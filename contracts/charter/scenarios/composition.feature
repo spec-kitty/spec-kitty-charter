@@ -146,9 +146,11 @@ Feature: The compose resolves the configured packs' dependency graph
         range: '>=1.0.0'
       """
     When I GET "/offering"
-    Then the response status is 422
+    Then the response status is 500
     And the problem code is "pack_dependency_cycle"
-    And the field "detail" of the response body is "the dependency graph contains a cycle through 01M4P01D5TWB5FKZGNNQG3943R"
+    And the field "detail" of the response body is "pack `alpha-pack` (01M4P01D5TWB5FKZGNNQG3943R) is on a dependency cycle: `alpha-pack` -> `beta-pack` -> `alpha-pack`"
+    And the field at "/packs/0/packId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/0/name" is "alpha-pack"
     And the response has no "Charter-Source-Fingerprint" header
 
   Scenario: A chain with no cycle resolves, the dependency first
@@ -193,9 +195,11 @@ Feature: The compose resolves the configured packs' dependency graph
         range: '>=1.0.0'
       """
     When I GET "/offering"
-    Then the response status is 422
+    Then the response status is 500
     And the problem code is "pack_dependency_unknown"
-    And the field "detail" of the response body is "pack 01M4P01D5TWB5FKZGNNQG3943R depends on 01M4P01D5TWB5FKZGNNQG3943X, which no configured pack declares"
+    And the field "detail" of the response body is "pack `alpha-pack` (01M4P01D5TWB5FKZGNNQG3943R) depends on pack `01M4P01D5TWB5FKZGNNQG3943X`, which no configured pack declares"
+    And the field at "/packs/0/packId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/0/name" is "alpha-pack"
     And the response has no "Charter-Source-Fingerprint" header
 
   Scenario: A declared dependency a configured pack declares resolves
@@ -253,9 +257,13 @@ Feature: The compose resolves the configured packs' dependency graph
       pack_level: org
       """
     When I GET "/offering"
-    Then the response status is 422
+    Then the response status is 500
     And the problem code is "pack_dependency_out_of_range"
-    And the field "detail" of the response body is "pack 01M4P01D5TWB5FKZGNNQG3943R requires 01M4P01D5TWB5FKZGNNQG3943S in range ==2.0.0, and the held version is 1.9.0"
+    And the field "detail" of the response body is "pack `alpha-pack` (01M4P01D5TWB5FKZGNNQG3943R) requires pack `beta-pack` (01M4P01D5TWB5FKZGNNQG3943S) in range `==2.0.0`, but `beta-pack` is at version 1.9.0"
+    And the field at "/packs/0/packId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/0/name" is "alpha-pack"
+    And the field at "/packs/1/packId" is "01M4P01D5TWB5FKZGNNQG3943S"
+    And the field at "/packs/1/name" is "beta-pack"
     And the response has no "Charter-Source-Fingerprint" header
 
   Scenario: A range the held version satisfies resolves
@@ -297,9 +305,11 @@ Feature: The compose resolves the configured packs' dependency graph
       pack_level: org
       """
     When I GET "/offering"
-    Then the response status is 422
+    Then the response status is 500
     And the problem code is "pack_parent_unresolved"
-    And the field "detail" of the response body is "pack 01M4P01D5TWB5FKZGNNQG3943R names parent_pack 01M4P01D5TWB5FKZGNNQG3943X, which no configured pack declares"
+    And the field "detail" of the response body is "pack `orphan-pack` (01M4P01D5TWB5FKZGNNQG3943R) names parent_pack `01M4P01D5TWB5FKZGNNQG3943X`, which no configured pack declares"
+    And the field at "/packs/0/packId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/0/name" is "orphan-pack"
     And the response has no "Charter-Source-Fingerprint" header
 
   Scenario: A parent_pack a configured pack declares resolves
@@ -353,9 +363,13 @@ Feature: The compose resolves the configured packs' dependency graph
       pack_level: project
       """
     When I GET "/offering"
-    Then the response status is 422
+    Then the response status is 500
     And the problem code is "pack_level_violation"
-    And the field "detail" of the response body is "pack 01M4P01D5TWB5FKZGNNQG3943R at org depends on 01M4P01D5TWB5FKZGNNQG3943W at project; a pack may take a dependency or a parent only at its own level or one nearer built-in"
+    And the field "detail" of the response body is "pack `house-pack` (01M4P01D5TWB5FKZGNNQG3943R) at org depends on pack `team-pack` (01M4P01D5TWB5FKZGNNQG3943W) at project; a pack may take a dependency or a parent only at its own level or one nearer built-in"
+    And the field at "/packs/0/packId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/0/name" is "house-pack"
+    And the field at "/packs/1/packId" is "01M4P01D5TWB5FKZGNNQG3943W"
+    And the field at "/packs/1/name" is "team-pack"
     And the response has no "Charter-Source-Fingerprint" header
 
   Scenario: A project pack depending on an org pack resolves
@@ -406,9 +420,13 @@ Feature: The compose resolves the configured packs' dependency graph
       pack_level: project
       """
     When I GET "/offering"
-    Then the response status is 422
+    Then the response status is 500
     And the problem code is "pack_level_violation"
-    And the field "detail" of the response body is "pack 01M4P01D5TWB5FKZGNNQG3943S at org names as parent_pack 01M4P01D5TWB5FKZGNNQG3943W at project; a pack may take a dependency or a parent only at its own level or one nearer built-in"
+    And the field "detail" of the response body is "pack `child-pack` (01M4P01D5TWB5FKZGNNQG3943S) at org names pack `team-pack` (01M4P01D5TWB5FKZGNNQG3943W) at project as its parent_pack; a pack may take a dependency or a parent only at its own level or one nearer built-in"
+    And the field at "/packs/0/packId" is "01M4P01D5TWB5FKZGNNQG3943S"
+    And the field at "/packs/0/name" is "child-pack"
+    And the field at "/packs/1/packId" is "01M4P01D5TWB5FKZGNNQG3943W"
+    And the field at "/packs/1/name" is "team-pack"
     And the response has no "Charter-Source-Fingerprint" header
 
   Scenario: Two packs declaring one name refuse the compose
@@ -431,9 +449,13 @@ Feature: The compose resolves the configured packs' dependency graph
       pack_level: org
       """
     When I GET "/offering"
-    Then the response status is 422
+    Then the response status is 500
     And the problem code is "pack_name_conflict"
-    And the field "detail" of the response body is "pack name shared-house-rules is declared by packs 01M4P01D5TWB5FKZGNNQG3943R and 01M4P01D5TWB5FKZGNNQG3943S"
+    And the field "detail" of the response body is "packs `shared-house-rules` (01M4P01D5TWB5FKZGNNQG3943R) and `shared-house-rules` (01M4P01D5TWB5FKZGNNQG3943S) both declare the name `shared-house-rules`"
+    And the field at "/packs/0/packId" is "01M4P01D5TWB5FKZGNNQG3943S"
+    And the field at "/packs/0/name" is "shared-house-rules"
+    And the field at "/packs/1/packId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/1/name" is "shared-house-rules"
     And the response has no "Charter-Source-Fingerprint" header
 
   Scenario: Two packs with distinct names resolve
@@ -480,9 +502,13 @@ Feature: The compose resolves the configured packs' dependency graph
       pack_level: org
       """
     When I GET "/offering"
-    Then the response status is 422
+    Then the response status is 500
     And the problem code is "pack_duplicate_id"
-    And the field "detail" of the response body is "pack_id 01M4P01D5TWB5FKZGNNQG3943R is declared by two configured packs"
+    And the field "detail" of the response body is "packs `one-pack` (01M4P01D5TWB5FKZGNNQG3943R) and `two-pack` (01M4P01D5TWB5FKZGNNQG3943R) both declare the pack_id 01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/0/packId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/0/name" is "two-pack"
+    And the field at "/packs/1/packId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/1/name" is "one-pack"
     And the response has no "Charter-Source-Fingerprint" header
 
   Scenario: Two configured packs with distinct pack_ids resolve
@@ -512,7 +538,7 @@ Feature: The compose resolves the configured packs' dependency graph
   Scenario: Two siblings changing one artifact, unsettled, refuse the compose
     WP01's contest (FR-012): left and right, both at org, each declare an enhances edge on the same
     directive in their graphs, and no pack of the compose declares an overrides edge settling it. A
-    conflict must be a decision, not load order, so the compose is refused (409) naming both packs
+    conflict must be a decision, not load order, so the compose is refused (500, like every composition refusal) naming both packs
     and the artifact.
     Given the org pack "left" with the file "pack.yaml":
       """
@@ -563,9 +589,13 @@ Feature: The compose resolves the configured packs' dependency graph
         relation: enhances
       """
     When I GET "/offering"
-    Then the response status is 409
+    Then the response status is 500
     And the problem code is "pack_sibling_refinement_conflict"
-    And the field "detail" of the response body is "packs 01M4P01D5TWB5FKZGNNQG3943R and 01M4P01D5TWB5FKZGNNQG3943S at org both change the artifact directive:software-dev/test-first, and no pack of the compose declares an overrides edge settling it"
+    And the field "detail" of the response body is "packs `left-pack` (01M4P01D5TWB5FKZGNNQG3943R) and `right-pack` (01M4P01D5TWB5FKZGNNQG3943S) at org both change the artifact `directive:software-dev/test-first`, and no pack of the compose declares an overrides edge settling it"
+    And the field at "/packs/0/packId" is "01M4P01D5TWB5FKZGNNQG3943S"
+    And the field at "/packs/0/name" is "right-pack"
+    And the field at "/packs/1/packId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/1/name" is "left-pack"
     And the response has no "Charter-Source-Fingerprint" header
 
   Scenario: An overrides edge settling the contest serves the compose
@@ -673,9 +703,13 @@ Feature: The compose resolves the configured packs' dependency graph
       enforcement: required
       """
     When I GET "/offering"
-    Then the response status is 409
+    Then the response status is 500
     And the problem code is "pack_sibling_refinement_conflict"
-    And the field "detail" of the response body is "packs 01M4P01D5TWB5FKZGNNQG3943R and 01M4P01D5TWB5FKZGNNQG3943S at org both define the artifact directive:SHARE, and no pack of the compose declares an overrides edge settling it"
+    And the field "detail" of the response body is "packs `left-pack` (01M4P01D5TWB5FKZGNNQG3943R) and `right-pack` (01M4P01D5TWB5FKZGNNQG3943S) at org both define the artifact `directive:SHARE`, and no pack of the compose declares an overrides edge settling it"
+    And the field at "/packs/0/packId" is "01M4P01D5TWB5FKZGNNQG3943S"
+    And the field at "/packs/0/name" is "right-pack"
+    And the field at "/packs/1/packId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/1/name" is "left-pack"
     And the response has no "Charter-Source-Fingerprint" header
 
   Scenario: An org pack and a project pack defining one artifact compose as a layer override
@@ -801,9 +835,13 @@ Feature: The compose resolves the configured packs' dependency graph
       enforcement: required
       """
     When I GET "/offering"
-    Then the response status is 422
+    Then the response status is 500
     And the problem code is "pack_reference_unqualified"
-    And the field "detail" of the response body is "the bare reference directive:SHARE of pack 01M4P01D5TWB5FKZGNNQG3943R resolves only in pack beta-pack; a cross-pack reference is written pack-qualified"
+    And the field "detail" of the response body is "pack `alpha-pack` (01M4P01D5TWB5FKZGNNQG3943R) writes the bare reference `directive:SHARE`, which resolves only in pack `beta-pack` (01M4P01D5TWB5FKZGNNQG3943S); a cross-pack reference is written pack-qualified"
+    And the field at "/packs/0/packId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/0/name" is "alpha-pack"
+    And the field at "/packs/1/packId" is "01M4P01D5TWB5FKZGNNQG3943S"
+    And the field at "/packs/1/name" is "beta-pack"
     And the response has no "Charter-Source-Fingerprint" header
 
 
@@ -849,9 +887,13 @@ Feature: The compose resolves the configured packs' dependency graph
       enforcement: required
       """
     When I GET "/offering"
-    Then the response status is 422
+    Then the response status is 500
     And the problem code is "pack_reference_pack_missing"
-    And the field "detail" of the response body is "the reference beta-pack::directive:SHARE of pack 01M4P01D5TWB5FKZGNNQG3943R names pack beta-pack, which is outside the depends_on closure of pack 01M4P01D5TWB5FKZGNNQG3943R"
+    And the field "detail" of the response body is "pack `alpha-pack` (01M4P01D5TWB5FKZGNNQG3943R) writes the reference `beta-pack::directive:SHARE`, but pack `beta-pack` (01M4P01D5TWB5FKZGNNQG3943S) is outside its depends_on closure"
+    And the field at "/packs/0/packId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/0/name" is "alpha-pack"
+    And the field at "/packs/1/packId" is "01M4P01D5TWB5FKZGNNQG3943S"
+    And the field at "/packs/1/name" is "beta-pack"
     And the response has no "Charter-Source-Fingerprint" header
 
 
@@ -944,9 +986,13 @@ Feature: The compose resolves the configured packs' dependency graph
           when: always
       """
     When I GET "/offering"
-    Then the response status is 422
+    Then the response status is 500
     And the problem code is "pack_reference_unqualified"
-    And the field "detail" of the response body is "the bare reference directive:SHARE of pack 01M4P01D5TWB5FKZGNNQG3943R resolves only in pack beta-pack; a cross-pack reference is written pack-qualified"
+    And the field "detail" of the response body is "pack `alpha-pack` (01M4P01D5TWB5FKZGNNQG3943R) writes the bare reference `directive:SHARE`, which resolves only in pack `beta-pack` (01M4P01D5TWB5FKZGNNQG3943S); a cross-pack reference is written pack-qualified"
+    And the field at "/packs/0/packId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/0/name" is "alpha-pack"
+    And the field at "/packs/1/packId" is "01M4P01D5TWB5FKZGNNQG3943S"
+    And the field at "/packs/1/name" is "beta-pack"
 
   Scenario: A pack-qualified typed reference inside the closure resolves
     The control of the typed carrier (FR-013, FR-017): the same tactic writes the reference

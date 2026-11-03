@@ -43,3 +43,12 @@ properties:
       need not parse detail (ADR-0020 D10).
     items:
       $ref: RefusalViolation.yaml
+  packs:
+    type: array
+    description: >-
+      Only on a refusal of the pack composition (the pack_dependency_*, pack_parent_unresolved,
+      pack_level_violation, pack_name_conflict, pack_duplicate_id, pack_sibling_conflict and pack_reference_*
+      codes): the packs the refusal names, the pack that broke the rule first, each with the pack_id and the
+      name its pack.yaml declares, so a client need not parse detail.
+    items:
+      $ref: RefusalPack.yaml

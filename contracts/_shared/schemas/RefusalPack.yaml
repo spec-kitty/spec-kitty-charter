@@ -1,0 +1,28 @@
+title: RefusalPack
+description: >-
+  A pack a refusal names: the pack that broke the rule, or a pack the rule relates it to. Both identities come
+  from the pack's own pack.yaml, so a client reads which pack to fix without parsing detail.
+type: object
+additionalProperties: false
+required:
+  - packId
+  - name
+properties:
+  packId:
+    type: string
+    minLength: 1
+    maxLength: 64
+    description: The pack_id (ULID) the pack's pack.yaml declares.
+    x-derived:
+      rule: The pack_id of the pack's descriptor.
+      inputs:
+        - the pack.yaml of the pack the refusal names
+  name:
+    type: string
+    minLength: 1
+    maxLength: 64
+    description: The name the pack's pack.yaml gives, the handle a pack-qualified reference uses.
+    x-derived:
+      rule: The name of the pack's descriptor.
+      inputs:
+        - the pack.yaml of the pack the refusal names

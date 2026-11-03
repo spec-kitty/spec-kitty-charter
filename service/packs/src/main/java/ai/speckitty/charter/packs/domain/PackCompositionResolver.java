@@ -6,6 +6,7 @@ import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackOverride;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.Pep440Range;
+import ai.speckitty.charter.kernel.domain.RefusalPack;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -125,7 +126,9 @@ public final class PackCompositionResolver {
     }
 
     /**
-     * A refused compose: the reason and the pack that broke it.
+     * A refused compose: the reason and the packs it names, the pack that broke the graph first. Each pack is named
+     * by both identities its descriptor gives, {@code pack_id} and {@code name}, so a client never has to tell a name
+     * from an id.
      */
     public static final class Refusal extends RuntimeException {
 
@@ -134,20 +137,23 @@ public final class PackCompositionResolver {
         /** Why the compose cannot be served. */
         private final Failure failure;
 
-        /** The pack that broke the graph. */
-        private final String packId;
+        /** The packs the refusal names, the violating pack first; never empty. */
+        private final transient List<RefusalPack> packs;
 
         /**
          * A refusal.
          *
          * @param failure why the compose cannot be served
-         * @param packId the pack that broke the graph
+         * @param packs the packs the refusal names, the pack that broke the graph first
          * @param detail what the caller needs to read
          */
-        public Refusal(Failure failure, String packId, String detail) {
+        public Refusal(Failure failure, List<RefusalPack> packs, String detail) {
             super(detail);
             this.failure = Objects.requireNonNull(failure, "failure");
-            this.packId = Objects.requireNonNull(packId, "packId");
+            this.packs = List.copyOf(Objects.requireNonNull(packs, "packs"));
+            if (this.packs.isEmpty()) {
+                throw new IllegalArgumentException("a refusal names the pack that broke the graph");
+            }
         }
 
         /**
@@ -160,12 +166,21 @@ public final class PackCompositionResolver {
         }
 
         /**
+         * The packs the refusal names, the pack that broke the graph first.
+         *
+         * @return the packs, each with its descriptor {@code pack_id} and {@code name}
+         */
+        public List<RefusalPack> packs() {
+            return packs;
+        }
+
+        /**
          * The pack that broke the graph.
          *
-         * @return its {@code pack_id}
+         * @return its descriptor {@code pack_id}
          */
         public String packId() {
-            return packId;
+            return packs.getFirst().packId();
         }
 
         /**
@@ -247,36 +262,38 @@ public final class PackCompositionResolver {
             byName.putIfAbsent(pack.descriptor().name(), pack);
         }
         Set<String> closure = closureOf(referringPackId, byId);
+        PackUnderResolution referring = byId.get(referringPackId);
+        List<RefusalPack> referringPack =
+                List.of(referring == null ? new RefusalPack(referringPackId, referringPackId) : refusalPack(referring));
+        String referringLabel = referring == null ? "pack `" + referringPackId + "`" : label(referring);
         for (ResolvedReference resolved : references) {
             PackQualifiedReference reference = resolved.reference();
             if (reference.qualified()) {
-                String named = reference.packName().orElseThrow();
-                PackUnderResolution target = byName.get(named);
+                String missing = reference.packName().orElseThrow();
+                PackUnderResolution target = byName.get(missing);
                 if (target == null) {
                     throw new Refusal(
                             Failure.REFERENCE_PACK_MISSING,
-                            named,
-                            "the reference " + reference + " names pack " + named
-                                    + ", which the compose does not hold");
+                            referringPack,
+                            referringLabel + " writes the reference `" + reference + "`, but the compose holds no pack"
+                                    + " named `" + missing + "`");
                 }
                 if (!closure.contains(target.descriptor().packId())) {
                     throw new Refusal(
                             Failure.REFERENCE_PACK_MISSING,
-                            named,
-                            "the reference " + reference + " of pack " + referringPackId + " names pack " + named
-                                    + ", which is outside the depends_on closure of pack " + referringPackId);
+                            concat(referringPack, named(target)),
+                            referringLabel + " writes the reference `" + reference + "`, but " + label(target)
+                                    + " is outside its depends_on closure");
                 }
             } else if (!resolved.holdingPackId().equals(referringPackId)) {
                 PackUnderResolution holding = byId.get(resolved.holdingPackId());
-                String holdingName = holding == null
-                        ? resolved.holdingPackId()
-                        : holding.descriptor().name();
+                List<RefusalPack> holder = holding == null ? List.of() : named(holding);
+                String holdingLabel = holding == null ? "pack `" + resolved.holdingPackId() + "`" : label(holding);
                 throw new Refusal(
                         Failure.REFERENCE_UNQUALIFIED,
-                        resolved.holdingPackId(),
-                        "the bare reference " + reference + " of pack " + referringPackId
-                                + " resolves only in pack " + holdingName
-                                + "; a cross-pack reference is written pack-qualified");
+                        concat(referringPack, holder),
+                        referringLabel + " writes the bare reference `" + reference + "`, which resolves only in "
+                                + holdingLabel + "; a cross-pack reference is written pack-qualified");
             }
         }
     }
@@ -309,7 +326,7 @@ public final class PackCompositionResolver {
             for (PackDependency dependency : pack.descriptor().dependencies()) {
                 if (byId.containsKey(dependency.packId()) && Pep440Range.isWellFormed(dependency.range())) {
                     byTarget.computeIfAbsent(dependency.packId(), key -> new ArrayList<>())
-                            .add(new Declared(pack.descriptor().packId(), dependency.range()));
+                            .add(new Declared(pack, dependency.range()));
                 }
             }
         }
@@ -322,17 +339,21 @@ public final class PackCompositionResolver {
                     if (!Pep440Range.overlaps(first.range(), second.range())) {
                         throw new Refusal(
                                 Failure.OUT_OF_RANGE,
-                                second.packId(),
-                                "packs " + first.packId() + " and " + second.packId() + " require " + asked.getKey()
-                                        + " in ranges " + first.range() + " and " + second.range()
-                                        + ", which no version satisfies together");
+                                named(second.pack(), first.pack()),
+                                "packs `" + first.pack().descriptor().name() + "` ("
+                                        + first.pack().descriptor().packId() + ") and `"
+                                        + second.pack().descriptor().name() + "` ("
+                                        + second.pack().descriptor().packId() + ") require pack `"
+                                        + nameOf(asked.getKey(), byId) + "` (" + asked.getKey() + ") in ranges `"
+                                        + first.range() + "` and `" + second.range()
+                                        + "`, which no version satisfies together");
                     }
                 }
             }
         }
     }
 
-    private record Declared(String packId, String range) {}
+    private record Declared(PackUnderResolution pack, String range) {}
 
     /**
      * Refuses two packs of one configured level that contest an artifact, unless a pack of the compose declares an
@@ -398,12 +419,14 @@ public final class PackCompositionResolver {
                         ? "no pack of the compose declares an overrides edge settling it"
                         : "an overrides edge settling it names " + String.join(", ", staleMembers)
                                 + ", which is not a contestant";
+                List<PackUnderResolution> named = new ArrayList<>(siblings);
+                named.addFirst(named.remove(1));
                 throw new Refusal(
                         Failure.SIBLING_CONFLICT,
-                        ids.get(1),
-                        "packs " + String.join(" and ", ids) + " at "
+                        named(named.toArray(PackUnderResolution[]::new)),
+                        labels(siblings) + " at "
                                 + siblings.getFirst().configured().level().token()
-                                + " both " + verb + " the artifact " + artifact + ", and " + reason);
+                                + " both " + verb + " the artifact `" + artifact + "`, and " + reason);
             }
         }
     }
@@ -424,24 +447,24 @@ public final class PackCompositionResolver {
             if (previous != null) {
                 throw new Refusal(
                         Failure.DUPLICATE_ID,
-                        pack.descriptor().packId(),
-                        "pack_id " + pack.descriptor().packId() + " is declared by two configured packs");
+                        named(pack, previous),
+                        labels(List.of(previous, pack)) + " both declare the pack_id "
+                                + pack.descriptor().packId());
             }
         }
         return byId;
     }
 
     private static void indexByName(List<PackUnderResolution> packs) {
-        Map<String, String> byName = new HashMap<>();
+        Map<String, PackUnderResolution> byName = new HashMap<>();
         for (PackUnderResolution pack : packs) {
             String name = pack.descriptor().name();
-            String previous = byName.putIfAbsent(name, pack.descriptor().packId());
+            PackUnderResolution previous = byName.putIfAbsent(name, pack);
             if (previous != null) {
                 throw new Refusal(
                         Failure.NAME_CONFLICT,
-                        pack.descriptor().packId(),
-                        "pack name " + name + " is declared by packs " + previous + " and "
-                                + pack.descriptor().packId());
+                        named(pack, previous),
+                        labels(List.of(previous, pack)) + " both declare the name `" + name + "`");
             }
         }
     }
@@ -451,37 +474,33 @@ public final class PackCompositionResolver {
         for (PackDependency dependency : pack.descriptor().dependencies()) {
             String targetId = dependency.packId();
             if (targetId.equals(pack.descriptor().packId())) {
-                throw new Refusal(
-                        Failure.CYCLE,
-                        pack.descriptor().packId(),
-                        "pack " + pack.descriptor().packId() + " depends on itself");
+                throw new Refusal(Failure.CYCLE, named(pack), label(pack) + " depends on itself");
             }
             PackUnderResolution target = byId.get(targetId);
             if (target == null) {
                 throw new Refusal(
                         Failure.UNKNOWN_DEPENDENCY,
-                        pack.descriptor().packId(),
-                        "pack " + pack.descriptor().packId() + " depends on " + targetId
-                                + ", which no configured pack declares");
+                        named(pack),
+                        label(pack) + " depends on pack `" + targetId + "`, which no configured pack declares");
             }
             if (!Pep440Range.isVersion(target.descriptor().packVersion())) {
                 throw new Refusal(
                         Failure.OUT_OF_RANGE,
-                        targetId,
-                        "pack " + targetId + " has pack_version "
+                        named(target, pack),
+                        label(target) + " has pack_version `"
                                 + target.descriptor().packVersion()
-                                + ", which is not a PEP 440 version, so the range " + dependency.range()
-                                + " of pack " + pack.descriptor().packId() + " cannot be decided against it");
+                                + "`, which is not a PEP 440 version, so the range `" + dependency.range() + "` of "
+                                + label(pack) + " cannot be decided against it");
             }
             if (!admits(pack, dependency, target)) {
                 throw new Refusal(
                         Failure.OUT_OF_RANGE,
-                        pack.descriptor().packId(),
-                        "pack " + pack.descriptor().packId() + " requires " + targetId + " in range "
-                                + dependency.range() + ", and the held version is "
+                        named(pack, target),
+                        label(pack) + " requires " + label(target) + " in range `" + dependency.range()
+                                + "`, but `" + target.descriptor().name() + "` is at version "
                                 + target.descriptor().packVersion());
             }
-            requireLevel(pack, target, "depends on");
+            requireLevel(pack, target, false);
             dependencies.add(targetId);
         }
         pack.descriptor().parentPack().ifPresent(parent -> {
@@ -489,11 +508,10 @@ public final class PackCompositionResolver {
             if (parentPack == null) {
                 throw new Refusal(
                         Failure.PARENT_UNRESOLVED,
-                        pack.descriptor().packId(),
-                        "pack " + pack.descriptor().packId() + " names parent_pack " + parent
-                                + ", which no configured pack declares");
+                        named(pack),
+                        label(pack) + " names parent_pack `" + parent + "`, which no configured pack declares");
             }
-            requireLevel(pack, parentPack, "names as parent_pack");
+            requireLevel(pack, parentPack, true);
         });
         return dependencies;
     }
@@ -505,10 +523,9 @@ public final class PackCompositionResolver {
         } catch (IllegalArgumentException malformed) {
             throw new Refusal(
                     Failure.OUT_OF_RANGE,
-                    declaring.descriptor().packId(),
-                    "pack " + declaring.descriptor().packId() + " declares range " + dependency.range() + " on "
-                            + target.descriptor().packId() + ", which is not a PEP 440 range: "
-                            + malformed.getMessage());
+                    named(declaring, target),
+                    label(declaring) + " declares the range `" + dependency.range() + "` on " + label(target)
+                            + ", which is not a PEP 440 range: " + malformed.getMessage());
         }
     }
 
@@ -516,15 +533,17 @@ public final class PackCompositionResolver {
      * A pack may take a dependency or a parent only at its own level or one nearer built-in (ADR-0048 decision 7); the
      * levels run built-in, org, project, and a pack at one level reaches no pack further from built-in than itself.
      */
-    private static void requireLevel(PackUnderResolution pack, PackUnderResolution target, String edge) {
+    private static void requireLevel(PackUnderResolution pack, PackUnderResolution target, boolean parentEdge) {
         PackLevel own = pack.configured().level();
         PackLevel targetLevel = target.configured().level();
         if (rank(targetLevel) > rank(own)) {
+            String edge = parentEdge
+                    ? " names " + label(target) + " at " + targetLevel.token() + " as its parent_pack"
+                    : " depends on " + label(target) + " at " + targetLevel.token();
             throw new Refusal(
                     Failure.LEVEL_VIOLATION,
-                    pack.descriptor().packId(),
-                    "pack " + pack.descriptor().packId() + " at " + own.token() + " " + edge + " "
-                            + target.descriptor().packId() + " at " + targetLevel.token()
+                    named(pack, target),
+                    label(pack) + " at " + own.token() + edge
                             + "; a pack may take a dependency or a parent only at its own level or one nearer built-in");
         }
     }
@@ -573,18 +592,29 @@ public final class PackCompositionResolver {
             }
         }
         if (ordered.size() != packs.size()) {
-            String onCycle = packOnCycle(ordered, dependenciesByPack);
-            throw new Refusal(Failure.CYCLE, onCycle, "the dependency graph contains a cycle through " + onCycle);
+            List<PackUnderResolution> cycle = cycleOf(ordered, byId, dependenciesByPack);
+            String path = cycle.stream()
+                    .map(member -> "`" + member.descriptor().name() + "`")
+                    .collect(java.util.stream.Collectors.joining(" -> "));
+            throw new Refusal(
+                    Failure.CYCLE,
+                    named(cycle.toArray(PackUnderResolution[]::new)),
+                    label(cycle.getFirst()) + " is on a dependency cycle: " + path + " -> `"
+                            + cycle.getFirst().descriptor().name() + "`");
         }
         return List.copyOf(ordered);
     }
 
     /**
-     * A pack that lies on a cycle. What Kahn's pass leaves behind is the cycles and everything downstream of them, and
-     * the first leftover in the stable order may be only downstream. Every leftover has an unplaced dependency, so
-     * walking from one along unplaced dependencies must repeat a pack, and the first repeat is on a cycle.
+     * The packs of one cycle, starting at a pack on it. What Kahn's pass leaves behind is the cycles and everything
+     * downstream of them, and the first leftover in the stable order may be only downstream. Every leftover has an
+     * unplaced dependency, so walking from one along unplaced dependencies must repeat a pack, and the walk from the
+     * first repeat back to it is the cycle.
      */
-    private static String packOnCycle(List<PackUnderResolution> placed, Map<String, List<String>> dependenciesByPack) {
+    private static List<PackUnderResolution> cycleOf(
+            List<PackUnderResolution> placed,
+            Map<String, PackUnderResolution> byId,
+            Map<String, List<String>> dependenciesByPack) {
         Set<String> done = new LinkedHashSet<>();
         placed.forEach(pack -> done.add(pack.descriptor().packId()));
         String current = dependenciesByPack.keySet().stream()
@@ -598,6 +628,47 @@ public final class PackCompositionResolver {
                     .findFirst()
                     .orElseThrow();
         }
-        return current;
+        List<String> path = new ArrayList<>(walked);
+        return path.subList(path.indexOf(current), path.size()).stream()
+                .map(id -> Objects.requireNonNull(byId.get(id), "a leftover pack is in the compose"))
+                .toList();
+    }
+
+    // ---- how a refusal names a pack -----------------------------------------------------------------------------
+
+    private static RefusalPack refusalPack(PackUnderResolution pack) {
+        return new RefusalPack(pack.descriptor().packId(), pack.descriptor().name());
+    }
+
+    /** The pack as a sentence names it: {@code `name` (pack_id)}. */
+    private static String tag(PackUnderResolution pack) {
+        return "`" + pack.descriptor().name() + "` (" + pack.descriptor().packId() + ")";
+    }
+
+    /** The pack as a sentence names it: {@code pack `name` (pack_id)}. */
+    private static String label(PackUnderResolution pack) {
+        return "pack " + tag(pack);
+    }
+
+    private static String labels(List<PackUnderResolution> packs) {
+        return "packs "
+                + packs.stream()
+                        .map(PackCompositionResolver::tag)
+                        .collect(java.util.stream.Collectors.joining(" and "));
+    }
+
+    private static String nameOf(String packId, Map<String, PackUnderResolution> byId) {
+        PackUnderResolution pack = byId.get(packId);
+        return pack == null ? packId : pack.descriptor().name();
+    }
+
+    private static List<RefusalPack> concat(List<RefusalPack> first, List<RefusalPack> second) {
+        List<RefusalPack> both = new ArrayList<>(first);
+        both.addAll(second);
+        return both;
+    }
+
+    private static List<RefusalPack> named(PackUnderResolution... packs) {
+        return Arrays.stream(packs).map(PackCompositionResolver::refusalPack).toList();
     }
 }

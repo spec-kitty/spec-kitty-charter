@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.infra.api;
 
 import ai.speckitty.charter.api.model.CharterRefusal;
 import ai.speckitty.charter.api.model.Problem;
+import ai.speckitty.charter.api.model.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.application.PreconditionException;
 import org.apache.commons.logging.Log;
@@ -94,6 +95,11 @@ public class RefusalHandler {
                 status.value(),
                 CharterRefusal.CodeEnum.fromValue(refusal.code().token()));
         body.setDetail(refusal.getMessage());
+        if (!refusal.packs().isEmpty()) {
+            body.setPacks(refusal.packs().stream()
+                    .map(pack -> new RefusalPack(pack.packId(), pack.name()))
+                    .toList());
+        }
         return ResponseEntity.status(status)
                 .contentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .body(body);
@@ -101,7 +107,8 @@ public class RefusalHandler {
 
     /**
      * The HTTP status a refusal code is answered with. A not-found is 404; a validation failure is 422; a conflict or
-     * policy refusal is 409; every other code, {@code stale_input} and {@code internal_error} included, is 500. The
+     * policy refusal is 409; every other code is 500, {@code stale_input} and {@code internal_error} and the codes of
+     * the pack composition included: the request is fine and the configured packs are not. The
      * {@code 412}/{@code 428} preconditions are not refusal codes: {@link #precondition} answers those as plain
      * problem bodies.
      *
@@ -122,8 +129,14 @@ public class RefusalHandler {
                     ACTIVATION_NOT_FOUND,
                     ARTIFACT_NOT_FOUND,
                     PRESET_NOT_FOUND -> HttpStatus.NOT_FOUND;
-            case VALIDATION_FAILED,
-                    ACTIVATION_INVALID,
+            case VALIDATION_FAILED, ACTIVATION_INVALID -> HttpStatus.UNPROCESSABLE_CONTENT;
+            case REGISTRATION_CONFLICT, GOVERNANCE_POLICY_VIOLATION, ARTIFACT_REQUIRED, ARTIFACT_LOCKED ->
+                HttpStatus.CONFLICT;
+            // TODO(batch B): pack_reference_artifact_missing joins the composition codes below as a 500.
+            case PACK_LEVEL_MISMATCH,
+                    PACK_UNREADABLE,
+                    DRG_SCHEMA_ERROR,
+                    UNRESOLVED_EDGE_ENDPOINT,
                     PACK_DEPENDENCY_CYCLE,
                     PACK_DEPENDENCY_UNKNOWN,
                     PACK_DEPENDENCY_OUT_OF_RANGE,
@@ -131,17 +144,9 @@ public class RefusalHandler {
                     PACK_LEVEL_VIOLATION,
                     PACK_NAME_CONFLICT,
                     PACK_DUPLICATE_ID,
+                    PACK_SIBLING_REFINEMENT_CONFLICT,
                     PACK_REFERENCE_UNQUALIFIED,
-                    PACK_REFERENCE_PACK_MISSING -> HttpStatus.UNPROCESSABLE_CONTENT;
-            case REGISTRATION_CONFLICT,
-                    GOVERNANCE_POLICY_VIOLATION,
-                    ARTIFACT_REQUIRED,
-                    ARTIFACT_LOCKED,
-                    PACK_SIBLING_REFINEMENT_CONFLICT -> HttpStatus.CONFLICT;
-            case PACK_LEVEL_MISMATCH,
-                    PACK_UNREADABLE,
-                    DRG_SCHEMA_ERROR,
-                    UNRESOLVED_EDGE_ENDPOINT,
+                    PACK_REFERENCE_PACK_MISSING,
                     INTERNAL_ERROR,
                     STALE_INPUT -> HttpStatus.INTERNAL_SERVER_ERROR;
         };

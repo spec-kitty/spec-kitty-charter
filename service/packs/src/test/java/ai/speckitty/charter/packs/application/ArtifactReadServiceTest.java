@@ -498,7 +498,7 @@ class ArtifactReadServiceTest {
         assertThatThrownBy(() -> referenceFixture(() -> D1).referenced(PACK, "charlie::directive:SHARED_1"))
                 .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
                     assertThat(refused.code()).isEqualTo(RefusalCode.PACK_REFERENCE_PACK_MISSING);
-                    assertThat(refused.getMessage()).contains("charlie").contains("does not hold");
+                    assertThat(refused.getMessage()).contains("charlie").contains("holds no pack");
                 });
     }
 

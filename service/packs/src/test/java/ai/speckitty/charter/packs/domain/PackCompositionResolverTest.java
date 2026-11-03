@@ -10,6 +10,7 @@ import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackOverride;
 import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
+import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.Failure;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import java.util.ArrayList;
@@ -290,7 +291,8 @@ class PackCompositionResolverTest {
         assertThatThrownBy(() -> PackCompositionResolver.resolve(List.of(ownPack, targetPack)))
                 .isInstanceOfSatisfying(PackCompositionResolver.Refusal.class, refusal -> {
                     assertThat(refusal.failure()).isEqualTo(Failure.LEVEL_VIOLATION);
-                    assertThat(refusal.packId()).isEqualTo("01OWN0");
+                    assertThat(refusal.packs())
+                            .containsExactly(new RefusalPack("01OWN0", "own"), new RefusalPack("01TRGT", "target"));
                     assertThat(refusal.detail())
                             .contains("01TRGT", own.token(), target.token())
                             .contains("its own level or one nearer built-in");
@@ -354,7 +356,7 @@ class PackCompositionResolverTest {
                     assertThat(refusal.failure()).isEqualTo(Failure.SIBLING_CONFLICT);
                     assertThat(refusal.packId()).isEqualTo("01RIGHT");
                     assertThat(refusal.detail())
-                            .contains("01LEFT", "01RIGHT", "both define the artifact directive:DIRECTIVE_009");
+                            .contains("01LEFT", "01RIGHT", "both define the artifact `directive:DIRECTIVE_009`");
                 });
     }
 
@@ -465,8 +467,9 @@ class PackCompositionResolverTest {
                                 PackQualifiedReference.parse("writing::directive:DIRECTIVE_009"), "01WRI"))))
                 .isInstanceOfSatisfying(PackCompositionResolver.Refusal.class, refusal -> {
                     assertThat(refusal.failure()).isEqualTo(Failure.REFERENCE_PACK_MISSING);
-                    assertThat(refusal.packId()).isEqualTo("writing");
-                    assertThat(refusal.detail()).contains("depends_on closure of pack 01REA");
+                    assertThat(refusal.packs())
+                            .containsExactly(new RefusalPack("01REA", "reader"), new RefusalPack("01WRI", "writing"));
+                    assertThat(refusal.detail()).contains("`writing` (01WRI) is outside its depends_on closure");
                 });
     }
 
