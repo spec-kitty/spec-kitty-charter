@@ -708,6 +708,14 @@ class ArtifactReadServiceTest {
             return List.of();
         }
 
+        /** A pack holds the artifacts of its aggregate, which the compose reads once per pack. */
+        @Override
+        public List<String> definedArtifacts(PackIdentifier pack) {
+            return contents(pack).artifacts().stream()
+                    .map(artifact -> artifact.urn().toString())
+                    .toList();
+        }
+
         @Override
         public Optional<Tactic> load(PackIdentifier pack, TacticIdentifier tactic) {
             return contents(pack).tactics().stream()

@@ -10,7 +10,6 @@ import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver;
-import ai.speckitty.charter.packs.domain.PackCompositionResolver.Failure;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackPolicy;
@@ -194,7 +193,7 @@ public final class OfferingReadService {
             }
             return closure;
         } catch (PackCompositionResolver.Refusal refusal) {
-            throw new CharterRefusal(codeOf(refusal.failure()), refusal.detail(), refusal.packs());
+            throw new CharterRefusal(refusal.failure().code(), refusal.detail(), refusal.packs());
         }
     }
 
@@ -243,20 +242,5 @@ public final class OfferingReadService {
                     throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, finding.detail());
                 });
         return descriptor;
-    }
-
-    private static RefusalCode codeOf(Failure failure) {
-        return switch (failure) {
-            case CYCLE -> RefusalCode.PACK_DEPENDENCY_CYCLE;
-            case UNKNOWN_DEPENDENCY -> RefusalCode.PACK_DEPENDENCY_UNKNOWN;
-            case OUT_OF_RANGE -> RefusalCode.PACK_DEPENDENCY_OUT_OF_RANGE;
-            case PARENT_UNRESOLVED -> RefusalCode.PACK_PARENT_UNRESOLVED;
-            case LEVEL_VIOLATION -> RefusalCode.PACK_LEVEL_VIOLATION;
-            case NAME_CONFLICT -> RefusalCode.PACK_NAME_CONFLICT;
-            case DUPLICATE_ID -> RefusalCode.PACK_DUPLICATE_ID;
-            case SIBLING_CONFLICT -> RefusalCode.PACK_SIBLING_CONFLICT;
-            case REFERENCE_UNQUALIFIED -> RefusalCode.PACK_REFERENCE_UNQUALIFIED;
-            case REFERENCE_PACK_MISSING -> RefusalCode.PACK_REFERENCE_PACK_MISSING;
-        };
     }
 }

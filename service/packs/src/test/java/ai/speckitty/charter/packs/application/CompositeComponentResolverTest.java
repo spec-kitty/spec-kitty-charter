@@ -23,6 +23,7 @@ import ai.speckitty.charter.packs.domain.DirectiveRepository;
 import ai.speckitty.charter.packs.domain.Enforcement;
 import ai.speckitty.charter.packs.domain.Guide;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Paradigm;
@@ -195,6 +196,15 @@ class CompositeComponentResolverTest {
     }
 
     @Test
+    void aBareReferenceToAKindNoReadPathServesIsRefusedWhenOnlyAnotherPackHoldsIt() {
+        // The held list answers for every kind, so a procedure held only by bravo is not failed open.
+        assertThatThrownBy(() -> twoPackResolver().resolveReference("procedure:release", PACK))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refused -> assertThat(refused.code()).isEqualTo(RefusalCode.PACK_REFERENCE_UNQUALIFIED));
+    }
+
+    @Test
     void aQualifiedReferenceToAPackOutsideTheClosureIsRefusedNamingTheMissingPack() {
         // The id exists in the referring pack, yet a name the closure does not hold is FR-017's refusal, never a
         // fallback to the referring pack.
@@ -265,7 +275,19 @@ class CompositeComponentResolverTest {
                         () -> List.of(
                                 new ConfiguredPack(PACK, PackLevel.ORG), new ConfiguredPack(PACK_B, PackLevel.ORG)),
                         new NamedDescriptors(),
-                        pack -> List.of(),
+                        new PackArtifactRepository() {
+                            @Override
+                            public List<String> changedArtifacts(PackIdentifier pack) {
+                                return List.of();
+                            }
+
+                            @Override
+                            public List<String> definedArtifacts(PackIdentifier pack) {
+                                return pack.equals(PACK_B)
+                                        ? List.of("directive:SHARED_1", "procedure:release")
+                                        : List.of("directive:OWN_1");
+                            }
+                        },
                         fixedDigest()));
     }
 
