@@ -31,14 +31,13 @@ runs.
 - **`guard`** (`guards/<id>.guard.yaml`) and **`lifecycle`** (`lifecycles/<id>.lifecycle.yaml`) are pack kinds with
   closed schemas, bound in the kind registry and compared by meaning (ADR-0036). Both are in force with their pack,
   not activatable, and not served over the API until their contract set (work breakdown item 13).
-- **The asset `executable` block**: a `runtime` from a closed allowlist (`python`), and an `entry` that is the asset's
-  own path and one argv element. A shell, an escaping path and a command string are refused.
-- **`implemented_by`** is worked out from a guard's own field, never authored. Nothing reads it yet: no graph or API
-  consumer arrives before item 13, and until then no authored edge names a guard or a lifecycle.
-- **Load-time checks fail closed:** a guard's asset must be held and executable; its `config_schema` must compile
-  offline, may not use `$ref` or any other reference keyword, and holds only patterns that run in linear time
-  (RE2 syntax: no backreference, no lookaround, which are refused); a lifecycle's guard entries must resolve and their `config` fit. A pack-qualified reference waits for the
-  pack dependency closure. What does not close is left out with a `reference` violation.
+- **The asset `executable` block**: a `runtime` from a closed allowlist (`python`) and an `entry`, one argv element
+  naming a payload file of the same pack. A shell, an escaping path and a command string are refused.
+- **`implemented_by`** is worked out from a guard's own field, never authored. Nothing reads it before item 13.
+- **Load-time checks fail closed:** an executable's entry must be a payload the pack holds; a guard's asset must be held
+  and executable; its `config_schema` must compile offline, use no `$ref` or other reference keyword, and hold only
+  linear-time (RE2) patterns; a lifecycle's guard entries must resolve and their `config` fit. A pack-qualified
+  reference waits for the dependency closure. What does not close is left out with a `reference` violation.
 - **Rulings (operator, 2026-11-02):** six `builtin:` ids; ADR-0042 S4 admits `config_schema` and an entry's `config`;
   the event key is `event`, not `on`; `"*"` leaves out the target; action points wait for item 7; the changed-files
   input stays open. ADR-0042, ADR-0050 and ADR-0054 record them.

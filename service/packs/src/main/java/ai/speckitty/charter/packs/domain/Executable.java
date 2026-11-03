@@ -16,7 +16,8 @@ import java.util.regex.Pattern;
  *
  * @param runtime the runtime, from the allowlist
  * @param minVersion the lowest runtime version the asset needs, as dotted numbers, when stated
- * @param entry the asset's payload, relative to the pack's {@code assets/} directory
+ * @param entry a payload of the same pack, relative to its {@code assets/} directory: the asset's own or another's
+ *     (the pack store checks that the pack holds it, ADR-0054 decision 5 as amended on 2026-11-03)
  * @param args the arguments after the entry, in order
  */
 public record Executable(ExecutableRuntime runtime, Optional<String> minVersion, String entry, List<String> args) {

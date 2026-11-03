@@ -368,12 +368,15 @@ class GuardAndLifecycleLoadTest {
     }
 
     @Test
-    @DisplayName("an executable whose entry is not the asset's own payload is refused")
-    void anEntryThatIsNotThePayloadIsRefused() throws IOException {
-        Path pack = pack();
-        edit(pack, ASSET, text -> text.replace("  entry: carrier_lint.py\n", "  entry: other.py\n"));
+    @DisplayName("an executable's entry names any payload of its pack; one the pack does not hold drops the asset")
+    void anEntryNamesAPayloadThePackHolds() throws IOException {
+        Path another = pack();
+        edit(another, ASSET, text -> text.replace("  entry: carrier_lint.py\n", "  entry: notes.txt\n"));
+        assertThat(load(another).violations()).as("another payload of the pack").isEmpty();
 
-        assertDroppedWithItsGuard(load(pack), "An executable's entry is the asset's own path");
+        Path missing = PackFixtures.copyOf(PACK, Files.createTempDirectory(host, "missing"));
+        edit(missing, ASSET, text -> text.replace("  entry: carrier_lint.py\n", "  entry: other.py\n"));
+        assertDroppedWithItsGuard(load(missing), "is not a payload file the pack holds");
     }
 
     @Test
@@ -468,7 +471,7 @@ class GuardAndLifecycleLoadTest {
                 .isEmpty();
         assertThat(loaded.violations()).hasSize(3);
         assertThat(loaded.violations().get(0)).satisfies(violation -> {
-            assertThat(violation.kind()).isEqualTo("domain");
+            assertThat(violation.kind()).isEqualTo("reference");
             assertThat(violation.reason()).contains(rule);
         });
         assertThat(loaded.violations().subList(1, 3))
