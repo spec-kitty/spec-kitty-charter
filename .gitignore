@@ -57,5 +57,6 @@ kitty-ops/lifecycle.jsonl
 
 # Packs are synced from the spec-kitty-open-packs commit pinned by openPacksRef in gradle.properties, never
 # authored here: run `./gradlew syncPacks` (once per worktree). packs/open-packs.lock.yaml records their digests.
-/packs/internal/
-/packs/qa/
+# No trailing slash: that ignores a stray file or symbolic link at the same path as well as the synced directory.
+/packs/internal
+/packs/qa
