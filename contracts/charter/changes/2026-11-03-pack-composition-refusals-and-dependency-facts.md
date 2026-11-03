@@ -31,3 +31,13 @@
   fixture shape, plus the diamond, the descriptor without `depends_on` and the settled sibling contest; the raised-codes
   table of `scenarios/errors.feature` lists the eleven codes. Core's seam: a client that reads `GET /offering` must
   tolerate the `dependsOn` member (or move to the new version) and may now meet the eleven refusal codes.
+
+- New operation in this release: `GET /packs/{packId}/artifacts/{kind}/{artifactId}/references` (`listArtifactReferences`), a composed read: it
+  resolves the compose once inside the read and answers the references one artifact writes (`ArtifactReferenceList`),
+  each as written (`PackQualifiedReference`), with its relation when the artifact mints one, the `HoldingPack` that
+  holds what it names (`packId`, `descriptorPackId`, `name`), the bare `urn` it resolves to and an `artifact` link to the
+  pack-scoped read of the target. A bare reference is held by the pack that writes it, which shadows a same-named
+  artifact of another pack. A compose the resolver cannot serve refuses it with the same 500 composition code and
+  `packs` as `GET /offering`; the pack-scoped read of the artifact still answers. The pack, the kind and the artifact
+  are judged as for the artifact read (404). New relation key `artifact`. Scenarios: `scenarios/composition.feature`.
+

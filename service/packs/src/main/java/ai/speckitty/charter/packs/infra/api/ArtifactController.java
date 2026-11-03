@@ -3,7 +3,10 @@ package ai.speckitty.charter.packs.infra.api;
 import ai.speckitty.charter.api.ArtifactsApi;
 import ai.speckitty.charter.api.model.Artifact;
 import ai.speckitty.charter.api.model.ArtifactPage;
+import ai.speckitty.charter.api.model.ArtifactReferenceList;
+import ai.speckitty.charter.api.model.HoldingPack;
 import ai.speckitty.charter.api.model.PageInfo;
+import ai.speckitty.charter.api.model.ReferencedArtifact;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.packs.application.ArtifactPosition;
@@ -26,8 +29,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 /**
- * {@code GET /packs/{packId}/artifacts} and {@code GET /packs/{packId}/artifacts/{kind}/{artifactId}}: the generic
- * reads of {@link ArtifactReadService}, the only reads of a pack's artifacts. The writable kinds are registered under
+ * {@code GET /packs/{packId}/artifacts}, {@code GET /packs/{packId}/artifacts/{kind}/{artifactId}} and the composed
+ * {@code GET /packs/{packId}/artifacts/{kind}/{artifactId}/references}: the generic reads of
+ * {@link ArtifactReadService}, the only reads of a pack's artifacts. The writable kinds are registered under
  * the same tree by their own controllers ({@link DirectiveController} and its siblings). A refusal the service throws is answered by
  * {@link RefusalHandler}. The adapter answers the 400s itself, as plain problems without a code: a kind filter that
  * is not a served kind, a page cursor {@link ArtifactCursor} cannot read, and a parameter out of the bounds the
@@ -44,6 +48,7 @@ public class ArtifactController implements ArtifactsApi {
     private static final String PACKS = "packs";
     private static final String ARTIFACTS = "artifacts";
     private static final String KIND = "kind";
+    private static final String REFERENCES = "references";
     private static final String PAGE_SIZE = "pageSize";
     private static final String PAGE_CURSOR = "pageCursor";
 
@@ -101,6 +106,51 @@ public class ArtifactController implements ArtifactsApi {
         verified.value().revision().ifPresent(revision -> answer.eTag(revision.token()));
         return answer.body(ArtifactDtos.artifact(
                 verified.value(), guides, ArtifactDtos.itemLinks(kind, packId, artifactId, links)));
+    }
+
+    @Override
+    public ResponseEntity<ArtifactReferenceList> listArtifactReferences(String packId, String kind, String artifactId) {
+        var verified = reads.references(new PackIdentifier(packId), kind, artifactId);
+        List<ReferencedArtifact> items = verified.value().stream()
+                .map(reference -> referenced(reference))
+                .toList();
+        Map<Relation, Hypermedia.LinkValue> own = new EnumMap<>(Relation.class);
+        own.put(Relation.SELF, links.link(PACKS, packId, ARTIFACTS, kind, artifactId, REFERENCES));
+        return ResponseEntity.ok()
+                .headers(CharterHeaders.fingerprint(verified.fingerprint()))
+                .body(new ArtifactReferenceList(items, Hypermedia.wire(own)));
+    }
+
+    /** One resolved reference on the wire: the artifact link only when the target is a kind the service serves. */
+    private ReferencedArtifact referenced(ArtifactReadService.Reference reference) {
+        Map<Relation, Hypermedia.LinkValue> target = new EnumMap<>(Relation.class);
+        reference
+                .holder()
+                .ifPresent(holder -> reference
+                        .urn()
+                        .kind()
+                        .artifactKind()
+                        .filter(kind -> ArtifactReadService.SERVED.contains(kind))
+                        .ifPresent(kind -> target.put(
+                                Relation.ARTIFACT,
+                                links.link(
+                                        PACKS,
+                                        holder.configured().id().value(),
+                                        ARTIFACTS,
+                                        kind.token(),
+                                        reference.urn().id()))));
+        ReferencedArtifact wire = new ReferencedArtifact(
+                reference.written().toString(), reference.urn().toString(), Hypermedia.wire(target));
+        reference
+                .relation()
+                .ifPresent(relation -> wire.setRelation(ReferencedArtifact.RelationEnum.fromValue(relation.token())));
+        reference
+                .holder()
+                .ifPresent(holder -> wire.setHoldingPack(new HoldingPack(
+                        holder.configured().id().value(),
+                        holder.descriptor().packId(),
+                        holder.descriptor().name())));
+        return wire;
     }
 
     /**

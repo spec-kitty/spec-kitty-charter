@@ -1,0 +1,24 @@
+summary: A directive of alpha that relies on a directive of beta and on a procedure alpha holds.
+value:
+  items:
+    - reference: beta-pack::directive:SHARE
+      relation: suggests
+      holdingPack:
+        packId: beta
+        descriptorPackId: 01M4P01D5TWB5FKZGNNQG3943S
+        name: beta-pack
+      urn: directive:SHARE
+      _links:
+        artifact:
+          href: /api/v1/packs/beta/artifacts/directive/SHARE
+    - reference: procedure:release
+      relation: requires
+      holdingPack:
+        packId: alpha
+        descriptorPackId: 01M4P01D5TWB5FKZGNNQG3943R
+        name: alpha-pack
+      urn: procedure:release
+      _links: {}
+  _links:
+    self:
+      href: /api/v1/packs/alpha/artifacts/directive/USE/references

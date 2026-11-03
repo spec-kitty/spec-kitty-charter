@@ -157,8 +157,9 @@ Feature: The compose resolves the configured packs' dependency graph
     And the response has no "Charter-Source-Fingerprint" header
 
   Scenario: A broken compose refuses the composed read, while a pack-scoped read of one artifact still answers
-    A broken compose never reaches a composed read (operator ruling of 2026-11-03), but the pack-scoped read of
-    one artifact by id resolves no compose, so an author can inspect a broken pack. The control of the refusal is
+    A broken compose never reaches a composed read (operator ruling of 2026-11-03): the offering and the
+    references of an artifact are both refused with the composition code. The pack-scoped read of one artifact by
+    id resolves no compose, so an author can inspect a broken pack. The control of the refusal is
     the scenario below: the same descriptor with its dependency configured is served.
     Given the org pack "alpha" with the file "pack.yaml":
       """
@@ -182,6 +183,10 @@ Feature: The compose resolves the configured packs' dependency graph
     When I GET "/offering"
     Then the response status is 500
     And the problem code is "pack_dependency_unknown"
+    When I GET "/packs/alpha/artifacts/directive/SHARE/references"
+    Then the response status is 500
+    And the problem code is "pack_dependency_unknown"
+    And the field at "/packs/0/name" is "alpha-pack"
     When I GET "/packs/alpha/artifacts/directive/SHARE"
     Then the response status is 200
     And the field "id" of the response body is "SHARE"
@@ -1028,6 +1033,150 @@ Feature: The compose resolves the configured packs' dependency graph
     And the field at "/packs/1/packId" is "01M4P01D5TWB5FKZGNNQG3943S"
     And the field at "/packs/1/name" is "beta-pack"
     And the response has no "Charter-Source-Fingerprint" header
+
+  Scenario: The references of an artifact are read across packs, each resolved through the compose
+    A composed read (operator ruling of 2026-11-03). Alpha depends on beta, and alpha's directive USE writes
+    beta-pack::SHARE as a typed reference: the read answers it as written, under the relation the artifact mints for
+    it, held by beta, resolved to the bare URN, and its artifact link reads beta's directive. The artifact the
+    read is asked for must exist, exactly as for the pack-scoped read.
+    Given the org pack "alpha" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: alpha-pack
+      pack_level: org
+      depends_on:
+      - pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+        range: '>=1.0'
+      """
+    And the org pack "beta" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+      pack_version: 1.0.0
+      parent_pack: null
+      name: beta-pack
+      pack_level: org
+      """
+    And the org pack "alpha" with the file "directives/USE.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: USE
+      title: Use the shared load
+      intent: Use it
+      enforcement: required
+      references:
+      - type: directive
+        id: beta-pack::SHARE
+      """
+    And the org pack "beta" with the file "directives/SHARE.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: SHARE
+      title: Share the load
+      intent: Share it
+      enforcement: required
+      """
+    When I GET "/packs/alpha/artifacts/directive/USE/references"
+    Then the response status is 200
+    And the field at "/items/0/reference" is "beta-pack::directive:SHARE"
+    And the field at "/items/0/relation" is "suggests"
+    And the field at "/items/0/urn" is "directive:SHARE"
+    And the field at "/items/0/holdingPack/packId" is "beta"
+    And the field at "/items/0/holdingPack/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943S"
+    And the field at "/items/0/holdingPack/name" is "beta-pack"
+    And the field at "/items/0/_links/artifact/href" is "/api/v1/packs/beta/artifacts/directive/SHARE"
+    And following the link "artifact" of every element of "items" answers 200
+    When I GET "/packs/alpha/artifacts/directive/NOPE/references"
+    Then the response status is 404
+    And the problem code is "directive_not_found"
+
+  Scenario: A bare reference is held by the pack that writes it, which shadows another pack's artifact of that id
+    FR-014: alpha (project) and beta (org) both hold directive SHARE, and alpha's USE writes it bare. The read
+    answers alpha as the holding pack, with no refusal, and its artifact link reads alpha's directive.
+    Given the org pack "beta" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+      pack_version: 1.0.0
+      parent_pack: null
+      name: beta-pack
+      pack_level: org
+      """
+    And the project pack "alpha" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: alpha-pack
+      pack_level: project
+      """
+    And the org pack "beta" with the file "directives/SHARE.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: SHARE
+      title: Beta's share
+      intent: Share it
+      enforcement: required
+      """
+    And the project pack "alpha" with the file "directives/SHARE.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: SHARE
+      title: Alpha's share
+      intent: Share it
+      enforcement: required
+      """
+    And the project pack "alpha" with the file "directives/USE.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: USE
+      title: Use the shared load
+      intent: Use it
+      enforcement: required
+      references:
+      - type: directive
+        id: SHARE
+      """
+    When I GET "/packs/alpha/artifacts/directive/USE/references"
+    Then the response status is 200
+    And the field at "/items/0/reference" is "directive:SHARE"
+    And the field at "/items/0/holdingPack/packId" is "alpha"
+    And the field at "/items/0/_links/artifact/href" is "/api/v1/packs/alpha/artifacts/directive/SHARE"
+    When I GET "/packs/alpha/artifacts/directive/SHARE"
+    Then the response status is 200
+    And the field at "/directive/title" is "Alpha's share"
+
+  Scenario: A qualified reference naming a pack absent from the compose refuses the composed read
+    The refusal is the compose's, raised when it resolves (FR-017): the references read is refused with the same
+    pack_reference_pack_missing as the offering, naming alpha, the pack that wrote the reference. The pack-scoped read
+    of the same directive still answers.
+    Given the org pack "alpha" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: alpha-pack
+      pack_level: org
+      """
+    And the org pack "alpha" with the file "directives/USE.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: USE
+      title: Use the shared load
+      intent: Use it
+      enforcement: required
+      references:
+      - type: directive
+        id: ghost-pack::SHARE
+      """
+    When I GET "/packs/alpha/artifacts/directive/USE/references"
+    Then the response status is 500
+    And the problem code is "pack_reference_pack_missing"
+    And the field "detail" of the response body is "pack `alpha-pack` (01M4P01D5TWB5FKZGNNQG3943R) writes the reference `ghost-pack::directive:SHARE`, but the compose holds no pack named `ghost-pack`"
+    And the field at "/packs/0/name" is "alpha-pack"
+    And the response has no "Charter-Source-Fingerprint" header
+    When I GET "/packs/alpha/artifacts/directive/USE"
+    Then the response status is 200
 
   Scenario: A bare cross-pack reference in a tactic's typed references is refused naming the holding pack
     The same refusal as above (FR-015), through the other carrier of a reference: alpha's tactic

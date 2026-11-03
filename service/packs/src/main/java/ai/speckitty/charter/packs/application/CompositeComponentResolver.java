@@ -148,28 +148,46 @@ public final class CompositeComponentResolver {
          */
         public Optional<CharterArtifact> resolveReference(String reference, PackIdentifier referringPack) {
             Objects.requireNonNull(reference, "reference");
-            Objects.requireNonNull(referringPack, "referringPack");
             PackQualifiedReference parsed = PackQualifiedReference.parse(reference);
-            String referringId = closure.stream()
+            return holder(parsed, referringPack)
+                    .flatMap(held -> resolve(held.configured().id(), parsed.urn()));
+        }
+
+        /**
+         * The pack of the compose that holds what a reference names, by the rules of
+         * {@link #resolveReference(String, PackIdentifier)}: the one owner of "which pack does this reference mean".
+         * A qualified reference is held by the pack it names. A bare one is held by the referring pack when it holds
+         * the artifact, which shadows a same-named artifact of another pack (FR-014); when only another pack holds it
+         * the reference is refused {@link RefusalCode#PACK_REFERENCE_UNQUALIFIED}, and when no pack holds it nothing
+         * holds it.
+         *
+         * @param parsed the reference as the artifact writes it
+         * @param referringPack the pack whose artifact writes it
+         * @return the holding pack; empty when no pack of the compose holds what a bare reference names
+         * @throws CharterRefusal as {@link #resolveReference(String, PackIdentifier)} refuses
+         */
+        public Optional<PackCompositionResolver.PackUnderResolution> holder(
+                PackQualifiedReference parsed, PackIdentifier referringPack) {
+            Objects.requireNonNull(parsed, "parsed");
+            Objects.requireNonNull(referringPack, "referringPack");
+            Optional<PackCompositionResolver.PackUnderResolution> referring = closure.stream()
                     .filter(pack -> pack.configured().id().equals(referringPack))
-                    .map(pack -> pack.descriptor().packId())
-                    .findFirst()
-                    .orElse(referringPack.value());
+                    .findFirst();
+            String referringId =
+                    referring.map(pack -> pack.descriptor().packId()).orElse(referringPack.value());
             if (parsed.qualified()) {
                 checked(closure, referringId, new PackCompositionResolver.ResolvedReference(parsed, referringId));
-                PackIdentifier holder =
-                        packNamed(parsed.packName().orElseThrow()).orElseThrow();
-                return resolve(holder, parsed.urn());
+                return closure.stream()
+                        .filter(pack -> pack.descriptor()
+                                .name()
+                                .equals(parsed.packName().orElseThrow()))
+                        .findFirst();
             }
-            Optional<CharterArtifact> inPack = resolve(referringPack, parsed.urn());
-            if (inPack.isPresent()) {
-                return inPack;
+            if (referring.isPresent() && referring.get().holds(parsed.urn())) {
+                return referring;
             }
             for (PackCompositionResolver.PackUnderResolution pack : closure) {
-                if (pack.configured().id().equals(referringPack)) {
-                    continue;
-                }
-                if (pack.holds(parsed.urn())) {
+                if (!pack.configured().id().equals(referringPack) && pack.holds(parsed.urn())) {
                     checked(
                             closure,
                             referringId,

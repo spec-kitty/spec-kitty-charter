@@ -1,0 +1,54 @@
+get:
+  operationId: listArtifactReferences
+  summary: List the references one artifact of a Charter Pack writes, each resolved through the compose.
+  description: >-
+    A composed read (operator ruling of 2026-11-03): it resolves the compose of the configured packs once, inside
+    the read, and answers the references the artifact writes, in the order it writes them and without repeats.
+    Each item carries the reference as written (bare, or <pack-name>::<kind>:<id> for an artifact of another pack
+    the writer relies on), the relation it is written under when the artifact mints a relationship for it, the
+    pack that holds what it names (the configured packId, the pack_id of its pack.yaml and its name), the bare URN it
+    resolves to and, when the target is an artifact the service serves, an artifact link to the pack-scoped read of
+    it. A bare reference is held by the pack that writes it, so it shadows an artifact of the same id in another
+    pack (FR-014); a qualified one is held by the pack it names. A reference no pack holds has no holdingPack and no
+    link. A compose the resolver cannot serve refuses the whole read with the composition code the offering is
+    refused with (pack_dependency_cycle, pack_reference_pack_missing and the others), with the packs member naming
+    the packs; the pack-scoped read of the artifact itself still answers on the same setup. The pack is judged
+    first: an identifier that matches no configured pack is a 404 pack_not_found, then a slug that names no kind
+    the service serves is a 404 kind_not_found, and an id the pack does not hold is the not-found code of its kind,
+    exactly as for the artifact read. The answer is verified against the source fingerprint and carries it; inputs
+    that change while it is read are stale_input.
+  tags:
+    - Artifacts
+  parameters:
+    - $ref: ../parameters/PackId.yaml
+    - $ref: ../parameters/ArtifactKind.yaml
+    - $ref: ../parameters/ArtifactId.yaml
+  responses:
+    '200':
+      description: The references of the artifact, resolved through the compose.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/ArtifactReferenceList.yaml
+          examples:
+            cross-pack:
+              $ref: ../examples/ArtifactReferenceList.cross-pack.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/ArtifactNotFound.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

@@ -482,6 +482,23 @@ class ArtifactReadServiceTest {
     }
 
     @Test
+    void theReferencesReadResolvesTheComposeOnceAndRefusesAnUnknownKindAfterThePack() {
+        AtomicInteger counted = new AtomicInteger();
+        ArtifactReadService counting = referenceFixture(() -> {
+            counted.incrementAndGet();
+            return D1;
+        });
+
+        assertThat(counting.references(PACK, "directive", "OWN_1").value()).isEmpty();
+        // The outer read digests twice and the referrer's own verified read twice more; the compose adds none.
+        assertThat(counted).hasValue(4);
+        assertThatThrownBy(() -> counting.references(PACK, "procedure", "x"))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refused -> assertThat(refused.code()).isEqualTo(RefusalCode.KIND_NOT_FOUND));
+    }
+
+    @Test
     void aReferenceOutsideTheGrammarIsARefusalAndNeverAFault() {
         for (String malformed : List.of("::directive:SHARED_1", "Bad Pack::directive:SHARED_1", "a::b::directive:x")) {
             assertThatThrownBy(() -> referenceFixture(() -> D1).referenced(PACK, malformed))
