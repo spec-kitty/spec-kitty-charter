@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.infra.api;
 
 import ai.speckitty.charter.api.model.RelationshipRegistration;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
@@ -63,8 +64,8 @@ final class RelationshipWire {
      */
     static RelationshipRegistration toWire(Relationship relationship) {
         RelationshipRegistration dto = new RelationshipRegistration(
-                relationship.from().toString(),
-                relationship.to().toString(),
+                relationship.fromReference().toString(),
+                relationship.toReference().toString(),
                 relationship.type().token());
         dto.setRationale(relationship.rationale().orElse(null));
         dto.setWhen(relationship.when().orElse(null));
@@ -73,9 +74,16 @@ final class RelationshipWire {
 
     private static Relationship relationship(
             String from, String to, String type, @Nullable String when, @Nullable String rationale) {
+        if (from.contains("::")) {
+            throw new IllegalArgumentException(
+                    "a registered relationship is authored from an artifact of the pack, so its source is not"
+                            + " pack-qualified: " + from);
+        }
         Urn fromUrn =
                 Urn.parse(from).orElseThrow(() -> new IllegalArgumentException("not a URN of a known kind: " + from));
-        Urn toUrn = Urn.parse(to).orElseThrow(() -> new IllegalArgumentException("not a URN of a known kind: " + to));
+        PackQualifiedReference toReference = parsed(to);
+        Urn toUrn =
+                toReference.asUrn().orElseThrow(() -> new IllegalArgumentException("not a URN of a known kind: " + to));
         for (Urn endpoint : List.of(fromUrn, toUrn)) {
             if (!endpoint.kind().authoredInGraphs()) {
                 throw new IllegalArgumentException(PackPolicy.NOT_AUTHORED + endpoint);
@@ -88,7 +96,22 @@ final class RelationshipWire {
                     "relation type " + type + " is derived from an artifact's own field, never registered");
         }
         return new Relationship(
-                fromUrn, toUrn, relationType, Optional.ofNullable(when), Optional.ofNullable(rationale));
+                fromUrn,
+                Optional.empty(),
+                toUrn,
+                toReference.packName(),
+                relationType,
+                Optional.ofNullable(when),
+                Optional.ofNullable(rationale));
+    }
+
+    /** The target as written, bare or pack-qualified; a malformed qualifier is a refused registration. */
+    private static PackQualifiedReference parsed(String reference) {
+        try {
+            return PackQualifiedReference.parse(reference);
+        } catch (IllegalArgumentException malformed) {
+            throw new IllegalArgumentException("not a URN of a known kind: " + reference, malformed);
+        }
     }
 
     private static CharterRefusal refused(IllegalArgumentException invalid) {

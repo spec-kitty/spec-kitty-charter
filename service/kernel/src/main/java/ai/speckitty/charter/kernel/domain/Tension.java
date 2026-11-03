@@ -15,13 +15,44 @@ import java.util.Optional;
  * (ADR-0045).
  *
  * @param from the rule the tension is authored from
+ * @param fromPack the pack the source reference names; empty for a bare reference
  * @param to the rule the tension is authored to
+ * @param toPack the pack the target reference names; empty for a bare reference
  * @param when the authored condition; empty when it has none
  * @param rationale the authored reason; empty when it has none
  */
-public record Tension(Urn from, Urn to, Optional<String> when, Optional<String> rationale) {
+public record Tension(
+        Urn from,
+        Optional<String> fromPack,
+        Urn to,
+        Optional<String> toPack,
+        Optional<String> when,
+        Optional<String> rationale) {
     /**
      * Checks that every field is present and that the tension joins two different rules.
+     *
+     * @param from the rule the tension is authored from
+     * @param fromPack the pack the source reference names, possibly empty
+     * @param to the rule the tension is authored to
+     * @param toPack the pack the target reference names, possibly empty
+     * @param when the condition, possibly empty
+     * @param rationale the reason, possibly empty
+     * @throws IllegalArgumentException when {@code from} equals {@code to}
+     */
+    public Tension {
+        Objects.requireNonNull(from, "from");
+        Objects.requireNonNull(fromPack, "fromPack");
+        Objects.requireNonNull(to, "to");
+        Objects.requireNonNull(toPack, "toPack");
+        Objects.requireNonNull(when, "when");
+        Objects.requireNonNull(rationale, "rationale");
+        if (from.equals(to)) {
+            throw new IllegalArgumentException("A tension cannot join a rule to itself: " + from);
+        }
+    }
+
+    /**
+     * A tension between two bare rules.
      *
      * @param from the rule the tension is authored from
      * @param to the rule the tension is authored to
@@ -29,13 +60,7 @@ public record Tension(Urn from, Urn to, Optional<String> when, Optional<String> 
      * @param rationale the reason, possibly empty
      * @throws IllegalArgumentException when {@code from} equals {@code to}
      */
-    public Tension {
-        Objects.requireNonNull(from, "from");
-        Objects.requireNonNull(to, "to");
-        Objects.requireNonNull(when, "when");
-        Objects.requireNonNull(rationale, "rationale");
-        if (from.equals(to)) {
-            throw new IllegalArgumentException("A tension cannot join a rule to itself: " + from);
-        }
+    public Tension(Urn from, Urn to, Optional<String> when, Optional<String> rationale) {
+        this(from, Optional.empty(), to, Optional.empty(), when, rationale);
     }
 }

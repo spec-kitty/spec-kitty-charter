@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.PackOverride;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.Pep440Range;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
+import ai.speckitty.charter.kernel.domain.Urn;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -431,10 +432,16 @@ public final class PackCompositionResolver {
         }
     }
 
-    /** The URN an artifact reference names, without a {@code <pack>::} qualifier; a malformed one is its own key. */
+    /**
+     * The identity an artifact reference names: its bare URN. The {@code <pack>::} qualifier is split off by
+     * {@link PackQualifiedReference}, the one parser, and is not part of the identity, since a pack is provenance
+     * (ADR-0048 decision 10). A reference that is no URN of a known kind is its own key, so it never contests anything
+     * but itself.
+     */
     private static String bare(String reference) {
         try {
-            return PackQualifiedReference.parse(reference).urn();
+            PackQualifiedReference parsed = PackQualifiedReference.parse(reference);
+            return parsed.asUrn().map(Urn::toString).orElse(parsed.urn());
         } catch (IllegalArgumentException malformed) {
             return reference;
         }

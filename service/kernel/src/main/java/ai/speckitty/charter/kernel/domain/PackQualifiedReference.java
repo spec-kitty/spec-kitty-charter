@@ -79,6 +79,15 @@ public record PackQualifiedReference(Optional<String> packName, String urn) {
     }
 
     /**
+     * The URN part as a bare {@link Urn}.
+     *
+     * @return the URN; empty when the URN part is not a URN of a known node kind
+     */
+    public Optional<Urn> asUrn() {
+        return Urn.parse(urn);
+    }
+
+    /**
      * Whether the reference names a pack.
      *
      * @return {@code true} when the reference is pack-qualified

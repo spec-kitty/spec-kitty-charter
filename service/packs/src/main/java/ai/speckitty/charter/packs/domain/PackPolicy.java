@@ -6,6 +6,7 @@ import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.Pep440;
 import ai.speckitty.charter.kernel.domain.Pep440Range;
 import ai.speckitty.charter.kernel.domain.RelationType;
@@ -538,7 +539,7 @@ public final class PackPolicy {
 
     private static Optional<DrgNode> shardNode(RawNode node) {
         return Urn.parse(node.ref())
-                .filter(urn -> urn.pack().isEmpty() && urn.kind().authoredInGraphs())
+                .filter(urn -> urn.kind().authoredInGraphs())
                 .map(urn -> boundNode(urn, node));
     }
 
@@ -559,7 +560,7 @@ public final class PackPolicy {
     private static String nodeProblem(RawGraph.Shape shape, RawNode node, String origin) {
         return switch (shape) {
             case SHARD ->
-                Urn.parse(node.ref()).filter(urn -> urn.pack().isEmpty()).isPresent()
+                Urn.parse(node.ref()).isPresent()
                         ? origin + ": " + NOT_AUTHORED + "'" + node.ref() + "'"
                         : origin + ": node urn '" + node.ref() + "' is not <kind>:<id>";
             case FRAGMENT ->
@@ -600,7 +601,14 @@ public final class PackPolicy {
         }
         Object endpoints = endpoints(raw, origin);
         return endpoints instanceof Endpoints bound
-                ? new Relationship(bound.from(), bound.to(), relation.get(), raw.when(), raw.reason())
+                ? new Relationship(
+                        bound.from(),
+                        bound.fromPack(),
+                        bound.to(),
+                        bound.toPack(),
+                        relation.get(),
+                        raw.when(),
+                        raw.reason())
                 : endpoints;
     }
 
@@ -614,32 +622,49 @@ public final class PackPolicy {
         }
         Object endpoints = endpoints(raw, origin);
         return endpoints instanceof Endpoints bound
-                ? new Tension(bound.from(), bound.to(), raw.when(), raw.reason())
+                ? new Tension(bound.from(), bound.fromPack(), bound.to(), bound.toPack(), raw.when(), raw.reason())
                 : endpoints;
     }
 
-    /** The two endpoints of an edge, both URNs and not the same one. */
-    private record Endpoints(Urn from, Urn to) {}
+    /** The two endpoints of an edge: each a bare URN and the pack its reference names, if it is pack-qualified. */
+    private record Endpoints(Urn from, Optional<String> fromPack, Urn to, Optional<String> toPack) {}
 
     /** The endpoints of an edge, or the finding text for the first that does not bind. */
     private static Object endpoints(RawEdge raw, String origin) {
-        Optional<Urn> source = Urn.parse(raw.source());
-        if (source.isEmpty()) {
+        Optional<PackQualifiedReference> source = reference(raw.source());
+        Optional<Urn> sourceUrn = source.flatMap(PackQualifiedReference::asUrn);
+        if (sourceUrn.isEmpty()) {
             return origin + ": edge endpoint '" + raw.source() + "' is not a URN";
         }
-        Optional<Urn> target = Urn.parse(raw.target());
-        if (target.isEmpty()) {
+        Optional<PackQualifiedReference> target = reference(raw.target());
+        Optional<Urn> targetUrn = target.flatMap(PackQualifiedReference::asUrn);
+        if (targetUrn.isEmpty()) {
             return origin + ": edge endpoint '" + raw.target() + "' is not a URN";
         }
-        if (source.get().equals(target.get())) {
-            return origin + ": a relationship cannot join '" + source.get() + "' to itself";
+        // The identity of an endpoint is its bare URN: a qualifier names where the writer relies on it, so
+        // `a::directive:X -> directive:X` joins the artifact to itself like `directive:X -> directive:X` does.
+        if (sourceUrn.get().equals(targetUrn.get())) {
+            return origin + ": a relationship cannot join '" + sourceUrn.get() + "' to itself";
         }
-        for (Urn endpoint : List.of(source.get(), target.get())) {
+        for (Urn endpoint : List.of(sourceUrn.get(), targetUrn.get())) {
             if (!endpoint.kind().authoredInGraphs()) {
                 return origin + ": " + NOT_AUTHORED + "'" + endpoint + "'";
             }
         }
-        return new Endpoints(source.get(), target.get());
+        return new Endpoints(
+                sourceUrn.get(),
+                source.get().packName(),
+                targetUrn.get(),
+                target.get().packName());
+    }
+
+    /** The endpoint text split by {@link PackQualifiedReference}; empty when its qualifier is malformed. */
+    private static Optional<PackQualifiedReference> reference(String text) {
+        try {
+            return Optional.of(PackQualifiedReference.parse(text));
+        } catch (IllegalArgumentException malformed) {
+            return Optional.empty();
+        }
     }
 
     /** An {@code impacts} edge carries a strength in [-1, 1]; no other edge carries one. */

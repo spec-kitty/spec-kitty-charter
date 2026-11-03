@@ -54,7 +54,7 @@ class ArtifactRelationshipsTest {
 
     @Test
     @DisplayName(
-            "a typed reference id that carries a pack qualifier mints a target that carries the pack, never a :: in the id")
+            "a reference id that carries a pack qualifier, typed or bare, mints a bare target and a relationship that carries the pack")
     void aQualifiedTypedReferenceMintsAQualifiedTarget() {
         Directive directive = Directive.builder()
                 .id(new DirectiveIdentifier("DIRECTIVE_010"))
@@ -65,14 +65,17 @@ class ArtifactRelationshipsTest {
                 .enforcement(Enforcement.REQUIRED)
                 .reference(new DirectiveReference("tactic", "writing-pack::tdd", Optional.empty(), Optional.empty()))
                 .reference(new DirectiveReference("tactic", "local-tdd", Optional.empty(), Optional.empty()))
+                .procedure("ops-pack::release")
+                .procedure("local-release")
                 .build();
 
         assertThat(directive.relationships())
-                .extracting(Relationship::to)
+                .extracting(Relationship::to, Relationship::toPack)
                 .containsExactly(
-                        new Urn(NodeKind.TACTIC, "tdd", Optional.of("writing-pack")),
-                        new Urn(NodeKind.TACTIC, "local-tdd"));
-        assertThat(directive.relationships().get(0).to().id()).doesNotContain("::");
+                        tuple(new Urn(NodeKind.TACTIC, "tdd"), Optional.of("writing-pack")),
+                        tuple(new Urn(NodeKind.TACTIC, "local-tdd"), Optional.empty()),
+                        tuple(new Urn(NodeKind.PROCEDURE, "release"), Optional.of("ops-pack")),
+                        tuple(new Urn(NodeKind.PROCEDURE, "local-release"), Optional.empty()));
     }
 
     @Test

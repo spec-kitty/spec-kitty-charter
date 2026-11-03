@@ -166,6 +166,20 @@ class PackPolicyGraphTest {
     }
 
     @Test
+    void aQualifierIsNotIdentitySoAQualifiedEndpointOntoItsOwnSourceIsASelfLoop() {
+        GraphBuild loop = build(List.of(edge("rival::tactic:a", "tactic:a", "requires", null)));
+        assertThat(loop.graph().relationships()).isEmpty();
+        assertThat(details(loop))
+                .containsExactly("qa/tactic.graph.yaml: a relationship cannot join 'tactic:a' to itself");
+
+        GraphBuild reference = build(List.of(edge("tactic:a", "rival::tactic:b", "requires", null)));
+        assertThat(reference.graph().relationships()).singleElement().satisfies(relationship -> {
+            assertThat(relationship.to()).isEqualTo(new Urn(NodeKind.TACTIC, "b"));
+            assertThat(relationship.toPack()).contains("rival");
+        });
+    }
+
+    @Test
     void anUnknownRelationIsAFinding() {
         GraphBuild build = build(List.of(edge("tactic:a", "directive:b", "befriends", null)));
         assertThat(build.graph().relationships()).isEmpty();

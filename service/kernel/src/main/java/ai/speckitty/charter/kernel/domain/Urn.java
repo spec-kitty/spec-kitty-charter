@@ -4,63 +4,43 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * A DRG node identity, {@code <kind>:<id>}, or, as a reference to an artifact of another pack, the pack-qualified
- * {@code <pack-name>::<kind>:<id>} (ADR-0053 decision 7). URNs order by their text. A qualified URN is a different
- * identity from the bare one: it names the pack it relies on.
+ * A DRG node identity, {@code <kind>:<id>}. URNs order by their text. A URN is bare: it never names a pack, because a
+ * pack is provenance, not identity (ADR-0048 decision 10). A reference that relies on another pack
+ * ({@code <pack-name>::<kind>:<id>}, ADR-0053 decision 7) is a {@link PackQualifiedReference}, the one parser, and the
+ * relationship or edge that holds it carries the qualifier beside its bare URN ({@link Relationship#toPack()}).
  *
  * @param kind the node's kind
- * @param id the node's id within its kind, for example {@code software-dev/plan}; never empty
- * @param pack the pack a qualified reference names; empty for a bare URN
+ * @param id the node's id within its kind, for example {@code software-dev/plan}; never empty, never holding a
+ *     {@code ::}
  */
-public record Urn(NodeKind kind, String id, Optional<String> pack) implements Comparable<Urn> {
+public record Urn(NodeKind kind, String id) implements Comparable<Urn> {
 
     /**
      * Checks the URN.
      *
      * @param kind the node's kind
      * @param id the node's id
-     * @param pack the pack a qualified reference names, in the pack-name grammar
-     * @throws IllegalArgumentException when {@code id} is empty or the pack name breaks the grammar
+     * @throws IllegalArgumentException when {@code id} is empty or holds the {@code ::} pack qualifier
      */
     public Urn {
         Objects.requireNonNull(kind, "kind");
-        Objects.requireNonNull(pack, "pack");
         if (id == null || id.isEmpty()) {
             throw new IllegalArgumentException("A URN needs a non-empty id");
         }
-        if (pack.isPresent() && !PackQualifiedReference.isPackName(pack.get())) {
-            throw new IllegalArgumentException("A URN qualifier follows the pack-name grammar: " + pack.get());
+        if (id.contains("::")) {
+            throw new IllegalArgumentException("A URN is bare: a pack qualifier belongs to the reference, not the id");
         }
     }
 
     /**
-     * A bare URN.
+     * Parses {@code kind:id}. A pack-qualified reference is not a URN: split it with {@link PackQualifiedReference}
+     * first and parse its URN part.
      *
-     * @param kind the node's kind
-     * @param id the node's id
-     */
-    public Urn(NodeKind kind, String id) {
-        this(kind, id, Optional.empty());
-    }
-
-    /**
-     * Parses {@code kind:id}, or the pack-qualified {@code <pack-name>::kind:id}. The qualifier is split by
-     * {@link PackQualifiedReference}, the one parser.
-     *
-     * @param token the text, for example {@code directive:DIRECTIVE_001} or {@code writing::directive:DIRECTIVE_001}
-     * @return the URN; empty when the token is not a URN of a known node kind, or its qualifier is malformed
+     * @param token the text, for example {@code directive:DIRECTIVE_001}
+     * @return the URN; empty when the token is not a URN of a known node kind, or holds a {@code ::} qualifier
      */
     public static Optional<Urn> parse(String token) {
-        if (token.contains("::")) {
-            PackQualifiedReference reference;
-            try {
-                reference = PackQualifiedReference.parse(token);
-            } catch (IllegalArgumentException malformed) {
-                return Optional.empty();
-            }
-            return parseBare(reference.urn()).map(bare -> new Urn(bare.kind(), bare.id(), reference.packName()));
-        }
-        return parseBare(token);
+        return token.contains("::") ? Optional.empty() : parseBare(token);
     }
 
     private static Optional<Urn> parseBare(String token) {
@@ -99,6 +79,6 @@ public record Urn(NodeKind kind, String id, Optional<String> pack) implements Co
 
     @Override
     public String toString() {
-        return pack.map(name -> name + "::").orElse("") + kind.token() + ":" + id;
+        return kind.token() + ":" + id;
     }
 }
