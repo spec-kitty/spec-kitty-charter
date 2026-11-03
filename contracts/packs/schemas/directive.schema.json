@@ -31,7 +31,8 @@
         },
         "id": {
           "title": "Id",
-          "type": "string"
+          "type": "string",
+          "pattern": "^([a-z0-9][a-z0-9_-]*::)?[A-Za-z][A-Za-z0-9_-]*$"
         },
         "when": {
           "anyOf": [
