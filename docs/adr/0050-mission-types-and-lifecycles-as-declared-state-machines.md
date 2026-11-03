@@ -2,7 +2,7 @@
 title: "ADR-0050: Mission types and lifecycles as declared state machines"
 description: "A mission type declares a state machine (explicit transitions, guards, emit actions); a lifecycle kind holds the per-work-package lanes; packs enhance or override steps."
 doc_status: active
-updated: 2026-11-02T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 decision_status: 'Accepted, with Amendment 2026-11-02 (ADR-0053; decision 14 superseded by ADR-0054)'
 decision_date: '2026-11-02'
 type: ADR

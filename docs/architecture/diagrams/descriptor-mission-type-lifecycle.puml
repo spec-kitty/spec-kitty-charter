@@ -68,12 +68,12 @@ class Gate <<pending>> {
   - config_schema : JSON Schema
   gates/<id>.gate.yaml (d14) <color:#8A6D00>[pending ADR-0050 OQ2: the gate kind and its shape]</color>
 }
-class Lifecycle <<pending>> {
+class Lifecycle {
   + id, title, description : string
   + initial : state-id
   + states : LifecycleState[]  (id, title, description?, terminal?, on_enter?, on_exit?)
-  + transitions : LifecycleTransition[]  ({from | list | "*", to, on?, guard?, on_transition?})
-  lifecycles/<id>.lifecycle.yaml (d17) <color:#8A6D00>[pending ADR-0050 OQ4: layout and shape]</color>
+  + transitions : LifecycleTransition[]  ({from | list | "*", to, event?, guard?})
+  lifecycles/<id>.lifecycle.yaml (d17)
   the shipped work-package lifecycle is core's lane machine, authored as an artifact (d19)
   forcing a transition stays in core, not declared <color:#8A6D00>[pending ADR-0050 OQ6]</color>
 }

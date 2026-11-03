@@ -2,7 +2,7 @@
 title: Pack ecosystem work breakdown
 description: "Ordered, sized work for epic #142 after ADR-0048 to ADR-0052: charter schema and service work, the open-packs split and curation, and the core follow-ups."
 doc_status: draft
-updated: 2026-11-02T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 type: Plan
 kind: Planning
 related:
@@ -43,7 +43,7 @@ Sizes: **S** is up to a day, **M** a few days, **L** a Mission of a week or more
 | 5 | The `anti_pattern` kind and `rejects`; drop inline `anti_patterns` from procedure and styleguide | 0052 | M | 1 | #154 |
 | 6 | ~~The authoring checklist for the tightened procedure definition~~ (done 2026-11-02, [Author a procedure](/guides/author-a-procedure/); applied by review. The closed schema has no output field and refuses any undeclared key and `type: action`, but not an `action:` URN as a reference id: #350) | 0052 | S | 1 | #150, #350 |
 | 7 | The `event_registry` kind and the shared `emit` entry shape | 0051 | M | 2 (resolution uses the closure) | proposed: "event registry kind" |
-| 8 | The `guard` and `lifecycle` kinds; the asset `executable` block and the `implemented_by` relation | 0050, 0054 | M | 1 | #156 (renamed to guard); proposed: "lifecycle kind" |
+| 8 | ~~The `guard` and `lifecycle` kinds; the asset `executable` block and the `implemented_by` relation~~ (done 2026-11-03, #354; validate mode and per-file writes do not run the closure checks yet, fix before item 13) | 0050, 0054 | M | 1 | #156 |
 | 9 | Mission-type schema: transitions, guard entries `{ref, config?, blocking?}` (#155, closed into #156), actions, the `submachine` field, requirement kinds (#164), `term:` links | 0050 | L | 4, 7, 8 | #148, #155, #164 |
 | 10 | Step enhancements and `overrides` checks, with the drift warning | 0050 | M | 3, 9 | #148 |
 | 11 | Mission type as an ordinary activatable kind (presets, deny list) | 0050 | M | 9 | #148 |

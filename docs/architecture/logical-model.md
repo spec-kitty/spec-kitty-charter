@@ -2,7 +2,7 @@
 title: Logical model
 description: How each concept of the conceptual model is represented — packs, levels, artifact kinds, the CRG, activation, mission types, profiles and deployment.
 doc_status: draft
-updated: 2026-11-02T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
