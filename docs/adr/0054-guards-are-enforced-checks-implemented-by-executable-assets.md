@@ -152,9 +152,13 @@ settles [#156](https://github.com/spec-kitty/spec-kitty-charter/issues/156), whi
    `smell` / `severe` / `breaking` ladder
    ([ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/) decision 10) may appear on
    findings, for reporting.
-10. **A step may add guards to the lifecycle it runs.** `submachine.add_guards: [{on: {from, to}, guard: [...]}]`
+10. **A step may add guards to the lifecycle it runs.** `submachine.add_guards: [{transition: {from, to}, guard: [...]}]`
     attaches guards to transitions of the shared lifecycle for this mission type only. It is add-only and may not
     remove a guard.
+
+    *Amended 2026-11-03 (operator, #156): the key that names the transition is `transition`, not `on`, because a YAML
+    1.1 reader takes a plain `on` key for `true`, the trap that moved the lifecycle transition's trigger to `event`
+    (ADR-0050 decision 17 as amended). The entry is `{transition: {from, to}, guard: [...]}`.*
 11. **A cross-pack asset is pinned by the pack, not the reference.** A guard in pack A implemented by an asset in
     pack B relies on A's `depends_on` range on B and B's pack fingerprint, with no digest per reference.
 12. **Migration of today's binding.**
