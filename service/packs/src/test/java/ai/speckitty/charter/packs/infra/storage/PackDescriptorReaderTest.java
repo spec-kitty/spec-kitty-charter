@@ -340,4 +340,17 @@ class PackDescriptorReaderTest {
         assertThat(details("pack_id: 01ARWG13C00000000000001ABC\npack_version: ''\nname: qa\n"))
                 .containsExactly("pack.yaml of qa: pack_version must not be empty");
     }
+
+    /** The schema's {@code allOf/if}: a descriptor that depends on a pack declares its own level; one with none need not. */
+    @Test
+    void aDescriptorThatDependsOnAPackMustDeclareItsLevel() {
+        String edge = "depends_on:\n  - {pack_id: 01M4P01D5TWB5FKZGNNQG3943R, range: '>=1'}\n";
+
+        assertThat(unreadable(VALID + edge).violations())
+                .singleElement()
+                .satisfies(violation -> assertThat(violation.keyword()).isEqualTo("required"))
+                .satisfies(violation -> assertThat(violation.args()).containsValue("pack_level"));
+        assertThat(read(VALID + edge + "pack_level: org\n").dependencies()).hasSize(1);
+        assertThat(read(VALID + "depends_on: []\n").dependencies()).isEmpty();
+    }
 }

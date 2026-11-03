@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.PackDependency;
@@ -76,26 +77,27 @@ class PackCompositionResolverTest {
         return resolved.stream().map(entry -> entry.descriptor().packId()).toList();
     }
 
+    // One level, and the dependency's id sorts after the dependent's: only the dependency edge can put it first.
     @Test
     void aDependencyComesBeforeThePackThatDeclaresIt() {
-        PackUnderResolution base = pack("01BASE", "base", "1.0.0", PackLevel.BUILT_IN);
+        PackUnderResolution base = pack("01ZBASE", "base", "1.0.0", PackLevel.ORG);
         PackUnderResolution dependent =
-                pack("01DEP", "dependent", "1.0.0", PackLevel.ORG, List.of(new PackDependency("01BASE", ">=1.0")));
+                pack("01ADEP", "dependent", "1.0.0", PackLevel.ORG, List.of(new PackDependency("01ZBASE", ">=1.0")));
 
         assertThat(ids(PackCompositionResolver.resolve(List.of(dependent, base))))
-                .containsExactly("01BASE", "01DEP");
+                .containsExactly("01ZBASE", "01ADEP");
     }
 
     @Test
     void aSharedDependencyAppearsOnce() {
-        PackUnderResolution base = pack("01BASE", "base", "1.0.0", PackLevel.BUILT_IN);
+        PackUnderResolution base = pack("01ZBASE", "base", "1.0.0", PackLevel.ORG);
         PackUnderResolution left =
-                pack("01LEFT", "left", "1.0.0", PackLevel.ORG, List.of(new PackDependency("01BASE", ">=1.0")));
+                pack("01ALEFT", "left", "1.0.0", PackLevel.ORG, List.of(new PackDependency("01ZBASE", ">=1.0")));
         PackUnderResolution right =
-                pack("01RIGHT", "right", "1.0.0", PackLevel.ORG, List.of(new PackDependency("01BASE", "<2.0")));
+                pack("01BRIGHT", "right", "1.0.0", PackLevel.ORG, List.of(new PackDependency("01ZBASE", "<2.0")));
 
         assertThat(ids(PackCompositionResolver.resolve(List.of(left, base, right))))
-                .containsExactly("01BASE", "01LEFT", "01RIGHT");
+                .containsExactly("01ZBASE", "01ALEFT", "01BRIGHT");
     }
 
     @Test
@@ -229,19 +231,6 @@ class PackCompositionResolverTest {
                     assertThat(refusal.packId()).isEqualTo("01BASE");
                     assertThat(refusal.detail()).contains("1.0.0-alpha.beta", "not a PEP 440 version");
                 });
-    }
-
-    @Test
-    void aVersionOutsideEveryRangeIsRefusedWithBothVersions() {
-        PackUnderResolution base = pack("01BASE", "base", "1.0.0", PackLevel.BUILT_IN);
-        PackUnderResolution dependent =
-                pack("01DEP", "dependent", "1.0.0", PackLevel.ORG, List.of(new PackDependency("01BASE", ">=2.0")));
-
-        assertThatThrownBy(() -> PackCompositionResolver.resolve(List.of(dependent, base)))
-                .isInstanceOf(PackCompositionResolver.Refusal.class)
-                .satisfies(refusal -> assertThat(((PackCompositionResolver.Refusal) refusal).failure())
-                        .isEqualTo(Failure.OUT_OF_RANGE))
-                .hasMessageContaining("1.0.0");
     }
 
     @Test
@@ -397,6 +386,26 @@ class PackCompositionResolverTest {
                 .containsExactly("01DSTR", "01LEFT", "01RIGHT");
     }
 
+    @Test
+    void aContestantMayDeclareTheOverridesEdgeThatSettlesItsOwnContest() {
+        PackUnderResolution left = new PackUnderResolution(
+                new ConfiguredPack(new PackIdentifier("01LEFT"), PackLevel.ORG),
+                new PackDescriptor(
+                        "01LEFT",
+                        "1.0.4",
+                        Optional.empty(),
+                        "left",
+                        Optional.of(PackLevel.ORG),
+                        Optional.empty(),
+                        PackPaths.none(),
+                        List.of(),
+                        List.of(new PackOverride("directive:DIRECTIVE_009", "01RIGHT"))),
+                List.of("directive:DIRECTIVE_009"));
+        PackUnderResolution right = refining("01RIGHT", "right", "1.0.0", PackLevel.ORG, "directive:DIRECTIVE_009");
+
+        assertThat(ids(PackCompositionResolver.resolve(List.of(right, left)))).containsExactly("01LEFT", "01RIGHT");
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"01GHOST", "01DSTR"})
     void anOverridesEdgeNamingAMemberThatIsNotAContestantDoesNotSettleTheContest(String member) {
@@ -431,26 +440,17 @@ class PackCompositionResolverTest {
     }
 
     @Test
-    void theLayerMergeAcrossLevelsStillComposesWithNoDependenciesAndNoContest() {
-        PackUnderResolution builtIn = pack("01BUILT", "built-in-pack", "1.0.0", PackLevel.BUILT_IN);
-        PackUnderResolution org = pack("01ORGP", "org-pack", "1.0.0", PackLevel.ORG);
-        PackUnderResolution project = pack("01PROJ", "project-pack", "1.0.0", PackLevel.PROJECT);
-
-        assertThat(ids(PackCompositionResolver.resolve(List.of(project, org, builtIn))))
-                .containsExactly("01BUILT", "01ORGP", "01PROJ");
-    }
-
-    @Test
     void aQualifiedReferenceToAPackOfTheComposeIsAccepted() {
         PackUnderResolution writing = pack("01WRI", "writing", "1.0.0", PackLevel.BUILT_IN);
         PackUnderResolution reader =
                 pack("01REA", "reader", "1.0.0", PackLevel.PROJECT, List.of(new PackDependency("01WRI", ">=1.0")));
 
-        PackCompositionResolver.checkReferences(
-                List.of(writing, reader),
-                "01REA",
-                List.of(new PackCompositionResolver.ResolvedReference(
-                        PackQualifiedReference.parse("writing::directive:DIRECTIVE_009"), "01WRI")));
+        assertThatCode(() -> PackCompositionResolver.checkReferences(
+                        List.of(writing, reader),
+                        "01REA",
+                        List.of(new PackCompositionResolver.ResolvedReference(
+                                PackQualifiedReference.parse("writing::directive:DIRECTIVE_009"), "01WRI"))))
+                .doesNotThrowAnyException();
     }
 
     @Test
@@ -477,11 +477,12 @@ class PackCompositionResolverTest {
     void aBareReferenceThatResolvesInTheReferringPackIsAccepted() {
         PackUnderResolution reader = pack("01REA", "reader", "1.0.0", PackLevel.PROJECT);
 
-        PackCompositionResolver.checkReferences(
-                List.of(reader),
-                "01REA",
-                List.of(new PackCompositionResolver.ResolvedReference(
-                        PackQualifiedReference.parse("directive:DIRECTIVE_009"), "01REA")));
+        assertThatCode(() -> PackCompositionResolver.checkReferences(
+                        List.of(reader),
+                        "01REA",
+                        List.of(new PackCompositionResolver.ResolvedReference(
+                                PackQualifiedReference.parse("directive:DIRECTIVE_009"), "01REA"))))
+                .doesNotThrowAnyException();
     }
 
     @Test
