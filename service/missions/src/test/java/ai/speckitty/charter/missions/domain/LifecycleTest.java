@@ -56,8 +56,10 @@ class LifecycleTest {
                 LANES,
                 edge("planned", "doing"),
                 edge("doing", "done"),
-                edge(new TransitionSource.EveryNonTerminal(), "blocked"),
-                edge(new TransitionSource.EveryNonTerminal(), "canceled"));
+                new LifecycleTransition(
+                        new TransitionSource.EveryNonTerminal(), "blocked", Optional.of("block"), List.of()),
+                new LifecycleTransition(
+                        new TransitionSource.EveryNonTerminal(), "canceled", Optional.of("cancel"), List.of()));
 
         assertThat(wp.kind()).isEqualTo(ArtifactKind.LIFECYCLE);
         assertThat(wp.sources(wp.transitions().get(2))).containsExactly("planned", "doing");
@@ -112,6 +114,30 @@ class LifecycleTest {
                         List.of(state("planned"), terminal("done")),
                         edge("planned", "done"),
                         edge(new TransitionSource.EveryNonTerminal(), "planned")));
+        assertRefused(
+                "A lifecycle declares at least one terminal state.",
+                () -> lifecycle(
+                        "planned",
+                        List.of(state("planned"), state("doing")),
+                        edge("planned", "doing"),
+                        edge("doing", "planned")));
+        assertRefused(
+                "Every state of a lifecycle is reachable from its initial state.",
+                () -> lifecycle(
+                        "planned",
+                        List.of(state("planned"), state("island"), terminal("done")),
+                        edge("planned", "done")));
+        List<LifecycleState> fork = List.of(state("planned"), state("doing"), terminal("done"));
+        assertRefused(
+                "A lifecycle is deterministic: no state and event lead to two different states.",
+                () -> lifecycle("planned", fork, edge("planned", "doing"), edge("planned", "done")));
+        assertRefused(
+                "A lifecycle is deterministic: no state and event lead to two different states.",
+                () -> lifecycle(
+                        "planned",
+                        fork,
+                        edge(new TransitionSource.EveryNonTerminal(), "doing"),
+                        edge("planned", "done")));
         assertRefused("A lifecycle declares at least one state.", () -> lifecycle("planned", List.of()));
         assertRefused(
                 "A lifecycle needs a title that is not blank.",
@@ -135,8 +161,9 @@ class LifecycleTest {
     void anotherEventIsAnotherTransition() {
         Lifecycle wp = lifecycle(
                 "planned",
-                LANES,
+                List.of(state("planned"), state("doing"), terminal("done")),
                 edge("planned", "doing"),
+                edge("doing", "done"),
                 new LifecycleTransition(new TransitionSource.One("planned"), "doing", Optional.of("force"), List.of()));
 
         assertThat(wp.edgesFrom("planned")).hasSize(2);
@@ -144,8 +171,9 @@ class LifecycleTest {
                 "A lifecycle declares each transition once",
                 () -> lifecycle(
                         "planned",
-                        LANES,
+                        List.of(state("planned"), state("doing"), terminal("done")),
                         edge("planned", "doing"),
+                        edge("doing", "done"),
                         new LifecycleTransition(
                                 new TransitionSource.One("planned"), "doing", Optional.of("next"), List.of())));
     }

@@ -255,6 +255,11 @@ up the formal meaning of a term used here.
     must reach at least one state. A lifecycle declares each (from, to, event) once with `"*"` expanded: an explicit
     edge that repeats a `"*"` edge is refused, and a source that needs other guards is listed instead of `"*"`. The
     action points (`on_enter`, `on_exit`, `on_transition`) are added with the event registry (work breakdown item 7).*
+
+    *Amended 2026-11-03 (operator, #156): a lifecycle is also refused when (a) no state is terminal, (b) a state is
+    not reachable from `initial` through the transitions, `"*"` expanded as above, or (c) one state and event lead to
+    two different targets. An absent event counts as `next`, and `"*"` is expanded, so a `"*"` edge with no event
+    clashes with every other edge from the same state that names no event; give such an edge an event.*
 18. **A mission type references a lifecycle from the steps that work on work packages**, with
     `work_package_lifecycle: <lifecycle-id>` on the step (proposed field name). In statechart terms the step holds a
     submachine state, instantiated once per work package. One lifecycle can serve several types, and a type may

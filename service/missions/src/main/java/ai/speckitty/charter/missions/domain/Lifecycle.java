@@ -50,7 +50,16 @@ public final class Lifecycle implements CharterArtifact {
                     "A lifecycle declares each transition once: no two share a from state, a to state and an event.",
                     Lifecycle::transitionsAreUnique))
             .must(Constraints.of(
-                    "A lifecycle transition names each guard once.", Lifecycle::guardsAreUniquePerTransition));
+                    "A lifecycle transition names each guard once.", Lifecycle::guardsAreUniquePerTransition))
+            .must(Constraints.of(
+                    "A lifecycle declares at least one terminal state.",
+                    l -> l.states.stream().anyMatch(LifecycleState::isTerminal)))
+            .must(Constraints.of(
+                    "Every state of a lifecycle is reachable from its initial state.",
+                    l -> l.reachableFromInitial().size() == l.states.size()))
+            .must(Constraints.of(
+                    "A lifecycle is deterministic: no state and event lead to two different states.",
+                    Lifecycle::transitionsAreDeterministic));
 
     private final LifecycleIdentifier id;
     private final PackIdentifier packId;
@@ -254,6 +263,34 @@ public final class Lifecycle implements CharterArtifact {
                 // An absent event means next (ADR-0050 decision 8), so the two spellings are one transition.
                 key.add(t.event().orElse("next"));
                 if (!seen.add(key)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /** The states some path of transitions reaches from the initial state, itself included. */
+    private Set<String> reachableFromInitial() {
+        Set<String> reached = new HashSet<>(List.of(initial));
+        java.util.ArrayDeque<String> pending = new java.util.ArrayDeque<>(reached);
+        while (!pending.isEmpty()) {
+            for (LifecycleTransition t : edgesFrom(pending.poll())) {
+                if (reached.add(t.to())) {
+                    pending.add(t.to());
+                }
+            }
+        }
+        return reached;
+    }
+
+    /** No (state, event) pair, an absent event being {@code next}, leaves for two different targets. */
+    private boolean transitionsAreDeterministic() {
+        java.util.Map<List<String>, String> targets = new java.util.HashMap<>();
+        for (LifecycleTransition t : transitions) {
+            for (String source : sources(t)) {
+                String other = targets.putIfAbsent(List.of(source, t.event().orElse("next")), t.to());
+                if (other != null && !other.equals(t.to())) {
                     return false;
                 }
             }

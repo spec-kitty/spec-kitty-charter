@@ -38,6 +38,7 @@ runs.
   and executable; its `config_schema` must compile offline, use no `$ref` or other reference keyword, and hold only
   linear-time (RE2) patterns; a lifecycle's guard entries must resolve and their `config` fit. A pack-qualified
   reference waits for the dependency closure. What does not close is left out with a `reference` violation.
+- **A lifecycle is refused** with no terminal state, an unreachable state, or two targets for one state and event.
 - **Rulings (operator, 2026-11-02):** six `builtin:` ids; ADR-0042 S4 admits `config_schema` and an entry's `config`;
   the event key is `event`, not `on`; `"*"` leaves out the target; action points wait for item 7; the changed-files
   input stays open. ADR-0042, ADR-0050 and ADR-0054 record them.
