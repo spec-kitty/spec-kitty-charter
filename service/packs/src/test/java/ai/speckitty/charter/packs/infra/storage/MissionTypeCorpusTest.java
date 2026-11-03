@@ -136,17 +136,13 @@ class MissionTypeCorpusTest {
     }
 
     @Test
-    @DisplayName("no pack at the pin, and no vendored pack, holds a file of a retired family")
+    @DisplayName("no pack at the pin holds a file of a retired family")
     void noRetiredFileIsLeft() throws IOException {
-        Path vendored =
-                Path.of(System.getProperty("charter.repositoryRoot", "../..")).resolve("packs");
-        for (Path root : List.of(OpenPacksCorpus.packsDirectory(), vendored)) {
-            try (Stream<Path> packs = Files.list(root)) {
-                for (Path pack : packs.filter(Files::isDirectory).sorted().toList()) {
-                    assertThat(PackFileSet.listing(pack, PackFileKind.bundled()).retired())
-                            .as("retired files in %s", pack)
-                            .isEmpty();
-                }
+        try (Stream<Path> packs = Files.list(OpenPacksCorpus.packsDirectory())) {
+            for (Path pack : packs.filter(Files::isDirectory).sorted().toList()) {
+                assertThat(PackFileSet.listing(pack, PackFileKind.bundled()).retired())
+                        .as("retired files in %s", pack)
+                        .isEmpty();
             }
         }
     }

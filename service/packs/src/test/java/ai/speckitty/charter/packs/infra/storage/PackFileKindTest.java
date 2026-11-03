@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -422,11 +423,16 @@ class PackFileKindTest {
      * {@code **}{@code /*.md} would turn an excluded assets README and every Markdown template or asset into a
      * schema'd Markdown file. The table load checks no overlap, so this does: no bundled {@code markdown} rule (none at
      * the pin) may match a path an exclusion or a payload rule matches, over the sample paths here and every file of
-     * the vendored packs. It fails as soon as an overlapping {@code markdown} rule is added (ADR-0040, 2026-10-29).
+     * the pinned open-packs packs. It fails as soon as an overlapping {@code markdown} rule is added (ADR-0040,
+     * 2026-10-29). Runs under {@code :packs:openPacksRoundTrip}, which supplies the checkout.
      */
     @Test
+    @Tag("open-packs")
     void noBundledMarkdownRuleMatchesAPathAnExclusionOrAPayloadRuleMatches() throws IOException {
-        assertThat(markdownOverlaps(KINDS, samplePaths())).isEmpty();
+        OpenPacksCorpus.assertPinned();
+        List<String> paths = samplePaths();
+        paths.addAll(pinnedPackPaths());
+        assertThat(markdownOverlaps(KINDS, paths)).isEmpty();
     }
 
     /** The guard above is not vacuous: an overlapping rule is caught, a disjoint one is not. */
@@ -442,20 +448,22 @@ class PackFileKindTest {
         assertThat(markdownOverlaps(withMarkdownRule("*/notes/*.md"), samples)).isEmpty();
     }
 
-    /** Every sample exclusion and payload path, then every file of the vendored packs, relative to {@code packs/}. */
-    private static List<String> samplePaths() throws IOException {
+    /** Every sample exclusion and payload path. */
+    private static List<String> samplePaths() {
         List<String> paths = new ArrayList<>(EXCLUDED);
         paths.addAll(PAYLOADS.keySet());
-        String root = System.getProperty("charter.repositoryRoot");
-        assertThat(root).as("charter.repositoryRoot, set by the build").isNotNull();
-        Path packs = Path.of(root, "packs");
+        return paths;
+    }
+
+    /** Every file of the pinned open-packs packs, relative to {@code packs/}. */
+    private static List<String> pinnedPackPaths() throws IOException {
+        Path packs = OpenPacksCorpus.packsDirectory();
         try (Stream<Path> walk = Files.walk(packs)) {
-            walk.filter(Files::isRegularFile)
+            return walk.filter(Files::isRegularFile)
                     .map(p -> packs.relativize(p).toString().replace('\\', '/'))
                     .sorted()
-                    .forEach(paths::add);
+                    .toList();
         }
-        return paths;
     }
 
     /** Each {@code markdown} rule and path it matches that an exclusion or a payload rule also matches. */

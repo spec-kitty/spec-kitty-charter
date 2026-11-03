@@ -118,9 +118,8 @@ val openPacksRoundTrip = tasks.register<Test>("openPacksRoundTrip") {
     val dir = openPacksDir
     inputs.dir(dir).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("openPacks")
     systemProperty("charter.openPacksDir", dir.get())
-    // VendoredPacksTest compares the vendored packs of this repository with the pinned checkout.
-    val vendoredPacks = rootProject.layout.projectDirectory.dir("packs")
-    inputs.dir(vendoredPacks).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("vendoredPacks")
+    // MissionTypeCorpusTest reads this repository's own build files. packs/internal and packs/qa are not read from the
+    // repository: they are synced from this same checkout (./gradlew syncPacks), and the tests read the checkout.
     systemProperty("charter.repositoryRoot", rootProject.layout.projectDirectory.asFile.absolutePath)
     val ref = openPacksRef
     inputs.property("openPacksRef", ref.orElse(""))

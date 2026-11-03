@@ -63,19 +63,12 @@ class WholePackOpenPacksRoundTripTest {
     /** What a pack holds of the asset and template kinds, counted from the aggregate. */
     record Counts(int sidecars, int assetFiles, int binary, int templates) {}
 
-    private static Path repositoryPacks() {
-        return Path.of(System.getProperty("charter.repositoryRoot")).resolve("packs");
-    }
-
     private static List<Path> packDirectories() throws IOException {
-        List<Path> roots = List.of(OpenPacksCorpus.packsDirectory(), repositoryPacks());
         List<Path> packs = new ArrayList<>();
-        for (Path root : roots) {
-            try (Stream<Path> dirs = Files.list(root)) {
-                dirs.filter(dir -> Files.isRegularFile(dir.resolve(PackFileSet.PACK_YAML)))
-                        .sorted()
-                        .forEach(packs::add);
-            }
+        try (Stream<Path> dirs = Files.list(OpenPacksCorpus.packsDirectory())) {
+            dirs.filter(dir -> Files.isRegularFile(dir.resolve(PackFileSet.PACK_YAML)))
+                    .sorted()
+                    .forEach(packs::add);
         }
         return packs;
     }
@@ -293,24 +286,19 @@ class WholePackOpenPacksRoundTripTest {
         assertThat(listed(openPacks.resolve("event-driven"))).isEqualTo(new Counts(1, 1, 0, 0));
         assertThat(listed(openPacks.resolve("internal"))).isEqualTo(countsOf(internal));
 
-        Path repositoryInternal = repositoryPacks().resolve("internal");
-        Counts internalOnDisk = countedOnDisk(repositoryInternal);
-        assertThat(internalOnDisk.sidecars())
-                .as("packs/internal holds sidecars")
-                .isPositive();
-        assertThat(countsOf(store.load(repositoryInternal)))
-                .as("packs/internal")
-                .isEqualTo(internalOnDisk);
-        Path repositoryQa = repositoryPacks().resolve("qa");
-        Counts qaOnDisk = countedOnDisk(repositoryQa);
-        assertThat(qaOnDisk.sidecars()).as("packs/qa holds sidecars").isPositive();
-        assertThat(listed(repositoryQa)).as("packs/qa").isEqualTo(qaOnDisk);
+        // The counts read from the files, without the store, match what the store and the listing report.
+        Counts internalOnDisk = countedOnDisk(openPacks.resolve("internal"));
+        assertThat(internalOnDisk.sidecars()).as("internal holds sidecars").isPositive();
+        assertThat(countsOf(internal)).as("internal").isEqualTo(internalOnDisk);
+        Counts qaOnDisk = countedOnDisk(openPacks.resolve("qa"));
+        assertThat(qaOnDisk.sidecars()).as("qa holds sidecars").isPositive();
+        assertThat(listed(openPacks.resolve("qa"))).as("qa").isEqualTo(qaOnDisk);
     }
 
     /**
      * #194: what the whole packs hold of procedures and toolguides at the pin, each toolguide with its guide. Built-in
      * and internal are the open-packs packs with a {@code pack.yaml}; {@code qa} has none and is counted file by file by
-     * {@code ProcedureAndGuideCorpusTest}. This repository's {@code packs/internal} holds the same as the pin.
+     * {@code ProcedureAndGuideCorpusTest}.
      */
     @Test
     void theProcedureAndToolguideCountsOfEveryWholePackArePinned() {
@@ -318,7 +306,6 @@ class WholePackOpenPacksRoundTripTest {
         Map<String, Path> packs = new LinkedHashMap<>();
         packs.put(BUILT_IN, openPacks.resolve(BUILT_IN));
         packs.put("internal", openPacks.resolve("internal"));
-        packs.put("repository internal", repositoryPacks().resolve("internal"));
         Map<String, List<Integer>> counts = new LinkedHashMap<>();
         packs.forEach((name, pack) -> {
             WholePackStore.LoadedPack loaded = store.load(pack);
@@ -333,11 +320,7 @@ class WholePackOpenPacksRoundTripTest {
                     List.of(loaded.pack().artifacts(ArtifactKind.PROCEDURE).size(), toolguides.size()));
         });
 
-        assertThat(counts)
-                .containsExactly(
-                        Map.entry(BUILT_IN, List.of(22, 18)),
-                        Map.entry("internal", List.of(12, 3)),
-                        Map.entry("repository internal", List.of(12, 3)));
+        assertThat(counts).containsExactly(Map.entry(BUILT_IN, List.of(22, 18)), Map.entry("internal", List.of(12, 3)));
     }
 
     /** The counts as {@link PackFileSet} lists the files, for a pack no store loads (it has no {@code pack.yaml}). */

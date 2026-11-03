@@ -25,7 +25,7 @@ import org.junit.jupiter.params.provider.CsvSource;
  * stable violation detail.
  *
  * <p>The open-packs corpus test runs under {@code :packs:openPacksRoundTrip} (tag {@code open-packs}), which supplies
- * the checkout; the rest, this repository's vendored copies included, runs under {@code :packs:test}.
+ * the checkout (its {@code internal} and {@code qa} packs among them); the rest runs under {@code :packs:test}.
  */
 @DisplayName("Glossary-pack and skill schemas (#192)")
 class GlossaryPackAndSkillSchemaTest {
@@ -105,21 +105,6 @@ class GlossaryPackAndSkillSchemaTest {
 
         assertThat(problems(files)).as("files that do not validate").isEmpty();
         assertThat(files).as("4 glossary packs and 5 skills").hasSize(9);
-    }
-
-    @Test
-    @DisplayName("every glossary pack and skill vendored in this repository's packs/ validates")
-    void everyVendoredFileValidates() throws IOException {
-        String root = System.getProperty("charter.repositoryRoot");
-        assertThat(root).as("system property charter.repositoryRoot").isNotNull();
-        List<Path> files = new ArrayList<>();
-        files.addAll(filesOfBothKinds(Path.of(root, "packs", "internal")));
-        files.addAll(filesOfBothKinds(Path.of(root, "packs", "qa")));
-
-        assertThat(problems(files)).as("files that do not validate").isEmpty();
-        assertThat(files)
-                .as("internal: 1 glossary pack and 5 skills; qa: 1 glossary pack")
-                .hasSize(7);
     }
 
     private static List<String> problems(List<Path> files) throws IOException {

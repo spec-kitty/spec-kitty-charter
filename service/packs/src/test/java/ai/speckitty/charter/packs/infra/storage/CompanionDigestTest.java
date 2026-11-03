@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -120,11 +121,13 @@ class CompanionDigestTest {
     }
 
     @Test
+    @Tag("open-packs")
     @DisplayName("binding skills adds nothing to the digest of a pack with no skill; only companions are Markdown")
     void packsWithoutCompanionsAreUnchanged() throws IOException {
-        // The vendored qa pack holds many kinds (agent profiles, directives, a glossary pack, step contracts, tactics,
+        // The pinned qa pack holds many kinds (agent profiles, directives, a glossary pack, step contracts, tactics,
         // styleguides, ...) and Markdown beside them, and no skill.
-        Path qa = Path.of(System.getProperty("charter.repositoryRoot", "../..")).resolve("packs/qa");
+        OpenPacksCorpus.assertPinned();
+        Path qa = OpenPacksCorpus.packsDirectory().resolve("qa");
         Set<ArtifactKind> withoutSkills = EnumSet.copyOf(KindBindings.kinds());
         withoutSkills.remove(ArtifactKind.SKILL);
 
