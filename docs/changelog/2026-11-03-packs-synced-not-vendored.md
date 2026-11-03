@@ -1,7 +1,7 @@
 ---
 okf_version: "0.2"
 title: "The internal and qa packs are synced from the pinned open-packs, not committed"
-description: "packs/internal and packs/qa are no longer committed. ./gradlew syncPacks fetches them from the pinned open-packs commit and verifies their digests."
+description: "packs/internal and packs/qa are no longer committed. A Gradle sync task fetches them from the pinned open-packs commit and verifies their digests."
 doc_status: active
 updated: 2026-11-03T00:00:00Z
 type: Changelog
