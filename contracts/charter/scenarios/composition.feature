@@ -952,6 +952,52 @@ Feature: The compose resolves the configured packs' dependency graph
     And the field at "/packs/0/packId" is "beta"
     And the field at "/packs/1/packId" is "alpha"
 
+  Scenario: A pack-qualified reference to an artifact the named pack does not hold is refused naming both packs
+    The control is the scenario above (ADR-0048 decision 2). Alpha depends on beta and writes
+    beta-pack::directive:SHARE, so beta is inside its closure, but beta holds no directive SHARE: the compose is
+    refused, naming alpha, the pack that wrote the reference, then beta, the pack that does not hold it.
+    Given the org pack "alpha" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: alpha-pack
+      pack_level: org
+      depends_on:
+      - pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+        range: '>=1.0'
+      """
+    And the org pack "beta" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+      pack_version: 1.0.0
+      parent_pack: null
+      name: beta-pack
+      pack_level: org
+      """
+    And the org pack "alpha" with the file "mission_type.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes:
+      - urn: action:software-dev/implement
+        kind: action
+        label: implement
+      edges:
+      - source: action:software-dev/implement
+        target: beta-pack::directive:SHARE
+        relation: requires
+      """
+    When I GET "/offering"
+    Then the response status is 500
+    And the problem code is "pack_reference_artifact_missing"
+    And the field "detail" of the response body is "pack `alpha-pack` (01M4P01D5TWB5FKZGNNQG3943R) writes the reference `beta-pack::directive:SHARE`, but pack `beta-pack` (01M4P01D5TWB5FKZGNNQG3943S) does not hold `directive:SHARE`"
+    And the field at "/packs/0/packId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/0/name" is "alpha-pack"
+    And the field at "/packs/1/packId" is "01M4P01D5TWB5FKZGNNQG3943S"
+    And the field at "/packs/1/name" is "beta-pack"
+    And the response has no "Charter-Source-Fingerprint" header
+
   Scenario: A bare cross-pack reference in a tactic's typed references is refused naming the holding pack
     The same refusal as above (FR-015), through the other carrier of a reference: alpha's tactic
     references directive SHARE bare, and only beta holds it. One check path serves both carriers.

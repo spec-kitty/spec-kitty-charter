@@ -212,3 +212,4 @@ Feature: Failures outside the charter's refusals
       | pack_sibling_conflict |
       | pack_reference_unqualified  |
       | pack_reference_pack_missing |
+      | pack_reference_artifact_missing |
