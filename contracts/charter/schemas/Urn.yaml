@@ -1,9 +1,7 @@
 title: Urn
-description: >-
-  A DRG node identity, <node kind>:<id>, for example directive:DIRECTIVE_010, or, in a reference to an artifact of
-  another pack, the pack-qualified <pack-name>::<node kind>:<id> (ADR-0053 decision 7).
+description: A DRG node identity, <node kind>:<id>, for example directive:DIRECTIVE_010. A pack is provenance, not identity (ADR-0048 decision 10), so a URN never names one.
 type: string
-pattern: '^([a-z0-9][a-z0-9_-]*::)?[a-z_]+:.+$'
+pattern: '^[a-z_]+:.+$'
 x-source:
   path: service/charter-domain/src/main/java/ai/speckitty/charter/domain/Urn.java
   symbol: Urn

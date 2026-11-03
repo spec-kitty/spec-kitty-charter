@@ -1,0 +1,11 @@
+title: PackQualifiedReference
+description: >-
+  A reference to a DRG node as an artifact or a relationship writes it: the bare URN <node kind>:<id>, or, for an
+  artifact of another pack in the writer's depends_on closure, the pack-qualified <pack-name>::<node kind>:<id>
+  (ADR-0053 decision 7). The qualifier says which pack the writer relies on; it is not part of the node's identity,
+  which stays the bare Urn.
+type: string
+pattern: '^([a-z0-9][a-z0-9_-]*::)?[a-z_]+:.+$'
+x-source:
+  path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/PackQualifiedReference.java
+  symbol: PackQualifiedReference

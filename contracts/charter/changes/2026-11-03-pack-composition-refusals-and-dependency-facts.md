@@ -11,7 +11,10 @@
   optional `packs` member of the refusal body (`Problem.packs`, a list of `RefusalPack`: the `pack_id` and `name` of every pack
   the refusal names, the violating pack first). The read exposes what the compose
   resolved (FR-019, FR-020).
-  `Urn` also accepts the pack-qualified `<pack-name>::<kind>:<id>` of a relationship that relies on another pack.
+  `Urn` stays the bare node identity, `<kind>:<id>` (a pack is provenance, not identity, ADR-0048 decision 10). A
+  reference that relies on another pack, `<pack-name>::<kind>:<id>`, is the new `PackQualifiedReference` schema; a
+  registered relationship's `to` is one, so a relationship reads back the qualifier the artifact wrote, while its
+  `from` stays an artifact of the pack.
   The pack descriptor tightens in the same set: `pack_id`, `parent_pack`, `depends_on[].pack_id` and `overrides[].member`
   must be ULIDs and `name` must match `^[a-z0-9][a-z0-9_-]*$`, or `pack.yaml` is unreadable (`pack_unreadable`).
   `OfferingPack` answers the required `dependsOn` array per pack: each declared dependency's target `pack_id` as `descriptorPackId`, the
