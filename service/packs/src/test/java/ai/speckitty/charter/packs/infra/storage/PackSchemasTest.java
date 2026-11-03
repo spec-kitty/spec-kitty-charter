@@ -245,6 +245,16 @@ class PackSchemasTest {
         assertThat(MAPPER.readTree(bundledText(kind)).at(pointer).asString()).startsWith("^" + qualifier);
     }
 
+    /** The service contract's qualified-reference schema spells the qualifier as the Java grammar does. */
+    @Test
+    void theContractQualifiedReferenceSchemaSpellsTheQualifierWithThePackNameGrammar() throws IOException {
+        String grammar = PackQualifiedReference.PACK_NAME_GRAMMAR;
+        String qualifier = "(" + grammar.substring(1, grammar.length() - 1) + "::)?";
+        Path schema = Path.of("..", "..", "contracts", "charter", "schemas", "PackQualifiedReference.yaml");
+
+        assertThat(Files.readString(schema)).contains("pattern: '^" + qualifier + "[a-z_]+:.+$'");
+    }
+
     @Test
     void aMissingPackVersionIsARequiredViolationWithAnEmptyPointer() {
         Object tree = Yaml.load("""

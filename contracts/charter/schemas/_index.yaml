@@ -14,6 +14,7 @@ files:
   - Offering.yaml
   - OfferingPack.yaml
   - PackLevel.yaml
+  - PackQualifiedReference.yaml
   - Relation.yaml
   - ResolvedDependency.yaml
   - ServiceInfo.yaml
