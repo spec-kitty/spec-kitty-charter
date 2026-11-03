@@ -127,6 +127,9 @@ Bumping the pin is one commit:
 2. Run `./gradlew syncPacks -PupdatePacksLock=true`, which syncs and rewrites the lockfile's commit and digests.
 3. Run `./gradlew verifyAll`. Never weaken an expectation to make a bump green.
 
+`verifyAll` itself does not run the sync, so step 2's run is the local lock check; CI repeats it before its own
+`verifyAll`. Use `-PcheckPacks=true` when you only want to re-verify the synced trees against the lockfile.
+
 Neither `packs/internal` nor `packs/qa` is edited here; a change goes to spec-kitty-open-packs and arrives with a pin bump.
 
 ## The whole-pack round-trip gate
