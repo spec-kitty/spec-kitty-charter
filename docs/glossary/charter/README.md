@@ -7,8 +7,8 @@ glossary_context: "Charter"
 doc_status: active
 generated:
   by: "doc-kitty-glossary/0.6.0"
-  at: "2026-11-03T20:15:59Z"
-  content_hash: "sha256:9b6e9b685428"
+  at: "2026-11-03T21:36:49Z"
+  content_hash: "sha256:c4d4fe665e39"
 ---
 
 # Charter
@@ -535,7 +535,7 @@ The project's own charter components, under the one flat root `.kittify/charter-
 
 ## Qualified reference
 
-A cross-pack reference written `<pack-name>::<urn>`; the URN part stays opaque (ADR-0053 decision 7). A reference inside the same pack stays bare. The pack is provenance, not identity: the artifact's URN stays bare. A bare reference that would only resolve in another pack is refused, naming the holding pack (`pack_reference_unqualified`); one that names a pack outside the referring pack's own `depends_on` closure is refused, naming the missing pack (`pack_reference_pack_missing`); one whose pack does not hold the artifact is refused too (`pack_reference_artifact_missing`).
+A cross-pack reference written `<pack-name>::<urn>`; the URN part stays opaque (ADR-0053 decision 7). A reference inside the same pack stays bare. The pack is provenance on the relationship, not identity: the artifact's URN stays bare. A bare reference is the referring pack's own artifact first. A bare reference that would only resolve in another pack is refused, naming the holding pack (`pack_reference_unqualified`); one that names a pack outside the referring pack's own `depends_on` closure is refused, naming the missing pack (`pack_reference_pack_missing`); one whose pack does not hold the artifact is refused too (`pack_reference_artifact_missing`).
 
 **Aliases:** pack-qualified reference
 
@@ -745,7 +745,7 @@ A structured set of charter templates that shape output artifacts and interactio
 
 ## Sibling conflict
 
-Two packs at the same level that both change, or both define, the same artifact id. It is refused as `pack_sibling_conflict` unless an overrides edge naming a contesting member settles it (ADR-0048 decision 9, ADR-0053 decision 5). Across levels the same id is a legitimate layer override, not a conflict.
+Two packs at the same level that both change, or both define, the same artifact id, of any kind; a definer and an enhancer do not conflict. It is refused as `pack_sibling_conflict` unless an overrides edge naming a contesting member settles it (ADR-0048 decision 9, ADR-0053 decision 5). Across levels the same id is a legitimate layer override, not a conflict.
 
 **Meta:**
 

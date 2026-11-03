@@ -1,7 +1,7 @@
 ---
 okf_version: "0.2"
 title: "Pack composition: depends_on, the resolver and qualified references"
-description: "Breaking: pack identities are ULIDs and bare built-in references are refused. Packs declare depends_on; the offering resolves the compose or refuses it."
+description: "Breaking: pack identities are ULIDs and bare built-in references are refused. Packs declare depends_on; the offering resolves it."
 doc_status: active
 updated: 2026-11-03T00:00:00Z
 type: Changelog
@@ -26,8 +26,8 @@ audience:
 
 Epic [#142](https://github.com/spec-kitty/spec-kitty-charter/issues/142), keystone [#145](https://github.com/spec-kitty/spec-kitty-charter/issues/145).
 
-**Breaking: `pack.yaml` identities are checked, and an org or project pack that references a built-in artifact bare is
-now refused.** Packs can declare `depends_on`.
+**Breaking: `pack.yaml` identities are checked, and a bare reference to a built-in artifact is now refused.** Packs can
+declare `depends_on`.
 
 **Now** (before, identities were free text):
 
@@ -37,14 +37,15 @@ now refused.** Packs can declare `depends_on`.
 - **Migration:** add `depends_on` on built-in (`01ARWG13C000000000000000FG`) with a range, and write each built-in
   reference as `built-in::<urn>` ([guide](/guides/compose-packs/#migrating-an-existing-pack)).
 - `depends_on: [{pack_id, range}]` (PEP 440) and `overrides` are accepted.
-- `GET /offering` serves the compose, the closure rooted at one level's configured packs, dependencies first. A broken
-  compose refuses every composed read, the walk that follows references included. A pack-scoped read of an artifact still answers.
+- `GET /offering` serves the compose, the closure of the configured packs, dependencies first. A broken compose
+  refuses every composed read, the reference walk included. A pack-scoped read of an artifact still answers.
 - A cross-pack reference is `<pack-name>::<urn>`; the artifact's URN stays bare.
-- Eleven composition refusals, each a 500 (not retryable) naming the violating packs; causes and fixes are in the
-  [table](/guides/compose-packs/#read-a-refusal). `pack_sibling_refinement_conflict` is now `pack_sibling_conflict`; `pack_reference_artifact_missing` is new.
+- Eleven composition refusals, each a 500 (not retryable) naming the violating packs; causes and fixes are
+  in the [table](/guides/compose-packs/#read-a-refusal). `pack_sibling_refinement_conflict` is now `pack_sibling_conflict`.
+- New: `GET /packs/{packId}/artifacts/{kind}/{artifactId}/references` shows how an artifact's references
+  [resolve](/guides/compose-packs/#see-how-references-resolve). It is a composed read.
 - Wire: `dependsOn[].packId` is now `dependsOn[].descriptorPackId`. `OfferingPack.packId` is the configured id,
-  `OfferingPack.descriptorPackId` the descriptor ULID. `PackPin` loses `dependsOn`.
+  `OfferingPack.descriptorPackId` the descriptor ULID. `PackPin` carries no `dependsOn` (#359).
 
-**Deferred:** [#357](https://github.com/spec-kitty/spec-kitty-charter/issues/357) (`overrides` clears the refusal only),
-#358 (any pack may declare it), #359 (pack pin facts), #360 (roots from the activation set), #363 (`internal`, via
-open-packs#113).
+**Deferred:** [#357](https://github.com/spec-kitty/spec-kitty-charter/issues/357) (`overrides` clears the refusal only), #358
+(any pack may declare it), #359 (pack pin facts), #360 (activation roots), #363 (`internal`, via open-packs#113).

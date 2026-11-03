@@ -87,12 +87,14 @@ except the servlet container's own 400s
 
 | Code | Meaning | Used here | Body | Retry |
 |---|---|---|---|---|
-| 500 Internal Server Error | The service cannot answer | Every offering refusal: `pack_level_mismatch`, `pack_unreadable`, `drg_schema_error`, `unresolved_edge_endpoint` (not retryable); `internal_error` and `stale_input` (retryable). `pack_level_mismatch`, `drg_schema_error` and `unresolved_edge_endpoint` are declared but raised by no operation of this version. Also the eleven refusals of the pack composition, which refuse the whole offering because the configured packs do not compose, not the request: `pack_dependency_cycle`, `pack_dependency_unknown`, `pack_dependency_out_of_range`, `pack_parent_unresolved`, `pack_level_violation`, `pack_name_conflict`, `pack_duplicate_id`, `pack_sibling_conflict`, `pack_reference_unqualified`, `pack_reference_pack_missing`, `pack_reference_artifact_missing` (not retryable). Each names the violating pack in `detail` and lists the packs it names, that pack first, in the `packs` member (each with its `pack_id` and `name`) | `CharterRefusal` | Only for `internal_error` and `stale_input` |
+| 500 Internal Server Error | The service cannot answer | Every offering refusal: `pack_level_mismatch`, `pack_unreadable`, `drg_schema_error`, `unresolved_edge_endpoint` (not retryable); `internal_error` and `stale_input` (retryable). `pack_level_mismatch`, `drg_schema_error` and `unresolved_edge_endpoint` are declared but raised by no operation of this version. Also the eleven refusals of the pack composition, which refuse every composed read (the offering, and `listArtifactReferences`) because the configured packs do not compose, not the request: `pack_dependency_cycle`, `pack_dependency_unknown`, `pack_dependency_out_of_range`, `pack_parent_unresolved`, `pack_level_violation`, `pack_name_conflict`, `pack_duplicate_id`, `pack_sibling_conflict`, `pack_reference_unqualified`, `pack_reference_pack_missing`, `pack_reference_artifact_missing` (not retryable). Each names the violating pack in `detail` and lists the packs it names, that pack first, in the `packs` member (each with its `pack_id` and `name`) | `CharterRefusal` | Only for `internal_error` and `stale_input` |
 | 501 Not Implemented | The operation is declared but not built | Every operation marked `x-reserved` (ADR-0020 D8): the 13 operations of the activation set (#125), answered before the request is read. The lint rules `reserved-operation-declares-501` and `built-operation-declares-no-501` pair the two. Never a 405: the contract declares the method. (`getOpenApiDocument` answered a 501 through `default` from #208 until #209 served the bundle.) | `Problem`, no code | No |
 | 503 Service Unavailable | Temporarily unable to serve; may carry `Retry-After` | Not used. See the open questions | — | — |
 
 `internal_error` is the only code for a failure no other code names. Its `detail` is a generic
-sentence, and the failure is logged. Every 500 the contract answers is therefore a refusal with a
+sentence, and the failure is logged at ERROR with its stack trace. `pack_unreadable` and the composition refusals
+are logged at WARN, with the code, the detail and the packs they name and no stack trace: the configured packs are
+broken, not the service. Every 500 the contract answers is therefore a refusal with a
 code.
 
 ## Rules for a new response
@@ -110,7 +112,7 @@ code.
 These are for review, not decisions. They belong to the follow-up of ADR-0019 and ADR-0020.
 
 1. **Offering-configuration refusals are 500.** `pack_level_mismatch`, `pack_unreadable`,
-   `drg_schema_error`, `unresolved_edge_endpoint` and the ten pack composition refusals (operator ruling of
+   `drg_schema_error`, `unresolved_edge_endpoint` and the eleven pack composition refusals (operator ruling of
    2026-11-03: a configured offering that does not compose is a server-side fault, not a bad request) describe a misconfigured offering. A 500 is
    defensible: the request was fine, and the server's configuration is not. The alternative view
    answers 503 (the service cannot serve until the packs are fixed) or 422 (the configured input is
