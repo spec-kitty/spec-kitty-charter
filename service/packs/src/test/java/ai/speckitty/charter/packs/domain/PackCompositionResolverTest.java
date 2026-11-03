@@ -12,11 +12,15 @@ import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.Failure;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /** The resolver orders one closure and refuses a broken graph where it breaks. */
@@ -250,16 +254,47 @@ class PackCompositionResolverTest {
                         .isEqualTo(Failure.NAME_CONFLICT));
     }
 
-    @Test
-    void aPackMayNotDependOnAPackAtAHigherLevel() {
-        PackUnderResolution project = pack("01PROJ", "project-pack", "1.0.0", PackLevel.PROJECT);
-        PackUnderResolution org =
-                pack("01ORG", "org-pack", "1.0.0", PackLevel.ORG, List.of(new PackDependency("01PROJ", ">=1.0")));
+    /** Every pair of levels, for each edge: a pack reaches its own level or one nearer built-in, and no further. */
+    private static final List<PackLevel> FROM_BUILT_IN = List.of(PackLevel.BUILT_IN, PackLevel.ORG, PackLevel.PROJECT);
 
-        assertThatThrownBy(() -> PackCompositionResolver.resolve(List.of(org, project)))
-                .isInstanceOf(PackCompositionResolver.Refusal.class)
-                .satisfies(refusal -> assertThat(((PackCompositionResolver.Refusal) refusal).failure())
-                        .isEqualTo(Failure.LEVEL_VIOLATION));
+    static Stream<Arguments> levelMatrix() {
+        List<Arguments> rows = new ArrayList<>();
+        for (boolean parent : new boolean[] {false, true}) {
+            for (PackLevel own : PackLevel.values()) {
+                for (PackLevel target : PackLevel.values()) {
+                    rows.add(Arguments.of(
+                            parent, own, target, FROM_BUILT_IN.indexOf(target) <= FROM_BUILT_IN.indexOf(own)));
+                }
+            }
+        }
+        return rows.stream();
+    }
+
+    @ParameterizedTest(name = "{0}: {1} -> {2} allowed={3}")
+    @MethodSource("levelMatrix")
+    void aPackTakesADependencyOrParentOnlyAtItsOwnLevelOrOneNearerBuiltIn(
+            boolean parentEdge, PackLevel own, PackLevel target, boolean allowed) {
+        PackUnderResolution targetPack = pack("01TRGT", "target", "1.0.0", target);
+        PackUnderResolution ownPack = parentEdge
+                ? new PackUnderResolution(
+                        new ConfiguredPack(new PackIdentifier("01OWN0"), own),
+                        new PackDescriptor(
+                                "01OWN0", "1.0.0", Optional.of("01TRGT"), "own", Optional.of(own), Optional.empty()))
+                : pack("01OWN0", "own", "1.0.0", own, List.of(new PackDependency("01TRGT", ">=1.0")));
+
+        if (allowed) {
+            assertThat(ids(PackCompositionResolver.resolve(List.of(ownPack, targetPack))))
+                    .containsExactlyInAnyOrder("01OWN0", "01TRGT");
+            return;
+        }
+        assertThatThrownBy(() -> PackCompositionResolver.resolve(List.of(ownPack, targetPack)))
+                .isInstanceOfSatisfying(PackCompositionResolver.Refusal.class, refusal -> {
+                    assertThat(refusal.failure()).isEqualTo(Failure.LEVEL_VIOLATION);
+                    assertThat(refusal.packId()).isEqualTo("01OWN0");
+                    assertThat(refusal.detail())
+                            .contains("01TRGT", own.token(), target.token())
+                            .contains("its own level or one nearer built-in");
+                });
     }
 
     @Test

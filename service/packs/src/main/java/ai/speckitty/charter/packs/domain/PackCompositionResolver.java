@@ -90,7 +90,7 @@ public final class PackCompositionResolver {
         OUT_OF_RANGE,
         /** A {@code parent_pack} names an id no configured pack declares. */
         PARENT_UNRESOLVED,
-        /** A pack depends across a level boundary it may not cross. */
+        /** A pack depends on, or takes as parent, a pack further from built-in than its own level. */
         LEVEL_VIOLATION,
         /** Two packs in the compose declare the same name. */
         NAME_CONFLICT,
@@ -439,17 +439,19 @@ public final class PackCompositionResolver {
                                 + dependency.range() + ", and the held version is "
                                 + target.descriptor().packVersion());
             }
-            requireLevel(pack, target);
+            requireLevel(pack, target, "depends on");
             dependencies.add(targetId);
         }
         pack.descriptor().parentPack().ifPresent(parent -> {
-            if (!byId.containsKey(parent)) {
+            PackUnderResolution parentPack = byId.get(parent);
+            if (parentPack == null) {
                 throw new Refusal(
                         Failure.PARENT_UNRESOLVED,
                         pack.descriptor().packId(),
                         "pack " + pack.descriptor().packId() + " names parent_pack " + parent
                                 + ", which no configured pack declares");
             }
+            requireLevel(pack, parentPack, "names as parent_pack");
         });
         return dependencies;
     }
@@ -468,16 +470,20 @@ public final class PackCompositionResolver {
         }
     }
 
-    private static void requireLevel(PackUnderResolution pack, PackUnderResolution target) {
+    /**
+     * A pack may take a dependency or a parent only at its own level or one nearer built-in (ADR-0048 decision 7); the
+     * levels run built-in, org, project, and a pack at one level reaches no pack further from built-in than itself.
+     */
+    private static void requireLevel(PackUnderResolution pack, PackUnderResolution target, String edge) {
         PackLevel own = pack.configured().level();
-        PackLevel dependencyLevel = target.configured().level();
-        if (rank(dependencyLevel) > rank(own)) {
+        PackLevel targetLevel = target.configured().level();
+        if (rank(targetLevel) > rank(own)) {
             throw new Refusal(
                     Failure.LEVEL_VIOLATION,
                     pack.descriptor().packId(),
-                    "pack " + pack.descriptor().packId() + " at " + own.token() + " depends on "
-                            + target.descriptor().packId() + " at " + dependencyLevel.token()
-                            + "; a pack may depend only on its own level or a lower one");
+                    "pack " + pack.descriptor().packId() + " at " + own.token() + " " + edge + " "
+                            + target.descriptor().packId() + " at " + targetLevel.token()
+                            + "; a pack may take a dependency or a parent only at its own level or one nearer built-in");
         }
     }
 
