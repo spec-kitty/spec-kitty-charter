@@ -182,8 +182,11 @@ public final class OfferingReadService {
     private List<PackUnderResolution> composeOf() {
         try {
             List<PackUnderResolution> closure = PackCompositionResolver.resolve(catalog.configured().stream()
-                    .map(pack ->
-                            new PackUnderResolution(pack, descriptorOf(pack), refinements.refinedArtifacts(pack.id())))
+                    .map(pack -> new PackUnderResolution(
+                            pack,
+                            descriptorOf(pack),
+                            refinements.refinedArtifacts(pack.id()),
+                            refinements.definedArtifacts(pack.id())))
                     .toList());
             for (PackUnderResolution pack : closure) {
                 PackCompositionResolver.checkReferences(

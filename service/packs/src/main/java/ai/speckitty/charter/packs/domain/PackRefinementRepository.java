@@ -23,6 +23,19 @@ public interface PackRefinementRepository {
     List<String> refinedArtifacts(PackIdentifier pack);
 
     /**
+     * The artifacts the pack itself holds, as bare URNs ({@code <kind>:<id>}) of the kinds the service serves. Two packs
+     * of one level that hold the same artifact contest it, and the resolver refuses them unless an {@code overrides}
+     * edge settles it.
+     *
+     * @param pack the pack's identity
+     * @return the held artifacts' URNs, in a stable order; empty when the pack holds none (the default, for a storage
+     *     with no artifacts)
+     */
+    default List<String> definedArtifacts(PackIdentifier pack) {
+        return List.of();
+    }
+
+    /**
      * The references the pack's graph documents write: the distinct edge targets of every relation, as written —
      * bare ({@code <urn>}) or pack-qualified ({@code <pack-name>::<urn>}) — in first-seen order.
      *

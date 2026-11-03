@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
@@ -358,6 +359,26 @@ public final class DomainRepositoryService
                             .forEach(ref -> references.add(written(ref.type().token(), ref.id()))));
         }
         return List.copyOf(references);
+    }
+
+    /**
+     * The artifacts the pack holds, as bare URNs, kind by kind in the order the service serves them. Files that cannot
+     * be read are skipped here as in every lenient kind read; the whole-pack load reports them.
+     */
+    @Override
+    public List<String> definedArtifacts(PackIdentifier pack) {
+        Resolved resolved = resolve(pack);
+        List<String> defined = new ArrayList<>();
+        urns(defined, NodeKind.TACTIC, read(resolved, pack, TacticBinding.INSTANCE));
+        urns(defined, NodeKind.DIRECTIVE, read(resolved, pack, DirectiveBinding.INSTANCE));
+        urns(defined, NodeKind.PARADIGM, read(resolved, pack, ParadigmBinding.INSTANCE));
+        urns(defined, NodeKind.STYLEGUIDE, read(resolved, pack, StyleguideBinding.INSTANCE));
+        urns(defined, NodeKind.TOOLGUIDE, read(resolved, pack, ToolguideBinding.INSTANCE));
+        return List.copyOf(defined);
+    }
+
+    private static void urns(List<String> into, NodeKind kind, List<? extends CharterArtifact> artifacts) {
+        artifacts.forEach(artifact -> into.add(new Urn(kind, artifact.localId()).toString()));
     }
 
     private <D, E extends CharterArtifact> List<E> read(

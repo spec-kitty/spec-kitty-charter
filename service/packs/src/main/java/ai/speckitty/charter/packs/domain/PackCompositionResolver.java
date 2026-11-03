@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.Set;
+import java.util.function.Function;
 
 /**
  * Resolves one compose: the configured packs plus their descriptors become an ordered closure, dependencies before the
@@ -49,9 +50,13 @@ public final class PackCompositionResolver {
      * @param descriptor what its {@code pack.yaml} states
      * @param refinedArtifacts the artifacts its graph documents say it changes (an {@code enhances} or
      *     {@code overrides} relation on the artifact); empty when they name none
+     * @param definedArtifacts the artifacts the pack itself holds, as bare URNs; empty when it holds none
      */
     public record PackUnderResolution(
-            ConfiguredPack configured, PackDescriptor descriptor, List<String> refinedArtifacts) {
+            ConfiguredPack configured,
+            PackDescriptor descriptor,
+            List<String> refinedArtifacts,
+            List<String> definedArtifacts) {
 
         /**
          * Checks the fields.
@@ -59,12 +64,27 @@ public final class PackCompositionResolver {
          * @param configured the configured pack
          * @param descriptor its descriptor
          * @param refinedArtifacts the artifacts it changes
+         * @param definedArtifacts the artifacts it holds
          */
         public PackUnderResolution {
             Objects.requireNonNull(configured, "configured");
             Objects.requireNonNull(descriptor, "descriptor");
             Objects.requireNonNull(refinedArtifacts, "refinedArtifacts");
+            Objects.requireNonNull(definedArtifacts, "definedArtifacts");
             refinedArtifacts = List.copyOf(refinedArtifacts);
+            definedArtifacts = List.copyOf(definedArtifacts);
+        }
+
+        /**
+         * A pack under resolution whose graphs name artifacts it changes and that holds no artifact of its own.
+         *
+         * @param configured the configured pack
+         * @param descriptor its descriptor
+         * @param refinedArtifacts the artifacts it changes
+         */
+        public PackUnderResolution(
+                ConfiguredPack configured, PackDescriptor descriptor, List<String> refinedArtifacts) {
+            this(configured, descriptor, refinedArtifacts, List.of());
         }
 
         /**
@@ -96,7 +116,7 @@ public final class PackCompositionResolver {
         NAME_CONFLICT,
         /** Two configured packs declare the same {@code pack_id}. */
         DUPLICATE_ID,
-        /** Two siblings at one level change one artifact and no pack of the compose settles it with an {@code overrides} edge. */
+        /** Two siblings at one level change or define one artifact and no pack of the compose settles it with an {@code overrides} edge. */
         SIBLING_CONFLICT,
         /** A bare reference resolves only in another pack of the compose; the refusal names the holding pack. */
         REFERENCE_UNQUALIFIED,
@@ -315,27 +335,40 @@ public final class PackCompositionResolver {
     private record Declared(String packId, String range) {}
 
     /**
-     * Refuses two packs of one configured level that change the same artifact, unless a pack of the compose declares
-     * an {@code overrides} edge settling that artifact (FR-012; ADR-0048 decision 9, ADR-0053 decision 5): a
-     * conflict must be a decision, not load order. An edge settles a contest only when its {@code member} is one of
-     * the packs contesting that artifact at that level; an edge naming any other member settles nothing and the
-     * refusal says so. Packs at different levels are no siblings — the layer merge across levels composes them
-     * (ADR-0048 decision 6) — and the pack named is the second refiner in the stable order, so the refusal is
-     * deterministic.
+     * Refuses two packs of one configured level that contest an artifact, unless a pack of the compose declares an
+     * {@code overrides} edge settling it (FR-012; ADR-0048 decision 9, ADR-0053 decision 5): a conflict must be a
+     * decision, not load order. Two packs contest an artifact when both change it (an {@code enhances} or
+     * {@code overrides} relation on it) or when both define it (each holds an artifact with that id). An edge settles
+     * a contest only when its {@code member} is one of the packs contesting that artifact at that level; an edge
+     * naming any other member settles nothing and the refusal says so. Packs at different levels are no siblings —
+     * the layer merge across levels composes them (ADR-0048 decision 6) — and the pack named is the second contestant
+     * in the stable order, so the refusal is deterministic.
+     *
+     * <p>Artifacts are compared by their bare URN: a {@code <pack>::} qualifier on a reference or an
+     * {@code overrides.artifact} names where it is read, not which artifact it is.
      */
     private static void refuseSiblingContests(List<PackUnderResolution> ordered) {
-        Map<String, List<PackUnderResolution>> refiners = new LinkedHashMap<>();
+        refuseContests(ordered, PackUnderResolution::refinedArtifacts, "change");
+        refuseContests(ordered, PackUnderResolution::definedArtifacts, "define");
+    }
+
+    private static void refuseContests(
+            List<PackUnderResolution> ordered, Function<PackUnderResolution, List<String>> artifactsOf, String verb) {
+        Map<String, List<PackUnderResolution>> contestants = new LinkedHashMap<>();
         for (PackUnderResolution pack : ordered) {
-            for (String artifact : pack.refinedArtifacts()) {
-                refiners.computeIfAbsent(artifact, key -> new ArrayList<>()).add(pack);
+            for (String artifact : artifactsOf.apply(pack)) {
+                List<PackUnderResolution> held = contestants.computeIfAbsent(bare(artifact), key -> new ArrayList<>());
+                if (!held.contains(pack)) {
+                    held.add(pack);
+                }
             }
         }
-        for (Map.Entry<String, List<PackUnderResolution>> contest : refiners.entrySet()) {
+        for (Map.Entry<String, List<PackUnderResolution>> contest : contestants.entrySet()) {
             String artifact = contest.getKey();
             Map<PackLevel, List<PackUnderResolution>> byLevel = new EnumMap<>(PackLevel.class);
-            for (PackUnderResolution refiner : contest.getValue()) {
-                byLevel.computeIfAbsent(refiner.configured().level(), level -> new ArrayList<>())
-                        .add(refiner);
+            for (PackUnderResolution contestant : contest.getValue()) {
+                byLevel.computeIfAbsent(contestant.configured().level(), level -> new ArrayList<>())
+                        .add(contestant);
             }
             for (List<PackUnderResolution> siblings : byLevel.values()) {
                 if (siblings.size() < 2) {
@@ -348,7 +381,7 @@ public final class PackCompositionResolver {
                 boolean settled = false;
                 for (PackUnderResolution pack : ordered) {
                     for (PackOverride override : pack.descriptor().overrides()) {
-                        if (!override.artifact().equals(artifact)) {
+                        if (!bare(override.artifact()).equals(artifact)) {
                             continue;
                         }
                         if (ids.contains(override.member())) {
@@ -370,8 +403,17 @@ public final class PackCompositionResolver {
                         ids.get(1),
                         "packs " + String.join(" and ", ids) + " at "
                                 + siblings.getFirst().configured().level().token()
-                                + " both change the artifact " + artifact + ", and " + reason);
+                                + " both " + verb + " the artifact " + artifact + ", and " + reason);
             }
+        }
+    }
+
+    /** The URN an artifact reference names, without a {@code <pack>::} qualifier; a malformed one is its own key. */
+    private static String bare(String reference) {
+        try {
+            return PackQualifiedReference.parse(reference).urn();
+        } catch (IllegalArgumentException malformed) {
+            return reference;
         }
     }
 
