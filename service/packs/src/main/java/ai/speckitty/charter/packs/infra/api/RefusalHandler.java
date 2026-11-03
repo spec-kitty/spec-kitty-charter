@@ -122,9 +122,22 @@ public class RefusalHandler {
                     ACTIVATION_NOT_FOUND,
                     ARTIFACT_NOT_FOUND,
                     PRESET_NOT_FOUND -> HttpStatus.NOT_FOUND;
-            case VALIDATION_FAILED, ACTIVATION_INVALID -> HttpStatus.UNPROCESSABLE_CONTENT;
-            case REGISTRATION_CONFLICT, GOVERNANCE_POLICY_VIOLATION, ARTIFACT_REQUIRED, ARTIFACT_LOCKED ->
-                HttpStatus.CONFLICT;
+            case VALIDATION_FAILED,
+                    ACTIVATION_INVALID,
+                    PACK_DEPENDENCY_CYCLE,
+                    PACK_DEPENDENCY_UNKNOWN,
+                    PACK_DEPENDENCY_OUT_OF_RANGE,
+                    PACK_PARENT_UNRESOLVED,
+                    PACK_LEVEL_VIOLATION,
+                    PACK_NAME_CONFLICT,
+                    PACK_DUPLICATE_ID,
+                    PACK_REFERENCE_UNQUALIFIED,
+                    PACK_REFERENCE_PACK_MISSING -> HttpStatus.UNPROCESSABLE_CONTENT;
+            case REGISTRATION_CONFLICT,
+                    GOVERNANCE_POLICY_VIOLATION,
+                    ARTIFACT_REQUIRED,
+                    ARTIFACT_LOCKED,
+                    PACK_SIBLING_REFINEMENT_CONFLICT -> HttpStatus.CONFLICT;
             case PACK_LEVEL_MISMATCH,
                     PACK_UNREADABLE,
                     DRG_SCHEMA_ERROR,

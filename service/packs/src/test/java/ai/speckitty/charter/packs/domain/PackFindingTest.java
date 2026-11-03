@@ -18,6 +18,7 @@ class PackFindingTest {
             PackFindingCode.PACK_LEVEL_MISMATCH,
             PackFindingCode.PACK_UNREADABLE,
             PackFindingCode.REQUIRES_CORE_INVALID,
+            PackFindingCode.DEPENDENCY_RANGE_INVALID,
             PackFindingCode.ORG_FRAGMENT_MISSING,
             PackFindingCode.DRG_SCHEMA_ERROR);
 
@@ -54,6 +55,8 @@ class PackFindingTest {
     void theOtherLoadPathBlockingCodesProjectOntoTheirRefusals() {
         assertThat(finding(PackFindingCode.PACK_UNREADABLE).code().refusal()).isEqualTo(RefusalCode.PACK_UNREADABLE);
         assertThat(finding(PackFindingCode.REQUIRES_CORE_INVALID).code().refusal())
+                .isEqualTo(RefusalCode.PACK_UNREADABLE);
+        assertThat(finding(PackFindingCode.DEPENDENCY_RANGE_INVALID).code().refusal())
                 .isEqualTo(RefusalCode.PACK_UNREADABLE);
         assertThat(finding(PackFindingCode.ORG_FRAGMENT_MISSING).code().refusal())
                 .isEqualTo(RefusalCode.PACK_UNREADABLE);

@@ -25,7 +25,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 @DisplayName("A mission step contract round-trips through the YAML format and the store (#191)")
 class MissionStepContractRoundTripTest {
 
-    private static final PackIdentifier PACK = new PackIdentifier("01M5YHYDSTEPCONTRACTFIXT0A");
+    private static final PackIdentifier PACK = new PackIdentifier("01M5YHYDSTEPC0NTRACTF1XT0A");
 
     private static final String FULL = """
             schema_version: "1.0"
@@ -270,7 +270,7 @@ class MissionStepContractRoundTripTest {
     private static Path pack(Path host) throws IOException {
         Path pack = Files.createDirectories(host.resolve("step-pack"));
         write(pack.resolve("pack.yaml"), """
-                pack_id: 01M5YHYDSTEPCONTRACTFIXT0A
+                pack_id: 01M5YHYDSTEPC0NTRACTF1XT0A
                 pack_version: 1.0.0
                 name: step-pack
                 pack_level: org

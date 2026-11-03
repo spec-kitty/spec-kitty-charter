@@ -35,7 +35,7 @@ import org.junit.jupiter.api.io.TempDir;
 @DisplayName("A loaded procedure keeps its references and mints no relationship; a loaded tactic mints its (#194)")
 class ProcedureEdgesTest {
 
-    private static final PackIdentifier PACK = new PackIdentifier("01M60H9BPROCEDUREEDGES000A");
+    private static final PackIdentifier PACK = new PackIdentifier("01M60H9BPR0CEDVREEDGES000A");
     private static final Urn TACTIC = new Urn(NodeKind.of(ArtifactKind.TACTIC), "land-with-review");
     private static final Urn PROCEDURE = new Urn(NodeKind.of(ArtifactKind.PROCEDURE), "land-a-change");
     private static final Urn DIRECTIVE = new Urn(NodeKind.of(ArtifactKind.DIRECTIVE), "REVIEW_FIRST");

@@ -34,7 +34,7 @@ import org.springframework.context.annotation.Bean;
 @SpringBootTest(classes = {StorageConfiguration.class, ApplicationConfiguration.class, TacticReadWiredTest.Root.class})
 class TacticReadWiredTest {
 
-    private static final PackIdentifier PACK = new PackIdentifier("01M5DEH8ROUNDTRIPFIXTURE0A");
+    private static final PackIdentifier PACK = new PackIdentifier("01M5DEH8R0VNDTR1PF1XTVRE0A");
 
     /** The one thing a deployment configures: where the packs are. Everything else is the real beans. */
     @TestConfiguration(proxyBeanMethods = false)

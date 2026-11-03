@@ -29,7 +29,8 @@ class OfferingControllerTest {
     private static final String FINGERPRINT = "Charter-Source-Fingerprint";
 
     private static MockMvc mvc(List<ConfiguredPack> packs, PackDescriptorRepository descriptors) {
-        OfferingReadService reads = new OfferingReadService(() -> packs, descriptors, new ConsistentRead(() -> DIGEST));
+        OfferingReadService reads =
+                new OfferingReadService(() -> packs, descriptors, pack -> List.of(), new ConsistentRead(() -> DIGEST));
         return MockMvcBuilders.standaloneSetup(new OfferingController(reads, new Hypermedia("/api/v1")))
                 .setControllerAdvice(new RefusalHandler(), new ProblemHandler())
                 .build();

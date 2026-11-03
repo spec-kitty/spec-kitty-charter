@@ -45,7 +45,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 class PackDocumentRoundTripTest {
 
     private static final String PACK_YAML =
-            "pack_id: 01M65MBWPACKDOCUMENT0000000\npack_version: 0.1.0\nname: documented\npack_level: project\n";
+            "pack_id: 01M65MBWPACKD0CVMENT000000\npack_version: 0.1.0\nname: documented\npack_level: project\n";
 
     private static final String WITH_FRONTMATTER = """
             ---

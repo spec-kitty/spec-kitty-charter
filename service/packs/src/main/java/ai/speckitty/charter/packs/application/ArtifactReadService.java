@@ -5,7 +5,9 @@ import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
@@ -39,6 +41,10 @@ import org.springframework.stereotype.Service;
  * page and its fingerprint name the same inputs. The pack is judged before the kind: an identifier that names no
  * configured pack is refused {@link RefusalCode#PACK_NOT_FOUND}, then a kind outside {@link #SERVED} is refused
  * {@link RefusalCode#KIND_NOT_FOUND}, inside the same kind of verified read.
+ *
+ * <p>Besides the item by kind and id, the service reads the artifact a reference names
+ * ({@link #referenced(PackIdentifier, String)}): the pack-qualified reference grammar of the compose (FR-013 to
+ * FR-017), resolved through {@link CompositeComponentResolver} against the closure the offering already resolved.
  *
  * <p>A configured pack without a readable {@code pack.yaml} is not a readable canonical pack (operator ruling of
  * 2026-10-31): the list and the item of every kind refuse it {@link RefusalCode#PACK_UNREADABLE}, never
@@ -77,6 +83,7 @@ public final class ArtifactReadService {
     private final StyleguideReadService styleguides;
     private final ParadigmReadService paradigms;
     private final ToolguideReadService toolguides;
+    private final CompositeComponentResolver components;
 
     /**
      * One artifact as the list names it.
@@ -211,6 +218,7 @@ public final class ArtifactReadService {
      * @param styleguides the styleguide reads an item of that kind delegates to
      * @param paradigms the paradigm reads an item of that kind delegates to
      * @param toolguides the toolguide reads an item of that kind delegates to
+     * @param components the resolver that resolves a reference a read is given, against the compose closure
      */
     @Autowired
     public ArtifactReadService(
@@ -222,7 +230,8 @@ public final class ArtifactReadService {
             DirectiveReadService directives,
             StyleguideReadService styleguides,
             ParadigmReadService paradigms,
-            ToolguideReadService toolguides) {
+            ToolguideReadService toolguides,
+            CompositeComponentResolver components) {
         this.packs = Objects.requireNonNull(packs, "packs");
         this.catalog = Objects.requireNonNull(catalog, "catalog");
         this.descriptors = Objects.requireNonNull(descriptors, "descriptors");
@@ -232,6 +241,7 @@ public final class ArtifactReadService {
         this.styleguides = Objects.requireNonNull(styleguides, "styleguides");
         this.paradigms = Objects.requireNonNull(paradigms, "paradigms");
         this.toolguides = Objects.requireNonNull(toolguides, "toolguides");
+        this.components = Objects.requireNonNull(components, "components");
     }
 
     /**
@@ -306,6 +316,75 @@ public final class ArtifactReadService {
             throw new CharterRefusal(RefusalCode.STALE_INPUT, stale);
         }
         return judged.value();
+    }
+
+    /**
+     * One artifact as a reference names it — bare ({@code <urn>}), a reference inside {@code pack}, or pack-qualified
+     * ({@code <pack-name>::<urn>}), which names the pack it relies on — with the digest of the inputs it was read
+     * from (FR-013, FR-014). The reference resolves against the compose closure the offering already resolved: a
+     * qualified reference reads the artifact of the pack it names, and a bare reference reads only an artifact of
+     * {@code pack} — a bare id that resolves only in another pack of the closure is refused
+     * {@link RefusalCode#PACK_REFERENCE_UNQUALIFIED} naming the holding pack (FR-015), so an accidental cross-pack
+     * coupling cannot resolve by load order, and a qualified reference to a pack outside the closure is refused
+     * {@link RefusalCode#PACK_REFERENCE_PACK_MISSING} naming the missing pack (FR-017). A reference that resolves to
+     * no artifact of the compose is the not-found of its kind, exactly as an unknown id of the item read is.
+     *
+     * <p>It is one verified read, judged as {@link #item(PackIdentifier, String, String)} judges: the referring pack's
+     * descriptor is judged before the reference resolves, the resolution and the kind's read run between the same two
+     * digests, and the answer carries the kind's fingerprint only when it equals the outer digests, so all digests
+     * agree.
+     *
+     * @param pack the referring pack's identity, whose perspective the reference is read from
+     * @param reference the reference as the artifact writes it, for example
+     *     {@code foundation::directive:DIRECTIVE_001}
+     * @return the artifact typed by its kind, and the verified fingerprint
+     * @throws IllegalArgumentException when the reference is outside the grammar (a malformed qualified form)
+     * @throws CharterRefusal with {@link RefusalCode#PACK_NOT_FOUND} when no configured pack has the referring pack's
+     *     identifier; with {@link RefusalCode#PACK_UNREADABLE} when the referring pack has no readable
+     *     {@code pack.yaml}; with {@link RefusalCode#PACK_REFERENCE_UNQUALIFIED} or
+     *     {@link RefusalCode#PACK_REFERENCE_PACK_MISSING} as the resolution refuses; with the not-found code of the
+     *     reference's kind when it resolves to no artifact, or {@link RefusalCode#KIND_NOT_FOUND} when it names no
+     *     kind the service serves; with {@link RefusalCode#PACK_UNREADABLE} or {@link RefusalCode#STALE_INPUT} as
+     *     every verified read refuses
+     */
+    public ConsistentRead.Verified<Item> referenced(PackIdentifier pack, String reference) {
+        Objects.requireNonNull(pack, "pack");
+        Objects.requireNonNull(reference, "reference");
+        PackQualifiedReference parsed = PackQualifiedReference.parse(reference);
+        String stale = "The inputs changed while the referenced artifact was read; read it again.";
+        ConsistentRead.Verified<ConsistentRead.Verified<Item>> judged = read.read(stale, () -> {
+            judgeDescriptor(pack);
+            CharterArtifact target;
+            try {
+                target = components.resolveReference(reference, pack).orElseThrow(() -> resolvesToNoArtifact(parsed));
+            } catch (ConstraintBreachException malformed) {
+                // An id the kind's identifier rules refuse names no artifact of the kind, exactly as an item's id does.
+                throw resolvesToNoArtifact(parsed);
+            }
+            return servedItem(target.packId(), target.kind(), target.localId());
+        });
+        if (!judged.fingerprint().equals(judged.value().fingerprint())) {
+            throw new CharterRefusal(RefusalCode.STALE_INPUT, stale);
+        }
+        return judged.value();
+    }
+
+    /**
+     * The not-found of a reference that resolves to no artifact of the compose: the kind's own not-found when the
+     * reference's URN names a served kind, and {@link RefusalCode#KIND_NOT_FOUND} when it names no kind the service
+     * serves. The URN reaches the existing {@link Urn} machinery verbatim; nothing here re-spells it (C-005).
+     */
+    private static CharterRefusal resolvesToNoArtifact(PackQualifiedReference reference) {
+        Optional<ArtifactKind> served =
+                Urn.parse(reference.urn()).flatMap(urn -> servedKind(urn.kind().token()));
+        if (served.isEmpty()) {
+            return new CharterRefusal(
+                    RefusalCode.KIND_NOT_FOUND,
+                    "The reference " + reference + " names no artifact kind the service serves.");
+        }
+        return new CharterRefusal(
+                Objects.requireNonNull(ABSENT.get(served.get()), "the not-found code of a served kind"),
+                "The reference " + reference + " resolves to no " + served.get().token() + " of the compose.");
     }
 
     /** The kind's own verified read of one artifact, typed by its kind. */

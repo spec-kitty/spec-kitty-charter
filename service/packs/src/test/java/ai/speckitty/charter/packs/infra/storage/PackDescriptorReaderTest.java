@@ -2,22 +2,26 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.domain.PackOverride;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /** The reader reports {@code pack.yaml} as facts; the texts below are the ones {@link PackPolicy} writes from them. */
 class PackDescriptorReaderTest {
 
-    private static final String VALID = "pack_id: 01ABC\npack_version: 1.0.0\nname: qa\n";
+    private static final String VALID = "pack_id: 01ARWG13C00000000000001ABC\npack_version: 1.0.0\nname: qa\n";
 
     private static PackDescriptor read(String text) {
         FileRead<PackDescriptor> read = PackDescriptorReader.read(text);
@@ -49,6 +53,74 @@ class PackDescriptorReaderTest {
     @Test
     void anAbsentLevelIsReportedAsEmptyNotDefaulted() {
         assertThat(read(VALID).declaredLevel()).isEqualTo(Optional.empty());
+    }
+
+    @Test
+    void anAbsentDependsOnIsEmptyNotDefaulted() {
+        assertThat(read(VALID).dependencies()).isEmpty();
+    }
+
+    @Test
+    void declaredDependenciesAreReportedInFileOrder() {
+        PackDescriptor descriptor = read(VALID + """
+                pack_level: org
+                depends_on:
+                  - pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+                    range: '>=1.0,<2'
+                  - pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+                    range: ==1.2.3
+                """);
+
+        assertThat(descriptor.dependencies())
+                .containsExactly(
+                        new PackDependency("01M4P01D5TWB5FKZGNNQG3943R", ">=1.0,<2"),
+                        new PackDependency("01M4P01D5TWB5FKZGNNQG3943S", "==1.2.3"));
+    }
+
+    @Test
+    void aDependencyWithoutItsRangeIsUnreadable() {
+        assertThat(details(VALID + "depends_on:\n  - pack_id: 01M4P01D5TWB5FKZGNNQG3943R\n"))
+                .isNotEmpty();
+    }
+
+    @Test
+    void anAbsentOverridesIsEmptyNotDefaulted() {
+        assertThat(read(VALID).overrides()).isEmpty();
+    }
+
+    @Test
+    void declaredOverridesAreReportedInFileOrder() {
+        PackDescriptor descriptor = read(VALID + """
+                overrides:
+                  - artifact: directive:DIRECTIVE_009
+                    member: 01M4P01D5TWB5FKZGNNQG3943R
+                  - artifact: tactic:alpha-tactic
+                    member: 01M4P01D5TWB5FKZGNNQG3943S
+                """);
+
+        assertThat(descriptor.overrides())
+                .containsExactly(
+                        new PackOverride("directive:DIRECTIVE_009", "01M4P01D5TWB5FKZGNNQG3943R"),
+                        new PackOverride("tactic:alpha-tactic", "01M4P01D5TWB5FKZGNNQG3943S"));
+    }
+
+    @Test
+    void anOverrideWithoutItsMemberIsUnreadable() {
+        assertThat(details(VALID + "overrides:\n  - artifact: directive:DIRECTIVE_009\n"))
+                .isNotEmpty();
+    }
+
+    @Test
+    void aSecondOverrideOnOneArtifactIsUnreadableAsTheUniqueItemsKeyword() {
+        String twice = VALID + """
+                overrides:
+                  - artifact: directive:DIRECTIVE_009
+                    member: 01M4P01D5TWB5FKZGNNQG3943R
+                  - artifact: directive:DIRECTIVE_009
+                    member: 01M4P01D5TWB5FKZGNNQG3943S
+                """;
+
+        assertThat(details(twice)).containsExactly("pack.yaml of qa: '/overrides' breaks schema keyword 'uniqueItems'");
     }
 
     @Test
@@ -124,6 +196,8 @@ class PackDescriptorReaderTest {
                         "parent_pack",
                         "name",
                         "pack_level",
+                        "depends_on",
+                        "overrides",
                         "requires_core",
                         "active_charter",
                         "pack_drg");
@@ -155,13 +229,14 @@ class PackDescriptorReaderTest {
 
     @Test
     void aMissingRequiredKeyIsTheKeywordRequiredNamingTheKey() {
-        FileRead.Unreadable<PackDescriptor> bad = unreadable("pack_id: 01ABC\nname: qa\n");
+        FileRead.Unreadable<PackDescriptor> bad = unreadable("pack_id: 01ARWG13C00000000000001ABC\nname: qa\n");
 
         assertThat(bad.violations()).singleElement().satisfies(v -> {
             assertThat(v.keyword()).isEqualTo("required");
             assertThat(v.property()).contains("pack_version");
         });
-        assertThat(details("pack_id: 01ABC\nname: qa\n")).containsExactly("pack.yaml of qa has no pack_version");
+        assertThat(details("pack_id: 01ARWG13C00000000000001ABC\nname: qa\n"))
+                .containsExactly("pack.yaml of qa has no pack_version");
     }
 
     @Test
@@ -178,7 +253,7 @@ class PackDescriptorReaderTest {
     @ParameterizedTest
     @ValueSource(strings = {"~", "Null", "NULL"})
     void aPlainNullFormInARequiredStringIsRefusedLikeAnExplicitNull(String form) {
-        assertThat(details("pack_id: 01ABC\npack_version: 1.0.0\nname: " + form + "\n"))
+        assertThat(details("pack_id: 01ARWG13C00000000000001ABC\npack_version: 1.0.0\nname: " + form + "\n"))
                 .containsExactly("pack.yaml of qa: name must be a string");
     }
 
@@ -206,10 +281,11 @@ class PackDescriptorReaderTest {
 
     @Test
     void aNonFiniteNumberWhereAStringIsDeclaredIsStillRefused() {
-        assertThat(unreadable(VALID.replace("name: qa", "name: .nan")).violations())
+        assertThat(unreadable(VALID.replace("pack_version: 1.0.0", "pack_version: .nan"))
+                        .violations())
                 .singleElement()
                 .satisfies(v -> {
-                    assertThat(v.pointer()).containsExactly("name");
+                    assertThat(v.pointer()).containsExactly("pack_version");
                     assertThat(v.keyword()).isEqualTo("type");
                     assertThat(v.value()).contains("NaN");
                 });
@@ -218,16 +294,50 @@ class PackDescriptorReaderTest {
     @Test
     void aNonFiniteNumberWhereAStringIsDeclaredHasTheTextOfAnyOtherNumber() {
         for (String number : List.of("1.5", ".nan", ".inf", "-.inf", "1e400")) {
-            assertThat(PackPolicy.unreadable("qa", unreadable(VALID.replace("name: qa", "name: " + number))))
+            assertThat(PackPolicy.unreadable(
+                            "qa", unreadable(VALID.replace("pack_version: 1.0.0", "pack_version: " + number))))
                     .extracting(PackFinding::detail)
                     .as(number)
-                    .containsExactly("pack.yaml of qa: name must be a string");
+                    .containsExactly("pack.yaml of qa: pack_version must be a string");
         }
+    }
+
+    /** Each identity field that follows a grammar, with one value that breaks it (FR-003, C-003). */
+    @ParameterizedTest
+    @CsvSource(
+            delimiter = '|',
+            value = {
+                "pack_id: 01ABC|pack_id",
+                "pack_id: 01arwg13c00000000000001abc|pack_id",
+                "pack_id: 01ARWG13C0000000000000OLIU|pack_id",
+                "parent_pack: 01ABC|parent_pack",
+                "name: beta pack|name",
+                "name: Beta|name",
+                "name: _beta|name",
+                "name: qa::x|name"
+            })
+    void anIdentityThatBreaksItsGrammarMakesThePackUnreadable(String line, String field) {
+        String key = line.substring(0, line.indexOf(':') + 1);
+        String text = VALID.lines().filter(kept -> !kept.startsWith(key)).collect(Collectors.joining("\n", "", "\n"))
+                + line + "\n";
+
+        assertThat(unreadable(text).violations())
+                .anySatisfy(violation -> assertThat(violation.pointer()).startsWith(field));
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+            strings = {
+                "depends_on:\n  - {pack_id: 01ABC, range: '>=1'}\npack_level: org\n",
+                "overrides:\n  - {artifact: 'directive:X', member: 01ABC}\n"
+            })
+    void aNestedPackIdThatIsNoUlidMakesThePackUnreadable(String declaration) {
+        assertThat(unreadable(VALID + declaration).violations()).isNotEmpty();
     }
 
     @Test
     void anEmptyPackVersionIsRefusedWithItsOwnDetail() {
-        assertThat(details("pack_id: 01ABC\npack_version: ''\nname: qa\n"))
+        assertThat(details("pack_id: 01ARWG13C00000000000001ABC\npack_version: ''\nname: qa\n"))
                 .containsExactly("pack.yaml of qa: pack_version must not be empty");
     }
 }

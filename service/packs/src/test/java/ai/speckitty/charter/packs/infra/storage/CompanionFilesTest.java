@@ -35,7 +35,8 @@ import org.junit.jupiter.api.io.TempDir;
 class CompanionFilesTest {
 
     private static final PackIdentifier PACK = new PackIdentifier("p");
-    private static final String PACK_YAML = "pack_id: p\npack_version: 1.0.0\nname: p\npack_level: org\n";
+    private static final String PACK_YAML =
+            "pack_id: 01ARWG13C0000000000000000P\npack_version: 1.0.0\nname: p\npack_level: org\n";
 
     @TempDir
     Path root;

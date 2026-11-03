@@ -52,7 +52,7 @@ class AssetPackRegistrationTest {
         Map<String, byte[]> files = new LinkedHashMap<>();
         files.put(
                 "pack.yaml",
-                utf8("pack_id: 01M5DEH8ASSETREGISTRATION0\npack_version: 0.1.0\nname: pack-a\npack_level: org\n"));
+                utf8("pack_id: 01M5DEH8ASSETREG1STRAT10N0\npack_version: 0.1.0\nname: pack-a\npack_level: org\n"));
         files.put("assets/debrief/logo.png.asset.yaml", utf8("id: logo\nmime: image/png\npath: debrief/logo.png\n"));
         files.put("assets/debrief/logo.png", LOGO);
         files.put("assets/lint.config.yaml", utf8("rules:\r\n  - a\r\n"));

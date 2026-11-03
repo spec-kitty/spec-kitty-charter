@@ -49,14 +49,18 @@ class MissionTypeCorpusTest {
             pack_level: org
             """;
 
-    /** The schema violations of the built-in pack's two pinned presets (OP-1), as the store reports them. */
-    private static final int BUILT_IN_PRESET_VIOLATIONS = 14;
+    /**
+     * The schema violations of the built-in pack's two pinned presets: none. OP-1 landed upstream before the pin
+     * (open-packs commit 213a059, the presets moved to the sanitized shape), so the presets load clean; a new one is
+     * a regression this count catches.
+     */
+    private static final int BUILT_IN_PRESET_VIOLATIONS = 0;
 
     @TempDir
     Path host;
 
     @ParameterizedTest(name = "{0}: {1} mission types, {2} steps, {3} on demand")
-    @CsvSource({"built-in, 4, 25, 6", "cave-kitty, 1, 8, 0", "qa, 1, 7, 0"})
+    @CsvSource({"built-in, 4, 25, 7", "cave-kitty, 1, 8, 0", "qa, 1, 7, 0"})
     @DisplayName("each pack's mission types read with no violation, and their counts are pinned")
     void everyMissionTypeReads(String pack, int types, int steps, int onDemand) throws IOException {
         List<MissionType> read = missionTypes(pack);
@@ -71,7 +75,7 @@ class MissionTypeCorpusTest {
     }
 
     @Test
-    @DisplayName("the corpus holds 6 mission types, 40 steps and 6 on demand, 43 prompts and 17 guidelines")
+    @DisplayName("the corpus holds 6 mission types, 40 steps and 7 on demand, 47 prompts and 17 guidelines")
     void theCorpusCountsArePinned() throws IOException {
         List<MissionStep> steps = new ArrayList<>();
         for (String pack : List.of("built-in", "cave-kitty", "qa")) {
@@ -81,7 +85,7 @@ class MissionTypeCorpusTest {
             }
         }
 
-        assertThat(steps).hasSize(46);
+        assertThat(steps).hasSize(47);
         List<Path> templates = new ArrayList<>();
         for (String pack : List.of("built-in", "cave-kitty", "qa")) {
             Path packDirectory = OpenPacksCorpus.packsDirectory().resolve(pack);
@@ -99,18 +103,18 @@ class MissionTypeCorpusTest {
                 .as("output templates the mission types name")
                 .hasSize(13)
                 .allSatisfy(template -> assertThat(template).isRegularFile());
-        assertThat(steps.stream().filter(step -> step.prompt().isPresent())).hasSize(43);
+        assertThat(steps.stream().filter(step -> step.prompt().isPresent())).hasSize(47);
         assertThat(steps.stream().filter(step -> step.guidelines().isPresent())).hasSize(17);
         assertThat(steps.stream()
                         .filter(step -> step.prompt()
                                 .flatMap(prompt -> prompt.description())
                                 .isPresent()))
                 .as("prompts with a detailed description (ruling Q1 as refined on 2026-10-30)")
-                .hasSize(28);
+                .hasSize(32);
     }
 
     @ParameterizedTest(name = "{0}: {1} files")
-    @CsvSource({"built-in, 49", "cave-kitty, 9", "qa, 8"})
+    @CsvSource({"built-in, 53", "cave-kitty, 9", "qa, 8"})
     @DisplayName("each mission-type file and step companion writes back through the production writer byte for byte")
     void everyMissionFileWritesBackByteForByte(String pack, int files) throws IOException {
         OpenPacksCorpus.assertPinned();
@@ -174,7 +178,7 @@ class MissionTypeCorpusTest {
         FilesystemPackStore.PackRead read = new FilesystemPackStore(packs, new YamlSerializationStrategy())
                 .read(new PackIdentifier(pack), List.of(MissionTypeBinding.INSTANCE));
 
-        // The built-in pack's two pinned presets have known findings of their own (OP-1); nothing else is refused.
+        // The built-in pack's presets load clean (OP-1 landed upstream before the pin); nothing is refused.
         assertThat(read.violations())
                 .as("%s violations outside its presets", pack)
                 .filteredOn(violation -> !violation.file().startsWith("presets/"))

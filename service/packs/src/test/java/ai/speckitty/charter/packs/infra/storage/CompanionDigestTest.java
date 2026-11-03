@@ -25,7 +25,7 @@ import org.junit.jupiter.api.io.TempDir;
 class CompanionDigestTest {
 
     private static final String PACK_YAML = """
-            pack_id: 01M5YVECCOMPANIONDIGEST00A
+            pack_id: 01M5YVECC0MPAN10ND1GEST00A
             pack_version: 1.0.0
             name: p
             pack_level: org
@@ -133,10 +133,12 @@ class CompanionDigestTest {
 
         List<String> digested = PackFileSet.digested(qa);
         // #193 digests the pack's asset files (three .py payloads) and then its templates, last; #194 makes the mission
-        // type's templates templates.
+        // type's templates templates. The preset the pin added (open-packs 7963b62, vendored by the re-vendor) is
+        // digested after them, as the pack-level tail (ADR-0042 decision 9): the digest ends with the payloads and it.
         List<String> assetFiles = PackFileSet.assetFiles(qa);
         List<String> payloads = new java.util.ArrayList<>(assetFiles);
         payloads.addAll(PackFileSet.templates(qa));
+        payloads.add("presets/qa.yaml");
         // #194: every file before them is YAML, except the companions: the three toolguide guides, each right after its
         // toolguide, and the qa mission type's seven step prompts, right after the mission-type file in step order.
         List<String> beforeAssets = digested.subList(0, digested.size() - payloads.size());

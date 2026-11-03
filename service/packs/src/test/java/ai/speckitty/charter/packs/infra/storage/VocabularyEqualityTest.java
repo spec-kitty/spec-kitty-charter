@@ -40,7 +40,8 @@ class VocabularyEqualityTest {
 
     private static final JsonMapper JSON = JsonMapper.builder().build();
     private static final String TENSION_SPELLING = "in_tension_with";
-    private static final Pattern ALTERNATION = Pattern.compile("^\\^\\(([a-z_|]+)\\):");
+    private static final Pattern ALTERNATION =
+            Pattern.compile("^\\^(?:\\(\\[a-z0-9\\]\\[a-z0-9_-\\]\\*::\\)\\?)?\\(([a-z_|]+)\\):");
 
     private static JsonNode schema(String kind) throws IOException {
         try (InputStream in =

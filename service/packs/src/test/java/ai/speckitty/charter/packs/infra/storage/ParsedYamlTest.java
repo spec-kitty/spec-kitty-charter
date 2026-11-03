@@ -27,7 +27,7 @@ class ParsedYamlTest {
     private static final String SHARD = "tactic.graph.yaml";
     private static final String FRAGMENT = "drg/fragment.yaml";
     private static final String HEADER = "schema_version: '1.0'\ngenerated_at: STATIC\n";
-    private static final String DESCRIPTOR = "pack_id: 01ABC\npack_version: 1.0.0\nname: qa\n";
+    private static final String DESCRIPTOR = "pack_id: 01ARWG13C00000000000001ABC\npack_version: 1.0.0\nname: qa\n";
     private static final String TOO_DEEP = "the document is nested too deeply";
     private static final String NOT_PLAIN = "a value is not a string, a number, a boolean or null";
 

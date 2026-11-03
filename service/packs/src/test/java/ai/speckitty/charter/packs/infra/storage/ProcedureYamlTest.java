@@ -28,7 +28,7 @@ import org.junit.jupiter.api.io.TempDir;
 @DisplayName("A procedure round-trips through the YAML format and the store; the retired shape is refused (#194)")
 class ProcedureYamlTest {
 
-    private static final PackIdentifier PACK = new PackIdentifier("01M60H9BPROCEDURERETIRED0A");
+    private static final PackIdentifier PACK = new PackIdentifier("01M60H9BPR0CEDVRERET1RED0A");
     private static final String DIR = "/roundtrip-fixtures/procedure/";
 
     private final YamlSerializationStrategy strategy = new YamlSerializationStrategy();

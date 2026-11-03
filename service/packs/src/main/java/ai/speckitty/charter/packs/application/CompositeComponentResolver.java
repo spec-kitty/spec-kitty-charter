@@ -3,6 +3,8 @@ package ai.speckitty.charter.packs.application;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ComponentResolver;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
@@ -10,6 +12,7 @@ import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
 import ai.speckitty.charter.packs.domain.StyleguideIdentifier;
 import ai.speckitty.charter.packs.domain.TacticIdentifier;
 import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -32,6 +35,11 @@ import org.springframework.stereotype.Service;
  * bound once — {@link #forPack(PackIdentifier)} yields the pack-scoped {@link ComponentResolver} the application-layer
  * walk driver consumes, exactly as the slice tests bind their resolver to the pack under walk. This service is
  * component-scanned; the composition root needs no {@code @Bean}.
+ *
+ * <p>Besides the in-pack URNs, it resolves a reference as an artifact writes it — bare or pack-qualified — against the
+ * compose closure the offering already resolved ({@link #resolveReference(String, PackIdentifier)}). The two graphs
+ * stay unmerged (research): the pack composition is consumed read-only through {@link OfferingReadService}, and the
+ * component resolution still goes through the per-kind read services alone.
  */
 @Service
 public final class CompositeComponentResolver {
@@ -41,15 +49,17 @@ public final class CompositeComponentResolver {
     private final ParadigmReadService paradigms;
     private final ToolguideReadService toolguides;
     private final TacticReadService tactics;
+    private final OfferingReadService offerings;
 
     /**
-     * A resolver over the injected per-kind read services.
+     * A resolver over the injected per-kind read services and the offering that owns the compose closure.
      *
      * @param directives the directive read path
      * @param styleguides the styleguide read path
      * @param paradigms the paradigm read path
      * @param toolguides the toolguide read path
      * @param tactics the tactic read path
+     * @param offerings the offering read whose resolved closure a pack-qualified reference is resolved against
      */
     @Autowired
     public CompositeComponentResolver(
@@ -57,12 +67,14 @@ public final class CompositeComponentResolver {
             StyleguideReadService styleguides,
             ParadigmReadService paradigms,
             ToolguideReadService toolguides,
-            TacticReadService tactics) {
+            TacticReadService tactics,
+            OfferingReadService offerings) {
         this.directives = Objects.requireNonNull(directives, "directives");
         this.styleguides = Objects.requireNonNull(styleguides, "styleguides");
         this.paradigms = Objects.requireNonNull(paradigms, "paradigms");
         this.toolguides = Objects.requireNonNull(toolguides, "toolguides");
         this.tactics = Objects.requireNonNull(tactics, "tactics");
+        this.offerings = Objects.requireNonNull(offerings, "offerings");
     }
 
     /**
@@ -73,7 +85,117 @@ public final class CompositeComponentResolver {
      */
     public ComponentResolver forPack(PackIdentifier pack) {
         Objects.requireNonNull(pack, "pack");
-        return urn -> resolve(pack, urn);
+        return urn -> urn.pack().isPresent() ? resolveQualified(urn) : resolve(pack, urn);
+    }
+
+    /**
+     * A pack-qualified neighbour of a walk: resolved inside the pack the qualifier names in the compose, or empty when
+     * the compose holds no such pack. The reference checks of the compose refuse an unreachable pack when it resolves,
+     * so a walk only continues past it.
+     */
+    private Optional<CharterArtifact> resolveQualified(Urn qualified) {
+        String named = qualified.pack().orElseThrow();
+        return offerings.compose().value().stream()
+                .filter(pack -> pack.descriptor().name().equals(named))
+                .findFirst()
+                .flatMap(pack -> resolve(pack.configured().id(), new Urn(qualified.kind(), qualified.id())));
+    }
+
+    /**
+     * Resolves one reference as an artifact writes it — bare ({@code <urn>}), a reference inside the referring pack,
+     * or pack-qualified ({@code <pack-name>::<urn>}), which names the pack it relies on (FR-013, FR-014, FR-015,
+     * FR-017). A qualified reference names a pack of the compose closure the offering already resolved, and its URN
+     * part resolves inside that pack through the same per-kind dispatch an in-pack neighbour takes — the referring
+     * pack's own artifacts are reachable both bare and qualified. A name the closure does not hold is refused
+     * {@link RefusalCode#PACK_REFERENCE_PACK_MISSING}, naming the missing pack, and never falls back to the referring
+     * pack. A bare reference resolves only inside the referring pack; when its id resolves only in another pack of the
+     * closure, that accidental coupling is refused {@link RefusalCode#PACK_REFERENCE_UNQUALIFIED}, naming the holding
+     * pack, so it cannot resolve by load order. A bare id that resolves nowhere keeps the empty answer an absent
+     * in-scope component always gets.
+     *
+     * <p>Both verdicts are the compose resolver's: the resolution names the pack that holds the id and
+     * {@link PackCompositionResolver#checkReferences} refuses, so the reference codes travel the same path the other
+     * compose refusals travel. The URN part is opaque to the reference grammar (ADR-0053 open question 3, ruled; the
+     * mission writes no URN-parsing code): it reaches the existing {@link Urn} machinery verbatim and is never
+     * re-spelled, and a token no known kind holds resolves empty, exactly as a bare neighbour of an unwired kind does
+     * (research Decision 6).
+     *
+     * @param reference the reference as the artifact writes it, for example
+     *     {@code foundation::directive:DIRECTIVE_001}
+     * @param referringPack the pack whose artifact writes the reference; a bare reference resolves only inside it
+     * @return the referenced component when its kind is in scope and the pack it names holds it; empty when it
+     *     resolves nowhere in the closure
+     * @throws IllegalArgumentException when the reference is outside the grammar (a malformed qualified form)
+     * @throws CharterRefusal with {@link RefusalCode#PACK_REFERENCE_PACK_MISSING} when a qualified reference names a
+     *     pack outside the closure, with {@link RefusalCode#PACK_REFERENCE_UNQUALIFIED} when a bare reference resolves
+     *     only in another pack of the closure, or as the offering's read of the closure refuses
+     */
+    public Optional<CharterArtifact> resolveReference(String reference, PackIdentifier referringPack) {
+        Objects.requireNonNull(reference, "reference");
+        Objects.requireNonNull(referringPack, "referringPack");
+        PackQualifiedReference parsed = PackQualifiedReference.parse(reference);
+        List<PackCompositionResolver.PackUnderResolution> closure =
+                offerings.compose().value();
+        String referringId = closure.stream()
+                .filter(pack -> pack.configured().id().equals(referringPack))
+                .map(pack -> pack.descriptor().packId())
+                .findFirst()
+                .orElse(referringPack.value());
+        if (parsed.qualified()) {
+            String named = parsed.packName().orElseThrow();
+            Optional<PackCompositionResolver.PackUnderResolution> target = closure.stream()
+                    .filter(pack -> pack.descriptor().name().equals(named))
+                    .findFirst();
+            // The closure check of the referring pack decides whether the named pack may be relied on.
+            checked(closure, referringId, new PackCompositionResolver.ResolvedReference(parsed, referringId));
+            return resolve(target.orElseThrow().configured().id(), parsed.urn());
+        }
+        Optional<CharterArtifact> inPack = resolve(referringPack, parsed.urn());
+        if (inPack.isPresent()) {
+            return inPack;
+        }
+        for (PackCompositionResolver.PackUnderResolution pack : closure) {
+            if (pack.configured().id().equals(referringPack)) {
+                continue;
+            }
+            if (resolve(pack.configured().id(), parsed.urn()).isPresent()) {
+                checked(
+                        closure,
+                        referringId,
+                        new PackCompositionResolver.ResolvedReference(
+                                parsed, pack.descriptor().packId()));
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Resolves the URN part of a reference inside one pack. The URN is opaque to the reference grammar (C-005): it
+     * reaches the existing {@link Urn} machinery verbatim, and a token no known kind holds resolves empty, exactly as
+     * a bare neighbour of an unwired kind does (research Decision 6).
+     */
+    private Optional<CharterArtifact> resolve(PackIdentifier pack, String urn) {
+        return Urn.parse(urn).flatMap(target -> resolve(pack, target));
+    }
+
+    /** The closure check of the compose resolver, its refusal mapped to the reference code the contract serves. */
+    private static void checked(
+            List<PackCompositionResolver.PackUnderResolution> closure,
+            String referringPackId,
+            PackCompositionResolver.ResolvedReference resolved) {
+        try {
+            PackCompositionResolver.checkReferences(closure, referringPackId, List.of(resolved));
+        } catch (PackCompositionResolver.Refusal refusal) {
+            throw new CharterRefusal(referenceCodeOf(refusal.failure()), refusal.detail());
+        }
+    }
+
+    private static RefusalCode referenceCodeOf(PackCompositionResolver.Failure failure) {
+        return switch (failure) {
+            case REFERENCE_UNQUALIFIED -> RefusalCode.PACK_REFERENCE_UNQUALIFIED;
+            case REFERENCE_PACK_MISSING -> RefusalCode.PACK_REFERENCE_PACK_MISSING;
+            default -> throw new IllegalStateException("not a reference failure: " + failure);
+        };
     }
 
     private Optional<CharterArtifact> resolve(PackIdentifier pack, Urn urn) {

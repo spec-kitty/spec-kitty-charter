@@ -53,6 +53,46 @@ class ArtifactRelationshipsTest {
     }
 
     @Test
+    @DisplayName(
+            "a typed reference id that carries a pack qualifier mints a target that carries the pack, never a :: in the id")
+    void aQualifiedTypedReferenceMintsAQualifiedTarget() {
+        Directive directive = Directive.builder()
+                .id(new DirectiveIdentifier("DIRECTIVE_010"))
+                .packId(PACK)
+                .schemaVersion("1.0")
+                .title("Title")
+                .intent("Intent")
+                .enforcement(Enforcement.REQUIRED)
+                .reference(new DirectiveReference("tactic", "writing-pack::tdd", Optional.empty(), Optional.empty()))
+                .reference(new DirectiveReference("tactic", "local-tdd", Optional.empty(), Optional.empty()))
+                .build();
+
+        assertThat(directive.relationships())
+                .extracting(Relationship::to)
+                .containsExactly(
+                        new Urn(NodeKind.TACTIC, "tdd", Optional.of("writing-pack")),
+                        new Urn(NodeKind.TACTIC, "local-tdd"));
+        assertThat(directive.relationships().get(0).to().id()).doesNotContain("::");
+    }
+
+    @Test
+    @DisplayName("a typed reference id with a malformed qualifier is refused, not minted")
+    void aMalformedQualifierIsRefused() {
+        Directive directive = Directive.builder()
+                .id(new DirectiveIdentifier("DIRECTIVE_010"))
+                .packId(PACK)
+                .schemaVersion("1.0")
+                .title("Title")
+                .intent("Intent")
+                .enforcement(Enforcement.REQUIRED)
+                .reference(new DirectiveReference("tactic", "Bad Pack::tdd", Optional.empty(), Optional.empty()))
+                .build();
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(directive::relationships)
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     @DisplayName("a paradigm's directive refs mint a requires to directive:<id>, its typed refs a suggests")
     void paradigmMintsRequiresToDirectiveAndSuggestsToTyped() {
         Paradigm paradigm = Paradigm.builder()

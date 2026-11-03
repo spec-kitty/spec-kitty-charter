@@ -4,8 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.PackContents.ArtifactFacts;
 import ai.speckitty.charter.packs.domain.PackContents.AssetFacts;
@@ -37,7 +39,13 @@ class PackPolicyRulesTest {
             "drg/fragment.yaml", new RawGraph("drg/fragment.yaml", RawGraph.Shape.FRAGMENT, List.of(), List.of()));
 
     private static PackDescriptor descriptor(Optional<String> requiresCore) {
-        return new PackDescriptor("01ABC", "1.0.0", Optional.empty(), "qa", Optional.of(PackLevel.ORG), requiresCore);
+        return new PackDescriptor(
+                "01ARWG13C00000000000001ABC",
+                "1.0.0",
+                Optional.empty(),
+                "qa",
+                Optional.of(PackLevel.ORG),
+                requiresCore);
     }
 
     private static PackContents contents(
@@ -105,6 +113,34 @@ class PackPolicyRulesTest {
         assertThat(judge(withDescriptor(Optional.of(requiresCore)))).isEmpty();
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"1.2.3", "banana", "~=1"})
+    void aMalformedDependsOnRangeIsBlockingAndNamesTheDeclaringPackAndPlace(String range) {
+        PackDescriptor declaring = new PackDescriptor(
+                "01ARWG13C00000000000001ABC",
+                "1.0.0",
+                Optional.empty(),
+                "qa",
+                Optional.of(PackLevel.ORG),
+                Optional.empty(),
+                PackPaths.none(),
+                List.of(
+                        new PackDependency("01M4P01D5TWB5FKZGNNQG3943R", ">=1.0,<2"),
+                        new PackDependency("01M4P01D5TWB5FKZGNNQG3943S", range)));
+        PackContents contents = contents(new FileRead.Read<>("pack.yaml", declaring), List.of(), List.of(), List.of());
+
+        assertThat(judge(contents))
+                .containsExactly(new PackFinding(
+                        PackFindingCode.DEPENDENCY_RANGE_INVALID,
+                        "pack.yaml",
+                        List.of("depends_on", "1", "range"),
+                        "pack.yaml of qa: depends_on[1] range '" + range + "' is not a PEP 440 version specifier"));
+        assertThatThrownBy(() -> Judged.refuseOnFirstBlocking(contents))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+    }
+
     @Test
     void anAbsentRequiresCoreGivesNoFinding() {
         assertThat(judge(withDescriptor(Optional.empty()))).isEmpty();
@@ -136,7 +172,7 @@ class PackPolicyRulesTest {
                 new FileRead.Read<>(
                         "pack.yaml",
                         new PackDescriptor(
-                                "01ABC",
+                                "01ARWG13C00000000000001ABC",
                                 "1.0.0",
                                 Optional.empty(),
                                 "qa",
@@ -173,7 +209,9 @@ class PackPolicyRulesTest {
 
     private static FileRead<PackDescriptor> declaring(Optional<PackLevel> level) {
         return new FileRead.Read<>(
-                "pack.yaml", new PackDescriptor("01ABC", "1.0.0", Optional.empty(), "lonely", level, Optional.empty()));
+                "pack.yaml",
+                new PackDescriptor(
+                        "01ARWG13C00000000000001ABC", "1.0.0", Optional.empty(), "lonely", level, Optional.empty()));
     }
 
     private static final FileRead<RawGraph> NO_FRAGMENT = new FileRead.Absent<>("drg/fragment.yaml");
@@ -257,7 +295,7 @@ class PackPolicyRulesTest {
                 new FileRead.Read<>(
                         "pack.yaml",
                         new PackDescriptor(
-                                "01ABC",
+                                "01ARWG13C00000000000001ABC",
                                 "1.0.0",
                                 Optional.empty(),
                                 "lonely",

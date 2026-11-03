@@ -18,8 +18,11 @@ import org.junit.jupiter.api.Test;
  * consolidated mission type tolerates no retired or variant field, so its reader and domain never name one. Only
  * {@code contracts/packs/file-kinds.yaml}, which is not a main source, names the retired files, in its {@code retired}
  * section. The field names are scanned as the token itself, except {@code agent_profile}: it is also the live
- * {@code agent_profile} node kind token, so only its use as a YAML key, the quoted literal, is retired. Its runtime twin
- * is {@link RetiredFilesTest}, which refuses each retired file by name. The precedent is {@link RetiredFieldNamesTest}.
+ * {@code agent_profile} node kind token, so only its use as a YAML key, the quoted literal, is retired; and
+ * {@code depends_on}: it is retired as a mission step field, but live as the pack descriptor's dependency list (the
+ * pack-composition mission, ADR-0048 decision 4), so a source whose concern is the mission type may not name it while
+ * the pack descriptor's reader, writer and resolver do. Its runtime twin is {@link RetiredFilesTest}, which refuses
+ * each retired file by name. The precedent is {@link RetiredFieldNamesTest}.
  */
 @DisplayName("No :missions or :packs main source reads a retired mission field or file name (#194)")
 class RetiredMissionFieldNamesTest {
@@ -29,10 +32,12 @@ class RetiredMissionFieldNamesTest {
             "\"agent_profile\"",
             "sequence_index",
             "in_action_sequence",
-            "depends_on",
             "mission-runtime",
             "governance-profile",
             "expected-artifacts");
+
+    /** Retired as a mission step field (#194); live as the pack descriptor's dependency list (ADR-0048 decision 4). */
+    private static final String DEPENDS_ON = "depends_on";
 
     @Test
     @DisplayName("the main sources hold none of the retired names; the scan does see the mission-type keys")
@@ -48,6 +53,9 @@ class RetiredMissionFieldNamesTest {
                         "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/MissionTypeYaml.java"))
                 .contains("\"steps\"", "\"on_demand_steps\"", "\"role\"");
         assertThat(sources.keySet()).noneMatch(path -> path.endsWith("file-kinds.yaml"));
+        assertThat(sources.keySet())
+                .as("the depends_on scoping below reaches mission-type sources in both modules")
+                .anyMatch(RetiredMissionFieldNamesTest::missionTypeConcern);
 
         for (Map.Entry<String, String> source : sources.entrySet()) {
             for (String name : RETIRED) {
@@ -55,7 +63,18 @@ class RetiredMissionFieldNamesTest {
                         .as(source.getKey() + " names " + name)
                         .doesNotContain(name);
             }
+            if (missionTypeConcern(source.getKey())) {
+                assertThat(source.getValue())
+                        .as(source.getKey() + " names " + DEPENDS_ON)
+                        .doesNotContain(DEPENDS_ON);
+            }
         }
+    }
+
+    /** Whether a source's concern is the mission type: the missions module, or a {@code Mission*} source of :packs. */
+    private static boolean missionTypeConcern(String path) {
+        return path.startsWith("service/missions/src/main/")
+                || path.substring(path.lastIndexOf('/') + 1).startsWith("Mission");
     }
 
     private static Map<String, String> mainSources() throws IOException {

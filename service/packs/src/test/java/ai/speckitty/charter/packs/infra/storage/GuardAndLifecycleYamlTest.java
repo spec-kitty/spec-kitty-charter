@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test;
 @DisplayName("Guards, lifecycles and executable assets round-trip through the YAML format and the domain (#156)")
 class GuardAndLifecycleYamlTest {
 
-    private static final PackIdentifier PACK = new PackIdentifier("01M65RTQZ8GUARDLIFECYC0LEA");
+    private static final PackIdentifier PACK = new PackIdentifier("01M65RTQZ8GVARD11FECYC01EA");
     private static final String DIR = "/roundtrip-fixtures/guard-lifecycle/";
 
     private final YamlSerializationStrategy strategy = new YamlSerializationStrategy();

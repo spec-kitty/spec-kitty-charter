@@ -9,6 +9,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackOverride;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import java.io.IOException;
@@ -32,14 +33,16 @@ class PackRoundTripTest {
     private static final String BETA_ID = "beta-tactic";
 
     private static final PackDescriptorDso PACK_A_DESCRIPTOR = new PackDescriptorDso(
-            "01M5DEH8ROUNDTRIPFIXTURE0A",
+            "01M5DEH8R0VNDTR1PF1XTVRE0A",
             "1.2.3",
             Optional.empty(),
             "roundtrip-a",
             Optional.of("org"),
             Optional.of(">=1.0"),
             Optional.of("org-charter.yaml"),
-            Optional.of("drg/fragment.yaml"));
+            Optional.of("drg/fragment.yaml"),
+            List.of(),
+            List.of());
 
     private static final TacticDso ALPHA = new TacticDso(
             ALPHA_ID,
@@ -103,7 +106,7 @@ class PackRoundTripTest {
     private static FilesystemPackStore.PackRead roundTrip(FilesystemPackStore.PackRead original, Path fresh)
             throws IOException {
         Path pack = Files.createDirectories(fresh.resolve(PACK.value()));
-        Files.writeString(pack.resolve("pack.yaml"), "pack_id: placeholder\n");
+        Files.writeString(pack.resolve("pack.yaml"), "pack_id: 01ARWG13C000000P1ACEH01DER\n");
         for (TacticDso tactic : tactics(original)) {
             Files.writeString(pack.resolve(tactic.id() + ".tactic.yaml"), "id: " + tactic.id() + "\n");
         }
@@ -220,13 +223,42 @@ class PackRoundTripTest {
                 Optional.of("project"),
                 d.requiresCore(),
                 d.activeCharter(),
-                d.packDrg());
+                d.packDrg(),
+                d.dependencies(),
+                d.overrides());
 
         FilesystemPackStore.PackRead refetched =
                 roundTrip(withTactics(mutated, List.of(), List.of()), host.resolve("fresh"));
 
         assertThat(refetched.descriptor()).isNotEqualTo(original.descriptor());
         assertThat(refetched.descriptor().packLevel()).contains("project");
+    }
+
+    /** FR-012: an `overrides` edge survives a write to a fresh directory, its artifact and member intact. */
+    @Test
+    void aDescriptorWithAnOverridesEdgeRefetchesEqualToTheOriginal(@TempDir Path host) throws IOException {
+        PackFixtures.copyOf("pack-a", host.resolve("source"));
+        FilesystemPackStore.PackRead original =
+                storeOver(host.resolve("source")).read(PACK);
+        PackDescriptorDso d = original.descriptor();
+        PackDescriptorDso settling = new PackDescriptorDso(
+                d.packId(),
+                d.packVersion(),
+                d.parentPack(),
+                d.name(),
+                d.packLevel(),
+                d.requiresCore(),
+                d.activeCharter(),
+                d.packDrg(),
+                d.dependencies(),
+                List.of(new PackOverride("directive:DIRECTIVE_009", "01M4P01D5TWB5FKZGNNQG3943S")));
+
+        FilesystemPackStore.PackRead refetched =
+                roundTrip(withTactics(settling, List.of(), List.of()), host.resolve("fresh"));
+
+        assertThat(refetched.descriptor()).isEqualTo(settling);
+        assertThat(refetched.descriptor().overrides())
+                .containsExactly(new PackOverride("directive:DIRECTIVE_009", "01M4P01D5TWB5FKZGNNQG3943S"));
     }
 
     /**

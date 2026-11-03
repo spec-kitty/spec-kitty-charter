@@ -256,8 +256,9 @@ class PackLevelSchemasTest {
     // ---- the pinned content -----------------------------------------------------------------------------------
 
     /**
-     * The pinned built-in presets and manifest are not in the sanitized shape: each is refused, naming the unknown keys
-     * the divergence table (research/grounding-squad.md §5) lists for it. Fixed in open-packs (OP-1, OP-2).
+     * The pinned built-in presets and manifest are in the sanitized shape: OP-1 and OP-2 landed upstream before the
+     * pin (open-packs commits 213a059 and cfc9971 moved the presets and the manifest to the shapes of ADR-0042), so
+     * the closed schemas accept each. A pinned file that is refused again, for any keyword, fails here.
      */
     @Nested
     @Tag("open-packs")
@@ -268,24 +269,15 @@ class PackLevelSchemasTest {
             return Files.readString(builtIn.resolve(file), StandardCharsets.UTF_8);
         }
 
-        @ParameterizedTest(name = "{0} is refused for {1}")
-        @CsvSource({"presets/default.yaml, name", "presets/minimal.yaml, name"})
-        void aPinnedPresetIsRefused(String file, String key) throws IOException {
-            List<SchemaViolation> violations = preset(pinned(file));
-            assertThat(violations)
-                    .filteredOn(v -> v.keyword().equals("additionalProperties"))
-                    .extracting(v -> v.property().orElse(""))
-                    .contains(key, "mission_type_activations");
+        @ParameterizedTest(name = "{0} is accepted")
+        @CsvSource({"presets/default.yaml", "presets/minimal.yaml"})
+        void aPinnedPresetIsAccepted(String file) throws IOException {
+            assertThat(preset(pinned(file))).as(file).isEmpty();
         }
 
         @Test
-        void thePinnedManifestIsRefused() throws IOException {
-            List<SchemaViolation> violations = manifest(pinned("pack-manifest.yaml"));
-            assertThat(violations)
-                    .filteredOn(v -> v.keyword().equals("additionalProperties")
-                            && v.pointer().isEmpty())
-                    .extracting(v -> v.property().orElse(""))
-                    .contains("charter", "fetched_at", "source_type", "source_url", "generated_by");
+        void thePinnedManifestIsAccepted() throws IOException {
+            assertThat(manifest(pinned("pack-manifest.yaml"))).isEmpty();
         }
     }
 }

@@ -40,14 +40,6 @@ final class WholePackExpectation {
     /** The only form of issue a known failure may name: an issue of spec-kitty-open-packs. */
     private static final Pattern OPEN_PACKS_ISSUE = Pattern.compile("spec-kitty/spec-kitty-open-packs#[1-9]\\d*");
 
-    /**
-     * The two placeholders #195 may name while its upstream drafts are not yet filed (ADR-0042): the preset shape and
-     * the manifest shape. Exactly these are admitted; any other {@code #TBD-} key is refused. The hand-off replaces
-     * each with the filed issue's number and removes this set.
-     */
-    static final Set<String> PENDING_DRAFTS = Set.of(
-            "spec-kitty/spec-kitty-open-packs#TBD-preset-shape", "spec-kitty/spec-kitty-open-packs#TBD-manifest-shape");
-
     /** The status of one file in a gate run. */
     enum Status {
         /** Written, read back, and its meaning is unchanged. */
@@ -100,8 +92,23 @@ final class WholePackExpectation {
      * @param at where the file differs (as {@link #atOf}), or the whole red detail for a refused file
      * @param reason why it fails
      * @param issue the open-packs issue, {@code spec-kitty/spec-kitty-open-packs#<number>}
+     * @param roundTripOnly whether only the gate's round trip reports the failure while the store load accepts the
+     *     file, so load-refusal ratchets skip the entry and the gate still pins it exactly
      */
-    record KnownFailure(String path, String at, String reason, String issue) {}
+    record KnownFailure(String path, String at, String reason, String issue, boolean roundTripOnly) {
+
+        /**
+         * The convenience form of an entry the load itself refuses, so {@code roundTripOnly} is false.
+         *
+         * @param path the pack-relative path
+         * @param at where the file differs
+         * @param reason why it fails
+         * @param issue the open-packs issue
+         */
+        KnownFailure(String path, String at, String reason, String issue) {
+            this(path, at, reason, issue, false);
+        }
+    }
 
     /**
      * A class of files the gate does not compare.
@@ -192,8 +199,7 @@ final class WholePackExpectation {
      * @param knownFailuresYaml the text of {@code known-failures.yaml}
      * @return the expectation
      * @throws IllegalArgumentException when an entry lacks a field, carries an unknown key, or repeats, or when a known
-     *     failure does not name a {@code spec-kitty/spec-kitty-open-packs#<number>} issue or one of the
-     *     {@link #PENDING_DRAFTS}
+     *     failure does not name a {@code spec-kitty/spec-kitty-open-packs#<number>} issue
      */
     static WholePackExpectation load(String expectedRedYaml, String exclusionsYaml, String knownFailuresYaml) {
         Map<String, Object> red =
@@ -219,15 +225,23 @@ final class WholePackExpectation {
         }
         Map<String, Object> known = document(knownFailuresYaml, KNOWN_FAILURES_RESOURCE, Set.of("known_failures"));
         List<KnownFailure> knownFailures = new ArrayList<>();
-        for (Map<String, String> entry :
-                entries(known.get("known_failures"), "known_failures", List.of("path", "at", "reason", "issue"))) {
+        for (Map<String, String> entry : entries(
+                known.get("known_failures"),
+                "known_failures",
+                List.of("path", "at", "reason", "issue"),
+                Set.of("round_trip_only"))) {
             String path = entry.get("path");
             String issue = entry.get("issue");
-            if (!OPEN_PACKS_ISSUE.matcher(issue).matches() && !PENDING_DRAFTS.contains(issue)) {
+            if (!OPEN_PACKS_ISSUE.matcher(issue).matches()) {
                 throw new IllegalArgumentException("known_failures entry " + path + " has issue '" + issue
                         + "'; expected spec-kitty/spec-kitty-open-packs#<number> (ADR-0036 decision 5)");
             }
-            knownFailures.add(new KnownFailure(path, entry.get("at"), entry.get("reason"), issue));
+            String flag = entry.get("round_trip_only");
+            if (flag != null && !"true".equals(flag) && !"false".equals(flag)) {
+                throw new IllegalArgumentException(
+                        "known_failures entry " + path + " has round_trip_only '" + flag + "'; expected true or false");
+            }
+            knownFailures.add(new KnownFailure(path, entry.get("at"), entry.get("reason"), issue, "true".equals(flag)));
         }
         return new WholePackExpectation(kinds, files, emptyKinds, exclusions, knownFailures);
     }
@@ -483,6 +497,15 @@ final class WholePackExpectation {
     }
 
     private static List<Map<String, String>> entries(@Nullable Object list, String where, List<String> fields) {
+        return entries(list, where, fields, Set.of());
+    }
+
+    /**
+     * As {@link #entries(Object, String, List)}, with keys an entry may carry but need not: a key that is neither
+     * required nor optional is refused as unknown.
+     */
+    private static List<Map<String, String>> entries(
+            @Nullable Object list, String where, List<String> fields, Set<String> optional) {
         if (list == null) {
             return List.of();
         }
@@ -497,9 +520,9 @@ final class WholePackExpectation {
             }
             Map<String, String> entry = new LinkedHashMap<>();
             map.forEach((key, value) -> {
-                if (!fields.contains(String.valueOf(key))) {
-                    throw new IllegalArgumentException(
-                            where + " entry " + map + " has an unknown key '" + key + "'; allowed: " + fields);
+                if (!fields.contains(String.valueOf(key)) && !optional.contains(String.valueOf(key))) {
+                    throw new IllegalArgumentException(where + " entry " + map + " has an unknown key '" + key
+                            + "'; allowed: " + fields + (optional.isEmpty() ? "" : " or " + optional));
                 }
                 if (value instanceof Map<?, ?> || value instanceof List<?>) {
                     throw new IllegalArgumentException(

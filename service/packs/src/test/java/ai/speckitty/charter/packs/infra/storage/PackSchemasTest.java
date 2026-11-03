@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.infra.storage;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
 import com.networknt.schema.InvalidSchemaException;
@@ -215,6 +216,35 @@ class PackSchemasTest {
                 .isEmpty();
     }
 
+    /** The schema and {@code PackQualifiedReference} read one name grammar, so every authored pack can be referenced. */
+    @Test
+    void theDescriptorSchemaConstrainsNameToThePackQualifiedReferenceGrammar() throws IOException {
+        assertThat(MAPPER.readTree(bundledText("pack-descriptor"))
+                        .at("/properties/name/pattern")
+                        .asString())
+                .isEqualTo(PackQualifiedReference.PACK_NAME_GRAMMAR);
+    }
+
+    /** Every schema that lets a reference carry a {@code <pack-name>::} qualifier spells it as the Java grammar does. */
+    @ParameterizedTest
+    @CsvSource({
+        "graph-shard,/$defs/DRGEdge/properties/source/pattern",
+        "graph-shard,/$defs/DRGEdge/properties/target/pattern",
+        "org-fragment,/$defs/_OrgDRGEdge/properties/source/pattern",
+        "org-fragment,/$defs/_OrgDRGEdge/properties/target/pattern",
+        "tactic,/$defs/TacticReference/properties/id/pattern",
+        "directive,/$defs/DirectiveReference/properties/id/pattern",
+        "paradigm,/$defs/ParadigmReference/properties/id/pattern",
+        "procedure,/$defs/Reference/properties/id/pattern",
+        "mission-type,/$defs/Reference/properties/id/pattern"
+    })
+    void aReferencePatternQualifiesWithThePackNameGrammar(String kind, String pointer) throws IOException {
+        String grammar = PackQualifiedReference.PACK_NAME_GRAMMAR;
+        String qualifier = "(" + grammar.substring(1, grammar.length() - 1) + "::)?";
+
+        assertThat(MAPPER.readTree(bundledText(kind)).at(pointer).asString()).startsWith("^" + qualifier);
+    }
+
     @Test
     void aMissingPackVersionIsARequiredViolationWithAnEmptyPointer() {
         Object tree = Yaml.load("""
@@ -326,7 +356,10 @@ class PackSchemasTest {
 
     @Test
     void aNonFiniteNumberWhereAStringIsDeclaredIsRefusedAsTheWrongType() {
-        assertThat(violationsAt("pack-descriptor", "pack_id: 01ABC\npack_version: 1.0.0\nname: .nan\n", "name"))
+        assertThat(violationsAt(
+                        "pack-descriptor",
+                        "pack_id: 01ARWG13C00000000000001ABC\npack_version: .nan\nname: qa\n",
+                        "pack_version"))
                 .singleElement()
                 .satisfies(v -> {
                     assertThat(v.keyword()).isEqualTo("type");

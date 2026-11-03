@@ -2,14 +2,19 @@ package ai.speckitty.charter.packs.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.domain.PackOverride;
+import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
+import ai.speckitty.charter.packs.domain.PackRefinementRepository;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +33,7 @@ class OfferingReadServiceTest {
 
     private final Map<String, Optional<PackDescriptor>> descriptors = new HashMap<>();
     private final Map<String, CharterRefusal> unreadable = new HashMap<>();
+    private final Map<String, List<String>> refined = new HashMap<>();
 
     private ConfiguredPack configured(String id, PackLevel level) {
         descriptors.putIfAbsent(id, Optional.of(descriptor(id, Optional.empty())));
@@ -38,8 +44,21 @@ class OfferingReadServiceTest {
         return new PackDescriptor(id, "1.0." + id.length(), Optional.empty(), id + " pack", declared, Optional.empty());
     }
 
+    private static PackDescriptor descriptor(String id, String version, PackDependency... dependencies) {
+        return new PackDescriptor(
+                id,
+                version,
+                Optional.empty(),
+                id + " pack",
+                Optional.empty(),
+                Optional.empty(),
+                PackPaths.none(),
+                List.of(dependencies),
+                List.of());
+    }
+
     private OfferingReadService service(List<ConfiguredPack> packs, ConsistentRead read) {
-        return new OfferingReadService(() -> packs, new InMemoryDescriptors(), read);
+        return new OfferingReadService(() -> packs, new InMemoryDescriptors(), new InMemoryRefinements(), read);
     }
 
     private OfferingReadService service(List<ConfiguredPack> packs) {
@@ -133,6 +152,77 @@ class OfferingReadServiceTest {
         assertThat(service(List.of()).offering().value()).isEmpty();
     }
 
+    // ---- the resolved dependency facts (FR-020) -------------------------------------------------------
+
+    @Test
+    void aDiamondComposeExposesEachResolvedEdgeOnceWithItsRangeAndSatisfyingVersion() {
+        descriptors.put("apex", Optional.of(descriptor("apex", "1.0.0")));
+        descriptors.put("left", Optional.of(descriptor("left", "2.0.0", new PackDependency("apex", ">=1.0"))));
+        descriptors.put("right", Optional.of(descriptor("right", "3.0.0", new PackDependency("apex", ">=1.0"))));
+        descriptors.put(
+                "top",
+                Optional.of(descriptor(
+                        "top", "4.0.0", new PackDependency("left", ">=2.0"), new PackDependency("right", "<4.0"))));
+        List<ConfiguredPack> packs = List.of(
+                configured("top", PackLevel.ORG),
+                configured("right", PackLevel.ORG),
+                configured("left", PackLevel.ORG),
+                configured("apex", PackLevel.ORG));
+
+        List<OfferingReadService.OfferingEntry> entries =
+                service(packs).offering().value();
+
+        assertThat(entries)
+                .as("dependencies before dependents, apex once before left and right")
+                .extracting(entry -> entry.id().value())
+                .containsExactly("apex", "left", "right", "top");
+        assertThat(entries.getFirst().dependencies()).isEmpty();
+        assertThat(entries.stream().flatMap(entry -> entry.dependencies().stream()))
+                .extracting(ResolvedEdge::from, ResolvedEdge::to, ResolvedEdge::range, ResolvedEdge::version)
+                .containsExactly(
+                        tuple("left", "apex", ">=1.0", "1.0.0"),
+                        tuple("right", "apex", ">=1.0", "1.0.0"),
+                        tuple("top", "left", ">=2.0", "2.0.0"),
+                        tuple("top", "right", "<4.0", "3.0.0"));
+    }
+
+    // ---- the sibling refinement contest (FR-012) -----------------------------------------------------
+
+    @Test
+    void aSiblingRefinementConflictRefusesTheWholeOfferingNamingBothPacksAndTheArtifact() {
+        refined.put("left", List.of("directive:DIRECTIVE_009"));
+        refined.put("right", List.of("directive:DIRECTIVE_009"));
+        List<ConfiguredPack> packs = List.of(configured("left", PackLevel.ORG), configured("right", PackLevel.ORG));
+
+        assertThatThrownBy(() -> service(packs).offering()).isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+            assertThat(refused.code()).isEqualTo(RefusalCode.PACK_SIBLING_REFINEMENT_CONFLICT);
+            assertThat(refused.getMessage()).contains("left").contains("right").contains("directive:DIRECTIVE_009");
+        });
+    }
+
+    @Test
+    void aSettlingOverridesEdgeServesTheOffering() {
+        descriptors.put(
+                "left",
+                Optional.of(new PackDescriptor(
+                        "left",
+                        "1.0.4",
+                        Optional.empty(),
+                        "left pack",
+                        Optional.of(PackLevel.ORG),
+                        Optional.empty(),
+                        PackPaths.none(),
+                        List.of(),
+                        List.of(new PackOverride("directive:DIRECTIVE_009", "right")))));
+        refined.put("left", List.of("directive:DIRECTIVE_009"));
+        refined.put("right", List.of("directive:DIRECTIVE_009"));
+        List<ConfiguredPack> packs = List.of(configured("left", PackLevel.ORG), configured("right", PackLevel.ORG));
+
+        assertThat(service(packs).offering().value())
+                .extracting(entry -> entry.id().value())
+                .containsExactly("left", "right");
+    }
+
     @Test
     void inputsThatChangeWhileTheOfferingIsReadAreStale() {
         AtomicInteger count = new AtomicInteger();
@@ -167,6 +257,15 @@ class OfferingReadServiceTest {
         @Override
         public void save(PackIdentifier pack, PackDescriptor descriptor) {
             throw new UnsupportedOperationException("the offering never writes");
+        }
+    }
+
+    /** The refined artifacts by pack id; a pack with no graph documents refines none. */
+    private final class InMemoryRefinements implements PackRefinementRepository {
+
+        @Override
+        public List<String> refinedArtifacts(PackIdentifier pack) {
+            return refined.getOrDefault(pack.value(), List.of());
         }
     }
 }
