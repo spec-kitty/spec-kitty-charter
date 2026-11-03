@@ -36,7 +36,8 @@ runs.
 - **`implemented_by`** is worked out from a guard's own field, never authored. Nothing reads it yet: no graph or API
   consumer arrives before item 13, and until then no authored edge names a guard or a lifecycle.
 - **Load-time checks fail closed:** a guard's asset must be held and executable; its `config_schema` must compile
-  offline and may not use `$ref` or any other reference keyword; a lifecycle's guard entries must resolve and their `config` fit. A pack-qualified reference waits for the
+  offline, may not use `$ref` or any other reference keyword, and holds only patterns that run in linear time
+  (RE2 syntax: no backreference, no lookaround, which are refused); a lifecycle's guard entries must resolve and their `config` fit. A pack-qualified reference waits for the
   pack dependency closure. What does not close is left out with a `reference` violation.
 - **Rulings (operator, 2026-11-02):** six `builtin:` ids; ADR-0042 S4 admits `config_schema` and an entry's `config`;
   the event key is `event`, not `on`; `"*"` leaves out the target; action points wait for item 7; the changed-files

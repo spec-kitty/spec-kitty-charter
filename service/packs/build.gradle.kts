@@ -23,6 +23,8 @@ dependencies {
         exclude(group = "tools.jackson.dataformat", module = "jackson-dataformat-yaml")
         exclude(group = "org.slf4j", module = "slf4j-api")
     }
+    // re2j runs the patterns a pack writes into a config_schema in linear time (no backtracking).
+    implementation(catalog.lib("re2j"))
     implementation(catalog.lib("jackson-databind"))
     implementation(catalog.lib("slf4j-api"))
 

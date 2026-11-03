@@ -5,6 +5,7 @@ import com.networknt.schema.Error;
 import com.networknt.schema.Schema;
 import com.networknt.schema.SchemaLocation;
 import com.networknt.schema.SchemaRegistry;
+import com.networknt.schema.SchemaRegistryConfig;
 import com.networknt.schema.dialect.Dialect;
 import com.networknt.schema.dialect.Dialects;
 import com.networknt.schema.keyword.DisallowUnknownKeywordFactory;
@@ -19,7 +20,8 @@ import tools.jackson.databind.JsonNode;
  *
  * <p>An embedded schema is checked against the Draft 2020-12 metaschema, then compiled with the same strict dialect as
  * the bundled schemas (an unknown keyword is refused) in a registry of its own whose loader allows exactly the Draft
- * 2020-12 metaschema and vocabulary IRIs: a reference keyword ({@code $ref}, {@code $dynamicRef}, an anchor) anywhere in the schema refuses it instead. Problems are short
+ * 2020-12 metaschema and vocabulary IRIs, and with its patterns run by re2j in linear time (a pattern re2j cannot
+ * compile refuses the schema): a reference keyword ({@code $ref}, {@code $dynamicRef}, an anchor) anywhere in the schema refuses it instead. Problems are short
  * facts ({@code <keyword> at <location>}); the validator's localized message text is never read.
  */
 final class EmbeddedSchemas {
@@ -46,7 +48,10 @@ final class EmbeddedSchemas {
             Dialect.builder(Dialects.getDraft202012())
                     .unknownKeywordFactory(DisallowUnknownKeywordFactory.getInstance())
                     .build(),
-            builder -> builder.schemaLoader(loader -> loader.allow(iri -> METASCHEMA_IRIS.contains(iri.toString()))));
+            builder -> builder.schemaLoader(loader -> loader.allow(iri -> METASCHEMA_IRIS.contains(iri.toString())))
+                    .schemaRegistryConfig(SchemaRegistryConfig.builder()
+                            .regularExpressionFactory(Re2jRegularExpressionFactory.INSTANCE)
+                            .build()));
 
     private static final Schema METASCHEMA = REGISTRY.getSchema(SchemaLocation.of(DRAFT_2020_12));
 

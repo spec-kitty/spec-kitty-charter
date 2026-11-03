@@ -1,8 +1,10 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 import ai.speckitty.charter.kernel.domain.ConfigValue;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -42,10 +44,17 @@ class EmbeddedSchemasTest {
                 .allSatisfy(problem -> assertThat(problem).endsWith(" at /type"));
         assertThat(EmbeddedSchemas.schemaProblems(tree("{$schema: 'http://json-schema.org/draft-07/schema#'}")))
                 .containsExactly("$schema is not https://json-schema.org/draft/2020-12/schema");
-        assertThat(EmbeddedSchemas.schemaProblems(tree("{type: object, x-check: true}")))
-                .singleElement()
-                .asString()
-                .startsWith("it does not compile offline (an unknown keyword or a $ref outside the document): ");
+        // The linear-time engine has no backreference or lookaround: such a pattern is refused, never run on the JDK's.
+        for (String uncompilable : List.of(
+                "{type: object, x-check: true}",
+                "{properties: {a: {pattern: '(a)\\1'}}}",
+                "{patternProperties: {'^(?=a)': {type: string}}}")) {
+            assertThat(EmbeddedSchemas.schemaProblems(tree(uncompilable)))
+                    .as(uncompilable)
+                    .singleElement()
+                    .asString()
+                    .startsWith("it does not compile offline (an unknown keyword or a $ref outside the document): ");
+        }
         for (String reference : List.of(
                 "{$ref: 'https://example.com/evil.schema.json'}",
                 "{$ref: 'https://json-schema.org/draft/2020-12/not-a-vocabulary'}",
@@ -59,5 +68,18 @@ class EmbeddedSchemasTest {
                     .isNotEmpty()
                     .allSatisfy(problem -> assertThat(problem).startsWith("a reference keyword is not allowed"));
         }
+    }
+
+    @Test
+    @DisplayName("a pack-written pattern runs in linear time, and one the engine cannot run is refused (ReDoS)")
+    void aCatastrophicPatternIsEvaluatedInLinearTime() {
+        ConfigValue schema = tree("{type: object, properties: {a: {type: string, pattern: '^(.*a){12}$'}}}");
+        ConfigValue value = ConfigValue.of(Map.of("a", "a".repeat(40) + "!"));
+
+        assertThat(EmbeddedSchemas.schemaProblems(schema)).isEmpty();
+        assertTimeoutPreemptively(
+                Duration.ofSeconds(5),
+                () -> assertThat(EmbeddedSchemas.valueProblems(schema, Optional.of(value)))
+                        .containsExactly("pattern at /a"));
     }
 }
