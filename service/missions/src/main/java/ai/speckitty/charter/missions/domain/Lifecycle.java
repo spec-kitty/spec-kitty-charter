@@ -251,7 +251,8 @@ public final class Lifecycle implements CharterArtifact {
         for (LifecycleTransition t : transitions) {
             for (String source : sources(t)) {
                 List<String> key = new ArrayList<>(List.of(source, t.to()));
-                key.add(t.event().orElse(""));
+                // An absent event means next (ADR-0050 decision 8), so the two spellings are one transition.
+                key.add(t.event().orElse("next"));
                 if (!seen.add(key)) {
                     return false;
                 }

@@ -140,6 +140,14 @@ class LifecycleTest {
                 new LifecycleTransition(new TransitionSource.One("planned"), "doing", Optional.of("force"), List.of()));
 
         assertThat(wp.edgesFrom("planned")).hasSize(2);
+        assertRefused(
+                "A lifecycle declares each transition once",
+                () -> lifecycle(
+                        "planned",
+                        LANES,
+                        edge("planned", "doing"),
+                        new LifecycleTransition(
+                                new TransitionSource.One("planned"), "doing", Optional.of("next"), List.of())));
     }
 
     @Test
