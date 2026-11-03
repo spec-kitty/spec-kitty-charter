@@ -336,7 +336,7 @@ service it is the node of the `mission_type` artifact kind (DIV-501):
 | `impacts` (current state) | Directed and signed: the source artifact helps (positive) or hurts (negative) the target, with a strength from -1 to +1 (in core ADR `2026-07-26-3` a negative strength was a tension claim). It replaced `in_tension_with` in core ADR `2026-07-26-3`. Superseded as a relation by ADR-0028: `impacts` becomes an artifact's per-value list, and a tension is never an `impacts` edge: the service holds an `in_tension_with` edge as a tension ([ADR-0045](/adr/0045-tension-beside-the-relationships-and-nodes-keep-every-declared-field/)). |
 | `reconciles_tension` | Directional, from a reconciling artifact to one side of a tension pair. A pair is resolved only when an active artifact reconciles both sides. The pair is joined by a tension (ADR-0028); in today's pack files that tension is written `in_tension_with` (ADR-0045). |
 | `rejects` | Directional, from a good artifact to an `anti_pattern` node. |
-| `implemented_by` | Directional, from a guard to the executable asset that implements it ([ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/) decision 3). Derived from the guard's `implemented_by` field, never authored: a graph shard or a relationship registration that names it is refused. A built-in guard derives no edge. |
+| `implemented_by` | Directional, from a guard to the executable asset that implements it ([ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/) decision 3). Derived from the guard's `implemented_by` field (`Guard.relationships()`), never authored, and read by nothing until the contract set lands (work breakdown item 13): a graph shard or a relationship registration that names it is refused. A built-in guard derives no edge. |
 
 An edge endpoint is a URN `<kind>:<id>`, in shards and in fragments alike; a local reference
 is written as a URN too. A value that is not a URN is refused as `drg_schema_error` by the
@@ -530,7 +530,7 @@ runs it, evaluates its guards and sends its events. The charter service runs no 
 | Submachine state | none; the work-package lanes are hardcoded in core | a step's `submachine: {lifecycle, per: work_package}`, one instance per work package |
 | Transition | implicit: list order, step *i* to *i + 1* | `transitions: [{to, event?, guard?, on_transition?}]` (the key `event`, not `on`: ADR-0050 as amended); absent means "next in the list" |
 | Guard | blocking expected input and output artifacts | `guard: [{ref, config?, blocking?}]` naming guard artifacts backed by executable assets ([ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/)); blocking artifacts stay the built-in guard |
-| Triggering event | external: the runtime's `next` | `on`, a token the client interprets (`next` when absent) |
+| Triggering event | external: the runtime's `next` | `event`, a token the client interprets (`next` when absent) |
 | Global transitions | `on_demand_steps` | unchanged |
 | Actions | none | `on_enter`, `on_exit` (Moore) and `on_transition` (Mealy), each emitting events or, behind trust, running a pack asset |
 | Branches and back-edges | not modelled | explicit transitions |
