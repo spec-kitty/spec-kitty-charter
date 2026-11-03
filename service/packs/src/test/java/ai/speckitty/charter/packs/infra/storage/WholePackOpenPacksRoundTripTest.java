@@ -28,13 +28,14 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * The whole-pack seam over the real packs (#189, SC-002; #193 FR-010, NFR-001): every open-packs pack and every pack of
- * this repository's {@code packs/} that has a {@code pack.yaml} loads with exactly the violations pinned for it as
+ * The whole-pack seam over the real packs (#189, SC-002; #193 FR-010, NFR-001): every open-packs pack that has a
+ * {@code pack.yaml} loads with exactly the violations pinned for it as
  * known failures in {@code whole-pack/known-failures.yaml} (built-in only; none for every other pack), and every pack
  * that loads clean writes to a fresh directory and reloads with the same meaning: every bound kind, the asset files,
  * the templates, the presets, the pack document and every DRG document. The files are compared too: asset sidecars and
@@ -51,6 +52,12 @@ import org.junit.jupiter.api.io.TempDir;
  */
 @Tag("open-packs")
 class WholePackOpenPacksRoundTripTest {
+
+    /** Fail with the pin's own message rather than as a count or diff mismatch when the checkout is at another commit. */
+    @BeforeAll
+    static void theCheckoutIsAtThePin() {
+        OpenPacksCorpus.assertPinned();
+    }
 
     private static final String BUILT_IN = "built-in";
     private static final String SIDECAR_SUFFIX = ".asset.yaml";
@@ -261,8 +268,8 @@ class WholePackOpenPacksRoundTripTest {
     // ---- pinned counts -------------------------------------------------------------------------------------------
 
     /**
-     * Acceptance check 1: what the open packs hold of our kinds at the pin, and what this repository's packs hold
-     * counted from their own files. A pack with a {@code pack.yaml} is counted from its whole-pack load; the
+     * Acceptance check 1: what the open packs hold of our kinds at the pin. A pack with a {@code pack.yaml} is included
+     * from its whole-pack load; the
      * {@code qa} and {@code event-driven} packs have none, so no store loads them, and they are counted from the
      * {@link PackFileSet} listing any load reads. The internal pack's whole-pack load time is logged (NFR-004), not
      * asserted.

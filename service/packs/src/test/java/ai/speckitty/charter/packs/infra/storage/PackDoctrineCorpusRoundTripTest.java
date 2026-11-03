@@ -23,8 +23,9 @@ import org.junit.jupiter.api.Test;
  * must be positive, so an empty or moved corpus cannot pass vacuously. A file the reader refuses is collected and
  * fails the run rather than being skipped.
  *
- * <p>Runs under {@code :packs:openPacksRoundTrip} (tag {@code open-packs}), which supplies the checkout. The pin
- * itself is asserted by the corpus tests that call {@code assertPinned()}; fidelity does not depend on the exact commit.
+ * <p>Runs under {@code :packs:openPacksRoundTrip} (tag {@code open-packs}), which supplies the checkout. Other corpus
+ * tests in that task call {@code assertPinned()}, so the checkout is pinned; this class's fidelity does not depend on
+ * the exact commit.
  */
 @Tag("open-packs")
 class PackDoctrineCorpusRoundTripTest {
