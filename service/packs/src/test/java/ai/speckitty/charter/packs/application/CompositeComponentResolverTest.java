@@ -13,6 +13,7 @@ import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackPaths;
+import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ComponentResolver;
@@ -53,8 +54,8 @@ import org.junit.jupiter.api.Test;
  * in-scope component resolves empty too; the resolver never throws for an unresolvable kind.
  *
  * <p>The pack-qualified reference grammar (FR-013, FR-014, FR-015, FR-017) resolves through the same resolver against
- * the compose closure the offering already resolved: a qualified reference reads the pack it names, a bare reference
- * reads only the referring pack, and the two refusals name their packs.
+ * the compose closure the offering already resolved: a qualified reference is held by the pack it names, a bare reference
+ * is held only by the referring pack, and the two refusals name their packs.
  */
 class CompositeComponentResolverTest {
 
@@ -159,35 +160,24 @@ class CompositeComponentResolverTest {
     // ---- the pack-qualified reference grammar (FR-013, FR-014, FR-015, FR-017; SC-004's shared fixture) --------
 
     @Test
-    void aPackQualifiedReferenceResolvesThroughTheNamedPackOfTheClosure() {
-        Optional<CharterArtifact> resolved = twoPackResolver().resolveReference("bravo::directive:SHARED_1", PACK);
-
-        assertThat(resolved).isPresent();
-        assertThat(resolved.get().packId()).isEqualTo(PACK_B);
-        assertThat(resolved.get().localId()).isEqualTo("SHARED_1");
+    void aPackQualifiedReferenceIsHeldByTheNamedPackOfTheClosure() {
+        assertThat(holderOf(twoPackResolver(), "bravo::directive:SHARED_1")).isEqualTo(PACK_B);
     }
 
     @Test
-    void aPackQualifiedReferenceToTheReferringPackItselfResolves() {
+    void aPackQualifiedReferenceToTheReferringPackItselfIsHeldByIt() {
         // FR-013: the pack's own artifacts are reachable both bare and qualified.
-        Optional<CharterArtifact> resolved = twoPackResolver().resolveReference("alpha::directive:OWN_1", PACK);
-
-        assertThat(resolved).isPresent();
-        assertThat(resolved.get().packId()).isEqualTo(PACK);
-        assertThat(resolved.get().localId()).isEqualTo("OWN_1");
+        assertThat(holderOf(twoPackResolver(), "alpha::directive:OWN_1")).isEqualTo(PACK);
     }
 
     @Test
-    void aBareReferenceResolvesOnlyInsideTheReferringPack() {
-        Optional<CharterArtifact> resolved = twoPackResolver().resolveReference("directive:OWN_1", PACK);
-
-        assertThat(resolved).isPresent();
-        assertThat(resolved.get().packId()).isEqualTo(PACK);
+    void aBareReferenceIsHeldOnlyByTheReferringPack() {
+        assertThat(holderOf(twoPackResolver(), "directive:OWN_1")).isEqualTo(PACK);
     }
 
     @Test
-    void aBareReferenceThatResolvesOnlyInAnotherPackIsRefusedNamingTheHoldingPack() {
-        assertThatThrownBy(() -> twoPackResolver().resolveReference("directive:SHARED_1", PACK))
+    void aBareReferenceThatIsHeldOnlyByAnotherPackIsRefusedNamingTheHoldingPack() {
+        assertThatThrownBy(() -> holderOf(twoPackResolver(), "directive:SHARED_1"))
                 .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
                     assertThat(refused.code()).isEqualTo(RefusalCode.PACK_REFERENCE_UNQUALIFIED);
                     assertThat(refused.getMessage()).contains("bravo").contains("pack-qualified");
@@ -197,7 +187,7 @@ class CompositeComponentResolverTest {
     @Test
     void aBareReferenceToAKindNoReadPathServesIsRefusedWhenOnlyAnotherPackHoldsIt() {
         // The held list answers for every kind, so a procedure held only by bravo is not failed open.
-        assertThatThrownBy(() -> twoPackResolver().resolveReference("procedure:release", PACK))
+        assertThatThrownBy(() -> holderOf(twoPackResolver(), "procedure:release"))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refused -> assertThat(refused.code()).isEqualTo(RefusalCode.PACK_REFERENCE_UNQUALIFIED));
@@ -207,7 +197,7 @@ class CompositeComponentResolverTest {
     void aQualifiedReferenceToAPackOutsideTheClosureIsRefusedNamingTheMissingPack() {
         // The id exists in the referring pack, yet a name the closure does not hold is FR-017's refusal, never a
         // fallback to the referring pack.
-        assertThatThrownBy(() -> twoPackResolver().resolveReference("charlie::directive:OWN_1", PACK))
+        assertThatThrownBy(() -> holderOf(twoPackResolver(), "charlie::directive:OWN_1"))
                 .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
                     assertThat(refused.code()).isEqualTo(RefusalCode.PACK_REFERENCE_PACK_MISSING);
                     assertThat(refused.getMessage()).contains("charlie").contains("holds no pack");
@@ -215,20 +205,26 @@ class CompositeComponentResolverTest {
     }
 
     @Test
-    void aBareReferenceReadsTheReferringPacksArtifactWhenAnotherPackHoldsTheSameIdAndTheQualifiedOneReadsTheOther() {
+    void aBareReferenceIsHeldByTheReferringPackWhenAnotherPackHoldsTheSameIdAndTheQualifiedOneByTheOther() {
         // FR-014: alpha writes directive:SHARE bare, and bravo holds one too. Alpha's own shadows it, with no refusal.
         CompositeComponentResolver.Composed shadowing = shadowingResolver();
 
-        assertThat(shadowing.resolveReference("directive:SHARE", PACK))
-                .hasValueSatisfying(found -> assertThat(found.packId()).isEqualTo(PACK));
-        assertThat(shadowing.resolveReference("bravo::directive:SHARE", PACK))
-                .hasValueSatisfying(found -> assertThat(found.packId()).isEqualTo(PACK_B));
+        assertThat(holderOf(shadowing, "directive:SHARE")).isEqualTo(PACK);
+        assertThat(holderOf(shadowing, "bravo::directive:SHARE")).isEqualTo(PACK_B);
     }
 
     @Test
-    void aBareReferenceThatResolvesNowhereKeepsTheEmptyAnswerOfTheWalk() {
-        assertThat(twoPackResolver().resolveReference("directive:NOWHERE", PACK))
+    void aBareReferenceHeldByNoPackHasNoHolder() {
+        assertThat(twoPackResolver().holder(PackQualifiedReference.parse("directive:NOWHERE"), PACK))
                 .isEmpty();
+    }
+
+    /** The pack of the compose that holds what the reference names, from alpha's perspective. */
+    private static PackIdentifier holderOf(CompositeComponentResolver.Composed composed, String reference) {
+        return composed.holder(PackQualifiedReference.parse(reference), PACK)
+                .orElseThrow()
+                .configured()
+                .id();
     }
 
     private void assertResolvesTo(Urn urn, ArtifactKind kind, String localId) {
