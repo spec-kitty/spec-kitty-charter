@@ -254,7 +254,12 @@ class PackSchemasTest {
         String qualifier = "(" + grammar.substring(1, grammar.length() - 1) + "::)?";
         Path schema = Path.of("..", "..", "contracts", "charter", "schemas", "PackQualifiedReference.yaml");
 
-        assertThat(Files.readString(schema)).contains("pattern: '^" + qualifier + "[a-z_]+:.+$'");
+        Object parsed = Yaml.load(Files.readString(schema));
+
+        assertThat(parsed).isInstanceOf(Map.class);
+        assertThat(((Map<?, ?>) parsed).get("pattern"))
+                .as("the schema's parsed pattern value, whatever the YAML quoting")
+                .isEqualTo("^" + qualifier + "[a-z_]+:.+$");
     }
 
     @Test

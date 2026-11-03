@@ -14,6 +14,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
+import ai.speckitty.charter.packs.domain.DirectiveReference;
 import ai.speckitty.charter.packs.domain.DirectiveRepository;
 import ai.speckitty.charter.packs.domain.Enforcement;
 import ai.speckitty.charter.packs.domain.Guide;
@@ -453,20 +454,39 @@ class ArtifactReadServiceTest {
     // ---- the pack-qualified reference grammar (FR-013, FR-014, FR-015, FR-017; SC-004's shared fixture) --------
 
     @Test
-    void theReferencesReadResolvesTheComposeOnceAndRefusesAnUnknownKindAfterThePack() {
+    void theReferencesReadResolvesEachReferenceAgainstTheComposeItResolvedOnce() {
         AtomicInteger counted = new AtomicInteger();
         ArtifactReadService counting = referenceFixture(() -> {
             counted.incrementAndGet();
             return D1;
         });
 
-        assertThat(counting.references(PACK, "directive", "OWN_1").value()).isEmpty();
-        // The outer read digests twice and the referrer's own verified read twice more; the compose adds none.
+        List<ArtifactReadService.Reference> references =
+                counting.references(PACK, "directive", "OWN_1").value();
+
+        assertThat(references).hasSize(2);
+        assertThat(references)
+                .extracting(reference -> reference.written().toString())
+                .containsExactly("bravo::directive:SHARED_1", "directive:OWN_2");
+        assertThat(references)
+                .extracting(reference ->
+                        reference.holder().orElseThrow().descriptor().name())
+                .as("the qualified reference is held by the pack it names, the bare one by the referring pack")
+                .containsExactly("bravo", "alpha");
+        // The outer read digests twice and the referrer's own verified read twice more; neither the compose nor the
+        // two references resolved against it add any.
         assertThat(counted).hasValue(4);
+    }
+
+    @Test
+    void theReferencesReadRefusesAnUnknownKindAfterThePack() {
+        ArtifactReadService counting = referenceFixture(() -> D1);
+
         assertThatThrownBy(() -> counting.references(PACK, "procedure", "x"))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refused -> assertThat(refused.code()).isEqualTo(RefusalCode.KIND_NOT_FOUND));
+        assertThat(codeOf(() -> counting.references(ABSENT, "procedure", "x"))).isEqualTo(RefusalCode.PACK_NOT_FOUND);
     }
 
     @Test
@@ -517,7 +537,8 @@ class ArtifactReadServiceTest {
 
     /**
      * The shared two-pack fixture of the grammar (SC-004), over the given digest: {@code pack-a} is alpha and holds
-     * directive {@code OWN_1}, {@code pack-b} is bravo and holds directive {@code SHARED_1}, and the two form one
+     * directives {@code OWN_1} and {@code OWN_2} ({@code OWN_1} writes one qualified reference, to bravo's
+     * {@code SHARED_1}, and one bare, to {@code OWN_2}), {@code pack-b} is bravo and holds directive {@code SHARED_1}, and the two form one
      * compose closure — nothing else is configured, so the closure is exactly the two of them.
      */
     private ArtifactReadService referenceFixture(PackSources sources) {
@@ -527,7 +548,13 @@ class ArtifactReadServiceTest {
                 Pack.builder()
                         .id(PACK)
                         .descriptor(descriptorNamed(PACK, "alpha", SIBLING))
-                        .directive(directiveIn(PACK, "OWN_1"))
+                        .directive(directiveBuilderIn(PACK, "OWN_1")
+                                .reference(new DirectiveReference(
+                                        "directive", "bravo::SHARED_1", Optional.empty(), Optional.empty()))
+                                .reference(new DirectiveReference(
+                                        "directive", "OWN_2", Optional.empty(), Optional.empty()))
+                                .build())
+                        .directive(directiveIn(PACK, "OWN_2"))
                         .build());
         stored.put(
                 SIBLING,
@@ -540,14 +567,17 @@ class ArtifactReadServiceTest {
     }
 
     private static Directive directiveIn(PackIdentifier pack, String id) {
+        return directiveBuilderIn(pack, id).build();
+    }
+
+    private static Directive.Builder directiveBuilderIn(PackIdentifier pack, String id) {
         return Directive.builder()
                 .id(new DirectiveIdentifier(id))
                 .packId(pack)
                 .schemaVersion("1.0")
                 .title("Title of " + id)
                 .intent("Intent of " + id)
-                .enforcement(Enforcement.REQUIRED)
-                .build();
+                .enforcement(Enforcement.REQUIRED);
     }
 
     private static Tactic tactic(String id, String name) {
