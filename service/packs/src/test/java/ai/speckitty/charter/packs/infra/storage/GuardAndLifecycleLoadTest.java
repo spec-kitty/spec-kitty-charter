@@ -370,7 +370,8 @@ class GuardAndLifecycleLoadTest {
     }
 
     @Test
-    @DisplayName("an executable's entry names any payload of its pack; one the pack does not hold drops the asset")
+    @DisplayName(
+            "an executable's entry names any payload of its pack; one the pack does not hold, or a sidecar, drops the asset")
     void anEntryNamesAPayloadThePackHolds() throws IOException {
         Path another = pack();
         edit(another, ASSET, text -> text.replace("  entry: carrier_lint.py\n", "  entry: notes.txt\n"));
@@ -379,6 +380,10 @@ class GuardAndLifecycleLoadTest {
         Path missing = PackFixtures.copyOf(PACK, Files.createTempDirectory(host, "missing"));
         edit(missing, ASSET, text -> text.replace("  entry: carrier_lint.py\n", "  entry: other.py\n"));
         assertDroppedWithItsGuard(load(missing), "reference", "is not a payload file the pack holds");
+
+        Path sidecar = PackFixtures.copyOf(PACK, Files.createTempDirectory(host, "sidecar"));
+        edit(sidecar, ASSET, text -> text.replace("  entry: carrier_lint.py\n", "  entry: notes.txt.asset.yaml\n"));
+        assertDroppedWithItsGuard(load(sidecar), "reference", "is not a payload file the pack holds");
     }
 
     @Test
