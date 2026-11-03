@@ -32,6 +32,9 @@ How to build the charter service and run every check CI runs.
   `86d9284695a18a71f9f7cc934f0305b1b03de19e`); the build refuses otherwise, and prints the
   command that fixes it (a `git fetch` and `git checkout` of the pinned commit, after you
   stash or clean the checkout).
+- **The synced packs**, once per worktree: `./gradlew syncPacks`. `packs/internal` and `packs/qa` are not
+  committed; they are copied from that open-packs checkout at the pin and checked against
+  `packs/open-packs.lock.yaml`. See [Syncing the packs](#syncing-the-packs).
 - **The full Git history and tags.** The breaking-change check compares the contract with its
   last released version (see [the released baseline](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/lint/README.md#the-released-baseline)) and refuses a shallow clone. In a clone
   you cannot deepen, pass `-PcontractBaseline=none` to skip that one check on purpose; CI
@@ -64,7 +67,7 @@ How to build the charter service and run every check CI runs.
 | `:<module>:javadoc` | Javadoc of main sources with doclint on and warnings as errors |
 | `:<module>:test`, `jacocoTestReport` | Unit tests of each module, and its coverage report |
 | `:bootstrap:test` | The ArchUnit rules (dependency direction, a plain-Java core, `@NullMarked` packages) and every `@contract` scenario in `contracts/charter/scenarios/` |
-| `:packs:openPacksRoundTrip` | The corpus checks over the pinned open-packs checkout: every directive, styleguide and paradigm file reads back equal after a write, and the vendored packs in `packs/` equal the pin. It fails, never skips, without a checkout |
+| `:packs:openPacksRoundTrip` | The corpus checks over the pinned open-packs checkout: every directive, styleguide and paradigm file reads back equal after a write, and the pinned `internal` and `qa` packs are read as they are synced here. It fails, never skips, without a checkout |
 | `:charter-reports:aggregateJavadoc` | One Javadoc site over the three hand-written service modules, doclint as errors ([Java API reference](/api/javadoc/)) |
 | `:charter-reports:testCodeCoverageReport` | One JaCoCo report over the same modules |
 
@@ -97,6 +100,32 @@ exactly the planted files, stay in `:packs:test` (`PackFileSetExactnessTest`). A
 CPU-time budget is tagged `timing`. A hang cap (`@Timeout`) and a deadline check, which proves a guard cuts work off
 within a bound far above the work's own time, are not budgets and need no tag
 ([#320](https://github.com/spec-kitty/spec-kitty-charter/issues/320) tracks the tight ones).
+
+## Syncing the packs
+
+This repository does not commit copies of open-packs content, so they cannot drift. The packs that the repository's own
+Spec Kitty governance uses (`.kittify/config.yaml` lists `packs/internal` and `packs/qa`) are synced:
+
+```bash
+git clone https://github.com/spec-kitty/spec-kitty-open-packs.git ../spec-kitty-open-packs   # once
+./gradlew syncPacks                           # once per worktree; sync, then verify
+./gradlew syncPacks -PcheckPacks=true         # verify the synced trees only
+./gradlew syncPacks -PopenPacksDir=<path>     # another checkout, absolute or relative to the repository root
+```
+
+`syncPacks` runs `scripts/packs/sync_packs.py`, which also runs as a bare `python3 scripts/packs/sync_packs.py`. It reads
+`packs/internal` and `packs/qa` at `openPacksRef` with `git archive`, never from the checkout's working tree, so a dirty
+checkout cannot leak in. It then compares each tree's digest with `packs/open-packs.lock.yaml`, whose header defines the
+algorithm. A mismatch fails and leaves the synced trees as they were. The tests read the open-packs checkout directly
+and need no synced copy; CI runs the sync to guard the lockfile.
+
+Bumping the pin is one commit:
+
+1. Change `openPacksRef` in `gradle.properties`.
+2. Run `./gradlew syncPacks -PupdatePacksLock=true`, which syncs and rewrites the lockfile's commit and digests.
+3. Run `./gradlew verifyAll`. Never weaken an expectation to make a bump green.
+
+Neither `packs/internal` nor `packs/qa` is edited here; a change goes to spec-kitty-open-packs and arrives with a pin bump.
 
 ## The whole-pack round-trip gate
 
