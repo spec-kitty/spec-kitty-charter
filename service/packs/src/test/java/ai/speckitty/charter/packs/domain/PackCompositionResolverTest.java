@@ -336,6 +336,54 @@ class PackCompositionResolverTest {
                 .hasMessageContaining("overrides");
     }
 
+    private static PackUnderResolution defining(String id, String name, PackLevel level, String artifact) {
+        return new PackUnderResolution(
+                new ConfiguredPack(new PackIdentifier(id), level),
+                new PackDescriptor(id, "1.0.0", Optional.empty(), name, Optional.of(level), Optional.empty()),
+                List.of(),
+                List.of(artifact));
+    }
+
+    @Test
+    void twoSiblingsDefiningOneArtifactAreRefusedNamingBothPacksAndTheArtifact() {
+        PackUnderResolution left = defining("01LEFT", "left", PackLevel.ORG, "directive:DIRECTIVE_009");
+        PackUnderResolution right = defining("01RIGHT", "right", PackLevel.ORG, "directive:DIRECTIVE_009");
+
+        assertThatThrownBy(() -> PackCompositionResolver.resolve(List.of(right, left)))
+                .isInstanceOfSatisfying(PackCompositionResolver.Refusal.class, refusal -> {
+                    assertThat(refusal.failure()).isEqualTo(Failure.SIBLING_CONFLICT);
+                    assertThat(refusal.packId()).isEqualTo("01RIGHT");
+                    assertThat(refusal.detail())
+                            .contains("01LEFT", "01RIGHT", "both define the artifact directive:DIRECTIVE_009");
+                });
+    }
+
+    @Test
+    void packsAtDifferentLevelsDefiningOneArtifactComposeAsALayerOverrideAndAnOverridesEdgeSettlesSiblings() {
+        PackUnderResolution org = defining("01ORGP", "org-pack", PackLevel.ORG, "directive:DIRECTIVE_009");
+        PackUnderResolution project = defining("01PROJ", "project-pack", PackLevel.PROJECT, "directive:DIRECTIVE_009");
+        PackUnderResolution sibling = defining("01SIBL", "sibling", PackLevel.ORG, "directive:DIRECTIVE_009");
+        // The settling edge is written pack-qualified, the definitions bare: both name the one artifact.
+        PackUnderResolution settler =
+                settling("01SETL", "settler", "1.0.0", PackLevel.ORG, "org-pack::directive:DIRECTIVE_009", "01ORGP");
+
+        assertThat(ids(PackCompositionResolver.resolve(List.of(project, org)))).containsExactly("01ORGP", "01PROJ");
+        assertThat(ids(PackCompositionResolver.resolve(List.of(sibling, org, settler))))
+                .containsExactly("01ORGP", "01SETL", "01SIBL");
+    }
+
+    @Test
+    void aQualifierDoesNotMakeTwoWritingsOfOneArtifactTwoContests() {
+        PackUnderResolution bare = refining("01LEFT", "left", "1.0.0", PackLevel.ORG, "directive:DIRECTIVE_009");
+        PackUnderResolution qualified =
+                refining("01RIGHT", "right", "1.0.0", PackLevel.ORG, "base::directive:DIRECTIVE_009");
+
+        assertThatThrownBy(() -> PackCompositionResolver.resolve(List.of(bare, qualified)))
+                .isInstanceOfSatisfying(
+                        PackCompositionResolver.Refusal.class,
+                        refusal -> assertThat(refusal.failure()).isEqualTo(Failure.SIBLING_CONFLICT));
+    }
+
     @Test
     void aSettlingOverridesEdgeResolvesTheContestInOrder() {
         PackUnderResolution left = refining("01LEFT", "left", "1.0.0", PackLevel.ORG, "directive:DIRECTIVE_009");

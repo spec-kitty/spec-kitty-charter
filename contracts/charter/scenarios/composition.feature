@@ -637,6 +637,88 @@ Feature: The compose resolves the configured packs' dependency graph
     And the field at "/packs/1/packId" is "right"
     And the field at "/packs/2/packId" is "settler"
 
+  Scenario: Two siblings defining one artifact, unsettled, refuse the compose
+    Two packs at one configured level that both hold the directive SHARE contest it (ruling 13): the
+    compose is refused, naming both packs and the artifact, as for two siblings changing one artifact.
+    Given the org pack "left" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: left-pack
+      pack_level: org
+      """
+    And the org pack "left" with the file "directives/SHARE.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: SHARE
+      title: Share the load
+      intent: Share it
+      enforcement: required
+      """
+    And the org pack "right" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+      pack_version: 1.0.0
+      parent_pack: null
+      name: right-pack
+      pack_level: org
+      """
+    And the org pack "right" with the file "directives/SHARE.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: SHARE
+      title: Share the load
+      intent: Share it
+      enforcement: required
+      """
+    When I GET "/offering"
+    Then the response status is 409
+    And the problem code is "pack_sibling_refinement_conflict"
+    And the field "detail" of the response body is "packs 01M4P01D5TWB5FKZGNNQG3943R and 01M4P01D5TWB5FKZGNNQG3943S at org both define the artifact directive:SHARE, and no pack of the compose declares an overrides edge settling it"
+    And the response has no "Charter-Source-Fingerprint" header
+
+  Scenario: An org pack and a project pack defining one artifact compose as a layer override
+    The negative control of the duplicate-definition refusal: the same directive held at two
+    different levels is the layer override of ADR-0048 decision 6, not a contest. Both packs are
+    served, the org pack first.
+    Given the org pack "house" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: house-pack
+      pack_level: org
+      """
+    And the org pack "house" with the file "directives/SHARE.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: SHARE
+      title: Share the load
+      intent: Share it
+      enforcement: required
+      """
+    And the project pack "team" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+      pack_version: 1.0.0
+      parent_pack: null
+      name: team-pack
+      pack_level: project
+      """
+    And the project pack "team" with the file "directives/SHARE.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: SHARE
+      title: Share the load
+      intent: Share it
+      enforcement: required
+      """
+    When I GET "/offering"
+    Then the response status is 200
+    And the field at "/packs/0/packId" is "house"
+    And the field at "/packs/1/packId" is "team"
+
   # Deferred to #360: roots come from the activation set (operator ruling 2026-11-03).
   @WIP
   Scenario: The compose is the closure of the activated packs, not every available pack
