@@ -453,35 +453,6 @@ class ArtifactReadServiceTest {
     // ---- the pack-qualified reference grammar (FR-013, FR-014, FR-015, FR-017; SC-004's shared fixture) --------
 
     @Test
-    void aPackQualifiedReferenceReadsTheArtifactOfTheNamedPack() {
-        ConsistentRead.Verified<ArtifactReadService.Item> read =
-                referenceFixture(() -> D1).referenced(PACK, "bravo::directive:SHARED_1");
-
-        assertThat(read.value()).isInstanceOf(ArtifactReadService.Item.OfDirective.class);
-        assertThat(read.value().artifact().localId()).isEqualTo("SHARED_1");
-        assertThat(read.value().artifact().packId()).isEqualTo(SIBLING);
-        assertThat(read.value().revision()).isPresent();
-        assertThat(read.fingerprint()).isEqualTo(D1);
-    }
-
-    /** The resolution of a reference is covered by CompositeComponentResolverTest; this is the read's own contract. */
-    @Test
-    void aReferenceReadResolvesTheComposeOnceNotOncePerHop() {
-        AtomicInteger counted = new AtomicInteger();
-        ArtifactReadService counting = referenceFixture(() -> {
-            counted.incrementAndGet();
-            return D1;
-        });
-
-        counting.referenced(PACK, "bravo::directive:SHARED_1");
-
-        // The outer read digests twice, the kind's read that resolves the reference twice more, and the kind's read
-        // that
-        // serves it twice again; a compose verified on its own would add two more for every reference it resolves.
-        assertThat(counted).hasValue(6);
-    }
-
-    @Test
     void theReferencesReadResolvesTheComposeOnceAndRefusesAnUnknownKindAfterThePack() {
         AtomicInteger counted = new AtomicInteger();
         ArtifactReadService counting = referenceFixture(() -> {
@@ -499,32 +470,11 @@ class ArtifactReadServiceTest {
     }
 
     @Test
-    void aReferenceOutsideTheGrammarIsARefusalAndNeverAFault() {
-        for (String malformed : List.of("::directive:SHARED_1", "Bad Pack::directive:SHARED_1", "a::b::directive:x")) {
-            assertThatThrownBy(() -> referenceFixture(() -> D1).referenced(PACK, malformed))
-                    .as(malformed)
-                    .isInstanceOfSatisfying(
-                            CharterRefusal.class,
-                            refused -> assertThat(refused.code()).isEqualTo(RefusalCode.VALIDATION_FAILED));
-        }
-    }
-
-    @Test
-    void aReferenceThatResolvesToNoArtifactIsTheNotFoundOfItsKind() {
-        // FR-015's code is the "it exists, but not here" case: a bare id that resolves nowhere keeps the kind's
-        // not-found, exactly as an unknown id of the item read does.
-        assertThatThrownBy(() -> referenceFixture(() -> D1).referenced(PACK, "directive:NOWHERE"))
-                .isInstanceOfSatisfying(
-                        CharterRefusal.class,
-                        refused -> assertThat(refused.code()).isEqualTo(RefusalCode.DIRECTIVE_NOT_FOUND));
-    }
-
-    @Test
-    void aReferenceWhoseInputsChangeWhileItIsReadIsStale() {
+    void theReferencesOfAnArtifactWhoseInputsChangeWhileTheyAreReadAreStale() {
         AtomicInteger digests = new AtomicInteger();
         ArtifactReadService changing = referenceFixture(() -> digests.incrementAndGet() == 1 ? D1 : D2);
 
-        assertThatThrownBy(() -> changing.referenced(PACK, "bravo::directive:SHARED_1"))
+        assertThatThrownBy(() -> changing.references(PACK, "directive", "OWN_1"))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refused -> assertThat(refused.code()).isEqualTo(RefusalCode.STALE_INPUT));

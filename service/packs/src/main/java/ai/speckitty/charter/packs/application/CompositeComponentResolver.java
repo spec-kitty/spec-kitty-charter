@@ -37,10 +37,10 @@ import org.springframework.stereotype.Service;
  * {@link #forPack(PackIdentifier)} yields the pack-scoped {@link ComponentResolver} the application-layer walk driver
  * consumes. This service is component-scanned; the composition root needs no {@code @Bean}.
  *
- * <p>Besides the in-pack URNs, it resolves a reference as an artifact writes it — bare or pack-qualified — against a
- * compose closure the caller resolved once for its read ({@link #over(List)}). The two graphs stay unmerged
- * (research): the pack composition is handed in read-only, and the component resolution still goes through the
- * per-kind read services alone.
+ * <p>Besides the in-pack URNs, it names the pack that holds a reference as an artifact writes it — bare or
+ * pack-qualified — against a compose closure the caller resolved once for its read ({@link #over(List)}). The two
+ * graphs stay unmerged (research): the pack composition is handed in read-only, and the component resolution still
+ * goes through the per-kind read services alone.
  */
 @Service
 public final class CompositeComponentResolver {
@@ -98,7 +98,7 @@ public final class CompositeComponentResolver {
         return new Composed(List.copyOf(Objects.requireNonNull(closure, "closure")));
     }
 
-    /** The compose a read resolved once: the pack a name stands for, a resolver per pack, and references. */
+    /** The compose a read resolved once: the pack a name stands for, a resolver per pack, and the holder of a reference. */
     public final class Composed implements ComposeResolver {
 
         private final List<PackCompositionResolver.PackUnderResolution> closure;
@@ -121,50 +121,23 @@ public final class CompositeComponentResolver {
         }
 
         /**
-         * Resolves one reference as an artifact writes it — bare ({@code <urn>}), a reference inside the referring
-         * pack, or pack-qualified ({@code <pack-name>::<urn>}), which names the pack it relies on (FR-013, FR-014,
-         * FR-015, FR-017). The reference resolves to {@code (holding pack, bare URN)}: a qualified reference names a
-         * pack of the compose, and its URN part resolves inside that pack through the same per-kind dispatch an in-pack
-         * neighbour takes — the referring pack's own artifacts are reachable both bare and qualified. A name the
-         * compose does not hold is refused {@link RefusalCode#PACK_REFERENCE_PACK_MISSING}, naming the missing pack,
-         * and never falls back to the referring pack. A bare reference resolves only inside the referring pack; when
-         * its id resolves only in another pack of the compose, that accidental coupling is refused
-         * {@link RefusalCode#PACK_REFERENCE_UNQUALIFIED}, naming the holding pack, so it cannot resolve by load order.
-         * A bare id that resolves nowhere keeps the empty answer an absent in-scope component always gets.
+         * The pack of the compose that holds what a reference names, as an artifact writes it (FR-013, FR-014, FR-015,
+         * FR-017): the one owner of "which pack does this reference mean". A qualified reference is held by the pack
+         * it names; a name the compose does not hold is refused {@link RefusalCode#PACK_REFERENCE_PACK_MISSING}, naming
+         * the missing pack, and never falls back to the referring pack. A bare one is held by the referring pack when
+         * it holds the artifact, which shadows a same-named artifact of another pack (FR-014); when only another pack
+         * holds it the reference is refused {@link RefusalCode#PACK_REFERENCE_UNQUALIFIED}, naming the holding pack, so
+         * it cannot resolve by load order. When no pack holds it nothing holds it.
          *
          * <p>Both verdicts are the compose resolver's: {@link PackCompositionResolver#checkReferences} refuses, so the
-         * reference codes travel the same path the other compose refusals travel. A token no known kind holds resolves
-         * empty, exactly as a bare neighbour of an unwired kind does (research Decision 6).
-         *
-         * @param reference the reference as the artifact writes it, for example
-         *     {@code foundation::directive:DIRECTIVE_001}
-         * @param referringPack the pack whose artifact writes the reference; a bare reference resolves only inside it
-         * @return the referenced component when its kind is in scope and the pack it names holds it; empty when it
-         *     resolves nowhere in the compose
-         * @throws IllegalArgumentException when the reference is outside the grammar (a malformed qualified form)
-         * @throws CharterRefusal with {@link RefusalCode#PACK_REFERENCE_PACK_MISSING} when a qualified reference names
-         *     a pack outside the compose, or with {@link RefusalCode#PACK_REFERENCE_UNQUALIFIED} when a bare reference
-         *     resolves only in another pack of the compose
-         */
-        public Optional<CharterArtifact> resolveReference(String reference, PackIdentifier referringPack) {
-            Objects.requireNonNull(reference, "reference");
-            PackQualifiedReference parsed = PackQualifiedReference.parse(reference);
-            return holder(parsed, referringPack)
-                    .flatMap(held -> resolve(held.configured().id(), parsed.urn()));
-        }
-
-        /**
-         * The pack of the compose that holds what a reference names, by the rules of
-         * {@link #resolveReference(String, PackIdentifier)}: the one owner of "which pack does this reference mean".
-         * A qualified reference is held by the pack it names. A bare one is held by the referring pack when it holds
-         * the artifact, which shadows a same-named artifact of another pack (FR-014); when only another pack holds it
-         * the reference is refused {@link RefusalCode#PACK_REFERENCE_UNQUALIFIED}, and when no pack holds it nothing
-         * holds it.
+         * reference codes travel the same path the other compose refusals travel.
          *
          * @param parsed the reference as the artifact writes it
          * @param referringPack the pack whose artifact writes it
          * @return the holding pack; empty when no pack of the compose holds what a bare reference names
-         * @throws CharterRefusal as {@link #resolveReference(String, PackIdentifier)} refuses
+         * @throws CharterRefusal with {@link RefusalCode#PACK_REFERENCE_PACK_MISSING} when a qualified reference names
+         *     a pack outside the compose, or with {@link RefusalCode#PACK_REFERENCE_UNQUALIFIED} when a bare reference
+         *     resolves only in another pack of the compose
          */
         public Optional<PackCompositionResolver.PackUnderResolution> holder(
                 PackQualifiedReference parsed, PackIdentifier referringPack) {
@@ -197,15 +170,6 @@ public final class CompositeComponentResolver {
             }
             return Optional.empty();
         }
-    }
-
-    /**
-     * Resolves the URN part of a reference inside one pack. The URN is opaque to the reference grammar (C-005): it
-     * reaches the existing {@link Urn} machinery verbatim, and a token no known kind holds resolves empty, exactly as
-     * a bare neighbour of an unwired kind does (research Decision 6).
-     */
-    private Optional<CharterArtifact> resolve(PackIdentifier pack, String urn) {
-        return Urn.parse(urn).flatMap(target -> resolve(pack, target));
     }
 
     /** The closure check of the compose resolver, its refusal mapped to the reference code the contract serves. */
