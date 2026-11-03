@@ -43,7 +43,9 @@ transitions:
     blocking: true
 - from: '*'
   to: canceled
+  event: cancel
 - from:
   - planned
   - in_progress
   to: blocked
+  event: block

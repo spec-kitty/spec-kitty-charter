@@ -605,7 +605,8 @@ these are resources, used rather than followed.
   (`lifecycles/<id>.lifecycle.yaml`, ADR-0050 decision 17) declares `initial`, `states` and `transitions`; a
   transition's `from` is one state, a list, or `*` (every non-terminal state other than the target), and its
   `guard` entries `{ref, config?, blocking?}` must name guards that resolve, each `config` fitting its guard's
-  `config_schema`. Both are in force with their pack and are not activatable. What does not close is left out of
+  `config_schema`. A lifecycle needs a terminal state, every state reachable from `initial`, and no two targets for
+  one state and event (an absent event is `next`). Both are in force with their pack and are not activatable. What does not close is left out of
   the pack with a `reference` violation, failing closed.
 - A **template** under a pack's top-level `templates/` is an artifact whose id is its path under
   that directory (`templates/writing/meeting-minutes.md` is
