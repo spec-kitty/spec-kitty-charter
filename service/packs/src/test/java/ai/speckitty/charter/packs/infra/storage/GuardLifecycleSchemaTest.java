@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.infra.storage;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.packs.domain.BuiltinGuard;
+import ai.speckitty.charter.packs.domain.Executable;
 import ai.speckitty.charter.packs.domain.ExecutableRuntime;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import java.util.Arrays;
@@ -241,7 +242,7 @@ class GuardLifecycleSchemaTest {
 
     @Test
     @DisplayName("the schema's builtin: list is exactly the domain's closed list, and its runtimes the allowlist")
-    void theClosedListsAreTheDomains() {
+    void theClosedListsAreTheDomains() throws ReflectiveOperationException {
         JsonNode guard = bundled("guard");
         Matcher builtins = Pattern.compile("builtin:\\(([a-z|-]+)\\)")
                 .matcher(guard.get("properties")
@@ -264,6 +265,20 @@ class GuardLifecycleSchemaTest {
                 .containsExactlyElementsOf(Arrays.stream(ExecutableRuntime.values())
                         .map(ExecutableRuntime::token)
                         .toList());
+        // The domain's copies of the entry and min_version patterns are the schema's, anchored.
+        for (String[] copy : new String[][] {{"VERSION", "min_version"}, {"RELATIVE_PATH", "entry"}}) {
+            var field = Executable.class.getDeclaredField(copy[0]);
+            field.setAccessible(true);
+            assertThat(bundled("asset")
+                            .get("$defs")
+                            .get("Executable")
+                            .get("properties")
+                            .get(copy[1])
+                            .get("pattern")
+                            .asString())
+                    .as(copy[1])
+                    .isEqualTo("^" + ((Pattern) field.get(null)).pattern() + "$");
+        }
     }
 
     @Test
