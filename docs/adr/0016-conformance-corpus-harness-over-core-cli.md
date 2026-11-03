@@ -2,7 +2,7 @@
 title: "ADR-0016: The conformance corpus is a harness over core's CLI, on open-packs and fixture projects"
 description: Corpus inputs come from open-packs and small fixture projects; expected answers come from core's existing CLI, mapped onto the contract shape.
 doc_status: active
-updated: 2026-10-19T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 decision_status: Accepted, with Amendment 2026-10-19
 decision_date: '2026-10-19'
 type: ADR
@@ -13,6 +13,7 @@ related:
   - adr/0010-cutover-scope-and-seam-boundary
   - adr/0015-charter-repository-is-canonical-for-charter-structure
   - plans/roadmap
+  - adr/0055-cutover-sequencing-the-java-service-first
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this for what a corpus case is, where its expected answer comes from and how a deliberate difference from core is recorded.
@@ -37,6 +38,14 @@ in this repository over core's existing CLI.
 
 Amended 2026-10-19 by [ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/): see
 [Amendment](#amendment-2026-10-19).
+
+### Amendment 2026-11-03
+
+The operator ruled on 2026-11-03 that the design is the acceptance oracle, not core's Python answers
+([ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/) D3). A corpus whose expected answers come from core's CLI is therefore no longer the
+acceptance oracle for the service, and it no longer gates the switch-over. The packs are authored or updated to the
+design first, and the domain is accepted against them. This record's harness design stands as written, but not as an
+acceptance criterion. The original text stands.
 
 ## Context
 

@@ -2,7 +2,7 @@
 title: "ADR-0010: The 4.x cutover retires every Python offering read in one switch-over; core governs only the seam routing"
 description: All offering reads, including activation's, go through the API at once, gated by the conformance corpus; offering internals and pack structure are decided here.
 doc_status: active
-updated: 2026-10-19T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-10-19'
 type: ADR
@@ -13,6 +13,7 @@ related:
   - adr/0011-seam-runtime-fail-closed-daemon-and-freshness
   - architecture/strangler-transition
   - plans/roadmap
+  - adr/0055-cutover-sequencing-the-java-service-first
 audience:
   - profile: core-maintainer
     guidance_text: Read this for what the cutover removes from core, what stays, and the amendments asked of core.
@@ -29,6 +30,15 @@ audience:
 **Accepted** — 2026-10-27 (provisional since 2026-10-19). Decider: Stijn Dejongh (operator).
 This decision is ratified as of 2026-10-27; it is still revisited as the system evolves, and a later record
 supersedes it rather than editing it.
+
+### Amendment 2026-11-03
+
+The operator ruled on 2026-11-03 that the design, not core's Python answers, is the acceptance oracle
+([ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/) D3). The conformance corpus no longer gates the switch, so decision 5 is superseded as an acceptance
+criterion; it is annotated where it stands. The cutover scope and the other decisions stand. The Java service is built
+first and core's integration follows (ADR-0055 D1), and the `depends_on` resolver of
+[ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) is on the cutover path (ADR-0055 D2). What gates each
+switch in core is an open question in ADR-0055. The original text stands.
 
 ## Context
 
@@ -76,6 +86,9 @@ Four facts shape what that means:
    ([ADR-0011](/adr/0011-seam-runtime-fail-closed-daemon-and-freshness/): fail closed).
 5. **The conformance corpus alone gates the switch-over.** A divergence on the supported
    corpus fails core's CI (#72). There is no observation period (#75 is dropped).
+
+   *Amended 2026-11-03 ([ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/) D3): the corpus no longer gates the switch. The service is accepted against the
+   design, and what gates each switch in core is an open question in ADR-0055. There is still no observation period.*
 6. **The split of authority.** Core ADR `2026-10-03-1` governs only the seam routing: the
    stages, the switch at the seam, and what the seam does on failure. Everything inside the
    offering is decided here: the domain model, resolution and merge rules, the contract, and

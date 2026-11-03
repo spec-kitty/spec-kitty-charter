@@ -2,13 +2,14 @@
 title: Milestones
 description: The tracker's milestones, what closes each one, and the proposed distribution of the open spec-kitty-charter issues across them.
 doc_status: draft
-updated: 2026-10-31T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 type: Plan
 kind: Planning
 related:
   - plans/roadmap
   - plans/overhaul-approach
   - architecture/strangler-transition
+  - adr/0055-cutover-sequencing-the-java-service-first
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this to find which milestone an issue belongs to and what has to close before the cutover.
@@ -34,7 +35,7 @@ All `#N` are `spec-kitty-charter` issues unless prefixed with another repository
 | Milestone | Done when |
 |---|---|
 | **4.0 GA (contract adopted)** | What core's 4.0 GA needs from this repository (core epic spec-kitty#6518). Contract 0.1.0 and the activation minor (#125) are released. Core's generated client and routing proxy run with every operation still on core's Python ([ADR-0021](/adr/0021-contract-first-seam-generated-client-and-routing-proxy/)). The service answers the first offering reads against open-packs on the canonical `Pack` model, with the artifact kinds and edge relations modelled here ([ADR-0015](/adr/0015-charter-repository-is-canonical-for-charter-structure/)). |
-| **4.x cutover** | The charter offering's Python code in core is removed or inactive. Every Charter Pack and offering read goes through this repository's API, called from core's seam (`charter.offering.api`, the anti-corruption layer at core's entry point). This is [strangler stage 4](/architecture/strangler-transition/), "Java reads complete". Writes may still be Python. |
+| **4.x cutover** | The charter offering's Python code in core is removed or inactive. Every Charter Pack and offering read goes through this repository's API, called from core's seam (`charter.offering.api`, the anti-corruption layer at core's entry point). This is [strangler stage 4](/architecture/strangler-transition/), "Java reads complete". Writes may still be Python. The service is built first, then core's integration, and the `depends_on` resolver ([#145](https://github.com/spec-kitty/spec-kitty-charter/issues/145), [#146](https://github.com/spec-kitty/spec-kitty-charter/issues/146)) is on the cutover path ([ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/)). |
 | **Post-cutover** | Open-ended. This is the work that builds on the cut-over charter: write migration (stage 5 onward), new charter capabilities, and quality follow-ups that block nothing. |
 | **Infra & Enablers** | Not a delivery target either, and never on the release critical path: background work, enablers, automation and deployment concerns. An item whose outcome can change the contract before 1.0.0 moves to the milestone that needs it. |
 | **Backlog** | Not a delivery target. This holds design spikes and ideas that are not yet committed to a milestone. |
@@ -106,9 +107,10 @@ surface), #114 (canonical pack schemas) and #124 (0.x versioning, PR #129).
 | #127 | The hosted-first reshape, as a 0.x minor | The contract must not assume a worktree or project files at 1.0.0 |
 | #233 | Spike: the multi-instance state model for hosted | Its answers (activation store, ETag consistency across replicas, tenancy) can change the contract, so it lands before 1.0.0 with #127. Moved from Infra & Enablers (operator, 2026-10-27) |
 | #128 | Mint contract 1.0.0 | The first route switched to the service needs it (ADR-0022 D6) |
-| #9 | Conformance corpus: a harness over core's CLI | Roadmap step 3; each switch is judged against it ([ADR-0016](/adr/0016-conformance-corpus-harness-over-core-cli/)) |
+| #9 | Conformance corpus: a harness over core's CLI | Roadmap step 3, now superseded: the corpus over core's CLI is no longer the acceptance oracle (ADR-0055 D3; [ADR-0016](/adr/0016-conformance-corpus-harness-over-core-cli/)). To be re-scoped |
 | #94, #95 to #112 | Epic and steps: the cutover read inventory (R1 to R18) | Decides what the contract, and so the corpus, must cover |
-| #10, #11 | Domain and YAML read adapter; org and project layers | Roadmap steps 4 and 5 |
+| #145, #146 | Pack-composition resolver: the `depends_on` and `parent_pack` checks, and the dependency resolver | Roadmap step 3a. Moved here from Post-cutover on 2026-11-03: the layer merge is built on it, so it lands before #10 and #11 ([ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/) D2) |
+| #10, #11 | Domain and YAML read adapter; org and project layers | Roadmap steps 4 and 5. Accepted against the design-derived packs (ADR-0055 D3) |
 | #14 | Read shadow | Runs in core's proxy, one operation at a time (ADR-0021 D4) |
 | #46 | `x-stability-level` for provisional operations | Under review: no provisional operation remains, and the 0.x rule may cover the need |
 | #47 | `x-source` citation checker | The citations have to stay true while #10 and #11 grow the domain |
@@ -133,7 +135,7 @@ operation at a time.
 | #69 Epic: retire the Python charter reads | 3, 4 | The children below are closed and core no longer answers a charter read in Python |
 | #70 Launcher and service lifecycle | 3 | The service runs wherever a routed operation needs it. Needed by the first switch, not before (ADR-0021 D5) |
 | #71 Cross-OS packaging of the service | 3, 4 | Each supported OS gets a service artifact: native for four targets plus the jar, on the `service-v*` line ([ADR-0046](/adr/0046-service-release-line-and-native-packaging/)). The launcher criterion moved to #70 and core's checksum check to spec-kitty#6909 |
-| #72 Conformance as a blocking gate | 3, 4 | A divergence on the supported corpus fails core's CI. It gates each operation's switch |
+| #72 Conformance as a blocking gate | 3, 4 | ~~A divergence on the supported corpus fails core's CI. It gates each operation's switch~~ To be re-scoped: the gate for each switch is an open question in ADR-0055 |
 | #73 Stale, slow and unavailable service behavior | 3, 4 | The seam fails closed per routed operation: a down or slow service is a named error, and stale input is refused |
 | #74 Java authoritative reads | 3, 4 | Every read is routed to the service |
 | #76 Remove the Python read paths from core | 4 | The offering's read code is deleted or inactive in core, and a ratchet keeps it that way |
