@@ -78,7 +78,7 @@ Authored, never machine-rewritten. Identifies the pack and declares its level.
 | `pack_id` | ULID (26 characters, `^[0-9A-HJKMNP-TV-Z]{26}$`), the pack's stable identity; `parent_pack`, `depends_on[].pack_id` and `overrides[].member` take the same shape |
 | `pack_version` | semantic version of the pack content; required at every level (open question 13; DIV-004) |
 | `name` | human handle and the `<name>::` qualifier of a cross-pack reference, so it follows the identifier grammar `^[a-z0-9][a-z0-9_-]*$` (lower-case letters, digits, `-` and `_`, starting with a letter or digit) |
-| `parent_pack` | parent pack, or `null` for a root pack |
+| `parent_pack` | parent pack, or `null` for a root pack; lineage only, and a pack may take one only at its own level or one nearer built-in |
 | `pack_level` | required when `depends_on` is non-empty, otherwise optional; `built-in`, `org` or `project` (core ADR [`2026-10-11-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-11-2-a-pack-declares-its-level-in-pack-yaml.md)); a mismatch with where the pack is configured refuses with `pack_level_mismatch`; a missing value is the diagnostic `pack_level_missing` ([`DiagnosticCode`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/schemas/DiagnosticCode.yaml)) |
 | `requires_core` | optional; a PEP 440 range of supported core versions; a malformed value refuses the pack with `pack_unreadable` |
 | `active_charter` | org packs: path to the org charter, usually `org-charter.yaml` |

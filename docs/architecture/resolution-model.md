@@ -75,8 +75,9 @@ flowchart LR
 
    > **Partly built:** for sibling packs at one level,
    > [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) decision 9 is built: two siblings that both
-   > change or both define the same artifact are refused with `pack_sibling_conflict` unless an `overrides` edge naming
-   > a contesting member settles it, so siblings leave no "last loaded wins". Until
+   > change or both define the same artifact, of any kind, are refused with `pack_sibling_conflict` unless an
+   > `overrides` edge naming a contesting member settles it, so siblings leave no "last loaded wins". A definer and an
+   > enhancer of one artifact do not conflict. Until
    > [#357](https://github.com/spec-kitty/spec-kitty-charter/issues/357) the edge only clears the refusal: the named
    > member's version is not yet put in force, and the merge does not apply the settled choice. Until #358 any pack of
    > the compose may declare the edge. The layer merge across levels keeps the rule above: the same id at two levels is

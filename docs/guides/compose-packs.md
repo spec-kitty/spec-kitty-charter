@@ -1,6 +1,6 @@
 ---
 title: Compose packs
-description: "Declare depends_on, qualify cross-pack references, settle a sibling conflict, and fix each of the eleven composition refusals. The single refusal table."
+description: "Declare depends_on, qualify cross-pack references, see how they resolve, settle a sibling conflict, and fix each of the eleven composition refusals."
 doc_status: draft
 updated: 2026-11-03T00:00:00Z
 type: Guide
@@ -24,8 +24,8 @@ audience:
 # Compose packs
 
 This page is for a pack author whose pack builds on another pack, and for whoever reviews that pack. It covers
-declaring the dependency, writing references across packs, settling a conflict between sibling packs, and reading
-a refusal. The concepts are in the [logical model](/architecture/logical-model/#charter-packs-and-pack-levels);
+declaring the dependency, writing references across packs, seeing how they resolve, settling a conflict between
+sibling packs, and reading a refusal. The concepts are in the [logical model](/architecture/logical-model/#charter-packs-and-pack-levels);
 the decisions are [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) and
 [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/).
 
@@ -80,8 +80,9 @@ on org or built-in packs; a built-in pack on built-in packs only.
 
 ## Reference another pack's artifact
 
-Write `<pack-name>::<urn>` on a graph edge (`source` or `target`) and in the `id` of a typed reference. The
-`<pack-name>` is the `name` in the other pack's `pack.yaml`.
+Write `<pack-name>::<urn>` on either end of a graph edge (`source` or `target`), in the `id` of a typed reference,
+and in an entry of a directive's `procedures` or a paradigm's `directive_refs`. The `<pack-name>` is the `name` in the
+other pack's `pack.yaml`. Those two lists take an optional qualifier and no other `::`.
 
 ```yaml
 references:
@@ -89,17 +90,38 @@ references:
     id: built-in::directive:DIRECTIVE_001
 ```
 
-- A reference to an artifact in your own pack stays bare. So does a bare id in a directive's `procedures` or a
-  paradigm's `directive_refs`: those are not typed references and are not checked.
+- A bare reference resolves in this order. If your own pack holds the artifact, it is yours, even when another pack
+  holds the same id (your pack shadows it). Else, if another pack holds it, the reference is refused as unqualified
+  (`pack_reference_unqualified`). Else no pack holds it and nothing is refused, as for a kind the service does not serve.
 - The qualified pack must be in **your pack's own** `depends_on` closure, not merely in the compose, and it must
   hold that artifact.
-- The pack is provenance, not identity. The artifact's own URN stays bare.
+- The pack is provenance, not identity. The artifact's own URN stays bare, and the relationship it mints records
+  the qualifier you wrote.
+- When you register a relationship, its `to` may be qualified and its `from` may not: `from` is an artifact of the
+  pack you register into.
 - Following a qualified reference across packs is part of a served read, the walk.
+
+## See how references resolve
+
+`GET /packs/{packId}/artifacts/{kind}/{artifactId}/references` (`listArtifactReferences`) lists the references one
+artifact writes, in the order it writes them and without repeats. Each item gives:
+
+- the reference as written, bare or qualified, and the relation it is written under when the artifact mints one;
+- the `holdingPack` that holds what it names (`packId`, `descriptorPackId`, `name`), and the bare `urn` it resolves to;
+- an `artifact` link to the pack-scoped read of the target.
+
+This is where you see shadowing: a bare reference to an id both your pack and another pack hold shows your pack as
+holder, and a qualified one shows the pack it names. A reference no pack holds has no `holdingPack` and no link.
+
+It is a composed read. It resolves the compose and refuses with the same composition code as `GET /offering` when
+the compose is broken, while the pack-scoped read of the artifact itself still answers. The pack, the kind and the
+artifact are judged as for the artifact read (404).
 
 ## Settle a sibling conflict
 
-Two packs at the same level that both change, or both define, the same artifact id are a
-[sibling conflict](/glossary/charter/#sibling-conflict). It is refused unless an
+Two packs at the same level that both change, or both define, the same artifact id, of any artifact kind, are a
+[sibling conflict](/glossary/charter/#sibling-conflict). A pack that defines an artifact and a sibling that
+enhances it do not conflict. The conflict is refused unless an
 [`overrides` edge](/glossary/charter/#overrides-edge) settles it. Across levels the same id is a legitimate layer
 override, so no edge is needed.
 
@@ -119,23 +141,28 @@ A second edge on one artifact refuses the descriptor. Two caveats hold until the
 ## Read a refusal
 
 Every composition refusal answers **500** and is not retryable, like every offering refusal
-([HTTP status codes](/development/http-status-codes/)). Each carries a detail in words and a structured member
-naming the violating pack or packs by descriptor `packId` and `name`.
+([HTTP status codes](/development/http-status-codes/)). Each carries a detail in words and a `packs` member, a list
+of `{packId, name}` that names the violating packs, the pack that broke the rule first, by descriptor `pack_id`.
 
 A broken compose refuses every composed read: the offering, and the walk that follows references. A pack-scoped
 read of one artifact by id still answers, so you can inspect a broken pack.
 
+A pack the service cannot read is a different refusal, `pack_unreadable` (also 500). `GET /offering` refuses with it
+when an artifact file or a graph file of a configured pack cannot be read, and when `depends_on` ranges,
+`requires_core` or `pack_version` are malformed, the same verdict validate mode gives. A pack-scoped read of an
+artifact that is readable still answers.
+
 | Code | Cause | Fix |
 |---|---|---|
-| `pack_dependency_cycle` | `depends_on` edges lead from a pack back to itself. | Remove an edge to break the cycle; a shared base belongs in a pack both depend on. |
+| `pack_dependency_cycle` | `depends_on` edges lead from a pack back to itself. The detail names a pack on the cycle and the cycle path. | Remove an edge to break the cycle; a shared base belongs in a pack both depend on. |
 | `pack_dependency_unknown` | A `depends_on[].pack_id` names no pack the service holds. | Correct the ULID, or register the dependency's pack. |
 | `pack_dependency_out_of_range` | The held version misses the range; or two ranges on one dependency share no version; or a range is malformed. | Widen the range, update the held pack, align the dependents' ranges, or fix the PEP 440 syntax. |
 | `pack_parent_unresolved` | `parent_pack` names no pack the service holds. | Correct the ULID, register the parent, or set `parent_pack: null`. |
 | `pack_level_violation` | A `parent_pack` or `depends_on` target is not at the pack's own level or one nearer built-in. | Depend on a pack at your level or nearer built-in, or move your pack's level. |
 | `pack_duplicate_id` | Two packs declare the same descriptor `pack_id`. | Give each pack its own ULID; a copied `pack.yaml` is the usual cause. |
 | `pack_name_conflict` | Two packs declare the same `name`. | Rename one. Names are the qualifier of references and are unique without exception. |
-| `pack_sibling_conflict` | Two packs at one level change or define the same artifact id, and no `overrides` edge settles it. | Remove one change, or declare `overrides` naming a contesting member (see the caveats above). |
-| `pack_reference_unqualified` | A bare reference resolves only to an artifact another pack holds. | Write it `<pack-name>::<urn>` and depend on that pack. |
+| `pack_sibling_conflict` | Two packs at one level both change, or both define, the same artifact id, and no `overrides` edge settles it. | Remove one change, or declare `overrides` naming a contesting member (see the caveats above). |
+| `pack_reference_unqualified` | A bare reference, on an edge end or in a typed reference, `procedures` or `directive_refs`, names an artifact only another pack holds. | Write it `<pack-name>::<urn>` and depend on that pack. |
 | `pack_reference_pack_missing` | A qualified reference names a pack outside the referring pack's own `depends_on` closure. | Add a `depends_on` on that pack, or correct the name. |
 | `pack_reference_artifact_missing` | A qualified reference names a pack in the closure, but that pack holds no such artifact. | Correct the URN, or reference the pack that holds it. |
 

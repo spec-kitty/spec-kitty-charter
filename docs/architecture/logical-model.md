@@ -180,18 +180,23 @@ naming the pack, rather than serving part of it.
   nearer built-in. `parent_pack` stays lineage only; it orders nothing.
 - **Identity.** A pack id and a pack name are unique across a compose without exception. An artifact id is unique
   within a level, except where an `overrides` edge settles it. Across levels the same id is a layer override.
-- **Sibling conflict.** Two packs at one level that both change or both define the same artifact id are a
+- **Sibling conflict.** Two packs at one level that both change or both define the same artifact id, of any kind, are a
   [sibling conflict](/glossary/charter/#sibling-conflict), refused unless an
-  [`overrides` edge](/glossary/charter/#overrides-edge) naming a contesting member settles it. There is no
-  "last loaded wins". Until #358 any pack of the compose may declare the edge; until #357 settling only clears the
-  refusal and the member's version is not yet put in force.
+  [`overrides` edge](/glossary/charter/#overrides-edge) naming a contesting member settles it. A pack that defines an
+  artifact and a sibling that enhances it do not conflict. There is no "last loaded wins". Until #358 any pack of
+  the compose may declare the edge; until #357 settling only clears the refusal and the member's version is not yet
+  put in force.
 - **Qualified reference.** A reference to an artifact of another pack is written `<pack-name>::<urn>`
   ([qualified reference](/glossary/charter/#qualified-reference)). The pack is provenance, not identity: the
-  artifact's URN stays bare, and a qualified typed reference becomes a relationship whose target names the pack. The
-  named pack must be in the *referring* pack's own `depends_on` closure and must hold the artifact. A composed read
-  checks every reference, and following one across packs is part of a served read.
-- **Refusals.** A broken compose refuses every composed read with a 500 that names the violating packs. A pack-scoped
-  read of one artifact by id still answers. The causes and fixes are one table in
+  artifact's URN stays bare, and the qualifier is provenance on the relationship the reference mints. The named pack
+  must be in the *referring* pack's own `depends_on` closure and must hold the artifact. A bare reference is the
+  referring pack's own artifact if it holds one, is refused as unqualified if only another pack holds it, and has no
+  holder otherwise. A composed read checks every reference, edge ends and `procedures` and `directive_refs` included,
+  and following one across packs is part of a served read. `listArtifactReferences` shows how one artifact's
+  references resolve.
+- **Refusals.** A broken compose refuses every composed read with a 500 that names the violating packs in its
+  `packs` member. A pack-scoped read of one artifact by id still answers. An unreadable artifact or graph file of a
+  configured pack makes the offering refuse `pack_unreadable`. The causes and fixes are one table in
   [Compose packs](/guides/compose-packs/#read-a-refusal).
 
 The offering response carries what a compose resolved: each pack lists its configured `packId`, its

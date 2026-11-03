@@ -26,7 +26,7 @@ The planned operations, error model and transports of the charter service's Open
 
 ## The contract files
 
-The contract is in [`contracts/charter/`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/openapi.yaml), at `0.1.0-SNAPSHOT`, unreleased (published as 0.x until it is stable, [ADR-0022](/adr/0022-contract-versions-start-at-0-x/)):
+The contract is in [`contracts/charter/`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/openapi.yaml), at `0.2.0-SNAPSHOT`, unreleased (published as 0.x until it is stable, [ADR-0022](/adr/0022-contract-versions-start-at-0-x/)):
 
 - [`openapi.yaml`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/charter/openapi.yaml): the header and the map from each path to its file;
 - `paths/`, `schemas/`, `parameters/`, `responses/` and `examples/`: one definition per file;
@@ -56,6 +56,7 @@ every `href` starts with `/api/v1` and points to a built operation.
 | `getOffering` | The configured packs in force, in the merge order (configured level, then pack id), each with its id, configured level, name, version and an `artifacts` link | `GET /offering` |
 | `listPackArtifacts` | One configured pack's artifacts of the served kinds as summaries, filtered by an optional `kind` and paged (`pageSize` 1 to 200, 50 by default; `pageCursor`), with `self`, `first` and `next` links | `GET /packs/{packId}/artifacts` |
 | `getPackArtifact` | One artifact in the common `Artifact` envelope (`kind`, `id`, `packId`, `_links`, and one kind-named member with the kind's representation); an `ETag` for a writable kind | `GET /packs/{packId}/artifacts/{kind}/{artifactId}` |
+| `listArtifactReferences` | The references one artifact writes, in written order, each resolved through the compose: the reference as written, its relation, the `holdingPack` (`packId`, `descriptorPackId`, `name`), the bare `urn` and an `artifact` link to the pack-scoped read of the target. A composed read: it refuses a broken compose with the composition code of `GET /offering`, while `getPackArtifact` still answers. The pack, kind and artifact are judged as for `getPackArtifact` | `GET /packs/{packId}/artifacts/{kind}/{artifactId}/references` |
 | `registerPackDirective`, `registerPackStyleguide`, `registerPackParadigm`, `registerPackToolguide` | Register an artifact of that kind; `201` with `Location` and the `Artifact` envelope | `POST /packs/{packId}/artifacts/<kind>` |
 | `putPackDirective`, `putPackStyleguide`, `putPackParadigm`, `putPackToolguide` | Register or replace an artifact of that kind, with `If-Match`; `200` (`201` when it creates) with the `Artifact` envelope | `PUT /packs/{packId}/artifacts/<kind>/{artifactId}` |
 | `putPackRelationship` | Register a relationship between a pack's components; answers `RelationshipRegistered`, linked to the pack's artifacts | `PUT /packs/{packId}/relationships` |
@@ -79,8 +80,8 @@ tools.
 
 Every operation requires the per-worktree bearer token (`charterWorktreeToken`). Every answer
 carries `Charter-Contract-Version` and `Charter-Worktree`. `Charter-Source-Fingerprint` is declared,
-and required, only on the 200 of a verified read: `getServiceInfo`, `getOffering`, `listPackArtifacts` and
-`getPackArtifact` ([#175](https://github.com/spec-kitty/spec-kitty-charter/issues/175)). It carries the digest
+and required, only on the 200 of a verified read: `getServiceInfo`, `getOffering`, `listPackArtifacts`,
+`getPackArtifact` and `listArtifactReferences` ([#175](https://github.com/spec-kitty/spec-kitty-charter/issues/175)). It carries the digest
 that read verified. The 200s of the five reserved activation reads (`getActivation`, `listEffectiveArtifacts`,
 `getActivationSkippedReport`, `getEffectiveGraph`, `getEffectiveActionContext`) declare it too, ahead of being
 built; while they answer `501` they send none. No refusal, write, root or contract-document answer carries it.
@@ -96,7 +97,9 @@ result. An operator ruling of 2026-10-31 (option A of the question the WP03 revi
 specification left open: a configured pack whose `pack.yaml` is missing, unreadable or invalid is not a readable
 canonical pack. `GET /offering`, the artifact list and the artifact item refuse it with a 500 `pack_unreadable`,
 so every listed pack has a `name` and a `version`; 404 `pack_not_found` is answered only for an identifier that
-names no configured pack.
+names no configured pack. The offering also refuses `pack_unreadable` when an artifact file or a graph file of a
+configured pack cannot be read, or when a `depends_on` range, `requires_core` or `pack_version` is malformed; a
+pack-scoped read of a readable artifact still answers.
 
 PR #139 (2026-10-21) rebuilt the service on one canonical `Pack` aggregate. It removed
 `listPacks` (`GET /packs`), `refreshPacks` (`POST /packs/refresh`) and `getActionContext`
@@ -276,8 +279,14 @@ writes come after the read stages, one at a time: charter document save and comp
 - `kind_not_found` (404) is raised when the path of an artifact read names a kind the service does not serve.
   The pack is judged first, so an unknown pack is `pack_not_found` whatever the kind; an id the pack does not hold
   is the not-found code of its kind (`tactic_not_found`, …).
-- `stale_input` is raised by every verified read (`getServiceInfo`, `getOffering`, `listPackArtifacts` and
-  `getPackArtifact`): inputs changed while the answer was computed, a failed
+- The eleven refusals of the pack composition (`pack_dependency_cycle`, `pack_dependency_unknown`,
+  `pack_dependency_out_of_range`, `pack_parent_unresolved`, `pack_level_violation`, `pack_name_conflict`,
+  `pack_duplicate_id`, `pack_sibling_conflict`, `pack_reference_unqualified`, `pack_reference_pack_missing` and
+  `pack_reference_artifact_missing`) are 500 and not retryable. `getOffering` and `listArtifactReferences` raise
+  them, and the `packs` member of the `Problem` lists the packs they name, the violating pack first, each as
+  `{packId, name}` (`RefusalPack`). The causes and fixes are in [Compose packs](/guides/compose-packs/#read-a-refusal).
+- `stale_input` is raised by every verified read (`getServiceInfo`, `getOffering`, `listPackArtifacts`,
+  `getPackArtifact` and `listArtifactReferences`): inputs changed while the answer was computed, a failed
   load whose inputs changed included. It may be retried.
 - `governance_policy_violation` (409) is raised by the registration writes when the mutability level of the
   pack that owns the target does not permit the write (ADR-0012, epic #55). No policy file is read yet, so every
