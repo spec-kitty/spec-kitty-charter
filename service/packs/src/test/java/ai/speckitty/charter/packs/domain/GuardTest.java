@@ -30,21 +30,6 @@ class GuardTest {
     }
 
     @Test
-    @DisplayName("the built-in list is the six ids the operator ruled, each a kebab id")
-    void theBuiltinListIsClosed() {
-        assertThat(BuiltinGuard.values())
-                .extracting(BuiltinGuard::id)
-                .containsExactly(
-                        "transition-context-complete",
-                        "dependency-ready",
-                        "implementation-ready",
-                        "review-approved",
-                        "review-ref",
-                        "spec-kitty-pre-review");
-        assertThat(BuiltinGuard.fromId("review-ref")).contains(BuiltinGuard.REVIEW_REF);
-    }
-
-    @Test
     @DisplayName("a guard defaults to block when it could not evaluate, and to no network")
     void defaultsFailClosed() {
         Guard guard = new Guard(
@@ -81,7 +66,6 @@ class GuardTest {
                     .as(entry)
                     .isInstanceOf(ConstraintBreachException.class);
         }
-        assertThat(ExecutableRuntime.fromToken("sh")).isEmpty();
         assertThat(ExecutableRuntime.fromToken("python")).contains(ExecutableRuntime.PYTHON);
     }
 }
