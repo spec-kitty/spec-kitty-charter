@@ -2,7 +2,7 @@
 title: Pack registration and distribution
 description: "How the charter service registers, stores, verifies and distributes packs of every level: layering, the four source kinds, the trust and lockfile model, and the API surface."
 doc_status: draft
-updated: 2026-11-02T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -201,10 +201,13 @@ Repository ports (domain-owned, impl in storage ring):
 > `glossary_pack` to `glossary`,
 > [ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/) makes `anti_pattern` an
 > authored file, and [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) makes
-> `mission_type` an ordinary activatable kind and adds the `lifecycle` kind and, pending a ruling (ADR-0050 open
-> question 2), a `gate` kind; [ADR-0051](/adr/0051-event-registry-a-thin-provider-neutral-consistency-check/) adds
+> `mission_type` an ordinary activatable kind and adds the `lifecycle` kind, and a `guard` kind implemented by
+> executable assets ([ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/); the proposed
+> `gate` kind was not taken); [ADR-0051](/adr/0051-event-registry-a-thin-provider-neutral-consistency-check/) adds
 > `event_registry`. [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) adds `depends_on`
-> composition, so a pack's `parent_pack` is lineage only and sibling packs have no load order. This page does not
+> composition, built for one compose now: the offering read resolves the configured packs' `depends_on` closure and
+> refuses a broken one instead of serving part of it, `parent_pack` is lineage only, and sibling packs have no load
+> order. This page does not
 > describe the target.
 
 ---

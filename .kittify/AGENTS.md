@@ -241,3 +241,11 @@ Rules:
 - Fetch them once per worktree, after cloning `spec-kitty-open-packs` beside this repository: `./gradlew syncPacks` (or `python3 scripts/packs/sync_packs.py`; `-PopenPacksDir=<path>` / `--open-packs-dir <path>` names another checkout). The sync reads the pinned commit, not the checkout's working tree, and fails closed on a digest that differs from `packs/open-packs.lock.yaml`. `./gradlew syncPacks -PcheckPacks=true` only verifies.
 - Never edit a synced file. A change goes to `spec-kitty-open-packs` and arrives with a pin bump.
 - Bumping the pin is one commit: change `openPacksRef`, run `./gradlew syncPacks -PupdatePacksLock=true` (re-syncs and rewrites the lockfile's commit and digests), and commit both. Never weaken an expectation to make a bump green.
+- **This repository pins `spec-kitty-open-packs` at its latest mainline.** `openPacksRef` in `gradle.properties` is
+  the single source of truth: the sync, Gradle's round-trip tasks and CI read it. The charter must validate against the
+  newest published packs, so a stale pin here is a defect, not a reproducibility choice. Core (`spec-kitty/spec-kitty`)
+  may pin an older hash for its own builds; that is a separate decision.
+- **A pin bump is a delivery, not a one-line edit:** besides the lockfile, align what the new tree changes (round-trip
+  expectation counts and goldens, pinned-refusal fixtures), citing the pinned tree as evidence for each changed
+  expectation, and update the comment at the pin with the commit and why. If a failure is a real defect rather than a
+  stale expectation, fix the code.

@@ -53,6 +53,7 @@ examples
 facade
 from
 frontmatter
+frozenset
 gherkin
 global
 glossary
@@ -114,6 +115,7 @@ requirable
 required
 requires
 resolution
+retargets
 rule
 schema
 scope
@@ -192,6 +194,7 @@ parameterizing
 dedup
 multigraph
 unbuilt
+unioned
 unminted
 Priti
 contract

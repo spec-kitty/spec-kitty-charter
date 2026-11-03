@@ -2,7 +2,7 @@
 title: Pack ecosystem design notes
 description: "Working notes of the operator design pass on epic #142: the rulings of 2026-11-02, formalized as ADR-0048 to ADR-0052 (Accepted)."
 doc_status: draft
-updated: 2026-11-02T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 type: Plan
 kind: Planning
 related:
@@ -11,6 +11,8 @@ related:
   - adr/0050-mission-types-and-lifecycles-as-declared-state-machines
   - adr/0051-event-registry-a-thin-provider-neutral-consistency-check
   - adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts
+  - adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions
+  - adr/0054-guards-are-enforced-checks-implemented-by-executable-assets
   - plans/pack-ecosystem-work-breakdown
   - adr/0019-packs-resource-model-and-hypermedia
   - architecture/logical-model
@@ -373,6 +375,8 @@ client's (the event-registry revision).*
 - **Left for formalization** (recommended default): a gate is its own declared kind, with id,
   description, severity on the `smell` / `severe` / `breaking` ladder (to align with core's ladder,
   #3416) and a config schema (#164 Q3).
+- **Re-ruled 2026-11-02** by [ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/):
+  there is no `gate` kind; guards are artifacts implemented by executable assets.
 
 ## Lower-impact items: defaults for the formalization pass
 

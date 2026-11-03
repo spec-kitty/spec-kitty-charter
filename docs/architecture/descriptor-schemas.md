@@ -134,8 +134,9 @@ type from files the service retires (DIV-502). All three are closed
 fields.
 
 > **Decided design:** [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) adds
-> explicit transitions, guards and the `lifecycle` kind to the mission type and, pending a ruling (ADR-0050 open
-> question 2), a `gate` kind, and [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) renames
+> explicit transitions, guards and the `lifecycle` kind to the mission type, and a `guard` kind implemented by
+> executable assets ([ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/); the proposed
+> `gate` kind was not taken), and [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) renames
 > `missions/` to `mission_types/`. The diagram below draws that design, and the code does not do it yet. The
 > field list below it is the schema the service reads today.
 
