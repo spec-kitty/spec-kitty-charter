@@ -1,7 +1,7 @@
 ---
 okf_version: "0.2"
 title: Plans
-description: Forward-looking work for the charter service — the bootstrap roadmap and the questions still open.
+description: Forward-looking work for the charter service — the bootstrap roadmap, the questions still open and dated engineering notes that feed decisions.
 doc_status: draft
 updated: 2026-11-03T00:00:00Z
 type: Plan
