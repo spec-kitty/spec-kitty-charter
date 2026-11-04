@@ -8,6 +8,7 @@ import ai.speckitty.charter.kernel.domain.Descent;
 import ai.speckitty.charter.kernel.domain.DrgNode;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
@@ -176,19 +177,21 @@ class GraphWalkTest {
         Urn x = urn("X");
         Urn y = urn("Y");
         Urn z = urn("Z");
-        // X (a) -> b::Y; Y (b) -> a::X (back where it started) and bare Z; Z (b) -> a::X again; absent::W is passed
-        // over
+        // X (a) -> b::Y; Y (b) -> a::X (back where it started) and bare Z; Z (b) -> a::X again and a::Y, the Y that
+        // pack
+        // a holds beside pack b's own Y; absent::W is passed over
         Node nodeX = new Node(packA, x, List.of(qualified(x, y, "b"), qualified(x, urn("W"), "absent")));
         Node nodeY = new Node(packB, y, List.of(qualified(y, x, "a"), Relationship.of(y, z, RelationType.REQUIRES)));
-        Node nodeZ = new Node(packB, z, List.of(qualified(z, x, "a")));
+        Node nodeZ = new Node(packB, z, List.of(qualified(z, x, "a"), qualified(z, y, "a")));
+        Node nodeYofA = new Node(packA, y, List.of());
         // Z exists only in pack b, so a bare reference that stayed in pack a would never find it
         Map<PackIdentifier, Map<Urn, CharterArtifact>> packs =
-                Map.of(packA, Map.of(x, nodeX), packB, Map.of(y, nodeY, z, nodeZ));
+                Map.of(packA, Map.of(x, nodeX, y, nodeYofA), packB, Map.of(y, nodeY, z, nodeZ));
         List<String> asked = new ArrayList<>();
         ComposeResolver compose = new ComposeResolver() {
             @Override
-            public Optional<PackIdentifier> packNamed(String name) {
-                return switch (name) {
+            public Optional<PackIdentifier> holdingPack(PackQualifiedReference reference, PackIdentifier referring) {
+                return switch (reference.packName().orElseThrow()) {
                     case "a" -> Optional.of(packA);
                     case "b" -> Optional.of(packB);
                     default -> Optional.empty();
@@ -207,9 +210,10 @@ class GraphWalkTest {
 
         new GraphWalk(compose).walk(nodeX, recorder);
 
-        assertThat(recorder.visited).containsExactly(x, y, z);
-        // X is the start and is never resolved again; each of Y and Z is resolved once, in its own pack
-        assertThat(asked).containsExactly("pack-b/directive:Y", "pack-b/directive:Z");
+        // pack b's Y and pack a's Y are two components of one bare urn: both are visited, neither shadows the other
+        assertThat(recorder.visited).containsExactly(x, y, z, y);
+        // X is the start and is never resolved again; each of the others is resolved once, in its own pack
+        assertThat(asked).containsExactly("pack-b/directive:Y", "pack-b/directive:Z", "pack-a/directive:Y");
     }
 
     private static Relationship qualified(Urn from, Urn to, String pack) {

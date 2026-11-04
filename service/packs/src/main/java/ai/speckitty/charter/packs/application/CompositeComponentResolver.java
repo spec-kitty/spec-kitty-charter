@@ -8,6 +8,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ComponentResolver;
 import ai.speckitty.charter.packs.domain.ComposeResolver;
+import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
@@ -108,11 +109,10 @@ public final class CompositeComponentResolver {
         }
 
         @Override
-        public Optional<PackIdentifier> packNamed(String name) {
-            return closure.stream()
-                    .filter(pack -> pack.descriptor().name().equals(name))
-                    .map(pack -> pack.configured().id())
-                    .findFirst();
+        public Optional<PackIdentifier> holdingPack(PackQualifiedReference reference, PackIdentifier referringPack) {
+            return holder(reference, referringPack)
+                    .map(PackCompositionResolver.PackUnderResolution::configured)
+                    .map(ConfiguredPack::id);
         }
 
         @Override
@@ -122,15 +122,17 @@ public final class CompositeComponentResolver {
 
         /**
          * The pack of the compose that holds what a reference names, as an artifact writes it (FR-013, FR-014, FR-015,
-         * FR-017): the one owner of "which pack does this reference mean". A qualified reference is held by the pack
+         * FR-017), by the compose's one rule ({@link PackCompositionResolver#holderOf}) and judged by its one check
+         * ({@link PackCompositionResolver#checkReferences}); the walk seam asks it too. A qualified reference is held by the pack
          * it names; a name the compose does not hold is refused {@link RefusalCode#PACK_REFERENCE_PACK_MISSING}, naming
          * the missing pack, and never falls back to the referring pack. A bare one is held by the referring pack when
          * it holds the artifact, which shadows a same-named artifact of another pack (FR-014); when only another pack
          * holds it the reference is refused {@link RefusalCode#PACK_REFERENCE_UNQUALIFIED}, naming the holding pack, so
          * it cannot resolve by load order. When no pack holds it nothing holds it.
          *
-         * <p>Both verdicts are the compose resolver's: {@link PackCompositionResolver#checkReferences} refuses, so the
-         * reference codes travel the same path the other compose refusals travel.
+         * <p>Both verdicts are the compose resolver's, so the reference codes travel the same path the other compose
+         * refusals travel. The offering already checked every reference its packs write when it resolved the closure,
+         * so here the check is a defensive assertion for a closure that did not come from it.
          *
          * @param parsed the reference as the artifact writes it
          * @param referringPack the pack whose artifact writes it
@@ -143,32 +145,19 @@ public final class CompositeComponentResolver {
                 PackQualifiedReference parsed, PackIdentifier referringPack) {
             Objects.requireNonNull(parsed, "parsed");
             Objects.requireNonNull(referringPack, "referringPack");
-            Optional<PackCompositionResolver.PackUnderResolution> referring = closure.stream()
+            Optional<PackCompositionResolver.PackUnderResolution> holder =
+                    PackCompositionResolver.holderOf(closure, referringPack, parsed);
+            String referringId = closure.stream()
                     .filter(pack -> pack.configured().id().equals(referringPack))
-                    .findFirst();
-            String referringId =
-                    referring.map(pack -> pack.descriptor().packId()).orElse(referringPack.value());
-            if (parsed.qualified()) {
-                checked(closure, referringId, new PackCompositionResolver.ResolvedReference(parsed, referringId));
-                return closure.stream()
-                        .filter(pack -> pack.descriptor()
-                                .name()
-                                .equals(parsed.packName().orElseThrow()))
-                        .findFirst();
-            }
-            if (referring.isPresent() && referring.get().holds(parsed.urn())) {
-                return referring;
-            }
-            for (PackCompositionResolver.PackUnderResolution pack : closure) {
-                if (!pack.configured().id().equals(referringPack) && pack.holds(parsed.urn())) {
-                    checked(
-                            closure,
-                            referringId,
-                            new PackCompositionResolver.ResolvedReference(
-                                    parsed, pack.descriptor().packId()));
-                }
-            }
-            return Optional.empty();
+                    .map(pack -> pack.descriptor().packId())
+                    .findFirst()
+                    .orElse(referringPack.value());
+            checked(
+                    closure,
+                    referringId,
+                    new PackCompositionResolver.ResolvedReference(
+                            parsed, holder.map(pack -> pack.descriptor().packId())));
+            return holder;
         }
     }
 

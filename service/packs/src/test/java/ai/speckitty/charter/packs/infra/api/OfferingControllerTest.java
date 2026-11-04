@@ -14,6 +14,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.OfferingReadService;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
+import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import java.util.List;
 import java.util.Optional;
@@ -29,8 +30,8 @@ class OfferingControllerTest {
     private static final String FINGERPRINT = "Charter-Source-Fingerprint";
 
     private static MockMvc mvc(List<ConfiguredPack> packs, PackDescriptorRepository descriptors) {
-        OfferingReadService reads =
-                new OfferingReadService(() -> packs, descriptors, pack -> List.of(), new ConsistentRead(() -> DIGEST));
+        OfferingReadService reads = new OfferingReadService(
+                () -> packs, descriptors, pack -> PackCompositionFacts.NONE, new ConsistentRead(() -> DIGEST));
         return MockMvcBuilders.standaloneSetup(new OfferingController(reads, new Hypermedia("/api/v1")))
                 .setControllerAdvice(new RefusalHandler(), new ProblemHandler())
                 .build();

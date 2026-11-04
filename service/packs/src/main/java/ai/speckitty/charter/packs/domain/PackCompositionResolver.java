@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.domain;
 
 import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackOverride;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
@@ -263,22 +264,77 @@ public final class PackCompositionResolver {
      * One reference as the compose resolves it: the reference an artifact writes, and the pack that holds what it
      * names. The offering read builds these from the references of every pack's graphs and checks them with
      * {@link #checkReferences} when the compose resolves; the artifact reads build them for one reference at a time.
+     * Both build them through {@link #resolveReference}, the one owner of which pack a reference means.
      *
      * @param reference the reference as the artifact writes it
-     * @param holdingPackId the {@code pack_id} of the pack that holds what the reference names
+     * @param holdingPackId the {@code pack_id} of the pack that holds what the reference names: the named pack for a
+     *     qualified reference, the referring pack or the first other pack holding it for a bare one; empty when the
+     *     compose holds no such pack
      */
-    public record ResolvedReference(PackQualifiedReference reference, String holdingPackId) {
+    public record ResolvedReference(PackQualifiedReference reference, Optional<String> holdingPackId) {
 
         /**
          * Checks the fields.
          *
          * @param reference the reference as written
-         * @param holdingPackId the pack that holds what it names
+         * @param holdingPackId the pack that holds what it names, when there is one
          */
         public ResolvedReference {
             Objects.requireNonNull(reference, "reference");
             Objects.requireNonNull(holdingPackId, "holdingPackId");
         }
+    }
+
+    /**
+     * The pack of the compose that holds what a reference names, as an artifact writes it: the one owner of "which
+     * pack does this reference mean" (FR-013, FR-014, FR-015). A qualified reference is held by the pack of that
+     * name. A bare one is held by the referring pack when it holds the artifact, which shadows a same-named artifact
+     * of another pack (FR-014), else by the first other pack of the compose that holds it. It judges nothing: whether
+     * the holder is a legal one is {@link #checkReferences}.
+     *
+     * @param packs the resolved compose
+     * @param referring the configured identity of the pack whose artifact writes the reference
+     * @param reference the reference as written
+     * @return the holding pack; empty when the compose holds no pack of the qualifier's name, or when no pack holds
+     *     what a bare reference names
+     */
+    public static Optional<PackUnderResolution> holderOf(
+            List<PackUnderResolution> packs, PackIdentifier referring, PackQualifiedReference reference) {
+        Objects.requireNonNull(packs, "packs");
+        Objects.requireNonNull(referring, "referring");
+        Objects.requireNonNull(reference, "reference");
+        if (reference.qualified()) {
+            String name = reference.packName().orElseThrow();
+            return packs.stream()
+                    .filter(pack -> pack.descriptor().name().equals(name))
+                    .findFirst();
+        }
+        Optional<PackUnderResolution> own = packs.stream()
+                .filter(pack -> pack.configured().id().equals(referring))
+                .findFirst();
+        if (own.isPresent() && own.get().holds(reference.urn())) {
+            return own;
+        }
+        return packs.stream()
+                .filter(pack -> !pack.configured().id().equals(referring))
+                .filter(pack -> pack.holds(reference.urn()))
+                .findFirst();
+    }
+
+    /**
+     * One reference with the pack that holds what it names ({@link #holderOf}), ready for {@link #checkReferences}.
+     *
+     * @param packs the resolved compose
+     * @param referring the configured identity of the pack whose artifact writes the reference
+     * @param reference the reference as written
+     * @return the reference and its holding pack's {@code pack_id}, when there is one
+     */
+    public static ResolvedReference resolveReference(
+            List<PackUnderResolution> packs, PackIdentifier referring, PackQualifiedReference reference) {
+        return new ResolvedReference(
+                reference,
+                holderOf(packs, referring, reference)
+                        .map(holder -> holder.descriptor().packId()));
     }
 
     /**
@@ -340,10 +396,13 @@ public final class PackCompositionResolver {
                             referringLabel + " writes the reference `" + reference + "`, but " + label(target)
                                     + " does not hold `" + urn.get() + "`");
                 }
-            } else if (!resolved.holdingPackId().equals(referringPackId)) {
-                PackUnderResolution holding = byId.get(resolved.holdingPackId());
+            } else if (resolved.holdingPackId()
+                    .filter(id -> !id.equals(referringPackId))
+                    .isPresent()) {
+                String holdingId = resolved.holdingPackId().orElseThrow();
+                PackUnderResolution holding = byId.get(holdingId);
                 List<RefusalPack> holder = holding == null ? List.of() : named(holding);
-                String holdingLabel = holding == null ? "pack `" + resolved.holdingPackId() + "`" : label(holding);
+                String holdingLabel = holding == null ? "pack `" + holdingId + "`" : label(holding);
                 throw new Refusal(
                         Failure.REFERENCE_UNQUALIFIED,
                         concat(referringPack, holder),

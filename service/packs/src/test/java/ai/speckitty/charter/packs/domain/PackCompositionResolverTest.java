@@ -16,6 +16,7 @@ import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.Failure;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -285,12 +286,12 @@ class PackCompositionResolverTest {
                 .hasMessageContaining("overrides");
     }
 
-    private static PackUnderResolution defining(String id, String name, PackLevel level, String artifact) {
+    private static PackUnderResolution defining(String id, String name, PackLevel level, String... artifacts) {
         return new PackUnderResolution(
                 new ConfiguredPack(new PackIdentifier(id), level),
                 new PackDescriptor(id, "1.0.0", Optional.empty(), name, Optional.of(level), Optional.empty()),
                 List.of(),
-                List.of(artifact));
+                List.of(artifacts));
     }
 
     @Test
@@ -419,16 +420,18 @@ class PackCompositionResolverTest {
     }
 
     @Test
-    void aQualifiedReferenceToAnArtifactThePackHoldsIsAccepted() {
-        PackUnderResolution writing = defining("01WRI", "writing", PackLevel.BUILT_IN, "directive:DIRECTIVE_009");
+    void aQualifiedReferenceToAnArtifactThePackHoldsIsAcceptedWhateverItsKind() {
+        // an anti_pattern is held only as a graph node, and the qualified form must stand like a directive's
+        PackUnderResolution writing = defining(
+                "01WRI", "writing", PackLevel.BUILT_IN, "directive:DIRECTIVE_009", "anti_pattern:big-ball-of-mud");
         PackUnderResolution reader =
                 pack("01REA", "reader", "1.0.0", PackLevel.PROJECT, List.of(new PackDependency("01WRI", ">=1.0")));
 
-        assertThatCode(() -> PackCompositionResolver.checkReferences(
+        assertThatCode(() -> check(
                         List.of(writing, reader),
                         "01REA",
-                        List.of(new PackCompositionResolver.ResolvedReference(
-                                PackQualifiedReference.parse("writing::directive:DIRECTIVE_009"), "01WRI"))))
+                        "writing::directive:DIRECTIVE_009",
+                        "writing::anti_pattern:big-ball-of-mud"))
                 .doesNotThrowAnyException();
     }
 
@@ -438,11 +441,7 @@ class PackCompositionResolverTest {
         PackUnderResolution reader =
                 pack("01REA", "reader", "1.0.0", PackLevel.PROJECT, List.of(new PackDependency("01WRI", ">=1.0")));
 
-        assertThatThrownBy(() -> PackCompositionResolver.checkReferences(
-                        List.of(writing, reader),
-                        "01REA",
-                        List.of(new PackCompositionResolver.ResolvedReference(
-                                PackQualifiedReference.parse("writing::directive:DIRECTIVE_009"), "01WRI"))))
+        assertThatThrownBy(() -> check(List.of(writing, reader), "01REA", "writing::directive:DIRECTIVE_009"))
                 .isInstanceOfSatisfying(PackCompositionResolver.Refusal.class, refusal -> {
                     assertThat(refusal.failure()).isEqualTo(Failure.REFERENCE_ARTIFACT_MISSING);
                     assertThat(refusal.failure().code()).isEqualTo(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING);
@@ -456,16 +455,12 @@ class PackCompositionResolverTest {
 
     @Test
     void aQualifiedReferenceToAPackOnlyAnotherPackDependsOnIsRefusedNamingThatPack() {
-        PackUnderResolution writing = pack("01WRI", "writing", "1.0.0", PackLevel.BUILT_IN);
+        PackUnderResolution writing = defining("01WRI", "writing", PackLevel.BUILT_IN, "directive:DIRECTIVE_009");
         PackUnderResolution reader = pack("01REA", "reader", "1.0.0", PackLevel.PROJECT);
         PackUnderResolution other =
                 pack("01OTH", "other", "1.0.0", PackLevel.PROJECT, List.of(new PackDependency("01WRI", ">=1.0")));
 
-        assertThatThrownBy(() -> PackCompositionResolver.checkReferences(
-                        List.of(writing, reader, other),
-                        "01REA",
-                        List.of(new PackCompositionResolver.ResolvedReference(
-                                PackQualifiedReference.parse("writing::directive:DIRECTIVE_009"), "01WRI"))))
+        assertThatThrownBy(() -> check(List.of(writing, reader, other), "01REA", "writing::directive:DIRECTIVE_009"))
                 .isInstanceOfSatisfying(PackCompositionResolver.Refusal.class, refusal -> {
                     assertThat(refusal.failure()).isEqualTo(Failure.REFERENCE_PACK_MISSING);
                     assertThat(refusal.packs())
@@ -475,45 +470,54 @@ class PackCompositionResolverTest {
     }
 
     @Test
-    void aBareReferenceThatResolvesInTheReferringPackIsAccepted() {
-        PackUnderResolution reader = pack("01REA", "reader", "1.0.0", PackLevel.PROJECT);
+    void aBareReferenceIsHeldByTheReferringPackWhichShadowsAnotherPacksArtifactOfTheSameId() {
+        // FR-014: the reader holds directive:DIRECTIVE_009 and so does the writing pack; the reader's own shadows it.
+        // A bare reference no pack holds (an unwired kind) resolves nowhere and refuses nothing.
+        PackUnderResolution writing = defining("01WRI", "writing", PackLevel.BUILT_IN, "directive:DIRECTIVE_009");
+        PackUnderResolution reader = defining("01REA", "reader", PackLevel.PROJECT, "directive:DIRECTIVE_009");
+        PackQualifiedReference own = PackQualifiedReference.parse("directive:DIRECTIVE_009");
 
-        assertThatCode(() -> PackCompositionResolver.checkReferences(
-                        List.of(reader),
-                        "01REA",
-                        List.of(new PackCompositionResolver.ResolvedReference(
-                                PackQualifiedReference.parse("directive:DIRECTIVE_009"), "01REA"))))
+        assertThat(PackCompositionResolver.holderOf(
+                        List.of(writing, reader), reader.configured().id(), own))
+                .contains(reader);
+        assertThatCode(() -> check(List.of(writing, reader), "01REA", "directive:DIRECTIVE_009", "directive:NOWHERE"))
                 .doesNotThrowAnyException();
     }
 
     @Test
     void aBareReferenceThatResolvesOnlyInAnotherPackIsRefusedNamingTheHoldingPack() {
-        PackUnderResolution writing = pack("01WRI", "writing", "1.0.0", PackLevel.BUILT_IN);
+        // the anti_pattern kind is held only as a graph node: the bare form still finds its holder
+        PackUnderResolution writing = defining("01WRI", "writing", PackLevel.BUILT_IN, "anti_pattern:big-ball-of-mud");
         PackUnderResolution reader = pack("01REA", "reader", "1.0.0", PackLevel.PROJECT);
 
-        assertThatThrownBy(() -> PackCompositionResolver.checkReferences(
-                        List.of(writing, reader),
-                        "01REA",
-                        List.of(new PackCompositionResolver.ResolvedReference(
-                                PackQualifiedReference.parse("directive:DIRECTIVE_009"), "01WRI"))))
-                .isInstanceOf(PackCompositionResolver.Refusal.class)
-                .satisfies(refusal -> assertThat(((PackCompositionResolver.Refusal) refusal).failure())
-                        .isEqualTo(Failure.REFERENCE_UNQUALIFIED))
-                .hasMessageContaining("writing");
+        assertThatThrownBy(() -> check(List.of(writing, reader), "01REA", "anti_pattern:big-ball-of-mud"))
+                .isInstanceOfSatisfying(PackCompositionResolver.Refusal.class, refusal -> {
+                    assertThat(refusal.failure()).isEqualTo(Failure.REFERENCE_UNQUALIFIED);
+                    assertThat(refusal.packs())
+                            .containsExactly(new RefusalPack("01REA", "reader"), new RefusalPack("01WRI", "writing"));
+                });
     }
 
     @Test
     void aQualifiedReferenceToAPackOutsideTheComposeIsRefusedNamingTheMissingPack() {
         PackUnderResolution reader = pack("01REA", "reader", "1.0.0", PackLevel.PROJECT);
 
-        assertThatThrownBy(() -> PackCompositionResolver.checkReferences(
-                        List.of(reader),
-                        "01REA",
-                        List.of(new PackCompositionResolver.ResolvedReference(
-                                PackQualifiedReference.parse("writing::directive:DIRECTIVE_009"), "01WRI"))))
-                .isInstanceOf(PackCompositionResolver.Refusal.class)
-                .satisfies(refusal -> assertThat(((PackCompositionResolver.Refusal) refusal).failure())
-                        .isEqualTo(Failure.REFERENCE_PACK_MISSING))
-                .hasMessageContaining("writing");
+        assertThatThrownBy(() -> check(List.of(reader), "01REA", "writing::directive:DIRECTIVE_009"))
+                .isInstanceOfSatisfying(PackCompositionResolver.Refusal.class, refusal -> {
+                    assertThat(refusal.failure()).isEqualTo(Failure.REFERENCE_PACK_MISSING);
+                    assertThat(refusal.detail()).contains("writing");
+                });
+    }
+
+    /** The references one pack writes, each with the pack the compose says holds it, checked as the offering checks. */
+    private static void check(List<PackUnderResolution> packs, String referring, String... written) {
+        PackIdentifier from = new PackIdentifier(referring);
+        PackCompositionResolver.checkReferences(
+                packs,
+                referring,
+                Arrays.stream(written)
+                        .map(text -> PackCompositionResolver.resolveReference(
+                                packs, from, PackQualifiedReference.parse(text)))
+                        .toList());
     }
 }

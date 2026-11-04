@@ -5,6 +5,7 @@ import ai.speckitty.charter.kernel.domain.Descent;
 import ai.speckitty.charter.kernel.domain.DrgNode;
 import ai.speckitty.charter.kernel.domain.GraphWalker;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ComponentResolver;
@@ -40,7 +41,8 @@ public final class GraphWalk {
         Objects.requireNonNull(resolver, "resolver");
         this.resolvers = new ComposeResolver() {
             @Override
-            public Optional<PackIdentifier> packNamed(String name) {
+            public Optional<PackIdentifier> holdingPack(
+                    PackQualifiedReference reference, PackIdentifier referringPack) {
                 return Optional.empty();
             }
 
@@ -53,8 +55,12 @@ public final class GraphWalk {
 
     /**
      * Creates a walk driver across the packs of one compose. A bare reference resolves in the pack that holds the
-     * artifact writing it, also after a qualified hop into another pack; a qualified reference resolves in the pack it
-     * names, and is passed over when the compose holds none.
+     * artifact writing it, also after a qualified hop into another pack; a qualified reference resolves in the pack the
+     * compose's one closure rule gives it ({@link ComposeResolver#holdingPack}), is passed over when the compose holds
+     * none, and is refused as the compose refuses it when it names a pack outside the writer's {@code depends_on}
+     * closure.
+     *
+     * <p>Reserved for the effective-graph reads: no read of the service constructs a walk across packs yet.
      *
      * @param resolvers the compose, resolved once for the read the walk serves
      */
@@ -112,8 +118,10 @@ public final class GraphWalk {
             boolean forward = relationship.from().equals(component.urn());
             Urn neighbour = forward ? relationship.to() : relationship.from();
             Optional<String> qualifier = forward ? relationship.toPack() : relationship.fromPack();
-            Optional<PackIdentifier> holder =
-                    qualifier.isPresent() ? resolvers.packNamed(qualifier.get()) : Optional.of(component.packId());
+            Optional<PackIdentifier> holder = qualifier.isPresent()
+                    ? resolvers.holdingPack(
+                            new PackQualifiedReference(qualifier, neighbour.toString()), component.packId())
+                    : Optional.of(component.packId());
             if (holder.isEmpty() || visited.contains(new Held(holder.get(), neighbour))) {
                 continue;
             }

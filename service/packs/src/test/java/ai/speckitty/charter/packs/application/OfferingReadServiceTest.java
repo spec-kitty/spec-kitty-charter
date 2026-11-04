@@ -10,6 +10,7 @@ import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.PackArtifactRepository;
+import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import java.util.HashMap;
 import java.util.List;
@@ -199,18 +200,11 @@ class OfferingReadServiceTest {
     private final class InMemoryRefinements implements PackArtifactRepository {
 
         @Override
-        public List<String> changedArtifacts(PackIdentifier pack) {
-            return refined.getOrDefault(pack.value(), List.of());
-        }
-
-        @Override
-        public List<String> definedArtifacts(PackIdentifier pack) {
-            return defined.getOrDefault(pack.value(), List.of());
-        }
-
-        @Override
-        public List<String> referencesOf(PackIdentifier pack) {
-            return written.getOrDefault(pack.value(), List.of());
+        public PackCompositionFacts compositionFacts(PackIdentifier pack) {
+            return new PackCompositionFacts(
+                    refined.getOrDefault(pack.value(), List.of()),
+                    defined.getOrDefault(pack.value(), List.of()),
+                    written.getOrDefault(pack.value(), List.of()));
         }
     }
 }
