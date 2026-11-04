@@ -5,6 +5,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Urn;
@@ -326,6 +327,7 @@ public final class DomainRepositoryService
                 if (refines(edge.relation())) {
                     changed.add(edge.target());
                 }
+                refuseSelfLoop(pack, assembled.descriptor().name(), document.file(), edge);
                 references.add(edge.source());
                 references.add(edge.target());
             }
@@ -340,6 +342,27 @@ public final class DomainRepositoryService
         }
         defined.addAll(declared);
         return new PackCompositionFacts(List.copyOf(changed), List.copyOf(defined), List.copyOf(references));
+    }
+
+    /**
+     * Refuses a pack whose graph edge joins an artifact to itself by a qualifier naming the pack itself, the case the
+     * schema and the bare check cannot see (see {@link PackPolicy#joinsItself}); an endpoint that is no reference is
+     * left to the reads that judge the document.
+     */
+    private static void refuseSelfLoop(PackIdentifier pack, String packName, String file, GraphDocument.Edge edge) {
+        try {
+            if (PackPolicy.joinsItself(
+                    packName,
+                    PackQualifiedReference.parse(edge.source()),
+                    PackQualifiedReference.parse(edge.target()))) {
+                throw new CharterRefusal(
+                        RefusalCode.PACK_UNREADABLE,
+                        "the file " + file + " of " + pack.value() + " cannot be read: an edge joins '" + edge.source()
+                                + "' to itself");
+            }
+        } catch (IllegalArgumentException malformed) {
+            // Not a reference: the document is judged where it is read, not here.
+        }
     }
 
     /**
@@ -508,7 +531,8 @@ public final class DomainRepositoryService
         for (FilesystemPackStore.Stored<D> stored : read.elements(kind)) {
             try {
                 E entity = kind.toEntity(pack, stored.dso());
-                Optional<String> unsound = PackPolicy.referenceProblem(entity);
+                Optional<String> unsound =
+                        PackPolicy.referenceProblem(read.descriptor().name(), entity);
                 if (unsound.isPresent()) {
                     builder.violation(new PackElementViolation(stored.file(), "reference", unsound.get()));
                     continue;

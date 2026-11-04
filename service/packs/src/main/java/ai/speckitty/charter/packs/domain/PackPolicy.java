@@ -27,6 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -695,26 +696,47 @@ public final class PackPolicy {
     }
 
     /**
-     * The reason an artifact cannot be read for what it writes, or empty when its references are sound. A reference
-     * that is bare and names the artifact itself is a self-reference, refused as a graph edge to itself is (see
-     * {@code endpoints}); a qualified one names another pack's artifact of the same id and stands. A reference the
-     * artifact writes malformed is refused the same way, so a file whose references cannot be parsed is an unreadable
-     * file, never an exception the reads escape. The check covers every field {@link CharterArtifact#writtenReferences()}
-     * covers: typed references, bare procedures and directive refs, procedure references and tactic step references.
+     * The one rule for a self-loop in a pack named {@code packName}: two references join an artifact to itself when
+     * they name the same URN and both mean the writing pack, a bare one by default and a qualified one by naming it
+     * ({@code pack-a::directive:X} inside {@code pack-a}). A reference qualified with another pack names another
+     * pack's artifact of the same id, which is legal (ADR-0053 decision 7).
      *
+     * @param packName the descriptor name of the pack that writes both references
+     * @param from the reference on one side
+     * @param to the reference on the other side
+     * @return {@code true} when both mean the same artifact of the writing pack
+     */
+    public static boolean joinsItself(String packName, PackQualifiedReference from, PackQualifiedReference to) {
+        Objects.requireNonNull(packName, "packName");
+        return from.urn().equals(to.urn())
+                && from.packName().orElse(packName).equals(packName)
+                && to.packName().orElse(packName).equals(packName);
+    }
+
+    /**
+     * The reason an artifact cannot be read for what it writes, or empty when its references are sound. A reference
+     * that names the artifact itself is a self-reference ({@link #joinsItself}), refused as a graph edge to itself is
+     * (see {@code endpoints}); a reference qualified with another pack names that pack's artifact of the same id and
+     * stands. A reference the artifact writes malformed is refused the same way, so a file whose references cannot be
+     * parsed is an unreadable file, never an exception the reads escape. The check covers every field
+     * {@link CharterArtifact#writtenReferences()} covers: typed references, bare procedures and directive refs,
+     * procedure references and tactic step references.
+     *
+     * @param packName the descriptor name of the pack the artifact is read from
      * @param artifact the artifact, bound by its kind's mapper
      * @return the reason, worded after the artifact's URN; empty when the references are sound
      */
-    public static Optional<String> referenceProblem(CharterArtifact artifact) {
+    public static Optional<String> referenceProblem(String packName, CharterArtifact artifact) {
         List<PackQualifiedReference> written;
         try {
             written = artifact.writtenReferences();
         } catch (IllegalArgumentException malformed) {
             return Optional.of(artifact.urn() + ": " + malformed.getMessage());
         }
+        PackQualifiedReference self =
+                new PackQualifiedReference(Optional.empty(), artifact.urn().toString());
         for (PackQualifiedReference reference : written) {
-            if (!reference.qualified()
-                    && reference.asUrn().filter(artifact.urn()::equals).isPresent()) {
+            if (joinsItself(packName, self, reference)) {
                 return Optional.of(artifact.urn() + ": a reference cannot join '" + artifact.urn() + "' to itself");
             }
         }

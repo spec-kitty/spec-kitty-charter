@@ -100,9 +100,9 @@ references:
   hold that artifact.
 - The pack is provenance, not identity. The artifact's own URN stays bare, and the relationship it mints records
   the qualifier you wrote.
-- A bare reference to the artifact's own id is a self-loop, and the pack is refused as unreadable (`pack_unreadable`).
-  A qualified reference to the same id in another pack, such as a project pack's `SHARE` writing `base-pack::SHARE`,
-  is legal: it names a different artifact.
+- A bare reference to the artifact's own id, or one qualified with the pack that writes it, is a self-loop, and the
+  pack is refused as unreadable (`pack_unreadable`). A reference to the same id qualified with another pack, such as a
+  project pack's `SHARE` writing `base-pack::SHARE`, is legal: it names a different artifact.
 - When you register a relationship, its `to` may be qualified and its `from` may not: `from` is an artifact of the
   pack you register into.
 - Following a qualified reference across packs is part of a served read, the walk.
