@@ -35,24 +35,10 @@ class Pep440RangeTest {
         "<=2.0, 2.0.1, false",
         ">=1!1.0, 2.0, false",
         ">=2.0, 1!1.0, true",
-        // where the service once departed from packaging: epochs, local versions and the wildcard prefix
-        "~=1.4, 1!1.4.5, false",
-        "==1.*, 2!1.5, false",
-        "==1!1.*, 1.0, false",
+        // spellings the unit table keeps beside admits.tsv: an epoched wildcard and a local segment's case and zeros
         "==1!1.*, 1!1.2, true",
-        "==1.0+abc, 1.0, false",
-        "==1.0+abc, 1.0+xyz, false",
         "==1.0+abc, 1.0+ABC, true",
         "==1.0+abc.1, 1.0+abc.01, true",
-        "==1.0, 1.0+xyz, true",
-        "!=1.0+abc, 1.0, true",
-        "!=1.0.*, 1, false",
-        "!=1.0.*, 1.0.post1, false",
-        "!=1.*, 1!1.0, true",
-        "==1.0.*, 1.0.post1, true",
-        "==1.0.*, 1.0.1rc1, true",
-        "==1.0.*, 1, true",
-        "==1.0.0.*, 1, true",
     })
     void aRangeAdmitsOrRefusesAVersion(String range, String version, boolean admitted) {
         assertThat(Pep440Range.admits(range.trim(), version.trim())).isEqualTo(admitted);

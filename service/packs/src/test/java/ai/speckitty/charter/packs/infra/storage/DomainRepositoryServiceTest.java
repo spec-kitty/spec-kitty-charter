@@ -528,26 +528,26 @@ class DomainRepositoryServiceTest {
     }
 
     /**
-     * A reference that cannot be judged makes its file unreadable, never an exception the offering escapes as a 500:
-     * a qualifier with no URN after it (the schema pattern lets nothing through; the backstop holds when a document
-     * does) and a bare reference that names its own artifact, whichever field writes it. A qualified same-id reference
-     * names another pack's artifact and stands.
+     * A reference that names its own artifact, bare or qualified with the pack's own name, whichever field writes it,
+     * makes its file unreadable, never an exception the offering escapes as a 500. The schemas already refuse a
+     * qualifier with no URN after it ({@code PackSchemasTest}), so only the self-reference reaches this backstop.
+     * The reason must say so (the kernel's own self-loop guard or the backstop's): a schema refusal of the fixture would pass a bare file-name check. A qualified same-id
+     * reference to another pack names another pack's artifact and stands.
      */
     @ParameterizedTest
     @CsvSource(
             delimiter = '|',
             quoteCharacter = '"',
             value = {
-                "D1.directive.yaml|title: t\\nintent: i\\nenforcement: required\\nprocedures: ['ops::']",
-                "D1.directive.yaml|title: t\\nintent: i\\nenforcement: required\\nreferences: [{type: directive, id: D1}]",
-                "D1.directive.yaml|title: t\\nintent: i\\nenforcement: required\\nreferences: [{type: directive, id: 'roundtrip-descriptor-only::D1'}]",
-                "T1.tactic.yaml|name: n\\nsteps: [{title: s, description: d}]\\nreferences: [{type: tactic, id: T1}]",
-                "T1.tactic.yaml|name: n\\nsteps: [{title: s, description: d, references: [{type: tactic, id: T1}]}]",
-                "R1.procedure.yaml|title: t\\ndescription: d\\nentry_condition: a\\nexit_condition: b\\n"
-                        + "steps: [{title: s, description: d}]\\nreferences: [{type: procedure, id: R1}]"
+                "D1.directive.yaml|title: t\\nintent: i\\nenforcement: required\\nreferences: [{type: directive, id: D1}]|self-loop",
+                "D1.directive.yaml|title: t\\nintent: i\\nenforcement: required\\nreferences: [{type: directive, id: 'roundtrip-descriptor-only::D1'}]|itself",
+                "t1.tactic.yaml|name: n\\nsteps: [{title: s, description: d}]\\nreferences: [{name: n, type: tactic, id: t1, when: w}]|self-loop",
+                "t1.tactic.yaml|name: n\\nsteps: [{title: s, description: d, references: [{name: n, type: tactic, id: t1, when: w}]}]|itself",
+                "r1.procedure.yaml|title: t\\ndescription: d\\nentry_condition: a\\nexit_condition: b\\n"
+                        + "steps: [{title: s, description: d}]\\nreferences: [{type: procedure, id: r1}]|itself"
             })
-    void aReferenceThatCannotBeJudgedMakesItsFileUnreadable(String file, String fields, @TempDir Path host)
-            throws IOException {
+    void aReferenceThatNamesItsOwnArtifactMakesItsFileUnreadable(
+            String file, String fields, String reason, @TempDir Path host) throws IOException {
         Path pack = PackFixtures.copyOf("pack-descriptor-only", host);
         String id = file.substring(0, file.indexOf('.'));
         Files.writeString(
@@ -557,7 +557,7 @@ class DomainRepositoryServiceTest {
         assertThatThrownBy(() -> over.compositionFacts(new PackIdentifier("pack-descriptor-only")))
                 .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
                     assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
-                    assertThat(refused.getMessage()).contains(file);
+                    assertThat(refused.getMessage()).contains(file).contains(reason);
                 });
     }
 
