@@ -117,7 +117,7 @@ Everything a project could adopt: the buffet. It is made of Charter Packs, mostl
 
 ## Charter Pack
 
-A distributable bundle of charter components (artifacts and their CRG edges) together with optional activation presets shipped as `presets/<name>.yaml`. An org pack may also enforce activations through `required_<kind>` lists in its `org-charter.yaml`. A pack has two identities. Its configured pack id is the `charter_pack_id` it is configured under (`built-in`, an org pack's configured name, or `project`); org packs are configured under `charter_packs.org.packs` in `.kittify/config.yaml`. Its descriptor declares a pack id (a ULID) and a pack name (an identifier that qualifies cross-pack references). Pack ids and pack names are unique without exception. Every pack now declares its level in `pack.yaml` via the `pack_level` field — one of `built-in`, `org` or `project` (ADR 2026-10-11-2). The level names have one authority, `kernel.pack_tiers`; the tier token and the provenance/layer value now share a single spelling, `built-in` (the former no-hyphen `builtin` provenance spelling is folded away). Loading refuses a pack whose declared level disagrees with where it is configured (`PACK_LEVEL_MISMATCH`), and a `pack.yaml` missing the field (`PACK_LEVEL_MISSING`); for one release an org pack without a `pack.yaml` loads with a deprecation warning before that refusal takes effect. Validated with `spec-kitty charter pack validate`, listed with `spec-kitty charter pack list`. ADR-0048 composes packs through `depends_on`, and this part is built: the resolver orders the compose and the reads refuse a broken one. Still decided and not yet built: the named-packs split that makes `built-in` a distribution pack over the foundation, specialist, topical and stack packs.
+A distributable bundle of charter components (artifacts and their CRG edges) together with optional activation presets shipped as `presets/<name>.yaml`. An org pack may also enforce activations through `required_<kind>` lists in its `org-charter.yaml`. A pack has two identities and a name. Its configured pack id is the `charter_pack_id` it is configured under (`built-in`, an org pack's configured name, or `project`); org packs are configured under `charter_packs.org.packs` in `.kittify/config.yaml`. Its descriptor declares a pack id (a ULID) and a pack name (an identifier that qualifies cross-pack references, not an identity). Pack ids and pack names are unique without exception. Every pack now declares its level in `pack.yaml` via the `pack_level` field — one of `built-in`, `org` or `project` (ADR 2026-10-11-2). The level names have one authority, `kernel.pack_tiers`; the tier token and the provenance/layer value now share a single spelling, `built-in` (the former no-hyphen `builtin` provenance spelling is folded away). Loading refuses a pack whose declared level disagrees with where it is configured (`PACK_LEVEL_MISMATCH`), and a `pack.yaml` missing the field (`PACK_LEVEL_MISSING`); for one release an org pack without a `pack.yaml` loads with a deprecation warning before that refusal takes effect. Validated with `spec-kitty charter pack validate`, listed with `spec-kitty charter pack list`. ADR-0048 composes packs through `depends_on`, and this part is built: the resolver orders the compose and the reads refuse a broken one. Still decided and not yet built: the named-packs split that makes `built-in` a distribution pack over the foundation, specialist, topical and stack packs.
 
 {#charter-mediated-selection}
 
@@ -135,7 +135,7 @@ A resolution context (`charter.scope::CharterScope`) that maps a filesystem path
 
 ## Closure
 
-The set of packs reachable from one pack through `depends_on`, each pack id once. A qualified reference must name a pack in the closure of the pack that writes it, not merely in the compose; otherwise it is refused, naming the missing pack (ADR-0048, ADR-0053 decision 7).
+The set of packs reachable from one pack through `depends_on`, each pack id once. A qualified reference must name a pack in the closure of the pack that writes it, not merely in the compose; otherwise it is refused, naming the missing pack (`pack_reference_pack_missing`: missing from that closure, even when the pack is in the compose) (ADR-0048, ADR-0053 decision 7).
 
 **Meta:**
 
@@ -145,7 +145,7 @@ The set of packs reachable from one pack through `depends_on`, each pack id once
 
 ## Compose
 
-The closure rooted at one level's configured packs, including dependencies at levels nearer built-in. Today every configured pack is a root; roots from the activation set come with #360. It is ordered dependencies first, each level contiguous in merge order. A pack id and a pack name are each unique across it without exception, and an artifact id is unique within a level except where an `overrides` edge settles it (ADR-0048 decisions 8 and 10, ADR-0053 decision 6).
+The closure of `depends_on` rooted at every configured pack, across levels, including dependencies at levels nearer built-in. Today every configured pack is a root; roots from the activation set come with #360. It is ordered dependencies first, each level contiguous in merge order. A pack id and a pack name are each unique across it without exception, and an artifact id is unique within a level except where an `overrides` edge settles it (ADR-0048 decisions 8 and 10, ADR-0053 decision 6).
 
 **Meta:**
 
@@ -176,6 +176,16 @@ A pack whose artifacts the active charter puts in force. The activation set is r
 ## Available pack
 
 A pack the catalog offers and the service may hold, whether or not a project configures or activates it. Compare Configured pack and Activated pack.
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#composed-read}
+
+## Composed read
+
+A read that resolves the compose before it answers: `GET /offering` and `GET /packs/{packId}/artifacts/{kind}/{artifactId}/references`. A broken compose refuses it whole with the composition code, and any unreadable file of a configured pack refuses it as `pack_unreadable`, because it names every configured pack. Compare Pack-scoped read.
 
 **Meta:**
 
@@ -349,6 +359,16 @@ A high-level charter rule expressing non-negotiable or strongly preferred govern
 
 A directional Three-layer CRG relation marking a mandatory prerequisite: the source artifact cannot be meaningfully resolved without the target also being present and considered. Governance-context resolution for a mission-step action walks `requires` edges transitively (no hop limit) once it has collected the action's scoped artifacts, and the charter activation cascade follows the same edge to pull in artifacts that must also be active. It is the most heavily used relation in the built-in graph. Canonical source: `RELATION_DESCRIPTIONS[Relation.REQUIRES]` in `src/charter/offering/drg/models.py`.
 
+{#holding-pack}
+
+## Holding pack
+
+The pack of the compose that holds the artifact a reference names: the referring pack itself for a bare reference it can resolve there, the pack the qualifier names for a qualified one. It is answered as `HoldingPack` (`packId`, `descriptorPackId`, `name`) on a resolved reference and is absent when no pack holds the target.
+
+**Meta:**
+
+- **status:** `canonical`
+
 {#import-candidate}
 
 ## Import Candidate
@@ -443,7 +463,7 @@ A directional org-pack overlay relation: a pack artifact field-merges additional
 
 ## Overlay Override — `overrides` (CRG Relation)
 
-A directional org-pack overlay relation: a pack artifact declares a full replacement of a built-in artifact's content rather than a field-merge. Like Overlay Enhancement, no built-in artifact emits this edge by design — it only ever originates from an org- or project-tier overlay. Silently dropping steps or stripping step input/output when applying an `overrides` edge is rejected rather than tolerated. Canonical source: `RELATION_DESCRIPTIONS[Relation.OVERRIDES]` in `src/charter/offering/drg/models.py`.
+A directional org-pack overlay relation: a pack artifact declares a full replacement of a built-in artifact's content rather than a field-merge. Like Overlay Enhancement, no built-in artifact emits this edge by design — it only ever originates from an org- or project-tier overlay. Silently dropping steps or stripping step input/output when applying an `overrides` edge is rejected rather than tolerated. Canonical source: `RELATION_DESCRIPTIONS[Relation.OVERRIDES]` in `src/charter/offering/drg/models.py`. Not to be confused with the Overrides edge, a pack descriptor entry that settles a sibling conflict ([Overrides edge](#overrides-edge)), or with a layer override, a higher level's artifact taking the place of the same id at a lower level, which needs no relation or edge ([Sibling conflict](#sibling-conflict)).
 
 {#paradigm}
 
@@ -489,7 +509,7 @@ A playbook: a bounded, step-by-step way to handle one situation, with entry and 
 
 ## Overrides edge
 
-An `overrides: [{artifact, member}]` entry on a pack descriptor that settles a sibling conflict on `artifact` by naming `member`, the descriptor pack id of a contesting pack (ADR-0053 decision 5). Until #358 any pack of the compose may declare it; until #357 settling only clears the refusal and the member's version is not yet put in force.
+An `overrides: [{artifact, member}]` entry on a pack descriptor that settles a sibling conflict on `artifact` by naming `member`, the descriptor pack id of a contesting pack (ADR-0053 decision 5). Until #358 any pack of the compose may declare it; until #357 settling only clears the refusal and the member's version is not yet put in force. Not to be confused with the CRG relation [Overlay Override](#overlay-override-overrides-crg-relation), which replaces a built-in artifact's content, or with a layer override, the same id at a higher level taking the place of the lower level's, which needs no edge.
 
 **Meta:**
 
@@ -499,7 +519,7 @@ An `overrides: [{artifact, member}]` entry on a pack descriptor that settles a s
 
 ## Pack id (descriptor)
 
-The ULID a pack declares as `pack_id` in `pack.yaml`; `parent_pack`, `depends_on[].pack_id` and `overrides[].member` take the same shape. It is `OfferingPack.descriptorPackId` and `dependsOn[].descriptorPackId` on the wire, and the identity a dependency edge names. Unique across a compose without exception (`pack_duplicate_id`). Not the configured pack id.
+The ULID a pack declares as `pack_id` in `pack.yaml`; `parent_pack`, `depends_on[].pack_id` and `overrides[].member` take the same shape. It is `OfferingPack.descriptorPackId`, `dependsOn[].descriptorPackId` and a refusal's `packs[].descriptorPackId` on the wire, and the identity a dependency edge names. Unique across a compose without exception (`pack_duplicate_id`). Not the configured pack id.
 
 **Meta:**
 
@@ -515,11 +535,21 @@ The `name` in `pack.yaml`, matching `^[a-z0-9][a-z0-9_-]*$`. It is the `<pack-na
 
 - **status:** `canonical`
 
+{#pack-scoped-read}
+
+## Pack-scoped read
+
+A read that judges only the pack and the artifact its path names, such as `GET /packs/{packId}/artifacts/{kind}/{artifactId}`. It does not resolve the compose, so it still answers while the compose is broken or while another file of the pack is unreadable. Compare Composed read.
+
+**Meta:**
+
+- **status:** `canonical`
+
 {#pep-440-range}
 
 ## PEP 440 range
 
-The grammar of `depends_on[].range`: a PEP 440 version-specifier set such as `>=1.2,<2` or `~=1.4`, the grammar `requires_core` already uses (ADR-0053 decision 4). A malformed range, or two ranges on one pack that share no version, is refused as `pack_dependency_out_of_range`.
+The grammar of `depends_on[].range`: a PEP 440 version-specifier set such as `>=1.2,<2` or `~=1.4`, the grammar `requires_core` already uses (ADR-0053 decision 4). Two ranges on one pack that share no version, or a range the held version misses, are refused as `pack_dependency_out_of_range`; a range that is no PEP 440 specifier set, like a `pack_version` that is no PEP 440 version, makes the `pack.yaml` unreadable (`pack_unreadable`). A range does not exclude prereleases unless it says so, a deliberate deviation from `packaging`'s default.
 
 **Meta:**
 
@@ -633,7 +663,7 @@ A directional Three-layer CRG relation pointing at content that is relevant but 
 
 ## Specialist pack
 
-A pack that builds on the packs below it and only adds artifacts and graph edges. Two sibling packs that change the same artifact are refused unless the distribution pack settles it (ADR-0048).
+A pack that builds on the packs below it and only adds artifacts and graph edges. Two sibling packs that change or define the same artifact id are a sibling conflict, refused unless an `overrides` edge settles it; until #358 any pack of the compose may declare that edge, not only the distribution pack (ADR-0048, ADR-0053 decision 5).
 
 **Meta:**
 
