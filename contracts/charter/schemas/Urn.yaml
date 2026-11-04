@@ -3,5 +3,5 @@ description: A DRG node identity, <node kind>:<id>, for example directive:DIRECT
 type: string
 pattern: '^[a-z_]+:.+$'
 x-source:
-  path: service/charter-domain/src/main/java/ai/speckitty/charter/domain/Urn.java
+  path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/Urn.java
   symbol: Urn

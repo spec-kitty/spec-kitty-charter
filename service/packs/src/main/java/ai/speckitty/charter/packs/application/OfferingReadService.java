@@ -194,7 +194,7 @@ public final class OfferingReadService {
             }
             return closure;
         } catch (PackCompositionResolver.Refusal refusal) {
-            throw new CharterRefusal(refusal.failure().code(), refusal.detail(), refusal.packs());
+            throw refusal.toCharterRefusal();
         }
     }
 
