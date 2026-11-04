@@ -181,7 +181,8 @@ class RegistrationListsTest {
         ByteArrayInputStream over = new ByteArrayInputStream(bytes("0123456789abcdef"));
         assertThatThrownBy(() -> RegistrationLists.readBounded(message(over, new HttpHeaders()), 8, "paradigm"))
                 .as("without one, one byte past the limit")
-                .isInstanceOf(CharterRefusal.class);
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.VALIDATION_FAILED));
         assertThat(over.available()).as("the rest is never read").isEqualTo(16 - 9);
 
         assertThat(RegistrationLists.readBounded(message(bytes("01234567"), new HttpHeaders()), 8, "styleguide"))

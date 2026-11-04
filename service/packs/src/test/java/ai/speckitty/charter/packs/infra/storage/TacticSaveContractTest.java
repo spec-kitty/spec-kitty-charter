@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -76,18 +77,21 @@ class TacticSaveContractTest {
             throw new IOException("injected failure");
         });
         assertThatThrownBy(() -> failing.write(PACK, TacticBinding.INSTANCE, fresh))
-                .isInstanceOf(CharterRefusal.class);
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
         assertThat(tempSeen[0]).isTrue();
         assertThat(fileNames(pack)).isEqualTo(namesBefore);
 
         // Containment: a climbing id and a dangling link planted at the new file's name are refused.
         FilesystemPackStore store = new FilesystemPackStore(host, new YamlSerializationStrategy());
         assertThatThrownBy(() -> store.write(PACK, TacticBinding.INSTANCE, tactic("../escaped", "Escaped")))
-                .isInstanceOf(CharterRefusal.class);
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
         Path outside = host.resolve("outside.yaml");
         Files.createSymbolicLink(pack.resolve("brand-new-tactic.tactic.yaml"), outside);
         assertThatThrownBy(() -> store.write(PACK, TacticBinding.INSTANCE, fresh))
-                .isInstanceOf(CharterRefusal.class);
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
         assertThat(outside).doesNotExist();
         assertThat(host.resolve("escaped.tactic.yaml")).doesNotExist();
         Files.delete(pack.resolve("brand-new-tactic.tactic.yaml"));

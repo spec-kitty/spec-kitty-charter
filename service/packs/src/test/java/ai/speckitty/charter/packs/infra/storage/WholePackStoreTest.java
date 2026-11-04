@@ -259,7 +259,8 @@ class WholePackStoreTest {
                         new WholePackStore.LoadedPack(
                                 loaded.pack(), new PackLayout(places), loaded.graphs(), List.of()),
                         target))
-                .isInstanceOf(CharterRefusal.class);
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
         assertThat(target).doesNotExist();
         assertThat(parent.resolve("escaped.directive.yaml")).doesNotExist();
         assertThat(stagingLeftovers(parent)).isEmpty();
@@ -590,7 +591,9 @@ class WholePackStoreTest {
                         "assets/debrief/logo.png.asset.yaml",
                         "asset",
                         "payload assets/debrief/logo.png does not exist"));
-        assertThatThrownBy(() -> store.write(loaded, target)).isInstanceOf(CharterRefusal.class);
+        assertThatThrownBy(() -> store.write(loaded, target))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.VALIDATION_FAILED));
         assertThat(target).doesNotExist();
     }
 

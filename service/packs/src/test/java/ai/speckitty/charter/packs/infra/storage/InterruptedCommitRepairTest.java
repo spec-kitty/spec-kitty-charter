@@ -336,7 +336,9 @@ class InterruptedCommitRepairTest {
         StorageRootLocations locations = new StorageRootLocations(packs);
 
         assertThat(locations.all()).as("the dangling link is not served").isEmpty();
-        assertThatThrownBy(() -> write(locations, null)).isInstanceOf(CharterRefusal.class);
+        assertThatThrownBy(() -> write(locations, null))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND));
 
         assertThat(target)
                 .as("nothing was restored outside the configuration root")
@@ -381,7 +383,8 @@ class InterruptedCommitRepairTest {
     private void crash(StorageRootLocations locations) {
         assertThatThrownBy(() -> new PackCommitStore(locations, strategy, CRASH_AFTER_ASIDE)
                         .commit(PACK, null, toolguide("lost"), SHARD))
-                .isInstanceOf(CharterRefusal.class);
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
     }
 
     /** A write of {@code fd} through the write store's lock, as a registration does. */
