@@ -102,12 +102,15 @@ tasks.named("check") {
     dependsOn(tasks.named("javadoc"), tasks.named("jacocoTestReport"))
 }
 
-// Mockito is kept though no test uses it today (#373): spring-boot-starter-test brings it to the Spring modules
-// regardless, and the agent is attached so a future use does not hit the JDK's dynamic self-attach refusal.
-// Its version follows Spring Boot's (see the mockito entry in the version catalog).
+// Mockito is kept though no test uses it today (#373): spring-boot-starter-test brings it to :deployable and :packs
+// regardless; the other modules keep it only for a future use. The agent is attached because the JDK warns on
+// Mockito's dynamic self-attach today and will refuse it in a future release (JEP 451).
+// Its version follows Spring Boot's (see the mockito entry in the version catalog), and the agent resolves
+// consistently with the test runtime classpath, so a BOM that raises Mockito there raises the agent with it.
 val mockitoAgent = configurations.create("mockitoAgent") {
     isCanBeConsumed = false
     isTransitive = false
+    shouldResolveConsistentlyWith(configurations.testRuntimeClasspath.get())
 }
 
 dependencies {
