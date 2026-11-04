@@ -1,5 +1,5 @@
 ---
-title: "ADR-0056: SonarCloud runs nightly and reported only; complexity is gated per pull request by Checkstyle"
+title: "ADR-0058: SonarCloud runs nightly and reported only; complexity is gated per pull request by Checkstyle"
 description: "Static analysis beyond correctness: a nightly, never-required SonarCloud scan with new-code coverage, and Checkstyle complexity rules in the per-PR gate."
 doc_status: draft
 updated: 2026-11-03T00:00:00Z
@@ -18,7 +18,7 @@ audience:
     guidance_text: Read this for why SonarCloud is reported and not required, and what it costs.
 ---
 
-# ADR-0056: SonarCloud runs nightly and reported only; complexity is gated per pull request by Checkstyle
+# ADR-0058: SonarCloud runs nightly and reported only; complexity is gated per pull request by Checkstyle
 
 ## Status
 

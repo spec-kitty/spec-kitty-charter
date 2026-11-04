@@ -6,7 +6,7 @@ updated: 2026-11-03T00:00:00Z
 type: Plan
 kind: Planning
 related:
-  - adr/0056-sonarcloud-nightly-reported-and-checkstyle-complexity-per-pr
+  - adr/0058-sonarcloud-nightly-reported-and-checkstyle-complexity-per-pr
   - adr/0047-generated-indexes-and-merge-queue
   - adr/0023-ci-gate-required-check
   - adr/0006-onion-vertical-slices-archunit
@@ -22,7 +22,7 @@ audience:
 
 **Status: assessment, not a decision.** It answers two operator questions: how good is the test
 suite, and should the charter add SonarCloud? It changes no code. The SonarCloud decision it feeds
-is drafted as [ADR-0056](/adr/0056-sonarcloud-nightly-reported-and-checkstyle-complexity-per-pr/)
+is drafted as [ADR-0058](/adr/0058-sonarcloud-nightly-reported-and-checkstyle-complexity-per-pr/)
 (Proposed). The issues it proposes are listed at the end and are not filed.
 
 ## Short answer
@@ -274,6 +274,10 @@ The recommendations below refer to these as W1 to W5.
    leave alone.
 
    They have not flaked yet, but they share #316's failure mode under load.
+
+   *Since this assessment:* [ADR-0057](/adr/0057-performance-budgets-never-block-a-pull-request/)
+   (2026-11-04) rules that a time or CPU-time budget is tagged `timing`, stays out of `verifyAll` and
+   runs report-only in CI. These five asserts are what R2 below moves under that rule.
 4. **About a third of the exception assertions check only the type.** That is 154 of 494, of which
    15 are `CharterRefusal`. A change that raises the wrong refusal code, or fails for the wrong reason,
    still passes them. The contract scenarios catch some of these at the HTTP layer, but not the
@@ -304,7 +308,7 @@ Other findings, lower risk:
 | R3 | Pin the code on the 15 `CharterRefusal` checks that test only the type. Freeze the other 139 type-only `assertThatThrownBy` in a shrink-only baseline with a guard test. | S | W4 |
 | R4 | Close the module-local gaps that PIT's no-coverage list shows: `kernel.validation` (`Constrained`, `Rationale`), `profiles` (`SelfReviewStep`, `ModeDefault`) and `packs.infra.fetch` (`CappedBodySubscriber`). Prove each new test with a planted break. | M | W1, W2 |
 | R5 | Add Checkstyle complexity modules to the per-PR gate: `CyclomaticComplexity`, `NPathComplexity`, `MethodLength`, `NestedIfDepth`. Set the limits from a measurement run, and keep the current 0-suppression register or a shrink-only one. No new tool is needed. | M | W5 |
-| R6 | Add a nightly, reported-only SonarCloud scan with new-code coverage, as set out below and in ADR-0056. | M | W5, coverage |
+| R6 | Add a nightly, reported-only SonarCloud scan with new-code coverage, as set out below and in ADR-0058. | M | W5, coverage |
 | R7 | Remove the unused Mockito dependency and Java agent, or record why they are kept. | S | hygiene |
 | R8 | Run the QA pack's `qa-coverage-gap-analysis` over the 27 promise-first scenarios. Map each one to a contract scenario that covers it, move it under the Cucumber runner, or retire it with the covering scenario named. | M | traceability |
 | R9 | Give the internal pack's `test-quality-scan` a Java front end, as an open-packs change. The `test-suite-quality-assessment` procedure could then run per domain on this repository with ledgers. | L | repeatability |
@@ -331,7 +335,7 @@ Other findings, lower risk:
   is more surface for a signal that Checkstyle (R5) can give in the gate itself, blocking and with no
   new tool.
 
-**Proposed shape** (ADR-0056 has the full record):
+**Proposed shape** (ADR-0058 has the full record):
 
 - **A new `sonar.yml` workflow.**
   - It runs nightly and on manual dispatch, on `main` only.
@@ -359,7 +363,7 @@ Other findings, lower risk:
 
 | Question | Ruling |
 |---|---|
-| SonarCloud adoption and shape | **Nightly SonarCloud, reported only; per-PR complexity through Checkstyle** (R5, R6). Not implemented in this change: proposed as an issue and as [ADR-0056](/adr/0056-sonarcloud-nightly-reported-and-checkstyle-complexity-per-pr/) (Proposed). |
+| SonarCloud adoption and shape | **Nightly SonarCloud, reported only; per-PR complexity through Checkstyle** (R5, R6). Not implemented in this change: proposed as an issue and as [ADR-0058](/adr/0058-sonarcloud-nightly-reported-and-checkstyle-complexity-per-pr/) (Proposed). |
 | Mutation testing | **Adopt #239 as designed** (R1). |
 | Coverage gate | **No JaCoCo threshold. New-code coverage is reported by SonarCloud** (R6). |
 
@@ -376,7 +380,7 @@ proceeds as its own mission.
 | R3: "Pin refusal codes in exception assertions; shrink-only baseline for type-only checks" | S | Lists the 15 `CharterRefusal` sites. Applies `DIRECTIVE_041`. |
 | R4: "Close module-local test gaps in kernel.validation, profiles and packs.infra.fetch" | M | Acceptance: PIT no-coverage counts fall; each new test is proved by a planted break. |
 | R5: "Checkstyle complexity and length rules in the per-PR gate" | M | Limits measured first; 0 suppressions or a shrink-only register. |
-| R6: "Nightly reported-only SonarCloud scan (ADR-0056)" | M | Needs `SONAR_TOKEN` and the SonarCloud project from the operator. Accepting ADR-0056 comes first. |
+| R6: "Nightly reported-only SonarCloud scan (ADR-0058)" | M | Needs `SONAR_TOKEN` and the SonarCloud project from the operator. Accepting ADR-0058 comes first. |
 | R7: "Remove the unused Mockito dependency and Java agent" | S | |
 | R8: "Coverage-gap analysis of the 27 promise-first scenarios" | M | `qa-coverage-gap-analysis`; wire, map or retire each one. |
 | R9: "Java support for the test-quality-scan asset" | L | An open-packs change; this repository consumes it. |
