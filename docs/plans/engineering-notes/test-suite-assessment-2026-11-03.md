@@ -2,7 +2,7 @@
 title: "Test suite assessment (2026-11-03)"
 description: How good the charter's test suite is, measured against the pack testing rubric, and whether to add SonarCloud, with ranked weaknesses and proposed issues.
 doc_status: draft
-updated: 2026-11-03T00:00:00Z
+updated: 2026-11-04T00:00:00Z
 type: Plan
 kind: Planning
 related:
@@ -25,6 +25,16 @@ suite, and should the charter add SonarCloud? It changes no code. The SonarCloud
 is recorded as [ADR-0058](/adr/0058-sonarcloud-nightly-reported-and-checkstyle-complexity-per-pr/)
 (Accepted, 2026-11-03). The issues it proposes are listed at the end and are not filed.
 
+**Clarified 2026-11-04 (PR #366 landing).** The measurements below are as of 2026-11-03 and are not
+updated. Three readings are corrected, each marked inline:
+
+- the eight tight wall-clock checks in W3 are deadline checks, not budgets, so R2 keeps them in
+  `:packs:test` under [#320](https://github.com/spec-kitty/spec-kitty-charter/issues/320) and does
+  not tag them `timing`;
+- the `timingBudgets` step is report-only since
+  [ADR-0057](/adr/0057-performance-budgets-never-block-a-pull-request/);
+- R3 pins the 15 `CharterRefusal` codes and adds no counting guard test.
+
 ## Short answer
 
 The suite is **strong**, and its assertions hold up when probed. `./gradlew verifyAll` ran
@@ -36,7 +46,9 @@ The risk sits in what the suite does not measure:
 
 - mutation testing gates nothing and never reaches `packs`, which holds 90 % of the code;
 - module-local reach is lower than the aggregate coverage suggests;
-- wall-clock budgets of the kind behind #316 remain in the parallel test run;
+- tight wall-clock deadline checks (not budgets) remain in the parallel test run, which a loaded
+  runner can trip in the same way that #316's CPU-time budget (`ThreadMXBean`, not wall-clock) was
+  tripped *(clarified 2026-11-04)*;
 - about a third of the exception assertions check only the exception's type;
 - nothing measures complexity, duplication or security patterns.
 
@@ -131,7 +143,7 @@ are counted as they run, and the times are summed per suite, not wall clock.
 - **Conformance and parity tests** include `ContractConformanceTest`,
   `DivergenceRegisterTest`, `ActivationConfigConformanceTest` and the parity tests (`WireTokenParityTest`,
   `RelationSetParityTest` and others).
-- **Timing.** `timingBudgets` runs only `@Tag("timing")`. That is `PackFileSetBudgetTest`, run
+- **Timing.** `timingBudgets` runs only `@Tag("timing")` (report-only since 2026-11-04, ADR-0057). That is `PackFileSetBudgetTest`, run
   serially in its own CI step since #316 was fixed by #321.
 
 **Shape against the pyramid.** The base is wide: the domain modules plus `packs.domain` and
@@ -234,14 +246,18 @@ It fails closed, it honors `pr:pause-ci`, and per
 `service.yml` runs `verifyAll`, then `:packs:timingBudgets`, and uploads the aggregated JaCoCo
 report as the `coverage` artifact. A `verify` run on `main` takes about 5 minutes.
 
+*Clarified 2026-11-04:* since 2026-11-04 ([ADR-0057](/adr/0057-performance-budgets-never-block-a-pull-request/))
+the `timingBudgets` step is report-only and runs each budget in its own JVM.
+
 | Gate family | Present today | Blocking |
-|---|---|---|
+| --- | --- | --- |
 | Compiler | `-Xlint:all -Werror`, Error Prone 2.50.0 on main and test | yes |
 | Nullness | NullAway at ERROR, `OnlyNullMarked`, JSpecify mode, main code only; 20 of 20 main packages `@NullMarked` | yes |
 | Style | Checkstyle 14.3.0, `maxWarnings = 0`, 0 suppressions; Spotless | yes |
 | Architecture | ArchUnit onion rules ([ADR-0006](/adr/0006-onion-vertical-slices-archunit/)) | yes |
 | Contract | vacuum lint with planted fixtures, `oasdiff` breaking-change check | yes |
 | Supply chain | `gradle/verification-metadata.xml` (SHA-256), SHA-pinned actions | yes |
+| Performance budgets | `:packs:timingBudgets` | no (report-only, ADR-0057) |
 | Coverage | JaCoCo per module and aggregated, uploaded; **no threshold** | no |
 | Mutation | PIT nightly on kernel, missions, profiles; **no threshold**; uploads kernel's report only | no |
 | Complexity, length, duplication | **none**: Checkstyle has no such module; no PMD or CPD | — |
@@ -262,8 +278,10 @@ The recommendations below refer to these as W1 to W5.
    - `profiles` has a mutation score of 53 %, with 29 of 66 mutants never touched.
    - `packs.infra.fetch` has 77.2 % line coverage. It is the outbound HTTPS guide fetcher, a
      fail-closed network boundary, and `CappedBodySubscriber` has no test of its own.
-3. **Wall-clock budgets remain in the parallel `test` task.** These are the same kind of flake as
-   #316, which dropped unrelated pull requests from the merge queue. The budgets include:
+3. **Tight wall-clock deadline checks (not budgets) remain in the parallel `test` task.** A loaded
+   runner can trip them in the same way that #316's CPU-time budget (`ThreadMXBean`, not a
+   wall-clock one) was tripped, which dropped unrelated pull requests from the merge queue. The
+   eight checks, in five files, are:
    - `HttpsGuideFetcherTest.java:540`: less than 2 s;
    - `HttpsGuideFetcherLoopbackTest.java:93`: less than 5 s;
    - `ParsedYamlTest.java:130,146,153`: `assertTimeoutPreemptively`, 2 s;
@@ -275,9 +293,13 @@ The recommendations below refer to these as W1 to W5.
 
    They have not flaked yet, but they share #316's failure mode under load.
 
-   *Since this assessment:* [ADR-0057](/adr/0057-performance-budgets-never-block-a-pull-request/)
-   (2026-11-04) rules that a time or CPU-time budget is tagged `timing`, stays out of `verifyAll` and
-   runs report-only in CI. These five asserts are what R2 below moves under that rule.
+   *Clarified 2026-11-04:* [ADR-0057](/adr/0057-performance-budgets-never-block-a-pull-request/)
+   rules that a time or CPU-time budget is tagged `timing`, stays out of `verifyAll` and runs
+   report-only in CI. These eight are deadline checks, not budgets: several are correctness and
+   security guards, among them the alias-bomb refusal in `ParsedYamlTest` and the fetcher's
+   `TIMEOUT`. Tagging them `timing` would make those guards report-only. The
+   [service build guide](/guides/service-build/) says a deadline check needs no tag, and
+   [#320](https://github.com/spec-kitty/spec-kitty-charter/issues/320) tracks the tight ones.
 4. **About a third of the exception assertions check only the type.** That is 154 of 494, of which
    15 are `CharterRefusal`. A change that raises the wrong refusal code, or fails for the wrong reason,
    still passes them. The contract scenarios catch some of these at the HTTP layer, but not the
@@ -304,8 +326,8 @@ Other findings, lower risk:
 | # | Recommendation | Size | Addresses |
 |---|---|:-:|---|
 | R1 | Adopt [#239](https://github.com/spec-kitty/spec-kitty-charter/issues/239) as designed. Add a per-module floor of the current score minus 3, rounded down to a multiple of 5: kernel 65, missions 70, profiles 50, from today's run. Extend PIT to `packs.domain` and `packs.application`. Upload every module's report with a job summary. | M | W1 |
-| R2 | Move the remaining wall-clock budgets out of the parallel `test` task. Tag them `timing` so `timingBudgets` runs them, or assert work instead of time. Do not widen any budget. | S | W3 |
-| R3 | Pin the code on the 15 `CharterRefusal` checks that test only the type. Freeze the other 139 type-only `assertThatThrownBy` in a shrink-only baseline with a guard test. | S | W4 |
+| R2 | *(Clarified 2026-11-04.)* Under [#320](https://github.com/spec-kitty/spec-kitty-charter/issues/320), keep the eight deadline checks in `:packs:test`. Widen each deadline into a hang cap far above the work's own time, or assert the work instead of the time. Do not tag them `timing`. | S | W3 |
+| R3 | Pin the code on the 15 `CharterRefusal` checks that test only the type. Leave the other 139 type-only `assertThatThrownBy` to review and to the test-cleanup FIX verdicts, with no counting guard test, which would be a test about tests (`DIRECTIVE_041`). *(Clarified 2026-11-04.)* | S | W4 |
 | R4 | Close the module-local gaps that PIT's no-coverage list shows: `kernel.validation` (`Constrained`, `Rationale`), `profiles` (`SelfReviewStep`, `ModeDefault`) and `packs.infra.fetch` (`CappedBodySubscriber`). Prove each new test with a planted break. | M | W1, W2 |
 | R5 | Add Checkstyle complexity modules to the per-PR gate: `CyclomaticComplexity`, `NPathComplexity`, `MethodLength`, `NestedIfDepth`. Set the limits from a measurement run, and keep the current 0-suppression register or a shrink-only one. No new tool is needed. | M | W5 |
 | R6 | Add a nightly, reported-only SonarCloud scan with new-code coverage, as set out below and in ADR-0058. | M | W5, coverage |
@@ -376,8 +398,8 @@ proceeds as its own mission.
 | Proposed issue | Size | Notes |
 |---|:-:|---|
 | R1: comment on #239 with today's baseline (kernel 69 %, missions 77 %, profiles 53 %) and the report-upload gap | — | #239 exists, so this needs no new issue |
-| R2: "Move the remaining wall-clock budgets out of the parallel test run" | S | Names the call sites above. References #316 and #321. |
-| R3: "Pin refusal codes in exception assertions; shrink-only baseline for type-only checks" | S | Lists the 15 `CharterRefusal` sites. Applies `DIRECTIVE_041`. |
+| R2: a comment on [#320](https://github.com/spec-kitty/spec-kitty-charter/issues/320), not a new issue | S | Names the eight call sites above: widen each deadline into a hang cap, or assert the work; do not tag them `timing`. |
+| R3: "Pin refusal codes in `CharterRefusal` assertions" | S | Lists the 15 `CharterRefusal` sites. No counting guard test (`DIRECTIVE_041`). |
 | R4: "Close module-local test gaps in kernel.validation, profiles and packs.infra.fetch" | M | Acceptance: PIT no-coverage counts fall; each new test is proved by a planted break. |
 | R5: "Checkstyle complexity and length rules in the per-PR gate" | M | Limits measured first; 0 suppressions or a shrink-only register. |
 | R6: "Nightly reported-only SonarCloud scan (ADR-0058)" | M | Needs `SONAR_TOKEN` and the SonarCloud project from the operator. |

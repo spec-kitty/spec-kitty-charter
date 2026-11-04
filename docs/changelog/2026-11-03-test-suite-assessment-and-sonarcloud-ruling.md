@@ -35,7 +35,7 @@ by risk:
 
 1. Mutation testing gates nothing and skips `packs`.
 2. Each module's own tests reach less than the aggregate coverage shows.
-3. Wall-clock budgets remain in the parallel test run.
+3. Tight wall-clock deadline checks remain in the parallel test run.
 4. A third of the exception assertions check only the type.
 5. Nothing measures complexity.
 
