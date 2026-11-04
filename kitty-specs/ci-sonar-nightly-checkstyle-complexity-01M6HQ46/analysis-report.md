@@ -4,7 +4,7 @@ artifact_type: spec-kitty.analysis-report
 command: /spec-kitty.analyze
 mission_slug: ci-sonar-nightly-checkstyle-complexity-01M6HQ46
 mission_id: 01M6HQ467X9NT5XZQESZK52BBK
-generated_at: '2026-11-04T06:11:20.954165+00:00'
+generated_at: '2026-11-04T06:29:13.249702+00:00'
 analyzer_agent: unknown
 input_artifacts:
   spec.md:
@@ -15,16 +15,16 @@ input_artifacts:
     sha256: 615e7cc2231e9f372b9bacfa14ffd5d9cc92235cbd2ebf9b55352418c0032f51
   tasks.md:
     path: kitty-specs/ci-sonar-nightly-checkstyle-complexity-01M6HQ46/tasks.md
-    sha256: 801ddde0df80ed1aa2a28498bae16bba2da768ca27d1005d0f99ee3edf06f30e
+    sha256: 535aa25b139659eeca69ca11cafe7aae3778d3d3bf699bdf1adca66fb05c7595
   charter:
     path: .kittify/charter/charter.yaml
     sha256: af2620decc50721d9aa4e6f169d3e1e8c718412cc7d347a2891ca6d8aacbd351
 verdict: ready
 issue_counts:
-  low: 2
+  high: 0
   medium: 1
   critical: 0
-  high: 0
+  low: 2
   info: 0
 findings:
 - id: U1
@@ -54,7 +54,7 @@ findings:
 | Requirement Key | Has Task? | Task IDs | Notes |
 |-----------------|-----------|----------|-------|
 | FR-001 complexity-limits-in-gate | Yes | T001, T002, T004 | |
-| FR-002 shrink-only-register | Yes | T003, T005–T009 | |
+| FR-002 shrink-only-register | Yes | T003, T005–T009, T017 | T017 added by the operator's register-cap ruling: three methods refactored so the register fits SC-002's 15 |
 | FR-003 nightly-analysis | Yes | T010, T011 | |
 | FR-004 skip-green-without-token | Yes | T010, T013 | See U1 |
 | FR-005 reported-only-never-required | Yes | T011, T012 | |
@@ -75,7 +75,7 @@ pre-PR review.
 **Metrics:**
 
 - Total requirements: 21 (6 FR, 4 NFR, 5 C, 4 SC, plus 2 decisions recorded)
-- Total tasks: 16
+- Total tasks: 17
 - Coverage: 100 % of requirements have at least one task
 - Ambiguity count: 1
 - Duplication count: 0
@@ -83,6 +83,6 @@ pre-PR review.
 
 ## Next Actions
 
-Re-run after remediation: F1 (tasks.md wording) and C1 (commit trailers) from the first run are fixed.
+Re-run after the register-cap ruling (T017 added to WP01) and after remediation: F1 (tasks.md wording) and C1 (commit trailers) from the first run are fixed.
 No critical or high findings remain, so implementation may proceed. U1 and A1 go in the PR body as
 follow-ups for the operator. Commits made later by the CLI get the same trailer pass at closeout.
