@@ -621,7 +621,8 @@ public final class DomainRepositoryService
                 return candidate;
             }
         }
-        throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + pack.value() + " is not a configured pack");
+        // The identifier matches no configured pack: the caller asked wrongly (CharterRefusalCode pack_not_found).
+        throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + pack.value() + " was not found.");
     }
 
     /** The store rooted at the pack directory's parent, addressed by the directory's own name. */
