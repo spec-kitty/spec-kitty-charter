@@ -80,12 +80,14 @@ class DomainRepositoryServiceTest {
         assertThat(service.get(BY_ID)).isEqualTo(service.get(BY_NAME));
     }
 
-    /** Resolution refuses an identifier no configured location answers to (control for the two above). */
+    /** Resolution refuses an identifier no configured location answers to as not found, like the write side. */
     @Test
     void anUnconfiguredPackIsRefused() {
         assertThatThrownBy(() -> service.load(new PackIdentifier("unconfigured"), ALPHA))
-                .isInstanceOfSatisfying(
-                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+                .isInstanceOfSatisfying(CharterRefusal.class, r -> {
+                    assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
+                    assertThat(r.getMessage()).isEqualTo("Pack unconfigured was not found.");
+                });
     }
 
     /** Entity-level round-trip: save then load returns an equal entity, down to every field. */

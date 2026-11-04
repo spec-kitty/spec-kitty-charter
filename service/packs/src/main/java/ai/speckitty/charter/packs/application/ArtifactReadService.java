@@ -500,9 +500,9 @@ public final class ArtifactReadService {
     }
 
     /**
-     * The pack aggregate. A refusal to read it is {@link RefusalCode#PACK_NOT_FOUND} when no configured pack has the
-     * identifier, and stays {@link RefusalCode#PACK_UNREADABLE} for a configured pack (one without a readable
-     * {@code pack.yaml} among them).
+     * The pack aggregate. The storage refuses an identifier no configured pack answers to
+     * {@link RefusalCode#PACK_NOT_FOUND} itself; an unreadable pack is judged here, and stays
+     * {@link RefusalCode#PACK_UNREADABLE} for a configured pack (one without a readable {@code pack.yaml} among them).
      */
     private Pack load(PackIdentifier pack) {
         try {
