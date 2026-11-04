@@ -1060,12 +1060,14 @@ Feature: The compose resolves the configured packs' dependency graph
     And the field at "/packs/1/name" is "beta-pack"
     And the response has no "Charter-Source-Fingerprint" header
 
-  Scenario: A relationship whose target the compose cannot resolve is refused 422 before anything is written
+  Scenario Outline: A relationship whose target the compose cannot resolve is refused 422 before anything is written
     The registration judges its own to against the compose of the pack it writes into (FR-017), so an edge
-    the next offering read would refuse never lands. alpha declares no depends_on, so beta-pack is outside
-    its closure: the three reference codes answer 422 on putPackRelationship (the contract's x-refusal
-    operations map) where the reads answer 500, and the packs member names alpha first. The refused write
-    changed nothing: the same remembered ETag still registers a target no pack holds, which is external.
+    the next offering read would refuse never lands. alpha depends on beta and not on gamma: a qualifier naming
+    gamma is outside its closure, a bare SHARE only beta holds is unqualified, and beta-pack::NOPE names a pack
+    of the closure that does not hold it. Each of the three reference codes answers 422 on putPackRelationship
+    (the contract's x-refusal operations map) where the reads answer 500, and the packs member names alpha
+    first. The refused write changed nothing: the same remembered ETag still registers a target no pack holds,
+    which is external.
     Given the org pack "alpha" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943R
@@ -1073,6 +1075,9 @@ Feature: The compose resolves the configured packs' dependency graph
       parent_pack: null
       name: alpha-pack
       pack_level: org
+      depends_on:
+      - pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+        range: '>=1.0'
       """
     And the org pack "beta" with the file "pack.yaml":
       """
@@ -1080,6 +1085,14 @@ Feature: The compose resolves the configured packs' dependency graph
       pack_version: 1.0.0
       parent_pack: null
       name: beta-pack
+      pack_level: org
+      """
+    And the org pack "gamma" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943T
+      pack_version: 1.0.0
+      parent_pack: null
+      name: gamma-pack
       pack_level: org
       """
     And the org pack "alpha" with the file "directives/MINE.directive.yaml":
@@ -1098,26 +1111,32 @@ Feature: The compose resolves the configured packs' dependency graph
       intent: Share it
       enforcement: required
       """
-    Then the contract says "pack_reference_pack_missing" is answered with status 422 by the operation "putPackRelationship"
-    And the contract says "pack_reference_pack_missing" is answered with status 500
+    Then the contract says "<code>" is answered with status 422 by the operation "putPackRelationship"
+    And the contract says "<code>" is answered with status 500
     When I GET "/packs/alpha/artifacts/directive/MINE"
     Then the response status is 200
     When I remember the ETag
     When I PUT "/packs/alpha/relationships" with the remembered ETag and the body:
       """
-      {"from": "directive:MINE", "to": "beta-pack::directive:SHARE", "type": "requires"}
+      {"from": "directive:MINE", "to": "<to>", "type": "requires"}
       """
     Then the response status is 422
-    And the problem code is "pack_reference_pack_missing"
+    And the problem code is "<code>"
     And the field at "/packs/0/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943R"
     And the field at "/packs/0/packId" is "alpha"
-    And the field at "/packs/1/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943S"
-    And the field at "/packs/1/packId" is "beta"
+    And the field at "/packs/1/descriptorPackId" is "<second descriptor>"
+    And the field at "/packs/1/packId" is "<second>"
     When I PUT "/packs/alpha/relationships" with the remembered ETag and the body:
       """
       {"from": "directive:MINE", "to": "directive:ELSEWHERE", "type": "requires"}
       """
     Then the response status is 201
+
+    Examples:
+      | code                            | to                      | second | second descriptor          |
+      | pack_reference_pack_missing     | gamma-pack::directive:SHARE | gamma  | 01M4P01D5TWB5FKZGNNQG3943T |
+      | pack_reference_unqualified      | directive:SHARE         | beta   | 01M4P01D5TWB5FKZGNNQG3943S |
+      | pack_reference_artifact_missing | beta-pack::directive:NOPE | beta   | 01M4P01D5TWB5FKZGNNQG3943S |
 
   Scenario: The references of an artifact are read across packs, each resolved through the compose
     A composed read (operator ruling of 2026-11-03). Alpha depends on beta, and alpha's directive USE writes

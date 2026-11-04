@@ -22,6 +22,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 import org.snakeyaml.engine.v2.api.Load;
 import org.snakeyaml.engine.v2.api.LoadSettings;
+import org.springframework.web.method.HandlerMethod;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
@@ -140,8 +141,8 @@ public class ReadConsistencySteps {
     }
 
     /**
-     * Each refusal this scenario saw has a status the contract declares for its code (the code's own, or the one an
-     * operation declares for it) and the raised flag the contract declares.
+     * Each refusal this scenario saw has the status the contract declares for its code (the one the answering operation
+     * declares for it, else the code's own) and the raised flag the contract declares.
      */
     @After
     public void observedRefusalsAgreeWithTheContract() throws Exception {
@@ -155,12 +156,13 @@ public class ReadConsistencySteps {
                 continue;
             }
             Map<String, Object> declared = refusal(body.path("code").asString());
-            List<Object> statuses = new ArrayList<>();
-            statuses.add(declared.get("status"));
-            statuses.addAll(operationStatuses(declared).values());
-            assertThat(statuses)
-                    .as("the statuses the contract declares for %s", body.path("code"))
-                    .contains(exchange.result().getResponse().getStatus());
+            // The operation that answered is its handler method, named by its operationId.
+            String operation = exchange.result().getHandler() instanceof HandlerMethod handler
+                    ? handler.getMethod().getName()
+                    : "";
+            assertThat(operationStatuses(declared).getOrDefault(operation, declared.get("status")))
+                    .as("the status the contract declares for %s by %s", body.path("code"), operation)
+                    .isEqualTo(exchange.result().getResponse().getStatus());
             assertThat(declared)
                     .as("the contract declares %s", body.path("code"))
                     .containsEntry("raised", true);

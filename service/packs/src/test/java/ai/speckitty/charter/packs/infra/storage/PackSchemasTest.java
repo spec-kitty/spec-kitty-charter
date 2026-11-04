@@ -248,20 +248,20 @@ class PackSchemasTest {
     }
 
     /** A qualifier with nothing after it names no artifact: the schema refuses it before any reader parses it. */
-    @Test
-    void aQualifiedBareReferenceNeedsAnArtifactAfterTheQualifier() {
-        Object tree = Yaml.load("""
-                id: D1
-                schema_version: '1.0'
-                title: One
-                intent: one
-                enforcement: required
-                procedures: ['ops::release', 'ops::']
-                """);
+    @ParameterizedTest
+    @CsvSource(
+            delimiter = '|',
+            quoteCharacter = '"',
+            value = {
+                "directive|D1|title: One\\nintent: one\\nenforcement: required\\nprocedures: ['ops::release', 'ops::']|procedures",
+                "paradigm|p1|name: One\\nsummary: one\\ndirective_refs: ['ops::D1', 'ops::']|directive_refs"
+            })
+    void aQualifiedBareReferenceNeedsAnArtifactAfterTheQualifier(String kind, String id, String fields, String field) {
+        Object tree = Yaml.load("id: " + id + "\nschema_version: '1.0'\n" + fields.replace("\\n", "\n") + "\n");
 
-        assertThat(PackSchemas.bundled().validate("directive", "D1.directive.yaml", tree))
+        assertThat(PackSchemas.bundled().validate(kind, id + "." + kind + ".yaml", tree))
                 .singleElement()
-                .satisfies(violation -> assertThat(violation.pointer()).contains("procedures", "1"));
+                .satisfies(violation -> assertThat(violation.pointer()).contains(field, "1"));
     }
 
     /** The service contract's qualified-reference schema spells the qualifier as the Java grammar does. */

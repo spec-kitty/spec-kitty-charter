@@ -362,7 +362,7 @@ class PackCompositionResolverTest {
         PackUnderResolution agreeing =
                 settling("01DTWO", "dtwo", "1.0.0", PackLevel.ORG, "org::directive:DIRECTIVE_009", "01LEFT");
         assertThat(ids(PackCompositionResolver.resolve(List.of(agreeing, first, right, left))))
-                .contains("01LEFT", "01RIGHT");
+                .containsExactly("01DONE", "01DTWO", "01LEFT", "01RIGHT");
     }
 
     @Test
@@ -484,6 +484,19 @@ class PackCompositionResolverTest {
                         List.of(writing, reader), reader.configured().id(), own))
                 .contains(reader);
         assertThatCode(() -> check(List.of(writing, reader), "01REA", "directive:DIRECTIVE_009", "directive:NOWHERE"))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void aReferenceQualifiedWithTheReferringPacksOwnNameIsHeldByIt() {
+        // FR-013: the pack's own artifacts are reachable both bare and qualified (another artifact than the writer's).
+        PackUnderResolution reader = defining("01REA", "reader", PackLevel.PROJECT, "directive:OWN_1");
+        PackQualifiedReference own = PackQualifiedReference.parse("reader::directive:OWN_1");
+
+        assertThat(PackCompositionResolver.holderOf(
+                        List.of(reader), reader.configured().id(), own))
+                .contains(reader);
+        assertThatCode(() -> check(List.of(reader), "01REA", "reader::directive:OWN_1"))
                 .doesNotThrowAnyException();
     }
 
