@@ -34,18 +34,19 @@ declare `depends_on`.
 - **Breaking:** `pack_id`, `parent_pack`, `depends_on[].pack_id` and `overrides[].member` must be ULIDs, and `name`
   must match `^[a-z0-9][a-z0-9_-]*$`; else the pack is unreadable (`pack_unreadable`). `pack_level` is required
   when `depends_on` is declared.
-- **Migration:** add `depends_on` on built-in (`01ARWG13C000000000000000FG`) with a range, and write each built-in
-  reference as `built-in::<urn>` ([guide](/guides/compose-packs/#migrating-an-existing-pack)).
-- `depends_on: [{pack_id, range}]` (PEP 440) and `overrides` are accepted.
-- `GET /offering` serves the compose, the closure of the configured packs, dependencies first. A broken compose
-  refuses every composed read, the reference walk included. A pack-scoped read of an artifact still answers.
-- A cross-pack reference is `<pack-name>::<urn>`; the artifact's URN stays bare.
-- Eleven composition refusals, each a 500 (not retryable) naming the violating packs; causes and fixes are
-  in the [table](/guides/compose-packs/#read-a-refusal). `pack_sibling_refinement_conflict` is now `pack_sibling_conflict`.
-- New: `GET /packs/{packId}/artifacts/{kind}/{artifactId}/references` shows how an artifact's references
-  [resolve](/guides/compose-packs/#see-how-references-resolve). It is a composed read.
-- Wire: `dependsOn[].packId` is now `dependsOn[].descriptorPackId`. `OfferingPack.packId` is the configured id,
-  `OfferingPack.descriptorPackId` the descriptor ULID. `PackPin` carries no `dependsOn` (#359).
+- **Migration:** depend on built-in and write its references as `built-in::<urn>`
+  ([guide](/guides/compose-packs/#migrating-an-existing-pack)).
+- `GET /offering` serves the compose, dependencies first. A broken compose refuses every composed read; a
+  pack-scoped read still answers.
+- `depends_on: [{pack_id, range}]` (PEP 440), `overrides` and `<pack-name>::<urn>` references are accepted.
+- Eleven composition refusals, each a 500 (not retryable), naming the violating pack in `detail` and in `packs`, a list
+  of `{descriptorPackId, packId, name}` ([table](/guides/compose-packs/#read-a-refusal)).
+- Registering a relationship whose `to` the compose cannot resolve is refused with 422 before anything is written:
+  `pack_reference_*` ([ADR-0057](/adr/0057-a-refusal-code-may-declare-a-status-per-operation/)).
+- **Breaking:** `GET /offering` refuses with `pack_unreadable` when any file of a configured pack is invalid or cannot
+  be read, not only its `pack.yaml`. Known gap: the pinned built-in pack cannot be served by it until open-packs#75 lands.
+- New: `GET /packs/{packId}/artifacts/{kind}/{artifactId}/references`
+  ([how references resolve](/guides/compose-packs/#see-how-references-resolve)).
 
 **Deferred:** [#357](https://github.com/spec-kitty/spec-kitty-charter/issues/357) (`overrides` clears the refusal only), #358
-(any pack may declare it), #359 (pack pin facts), #360 (activation roots), #363 (`internal`, via open-packs#113).
+(any pack may declare it), #359 (pack pin facts), #360 (activation roots), #363 (`internal`).
