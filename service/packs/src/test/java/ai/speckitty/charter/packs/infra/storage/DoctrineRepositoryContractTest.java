@@ -180,7 +180,7 @@ class DoctrineRepositoryContractTest {
                 title: Blank procedure
                 intent: i
                 enforcement: required
-                procedures: ['']
+                procedures: [' ']
                 """);
 
         Pack pack = service.load(PACK);
