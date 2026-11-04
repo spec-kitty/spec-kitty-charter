@@ -187,7 +187,8 @@ tasks.register<Test>("timingBudgets") {
     // The generated trees plant symbolic links. A budget that skips is never meaningful, so a file system without them
     // fails here, whatever -PrequireSymlinks says.
     systemProperty("charter.requireSymlinks", "true")
-    // Each budget test prints the CPU time it measured, so the margin shows in every run.
+    // The budget tests that report a measured time (PackFileSetBudgetTest, ResolverCostBoundTest) print it, so the margin
+    // shows in every run.
     testLogging { showStandardStreams = true }
 }
 
