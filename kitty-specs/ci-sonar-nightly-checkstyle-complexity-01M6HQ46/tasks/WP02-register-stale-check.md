@@ -12,6 +12,9 @@ requirement_refs:
 planning_base_branch: ci-sonar-nightly-checkstyle-complexity
 merge_target_branch: ci-sonar-nightly-checkstyle-complexity
 branch_strategy: Planning artifacts for this mission were generated on ci-sonar-nightly-checkstyle-complexity. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into ci-sonar-nightly-checkstyle-complexity unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-ci-sonar-nightly-checkstyle-complexity-01M6HQ46
+base_commit: 9c2643b4eb0cb1908f579d6a7fa4abce37fa4bbf
+created_at: '2026-11-04T11:01:01.352042+00:00'
 subtasks:
 - T005
 - T006
