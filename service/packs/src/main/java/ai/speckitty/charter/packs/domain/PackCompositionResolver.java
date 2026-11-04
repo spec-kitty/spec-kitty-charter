@@ -28,9 +28,9 @@ import java.util.function.Function;
 
 /**
  * Resolves one compose: the configured packs plus their descriptors become an ordered closure, dependencies before the
- * packs that need them. One compose is one {@code depends_on} closure at one level (ADR-0048 decision 6); a shared
- * dependency appears once; a broken graph is refused with the pack that broke it named (ADR-0048 decision 10,
- * ADR-0053 decisions 4, 7, 8 and 9).
+ * packs that need them. One compose is one {@code depends_on} closure rooted at every configured pack, across levels (ADR-0053
+ * decision 6, as amended); a shared dependency appears once; a broken graph is refused with the pack that broke it
+ * named (ADR-0048 decision 10, ADR-0053 decisions 4, 7, 8 and 9).
  *
  * <p>The resolver is a pure function: it reads what it is given, orders it and refuses, and it touches no repository.
  * That keeps it testable without a filesystem and lets the offering read stay the one verified read.
@@ -137,7 +137,7 @@ public final class PackCompositionResolver {
         SIBLING_CONFLICT(RefusalCode.PACK_SIBLING_CONFLICT),
         /** A bare reference resolves only in another pack of the compose; the refusal names the holding pack. */
         REFERENCE_UNQUALIFIED(RefusalCode.PACK_REFERENCE_UNQUALIFIED),
-        /** A pack-qualified reference names a pack outside the compose's closure; the refusal names the missing pack. */
+        /** A pack-qualified reference names a pack outside the referring pack's {@code depends_on} closure; the refusal names the missing pack. */
         REFERENCE_PACK_MISSING(RefusalCode.PACK_REFERENCE_PACK_MISSING),
         /** A pack-qualified reference names a pack of the closure, and that pack does not hold the artifact. */
         REFERENCE_ARTIFACT_MISSING(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING);
@@ -160,7 +160,7 @@ public final class PackCompositionResolver {
 
     /**
      * A refused compose: the reason and the packs it names, the pack that broke the graph first. Each pack is named
-     * by both identities its descriptor gives, {@code pack_id} and {@code name}, so a client never has to tell a name
+     * by its descriptor {@code pack_id}, its configured id and its {@code name}, so a client never has to tell a name
      * from an id.
      */
     public static final class Refusal extends RuntimeException {
@@ -490,7 +490,7 @@ public final class PackCompositionResolver {
      * naming any other member settles nothing and the refusal says so. The edges of the whole compose are read
      * together, so a contest is settled only when they agree on one winner: two packs naming different winners leave
      * the winner to load order, and the refusal says so. Packs at different levels are no siblings —
-     * the layer merge across levels composes them (ADR-0048 decision 6) — and the pack named is the second contestant
+     * the layer merge across levels composes them (ADR-0053 decision 6) — and the pack named is the second contestant
      * in the stable order, so the refusal is deterministic.
      *
      * <p>Artifacts are compared by their bare URN: a {@code <pack>::} qualifier on a reference or an

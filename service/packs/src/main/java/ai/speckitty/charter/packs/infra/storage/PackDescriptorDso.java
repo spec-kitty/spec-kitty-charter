@@ -51,7 +51,7 @@ record PackDescriptorDso(
      * @param activeCharter the active charter path
      * @param packDrg the pack DRG path
      * @param dependencies the declared dependencies
-     * @param overrides the declared contests this pack settles
+     * @param overrides the declared sibling conflicts this pack settles
      */
     PackDescriptorDso {
         Objects.requireNonNull(packId, "packId");
