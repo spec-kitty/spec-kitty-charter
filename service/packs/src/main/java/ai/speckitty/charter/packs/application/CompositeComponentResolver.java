@@ -143,22 +143,39 @@ public final class CompositeComponentResolver {
          */
         public Optional<PackCompositionResolver.PackUnderResolution> holder(
                 PackQualifiedReference parsed, PackIdentifier referringPack) {
-            Objects.requireNonNull(parsed, "parsed");
-            Objects.requireNonNull(referringPack, "referringPack");
-            Optional<PackCompositionResolver.PackUnderResolution> holder =
-                    PackCompositionResolver.holderOf(closure, referringPack, parsed);
-            String referringId = closure.stream()
-                    .filter(pack -> pack.configured().id().equals(referringPack))
-                    .map(pack -> pack.descriptor().packId())
-                    .findFirst()
-                    .orElse(referringPack.value());
-            checked(
-                    closure,
-                    referringId,
-                    new PackCompositionResolver.ResolvedReference(
-                            parsed, holder.map(pack -> pack.descriptor().packId())));
-            return holder;
+            return holderIn(closure, parsed, referringPack);
         }
+    }
+
+    /**
+     * The holder of a reference in one resolved compose, judged by the compose's one rule and one check: what
+     * {@link Composed#holder} answers, for a caller that holds the closure and no resolver.
+     *
+     * @param closure the compose's closure, as the offering resolved it
+     * @param parsed the reference as the artifact writes it
+     * @param referringPack the pack whose artifact writes it
+     * @return the holding pack; empty when no pack of the compose holds what a bare reference names
+     * @throws CharterRefusal as {@link Composed#holder} does
+     */
+    static Optional<PackCompositionResolver.PackUnderResolution> holderIn(
+            List<PackCompositionResolver.PackUnderResolution> closure,
+            PackQualifiedReference parsed,
+            PackIdentifier referringPack) {
+        Objects.requireNonNull(parsed, "parsed");
+        Objects.requireNonNull(referringPack, "referringPack");
+        Optional<PackCompositionResolver.PackUnderResolution> holder =
+                PackCompositionResolver.holderOf(closure, referringPack, parsed);
+        String referringId = closure.stream()
+                .filter(pack -> pack.configured().id().equals(referringPack))
+                .map(pack -> pack.descriptor().packId())
+                .findFirst()
+                .orElse(referringPack.value());
+        checked(
+                closure,
+                referringId,
+                new PackCompositionResolver.ResolvedReference(
+                        parsed, holder.map(pack -> pack.descriptor().packId())));
+        return holder;
     }
 
     /** The closure check of the compose resolver, its refusal mapped to the reference code the contract serves. */

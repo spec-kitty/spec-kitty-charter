@@ -4,7 +4,8 @@ description: >-
   reason: one of the eleven composition codes (pack_dependency_cycle, pack_dependency_unknown,
   pack_dependency_out_of_range, pack_parent_unresolved, pack_level_violation, pack_name_conflict,
   pack_duplicate_id, pack_sibling_conflict, pack_reference_unqualified, pack_reference_pack_missing,
-  pack_reference_artifact_missing),
+  pack_reference_artifact_missing; putPackRelationship answers the last three with 422 instead, for the to it
+  was given),
   when the configured packs cannot be served together, with the packs member naming the packs involved, the
   violating pack first; or one of three others: pack_unreadable, when a configured pack's directory is missing, it
   has no readable pack.yaml, or a file the fingerprint covers cannot be read or a directory cannot be

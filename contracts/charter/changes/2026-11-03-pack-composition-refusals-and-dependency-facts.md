@@ -33,6 +33,19 @@
   table of `scenarios/errors.feature` lists the eleven codes. Core's seam: a client that reads `GET /offering` must
   tolerate the `dependsOn` member (or move to the new version) and may now meet the eleven refusal codes.
 
+- `CharterRefusalCode`'s `x-refusal` entries may declare a status per operation: `operations.<operationId>.status` is the
+  status that one operation answers the code with, in place of the entry's `status` (shape chosen as the smallest that
+  keeps one entry per code; the entries without `operations` are unchanged). `pack_reference_pack_missing`,
+  `pack_reference_unqualified` and `pack_reference_artifact_missing` declare 422 for `putPackRelationship` and stay 500
+  everywhere else. `PUT /packs/{packId}/relationships` now judges its `to` against the compose of the pack it registers
+  into, with the one rule the offering applies to what a pack writes, and refuses before any file is written: a
+  qualified `to` naming a pack outside the pack's `depends_on` closure (`pack_reference_pack_missing`), a bare `to` that
+  only another pack holds (`pack_reference_unqualified`) or a qualified `to` naming an artifact the named pack does not
+  hold (`pack_reference_artifact_missing`), each 422 with the `packs` member (the pack registered into first). A `to`
+  that no pack holds stays external and is accepted, and a qualified `to` that names another pack of the closure, or
+  the pack itself, with the same id as the `from` is legal (it is not a self-loop). The `422` response of the operation
+  documents the three codes. Scenario: `scenarios/composition.feature`.
+
 - New operation in this release: `GET /packs/{packId}/artifacts/{kind}/{artifactId}/references` (`listArtifactReferences`), a composed read: it
   resolves the compose once inside the read and answers the references one artifact writes (`ArtifactReferenceList`),
   each as written (`PackQualifiedReference`), with its relation when the artifact mints one, the `HoldingPack` that

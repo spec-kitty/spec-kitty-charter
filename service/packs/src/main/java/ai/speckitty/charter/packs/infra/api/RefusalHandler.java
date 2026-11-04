@@ -5,8 +5,10 @@ import ai.speckitty.charter.api.model.Problem;
 import ai.speckitty.charter.api.model.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.application.PreconditionException;
+import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
@@ -14,6 +16,10 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.method.HandlerMethod;
+import org.springframework.web.servlet.HandlerMapping;
 
 /**
  * Maps domain refusals to the contract's {@code CharterRefusal} problem bodies, and a registration's unmet
@@ -25,6 +31,20 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class RefusalHandler {
 
     private static final Log LOGGER = LogFactory.getLog(RefusalHandler.class);
+
+    /**
+     * The refusal codes an operation answers with a status other than the code's own, by the operation's
+     * {@code operationId} (the name of its controller method): the {@code operations} map of the code's entry in the
+     * contract's {@code x-refusal}, which the contract scenarios hold this table to. The relationship registration
+     * judges the request's own {@code to} against the compose, so the three reference codes are the request's fault
+     * there (422) where a read is refused by packs that do not compose (500).
+     */
+    private static final Map<String, Map<RefusalCode, HttpStatus>> STATUS_BY_OPERATION = Map.of(
+            "putPackRelationship",
+            Map.of(
+                    RefusalCode.PACK_REFERENCE_PACK_MISSING, HttpStatus.UNPROCESSABLE_CONTENT,
+                    RefusalCode.PACK_REFERENCE_UNQUALIFIED, HttpStatus.UNPROCESSABLE_CONTENT,
+                    RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING, HttpStatus.UNPROCESSABLE_CONTENT));
 
     private static final String INTERNAL_ERROR_DETAIL =
             "The charter service failed unexpectedly; the failure is logged.";
@@ -43,17 +63,34 @@ public class RefusalHandler {
      * as its cause; the 404 body names nothing of it, so it is logged at WARN here with the cause.
      *
      * @param refusal the domain refusal
+     * @param request the request, whose handler names the operation that raised the refusal
      * @return the {@code application/problem+json} response carrying the refusal's code and detail
      */
     @ExceptionHandler(ai.speckitty.charter.kernel.domain.CharterRefusal.class)
+    public ResponseEntity<CharterRefusal> refused(
+            ai.speckitty.charter.kernel.domain.CharterRefusal refusal, WebRequest request) {
+        return refused(refusal, operationOf(request));
+    }
+
+    /**
+     * Answers a refusal raised outside any operation, or one whose operation is not named: the status of its code.
+     *
+     * @param refusal the domain refusal
+     * @return the {@code application/problem+json} response carrying the refusal's code and detail
+     */
     public ResponseEntity<CharterRefusal> refused(ai.speckitty.charter.kernel.domain.CharterRefusal refusal) {
+        return refused(refusal, (String) null);
+    }
+
+    private ResponseEntity<CharterRefusal> refused(
+            ai.speckitty.charter.kernel.domain.CharterRefusal refusal, @Nullable String operation) {
         if (refusal.code() == RefusalCode.STALE_INPUT) {
             // Routine and retryable (an input changed under the read): one line, no stack trace.
             LOGGER.info("Refusal " + refusal.code().token() + ": " + refusal.getMessage());
         } else if (refusal.code() == RefusalCode.INTERNAL_ERROR) {
             // A fault of the service itself: the trail keeps the stack trace.
             LOGGER.error("Server refusal " + refusal.code().token(), refusal);
-        } else if (statusOf(refusal.code()).is5xxServerError()) {
+        } else if (statusOf(refusal.code(), operation).is5xxServerError()) {
             // The configured packs are broken, not the service: an unreadable pack, a graph that cannot be read or the
             // pack composition. The code, the detail and the packs say what to fix; a stack trace would say nothing.
             LOGGER.warn("Refusal " + refusal.code().token() + ": " + refusal.getMessage() + packsOf(refusal));
@@ -61,7 +98,15 @@ public class RefusalHandler {
             // A client refusal that hides an underlying failure: the body names nothing of it, so keep the trail.
             LOGGER.warn("Refusal " + refusal.code().token() + " hides a cause", refusal);
         }
-        return respond(refusal);
+        return respond(refusal, operation);
+    }
+
+    /** The {@code operationId} of the operation that handled the request: its controller method's name; none outside one. */
+    private static @Nullable String operationOf(WebRequest request) {
+        return request.getAttribute(HandlerMapping.BEST_MATCHING_HANDLER_ATTRIBUTE, RequestAttributes.SCOPE_REQUEST)
+                        instanceof HandlerMethod handler
+                ? handler.getMethod().getName()
+                : null;
     }
 
     /**
@@ -91,8 +136,10 @@ public class RefusalHandler {
      * @return the {@code application/problem+json} 500 response
      */
     static ResponseEntity<CharterRefusal> internalError() {
-        return respond(new ai.speckitty.charter.kernel.domain.CharterRefusal(
-                RefusalCode.INTERNAL_ERROR, INTERNAL_ERROR_DETAIL));
+        return respond(
+                new ai.speckitty.charter.kernel.domain.CharterRefusal(
+                        RefusalCode.INTERNAL_ERROR, INTERNAL_ERROR_DETAIL),
+                null);
     }
 
     /** The packs a refusal names, as {@code [packs: name (pack_id), ...]}; nothing when it names none. */
@@ -104,8 +151,9 @@ public class RefusalHandler {
                         .collect(java.util.stream.Collectors.joining(", ", " [packs: ", "]"));
     }
 
-    private static ResponseEntity<CharterRefusal> respond(ai.speckitty.charter.kernel.domain.CharterRefusal refusal) {
-        HttpStatus status = statusOf(refusal.code());
+    private static ResponseEntity<CharterRefusal> respond(
+            ai.speckitty.charter.kernel.domain.CharterRefusal refusal, @Nullable String operation) {
+        HttpStatus status = statusOf(refusal.code(), operation);
         CharterRefusal body = new CharterRefusal(
                 title(refusal.code()),
                 status.value(),
@@ -124,13 +172,22 @@ public class RefusalHandler {
     /**
      * The HTTP status a refusal code is answered with. A not-found is 404; a validation failure is 422; a conflict or
      * policy refusal is 409; every other code is 500, {@code stale_input} and {@code internal_error} and the codes of
-     * the pack composition included: the request is fine and the configured packs are not. The
-     * {@code 412}/{@code 428} preconditions are not refusal codes: {@link #precondition} answers those as plain
-     * problem bodies.
+     * the pack composition included: the request is fine and the configured packs are not. An operation that declares
+     * another status for a code in the per-operation statuses of the contract's x-refusal ({@link #STATUS_BY_OPERATION})
+     * answers that one. The {@code 412}/{@code 428} preconditions are not refusal codes: {@link #precondition} answers
+     * those as plain problem bodies.
      *
      * @param code the refusal code
+     * @param operation the id of the operation that raised it, when known
      * @return its HTTP status
      */
+    private static HttpStatus statusOf(RefusalCode code, @Nullable String operation) {
+        HttpStatus declared = operation == null
+                ? null
+                : STATUS_BY_OPERATION.getOrDefault(operation, Map.of()).get(code);
+        return declared != null ? declared : statusOf(code);
+    }
+
     private static HttpStatus statusOf(RefusalCode code) {
         return switch (code) {
             case MISSION_TYPE_NOT_FOUND,

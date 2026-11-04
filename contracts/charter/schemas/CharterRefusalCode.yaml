@@ -49,7 +49,10 @@ description: >-
   operation reaches (the whole-pack load and its findings).
 
   x-refusal declares, for every code, the HTTP status it is answered with, whether the read may be retried,
-  and whether an operation of this version raises it (raised). A code is raised when an operation of this version
+  and whether an operation of this version raises it (raised). A code has one status, except where its entry
+  carries an operations map: operations.<operationId>.status is the status that one operation answers the
+  code with, in place of the entry's status, and every other operation answers the entry's status. Only
+  putPackRelationship declares one (below). A code is raised when an operation of this version
   reaches the code that refuses with it, even when no configuration of this version provokes the refusal
   (governance_policy_violation); a code that only a part no operation reaches refuses with is not raised
   (drg_schema_error). Clients and the contract scenarios read it.
@@ -64,7 +67,12 @@ description: >-
   until the request or the configured packs change.
 
   The eleven codes of the pack composition are 500 like pack_unreadable, and for the same reason: the request is
-  fine and the configured packs are not, so the same read is refused the same way until a pack is fixed.
+  fine and the configured packs are not, so the same read is refused the same way until a pack is fixed. The one
+  exception is the registration of a relationship (putPackRelationship), which judges the request's own to
+  against the compose of the pack it registers into: pack_reference_pack_missing (a qualified to naming a pack
+  outside the source pack's depends_on closure), pack_reference_unqualified (a bare to that only another pack
+  holds) and pack_reference_artifact_missing (a qualified to naming an artifact the named pack does not hold)
+  answer 422 there, because the request is what is wrong, and are refused before any file is written.
   They are pack_dependency_cycle, pack_dependency_unknown, pack_dependency_out_of_range,
   pack_parent_unresolved, pack_level_violation, pack_name_conflict, pack_duplicate_id,
   pack_sibling_conflict, pack_reference_unqualified, pack_reference_pack_missing and
@@ -247,14 +255,23 @@ x-refusal:
     status: 500
     retryable: false
     raised: true
+    operations:
+      putPackRelationship:
+        status: 422
   pack_reference_pack_missing:
     status: 500
     retryable: false
     raised: true
+    operations:
+      putPackRelationship:
+        status: 422
   pack_reference_artifact_missing:
     status: 500
     retryable: false
     raised: true
+    operations:
+      putPackRelationship:
+        status: 422
 x-source:
   path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RefusalCode.java
   symbol: RefusalCode

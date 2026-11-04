@@ -239,8 +239,8 @@ class PackCommitStoreTest {
         DomainRepositoryService service = new DomainRepositoryService(locations(packDir), strategy);
         CommitStorePackWriteStore writeStore = new CommitStorePackWriteStore(
                 locations(packDir), strategy, new PackCommitStore(locations(packDir), strategy));
-        RelationshipRegistrationService registrations =
-                new RelationshipRegistrationService(service, writeStore, new PermissiveWritePolicyGate());
+        RelationshipRegistrationService registrations = new RelationshipRegistrationService(
+                service, writeStore, new PermissiveWritePolicyGate(), (source, target) -> {});
         Relationship edge = Relationship.of(
                 new Urn(NodeKind.TACTIC, "alpha-tactic"), new Urn(NodeKind.DIRECTIVE, "other"), RelationType.SUGGESTS);
 

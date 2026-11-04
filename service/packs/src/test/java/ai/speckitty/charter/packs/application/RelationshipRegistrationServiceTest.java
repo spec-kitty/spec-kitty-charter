@@ -58,8 +58,8 @@ class RelationshipRegistrationServiceTest {
 
     private static final PackIdentifier PACK = new PackIdentifier("pack-a");
     private final FakeStore store = new FakeStore();
-    private final RelationshipRegistrationService service =
-            new RelationshipRegistrationService(store, store, new PermissiveWritePolicyGate());
+    private final RelationshipRegistrationService service = new RelationshipRegistrationService(
+            store, store, new PermissiveWritePolicyGate(), SinglePackCompose.check(PACK, () -> store.packs.get(PACK)));
 
     // ---- FR-009: relationship upsert idempotent on the unordered pair, reverse replaces -------------------------
 
@@ -99,6 +99,36 @@ class RelationshipRegistrationServiceTest {
         assertThat(reverse.created()).isFalse();
         assertThat(store.relationships(PACK)).hasSize(1);
         assertThat(store.relationships(PACK).getFirst().type()).isEqualTo(RelationType.SUGGESTS);
+    }
+
+    /**
+     * A target the compose cannot resolve is refused before anything is written: the next read of the offering would
+     * refuse the pack that holds the edge. The accepted bare external target of the tests around it is the control.
+     */
+    @Test
+    void aTargetQualifiedToAPackTheComposeDoesNotHoldIsRefusedAndChangesNothing() {
+        seedDirective("DIR_A");
+        Urn from = new Urn(NodeKind.DIRECTIVE, "DIR_A");
+        Relationship toUnknownPack = new Relationship(
+                from,
+                Optional.empty(),
+                new Urn(NodeKind.PROCEDURE, "p"),
+                Optional.of("ghost"),
+                RelationType.REQUIRES,
+                Optional.empty(),
+                Optional.empty());
+        int before = store.commits;
+
+        assertThatThrownBy(() -> service.registerRelationship(
+                        PACK, toUnknownPack, store.currentRevision(PACK).token()))
+                .isInstanceOfSatisfying(CharterRefusal.class, r -> {
+                    assertThat(r.code()).isEqualTo(RefusalCode.PACK_REFERENCE_PACK_MISSING);
+                    assertThat(r.packs())
+                            .extracting("packId", "name")
+                            .containsExactly(org.assertj.core.groups.Tuple.tuple("pack-a", "pack-a"));
+                });
+        assertThat(store.commits).isEqualTo(before);
+        assertThat(store.relationships(PACK)).isEmpty();
     }
 
     @Test
@@ -327,7 +357,7 @@ class RelationshipRegistrationServiceTest {
                     repository,
                     writeStore,
                     new DirectiveRegistrationService(repository, writeStore, policy),
-                    new RelationshipRegistrationService(repository, writeStore, policy));
+                    new RelationshipRegistrationService(repository, writeStore, policy, (source, target) -> {}));
         }
 
         private static void write(Path pack, String relative, String text) throws IOException {

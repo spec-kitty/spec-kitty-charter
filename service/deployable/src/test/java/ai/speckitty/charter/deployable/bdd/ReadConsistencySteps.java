@@ -109,6 +109,13 @@ public class ReadConsistencySteps {
         assertThat(refusal(code)).containsEntry("status", status);
     }
 
+    @Then("the contract says {string} is answered with status {int} by the operation {string}")
+    public void theContractSaysStatusByOperation(String code, int status, String operation) {
+        assertThat(operationStatuses(refusal(code)))
+                .as("x-refusal of %s: operations", code)
+                .containsEntry(operation, status);
+    }
+
     @Then("the contract says {string} may not be retried")
     public void theContractSaysNotRetryable(String code) {
         assertThat(refusal(code)).containsEntry("retryable", false);
@@ -132,7 +139,10 @@ public class ReadConsistencySteps {
                 .containsExactlyInAnyOrderElementsOf(table.asList());
     }
 
-    /** Each refusal this scenario saw has the status and the raised flag the contract declares for its code. */
+    /**
+     * Each refusal this scenario saw has a status the contract declares for its code (the code's own, or the one an
+     * operation declares for it) and the raised flag the contract declares.
+     */
     @After
     public void observedRefusalsAgreeWithTheContract() throws Exception {
         for (ScenarioHttp.Exchange exchange : http.exchanges()) {
@@ -145,9 +155,14 @@ public class ReadConsistencySteps {
                 continue;
             }
             Map<String, Object> declared = refusal(body.path("code").asString());
+            List<Object> statuses = new ArrayList<>();
+            statuses.add(declared.get("status"));
+            statuses.addAll(operationStatuses(declared).values());
+            assertThat(statuses)
+                    .as("the statuses the contract declares for %s", body.path("code"))
+                    .contains(exchange.result().getResponse().getStatus());
             assertThat(declared)
                     .as("the contract declares %s", body.path("code"))
-                    .containsEntry("status", exchange.result().getResponse().getStatus())
                     .containsEntry("raised", true);
         }
     }
@@ -215,6 +230,19 @@ public class ReadConsistencySteps {
 
     private static List<String> codes() {
         return ((List<?>) schema().get("enum")).stream().map(String::valueOf).toList();
+    }
+
+    /** The statuses an entry of {@code x-refusal} declares per operation, by {@code operationId}; none when it has none. */
+    private static Map<String, Object> operationStatuses(Map<String, Object> entry) {
+        Map<String, Object> statuses = new TreeMap<>();
+        if (entry.get("operations") instanceof Map<?, ?> operations) {
+            operations.forEach((operation, declared) -> {
+                if (declared instanceof Map<?, ?> fields) {
+                    statuses.put(String.valueOf(operation), fields.get("status"));
+                }
+            });
+        }
+        return statuses;
     }
 
     /** The {@code x-refusal} entry of one code; empty when the contract has none. */
