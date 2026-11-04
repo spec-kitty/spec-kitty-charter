@@ -18,7 +18,7 @@
   the rules that method breaks. The list only shrinks: a new method over a limit is refactored, not registered.
   The complexity entries are worked down under spec-kitty/spec-kitty-charter#367.
 
-  Size: 15 entries.
+  Size: 14 entries.
 -->
 <suppressions>
     <!--
@@ -111,15 +111,6 @@
     <suppress-xpath checks="CyclomaticComplexity|NPathComplexity"
                     files="DomainRoundTrip\.java"
                     query="//CLASS_DEF//METHOD_DEF[./IDENT[@text='roundTrip']]"/>
-    <!--
-      rule:   MethodLength
-      file:   service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/FileSystemPackInspectorTest.java
-      reason: The corpus test asserts the inspector's whole report over the built-in pack, one expectation per finding and file class.
-      sunset: 2027-05-04
-    -->
-    <suppress-xpath checks="MethodLength"
-                    files="FileSystemPackInspectorTest\.java"
-                    query="//CLASS_DEF//METHOD_DEF[./IDENT[@text='validateModeOverTheBuiltInPackFindsWhatMainFoundAndListsTheConfigPayload']]"/>
     <!--
       rule:   CyclomaticComplexity
       file:   service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/GeneratedPackTree.java

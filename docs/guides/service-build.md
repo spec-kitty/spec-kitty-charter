@@ -305,7 +305,7 @@ return early. New code never gets a register entry. Proposed ADR-0058 (PR #366) 
 gates. No gate is relaxed anywhere else, and blanket suppressions are not allowed.
 
 The register lists the methods that were over a complexity limit when the limits landed. It holds
-15 entries, and it only shrinks: [#367](https://github.com/spec-kitty/spec-kitty-charter/issues/367)
+14 entries, and it only shrinks: [#367](https://github.com/spec-kitty/spec-kitty-charter/issues/367)
 works it down. Each entry is a `suppress-xpath` element for one method, never a whole file:
 
 - `checks` lists exactly the rules that method breaks, joined by `|`;
@@ -315,7 +315,7 @@ works it down. Each entry is a `suppress-xpath` element for one method, never a 
 
 The comment directly above each entry carries four fields: `rule:`, `file:` (relative to the
 repository root), `reason:` and `sunset:` (an ISO date by which the entry goes or is justified
-again). The header states the count, `Size: 15 entries.`
+again). The header states the count, `Size: 14 entries.`
 
 To shrink the register, simplify a method until it passes, then delete its entry (or drop the rules
 it no longer breaks from `checks`) and lower the `Size:` count in the same change.
