@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: Engineering notes
 description: Point-in-time engineering assessments and findings, dated, that feed decisions and issues rather than state conventions in force.
 doc_status: draft
-updated: 2026-11-03T00:00:00Z
+updated: 2026-11-04T00:00:00Z
 type: Plan
 kind: Hub
 audience:
@@ -16,8 +16,9 @@ audience:
 # Engineering notes
 
 Dated, point-in-time assessments. Each note records what was measured, on which revision, and what
-it recommends. Decisions it feeds land in a [decision record](/adr/) or an issue. A note is not
-updated as the code moves on; a later assessment gets its own note.
+it recommends. Decisions it feeds land in a [decision record](/adr/) or an issue. A note's
+measurements are not updated as the code moves on; a later assessment gets its own note. A note may
+carry dated clarifications, marked with their date, that correct a reading of its findings.
 
 - [Test suite assessment, 2026-11-03](/plans/engineering-notes/test-suite-assessment-2026-11-03/) —
   how good the test suite is against the packs' testing rubric, and the five weaknesses ranked by
