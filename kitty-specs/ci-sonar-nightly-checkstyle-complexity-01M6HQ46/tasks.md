@@ -26,6 +26,7 @@
 | T014 | `docs/guides/service-build.md`: the limits, the register and its stale check, the nightly report | WP04 | |
 | T015 | Changelog entry | WP04 | [P] |
 | T016 | Docs gate clean; spelling words added in sorted position | WP04 | |
+| T017 | Flatten the three nested-if methods so the register holds 15 entries (operator ruling) | WP01 | |
 
 ## Phase 1 — Per-PR complexity gate
 
@@ -41,6 +42,7 @@ T001 Add the four complexity modules and the XPath filter (WP01)
 T002 Measure every method over a limit, with the rules it breaks (WP01)
 T003 Write the register entries and the Size count (WP01)
 T004 Prove each limit bites with a planted method (WP01)
+T017 Flatten the three nested-if methods (WP01)
 
 - **Risks:**
   - An XPath that matches nothing exempts nothing, so the build fails visibly.

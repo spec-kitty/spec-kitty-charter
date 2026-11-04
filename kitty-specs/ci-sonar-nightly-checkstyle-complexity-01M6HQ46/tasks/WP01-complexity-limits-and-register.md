@@ -28,6 +28,8 @@ model: ''
 owned_files:
 - config/checkstyle/checkstyle.xml
 - config/checkstyle/suppressions.xml
+- contracts/src/main/java/ai/speckitty/charter/contracts/bundle/ComposedBundle.java
+- service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ActivationConfigSchemaParityTest.java
 role: implementer
 tags: []
 tracker_refs: []
@@ -196,14 +198,37 @@ register at 15.
 3. Remove the planted code. Confirm the module passes again.
 4. Paste the four error lines, and the pass, into the WP's evidence: the review notes or the PR body.
 
+### Subtask T017: Flatten the three nested-if methods (operator ruling 2026-11-04)
+
+**Purpose:** the real measurement found 18 over-limit methods, against SC-002's cap of 15. The operator
+ruled to refactor the three cheapest methods rather than raise the cap (decision recorded in
+`decisions/`). They are the three NestedIfDepth cases:
+- `ComposedBundle.checkReferences` and `ComposedBundle.reaches` in
+  `contracts/src/main/java/ai/speckitty/charter/contracts/bundle/ComposedBundle.java`;
+- `ActivationConfigSchemaParityTest.inline` in
+  `service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ActivationConfigSchemaParityTest.java`.
+
+**Steps:**
+1. Make each change behavior-preserving: a guard clause, an early `continue` or `return`, or an extracted
+   private method. Change no signature that a caller outside the file uses, and no observable output.
+2. Before and after, run the tests that cover each method: `:contracts:test` (`ComposedBundleTest` and the
+   bundle tests) and `:packs:test --tests '*ActivationConfigSchemaParityTest'`. They must pass unchanged. Do
+   not edit a test to make it pass.
+3. Remove the three methods' register entries; the register then holds 15 entries, and `Size: 15 entries`.
+4. Commit the refactor separately from the gate (its own `refactor(...)` commit), so the reviewer can
+   check it on its own.
+
+**Validation:** each file passes Checkstyle with no register entry, and `verifyAll` passes.
+
 ## Definition of Done
 
 - The four modules and the XPath filter are in `checkstyle.xml`, and the register uses the XPath DTD.
 - One entry per over-limit method, with rule, file, reason and sunset; Size is correct; at most 15
-  entries.
+  entries, after T017 removes the three nested-if methods.
 - `./gradlew verifyAll` passes.
 - The planted-method evidence for all four rules is recorded.
-- No new plugin or library, and no other file changed.
+- No new plugin or library, and no other file changed. T017's refactors are behavior-preserving, and
+  their covering tests pass unchanged.
 
 ## Risks and reviewer guidance
 
