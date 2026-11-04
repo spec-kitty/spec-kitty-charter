@@ -540,6 +540,7 @@ class DomainRepositoryServiceTest {
             value = {
                 "D1.directive.yaml|title: t\\nintent: i\\nenforcement: required\\nprocedures: ['ops::']",
                 "D1.directive.yaml|title: t\\nintent: i\\nenforcement: required\\nreferences: [{type: directive, id: D1}]",
+                "D1.directive.yaml|title: t\\nintent: i\\nenforcement: required\\nreferences: [{type: directive, id: 'roundtrip-descriptor-only::D1'}]",
                 "T1.tactic.yaml|name: n\\nsteps: [{title: s, description: d}]\\nreferences: [{type: tactic, id: T1}]",
                 "T1.tactic.yaml|name: n\\nsteps: [{title: s, description: d, references: [{type: tactic, id: T1}]}]",
                 "R1.procedure.yaml|title: t\\ndescription: d\\nentry_condition: a\\nexit_condition: b\\n"
@@ -558,6 +559,33 @@ class DomainRepositoryServiceTest {
                     assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
                     assertThat(refused.getMessage()).contains(file);
                 });
+    }
+
+    /**
+     * An edge that joins an artifact to itself through its own pack's qualifier makes the file of the edge unreadable
+     * as the bare edge does; the same edge qualified with another pack joins two artifacts and stands.
+     */
+    @Test
+    void anEdgeQualifiedWithThePacksOwnNameOntoTheSameIdMakesItsFileUnreadable(@TempDir Path host) throws IOException {
+        Path pack = PackFixtures.copyOf("pack-descriptor-only", host);
+        DomainRepositoryService over = overOne("pack-descriptor-only", pack);
+        PackIdentifier id = new PackIdentifier("pack-descriptor-only");
+        String graph = """
+                schema_version: '1.0'
+                generated_at: STATIC
+                nodes: []
+                edges:
+                - {source: %s, target: directive:D1, relation: requires}
+                """;
+
+        Files.writeString(pack.resolve("edges.graph.yaml"), graph.formatted("other::directive:D1"));
+        assertThat(over.compositionFacts(id).references()).contains("other::directive:D1");
+
+        Files.writeString(pack.resolve("edges.graph.yaml"), graph.formatted("roundtrip-descriptor-only::directive:D1"));
+        assertThatThrownBy(() -> over.compositionFacts(id)).isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+            assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+            assertThat(refused.getMessage()).contains("edges.graph.yaml");
+        });
     }
 
     /** A reference list that skipped an unreadable file would pass a reference it never saw: it fails closed. */

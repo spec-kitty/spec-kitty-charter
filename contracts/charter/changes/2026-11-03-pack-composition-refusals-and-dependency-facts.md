@@ -44,8 +44,9 @@
   qualified `to` naming a pack outside the pack's `depends_on` closure (`pack_reference_pack_missing`), a bare `to` that
   only another pack holds (`pack_reference_unqualified`) or a qualified `to` naming an artifact the named pack does not
   hold (`pack_reference_artifact_missing`), each 422 with the `packs` member (the pack registered into first). A `to`
-  that no pack holds stays external and is accepted, and a qualified `to` that names another pack of the closure, or
-  the pack itself, with the same id as the `from` is legal (it is not a self-loop). The `422` response of the operation
+  that no pack holds stays external and is accepted, and a qualified `to` that names another pack of the closure with
+  the same id as the `from` is legal. A `to` with the same id as the `from` that is bare, or qualified with the pack
+  registered into, is a self-loop, refused `422` `validation_failed`. The `422` response of the operation
   documents the three codes. Scenario: `scenarios/composition.feature`.
 
 - `GET /offering` and `GET /packs/{packId}/artifacts/{kind}/{artifactId}/references` refuse `pack_unreadable` (500) when

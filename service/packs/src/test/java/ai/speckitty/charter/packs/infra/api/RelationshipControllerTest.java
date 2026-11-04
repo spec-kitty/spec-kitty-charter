@@ -126,9 +126,18 @@ class RelationshipControllerTest {
         mvc.perform(put("/api/v1/packs/pack-a/relationships")
                         .header("If-Match", store.currentRevision(PACK).token())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(BODY.replace("procedure:p", "pack-a::directive:DIR_A")))
+                        .content(BODY.replace("procedure:p", "pack-a::directive:DIR_B")))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.relationship.to").value("pack-a::directive:DIR_A"));
+                .andExpect(jsonPath("$.relationship.to").value("pack-a::directive:DIR_B"));
+        assertThat(store.edges).hasSize(1);
+
+        // Qualified with the writer's own pack, the same artifact is the bare self-loop in another spelling.
+        mvc.perform(put("/api/v1/packs/pack-a/relationships")
+                        .header("If-Match", store.currentRevision(PACK).token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(BODY.replace("procedure:p", "pack-a::directive:DIR_A")))
+                .andExpect(status().is(422))
+                .andExpect(jsonPath("$.code").value("validation_failed"));
         assertThat(store.edges).hasSize(1);
 
         mvc.perform(put("/api/v1/packs/pack-a/relationships")
@@ -224,6 +233,14 @@ class RelationshipControllerTest {
                         .schemaVersion("1.0")
                         .title("Dir A")
                         .intent("a")
+                        .enforcement(Enforcement.REQUIRED)
+                        .build())
+                .directive(Directive.builder()
+                        .id(new DirectiveIdentifier("DIR_B"))
+                        .packId(PACK)
+                        .schemaVersion("1.0")
+                        .title("Dir B")
+                        .intent("b")
                         .enforcement(Enforcement.REQUIRED)
                         .build())
                 .build();

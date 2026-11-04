@@ -7,6 +7,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import java.util.List;
@@ -96,6 +97,13 @@ public final class RelationshipRegistrationService {
                         RefusalCode.REGISTRATION_CONFLICT,
                         "Relationship from " + relationship.from() + " does not resolve within pack " + pack.value()
                                 + ".");
+            }
+            if (PackPolicy.joinsItself(
+                    current.descriptor().name(), relationship.fromReference(), relationship.toReference())) {
+                throw new CharterRefusal(
+                        RefusalCode.VALIDATION_FAILED,
+                        "A relationship cannot be a self-loop: " + relationship.from() + " to "
+                                + relationship.toReference() + " in pack " + pack.value() + ".");
             }
             // Before anything is written: a target the compose cannot resolve would make the next offering read refuse.
             targets.require(pack, relationship.toReference());
