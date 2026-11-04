@@ -28,6 +28,7 @@
   "purpose_context": "The 2026-11-03 test suite assessment found that nothing in the charter's build measures complexity, duplication or security patterns. The operator ruled that Checkstyle complexity rules gate each pull request and that SonarCloud runs nightly and reported only, with new-code coverage, never as a required check. This mission implements that ruling without adding a Gradle plugin, and lands before the SonarCloud project exists.",
   "purpose_tldr": "Add a complexity gate to every pull request and a nightly, reported-only SonarCloud scan, as Proposed ADR-0056 records.",
   "slug": "ci-sonar-nightly-checkstyle-complexity-01M6HQ46",
+  "status_phase": "1",
   "target_branch": "ci-sonar-nightly-checkstyle-complexity",
   "topology": "coord",
   "vcs": "git",
