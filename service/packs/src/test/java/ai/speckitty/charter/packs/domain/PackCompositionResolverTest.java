@@ -157,27 +157,14 @@ class PackCompositionResolverTest {
                 });
     }
 
-    /** Two packs ask one pack for ranges; the held version satisfies the first in every row. */
+    /**
+     * Two packs ask one pack for ranges; the held version satisfies the first in every row. Which ranges share a
+     * version is {@code Pep440RangeTest}'s truth table, so two rows show the refusal wiring.
+     */
     @ParameterizedTest
     @CsvSource(
             delimiter = '|',
-            value = {
-                ">=1.0,<2|>=2.0|1.5.0|false",
-                "<2|>=2|1.5.0|false",
-                "==1.2.*|>=1.3|1.2.4|false",
-                ">=1.0,<3|>=2.0|2.5.0|true",
-                "~=1.4.5|>=1.4|1.4.7|true",
-                // a wildcard exclusion leaves the versions past the prefix: 2.0 satisfies both
-                "!=1.*|>=1.0|2.0.0|true",
-                // a prerelease of 1.0 sits above 1.0rc1 and below 1.0, as admits orders them
-                ">1.0rc1|<1.0|1.0rc2|true",
-                // an epoch outranks the release, so no epoch-0 version reaches it
-                ">=1!1|<5|1.0.0|false",
-                // an identity clause names one text, which no ordering clause can admit
-                "===foo|>=1|1.5.0|false",
-                // numbers of any size are numbers, not an error
-                ">=1,<99999999999|<5|2.0.0|true"
-            })
+            value = {">=1.0,<2|>=2.0|1.5.0|false", ">=1.0,<3|>=2.0|2.5.0|true"})
     void rangesNoVersionSatisfiesTogetherAreRefusedNamingBothPacksBeforeTheHeldVersionIsChecked(
             String firstRange, String secondRange, String held, boolean resolves) {
         PackUnderResolution base = pack("01BASE", "base", held, PackLevel.BUILT_IN);
