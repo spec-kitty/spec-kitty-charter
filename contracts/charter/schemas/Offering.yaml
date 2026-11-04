@@ -1,8 +1,9 @@
 title: Offering
 description: >-
-  The packs the service is configured with (ADR-0020 D1), in the merge order: by configured level
-  (built-in, then org, then project), then by pack id in code-point order, so Zeta comes before
-  alpha. Merging is not applied yet (#10, #11): the offering lists the packs, not a merged result.
+  The packs the service is configured with (ADR-0020 D1), in the merge order: dependencies before the
+  packs that need them, each level contiguous (built-in, then org, then project), and the packs no
+  dependency relates in configured-level, then pack-id code-point order, so Zeta comes before alpha.
+  Merging is not applied yet (#10, #11): the offering lists the packs, not a merged result.
   _links holds self. The list and its fingerprint come from one verified read.
 type: object
 additionalProperties: false
