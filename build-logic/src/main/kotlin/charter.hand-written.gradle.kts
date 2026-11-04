@@ -102,8 +102,9 @@ tasks.named("check") {
     dependsOn(tasks.named("javadoc"), tasks.named("jacocoTestReport"))
 }
 
-// Mockito where a hand-written fake is not worth it. It is loaded as a Java agent rather than self-attaching,
-// which the JDK warns about and will refuse.
+// Mockito is kept though no test uses it today (#373): spring-boot-starter-test brings it to the Spring modules
+// regardless, and the agent is attached so a future use does not hit the JDK's dynamic self-attach refusal.
+// Its version follows Spring Boot's (see the mockito entry in the version catalog).
 val mockitoAgent = configurations.create("mockitoAgent") {
     isCanBeConsumed = false
     isTransitive = false
