@@ -28,7 +28,7 @@ Two independent changes implement Proposed ADR-0056.
     so there is still one register (C-003).
 - **Stale-entry check.** A build-logic task re-runs the build's own Checkstyle over only the register's
   files, with the register empty. A verification task then fails `check` when:
-  - an entry's method no longer produces the entry's violation (stale);
+  - any rule an entry lists no longer fires on its method (stale or too wide);
   - an entry lacks rule, file, reason or sunset;
   - the Size count disagrees with the entries.
 - **Workflow.** `.github/workflows/sonar.yml` runs on `schedule` and `workflow_dispatch` only, with
@@ -121,8 +121,8 @@ None.
 - **Affected surfaces**: `config/checkstyle/checkstyle.xml`, `config/checkstyle/suppressions.xml`
 - **Sequencing/depends-on**: none
 - **Risks**: an XPath that matches nothing silently exempts nothing. That is safe, but it leaves a dead
-  entry, which IC-02 catches. Several methods break more than one rule, and each (rule, method) pair is
-  its own entry.
+  entry, which IC-02 catches. Several methods break more than one rule. Each method has one entry, whose `checks` regex lists
+  every rule it breaks, so the register stays at about 15 entries (SC-002).
 
 ### IC-02 — Stale-entry and register-format check
 

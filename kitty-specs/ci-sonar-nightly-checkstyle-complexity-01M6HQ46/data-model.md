@@ -4,16 +4,17 @@
 
 | Field | Source | Rule |
 |---|---|---|
-| rule | `checks` attribute and comment `rule:` | One of CyclomaticComplexity, NPathComplexity, MethodLength, NestedIfDepth (or an existing gate's rule) |
+| rules | `checks` attribute (an alternation such as `CyclomaticComplexity\|NPathComplexity`) and comment `rule:` | Each is one of CyclomaticComplexity, NPathComplexity, MethodLength, NestedIfDepth |
 | file | `files` attribute (regex) and comment `file:` | Matches exactly one source file |
 | method | `query` attribute, `@text='<name>'` | Names one method declared in that file |
 | reason | comment `reason:` | Non-empty |
 | sunset | comment `sunset:` | ISO date |
 
 **Invariants:**
-- Each (rule, file, method) is unique.
-- An entry is *live* only while the probe run reports a violation of its rule on its method. A non-live
-  entry is stale, and a stale entry fails the build.
+- Each (file, method) has at most one entry; the entry lists every rule the method breaks.
+- An entry is *live* only while the probe run reports a violation of **each** rule it lists on its
+  method. An entry with a rule that no longer fires is stale (it must narrow or go), and a stale entry
+  fails the build.
 - The header's `Size: N entries` equals the number of entries.
 
 **Lifecycle:** an entry is added (only for methods present when the mission lands), then shrinks
