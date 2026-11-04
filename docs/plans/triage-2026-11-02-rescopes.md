@@ -2,7 +2,7 @@
 title: Re-scope proposals, triage 2026-11-02
 description: "Proposed new scopes for the 66 issues the 2026-11-02 triage marked for re-scoping, for the operator to approve, amend or reject before any issue body changes."
 doc_status: draft
-updated: 2026-11-03T00:00:00Z
+updated: 2026-11-04T00:00:00Z
 type: Plan
 kind: Planning
 related:
@@ -21,7 +21,7 @@ audience:
 
 The [2026-11-02 triage](/plans/triage-2026-11-02/) found 66 open issues whose body no longer matches the ADRs or
 what has shipped. On 2026-11-03 the operator chose to review proposed re-scopes before any issue body changes. This
-page holds one proposal per issue. Nothing here is applied: an issue body changes only after its proposal is
+page holds one proposal per issue. Unless the list below says otherwise, nothing here is applied: an issue body changes only after its proposal is
 approved.
 
 ## How to review
@@ -61,6 +61,9 @@ Applied on the tracker before this page was written:
 - **Core follow-ups:** #333 to #342 moved under the new epic #361 (core adopts the pack-ecosystem design). #332 and
   #343 stay under #69.
 - **#13** moved from 4.0 GA to the 4.x cutover (ADR-0055 D1); the milestone page now says so.
+- **Applied 2026-11-04, after checking each against the code:** #210 closed as covered; the `Parent: #69` line in
+  #333 to #342 changed to `Parent: #361`; #111 decided as no operation of its own (see the correction at
+  [#111](#issue-111)).
 - **Still open:** the parents of #182, #184 and #185 (the triage proposed #94, #6 and #6). They stay under #142
   until the operator decides.
 
@@ -694,6 +697,9 @@ The answers these need, by issue. Each is repeated under its proposal.
   - The whole 'Decide and shape' body
 - **Evidence:** ADR-0053 d2, d3; ADR-0048 (topical pack spdd); work breakdown 'Foundation membership' spdd entry
 - **Question:** Close R17 as decided ('covered by R2 + R9'), with the decision recorded in #94 and service-contract.md?
+- **Correction, 2026-11-04:** the conclusion was approved, but the reason above is wrong. The blocks are text in the
+  built-in pack's `software-dev` step prompts, not bodies of the `spdd` pack's artifacts. So they are covered by the reads
+  that serve those prompts (R6, R10) plus R9, not by R2. The decision on #111 has the evidence.
 
 ### Issue #112
 
