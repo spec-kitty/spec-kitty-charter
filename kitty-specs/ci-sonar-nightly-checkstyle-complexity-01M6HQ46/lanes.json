@@ -12,7 +12,9 @@
       ],
       "write_scope": [
         "config/checkstyle/checkstyle.xml",
-        "config/checkstyle/suppressions.xml"
+        "config/checkstyle/suppressions.xml",
+        "contracts/src/main/java/ai/speckitty/charter/contracts/bundle/ComposedBundle.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ActivationConfigSchemaParityTest.java"
       ],
       "predicted_surfaces": [
         "api",
@@ -77,7 +79,7 @@
       "parallel_group": 2
     }
   ],
-  "computed_at": "2026-11-04T06:01:22.696686+00:00",
+  "computed_at": "2026-11-04T06:27:47.197383+00:00",
   "computed_from": "dependency_graph+ownership",
   "planning_artifact_wps": [
     "WP04"
