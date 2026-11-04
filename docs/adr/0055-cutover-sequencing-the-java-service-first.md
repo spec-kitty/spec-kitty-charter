@@ -137,7 +137,7 @@ one, so matching it would pin the service to the design it replaces.
 
 1. **What gates each core switch in phase 2,** now that core's Python answers are not the reference (D3)? It is
    needed before the first shadow (#14), not before the service is built.
-   *Answered 2026-11-04 (operator): the design's BDD scenarios alone gate each switch
+   *Answered 2026-11-04 (operator): the design's BDD scenarios and contract tests gate each switch
    ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) decision 1).*
 
 ## Follow-ups
