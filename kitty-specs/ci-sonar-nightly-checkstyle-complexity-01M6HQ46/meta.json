@@ -13,5 +13,7 @@
   "purpose_tldr": "Add a complexity gate to every pull request and a nightly, reported-only SonarCloud scan, as Proposed ADR-0056 records.",
   "slug": "ci-sonar-nightly-checkstyle-complexity-01M6HQ46",
   "target_branch": "ci-sonar-nightly-checkstyle-complexity",
-  "topology": "coord"
+  "topology": "coord",
+  "contracts": "none",
+  "contracts_rationale": "CI and build-gate change only: no API, schema or event contract is added or changed."
 }
