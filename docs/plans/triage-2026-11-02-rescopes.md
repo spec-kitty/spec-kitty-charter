@@ -21,8 +21,8 @@ audience:
 
 The [2026-11-02 triage](/plans/triage-2026-11-02/) found 66 open issues whose body no longer matches the ADRs or
 what has shipped. On 2026-11-03 the operator chose to review proposed re-scopes before any issue body changes. This
-page holds one proposal per issue. Unless the list below says otherwise, nothing here is applied: an issue body changes only after its proposal is
-approved.
+page holds one proposal per issue. Unless [Applied since](#applied-since) says otherwise, nothing here is applied: an
+issue body changes only after its proposal is approved.
 
 ## How to review
 
@@ -48,7 +48,7 @@ merged PR or a closed issue.
 | re-scope + retitle | 44 |
 | re-scope | 20 |
 | close instead | 2 |
-| with an open question | 31 |
+| with an open question | 29 |
 
 ## Decisions taken on 2026-11-03
 
@@ -61,11 +61,18 @@ Applied on the tracker before this page was written:
 - **Core follow-ups:** #333 to #342 moved under the new epic #361 (core adopts the pack-ecosystem design). #332 and
   #343 stay under #69.
 - **#13** moved from 4.0 GA to the 4.x cutover (ADR-0055 D1); the milestone page now says so.
-- **Applied 2026-11-04, after checking each against the code:** #210 closed as covered; the `Parent: #69` line in
-  #333 to #342 changed to `Parent: #361`; #111 decided as no operation of its own (see the correction at
-  [#111](#issue-111)).
 - **Still open:** the parents of #182, #184 and #185 (the triage proposed #94, #6 and #6). They stay under #142
   until the operator decides.
+
+## Applied since
+
+On 2026-11-04 the operator approved this cleanup, after each item was checked:
+
+- **#210** is closed as covered. Its closing comment names what stays uncovered: a neighbouring-path 404 scenario and a
+  general check for undeclared headers.
+- **#333 to #342:** the `Parent: #69` line in each body now says `Parent: #361`.
+- **#111** is decided: a contract operation with no separate shape. The reason differs from the proposal's; see the
+  correction at [#111](#issue-111).
 
 ## Summary
 
@@ -100,7 +107,7 @@ Applied on the tracker before this page was written:
 | [106](#issue-106) | Cutover read R12: Glossary packs: decide and shape | B | `scope-change` | re-scope + retitle | yes |
 | [109](#issue-109) | Cutover read R15: Override and pack policy: decide and shape | B | `scope-change` | re-scope | yes |
 | [110](#issue-110) | Cutover read R16: Built-in pin, manifest freshness and snapshot … | B | `scope-change` | re-scope | yes |
-| [111](#issue-111) | Cutover read R17: `SPDD/REASONS` blocks: decide and shape | B | `scope-change` | close instead | yes |
+| [111](#issue-111) | Cutover read R17: `SPDD/REASONS` blocks: decide and shape | B | `scope-change` | close instead | answered |
 | [112](#issue-112) | Cutover read R18: Kind taxonomy facts: decide and shape | B | `scope-change` | re-scope |  |
 | [70](#issue-70) | Launcher and service lifecycle: core starts and stops the charter … | B | `scope-change` | re-scope + retitle | yes |
 | [71](#issue-71) | Cross-OS packaging of the charter service | B | `scope-change` | re-scope | yes |
@@ -130,7 +137,7 @@ Applied on the tracker before this page was written:
 | [185](#issue-185) | Pack commit swap: readers in the swap window, staging leftovers, … | D | `scope-change` | re-scope + retitle |  |
 | [196](#issue-196) | Protect `contract-charter-v*` tags with a ruleset before the first … | D | `scope-change` | re-scope + retitle |  |
 | [205](#issue-205) | Re-render class-diagram and c4-components PlantUML for the ADR-0035 … | D | `scope-change` | re-scope + retitle |  |
-| [210](#issue-210) | Contract scenarios for `GET /openapi.yaml` | D | `factual` | close instead | yes |
+| [210](#issue-210) | Contract scenarios for `GET /openapi.yaml` | D | `factual` | close instead | answered |
 | [211](#issue-211) | Add IntelliJ HTTP Client examples … | D | `scope-change` | re-scope + retitle | yes |
 | [220](#issue-220) | Release: attach Java client zip + .sha256 to the contract release and … | D | `scope-change` | re-scope + retitle |  |
 | [226](#issue-226) | Hosted service configuration (profiles, validated properties, … | D | `factual` | re-scope + retitle | yes |
@@ -156,7 +163,7 @@ The answers these need, by issue. Each is repeated under its proposal.
 - **#106:** Once the item 4 issue ('glossary contexts and terms') is filed, close #106 into it, or keep #106 for the contract record?
 - **#109:** Is the mutability-policy read out of the cutover (needs an ADR-0010 amendment), given #55 and its children are Post-cutover?
 - **#110:** Are the pin and snapshot reads exempt pack tooling (like compile, ADR-0010 d3), or fields of the R4 pack listing?
-- **#111:** Close R17 as decided ('covered by R2 + R9'), with the decision recorded in #94 and service-contract.md?
+- **#111 (answered 2026-11-04, for a different reason):** Close R17 as decided ('covered by R2 + R9'), with the decision recorded in #94 and service-contract.md?
 - **#70:** Does the hosted-profile client path (configured endpoint and login) belong in #70, or in #127/#233 with #70 kept to the local launcher?
 - **#71:** Is a `service-v*` pre-release enough to close #71, or does it wait for a final release (which needs a released contract, ADR-0046 d3, and 0.1.0 is held)?
 - **#74:** What gates each switch (ADR-0055 open question 1)? #74 cannot state its per-operation acceptance until it is ruled.
@@ -169,7 +176,7 @@ The answers these need, by issue. Each is repeated under its proposal.
 - **#80:** Does the rename ride the named-packs split re-pin, or ship on its own? And confirm no dual reader (ADR-0053 OQ3 by analogy) despite the operator note.
 - **#82:** Keep the anti-pattern sign-flip rule (vector = minus the rejecting artifact's), now that ADR-0052 makes anti-patterns authored artifacts and they could carry their own `impacts` list?
 - **#15:** Must the nightly gating pass run black-box over loopback against the started jar (scripts/`release/smoke-service.sh` already starts one), or is the existing in-process `MockMvc` binding enough for the evidence trail?
-- **#210:** Close #210 as covered, or keep it for one neighboring-path 404 scenario (and, if wanted, a check that no undeclared header appears)?
+- **#210 (answered 2026-11-04: closed):** Close #210 as covered, or keep it for one neighboring-path 404 scenario (and, if wanted, a check that no undeclared header appears)?
 - **#211:** Which directory for the .http files: `contracts/charter/http/` (proposed) or another?
 - **#226:** ADR-0041 D1 keeps 'hosted' as the deployment-option name. Retitle the epic to 'Containerized service configuration' (proposed), or keep 'Hosted' in the title and fix only the body and #231/#232?
 - **#243:** Is `spec-kitty/spec-kitty`#6768 the same defect as defect 1 (additive-only check on synthesize again of an activated `PROJECT_` directive)? I could not read it.
@@ -697,9 +704,10 @@ The answers these need, by issue. Each is repeated under its proposal.
   - The whole 'Decide and shape' body
 - **Evidence:** ADR-0053 d2, d3; ADR-0048 (topical pack spdd); work breakdown 'Foundation membership' spdd entry
 - **Question:** Close R17 as decided ('covered by R2 + R9'), with the decision recorded in #94 and service-contract.md?
-- **Correction, 2026-11-04:** the conclusion was approved, but the reason above is wrong. The blocks are text in the
-  built-in pack's `software-dev` step prompts, not bodies of the `spdd` pack's artifacts. So they are covered by the reads
-  that serve those prompts (R6, R10) plus R9, not by R2. The decision on #111 has the evidence.
+- **Correction, 2026-11-04:** the operator approved closing this, but the reason above is wrong. The blocks are text in
+  the built-in pack's `software-dev` step prompts, not bodies of the `spdd` pack's artifacts, and R2 plays no part. The
+  prompt text comes with the mission-type read (R5, #99), and the activation answer comes from R9 (#103). The decision
+  on #111 has the evidence.
 
 ### Issue #112
 
@@ -1232,6 +1240,7 @@ The answers these need, by issue. Each is repeated under its proposal.
   - Closed-response item (ContractConformance on every request).
 - **Evidence:** `service/deployable/src/test/java/ai/speckitty/charter/deployable/OpenApiDocumentTest.java:87-189`; `contracts/charter/scenarios/service.feature:44-55`; `contracts/charter/scenarios/README.md:128-136`; errors`.feature`:27-32; root`.feature`:88-94; #208, #209 closed
 - **Question:** Close #210 as covered, or keep it for one neighboring-path 404 scenario (and, if wanted, a check that no undeclared header appears)?
+- **Applied, 2026-11-04:** closed as covered, without the neighbouring-path scenario or the header check.
 
 ### Issue #211
 
