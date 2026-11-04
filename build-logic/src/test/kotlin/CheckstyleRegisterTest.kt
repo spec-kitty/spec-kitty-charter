@@ -352,6 +352,25 @@ class CheckstyleRegisterTest {
     }
 
     @Test
+    fun aFileReachedThroughALinkOutOfTheModuleIsNeverRead() {
+        val module = root.resolve("lib")
+        write("other-checkout/lib/src/main/java/org/example/Gamma.java")
+        module.mkdirs()
+        val link = module.toPath().resolve("elsewhere")
+        try {
+            java.nio.file.Files.createSymbolicLink(link, root.resolve("other-checkout/lib").toPath())
+        } catch (e: UnsupportedOperationException) {
+            org.junit.jupiter.api.Assumptions.abort<Unit>("symbolic links are not supported here")
+        } catch (e: java.io.IOException) {
+            org.junit.jupiter.api.Assumptions.abort<Unit>("symbolic links are not supported here")
+        }
+
+        val relocated = CheckstyleRegister.relocate("/elsewhere/src/main/java/org/example/Gamma.java", module)
+
+        assertThat(relocated).isNull()
+    }
+
+    @Test
     fun aCheckstyleReportIsReadAsSimpleCheckNamesFilesAndLines() {
         val report = """
             <?xml version="1.0" encoding="UTF-8"?>
