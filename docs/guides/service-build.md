@@ -89,8 +89,10 @@ Not in `verifyAll` either, yet: the whole-pack round-trip gate (below).
 Not in `verifyAll` by design: the CPU-time budgets, the tests tagged `timing`
 ([#316](https://github.com/spec-kitty/spec-kitty-charter/issues/316)). A budget only means something on a quiet
 machine, and `verifyAll` runs every module's tests at once. Run them in an invocation of their own, as the only task
-named; CI runs them as a step of their own after `verifyAll`. Each prints the CPU time it measured against its budget,
-and the task fails rather than skips where symbolic links cannot be made:
+named; CI runs them as a step of their own after `verifyAll`. That step is **report-only**: a budget over its limit
+raises a warning and a job-summary line, and never fails the job or blocks a pull request
+([ADR-0057](/adr/0057-performance-budgets-never-block-a-pull-request/)). Each prints the CPU time it measured against its
+budget, and the task fails rather than skips where symbolic links cannot be made:
 
 ```bash
 ./gradlew :packs:timingBudgets
