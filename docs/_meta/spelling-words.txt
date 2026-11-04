@@ -63,6 +63,8 @@ grandfathered
 graphviz
 guideline
 hard
+hotspot
+hotspots
 import
 instantiates
 instantiation
