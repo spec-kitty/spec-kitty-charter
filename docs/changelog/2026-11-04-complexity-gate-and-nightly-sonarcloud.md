@@ -23,7 +23,7 @@ Proposed ADR-0058 (PR #366) sets limits on how complex a method may be. This cha
 - **Four Checkstyle limits,** on main and test sources: `CyclomaticComplexity` 15 (a `switch` counts once),
   `NPathComplexity` 1000, `MethodLength` 60 lines (blank lines and comments not counted) and `NestedIfDepth` 1.
   `checkstyleMain` and `checkstyleTest` fail on a violation. Fix it by simplifying the method.
-- **The register stays honest.** `config/checkstyle/suppressions.xml` lists the 15 methods that were over a limit,
+- **The register stays honest.** `config/checkstyle/suppressions.xml` lists the 14 methods that were over a limit,
   one `suppress-xpath` entry each, with `rule:`, `file:`, `reason:` and `sunset:`. New code gets no entry. The list
   only shrinks, under [#367](https://github.com/spec-kitty/spec-kitty-charter/issues/367).
 - **The stale check.** `checkCheckstyleRegister`, part of `check`, runs the rules without the register and fails on
