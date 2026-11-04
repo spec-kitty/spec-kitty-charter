@@ -16,9 +16,8 @@
   "baseline_merge_commit": "aa6852ba62922efa7ba401fd1957f8b1778b80f4",
   "contracts": "none",
   "contracts_rationale": "CI and build-gate change only: no API, schema or event contract is added or changed.",
-  "coordination_branch": "kitty/mission-ci-sonar-nightly-checkstyle-complexity-01M6HQ46",
   "created_at": "2026-11-03T22:05:29.238764+00:00",
-  "flattened": false,
+  "flattened": true,
   "friendly_name": "Nightly SonarCloud and per-PR complexity gate",
   "merged_at": "2026-11-04T13:51:51.819333+00:00",
   "merged_commit": "3793315a1ad9006ffea5012338c7e3f20e1482b2",
@@ -33,7 +32,6 @@
   "slug": "ci-sonar-nightly-checkstyle-complexity-01M6HQ46",
   "status_phase": "1",
   "target_branch": "ci-sonar-nightly-checkstyle-complexity",
-  "topology": "coord",
   "vcs": "git",
   "vcs_locked_at": "2026-11-04T06:11:39.513176+00:00"
 }
