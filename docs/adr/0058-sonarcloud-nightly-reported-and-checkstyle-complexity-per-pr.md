@@ -11,6 +11,8 @@ related:
   - plans/engineering-notes/test-suite-assessment-2026-11-03
   - adr/0023-ci-gate-required-check
   - adr/0047-generated-indexes-and-merge-queue
+  - adr/0057-performance-budgets-never-block-a-pull-request
+  - guides/service-build
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this for which complexity rules block a pull request and where the nightly SonarCloud result is reported.
@@ -49,7 +51,11 @@ analysis, not to tests.
 JaCoCo produces an aggregated XML report as part of `check`. `service.yml` uploads it, with no
 threshold, as FR-008 of the contract-and-build mission asked.
 
-Core runs SonarCloud on two surfaces. Both are reported only, outside the required
+Unlike [ADR-0057](/adr/0057-performance-budgets-never-block-a-pull-request/)'s performance budgets,
+which measure shared hardware, complexity rules are deterministic static analysis, so they can gate a
+pull request.
+
+Core runs SonarCloud on two surfaces. Both are report-only, outside the required
 `aggregate-gate`:
 
 - a nightly `sonar.yml`, which compiles Java only on trusted, merged code;
@@ -57,6 +63,10 @@ Core runs SonarCloud on two surfaces. Both are reported only, outside the requir
 
 Java analysis needs compiled classes (`sonar.java.binaries`). Core deliberately never compiles a
 pull request's build next to `SONAR_TOKEN`.
+
+This repository already has the local shape to follow: `.github/workflows/mutation-nightly.yml`
+runs nightly and on manual dispatch, has no pull-request trigger and gates nothing. The SonarCloud
+workflow follows it.
 
 The required-check rules this must respect:
 
@@ -69,22 +79,35 @@ The required-check rules this must respect:
 
 1. **Checkstyle gates complexity per pull request.** `config/checkstyle/checkstyle.xml` gains
    `CyclomaticComplexity`, `NPathComplexity`, `MethodLength` and `NestedIfDepth`.
-   - The limits are set from a measurement run over the current code, so the change lands green.
-   - Any exception goes into `config/checkstyle/suppressions.xml`, the one register, as a
-     shrink-only entry.
+   - **Limits.** As ruled by the operator: cyclomatic complexity 15, NPath 1000, 60 lines per
+     method and nested-if depth 1.
+   - **No grandfathering.** Operator ruling of 2026-11-04. The roughly 15 existing methods over a
+     limit, tracked in [#367](https://github.com/spec-kitty/spec-kitty-charter/issues/367), are
+     refactored below the limits before the gate turns on, so #367 is a prerequisite of the gate.
+     They get no suppression and no baseline entry.
+   - **The register is unchanged.** `config/checkstyle/suppressions.xml` stays the one register of
+     exceptions, for "the code is right and the rule is wrong", each with a sunset date. It is not
+     a place to park existing over-limit methods.
    - The rules run inside `verifyAll`, so `CI gate / gate` enforces them with no new job or tool.
-2. **SonarCloud runs nightly and is reported only.** A new `.github/workflows/sonar.yml` runs on a
+2. **SonarCloud runs nightly and is report-only.** A new `.github/workflows/sonar.yml` runs on a
    schedule and on manual dispatch, on `main` only.
    - **Analysis.** It runs `verifyAll` on trusted code, then the SHA-pinned generic
      `SonarSource/sonarqube-scan-action` that core uses. No Gradle plugin is added.
    - **Inputs.** It passes the modules' `build/classes/java/main` as `sonar.java.binaries`, and the
      aggregated report as `sonar.coverage.jacoco.xmlReportPaths`. It excludes the generated
      `charter-api`.
-   - **Reported only.** Every step is `continue-on-error`. The quality-gate result goes to the job
+   - **Report-only.** Every step is `continue-on-error`. The quality-gate result goes to the job
      summary. The job is never part of `CI gate / gate` and never runs on `merge_group` or a pull
      request.
    - **Without a token.** It skips green with a notice when `SONAR_TOKEN` is absent, so it can land
      before the SonarCloud project exists.
+   - **Supply chain.**
+     - The action is pinned by full commit SHA, with a version comment.
+     - The scanner version is pinned through the action's input.
+     - The job has `permissions: contents: read`.
+     - `SONAR_TOKEN` is exposed only to the scan step, never to the build or `verifyAll` steps.
+     - The scanner and SonarCloud's analyzers are analysis tools outside the build's dependency
+       graph, so the build's strict SHA-256 dependency verification is unchanged.
 3. **Coverage stays a report.** No JaCoCo threshold is added. New-code coverage is read from
    SonarCloud's new-code period on `main`.
 
@@ -97,6 +120,11 @@ The required-check rules this must respect:
 - Duplication, security hotspots and new-code coverage become visible, reported the same way core
   reports them.
 - The required check and the merge queue are unchanged.
+- The charter is unchanged: Checkstyle is already among `verifyAll`'s gates, and SonarCloud never
+  gates. When the follow-up is implemented, [the service build guide](/guides/service-build/) gains
+  the complexity rules and a nightly SonarCloud line.
+- The gate turns on only after #367 has refactored the existing over-limit methods, so the
+  complexity gate arrives later than the SonarCloud workflow.
 
 ### Negative
 
@@ -107,9 +135,11 @@ The required-check rules this must respect:
 
 ### Risks
 
-- A reported-only signal can be ignored. The four-week review below is the check on that.
-- Complexity limits set too loosely gate nothing. The limits are recorded with the measurement that
-  set them, and lowered only by a reviewed change.
+- A report-only signal can be ignored. The four-week review below is the check on that.
+- Complexity limits set too loosely gate nothing. The limits are the ones the operator ruled, and
+  change only by a reviewed change to this ADR.
+- A compromised action or scanner sees the source and the token. Mitigations: the SHA pin, minimal
+  permissions, the token scoped to one step, and report-only status, so it never gates.
 
 ## Alternatives considered
 
@@ -133,6 +163,11 @@ the stronger signal.
 ## References
 
 - [Test suite assessment, 2026-11-03](/plans/engineering-notes/test-suite-assessment-2026-11-03/)
-- Core's `sonar.yml`, the `sonar-pr` job in `ci-aggregate.yml`, and CLAUDE.md "Sonar Expectations"
-  (spec-kitty/spec-kitty)
+- Core's [`sonar.yml`](https://github.com/spec-kitty/spec-kitty/blob/3620217255267f3e0a4062d123c8333a73a4b5cf/.github/workflows/sonar.yml),
+  the [`sonar-pr` job in `ci-aggregate.yml`](https://github.com/spec-kitty/spec-kitty/blob/de459ad177eed0fb32a955a07f1c8735f3f0b419/.github/workflows/ci-aggregate.yml#L468),
+  and CLAUDE.md [Sonar Expectations](https://github.com/spec-kitty/spec-kitty/blob/c14c045d5fe388a39885b1340a3f59443264257d/CLAUDE.md#L387)
+  (spec-kitty/spec-kitty, pinned to commits on its `main`)
+- [#367](https://github.com/spec-kitty/spec-kitty-charter/issues/367) — refactor the existing
+  over-limit methods; a prerequisite of the complexity gate
+- `.github/workflows/mutation-nightly.yml` — the local nightly, report-only shape
 - [#239](https://github.com/spec-kitty/spec-kitty-charter/issues/239) — mutation floors

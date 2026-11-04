@@ -26,7 +26,7 @@ is recorded as [ADR-0058](/adr/0058-sonarcloud-nightly-reported-and-checkstyle-c
 (Accepted, 2026-11-03). The issues it proposes are listed at the end and are not filed.
 
 **Clarified 2026-11-04 (PR #366 landing).** The measurements below are as of 2026-11-03 and are not
-updated. Three readings are corrected, each marked inline:
+updated. Four readings are corrected, each marked inline:
 
 - the eight tight wall-clock checks in W3 are deadline checks, not budgets, so R2 keeps them in
   `:packs:test` under [#320](https://github.com/spec-kitty/spec-kitty-charter/issues/320) and does
@@ -34,6 +34,9 @@ updated. Three readings are corrected, each marked inline:
 - the `timingBudgets` step is report-only since
   [ADR-0057](/adr/0057-performance-budgets-never-block-a-pull-request/);
 - R3 pins the 15 `CharterRefusal` codes and adds no counting guard test.
+- R5 has no grandfathering (operator ruling of 2026-11-04): the existing over-limit methods are
+  refactored first under [#367](https://github.com/spec-kitty/spec-kitty-charter/issues/367), and
+  there is no shrink-only register.
 
 ## Short answer
 
@@ -329,7 +332,7 @@ Other findings, lower risk:
 | R2 | *(Clarified 2026-11-04.)* Under [#320](https://github.com/spec-kitty/spec-kitty-charter/issues/320), keep the eight deadline checks in `:packs:test`. Widen each deadline into a hang cap far above the work's own time, or assert the work instead of the time. Do not tag them `timing`. | S | W3 |
 | R3 | Pin the code on the 15 `CharterRefusal` checks that test only the type. Leave the other 139 type-only `assertThatThrownBy` to review and to the test-cleanup FIX verdicts, with no counting guard test, which would be a test about tests (`DIRECTIVE_041`). *(Clarified 2026-11-04.)* | S | W4 |
 | R4 | Close the module-local gaps that PIT's no-coverage list shows: `kernel.validation` (`Constrained`, `Rationale`), `profiles` (`SelfReviewStep`, `ModeDefault`) and `packs.infra.fetch` (`CappedBodySubscriber`). Prove each new test with a planted break. | M | W1, W2 |
-| R5 | Add Checkstyle complexity modules to the per-PR gate: `CyclomaticComplexity`, `NPathComplexity`, `MethodLength`, `NestedIfDepth`. Set the limits from a measurement run, and keep the current 0-suppression register or a shrink-only one. No new tool is needed. | M | W5 |
+| R5 | Add Checkstyle complexity modules to the per-PR gate: `CyclomaticComplexity`, `NPathComplexity`, `MethodLength`, `NestedIfDepth`. Set the limits from a measurement run, and keep the current 0-suppression register or a shrink-only one. No new tool is needed. *(Clarified 2026-11-04: the operator ruled no grandfathering; see ADR-0058. The limits are as ruled, #367 refactors the existing over-limit methods first, and there is no shrink-only register.)* | M | W5 |
 | R6 | Add a nightly, reported-only SonarCloud scan with new-code coverage, as set out below and in ADR-0058. | M | W5, coverage |
 | R7 | Remove the unused Mockito dependency and Java agent, or record why they are kept. | S | hygiene |
 | R8 | Run the QA pack's `qa-coverage-gap-analysis` over the 27 promise-first scenarios. Map each one to a contract scenario that covers it, move it under the Cucumber runner, or retire it with the covering scenario named. | M | traceability |
@@ -401,7 +404,7 @@ proceeds as its own mission.
 | R2: a comment on [#320](https://github.com/spec-kitty/spec-kitty-charter/issues/320), not a new issue | S | Names the eight call sites above: widen each deadline into a hang cap, or assert the work; do not tag them `timing`. |
 | R3: "Pin refusal codes in `CharterRefusal` assertions" | S | Lists the 15 `CharterRefusal` sites. No counting guard test (`DIRECTIVE_041`). |
 | R4: "Close module-local test gaps in kernel.validation, profiles and packs.infra.fetch" | M | Acceptance: PIT no-coverage counts fall; each new test is proved by a planted break. |
-| R5: "Checkstyle complexity and length rules in the per-PR gate" | M | Limits measured first; 0 suppressions or a shrink-only register. |
+| R5: "Checkstyle complexity and length rules in the per-PR gate" | M | Limits as ruled; #367 first; no suppressions and no shrink-only register (clarified 2026-11-04, ADR-0058). |
 | R6: "Nightly reported-only SonarCloud scan (ADR-0058)" | M | Needs `SONAR_TOKEN` and the SonarCloud project from the operator. |
 | R7: "Remove the unused Mockito dependency and Java agent" | S | |
 | R8: "Coverage-gap analysis of the 27 promise-first scenarios" | M | `qa-coverage-gap-analysis`; wire, map or retire each one. |
