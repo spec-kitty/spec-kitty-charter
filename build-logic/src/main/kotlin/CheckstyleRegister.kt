@@ -174,7 +174,8 @@ object CheckstyleRegister {
      * Judges a register for one module.
      *
      * @param register the parsed register
-     * @param violations the module's probe report errors, the register switched off
+     * @param violations the module's probe report errors, the register switched off; their paths may come from another
+     *   checkout when the report was restored from the build cache, and are re-rooted onto [moduleDir] ([relocate])
      * @param sourceLine line [n] (1-based) of a source file, or null past its end
      * @param rootDir the repository root, against which the comments' `file:` paths resolve
      * @param moduleDir the module's directory: liveness is judged only for entries whose `file:` lies under it
@@ -207,12 +208,22 @@ object CheckstyleRegister {
         }
 
         val mapped = mutableListOf<Pair<Violation, String?>>()
-        for (violation in violations) {
+        for (reported in violations) {
+            val file = relocate(reported.file, moduleDir)
+            if (file == null) {
+                findings += Finding(
+                    Kind.UNMAPPED, 0,
+                    "the probe reports ${reported.check} at ${reported.file}:${reported.line}, but no such file" +
+                        " lies under ${moduleDir.path}: the check cannot judge the register, so it fails",
+                )
+                continue
+            }
+            val violation = reported.copy(file = file.path)
             if (violation.check !in METHOD_RULES) {
                 mapped += violation to null
                 continue
             }
-            val method = methodOf(violation.check, violation.line) { n -> sourceLine(File(violation.file), n) }
+            val method = methodOf(violation.check, violation.line) { n -> sourceLine(file, n) }
             if (method == null) {
                 findings += Finding(
                     Kind.UNMAPPED, 0,
@@ -230,6 +241,28 @@ object CheckstyleRegister {
             findings += staleFindings(entry, mapped)
         }
         return findings
+    }
+
+    /**
+     * The file in [moduleDir] that a probe report names. Checkstyle writes absolute paths, and a probe report
+     * restored from the build cache carries the paths of the checkout that produced it; the probed sources are the
+     * same relative to the module (the probe's cache key holds them by relative path), so the reported path is
+     * re-rooted onto [moduleDir]: the longest trailing part of it, such as `src/main/java/…/Foo.java`, that names a
+     * file there. A path already under [moduleDir] is kept. A file outside [moduleDir] is never read, even when it
+     * exists, since it belongs to another checkout. Null when no trailing part names a file in [moduleDir].
+     */
+    fun relocate(reported: String, moduleDir: File, isFile: (File) -> Boolean = File::isFile): File? {
+        val module = moduleDir.canonicalFile
+        val asReported = File(reported)
+        if (asReported.isAbsolute && asReported.canonicalFile.startsWith(module) && isFile(asReported)) return asReported
+        val segments = reported.replace('\\', '/').split('/').filter { it.isNotEmpty() }
+        for (i in segments.indices) {
+            val suffix = segments.subList(i, segments.size)
+            if (".." in suffix) continue
+            val candidate = module.resolve(suffix.joinToString("/"))
+            if (isFile(candidate)) return candidate
+        }
+        return null
     }
 
     private fun fieldFindings(entry: Entry): List<Finding> {

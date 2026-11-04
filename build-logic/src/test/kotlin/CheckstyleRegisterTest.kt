@@ -316,6 +316,42 @@ class CheckstyleRegisterTest {
     }
 
     @Test
+    fun aReportRestoredFromAnotherCheckoutIsReRootedOntoThisModule() {
+        write(alphaPath)
+        val xml = register(1, comment() + xpath("CyclomaticComplexity", "[/\\\\]Alpha\\.java", "toString"))
+        val elsewhere = "/home/other/charter/.worktrees/mission-lane-b/$alphaPath"
+        val report = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <checkstyle version="14.3.0">
+            <file name="$elsewhere">
+            <error line="${lineOf(alphaSource, "@Override")}" column="5" severity="error" message="m" source="com.puppycrawl.tools.checkstyle.checks.metrics.CyclomaticComplexityCheck"/>
+            </file>
+            </checkstyle>
+        """.trimIndent()
+
+        assertThat(verify(xml, CheckstyleRegister.parseReport(report))).isEmpty()
+        assertThat(CheckstyleRegister.relocate(elsewhere, root.resolve("lib")))
+            .isEqualTo(root.resolve("lib").canonicalFile.resolve("src/main/java/org/example/Alpha.java"))
+    }
+
+    @Test
+    fun aReportedFileThatExistsOnlyInAnotherCheckoutIsNotReadAndFailsLoudly() {
+        write(alphaPath)
+        val other = root.resolve("other-checkout")
+        write("other-checkout/lib/src/main/java/org/example/Gamma.java")
+        val xml = register(1, comment() + xpath("CyclomaticComplexity", "Alpha\\.java", "toString"))
+        val violations = listOf(
+            at("CyclomaticComplexity", alphaPath, 4),
+            Violation("NPathComplexity", other.resolve("lib/src/main/java/org/example/Gamma.java").absolutePath, 4),
+        )
+
+        verify(xml, violations).only().let { finding ->
+            assertThat(finding.kind).isEqualTo(Kind.UNMAPPED)
+            assertThat(finding.message).contains("Gamma.java:4", "no such file")
+        }
+    }
+
+    @Test
     fun aCheckstyleReportIsReadAsSimpleCheckNamesFilesAndLines() {
         val report = """
             <?xml version="1.0" encoding="UTF-8"?>
