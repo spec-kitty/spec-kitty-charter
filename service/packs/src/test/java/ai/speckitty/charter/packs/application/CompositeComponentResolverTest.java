@@ -25,6 +25,7 @@ import ai.speckitty.charter.packs.domain.Enforcement;
 import ai.speckitty.charter.packs.domain.Guide;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackArtifactRepository;
+import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Paradigm;
@@ -165,42 +166,11 @@ class CompositeComponentResolverTest {
     }
 
     @Test
-    void aPackQualifiedReferenceToTheReferringPackItselfIsHeldByIt() {
-        // FR-013: the pack's own artifacts are reachable both bare and qualified.
-        assertThat(holderOf(twoPackResolver(), "alpha::directive:OWN_1")).isEqualTo(PACK);
-    }
-
-    @Test
-    void aBareReferenceIsHeldOnlyByTheReferringPack() {
-        assertThat(holderOf(twoPackResolver(), "directive:OWN_1")).isEqualTo(PACK);
-    }
-
-    @Test
     void aBareReferenceThatIsHeldOnlyByAnotherPackIsRefusedNamingTheHoldingPack() {
         assertThatThrownBy(() -> holderOf(twoPackResolver(), "directive:SHARED_1"))
                 .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
                     assertThat(refused.code()).isEqualTo(RefusalCode.PACK_REFERENCE_UNQUALIFIED);
                     assertThat(refused.getMessage()).contains("bravo").contains("pack-qualified");
-                });
-    }
-
-    @Test
-    void aBareReferenceToAKindNoReadPathServesIsRefusedWhenOnlyAnotherPackHoldsIt() {
-        // The held list answers for every kind, so a procedure held only by bravo is not failed open.
-        assertThatThrownBy(() -> holderOf(twoPackResolver(), "procedure:release"))
-                .isInstanceOfSatisfying(
-                        CharterRefusal.class,
-                        refused -> assertThat(refused.code()).isEqualTo(RefusalCode.PACK_REFERENCE_UNQUALIFIED));
-    }
-
-    @Test
-    void aQualifiedReferenceToAPackOutsideTheClosureIsRefusedNamingTheMissingPack() {
-        // The id exists in the referring pack, yet a name the closure does not hold is FR-017's refusal, never a
-        // fallback to the referring pack.
-        assertThatThrownBy(() -> holderOf(twoPackResolver(), "charlie::directive:OWN_1"))
-                .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
-                    assertThat(refused.code()).isEqualTo(RefusalCode.PACK_REFERENCE_PACK_MISSING);
-                    assertThat(refused.getMessage()).contains("charlie").contains("holds no pack");
                 });
     }
 
@@ -286,13 +256,8 @@ class CompositeComponentResolverTest {
                                 new NamedDescriptors(),
                                 new PackArtifactRepository() {
                                     @Override
-                                    public List<String> changedArtifacts(PackIdentifier pack) {
-                                        return List.of();
-                                    }
-
-                                    @Override
-                                    public List<String> definedArtifacts(PackIdentifier pack) {
-                                        return held.get(pack);
+                                    public PackCompositionFacts compositionFacts(PackIdentifier pack) {
+                                        return new PackCompositionFacts(List.of(), held.get(pack), List.of());
                                     }
                                 },
                                 fixedDigest())

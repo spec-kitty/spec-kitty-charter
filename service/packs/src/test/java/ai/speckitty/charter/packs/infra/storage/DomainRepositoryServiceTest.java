@@ -444,7 +444,7 @@ class DomainRepositoryServiceTest {
      */
     @Test
     void changedArtifactsAreTheDistinctTargetsOfEnhancesAndOverridesEdges(@TempDir Path host) throws IOException {
-        Path pack = PackFixtures.copyOf("pack-a", host);
+        Path pack = PackFixtures.copyOf("pack-descriptor-only", host);
         Files.writeString(pack.resolve("refinements.graph.yaml"), """
                 schema_version: '1.0'
                 generated_at: STATIC
@@ -455,13 +455,21 @@ class DomainRepositoryServiceTest {
                 - {source: tactic:alpha-tactic, target: tactic:beta-tactic, relation: requires}
                 """);
 
-        assertThat(overOne("pack-a", pack).changedArtifacts(BY_NAME)).containsExactly("directive:DIRECTIVE_009");
+        assertThat(overOne("pack-descriptor-only", pack)
+                        .compositionFacts(new PackIdentifier("pack-descriptor-only"))
+                        .changed())
+                .containsExactly("directive:DIRECTIVE_009");
     }
 
     /** A pack with no graph documents refines nothing: the empty answer, not a refusal. */
     @Test
-    void aPackWithoutGraphDocumentsRefinesNothing() {
-        assertThat(service.changedArtifacts(BY_NAME)).isEmpty();
+    void aPackWithoutGraphDocumentsRefinesNothing(@TempDir Path host) throws IOException {
+        Path pack = PackFixtures.copyOf("pack-descriptor-only", host);
+
+        assertThat(overOne("pack-descriptor-only", pack)
+                        .compositionFacts(new PackIdentifier("pack-descriptor-only"))
+                        .changed())
+                .isEmpty();
     }
 
     /** The offering judges a partial graph never: a graph document that cannot be read refuses the refinements. */
@@ -470,7 +478,8 @@ class DomainRepositoryServiceTest {
         Path pack = PackFixtures.copyOf("pack-a", host);
         Files.writeString(pack.resolve("refinements.graph.yaml"), "edges: [\n");
 
-        assertThatThrownBy(() -> overOne("pack-a", pack).changedArtifacts(BY_NAME))
+        assertThatThrownBy(
+                        () -> overOne("pack-a", pack).compositionFacts(BY_NAME).changed())
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refused -> assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
@@ -507,7 +516,9 @@ class DomainRepositoryServiceTest {
                 - {source: other::tactic:t, target: directive:D1, relation: requires}
                 """);
 
-        assertThat(overOne("pack-descriptor-only", pack).referencesOf(new PackIdentifier("pack-descriptor-only")))
+        assertThat(overOne("pack-descriptor-only", pack)
+                        .compositionFacts(new PackIdentifier("pack-descriptor-only"))
+                        .references())
                 .containsExactlyInAnyOrder(
                         "other::tactic:t",
                         "directive:D1",
@@ -542,7 +553,7 @@ class DomainRepositoryServiceTest {
                 pack.resolve(file), "id: " + id + "\nschema_version: '1.0'\n" + fields.replace("\\n", "\n") + "\n");
         DomainRepositoryService over = overOne("pack-descriptor-only", pack);
 
-        assertThatThrownBy(() -> over.referencesOf(new PackIdentifier("pack-descriptor-only")))
+        assertThatThrownBy(() -> over.compositionFacts(new PackIdentifier("pack-descriptor-only")))
                 .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
                     assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
                     assertThat(refused.getMessage()).contains(file);
@@ -554,16 +565,19 @@ class DomainRepositoryServiceTest {
     void aPackWithAnUnreadableArtifactRefusesItsReferencesAndHeldArtifactsWhileItsLoadStillAnswers() {
         assertThat(service.load(BY_ID).violations()).isNotEmpty();
 
-        for (Runnable read :
-                List.<Runnable>of(() -> service.referencesOf(BY_NAME), () -> service.definedArtifacts(BY_NAME))) {
-            assertThatThrownBy(read::run).isInstanceOfSatisfying(CharterRefusal.class, refused -> {
-                assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
-                assertThat(refused.getMessage()).contains(BROKEN_FILE);
-            });
-        }
+        assertThatThrownBy(() -> service.compositionFacts(BY_NAME))
+                .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+                    assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+                    assertThat(refused.getMessage()).contains(BROKEN_FILE);
+                });
     }
 
-    /** The held list answers for every kind a reference can name, so a kind outside the served five is not failed open. */
+    /**
+     * The held list answers for every kind a reference can name, so a kind outside the served five is not failed open.
+     * An anti_pattern is never a file: the pack holds it as a node of its graph document, so the qualified form
+     * {@code <pack>::anti_pattern:x} and the bare-form refusal both find it. A node of any other kind is no holding
+     * without its file.
+     */
     @Test
     void definedArtifactsNameEveryKindThePackHolds(@TempDir Path host) throws IOException {
         Path pack = PackFixtures.copyOf("pack-descriptor-only", host);
@@ -585,9 +599,19 @@ class DomainRepositoryServiceTest {
                 - title: Ship
                   description: ship it
                 """);
+        Files.writeString(pack.resolve("anti_pattern.graph.yaml"), """
+                schema_version: '1.0'
+                generated_at: STATIC
+                nodes:
+                - {urn: 'anti_pattern:big-ball-of-mud', kind: anti_pattern, label: Big Ball of Mud}
+                - {urn: 'directive:GHOST', kind: directive, label: Declared without a file}
+                edges: []
+                """);
 
-        assertThat(overOne("pack-descriptor-only", pack).definedArtifacts(new PackIdentifier("pack-descriptor-only")))
-                .containsExactlyInAnyOrder("directive:D1", "procedure:release");
+        assertThat(overOne("pack-descriptor-only", pack)
+                        .compositionFacts(new PackIdentifier("pack-descriptor-only"))
+                        .defined())
+                .containsExactlyInAnyOrder("directive:D1", "procedure:release", "anti_pattern:big-ball-of-mud");
     }
 
     private static DomainRepositoryService overOne(String name, Path directory) {

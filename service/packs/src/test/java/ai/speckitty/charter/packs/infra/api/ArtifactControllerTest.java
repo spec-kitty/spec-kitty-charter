@@ -34,6 +34,7 @@ import ai.speckitty.charter.packs.domain.GuideBlock;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
+import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Paradigm;
@@ -418,10 +419,10 @@ class ArtifactControllerTest {
             throw new UnsupportedOperationException();
         }
 
-        /** No route this controller serves resolves a reference, so the fixture's packs refine none. */
+        /** No route this controller serves resolves a reference, so the fixture's packs refine and hold none. */
         @Override
-        public List<String> changedArtifacts(PackIdentifier asked) {
-            return List.of();
+        public PackCompositionFacts compositionFacts(PackIdentifier asked) {
+            return PackCompositionFacts.NONE;
         }
 
         @Override

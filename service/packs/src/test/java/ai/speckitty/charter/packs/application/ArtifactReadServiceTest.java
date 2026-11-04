@@ -22,6 +22,7 @@ import ai.speckitty.charter.packs.domain.GuideBlock;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
+import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.PackSources;
@@ -90,6 +91,9 @@ class ArtifactReadServiceTest {
     private final AtomicInteger digests = new AtomicInteger();
     /** What a descriptor lookup does to the inputs as it answers; nothing, unless a test plants a change. */
     private Runnable onFind = () -> {};
+
+    /** How many times the compose asked the catalog for the configured packs: once per resolution of it. */
+    private final AtomicInteger composeResolutions = new AtomicInteger();
 
     private final ArtifactReadService service = serviceDigesting(() -> {
         digests.incrementAndGet();
@@ -455,11 +459,7 @@ class ArtifactReadServiceTest {
 
     @Test
     void theReferencesReadResolvesEachReferenceAgainstTheComposeItResolvedOnce() {
-        AtomicInteger counted = new AtomicInteger();
-        ArtifactReadService counting = referenceFixture(() -> {
-            counted.incrementAndGet();
-            return D1;
-        });
+        ArtifactReadService counting = referenceFixture(() -> D1);
 
         List<ArtifactReadService.Reference> references =
                 counting.references(PACK, "directive", "OWN_1").value();
@@ -473,9 +473,9 @@ class ArtifactReadServiceTest {
                         reference.holder().orElseThrow().descriptor().name())
                 .as("the qualified reference is held by the pack it names, the bare one by the referring pack")
                 .containsExactly("bravo", "alpha");
-        // The outer read digests twice and the referrer's own verified read twice more; neither the compose nor the
-        // two references resolved against it add any.
-        assertThat(counted).hasValue(4);
+        assertThat(composeResolutions)
+                .as("the two references are resolved against one resolution of the compose")
+                .hasValue(1);
     }
 
     @Test
@@ -666,6 +666,7 @@ class ArtifactReadServiceTest {
 
         @Override
         public List<ConfiguredPack> configured() {
+            composeResolutions.incrementAndGet();
             return stored.keySet().stream()
                     .map(id -> new ConfiguredPack(id, PackLevel.ORG))
                     .toList();
@@ -689,18 +690,18 @@ class ArtifactReadServiceTest {
             throw new UnsupportedOperationException();
         }
 
-        /** No pack of the fixture refines an artifact, so the compose holds no sibling contest. */
+        /**
+         * No pack of the fixture refines an artifact, so the compose holds no sibling contest; a pack holds the
+         * artifacts of its aggregate, which the compose reads once per pack.
+         */
         @Override
-        public List<String> changedArtifacts(PackIdentifier pack) {
-            return List.of();
-        }
-
-        /** A pack holds the artifacts of its aggregate, which the compose reads once per pack. */
-        @Override
-        public List<String> definedArtifacts(PackIdentifier pack) {
-            return contents(pack).artifacts().stream()
-                    .map(artifact -> artifact.urn().toString())
-                    .toList();
+        public PackCompositionFacts compositionFacts(PackIdentifier pack) {
+            return new PackCompositionFacts(
+                    List.of(),
+                    contents(pack).artifacts().stream()
+                            .map(artifact -> artifact.urn().toString())
+                            .toList(),
+                    List.of());
         }
 
         @Override

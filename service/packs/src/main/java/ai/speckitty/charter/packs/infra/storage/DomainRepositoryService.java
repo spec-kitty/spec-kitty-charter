@@ -2,9 +2,9 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
-import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Urn;
@@ -18,6 +18,7 @@ import ai.speckitty.charter.packs.domain.DirectiveRepository;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
+import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackDocument;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
@@ -288,74 +289,77 @@ public final class DomainRepositoryService
     // ---- PackArtifactRepository -------------------------------------------------------------------------------
 
     /**
-     * The artifacts the pack's graph documents say it changes: the distinct targets of its {@code enhances} and
-     * {@code overrides} relations, in first-seen order. A graph document that cannot be read refuses the answer
-     * rather than letting the offering judge a partial graph, where the whole-pack load reports it as a violation.
-     */
-    @Override
-    public List<String> changedArtifacts(PackIdentifier pack) {
-        Resolved resolved = resolve(pack);
-        FilesystemPackStore.GraphRead graphs = resolved.store.readGraphs(resolved.key);
-        if (!graphs.violations().isEmpty()) {
-            throw new CharterRefusal(
-                    RefusalCode.PACK_UNREADABLE, "a graph document of " + pack.value() + " cannot be read");
-        }
-        List<String> refined = new ArrayList<>();
-        for (GraphDocument document : graphs.documents()) {
-            for (GraphDocument.Edge edge : document.edges()) {
-                if (refines(edge.relation()) && !refined.contains(edge.target())) {
-                    refined.add(edge.target());
-                }
-            }
-        }
-        return List.copyOf(refined);
-    }
-
-    /**
-     * The references the pack writes, as written — {@code [<pack-name>::]<kind>:<id>}: both endpoints of every edge of
-     * its graph documents, then what each of its artifacts writes ({@link CharterArtifact#writtenReferences()}, which
-     * is the targets of the relationships the walk follows, so the check and the walk cannot disagree, and the
-     * references a kind keeps without minting an edge). A qualifier is split off by {@link PackQualifiedReference}.
+     * What the compose needs to know about the pack, from one assembly of it and one read of its graph documents:
      *
-     * <p>The answer fails closed: a graph document or an artifact file that cannot be read refuses it
-     * {@code pack_unreadable}, since the references of a file that cannot be read cannot be judged, and a compose that
-     * skipped it would pass a reference it never saw. The whole-pack load and the pack-scoped reads still answer for
-     * such a pack, so its author can inspect it.
+     * <ul>
+     *   <li>the artifacts its graph documents say it changes: the distinct targets of its {@code enhances} and
+     *       {@code overrides} relations, in first-seen order;
+     *   <li>the artifacts it holds, as bare URNs, of every kind a reference can name, in the order the pack lists them:
+     *       the files it holds, and the nodes its graph documents declare for a kind that is never a file (an
+     *       {@code anti_pattern}, a re-kinded node of another kind's graph). It is the one answer to "does this pack
+     *       hold this artifact";
+     *   <li>the references it writes, as written, {@code [<pack-name>::]<kind>:<id>}: both endpoints of every edge of its
+     *       graph documents, then what each of its artifacts writes ({@link CharterArtifact#writtenReferences()}, which
+     *       is the targets of the relationships the walk follows, so the check and the walk cannot disagree, and the
+     *       references a kind keeps without minting an edge).
+     * </ul>
+     *
+     * <p>The answer fails closed: a graph document or a file of the pack that cannot be read refuses it
+     * {@code pack_unreadable}, naming the first such file, since what an unreadable file holds or writes cannot be
+     * judged and a compose that skipped it would pass what it never saw. The whole-pack load and the pack-scoped reads
+     * still answer for such a pack, so its author can inspect it.
      */
     @Override
-    public List<String> referencesOf(PackIdentifier pack) {
+    public PackCompositionFacts compositionFacts(PackIdentifier pack) {
         Resolved resolved = resolve(pack);
         FilesystemPackStore.GraphRead graphs = resolved.store.readGraphs(resolved.key);
         if (!graphs.violations().isEmpty()) {
             throw new CharterRefusal(
                     RefusalCode.PACK_UNREADABLE, "a graph document of " + pack.value() + " cannot be read");
         }
+        Pack assembled = readable(pack);
+        Set<String> changed = new LinkedHashSet<>();
         Set<String> references = new LinkedHashSet<>();
+        Set<String> declared = new LinkedHashSet<>();
         for (GraphDocument document : graphs.documents()) {
             for (GraphDocument.Edge edge : document.edges()) {
+                if (refines(edge.relation())) {
+                    changed.add(edge.target());
+                }
                 references.add(edge.source());
                 references.add(edge.target());
             }
+            declaredWithoutFile(document).forEach(declared::add);
         }
-        for (CharterArtifact artifact : readable(pack).artifacts()) {
+        Set<String> defined = new LinkedHashSet<>();
+        for (CharterArtifact artifact : assembled.artifacts()) {
             artifact.writtenReferences().forEach(reference -> references.add(reference.toString()));
+            if (artifact.urn().kind().authoredInGraphs()) {
+                defined.add(artifact.urn().toString());
+            }
         }
-        return List.copyOf(references);
+        defined.addAll(declared);
+        return new PackCompositionFacts(List.copyOf(changed), List.copyOf(defined), List.copyOf(references));
     }
 
     /**
-     * The artifacts the pack holds, as bare URNs, of every kind a reference can name, in the order the pack lists them.
-     * It is the one answer to "does this pack hold this artifact": the compose reads it once per pack and both the
-     * contest rule and the reference checks ask the pack's held list. Fails closed like {@link #referencesOf}.
+     * The nodes a graph document declares for a kind that is never a file of its own: an {@code anti_pattern} lives
+     * only as a node of a graph document, so the document is where the pack holds it.
      */
-    @Override
-    public List<String> definedArtifacts(PackIdentifier pack) {
-        return readable(pack).artifacts().stream()
-                .map(artifact -> artifact.urn())
-                .filter(urn -> urn.kind().authoredInGraphs())
-                .map(Urn::toString)
-                .distinct()
-                .toList();
+    private static List<String> declaredWithoutFile(GraphDocument document) {
+        String token = NodeKind.ANTI_PATTERN.token();
+        return switch (document) {
+            case GraphDocument.Shard shard ->
+                shard.nodes().stream()
+                        .filter(node -> token.equals(node.kind()))
+                        .map(GraphDocument.ShardNode::urn)
+                        .toList();
+            case GraphDocument.Fragment fragment ->
+                fragment.nodes().stream()
+                        .filter(node -> NodeKind.ANTI_PATTERN.plural().equals(node.kind()))
+                        .map(node -> token + ":" + node.id())
+                        .toList();
+        };
     }
 
     /** The pack's aggregate, refused {@code pack_unreadable} when any file of it could not be read. */

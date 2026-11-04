@@ -9,12 +9,12 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
+import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.ResolvedEdge;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -163,73 +163,39 @@ public final class OfferingReadService {
     }
 
     /**
-     * The compose the offering resolves — the closure in the resolver's order, each pack with its descriptor — with
-     * the digest of the inputs it was read from. The reference-resolution paths consume it read-only to look a
-     * pack-qualified reference's pack up by name (FR-013): this is the closure the offering already resolved, never a
-     * second resolution of it, so the two graphs stay unmerged (research: the component resolution and the pack
-     * composition are two graphs).
-     *
-     * @return the compose's closure, dependencies first, each pack once, and the verified fingerprint
-     * @throws CharterRefusal with {@code PACK_UNREADABLE} when an input cannot be read, a configured pack's directory
-     *     is missing or it has no readable descriptor (none, or one that cannot be read), or with {@code STALE_INPUT}
-     *     when the inputs changed while the compose was read
-     */
-    public ConsistentRead.Verified<List<PackUnderResolution>> compose() {
-        return read.read(STALE, this::composed);
-    }
-
-    /**
      * The compose, resolved now and not verified: for a read that already runs inside its own {@link ConsistentRead},
      * so it resolves the compose once for itself and never nests a second verified read per reference or per hop.
      *
      * @return the compose's closure, dependencies first, each pack once
-     * @throws CharterRefusal as {@link #compose()} refuses
+     * @throws CharterRefusal with {@code PACK_UNREADABLE} when an input cannot be read or a configured pack has no readable
+     *     descriptor, or with a composition refusal when the graph cannot be served
      */
     public List<PackUnderResolution> composed() {
         try {
+            Map<String, PackCompositionFacts> facts = new HashMap<>();
             List<PackUnderResolution> closure = PackCompositionResolver.resolve(catalog.configured().stream()
-                    .map(pack -> new PackUnderResolution(
-                            pack,
-                            descriptorOf(pack),
-                            refinements.changedArtifacts(pack.id()),
-                            refinements.definedArtifacts(pack.id())))
+                    .map(pack -> {
+                        PackDescriptor descriptor = descriptorOf(pack);
+                        PackCompositionFacts read = refinements.compositionFacts(pack.id());
+                        facts.put(pack.id().value(), read);
+                        return new PackUnderResolution(pack, descriptor, read.changed(), read.defined());
+                    })
                     .toList());
             for (PackUnderResolution pack : closure) {
                 PackCompositionResolver.checkReferences(
-                        closure, pack.descriptor().packId(), referencesOf(pack, closure));
+                        closure,
+                        pack.descriptor().packId(),
+                        Objects.requireNonNull(facts.get(pack.configured().id().value()), "read above")
+                                .references()
+                                .stream()
+                                .map(written -> PackCompositionResolver.resolveReference(
+                                        closure, pack.configured().id(), PackQualifiedReference.parse(written)))
+                                .toList());
             }
             return closure;
         } catch (PackCompositionResolver.Refusal refusal) {
             throw new CharterRefusal(refusal.failure().code(), refusal.detail(), refusal.packs());
         }
-    }
-
-    /**
-     * The references one pack's graphs write, each with the pack that holds what it names (FR-013 to FR-017): a bare
-     * reference is held by the pack itself when it holds the artifact, else by the first other pack of the compose
-     * that does; a bare reference nothing holds resolves nowhere and refuses nothing, as an unwired kind does.
-     */
-    private List<PackCompositionResolver.ResolvedReference> referencesOf(
-            PackUnderResolution pack, List<PackUnderResolution> closure) {
-        List<PackCompositionResolver.ResolvedReference> resolved = new ArrayList<>();
-        for (String written : refinements.referencesOf(pack.configured().id())) {
-            PackQualifiedReference reference = PackQualifiedReference.parse(written);
-            if (reference.qualified()) {
-                resolved.add(new PackCompositionResolver.ResolvedReference(
-                        reference, pack.descriptor().packId()));
-                continue;
-            }
-            if (pack.holds(reference.urn())) {
-                continue;
-            }
-            closure.stream()
-                    .filter(other -> !other.equals(pack))
-                    .filter(other -> other.holds(reference.urn()))
-                    .findFirst()
-                    .ifPresent(holder -> resolved.add(new PackCompositionResolver.ResolvedReference(
-                            reference, holder.descriptor().packId())));
-        }
-        return resolved;
     }
 
     /**
