@@ -8,11 +8,9 @@ import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -46,10 +44,12 @@ final class PackDescriptorReader {
                 .map(token -> PackLevel.fromToken(token)
                         .orElseThrow(() -> new IllegalStateException(
                                 "pack_level '" + token + "' passed the schema but is no pack level")));
-        Optional<String> settledTwice = settledTwice(root);
+        List<PackOverride> overrides = overrides(root);
+        Optional<String> settledTwice = PackDescriptor.artifactSettledTwice(overrides);
         if (settledTwice.isPresent()) {
             // The schema's uniqueItems cannot say "one overrides edge per artifact": two edges naming different
-            // members are not identical items. The reader refuses the second edge as that keyword would.
+            // members are not identical items. The descriptor owns that rule; the reader refuses the second edge
+            // as that keyword would.
             return new FileRead.Unreadable<>(
                     FILE,
                     null,
@@ -67,7 +67,7 @@ final class PackDescriptorReader {
                         optional(root, "requires_core"),
                         new PackPaths(optional(root, "active_charter"), optional(root, "pack_drg")),
                         dependencies(root),
-                        overrides(root)));
+                        overrides));
     }
 
     /** The declared dependencies; the schema has already closed every entry. */
@@ -100,25 +100,6 @@ final class PackDescriptorReader {
             declared.add(new PackOverride(required(entry, "artifact"), required(entry, "member")));
         }
         return List.copyOf(declared);
-    }
-
-    /** The artifact a second {@code overrides} edge of the same descriptor settles, when there is one. */
-    private static Optional<String> settledTwice(Map<?, ?> root) {
-        @Nullable Object raw = root.get("overrides");
-        if (!(raw instanceof List<?> items)) {
-            return Optional.empty();
-        }
-        Set<String> settled = new HashSet<>();
-        for (Object item : items) {
-            if (!(item instanceof Map<?, ?> entry)) {
-                throw new IllegalStateException("an overrides entry passed the schema but is no mapping");
-            }
-            String artifact = required(entry, "artifact");
-            if (!settled.add(artifact)) {
-                return Optional.of(artifact);
-            }
-        }
-        return Optional.empty();
     }
 
     /** A string the schema has already required; anything else means the reader and the schema have drifted apart. */
