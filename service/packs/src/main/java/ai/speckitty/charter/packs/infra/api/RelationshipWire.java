@@ -74,7 +74,7 @@ final class RelationshipWire {
 
     private static Relationship relationship(
             String from, String to, String type, @Nullable String when, @Nullable String rationale) {
-        if (from.contains("::")) {
+        if (parsed(from).qualified()) {
             throw new IllegalArgumentException(
                     "a registered relationship is authored from an artifact of the pack, so its source is not"
                             + " pack-qualified: " + from);

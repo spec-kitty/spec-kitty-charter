@@ -76,7 +76,10 @@ Keep it small; add a step only when a scenario cannot be written without it.
   retried` and `... is raised by no operation` — read the machine-readable `x-refusal` map of
   `../schemas/CharterRefusalCode.yaml` (`status`, `retryable`, `raised` per code). `Then the contract says exactly
   these refusal codes are raised by an operation:` with a one-column table lists the codes whose `raised` is true.
-  After every scenario, each refusal it observed must have the status and `raised: true` the map declares.
+  `Then the contract says "<code>" is answered with status <n> by the operation "<operationId>"` reads the
+  `operations` map of a code's entry, the status that one operation answers the code with in place of the entry's
+  `status`. After every scenario, each refusal it observed must have a status the map declares for its code (the
+  entry's, or an operation's) and `raised: true`.
 - `Then the problem code is "<code>"` — the `code` of a `Problem` body.
 - `Then the problem has no code` — an `application/problem+json` body without a `code` member (absent, not empty): a
   transport or routing failure, not a charter refusal.

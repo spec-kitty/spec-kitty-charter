@@ -33,6 +33,7 @@ public final class RelationshipRegistrationService {
     private final PackRepository packs;
     private final PackWriteStore writeStore;
     private final WritePolicyGate policy;
+    private final RelationshipTargetCheck targets;
 
     /**
      * A service over the injected ports.
@@ -40,12 +41,15 @@ public final class RelationshipRegistrationService {
      * @param packs the port that loads the pack aggregate
      * @param writeStore the write-path seam that commits atomically and holds the relationship shard
      * @param policy the mutability gate consulted before a write (permissive by default; WP06 supplies ADR-0012)
+     * @param targets the check that the compose can resolve a relationship's {@code to}, made before anything is written
      */
     @Autowired
-    public RelationshipRegistrationService(PackRepository packs, PackWriteStore writeStore, WritePolicyGate policy) {
+    public RelationshipRegistrationService(
+            PackRepository packs, PackWriteStore writeStore, WritePolicyGate policy, RelationshipTargetCheck targets) {
         this.packs = Objects.requireNonNull(packs, "packs");
         this.writeStore = Objects.requireNonNull(writeStore, "writeStore");
         this.policy = Objects.requireNonNull(policy, "policy");
+        this.targets = Objects.requireNonNull(targets, "targets");
     }
 
     /**
@@ -65,13 +69,17 @@ public final class RelationshipRegistrationService {
      * atomically so the revision advances.
      *
      * @param pack the pack to register into
-     * @param relationship the relationship to register; its {@code from} must resolve within the pack
+     * @param relationship the relationship to register; its {@code from} must resolve within the pack, and its
+     *     {@code to} in the compose of the pack when it is pack-qualified or held by another pack
      * @param ifMatch the {@code If-Match} precondition; a sub-resource write <strong>requires</strong> one
      * @return the registration outcome; {@link Registered#created()} is {@code true} when the pair was not registered
      *     before (in either orientation)
      * @throws CharterRefusal {@link RefusalCode#PACK_NOT_FOUND} (404) when the pack is unknown,
-     *     {@link RefusalCode#REGISTRATION_CONFLICT} (409) when {@code from} does not resolve within the pack, or the
-     *     policy's {@link RefusalCode#GOVERNANCE_POLICY_VIOLATION} (409)
+     *     {@link RefusalCode#REGISTRATION_CONFLICT} (409) when {@code from} does not resolve within the pack, the
+     *     compose's {@link RefusalCode#PACK_REFERENCE_PACK_MISSING}, {@link RefusalCode#PACK_REFERENCE_UNQUALIFIED} or
+     *     {@link RefusalCode#PACK_REFERENCE_ARTIFACT_MISSING} (422 here) when {@code to} cannot resolve, a composition
+     *     refusal (500) when the configured packs do not compose, or the policy's
+     *     {@link RefusalCode#GOVERNANCE_POLICY_VIOLATION} (409)
      * @throws PreconditionException {@link PreconditionException.Kind#MISSING} (428) when no precondition was supplied,
      *     {@link PreconditionException.Kind#STALE} (412) when {@code ifMatch} is stale
      */
@@ -89,6 +97,8 @@ public final class RelationshipRegistrationService {
                         "Relationship from " + relationship.from() + " does not resolve within pack " + pack.value()
                                 + ".");
             }
+            // Before anything is written: a target the compose cannot resolve would make the next offering read refuse.
+            targets.require(pack, relationship.toReference());
             policy.authorize(current, WritePolicyGate.Operation.RELATIONSHIP, relationship.from());
             List<Relationship> existing = writeStore.registeredRelationships(pack);
             boolean created = existing.stream().noneMatch(relationship::equals);

@@ -141,7 +141,10 @@ A second edge on one artifact refuses the descriptor. Two caveats hold until the
 ## Read a refusal
 
 Every composition refusal answers **500** and is not retryable, like every offering refusal
-([HTTP status codes](/development/http-status-codes/)). Each carries a detail in words and a `packs` member, a list
+([HTTP status codes](/development/http-status-codes/)), with one exception: registering a relationship
+(`PUT /packs/{packId}/relationships`) answers its `to` that the compose cannot resolve with **422** and the same code
+(`pack_reference_pack_missing`, `pack_reference_unqualified` or `pack_reference_artifact_missing`), before anything is
+written, because there the request is what is wrong. Each carries a detail in words and a `packs` member, a list
 of `{descriptorPackId, packId, name}` that names the violating packs, the pack that broke the rule first. `descriptorPackId` is the `pack_id` its `pack.yaml` declares and `packId` the identifier
 it is configured under, the one the pack-scoped paths take.
 

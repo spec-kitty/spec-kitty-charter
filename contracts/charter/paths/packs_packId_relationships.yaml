@@ -7,7 +7,12 @@ put:
     200, each with an ETag revision (ADR-0018 D10 as amended) and a RelationshipRegistered body: the
     registered edge as relationship, and _links holding artifacts, the list of the pack's artifacts. There
     is no self link and no Location: this path has no GET. The from endpoint must resolve within the
-    pack (else 409 registration_conflict); to may be external. The whole pack is committed atomically and
+    pack (else 409 registration_conflict); to may be external, but a to the compose of the pack cannot
+    resolve is refused before anything is written (422): pack_reference_pack_missing, a qualified to naming
+    a pack outside the pack's depends_on closure; pack_reference_unqualified, a bare to that only another
+    pack holds; pack_reference_artifact_missing, a qualified to naming an artifact the named pack does not
+    hold. The three are 500 on the reads and 422 here (CharterRefusalCode, x-refusal operations), and their
+    packs member names the pack registered into first. The whole pack is committed atomically and
     answers an ETag revision. A relationship write is a sub-resource write: it requires an If-Match
     precondition (none supplied is 428), and a stale precondition is 412. Both 412 and 428 are plain
     Problem bodies, not refusal codes.
@@ -89,7 +94,9 @@ put:
     '422':
       description: >-
         The relationship is well-formed but breaks a schema or invariant (validation_failed), or its body is over the
-        body limit (1 MiB; refused validation_failed before it is read).
+        body limit (1 MiB; refused validation_failed before it is read), or its to cannot resolve in the compose of
+        the pack (pack_reference_pack_missing, pack_reference_unqualified or pack_reference_artifact_missing, each with
+        a packs member).
       headers:
         Charter-Contract-Version:
           $ref: ../headers/CharterContractVersion.yaml

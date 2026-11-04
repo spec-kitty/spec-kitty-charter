@@ -17,6 +17,7 @@ import ai.speckitty.charter.packs.application.PackWriteStore;
 import ai.speckitty.charter.packs.application.PackWriteStore.Change;
 import ai.speckitty.charter.packs.application.PermissiveWritePolicyGate;
 import ai.speckitty.charter.packs.application.RelationshipRegistrationService;
+import ai.speckitty.charter.packs.application.SinglePackCompose;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.Enforcement;
@@ -41,7 +42,11 @@ class RelationshipControllerTest {
 
     private final FakeStore store = new FakeStore();
     private final MockMvc mvc = MockMvcBuilders.standaloneSetup(new RelationshipController(
-                    new RelationshipRegistrationService(store, store, new PermissiveWritePolicyGate()),
+                    new RelationshipRegistrationService(
+                            store,
+                            store,
+                            new PermissiveWritePolicyGate(),
+                            SinglePackCompose.check(PACK, () -> store.pack)),
                     new Hypermedia("/api/v1")))
             .setControllerAdvice(new RefusalHandler(), new RegistrationBodyAdvice())
             .build();
@@ -110,15 +115,29 @@ class RelationshipControllerTest {
         assertThat(store.edges).isEmpty();
     }
 
-    /** A pack is provenance, not identity: a target may be qualified and reads back qualified, a source may not be. */
+    /**
+     * A pack is provenance, not identity: a target may be qualified and reads back qualified, a source may not be. A
+     * qualifier the compose cannot resolve is refused before anything is registered, with the status the contract
+     * declares for the registration (422), not the 500 the reads answer.
+     */
     @Test
-    void aQualifiedTargetRegistersAndReadsBackQualifiedWhileAQualifiedSourceIsRefused() throws Exception {
+    void aQualifiedTargetRegistersAndReadsBackQualifiedWhileAnUnresolvableOneAndAQualifiedSourceAreRefused()
+            throws Exception {
         mvc.perform(put("/api/v1/packs/pack-a/relationships")
                         .header("If-Match", store.currentRevision(PACK).token())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(BODY.replace("procedure:p", "ops::procedure:p")))
+                        .content(BODY.replace("procedure:p", "pack-a::directive:DIR_A")))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.relationship.to").value("ops::procedure:p"));
+                .andExpect(jsonPath("$.relationship.to").value("pack-a::directive:DIR_A"));
+        assertThat(store.edges).hasSize(1);
+
+        mvc.perform(put("/api/v1/packs/pack-a/relationships")
+                        .header("If-Match", store.currentRevision(PACK).token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(BODY.replace("procedure:p", "ops::procedure:q")))
+                .andExpect(status().is(422))
+                .andExpect(jsonPath("$.code").value("pack_reference_pack_missing"))
+                .andExpect(jsonPath("$.packs[0].packId").value("pack-a"));
         assertThat(store.edges).hasSize(1);
 
         mvc.perform(put("/api/v1/packs/pack-a/relationships")
