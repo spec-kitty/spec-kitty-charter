@@ -74,6 +74,31 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-04T06:27:35.973276Z",
+      "decision_id": "01M6JKVNX57FSK0RHCKXX2KKJJ",
+      "final_answer": "Refactor 3 methods to reach 15: flatten ComposedBundle.checkReferences, ComposedBundle.reaches and ActivationConfigSchemaParityTest.inline (behavior-preserving), folded into WP01 as T017",
+      "input_key": "register_cap",
+      "mission_id": "01M6HQ467X9NT5XZQESZK52BBK",
+      "mission_slug": "ci-sonar-nightly-checkstyle-complexity-01M6HQ46",
+      "opened_by": "cli",
+      "options": [
+        "Raise cap to 18",
+        "Refactor 3 methods to reach 15",
+        "Refactor all 10 main-code methods",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Measured 18 over-limit methods vs SC-002 cap of 15: raise the cap, refactor 3 methods, or refactor all main-code methods?",
+      "rationale": null,
+      "resolved_at": "2026-11-04T06:27:38.592594Z",
+      "resolved_by": null,
+      "slot_key": "plan.register.cap",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M6HQ467X9NT5XZQESZK52BBK",
