@@ -254,13 +254,17 @@ object CheckstyleRegister {
     fun relocate(reported: String, moduleDir: File, isFile: (File) -> Boolean = File::isFile): File? {
         val module = moduleDir.canonicalFile
         val asReported = File(reported)
-        if (asReported.isAbsolute && asReported.canonicalFile.startsWith(module) && isFile(asReported)) return asReported
+        if (asReported.isAbsolute && asReported.canonicalFile.startsWith(module) && isFile(asReported)) {
+            return asReported.canonicalFile
+        }
         val segments = reported.replace('\\', '/').split('/').filter { it.isNotEmpty() }
         for (i in segments.indices) {
             val suffix = segments.subList(i, segments.size)
             if (".." in suffix) continue
-            val candidate = module.resolve(suffix.joinToString("/"))
-            if (isFile(candidate)) return candidate
+            // A rooted suffix (a Windows drive such as `C:`) would make resolve() return it unchanged, and a link inside
+            // the module may point out of it: accept a candidate only when it really lies under the module.
+            val candidate = module.resolve(suffix.joinToString("/")).canonicalFile
+            if (candidate.startsWith(module) && isFile(candidate)) return candidate
         }
         return null
     }
