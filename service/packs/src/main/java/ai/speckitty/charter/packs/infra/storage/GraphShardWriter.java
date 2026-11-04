@@ -119,8 +119,8 @@ public final class GraphShardWriter {
         }
         for (Tension tension : graph.tensions()) {
             edges.add(edge(
-                    tension.fromPack().map(pack -> pack + "::").orElse("") + tension.from(),
-                    tension.toPack().map(pack -> pack + "::").orElse("") + tension.to(),
+                    tension.fromReference(),
+                    tension.toReference(),
                     PackPolicy.TENSION,
                     Optional.empty(),
                     tension.when(),

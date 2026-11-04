@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.domain;
 
+import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
@@ -213,6 +214,15 @@ public final class PackCompositionResolver {
          */
         public String packId() {
             return packs.getFirst().packId();
+        }
+
+        /**
+         * The wire refusal this one projects onto: the failure's code, the detail and the packs it names.
+         *
+         * @return the refusal to throw out of a read
+         */
+        public CharterRefusal toCharterRefusal() {
+            return new CharterRefusal(failure.code(), detail(), packs);
         }
 
         /**

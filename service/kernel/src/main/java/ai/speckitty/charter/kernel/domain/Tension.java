@@ -63,4 +63,28 @@ public record Tension(
     public Tension(Urn from, Urn to, Optional<String> when, Optional<String> rationale) {
         this(from, Optional.empty(), to, Optional.empty(), when, rationale);
     }
+
+    /**
+     * The source reference as the pack files write it: {@code <pack>::<urn>} when it names a pack, the bare URN
+     * otherwise.
+     *
+     * @return the written reference
+     */
+    public String fromReference() {
+        return reference(fromPack, from);
+    }
+
+    /**
+     * The target reference as the pack files write it: {@code <pack>::<urn>} when it names a pack, the bare URN
+     * otherwise.
+     *
+     * @return the written reference
+     */
+    public String toReference() {
+        return reference(toPack, to);
+    }
+
+    private static String reference(Optional<String> pack, Urn urn) {
+        return pack.map(name -> name + "::").orElse("") + urn;
+    }
 }

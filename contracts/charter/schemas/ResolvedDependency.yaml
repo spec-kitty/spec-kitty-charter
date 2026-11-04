@@ -16,7 +16,7 @@ properties:
     maxLength: 64
     description: The depended-on pack's pack_id, as the depending pack.yaml's depends_on names it. The same identity as descriptorPackId of the offering entry it points at, so a client joins an edge to its entry by equal values.
     x-source:
-      path: service/packs/src/main/java/ai/speckitty/charter/packs/application/ResolvedEdge.java
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/ResolvedEdge.java
       symbol: ResolvedEdge.to
   range:
     type: string
@@ -24,7 +24,7 @@ properties:
     maxLength: 256
     description: The PEP 440 version-specifier set the descriptor declared for the dependency.
     x-source:
-      path: service/packs/src/main/java/ai/speckitty/charter/packs/application/ResolvedEdge.java
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/ResolvedEdge.java
       symbol: ResolvedEdge.range
   version:
     type: string
@@ -32,5 +32,5 @@ properties:
     maxLength: 64
     description: The held pack_version that satisfied the declared range.
     x-source:
-      path: service/packs/src/main/java/ai/speckitty/charter/packs/application/ResolvedEdge.java
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/ResolvedEdge.java
       symbol: ResolvedEdge.version
