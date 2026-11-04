@@ -28,6 +28,8 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 /**
  * The domain ports realized by {@link DomainRepositoryService}, driven at entity level over a fixture pack. The pack
@@ -512,6 +514,39 @@ class DomainRepositoryServiceTest {
                         "ops::procedure:release",
                         "procedure:local-release",
                         "rules::directive:D9");
+    }
+
+    /**
+     * A reference that cannot be judged makes its file unreadable, never an exception the offering escapes as a 500:
+     * a qualifier with no URN after it (the schema pattern lets nothing through; the backstop holds when a document
+     * does) and a bare reference that names its own artifact, whichever field writes it. A qualified same-id reference
+     * names another pack's artifact and stands.
+     */
+    @ParameterizedTest
+    @CsvSource(
+            delimiter = '|',
+            quoteCharacter = '"',
+            value = {
+                "D1.directive.yaml|title: t\\nintent: i\\nenforcement: required\\nprocedures: ['ops::']",
+                "D1.directive.yaml|title: t\\nintent: i\\nenforcement: required\\nreferences: [{type: directive, id: D1}]",
+                "T1.tactic.yaml|name: n\\nsteps: [{title: s, description: d}]\\nreferences: [{type: tactic, id: T1}]",
+                "T1.tactic.yaml|name: n\\nsteps: [{title: s, description: d, references: [{type: tactic, id: T1}]}]",
+                "R1.procedure.yaml|title: t\\ndescription: d\\nentry_condition: a\\nexit_condition: b\\n"
+                        + "steps: [{title: s, description: d}]\\nreferences: [{type: procedure, id: R1}]"
+            })
+    void aReferenceThatCannotBeJudgedMakesItsFileUnreadable(String file, String fields, @TempDir Path host)
+            throws IOException {
+        Path pack = PackFixtures.copyOf("pack-descriptor-only", host);
+        String id = file.substring(0, file.indexOf('.'));
+        Files.writeString(
+                pack.resolve(file), "id: " + id + "\nschema_version: '1.0'\n" + fields.replace("\\n", "\n") + "\n");
+        DomainRepositoryService over = overOne("pack-descriptor-only", pack);
+
+        assertThatThrownBy(() -> over.referencesOf(new PackIdentifier("pack-descriptor-only")))
+                .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+                    assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+                    assertThat(refused.getMessage()).contains(file);
+                });
     }
 
     /** A reference list that skipped an unreadable file would pass a reference it never saw: it fails closed. */

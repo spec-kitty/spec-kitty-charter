@@ -52,7 +52,7 @@ class RelationshipTest {
     }
 
     @Test
-    void aQualifierIsProvenanceSoAQualifiedTargetIsTheSameIdentityAndALoopOntoTheOwnerIsASelfLoop() {
+    void aQualifierIsProvenanceSoAQualifiedTargetIsTheSameIdentityAndAQualifiedSameIdEndpointIsNotASelfLoop() {
         Relationship bare = Relationship.of(A, B, RelationType.REQUIRES);
         Relationship qualified = new Relationship(
                 A,
@@ -67,16 +67,16 @@ class RelationshipTest {
         assertThat(qualified.toPack()).contains("writing");
         assertThat(qualified.toReference()).hasToString("writing::tactic:b");
         assertThat(bare.toReference()).hasToString("tactic:b");
-        assertThatThrownBy(() -> new Relationship(
-                        A,
-                        Optional.empty(),
-                        A,
-                        Optional.of("writing"),
-                        RelationType.REQUIRES,
-                        Optional.empty(),
-                        Optional.empty()))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("self-loop");
+        // A qualifier names another pack's artifact of the same id: a different artifact, not a loop (ADR-0053).
+        Relationship acrossPacks = new Relationship(
+                A,
+                Optional.empty(),
+                A,
+                Optional.of("writing"),
+                RelationType.REQUIRES,
+                Optional.empty(),
+                Optional.empty());
+        assertThat(acrossPacks.toReference()).hasToString("writing::tactic:a");
     }
 
     @Test

@@ -166,11 +166,13 @@ class PackPolicyGraphTest {
     }
 
     @Test
-    void aQualifierIsNotIdentitySoAQualifiedEndpointOntoItsOwnSourceIsASelfLoop() {
-        GraphBuild loop = build(List.of(edge("rival::tactic:a", "tactic:a", "requires", null)));
-        assertThat(loop.graph().relationships()).isEmpty();
-        assertThat(details(loop))
-                .containsExactly("qa/tactic.graph.yaml: a relationship cannot join 'tactic:a' to itself");
+    void aQualifiedEndpointOntoTheSameIdIsAnotherPacksArtifactAndNotASelfLoop() {
+        GraphBuild crossPack = build(List.of(edge("rival::tactic:a", "tactic:a", "requires", null)));
+        assertThat(details(crossPack)).isEmpty();
+        assertThat(crossPack.graph().relationships()).singleElement().satisfies(relationship -> {
+            assertThat(relationship.fromPack()).contains("rival");
+            assertThat(relationship.to()).isEqualTo(A);
+        });
 
         GraphBuild reference = build(List.of(edge("tactic:a", "rival::tactic:b", "requires", null)));
         assertThat(reference.graph().relationships()).singleElement().satisfies(relationship -> {

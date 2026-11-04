@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.domain;
 
+import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.DoctrineGraph;
 import ai.speckitty.charter.kernel.domain.DrgNode;
 import ai.speckitty.charter.kernel.domain.NodeKind;
@@ -641,9 +642,11 @@ public final class PackPolicy {
         if (targetUrn.isEmpty()) {
             return origin + ": edge endpoint '" + raw.target() + "' is not a URN";
         }
-        // The identity of an endpoint is its bare URN: a qualifier names where the writer relies on it, so
-        // `a::directive:X -> directive:X` joins the artifact to itself like `directive:X -> directive:X` does.
-        if (sourceUrn.get().equals(targetUrn.get())) {
+        // Only a bare endpoint pair is a self-loop: a qualifier names another pack's artifact of the same id
+        // (`a::directive:X -> directive:X` joins two artifacts), which is legal (ADR-0053 decision 7).
+        if (sourceUrn.get().equals(targetUrn.get())
+                && source.get().packName().isEmpty()
+                && target.get().packName().isEmpty()) {
             return origin + ": a relationship cannot join '" + sourceUrn.get() + "' to itself";
         }
         for (Urn endpoint : List.of(sourceUrn.get(), targetUrn.get())) {
@@ -689,6 +692,33 @@ public final class PackPolicy {
      */
     private static boolean isStrength(double value) {
         return value >= -1.0 && value <= 1.0;
+    }
+
+    /**
+     * The reason an artifact cannot be read for what it writes, or empty when its references are sound. A reference
+     * that is bare and names the artifact itself is a self-reference, refused as a graph edge to itself is (see
+     * {@code endpoints}); a qualified one names another pack's artifact of the same id and stands. A reference the
+     * artifact writes malformed is refused the same way, so a file whose references cannot be parsed is an unreadable
+     * file, never an exception the reads escape. The check covers every field {@link CharterArtifact#writtenReferences()}
+     * covers: typed references, bare procedures and directive refs, procedure references and tactic step references.
+     *
+     * @param artifact the artifact, bound by its kind's mapper
+     * @return the reason, worded after the artifact's URN; empty when the references are sound
+     */
+    public static Optional<String> referenceProblem(CharterArtifact artifact) {
+        List<PackQualifiedReference> written;
+        try {
+            written = artifact.writtenReferences();
+        } catch (IllegalArgumentException malformed) {
+            return Optional.of(artifact.urn() + ": " + malformed.getMessage());
+        }
+        for (PackQualifiedReference reference : written) {
+            if (!reference.qualified()
+                    && reference.asUrn().filter(artifact.urn()::equals).isPresent()) {
+                return Optional.of(artifact.urn() + ": a reference cannot join '" + artifact.urn() + "' to itself");
+            }
+        }
+        return Optional.empty();
     }
 
     // ---- schema and parse findings -------------------------------------------------------------
