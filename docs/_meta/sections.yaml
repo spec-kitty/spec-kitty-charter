@@ -32,7 +32,7 @@ sections:
     label: Plans
     order: 40
     type: Plan
-    purpose: The bootstrap roadmap and the questions still open.
+    purpose: The bootstrap roadmap, the questions still open and dated engineering notes that feed decisions.
     feeds: [sitemap, llms, agent]
 
   - id: api

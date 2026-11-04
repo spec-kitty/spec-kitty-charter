@@ -22,4 +22,4 @@ carry dated clarifications, marked with their date, that correct a reading of it
 
 - [Test suite assessment, 2026-11-03](/plans/engineering-notes/test-suite-assessment-2026-11-03/) —
   how good the test suite is against the packs' testing rubric, and the five weaknesses ranked by
-  risk. It also gives the SonarCloud recommendation (nightly, reported only) and the operator's rulings.
+  risk. It also gives the SonarCloud recommendation (nightly, report-only) and the operator's rulings.
