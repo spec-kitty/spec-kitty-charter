@@ -10,8 +10,10 @@ get:
     never recomputes it from pack.yaml. Merging is not applied yet (#10, #11): the offering lists
     the packs, not a merged result. The answer is one read verified against the source fingerprint, and
     carries it. A configured pack whose directory is missing, that has no pack.yaml, or whose pack.yaml
-    cannot be read or is invalid, or any input the fingerprint covers that cannot be read, refuses the whole
-    answer with a 500 pack_unreadable; inputs that change while it is read refuse it with
+    cannot be read or is invalid, or a file of it is invalid or cannot be read (an asset sidecar whose payload the
+    pack does not hold included), or any input the fingerprint covers that cannot be read, refuses the whole
+    answer with a 500 pack_unreadable, because the offering names and composes every configured pack whole (the
+    pack-scoped reads judge only the artifact they name); inputs that change while it is read refuse it with
     stale_input, which may be retried. A compose the resolver cannot serve is refused whole with a 500 as
     well, because the configured packs are broken, not the request: pack_dependency_cycle,
     pack_dependency_unknown, pack_dependency_out_of_range (also two ranges on one pack that share no

@@ -216,6 +216,40 @@ Feature: The offering lists the configured packs in force
     And the problem code is "pack_unreadable"
     And the response has no "Charter-Source-Fingerprint" header
 
+  Scenario: One unreadable file of a configured pack refuses the offering, while the pack-scoped read still answers
+    Operator ruling of 2026-11-04: the offering fails closed when any file of any configured pack
+    cannot be read, an asset sidecar whose payload is missing included, because the offering names
+    and composes every pack whole. A read scoped to that pack judges only the artifact it names.
+    Given the org pack "docs" with the file "pack.yaml":
+      """
+      pack_id: 01ARWG13C0000000000000D0C5
+      pack_version: 1.0.0
+      parent_pack: null
+      name: docs-pack
+      pack_level: org
+      """
+    And the org pack "docs" with the file "tactics/rehearse.tactic.yaml":
+      """
+      schema_version: '1.0'
+      id: rehearse
+      name: Rehearse
+      steps:
+        - title: Only step
+      """
+    And the org pack "docs" with the file "assets/notes.md.asset.yaml":
+      """
+      id: notes
+      mime: text/markdown
+      path: notes.md
+      """
+    When I GET "/offering"
+    Then the response status is 500
+    And the problem code is "pack_unreadable"
+    And the field "detail" of the response body is "the file assets/notes.md.asset.yaml of docs cannot be read: payload assets/notes.md does not exist"
+    And the response has no "Charter-Source-Fingerprint" header
+    When I GET "/packs/docs/artifacts/tactic/rehearse"
+    Then the response status is 200
+
   Scenario: An offering whose inputs change while it is answered is refused with stale_input
     Given the built-in pack "core" with the file "pack.yaml":
       """

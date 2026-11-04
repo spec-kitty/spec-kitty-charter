@@ -46,6 +46,14 @@
   the pack itself, with the same id as the `from` is legal (it is not a self-loop). The `422` response of the operation
   documents the three codes. Scenario: `scenarios/composition.feature`.
 
+- `GET /offering` and `GET /packs/{packId}/artifacts/{kind}/{artifactId}/references` refuse `pack_unreadable` (500) when
+  any file of any configured pack is invalid or cannot be read, an asset sidecar whose payload the pack does not hold
+  included, not only when a `pack.yaml` is (operator ruling of 2026-11-04): both read the compose, and the compose names every
+  configured pack whole, so there is no partial answer. A client that read `GET /offering` against a set of packs one
+  of which holds a broken file now meets this refusal; the pack-scoped read of an artifact of that pack still answers.
+  Scenario: `scenarios/offering.feature`. Known gap: the pinned built-in pack cannot be served by `GET /offering` until
+  spec-kitty-open-packs#75 lands.
+
 - New operation in this release: `GET /packs/{packId}/artifacts/{kind}/{artifactId}/references` (`listArtifactReferences`), a composed read: it
   resolves the compose once inside the read and answers the references one artifact writes (`ArtifactReferenceList`),
   each as written (`PackQualifiedReference`), with its relation when the artifact mints one, the `HoldingPack` that
