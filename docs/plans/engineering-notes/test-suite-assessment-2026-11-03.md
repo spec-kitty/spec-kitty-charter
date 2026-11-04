@@ -1,6 +1,6 @@
 ---
 title: "Test suite assessment, 2026-11-03"
-description: How good the charter's test suite is, measured against the pack testing rubric, and whether to add SonarCloud, with ranked weaknesses and proposed issues.
+description: How good the charter's test suite is, measured against the pack testing rubric, and whether to add SonarCloud, with ranked weaknesses and follow-up issues.
 doc_status: draft
 updated: 2026-11-04T00:00:00Z
 type: Plan
@@ -13,7 +13,7 @@ related:
   - guides/service-build
 audience:
   - profile: charter-service-contributor
-    guidance_text: Read this for where the suite is strong, the five weaknesses ranked by risk, and the proposed issues that act on them.
+    guidance_text: Read this for where the suite is strong, the five weaknesses ranked by risk, and the filed issues that act on them.
   - profile: governance-lead
     guidance_text: Read this for the scorecard, the SonarCloud recommendation and its cost, and the operator decisions recorded on 2026-11-03.
 ---
@@ -23,7 +23,7 @@ audience:
 **Status: assessment, not a decision.** It answers two operator questions: how good is the test
 suite, and should the charter add SonarCloud? It changes no code. The SonarCloud decision it feeds
 is recorded as [ADR-0058](/adr/0058-sonarcloud-nightly-reported-and-checkstyle-complexity-per-pr/)
-(Accepted, 2026-11-03). The issues it proposes are listed at the end and are not filed.
+(Accepted, 2026-11-03). The follow-ups it recommends were filed on 2026-11-04 and are listed at the end.
 
 **Clarified 2026-11-04 (PR #366 landing).** The measurements below are as of 2026-11-03 and are not
 updated. Four readings are corrected, each marked inline:
@@ -396,19 +396,19 @@ The operator creates the SonarCloud project and the `SONAR_TOKEN` secret. The wo
 wait for them: it skips green, with a notice, until the token exists. So the CI work for R5 and R6
 proceeds as its own mission.
 
-## Proposed issues (not filed)
+## Follow-up issues (filed 2026-11-04)
 
-| Proposed issue | Size | Notes |
-|---|:-:|---|
-| R1: comment on #239 with today's baseline (kernel 69 %, missions 77 %, profiles 53 %) and the report-upload gap | — | #239 exists, so this needs no new issue |
-| R2: a comment on [#320](https://github.com/spec-kitty/spec-kitty-charter/issues/320), not a new issue | S | Names the eight call sites above: widen each deadline into a hang cap, or assert the work; do not tag them `timing`. |
-| R3: "Pin refusal codes in `CharterRefusal` assertions" | S | Lists the 15 `CharterRefusal` sites. No counting guard test (`DIRECTIVE_041`). |
-| R4: "Close module-local test gaps in kernel.validation, profiles and packs.infra.fetch" | M | Acceptance: PIT no-coverage counts fall; each new test is proved by a planted break. |
-| R5: "Checkstyle complexity and length rules in the per-PR gate" | M | Limits as ruled; #367 first; no suppressions and no shrink-only register (clarified 2026-11-04, ADR-0058). |
-| R6: "Nightly report-only SonarCloud scan (ADR-0058)" | M | Needs `SONAR_TOKEN` and the SonarCloud project from the operator. |
-| R7: "Remove the unused Mockito dependency and Java agent" | S | |
-| R8: "Coverage-gap analysis of the 27 promise-first scenarios" | M | `qa-coverage-gap-analysis`; wire, map or retire each one. |
-| R9: "Java support for the test-quality-scan asset" | L | An open-packs change; this repository consumes it. |
+| Recommendation | Issue | Size | Notes |
+| --- | --- | :-: | --- |
+| R1 | [#239](https://github.com/spec-kitty/spec-kitty-charter/issues/239) (comment) | M | Today's baseline and the report-upload gap |
+| R2 | [#320](https://github.com/spec-kitty/spec-kitty-charter/issues/320) (comment) | S | The eight call sites: widen each deadline into a hang cap, or assert the work; do not tag them `timing` |
+| R3 | [#369](https://github.com/spec-kitty/spec-kitty-charter/issues/369) | S | Lists the 15 `CharterRefusal` sites; no counting guard test (`DIRECTIVE_041`) |
+| R4 | [#370](https://github.com/spec-kitty/spec-kitty-charter/issues/370) | M | PIT no-coverage counts fall; each new test is proved by a planted break |
+| R5 | [#371](https://github.com/spec-kitty/spec-kitty-charter/issues/371) | M | Limits as ruled; [#367](https://github.com/spec-kitty/spec-kitty-charter/issues/367) first; no suppressions and no shrink-only register |
+| R6 | [#372](https://github.com/spec-kitty/spec-kitty-charter/issues/372) | M | Needs `SONAR_TOKEN` and the SonarCloud project from the operator |
+| R7 | [#373](https://github.com/spec-kitty/spec-kitty-charter/issues/373) | S | |
+| R8 | [#374](https://github.com/spec-kitty/spec-kitty-charter/issues/374) | M | `qa-coverage-gap-analysis`; map, wire or retire each one |
+| R9 | [open-packs#115](https://github.com/spec-kitty/spec-kitty-open-packs/issues/115) | L | An open-packs change; this repository consumes it |
 
 ## Reproduce
 
