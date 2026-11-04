@@ -327,36 +327,38 @@ public final class ComposedBundle {
     /** Refuses every {@code $ref} that is not a whole reference to a component the document holds. */
     private static void checkReferences(
             Map<Object, @Nullable Object> document, String pointer, @Nullable Object node, List<String> problems) {
-        if (node instanceof Map<?, ?> map) {
-            if (map.containsKey(BundleDocument.REF)) {
-                String at = pointer + "/" + BundleDocument.escape(BundleDocument.REF);
-                Object ref = map.get(BundleDocument.REF);
-                if (!(ref instanceof String text) || !text.startsWith(PREFIX)) {
-                    problems.add(at + ": " + ref + " is not a reference to a component of the bundle; the bundle must"
-                            + " be self-contained");
-                } else if (map.size() > 1) {
-                    List<String> siblings = map.keySet().stream()
-                            .map(String::valueOf)
-                            .filter(key -> !BundleDocument.REF.equals(key))
-                            .sorted()
-                            .toList();
-                    problems.add(at + ": a reference with sibling keys (" + String.join(", ", siblings)
-                            + "); the checks read a reference as the component it names, nothing more");
-                } else if (BundleDocument.target(document, map).isEmpty()) {
-                    problems.add(at + ": " + text + " names no component of the bundle");
-                }
-            }
-            map.forEach((key, value) -> {
-                if (!BundleDocument.REF.equals(key)) {
-                    checkReferences(
-                            document, pointer + "/" + BundleDocument.escape(String.valueOf(key)), value, problems);
-                }
-            });
-        } else if (node instanceof List<?> list) {
+        if (node instanceof List<?> list) {
             for (int i = 0; i < list.size(); i++) {
                 checkReferences(document, pointer + "/" + i, list.get(i), problems);
             }
+            return;
         }
+        if (!(node instanceof Map<?, ?> map)) {
+            return;
+        }
+        if (map.containsKey(BundleDocument.REF)) {
+            String at = pointer + "/" + BundleDocument.escape(BundleDocument.REF);
+            Object ref = map.get(BundleDocument.REF);
+            if (!(ref instanceof String text) || !text.startsWith(PREFIX)) {
+                problems.add(at + ": " + ref + " is not a reference to a component of the bundle; the bundle must"
+                        + " be self-contained");
+            } else if (map.size() > 1) {
+                List<String> siblings = map.keySet().stream()
+                        .map(String::valueOf)
+                        .filter(key -> !BundleDocument.REF.equals(key))
+                        .sorted()
+                        .toList();
+                problems.add(at + ": a reference with sibling keys (" + String.join(", ", siblings)
+                        + "); the checks read a reference as the component it names, nothing more");
+            } else if (BundleDocument.target(document, map).isEmpty()) {
+                problems.add(at + ": " + text + " names no component of the bundle");
+            }
+        }
+        map.forEach((key, value) -> {
+            if (!BundleDocument.REF.equals(key)) {
+                checkReferences(document, pointer + "/" + BundleDocument.escape(String.valueOf(key)), value, problems);
+            }
+        });
     }
 
     /**
@@ -384,24 +386,24 @@ public final class ComposedBundle {
     /** Whether {@code node} reaches the component {@code self}, following each component reference once. */
     private static boolean reaches(
             Map<Object, @Nullable Object> document, @Nullable Object node, String self, Set<String> followed) {
-        if (node instanceof Map<?, ?> map) {
-            if (map.get(BundleDocument.REF) instanceof String ref) {
-                if (ref.equals(self)) {
-                    return true;
-                }
-                if (!followed.add(ref)) {
-                    return false;
-                }
-                return BundleDocument.target(document, map)
-                        .map(target -> reaches(document, target.component(), self, followed))
-                        .orElse(false);
-            }
-            return map.values().stream().anyMatch(value -> reaches(document, value, self, followed));
-        }
         if (node instanceof List<?> list) {
             return list.stream().anyMatch(item -> reaches(document, item, self, followed));
         }
-        return false;
+        if (!(node instanceof Map<?, ?> map)) {
+            return false;
+        }
+        if (!(map.get(BundleDocument.REF) instanceof String ref)) {
+            return map.values().stream().anyMatch(value -> reaches(document, value, self, followed));
+        }
+        if (ref.equals(self)) {
+            return true;
+        }
+        if (!followed.add(ref)) {
+            return false;
+        }
+        return BundleDocument.target(document, map)
+                .map(target -> reaches(document, target.component(), self, followed))
+                .orElse(false);
     }
 
     private static Map<Object, @Nullable Object> copyMap(Map<?, ?> map) {
