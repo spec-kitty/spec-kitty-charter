@@ -104,7 +104,8 @@ references:
   pack is refused as unreadable (`pack_unreadable`). A reference to the same id qualified with another pack, such as a
   project pack's `SHARE` writing `base-pack::SHARE`, is legal: it names a different artifact.
 - When you register a relationship, its `to` may be qualified and its `from` may not: `from` is an artifact of the
-  pack you register into.
+  pack you register into. The registration resolves the whole compose, so it is refused with the composition code
+  (500) when another configured pack is broken.
 - Following a qualified reference across packs is part of a served read, the walk.
 
 ## See how references resolve
@@ -151,7 +152,7 @@ Every composition refusal answers **500** and is not retryable, like every offer
 (`PUT /packs/{packId}/relationships`) answers its `to` that the compose cannot resolve with **422** and the same code
 (`pack_reference_pack_missing`, `pack_reference_unqualified` or `pack_reference_artifact_missing`), before anything is
 written, because there the request is what is wrong
-([ADR-0057](/adr/0057-a-refusal-code-may-declare-a-status-per-operation/)). Each carries a detail in words and a `packs`
+([ADR-0056](/adr/0056-a-refusal-code-may-declare-a-status-per-operation/)). Each carries a detail in words and a `packs`
 member, a list of `{descriptorPackId, packId, name}` that names the packs involved, the violating pack first.
 `descriptorPackId` is the `pack_id` its `pack.yaml` declares and `packId` the identifier it is configured under, the one
 the pack-scoped paths take.
