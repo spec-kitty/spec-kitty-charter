@@ -441,3 +441,27 @@ in `contracts/build.gradle.kts`.
 A module that is not a Spring module may still import the Spring Boot BOM as a platform, to
 pin a transitive dependency to the version the service uses. `packs` does this for
 the Jackson and slf4j versions that networknt's JSON Schema validator brings in.
+
+### Pruning stale entries
+
+Gradle adds entries to the metadata but never removes them. To prune, empty the
+`<components>` element and keep `<configuration>` as it is. Then regenerate over every
+task family CI runs, so each artifact a CI job resolves is recorded:
+
+```bash
+./gradlew --write-verification-metadata sha256 help
+./gradlew --write-verification-metadata sha256 -Pcharter.native=true help
+./gradlew --write-verification-metadata sha256 verifyAll -PrequireSymlinks=true
+./gradlew --write-verification-metadata sha256 pitest
+./gradlew --write-verification-metadata sha256 :packs:wholePackRoundTrip :packs:timingBudgets \
+  :deployable:bootJar :charter-reports:aggregateJavadoc :contracts:bundleContract
+./gradlew --write-verification-metadata sha256 :deployable:nativeCompile -Pcharter.native=true
+```
+
+The last line is there for the dependencies the native build resolves. Without GraalVM's
+`native-image` it fails after it has resolved them; that is enough.
+
+Run the whole set twice: once with your usual `GRADLE_USER_HOME`, and once with a fresh, empty one
+(`GRADLE_USER_HOME=$(mktemp -d)`). A warm cache skips the BOM `.module` files a cold CI runner
+downloads, so a warm-only run drops entries that runner needs. Then review the diff: a removed
+entry should be a version nothing resolves any more, and no kept artifact's checksum should change.

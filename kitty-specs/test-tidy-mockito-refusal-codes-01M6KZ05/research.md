@@ -70,5 +70,7 @@ Kernel grew from 196 mutants (assessment, `d2e1670`) to 378; the floors are unch
 - **Decision**: `.isInstanceOfSatisfying(CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.X))`,
   as `ConsistentReadTest` does; keep every existing post-condition assertion.
 - **Rationale**: one statement, the code named in the failure message, no new test method.
-- **Alternatives considered**: `.extracting(...)` (loses the type check), a shared helper (adds
-  indirection for 15 sites; rejected as friction).
+- **Alternatives considered**: `.isInstanceOf(CharterRefusal.class).extracting(...)` (equally sound: the
+  type check stays when `extracting` is chained after `isInstanceOf`; `isInstanceOfSatisfying` was chosen to
+  follow the `ConsistentReadTest` precedent), a shared helper (adds indirection for 15 sites; rejected as
+  friction).
