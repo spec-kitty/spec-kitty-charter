@@ -77,5 +77,27 @@
         <module name="UpperEll"/>
         <module name="ArrayTypeStyle"/>
         <module name="OuterTypeFilename"/>
+
+        <!-- Complexity (ADR-0056); every method over a limit is listed by XPath in suppressions.xml -->
+        <module name="CyclomaticComplexity">
+            <property name="max" value="15"/>
+            <property name="switchBlockAsSingleDecisionPoint" value="true"/>
+        </module>
+        <module name="NPathComplexity">
+            <property name="max" value="1000"/>
+        </module>
+        <module name="MethodLength">
+            <property name="max" value="60"/>
+            <property name="countEmpty" value="false"/>
+        </module>
+        <module name="NestedIfDepth">
+            <property name="max" value="1"/>
+        </module>
+
+        <!-- Reads the same register as SuppressionFilter, for the method-scoped suppress-xpath entries -->
+        <module name="SuppressionXpathFilter">
+            <property name="file" value="${config_loc}/suppressions.xml"/>
+            <property name="optional" value="false"/>
+        </module>
     </module>
 </module>

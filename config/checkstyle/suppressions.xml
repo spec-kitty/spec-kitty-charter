@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE suppressions PUBLIC
-        "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
-        "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+        "-//Checkstyle//DTD SuppressionXpathFilter Experimental Configuration 1.2//EN"
+        "https://checkstyle.org/dtds/suppressions_1_2_xpath_experimental.dtd">
 <!--
   The one register of exceptions to the hand-written quality gates (spec NFR-001; research G3). It holds every
   exception to Checkstyle here, and records any exception to another gate (Error Prone, NullAway, doclint) as a
@@ -13,7 +13,147 @@
     reason: why the code is right and the rule is wrong for it
     sunset: the date by which the entry is removed or re-justified
 
-  Size: 0 entries.
+  Entries for the complexity rules (CyclomaticComplexity, NPathComplexity, MethodLength, NestedIfDepth; ADR-0056)
+  are `suppress-xpath` elements naming one method each through `query`, never a whole file. `checks` lists exactly
+  the rules that method breaks. The list only shrinks: a new method over a limit is refactored, not registered.
+  The complexity entries are worked down under spec-kitty/spec-kitty-charter#367.
+
+  Size: 15 entries.
 -->
 <suppressions>
+    <!--
+      rule:   CyclomaticComplexity, NPathComplexity
+      file:   contracts/src/main/java/ai/speckitty/charter/contracts/compat/CheckReleaseGate.java
+      reason: The command-line entry point parses every argument form and its input errors in one place before handing off to the gate.
+      sunset: 2027-05-04
+    -->
+    <suppress-xpath checks="CyclomaticComplexity|NPathComplexity"
+                    files="CheckReleaseGate\.java"
+                    query="//CLASS_DEF//METHOD_DEF[./IDENT[@text='run']]"/>
+    <!--
+      rule:   NPathComplexity
+      file:   contracts/src/main/java/ai/speckitty/charter/contracts/compat/ReleaseGate.java
+      reason: The release decision reads as one ordered list of refusals, each an early return, which multiplies the path count without nesting.
+      sunset: 2027-05-04
+    -->
+    <suppress-xpath checks="NPathComplexity"
+                    files="[/\\]ReleaseGate\.java"
+                    query="//CLASS_DEF//METHOD_DEF[./IDENT[@text='decide']]"/>
+    <!--
+      rule:   MethodLength
+      file:   service/missions/src/test/java/ai/speckitty/charter/missions/domain/LifecycleTest.java
+      reason: The test lists each malformed machine next to the rule it breaks, a table that is longest kept in one place.
+      sunset: 2027-05-04
+    -->
+    <suppress-xpath checks="MethodLength"
+                    files="LifecycleTest\.java"
+                    query="//CLASS_DEF//METHOD_DEF[./IDENT[@text='malformedMachinesAreRefused']]"/>
+    <!--
+      rule:   NPathComplexity
+      file:   service/packs/src/main/java/ai/speckitty/charter/packs/domain/markdown/MarkdownScanner.java
+      reason: Heading recognition follows the ATX rules one early return at a time; each test is flat, but the paths multiply.
+      sunset: 2027-05-04
+    -->
+    <suppress-xpath checks="NPathComplexity"
+                    files="MarkdownScanner\.java"
+                    query="//CLASS_DEF//METHOD_DEF[./IDENT[@text='heading']]"/>
+    <!--
+      rule:   CyclomaticComplexity, NPathComplexity
+      file:   service/packs/src/main/java/ai/speckitty/charter/packs/infra/fetch/AddressPolicy.java
+      reason: The method is the table of special-purpose IPv4 ranges, one commented test per range, kept together so it can be checked against the registry.
+      sunset: 2027-05-04
+    -->
+    <suppress-xpath checks="CyclomaticComplexity|NPathComplexity"
+                    files="AddressPolicy\.java"
+                    query="//CLASS_DEF//METHOD_DEF[./IDENT[@text='isGlobalV4']]"/>
+    <!--
+      rule:   MethodLength
+      file:   service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/WholePackStore.java
+      reason: The whole-pack write validates, stages and moves into place in one method so the cleanup of the staging directory covers every step.
+      sunset: 2027-05-04
+    -->
+    <suppress-xpath checks="MethodLength"
+                    files="WholePackStore\.java"
+                    query="//CLASS_DEF//METHOD_DEF[./IDENT[@text='write']]"/>
+    <!--
+      rule:   MethodLength
+      file:   service/packs/src/test/java/ai/speckitty/charter/packs/infra/fetch/HttpsGuideFetcherTest.java
+      reason: The scripted transport's send answers every scripted case of the fetcher tests in one switch-like body.
+      sunset: 2027-05-04
+    -->
+    <suppress-xpath checks="MethodLength"
+                    files="HttpsGuideFetcherTest\.java"
+                    query="//CLASS_DEF//METHOD_DEF[./IDENT[@text='send']]"/>
+    <!--
+      rule:   MethodLength
+      file:   service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/DoctrineValidationParityTest.java
+      reason: The parameter source is a table of rule cases, one row per rule, which reads best as one list.
+      sunset: 2027-05-04
+    -->
+    <suppress-xpath checks="MethodLength"
+                    files="DoctrineValidationParityTest\.java"
+                    query="//CLASS_DEF//METHOD_DEF[./IDENT[@text='rulesetCases']]"/>
+    <!--
+      rule:   MethodLength
+      file:   service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/DomainRepositoryServiceTest.java
+      reason: The test builds a decoy and a target pack and records every file opened, all of which the one assertion needs in view.
+      sunset: 2027-05-04
+    -->
+    <suppress-xpath checks="MethodLength"
+                    files="DomainRepositoryServiceTest\.java"
+                    query="//CLASS_DEF//METHOD_DEF[./IDENT[@text='aPointReadNeverOpensAnotherPacksTacticFiles']]"/>
+    <!--
+      rule:   CyclomaticComplexity, NPathComplexity
+      file:   service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/DomainRoundTrip.java
+      reason: The round trip dispatches on every modelled kind and records each outcome in one loop over the source files.
+      sunset: 2027-05-04
+    -->
+    <suppress-xpath checks="CyclomaticComplexity|NPathComplexity"
+                    files="DomainRoundTrip\.java"
+                    query="//CLASS_DEF//METHOD_DEF[./IDENT[@text='roundTrip']]"/>
+    <!--
+      rule:   MethodLength
+      file:   service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/FileSystemPackInspectorTest.java
+      reason: The corpus test asserts the inspector's whole report over the built-in pack, one expectation per finding and file class.
+      sunset: 2027-05-04
+    -->
+    <suppress-xpath checks="MethodLength"
+                    files="FileSystemPackInspectorTest\.java"
+                    query="//CLASS_DEF//METHOD_DEF[./IDENT[@text='validateModeOverTheBuiltInPackFindsWhatMainFoundAndListsTheConfigPayload']]"/>
+    <!--
+      rule:   CyclomaticComplexity
+      file:   service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/GeneratedPackTree.java
+      reason: The generator plants one file of any kind in any shape, and the placement rules of each kind are decided in one method.
+      sunset: 2027-05-04
+    -->
+    <suppress-xpath checks="CyclomaticComplexity"
+                    files="GeneratedPackTree\.java"
+                    query="//CLASS_DEF//METHOD_DEF[./IDENT[@text='plantLoaded']]"/>
+    <!--
+      rule:   MethodLength
+      file:   service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackFileSetExactnessTest.java
+      reason: The exactness assertion compares every kind the store loads against the generated tree in one pass per pack.
+      sunset: 2027-05-04
+    -->
+    <suppress-xpath checks="MethodLength"
+                    files="PackFileSetExactnessTest\.java"
+                    query="//CLASS_DEF//METHOD_DEF[./IDENT[@text='assertLoadIsExact']]"/>
+    <!--
+      rule:   MethodLength
+      file:   service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ReadOnlyPackSaveTest.java
+      reason: The parameter source lists every per-file write of the repository service, one row per write.
+      sunset: 2027-05-04
+    -->
+    <suppress-xpath checks="MethodLength"
+                    files="ReadOnlyPackSaveTest\.java"
+                    query="//CLASS_DEF//METHOD_DEF[./IDENT[@text='everyWrite']]"/>
+    <!--
+      rule:   CyclomaticComplexity, MethodLength, NPathComplexity
+      file:   service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackExpectation.java
+      reason: The expectation evaluator judges every census file against file, kind and known-failure entries and reports each problem in one pass.
+      sunset: 2027-05-04
+    -->
+    <suppress-xpath checks="CyclomaticComplexity|MethodLength|NPathComplexity"
+                    files="WholePackExpectation\.java"
+                    query="//CLASS_DEF//METHOD_DEF[./IDENT[@text='evaluate']]"/>
 </suppressions>

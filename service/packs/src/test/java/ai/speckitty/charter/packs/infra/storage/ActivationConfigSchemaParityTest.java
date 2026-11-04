@@ -180,33 +180,33 @@ class ActivationConfigSchemaParityTest {
     }
 
     private static Object inline(Object node) {
-        if (node instanceof Map<?, ?> map) {
-            Map<String, Object> out = new LinkedHashMap<>();
-            Object ref = map.get("$ref");
-            if (ref != null) {
-                assertThat(map.keySet().stream()
-                                .map(String::valueOf)
-                                .filter(name -> !name.equals("$ref")
-                                        && !name.startsWith("x-")
-                                        && !Set.of("title", "description").contains(name)))
-                        .as("a validating keyword beside %s would apply with it, not over it", ref)
-                        .isEmpty();
-                if (inline(load(CHARTER_SCHEMAS.resolve(String.valueOf(ref)))) instanceof Map<?, ?> target) {
-                    target.forEach((key, value) -> out.put(String.valueOf(key), value));
-                }
-            }
-            map.forEach((key, value) -> {
-                String name = String.valueOf(key);
-                if (!name.equals("$ref") && !name.startsWith("x-")) {
-                    out.put(name, inline(value));
-                }
-            });
-            return out;
-        }
         if (node instanceof List<?> list) {
             return list.stream().map(ActivationConfigSchemaParityTest::inline).toList();
         }
-        return node;
+        if (!(node instanceof Map<?, ?> map)) {
+            return node;
+        }
+        Map<String, Object> out = new LinkedHashMap<>();
+        Object ref = map.get("$ref");
+        if (ref != null) {
+            assertThat(map.keySet().stream()
+                            .map(String::valueOf)
+                            .filter(name -> !name.equals("$ref")
+                                    && !name.startsWith("x-")
+                                    && !Set.of("title", "description").contains(name)))
+                    .as("a validating keyword beside %s would apply with it, not over it", ref)
+                    .isEmpty();
+            if (inline(load(CHARTER_SCHEMAS.resolve(String.valueOf(ref)))) instanceof Map<?, ?> target) {
+                target.forEach((key, value) -> out.put(String.valueOf(key), value));
+            }
+        }
+        map.forEach((key, value) -> {
+            String name = String.valueOf(key);
+            if (!name.equals("$ref") && !name.startsWith("x-")) {
+                out.put(name, inline(value));
+            }
+        });
+        return out;
     }
 
     private static Object load(Path file) {
