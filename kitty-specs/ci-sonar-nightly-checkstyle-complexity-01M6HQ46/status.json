@@ -2,10 +2,9 @@
   "event_count": 42,
   "last_event_id": "01M6KD8VM9P08P34XC0JF81PVN",
   "materialized_at": "2026-11-04T13:51:42.217059+00:00",
-  "mission_number": "17",
+  "mission_number": "",
   "mission_slug": "ci-sonar-nightly-checkstyle-complexity-01M6HQ46",
-  "mission_type": "software-dev",
-  "schema_version": 2,
+  "mission_type": "",
   "summary": {
     "approved": 0,
     "blocked": 0,
@@ -20,136 +19,71 @@
   "work_packages": {
     "WP01": {
       "actor": "merge",
-      "agent": "claude::reviewer-renata",
-      "agent_profile": "reviewer-renata",
-      "agent_profile_version": "1.0",
+      "agent": "claude",
       "force_count": 1,
       "implementer_of_record": "claude",
       "lane": "done",
       "last_event_id": "01M6KD8H67W2MRCSVW6Z6JQDRK",
       "last_transition_at": "2026-11-04T13:51:31.527073+00:00",
-      "model": "__resolved_model_absent__",
-      "notes": [
-        "Register: 15 suppress-xpath entries (one method each, rule/file/reason/sunset 2027-05-04, Size: 15, header points to #367). Limits in checkstyle.xml: CyclomaticComplexity 15 (switch as one decision point), NPathComplexity 1000, MethodLength 60 (countEmpty=false), NestedIfDepth 1, plus SuppressionXpathFilter on the same register (XPath experimental DTD 1.2). T017: ComposedBundle.checkReferences, ComposedBundle.reaches and ActivationConfigSchemaParityTest.inline flattened with guard clauses (commit 039814ee); :contracts:test 251/251 and ActivationConfigSchemaParityTest 29/29 green before and after, no test edited; the three methods pass Checkstyle with no entry. T004: planted class in kernel tests gave exactly four errors: Cyclomatic Complexity is 16 [CyclomaticComplexity] (cyclomaticSixteen), NPath Complexity is 1,024 [NPathComplexity] (npathOverAThousand), Method sixtyOneLines length is 61 lines [MethodLength], Nested if-else depth is 2 [NestedIfDepth] (nestedIf); with the class removed :kernel:checkstyleTest passed. Note: max=1 allows an if inside an if, so the check fires at three levels. verifyAll exit 0 in 80 s (warm cache, 14 tasks executed); fresh Checkstyle on all modules about 38-55 s; a cold before/after delta was not measured. Gate commit 6fca1013.",
-        "cycle 2: literal file path for the rulesetCases entry",
-        "Review passed: four complexity modules + SuppressionXpathFilter at ruled limits; 15-entry method-scoped register verified against an empty-register run (checks exact per method); cycle-1 issue fixed in 7b2af652 (literal DoctrineValidationParityTest path and escaped files regex); T017 refactor behavior-preserving (contracts 251/251, parity 29/29); verifyAll green; all four limits proven to fire on planted methods. Coordination: WP02 consumes this register format."
-      ],
-      "provider": "__resolved_provider_absent__",
-      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/ci-sonar-nightly-checkstyle-complexity-01M6HQ46-coord/kitty-specs/ci-sonar-nightly-checkstyle-complexity-01M6HQ46/tasks/WP01-complexity-limits-and-register/review-cycle-2.md",
         "reference": "review-cycle://ci-sonar-nightly-checkstyle-complexity-01M6HQ46/WP01-complexity-limits-and-register/review-cycle-2.md",
         "reviewer": "claude::reviewer-renata",
         "verdict": "approved"
       },
-      "role": "reviewer",
-      "shell_pid": 21476,
-      "shell_pid_created_at": "1793789889.64",
-      "subtasks": {
-        "T001": "done",
-        "T002": "done",
-        "T003": "done",
-        "T004": "done",
-        "T017": "done"
-      }
+      "shell_pid": 18953,
+      "shell_pid_created_at": "1793780625.02"
     },
     "WP02": {
       "actor": "merge",
-      "agent": "claude::reviewer-renata",
-      "agent_profile": "reviewer-renata",
-      "agent_profile_version": "1.0",
+      "agent": "claude::implementer-ivan",
       "force_count": 1,
       "implementer_of_record": "claude::implementer-ivan",
       "lane": "done",
       "last_event_id": "01M6KD8QYRQX30M01EESETFZKC",
       "last_transition_at": "2026-11-04T13:51:38.456256+00:00",
-      "model": "__resolved_model_absent__",
-      "notes": [
-        "Commit f4112a85. CheckstyleRegister.kt (pure SAX parser with external DTD/entities off, comparator, method mapping) + 20 unit tests; charter.hand-written wires checkstyleRegisterProbeConfig, checkstyleRegisterProbeMain/Test (Checkstyle, probe config without both suppression filters, source filtered by the in-module entries' files regexes) and checkCheckstyleRegister into check. Liveness requires every listed rule on the method; findings STALE/MISSING_FILE/MISSING_FIELD/SIZE_MISMATCH/UNMAPPED. build-logic check exit 0; verifyAll exit 0, all 15 entries live; verifyAll --configuration-cache twice: stored then reused. Planted stale entry (NPathComplexity on AddressPolicy.allZero) -> STALE suppressions.xml:167 at :packs:checkCheckstyleRegister; Size 14 -> SIZE_MISMATCH; reverted, green. Cost: about 6 s wall clock added to verifyAll (25 s vs 19 s up-to-date), 23.6 s summed task time, four Checkstyle probe runs.",
-        "Resubmitted unchanged (f4112a85) with the implementer identity recorded, per the operator's ruling; the code was approved by reviewer-renata in the first review.",
-        "Review passed: register parsing has external DTD and entity loading off (unreachable-DTD test); liveness requires every listed rule on the named method, files regex on the absolute path, per-module scoping; STALE/MISSING_FILE/MISSING_FIELD/SIZE_MISMATCH/UNMAPPED unit-tested (20 tests) and scratch mapping cases (multi-line generic signature with throws, split lambda, anonymous class, constructor, multi-line annotations) map correctly; UNMAPPED only fires where the real gate would also fail, so not brittle. Probe strips both filters and fails unless exactly one of each, empty classpath, inputs complete including missing named files, configuration cache reused, check wired in all six hand-written modules. build-logic check and verifyAll exit 0; planted stale entry fails verifyAll with STALE suppressions.xml:167 (reverted). Added time within NFR-001 (19 s wall from clean). Commit f4112a85 limited to the three owned files, trailers present. Non-blocking: a method-scoped NestedIfDepth suppress-xpath targeting METHOD_DEF would not suppress in Checkstyle (violation is on LITERAL_IF); note for WP04 docs."
-      ],
-      "provider": "__resolved_provider_absent__",
-      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/ci-sonar-nightly-checkstyle-complexity-01M6HQ46-coord/kitty-specs/ci-sonar-nightly-checkstyle-complexity-01M6HQ46/tasks/WP02-register-stale-check/review-cycle-2.md",
         "reference": "review-cycle://ci-sonar-nightly-checkstyle-complexity-01M6HQ46/WP02-register-stale-check/review-cycle-2.md",
         "reviewer": "claude::reviewer-renata",
         "verdict": "approved"
       },
-      "role": "reviewer",
-      "shell_pid": 4688,
-      "shell_pid_created_at": "1793794531.6",
-      "subtasks": {
-        "T005": "done",
-        "T006": "done",
-        "T007": "done",
-        "T008": "done",
-        "T009": "done"
-      }
+      "shell_pid": 4052,
+      "shell_pid_created_at": "1793794504.57"
     },
     "WP03": {
       "actor": "merge",
-      "agent": "claude::reviewer-renata",
-      "agent_profile": "reviewer-renata",
-      "agent_profile_version": "1.0",
+      "agent": "claude",
       "force_count": 0,
       "implementer_of_record": "claude",
       "lane": "done",
       "last_event_id": "01M6KD8MVDEGH1QNQ6A9C1KS56",
       "last_transition_at": "2026-11-04T13:51:35.277732+00:00",
-      "model": "__resolved_model_absent__",
-      "notes": [
-        "Built .github/workflows/sonar.yml (schedule 23 4 * * * UTC + workflow_dispatch only; job guarded to spec-kitty/spec-kitty-charter main; token probe, checkout fetch-depth 0, open-packs pin + checkout, Java 25, Gradle, syncPacks, verifyAll, coverage-report check, SonarCloud scan v8.2.1, quality gate v1.2.1, outcome summary; all actions SHA-pinned with # v comments; every step after the probe gated on the probe and continue-on-error) and build-logic/src/test/kotlin/SonarWorkflowGuardTest.kt (11 tests: triggers, ci.yml/gate needs never name sonar, SHA pins, token placement, gating/continue-on-error, plus planted negative controls). build-logic tests: 28/28 pass, exit 0; a live mutation (pull_request trigger + unpinned setup-gradle) made 2 guard tests fail, then reverted. YAML parses. Skip-green path: no SONAR_TOKEN secret -> probe env is empty -> probe writes enabled=false, a ::notice:: and a job-summary line, exits 0 -> every later step's if requires enabled == 'true' so all are skipped (skipped steps do not fail a job) -> job succeeds. Analysis path is verified by a manual dispatch after the operator adds the token: follow-up, not this WP. Assumption: project key spec-kitty_spec-kitty-charter in org spec-kitty, operator to confirm. Deviation: SONAR_TOKEN also sits in the quality-gate step's env, because the gate action needs it to query SonarCloud; the guard allows it in the probe, scan and gate env only.",
-        "Review passed: triggers schedule+workflow_dispatch only, repo/main guard, contents:read, persist-credentials:false, SONAR_TOKEN only in env of probe/scan/gate, no untrusted expressions in run:. All uses: SHA-pinned, identical to service.yml and core sonar.yml. Skip-green: probe enabled=false, every later step gated on it, job green; with token every later step continue-on-error, gating on .outcome. Sonar args cover the 5 hand-written modules (paths verified), charter-api/contracts excluded, coverage XML path built by charter-reports check (in verifyAll), java.libraries absolute via shell step output (core's mechanism). Guard test 11/11 pass, exit 0, non-vacuous negative controls on the same functions, repo-root walk-up robust. Only the 2 owned files in the WP commit, trailers present, YAML parses. Anti-pattern checklist: 1 N/A, 2-8 PASS. Recorded #239 issue-matrix verdict not-applicable (spec C-004 out of scope) to unblock approval. Follow-up: manual dispatch after operator adds SONAR_TOKEN and confirms project key."
-      ],
-      "provider": "__resolved_provider_absent__",
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/ci-sonar-nightly-checkstyle-complexity-01M6HQ46-coord/kitty-specs/ci-sonar-nightly-checkstyle-complexity-01M6HQ46/tasks/WP03-nightly-sonar-workflow/review-cycle-1.md",
         "reference": "review-cycle://ci-sonar-nightly-checkstyle-complexity-01M6HQ46/WP03-nightly-sonar-workflow/review-cycle-1.md",
         "reviewer": "claude::reviewer-renata",
         "verdict": "approved"
       },
-      "role": "reviewer",
-      "shell_pid": 6802,
-      "shell_pid_created_at": "1793773201.54",
-      "subtasks": {
-        "T010": "done",
-        "T011": "done",
-        "T012": "done",
-        "T013": "done"
-      }
+      "shell_pid": 1380,
+      "shell_pid_created_at": "1793772715.64"
     },
     "WP04": {
       "actor": "merge",
-      "agent": "claude::reviewer-renata",
-      "agent_profile": "reviewer-renata",
-      "agent_profile_version": "1.0",
+      "agent": "claude::scribe-sally",
       "force_count": 0,
       "implementer_of_record": "claude::scribe-sally",
       "lane": "done",
       "last_event_id": "01M6KD8VM9P08P34XC0JF81PVN",
       "last_transition_at": "2026-11-04T13:51:42.217059+00:00",
-      "model": "__resolved_model_absent__",
-      "notes": [
-        "Docs written in 7029868c: service-build guide (Complexity limits; Exceptions to a gate rewritten, with The stale check covering all five findings; The nightly SonarCloud report; two table rows) and changelog 2026-11-04 (2359 chars). Docs gate clean; added 'sonarcloud' to the wordlist. ADR-0056 named in plain text, not linked; PIT sentence untouched.",
-        "Review passed: every claim checked against shipped WP01-03 (limits 15/1000/60/1 with switch-as-one and countEmpty=false, 15 suppress-xpath entries and Size header, checkCheckstyleRegister + probe task names, all five finding kinds and actions match CheckstyleRegister.kt, NestedIfDepth else-if semantics, Checkstyle 14.3.0 message format, sonar.yml name/cron 04:23 UTC/triggers/token skip/summary/project key); check_docs all clean; ADR-0056 unlinked; spelling insertion sorted; changelog 2359 chars; only the three owned files changed"
-      ],
-      "provider": "__resolved_provider_absent__",
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/ci-sonar-nightly-checkstyle-complexity-01M6HQ46-coord/kitty-specs/ci-sonar-nightly-checkstyle-complexity-01M6HQ46/tasks/WP04-documentation/review-cycle-1.md",
         "reference": "review-cycle://ci-sonar-nightly-checkstyle-complexity-01M6HQ46/WP04-documentation/review-cycle-1.md",
         "reviewer": "claude::reviewer-renata",
         "verdict": "approved"
       },
-      "role": "reviewer",
-      "shell_pid": 1876,
-      "shell_pid_created_at": "1793800007.27",
-      "subtasks": {
-        "T014": "done",
-        "T015": "done",
-        "T016": "done"
-      }
+      "shell_pid": 330,
+      "shell_pid_created_at": "1793795232.95"
     }
   }
 }
