@@ -60,13 +60,19 @@ class RefusalHandlerLoggingTest {
 
     @Test
     void aBrokenPackConfigurationIsLoggedAtWarnWithItsCodeDetailAndPacksAndNoStackTrace() {
-        new RefusalHandler()
+        var response = new RefusalHandler()
                 .refused(new CharterRefusal(
                         RefusalCode.PACK_DEPENDENCY_CYCLE,
                         "pack `a` is on a cycle",
-                        List.of(new RefusalPack("01A", "a"), new RefusalPack("01B", "b"))));
+                        List.of(new RefusalPack("01A", "cfg-a", "a"), new RefusalPack("01B", "cfg-b", "b"))));
         new RefusalHandler().refused(new CharterRefusal(RefusalCode.PACK_UNREADABLE, "cannot read"));
 
+        // the wire carries both identities of each pack: the descriptor's pack_id and the configured identifier
+        assertThat(response.getBody().getPacks())
+                .extracting("descriptorPackId", "packId", "name")
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("01A", "cfg-a", "a"),
+                        org.assertj.core.groups.Tuple.tuple("01B", "cfg-b", "b"));
         assertThat(events.list).hasSize(2).allSatisfy(event -> {
             assertThat(event.getLevel()).isEqualTo(Level.WARN);
             assertThat(event.getThrowableProxy()).isNull();

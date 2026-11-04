@@ -23,7 +23,7 @@ core included, adapt. A refresh from core never overwrites a change listed below
   them; the service writes them only on a 409 `artifact_required`/`artifact_locked` and a 422
   `activation_invalid`. The two new files use inline patterns, so `_shared` names nothing under
   `contracts/charter/`.
-- `schemas/Problem.yaml` gains the optional member `packs` (a list of `schemas/RefusalPack.yaml`, a new file here)
+- `schemas/Problem.yaml` gains the optional member `packs` (a list of `schemas/RefusalPack.yaml`, a new file here: `descriptorPackId`, `packId` and `name`)
   on the same terms as `requiredBy` and `violations`: `CharterRefusal` extends the closed `Problem` with `allOf`,
   so the member must be declared on `Problem`. The service writes it only on the refusals of the pack composition
   (`GET /offering`, and the artifact reads that raise a reference refusal): the packs the refusal names, the pack

@@ -9,7 +9,8 @@
   `depends_on` closure), `pack_reference_artifact_missing` (a qualified reference to a pack of the closure that does not
   hold the artifact) and `pack_sibling_conflict`, all with 500 like `pack_unreadable`: the request is fine and the
   configured packs do not compose (operator ruling of 2026-11-03). Each names the violating pack in `detail` and in the new
-  optional `packs` member of the refusal body (`Problem.packs`, a list of `RefusalPack`: the `pack_id` and `name` of every pack
+  optional `packs` member of the refusal body (`Problem.packs`, a list of `RefusalPack`: the `descriptorPackId` (the `pack_id` its
+  `pack.yaml` declares), the `packId` (the configured identifier, as on `OfferingPack` and `HoldingPack`) and the `name` of every pack
   the refusal names, the violating pack first). The read exposes what the compose
   resolved (FR-019, FR-020).
   `Urn` stays the bare node identity, `<kind>:<id>` (a pack is provenance, not identity, ADR-0048 decision 10). A

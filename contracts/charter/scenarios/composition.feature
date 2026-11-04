@@ -131,7 +131,8 @@ Feature: The compose resolves the configured packs' dependency graph
     Then the response status is 500
     And the problem code is "pack_dependency_cycle"
     And the field "detail" of the response body is "pack `alpha-pack` (01M4P01D5TWB5FKZGNNQG3943R) is on a dependency cycle: `alpha-pack` -> `beta-pack` -> `alpha-pack`"
-    And the field at "/packs/0/packId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/0/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/0/packId" is "alpha"
     And the field at "/packs/0/name" is "alpha-pack"
     And the response has no "Charter-Source-Fingerprint" header
 
@@ -152,7 +153,8 @@ Feature: The compose resolves the configured packs' dependency graph
     Then the response status is 500
     And the problem code is "pack_dependency_unknown"
     And the field "detail" of the response body is "pack `alpha-pack` (01M4P01D5TWB5FKZGNNQG3943R) depends on pack `01M4P01D5TWB5FKZGNNQG3943X`, which no configured pack declares"
-    And the field at "/packs/0/packId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/0/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/0/packId" is "alpha"
     And the field at "/packs/0/name" is "alpha-pack"
     And the response has no "Charter-Source-Fingerprint" header
 
@@ -264,9 +266,11 @@ Feature: The compose resolves the configured packs' dependency graph
     Then the response status is 500
     And the problem code is "pack_dependency_out_of_range"
     And the field "detail" of the response body is "packs `left-pack` (01M4P01D5TWB5FKZGNNQG3943S) and `right-pack` (01M4P01D5TWB5FKZGNNQG3943T) require pack `apex-pack` (01M4P01D5TWB5FKZGNNQG3943R) in ranges `<2` and `>=2`, which no version satisfies together"
-    And the field at "/packs/0/packId" is "01M4P01D5TWB5FKZGNNQG3943T"
+    And the field at "/packs/0/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943T"
+    And the field at "/packs/0/packId" is "right"
     And the field at "/packs/0/name" is "right-pack"
-    And the field at "/packs/1/packId" is "01M4P01D5TWB5FKZGNNQG3943S"
+    And the field at "/packs/1/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943S"
+    And the field at "/packs/1/packId" is "left"
     And the field at "/packs/1/name" is "left-pack"
     And the response has no "Charter-Source-Fingerprint" header
 
@@ -326,9 +330,11 @@ Feature: The compose resolves the configured packs' dependency graph
     Then the response status is 500
     And the problem code is "pack_dependency_out_of_range"
     And the field "detail" of the response body is "pack `alpha-pack` (01M4P01D5TWB5FKZGNNQG3943R) requires pack `beta-pack` (01M4P01D5TWB5FKZGNNQG3943S) in range `==2.0.0`, but `beta-pack` is at version 1.9.0"
-    And the field at "/packs/0/packId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/0/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/0/packId" is "alpha"
     And the field at "/packs/0/name" is "alpha-pack"
-    And the field at "/packs/1/packId" is "01M4P01D5TWB5FKZGNNQG3943S"
+    And the field at "/packs/1/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943S"
+    And the field at "/packs/1/packId" is "beta"
     And the field at "/packs/1/name" is "beta-pack"
     And the response has no "Charter-Source-Fingerprint" header
 
@@ -374,7 +380,8 @@ Feature: The compose resolves the configured packs' dependency graph
     Then the response status is 500
     And the problem code is "pack_parent_unresolved"
     And the field "detail" of the response body is "pack `orphan-pack` (01M4P01D5TWB5FKZGNNQG3943R) names parent_pack `01M4P01D5TWB5FKZGNNQG3943X`, which no configured pack declares"
-    And the field at "/packs/0/packId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/0/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/0/packId" is "orphan"
     And the field at "/packs/0/name" is "orphan-pack"
     And the response has no "Charter-Source-Fingerprint" header
 
@@ -432,9 +439,11 @@ Feature: The compose resolves the configured packs' dependency graph
     Then the response status is 500
     And the problem code is "pack_level_violation"
     And the field "detail" of the response body is "pack `house-pack` (01M4P01D5TWB5FKZGNNQG3943R) at org depends on pack `team-pack` (01M4P01D5TWB5FKZGNNQG3943W) at project; a pack may take a dependency or a parent only at its own level or one nearer built-in"
-    And the field at "/packs/0/packId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/0/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/0/packId" is "house"
     And the field at "/packs/0/name" is "house-pack"
-    And the field at "/packs/1/packId" is "01M4P01D5TWB5FKZGNNQG3943W"
+    And the field at "/packs/1/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943W"
+    And the field at "/packs/1/packId" is "team"
     And the field at "/packs/1/name" is "team-pack"
     And the response has no "Charter-Source-Fingerprint" header
 
@@ -489,9 +498,11 @@ Feature: The compose resolves the configured packs' dependency graph
     Then the response status is 500
     And the problem code is "pack_level_violation"
     And the field "detail" of the response body is "pack `child-pack` (01M4P01D5TWB5FKZGNNQG3943S) at org names pack `team-pack` (01M4P01D5TWB5FKZGNNQG3943W) at project as its parent_pack; a pack may take a dependency or a parent only at its own level or one nearer built-in"
-    And the field at "/packs/0/packId" is "01M4P01D5TWB5FKZGNNQG3943S"
+    And the field at "/packs/0/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943S"
+    And the field at "/packs/0/packId" is "child"
     And the field at "/packs/0/name" is "child-pack"
-    And the field at "/packs/1/packId" is "01M4P01D5TWB5FKZGNNQG3943W"
+    And the field at "/packs/1/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943W"
+    And the field at "/packs/1/packId" is "team"
     And the field at "/packs/1/name" is "team-pack"
     And the response has no "Charter-Source-Fingerprint" header
 
@@ -518,9 +529,11 @@ Feature: The compose resolves the configured packs' dependency graph
     Then the response status is 500
     And the problem code is "pack_name_conflict"
     And the field "detail" of the response body is "packs `shared-house-rules` (01M4P01D5TWB5FKZGNNQG3943R) and `shared-house-rules` (01M4P01D5TWB5FKZGNNQG3943S) both declare the name `shared-house-rules`"
-    And the field at "/packs/0/packId" is "01M4P01D5TWB5FKZGNNQG3943S"
+    And the field at "/packs/0/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943S"
+    And the field at "/packs/0/packId" is "two"
     And the field at "/packs/0/name" is "shared-house-rules"
-    And the field at "/packs/1/packId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/1/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/1/packId" is "one"
     And the field at "/packs/1/name" is "shared-house-rules"
     And the response has no "Charter-Source-Fingerprint" header
 
@@ -547,9 +560,11 @@ Feature: The compose resolves the configured packs' dependency graph
     Then the response status is 500
     And the problem code is "pack_duplicate_id"
     And the field "detail" of the response body is "packs `one-pack` (01M4P01D5TWB5FKZGNNQG3943R) and `two-pack` (01M4P01D5TWB5FKZGNNQG3943R) both declare the pack_id 01M4P01D5TWB5FKZGNNQG3943R"
-    And the field at "/packs/0/packId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/0/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/0/packId" is "two"
     And the field at "/packs/0/name" is "two-pack"
-    And the field at "/packs/1/packId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/1/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/1/packId" is "one"
     And the field at "/packs/1/name" is "one-pack"
     And the response has no "Charter-Source-Fingerprint" header
 
@@ -635,9 +650,11 @@ Feature: The compose resolves the configured packs' dependency graph
     Then the response status is 500
     And the problem code is "pack_sibling_conflict"
     And the field "detail" of the response body is "packs `left-pack` (01M4P01D5TWB5FKZGNNQG3943R) and `right-pack` (01M4P01D5TWB5FKZGNNQG3943S) at org both change the artifact `directive:software-dev/test-first`, and no pack of the compose declares an overrides edge settling it"
-    And the field at "/packs/0/packId" is "01M4P01D5TWB5FKZGNNQG3943S"
+    And the field at "/packs/0/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943S"
+    And the field at "/packs/0/packId" is "right"
     And the field at "/packs/0/name" is "right-pack"
-    And the field at "/packs/1/packId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/1/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/1/packId" is "left"
     And the field at "/packs/1/name" is "left-pack"
     And the response has no "Charter-Source-Fingerprint" header
 
@@ -749,9 +766,11 @@ Feature: The compose resolves the configured packs' dependency graph
     Then the response status is 500
     And the problem code is "pack_sibling_conflict"
     And the field "detail" of the response body is "packs `left-pack` (01M4P01D5TWB5FKZGNNQG3943R) and `right-pack` (01M4P01D5TWB5FKZGNNQG3943S) at org both define the artifact `directive:SHARE`, and no pack of the compose declares an overrides edge settling it"
-    And the field at "/packs/0/packId" is "01M4P01D5TWB5FKZGNNQG3943S"
+    And the field at "/packs/0/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943S"
+    And the field at "/packs/0/packId" is "right"
     And the field at "/packs/0/name" is "right-pack"
-    And the field at "/packs/1/packId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/1/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/1/packId" is "left"
     And the field at "/packs/1/name" is "left-pack"
     And the response has no "Charter-Source-Fingerprint" header
 
@@ -881,9 +900,11 @@ Feature: The compose resolves the configured packs' dependency graph
     Then the response status is 500
     And the problem code is "pack_reference_unqualified"
     And the field "detail" of the response body is "pack `alpha-pack` (01M4P01D5TWB5FKZGNNQG3943R) writes the bare reference `directive:SHARE`, which resolves only in pack `beta-pack` (01M4P01D5TWB5FKZGNNQG3943S); a cross-pack reference is written pack-qualified"
-    And the field at "/packs/0/packId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/0/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/0/packId" is "alpha"
     And the field at "/packs/0/name" is "alpha-pack"
-    And the field at "/packs/1/packId" is "01M4P01D5TWB5FKZGNNQG3943S"
+    And the field at "/packs/1/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943S"
+    And the field at "/packs/1/packId" is "beta"
     And the field at "/packs/1/name" is "beta-pack"
     And the response has no "Charter-Source-Fingerprint" header
 
@@ -933,9 +954,11 @@ Feature: The compose resolves the configured packs' dependency graph
     Then the response status is 500
     And the problem code is "pack_reference_pack_missing"
     And the field "detail" of the response body is "pack `alpha-pack` (01M4P01D5TWB5FKZGNNQG3943R) writes the reference `beta-pack::directive:SHARE`, but pack `beta-pack` (01M4P01D5TWB5FKZGNNQG3943S) is outside its depends_on closure"
-    And the field at "/packs/0/packId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/0/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/0/packId" is "alpha"
     And the field at "/packs/0/name" is "alpha-pack"
-    And the field at "/packs/1/packId" is "01M4P01D5TWB5FKZGNNQG3943S"
+    And the field at "/packs/1/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943S"
+    And the field at "/packs/1/packId" is "beta"
     And the field at "/packs/1/name" is "beta-pack"
     And the response has no "Charter-Source-Fingerprint" header
 
@@ -1028,9 +1051,11 @@ Feature: The compose resolves the configured packs' dependency graph
     Then the response status is 500
     And the problem code is "pack_reference_artifact_missing"
     And the field "detail" of the response body is "pack `alpha-pack` (01M4P01D5TWB5FKZGNNQG3943R) writes the reference `beta-pack::directive:SHARE`, but pack `beta-pack` (01M4P01D5TWB5FKZGNNQG3943S) does not hold `directive:SHARE`"
-    And the field at "/packs/0/packId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/0/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/0/packId" is "alpha"
     And the field at "/packs/0/name" is "alpha-pack"
-    And the field at "/packs/1/packId" is "01M4P01D5TWB5FKZGNNQG3943S"
+    And the field at "/packs/1/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943S"
+    And the field at "/packs/1/packId" is "beta"
     And the field at "/packs/1/name" is "beta-pack"
     And the response has no "Charter-Source-Fingerprint" header
 
@@ -1234,9 +1259,11 @@ Feature: The compose resolves the configured packs' dependency graph
     Then the response status is 500
     And the problem code is "pack_reference_unqualified"
     And the field "detail" of the response body is "pack `alpha-pack` (01M4P01D5TWB5FKZGNNQG3943R) writes the bare reference `directive:SHARE`, which resolves only in pack `beta-pack` (01M4P01D5TWB5FKZGNNQG3943S); a cross-pack reference is written pack-qualified"
-    And the field at "/packs/0/packId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/0/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943R"
+    And the field at "/packs/0/packId" is "alpha"
     And the field at "/packs/0/name" is "alpha-pack"
-    And the field at "/packs/1/packId" is "01M4P01D5TWB5FKZGNNQG3943S"
+    And the field at "/packs/1/descriptorPackId" is "01M4P01D5TWB5FKZGNNQG3943S"
+    And the field at "/packs/1/packId" is "beta"
     And the field at "/packs/1/name" is "beta-pack"
 
   Scenario: A pack-qualified typed reference inside the closure resolves
