@@ -66,7 +66,7 @@
     },
     "directive_refs": {
       "items": {
-        "pattern": "^([a-z0-9][a-z0-9_-]*::)?(?![\\s\\S]*::)[\\s\\S]*$",
+        "pattern": "^([a-z0-9][a-z0-9_-]*::)?(?![\\s\\S]*::)[\\s\\S]+$",
         "type": "string"
       },
       "title": "Directive Refs",
