@@ -240,7 +240,9 @@ class PackCompositionResolverTest {
                 .isInstanceOfSatisfying(PackCompositionResolver.Refusal.class, refusal -> {
                     assertThat(refusal.failure()).isEqualTo(Failure.LEVEL_VIOLATION);
                     assertThat(refusal.packs())
-                            .containsExactly(new RefusalPack("01OWN0", "own"), new RefusalPack("01TRGT", "target"));
+                            .containsExactly(
+                                    new RefusalPack("01OWN0", "01OWN0", "own"),
+                                    new RefusalPack("01TRGT", "01TRGT", "target"));
                     assertThat(refusal.detail())
                             .contains("01TRGT", own.token(), target.token())
                             .contains("its own level or one nearer built-in");
@@ -446,7 +448,9 @@ class PackCompositionResolverTest {
                     assertThat(refusal.failure()).isEqualTo(Failure.REFERENCE_ARTIFACT_MISSING);
                     assertThat(refusal.failure().code()).isEqualTo(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING);
                     assertThat(refusal.packs())
-                            .containsExactly(new RefusalPack("01REA", "reader"), new RefusalPack("01WRI", "writing"));
+                            .containsExactly(
+                                    new RefusalPack("01REA", "01REA", "reader"),
+                                    new RefusalPack("01WRI", "01WRI", "writing"));
                     assertThat(refusal.detail())
                             .contains("`reader` (01REA)")
                             .contains("`writing` (01WRI) does not hold `directive:DIRECTIVE_009`");
@@ -464,7 +468,9 @@ class PackCompositionResolverTest {
                 .isInstanceOfSatisfying(PackCompositionResolver.Refusal.class, refusal -> {
                     assertThat(refusal.failure()).isEqualTo(Failure.REFERENCE_PACK_MISSING);
                     assertThat(refusal.packs())
-                            .containsExactly(new RefusalPack("01REA", "reader"), new RefusalPack("01WRI", "writing"));
+                            .containsExactly(
+                                    new RefusalPack("01REA", "01REA", "reader"),
+                                    new RefusalPack("01WRI", "01WRI", "writing"));
                     assertThat(refusal.detail()).contains("`writing` (01WRI) is outside its depends_on closure");
                 });
     }
@@ -494,7 +500,9 @@ class PackCompositionResolverTest {
                 .isInstanceOfSatisfying(PackCompositionResolver.Refusal.class, refusal -> {
                     assertThat(refusal.failure()).isEqualTo(Failure.REFERENCE_UNQUALIFIED);
                     assertThat(refusal.packs())
-                            .containsExactly(new RefusalPack("01REA", "reader"), new RefusalPack("01WRI", "writing"));
+                            .containsExactly(
+                                    new RefusalPack("01REA", "01REA", "reader"),
+                                    new RefusalPack("01WRI", "01WRI", "writing"));
                 });
     }
 

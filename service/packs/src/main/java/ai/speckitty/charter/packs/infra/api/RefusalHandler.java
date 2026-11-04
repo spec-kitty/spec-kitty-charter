@@ -100,7 +100,7 @@ public class RefusalHandler {
         return refusal.packs().isEmpty()
                 ? ""
                 : refusal.packs().stream()
-                        .map(pack -> pack.name() + " (" + pack.packId() + ")")
+                        .map(pack -> pack.name() + " (" + pack.descriptorPackId() + ")")
                         .collect(java.util.stream.Collectors.joining(", ", " [packs: ", "]"));
     }
 
@@ -113,7 +113,7 @@ public class RefusalHandler {
         body.setDetail(refusal.getMessage());
         if (!refusal.packs().isEmpty()) {
             body.setPacks(refusal.packs().stream()
-                    .map(pack -> new RefusalPack(pack.packId(), pack.name()))
+                    .map(pack -> new RefusalPack(pack.descriptorPackId(), pack.packId(), pack.name()))
                     .toList());
         }
         return ResponseEntity.status(status)

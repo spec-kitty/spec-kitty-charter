@@ -363,8 +363,10 @@ public final class PackCompositionResolver {
         }
         Set<String> closure = closureOf(referringPackId, byId);
         PackUnderResolution referring = byId.get(referringPackId);
-        List<RefusalPack> referringPack =
-                List.of(referring == null ? new RefusalPack(referringPackId, referringPackId) : refusalPack(referring));
+        List<RefusalPack> referringPack = List.of(
+                referring == null
+                        ? new RefusalPack(referringPackId, referringPackId, referringPackId)
+                        : refusalPack(referring));
         String referringLabel = referring == null ? "pack `" + referringPackId + "`" : label(referring);
         for (ResolvedReference resolved : references) {
             PackQualifiedReference reference = resolved.reference();
@@ -743,7 +745,10 @@ public final class PackCompositionResolver {
     // ---- how a refusal names a pack -----------------------------------------------------------------------------
 
     private static RefusalPack refusalPack(PackUnderResolution pack) {
-        return new RefusalPack(pack.descriptor().packId(), pack.descriptor().name());
+        return new RefusalPack(
+                pack.descriptor().packId(),
+                pack.configured().id().value(),
+                pack.descriptor().name());
     }
 
     /** The pack as a sentence names it: {@code `name` (pack_id)}. */

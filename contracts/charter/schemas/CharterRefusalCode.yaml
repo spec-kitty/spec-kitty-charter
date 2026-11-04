@@ -70,7 +70,8 @@ description: >-
   pack_sibling_conflict, pack_reference_unqualified, pack_reference_pack_missing and
   pack_reference_artifact_missing. Each one's
   detail reads as a sentence naming the pack that broke the rule, and its packs member lists the packs
-  it names, that pack first, each with its pack_id and name.
+  it names, that pack first, each with its descriptorPackId (the pack_id its pack.yaml declares), its packId (the configured
+  identifier) and its name.
 
   unresolved_edge_endpoint is no longer raised: a graph edge endpoint is a URN, and an endpoint
   that is not one is refused as drg_schema_error. The value stays in the enum so that the

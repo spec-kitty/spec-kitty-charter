@@ -284,7 +284,7 @@ writes come after the read stages, one at a time: charter document save and comp
   `pack_duplicate_id`, `pack_sibling_conflict`, `pack_reference_unqualified`, `pack_reference_pack_missing` and
   `pack_reference_artifact_missing`) are 500 and not retryable. `getOffering` and `listArtifactReferences` raise
   them, and the `packs` member of the `Problem` lists the packs they name, the violating pack first, each as
-  `{packId, name}` (`RefusalPack`). The causes and fixes are in [Compose packs](/guides/compose-packs/#read-a-refusal).
+  `{descriptorPackId, packId, name}` (`RefusalPack`). The causes and fixes are in [Compose packs](/guides/compose-packs/#read-a-refusal).
 - `stale_input` is raised by every verified read (`getServiceInfo`, `getOffering`, `listPackArtifacts`,
   `getPackArtifact` and `listArtifactReferences`): inputs changed while the answer was computed, a failed
   load whose inputs changed included. It may be retried.

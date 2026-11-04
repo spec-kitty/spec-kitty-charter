@@ -142,7 +142,8 @@ A second edge on one artifact refuses the descriptor. Two caveats hold until the
 
 Every composition refusal answers **500** and is not retryable, like every offering refusal
 ([HTTP status codes](/development/http-status-codes/)). Each carries a detail in words and a `packs` member, a list
-of `{packId, name}` that names the violating packs, the pack that broke the rule first, by descriptor `pack_id`.
+of `{descriptorPackId, packId, name}` that names the violating packs, the pack that broke the rule first. `descriptorPackId` is the `pack_id` its `pack.yaml` declares and `packId` the identifier
+it is configured under, the one the pack-scoped paths take.
 
 A broken compose refuses every composed read: the offering, and the walk that follows references. A pack-scoped
 read of one artifact by id still answers, so you can inspect a broken pack.
