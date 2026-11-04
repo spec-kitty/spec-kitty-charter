@@ -2,6 +2,7 @@ package ai.speckitty.charter.kernel.domain;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -22,7 +23,10 @@ import java.util.regex.Pattern;
  * {@code >} and {@code ~=}, joined by commas (all must hold), with an {@code ==X.Y.*} prefix wildcard, and the
  * {@code ===} identity clause, which compares the text and needs no version. Prereleases, post releases, development
  * releases and epochs order as PEP 440 orders them, with numbers of any size. A local version segment
- * ({@code +local}) is accepted and ignored for ordering, as PEP 440's public ordering ignores it.
+ * ({@code +local}) is ignored for ordering, as PEP 440's public ordering ignores it, and it counts only where
+ * {@code packaging} lets it count: {@code ==} and {@code !=} compare it when their operand carries one, and ignore the
+ * held version's when the operand has none. A prefix match ({@code ==1.0.*}, and the prefix a {@code ~=} implies)
+ * compares the epoch, zero-pads the held release, and matches pre, post and development releases of the prefix too.
  *
  * <p>Two PEP 440 refinements are not modelled: the set that excludes prereleases by default ({@code >=1.0} does not
  * admit {@code 2.0b1}), and the exclusive-comparison caveats of {@code <V} and {@code >V} about pre- and post-releases
@@ -34,7 +38,7 @@ public final class Pep440Range {
     private static final Pattern VERSION = Pattern.compile(
             "^v?(?:(\\d++)!)?(\\d++(?:\\.\\d++)*+)(?:[-_.]?(a|b|c|rc|alpha|beta|pre|preview)[-_.]?(\\d*+))?"
                     + "(?:-(\\d++)|[-_.]?(post|rev|r)[-_.]?(\\d*+))?(?:[-_.]?dev[-_.]?(\\d*+))?"
-                    + "(?:\\+[a-z0-9]++(?:[-_.][a-z0-9]++)*+)?$");
+                    + "(?:\\+([a-z0-9]++(?:[-_.][a-z0-9]++)*+))?$");
 
     private Pep440Range() {}
 
@@ -155,18 +159,19 @@ public final class Pep440Range {
         Parsed held = candidate.version().get();
         Parsed target = spec.version().orElseThrow();
         if (spec.wildcard()) {
-            boolean matches = startsWith(held.release(), target.release()) && held.plainRelease();
-            return spec.operator().equals("==") == matches;
+            return spec.operator().equals("==") == hasPrefix(held, target.epoch(), target.release());
         }
         if (spec.operator().equals("~=")) {
             List<BigInteger> prefix =
                     target.release().subList(0, target.release().size() - 1);
-            return compare(held, target) >= 0 && startsWith(held.release(), prefix);
+            return compare(held, target) >= 0 && hasPrefix(held, target.epoch(), prefix);
         }
         int order = compare(held, target);
+        boolean equal =
+                order == 0 && (target.local().isEmpty() || target.local().equals(held.local()));
         return switch (spec.operator()) {
-            case "==" -> order == 0;
-            case "!=" -> order != 0;
+            case "==" -> equal;
+            case "!=" -> !equal;
             case "<" -> order < 0;
             case "<=" -> order <= 0;
             case ">" -> order > 0;
@@ -202,7 +207,9 @@ public final class Pep440Range {
             Parsed operand = spec.version().orElseThrow();
             List<BigInteger> release = operand.release();
             texts.add((operand.epoch().signum() == 0 ? "" : operand.epoch() + "!") + "0.dev0");
-            texts.add(canonical(operand.epoch(), release, operand.pre(), operand.post(), operand.dev()));
+            String exact = canonical(operand.epoch(), release, operand.pre(), operand.post(), operand.dev());
+            texts.add(exact);
+            operand.local().ifPresent(local -> texts.add(exact + "+" + String.join(".", local)));
             List<BigInteger> padded = new ArrayList<>(release);
             while (padded.size() < depth) {
                 padded.add(BigInteger.ZERO);
@@ -269,12 +276,14 @@ public final class Pep440Range {
 
     // ---- ordering -----------------------------------------------------------------------------------------------
 
-    private static boolean startsWith(List<BigInteger> release, List<BigInteger> prefix) {
-        if (release.size() < prefix.size()) {
+    /** The prefix match of {@code ==X.*} and {@code ~=}: same epoch, and the held release, zero-padded, starts with it. */
+    private static boolean hasPrefix(Parsed held, BigInteger epoch, List<BigInteger> prefix) {
+        if (!held.epoch().equals(epoch)) {
             return false;
         }
         for (int i = 0; i < prefix.size(); i++) {
-            if (!release.get(i).equals(prefix.get(i))) {
+            BigInteger segment = i < held.release().size() ? held.release().get(i) : BigInteger.ZERO;
+            if (!segment.equals(prefix.get(i))) {
                 return false;
             }
         }
@@ -343,7 +352,8 @@ public final class Pep440Range {
             List<BigInteger> release,
             Optional<Pre> pre,
             Optional<BigInteger> post,
-            Optional<BigInteger> dev) {
+            Optional<BigInteger> dev,
+            Optional<List<String>> local) {
 
         /** Before every prerelease for a development-only release, after every prerelease for a plain one. */
         int preRank() {
@@ -355,10 +365,6 @@ public final class Pep440Range {
                 };
             }
             return post.isEmpty() && dev.isPresent() ? -1 : 3;
-        }
-
-        boolean plainRelease() {
-            return pre.isEmpty() && post.isEmpty() && dev.isEmpty();
         }
 
         static Optional<Parsed> parse(String version) {
@@ -386,7 +392,14 @@ public final class Pep440Range {
                     : matcher.group(6) != null ? Optional.of(number(matcher.group(7))) : Optional.empty();
             Optional<BigInteger> dev =
                     matcher.group(8) == null ? Optional.empty() : Optional.of(number(matcher.group(8)));
-            return Optional.of(new Parsed(epoch, List.copyOf(release), pre, post, dev));
+            Optional<List<String>> local = matcher.group(9) == null
+                    ? Optional.empty()
+                    : Optional.of(Arrays.stream(matcher.group(9).split("[-_.]"))
+                            .map(segment -> segment.chars().allMatch(Character::isDigit)
+                                    ? new BigInteger(segment).toString()
+                                    : segment)
+                            .toList());
+            return Optional.of(new Parsed(epoch, List.copyOf(release), pre, post, dev, local));
         }
 
         private static BigInteger number(String digits) {
