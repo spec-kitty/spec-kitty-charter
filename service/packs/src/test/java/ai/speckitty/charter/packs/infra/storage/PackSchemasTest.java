@@ -247,6 +247,23 @@ class PackSchemasTest {
         assertThat(MAPPER.readTree(bundledText(kind)).at(pointer).asString()).startsWith("^" + qualifier);
     }
 
+    /** A qualifier with nothing after it names no artifact: the schema refuses it before any reader parses it. */
+    @Test
+    void aQualifiedBareReferenceNeedsAnArtifactAfterTheQualifier() {
+        Object tree = Yaml.load("""
+                id: D1
+                schema_version: '1.0'
+                title: One
+                intent: one
+                enforcement: required
+                procedures: ['ops::release', 'ops::']
+                """);
+
+        assertThat(PackSchemas.bundled().validate("directive", "D1.directive.yaml", tree))
+                .singleElement()
+                .satisfies(violation -> assertThat(violation.pointer()).contains("procedures", "1"));
+    }
+
     /** The service contract's qualified-reference schema spells the qualifier as the Java grammar does. */
     @Test
     void theContractQualifiedReferenceSchemaSpellsTheQualifierWithThePackNameGrammar() throws IOException {
