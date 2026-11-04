@@ -1,0 +1,56 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-11-03T22:08:23.327167Z",
+      "decision_id": "01M6HQ9K8ZPB1W0PS5CNDEE9WR",
+      "final_answer": "Core-aligned limits + shrink-only register: CyclomaticComplexity 15, NPathComplexity 1000, MethodLength 60, NestedIfDepth 1, on main and test; existing violators as shrink-only suppressions with a reason each",
+      "input_key": "complexity_limits",
+      "mission_id": "01M6HQ467X9NT5XZQESZK52BBK",
+      "mission_slug": "ci-sonar-nightly-checkstyle-complexity-01M6HQ46",
+      "opened_by": "cli",
+      "options": [
+        "Core-aligned limits + shrink-only register",
+        "Ceiling just above today's worst (near-zero entries)",
+        "Strict norms (CC 10, NPath 200, 50 lines) + large register",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Which Checkstyle complexity limits should gate each pull request?",
+      "rationale": null,
+      "resolved_at": "2026-11-04T05:44:40.751511Z",
+      "resolved_by": null,
+      "slot_key": "specify.complexity.limits",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-04T05:44:43.389384Z",
+      "decision_id": "01M6JHD5KXEKETR34N646Q79SK",
+      "final_answer": "Yes, proceed",
+      "input_key": "scope_confirmation",
+      "mission_id": "01M6HQ467X9NT5XZQESZK52BBK",
+      "mission_slug": "ci-sonar-nightly-checkstyle-complexity-01M6HQ46",
+      "opened_by": "cli",
+      "options": [
+        "Yes, proceed",
+        "Also include #239",
+        "Checkstyle only for now",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Do FR-001..FR-005 (Checkstyle complexity gate; nightly sonar.yml with generic scan action; skip green without SONAR_TOKEN; reported only, never required; docs) match the intended scope, with #239, per-PR Sonar and project/token creation out of scope?",
+      "rationale": null,
+      "resolved_at": "2026-11-04T05:44:45.943566Z",
+      "resolved_by": null,
+      "slot_key": "specify.scope.requirements",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M6HQ467X9NT5XZQESZK52BBK",
+  "version": 1
+}
