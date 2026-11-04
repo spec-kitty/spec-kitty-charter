@@ -30,7 +30,6 @@ class OfferingReadServiceTest {
 
     private final Map<String, Optional<PackDescriptor>> descriptors = new HashMap<>();
     private final Map<String, CharterRefusal> unreadable = new HashMap<>();
-    private final Map<String, List<String>> refined = new HashMap<>();
     private final Map<String, List<String>> defined = new HashMap<>();
     private final Map<String, List<String>> written = new HashMap<>();
 
@@ -196,13 +195,13 @@ class OfferingReadServiceTest {
         }
     }
 
-    /** The refined artifacts by pack id; a pack with no graph documents refines none. */
+    /** The defined and written artifacts by pack id; no pack refines any. */
     private final class InMemoryRefinements implements PackArtifactRepository {
 
         @Override
         public PackCompositionFacts compositionFacts(PackIdentifier pack) {
             return new PackCompositionFacts(
-                    refined.getOrDefault(pack.value(), List.of()),
+                    List.of(),
                     defined.getOrDefault(pack.value(), List.of()),
                     written.getOrDefault(pack.value(), List.of()));
         }

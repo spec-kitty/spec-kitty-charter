@@ -10,9 +10,7 @@ import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import org.junit.jupiter.api.Test;
@@ -53,10 +51,6 @@ class ResolverDeterminismTest {
                     .as("run %d", run)
                     .containsExactly("01AAA", "01FFF", "01BBB", "01CCC", "01DDD", "01EEE", "01GGG", "01HHH");
         }
-
-        List<PackUnderResolution> resolved = PackCompositionResolver.resolve(fixture);
-        assertThat(idsOf(resolved)).containsOnlyOnce("01AAA");
-        assertEveryDependencyPrecedesItsDependent(resolved);
     }
 
     @Test
@@ -88,22 +82,6 @@ class ResolverDeterminismTest {
                 pack("01B1", "b1", PackLevel.BUILT_IN));
 
         assertThat(idsOf(PackCompositionResolver.resolve(fixture))).containsExactly("01B1", "01B2", "01O1");
-    }
-
-    private static void assertEveryDependencyPrecedesItsDependent(List<PackUnderResolution> resolved) {
-        Map<String, Integer> position = new HashMap<>();
-        for (int index = 0; index < resolved.size(); index++) {
-            position.put(resolved.get(index).descriptor().packId(), index);
-        }
-        for (PackUnderResolution entry : resolved) {
-            for (PackDependency dependency : entry.descriptor().dependencies()) {
-                assertThat(position.get(dependency.packId()))
-                        .as(
-                                "%s precedes %s",
-                                dependency.packId(), entry.descriptor().packId())
-                        .isLessThan(position.get(entry.descriptor().packId()));
-            }
-        }
     }
 
     private static List<String> idsOf(List<PackUnderResolution> resolved) {

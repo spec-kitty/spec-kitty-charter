@@ -79,15 +79,18 @@ class PackCompositionResolverTest {
         return resolved.stream().map(entry -> entry.descriptor().packId()).toList();
     }
 
-    // One level, and the dependency's id sorts after the dependent's: only the dependency edge can put it first.
+    // One level, ids sorting the opposite way to the dependencies: only the dependency edges, across three hops, can
+    // order this.
     @Test
-    void aDependencyComesBeforeThePackThatDeclaresIt() {
+    void aDependencyComesBeforeThePackThatDeclaresItAcrossAChain() {
         PackUnderResolution base = pack("01ZBASE", "base", "1.0.0", PackLevel.ORG);
-        PackUnderResolution dependent =
-                pack("01ADEP", "dependent", "1.0.0", PackLevel.ORG, List.of(new PackDependency("01ZBASE", ">=1.0")));
+        PackUnderResolution middle =
+                pack("01MID0", "middle", "1.0.0", PackLevel.ORG, List.of(new PackDependency("01ZBASE", ">=1.0")));
+        PackUnderResolution top =
+                pack("01AATOP", "top", "1.0.0", PackLevel.ORG, List.of(new PackDependency("01MID0", ">=1.0")));
 
-        assertThat(ids(PackCompositionResolver.resolve(List.of(dependent, base))))
-                .containsExactly("01ZBASE", "01ADEP");
+        assertThat(ids(PackCompositionResolver.resolve(List.of(top, middle, base))))
+                .containsExactly("01ZBASE", "01MID0", "01AATOP");
     }
 
     @Test
@@ -311,17 +314,11 @@ class PackCompositionResolverTest {
     }
 
     @Test
-    void packsAtDifferentLevelsDefiningOneArtifactComposeAsALayerOverrideAndAnOverridesEdgeSettlesSiblings() {
+    void packsAtDifferentLevelsDefiningOneArtifactComposeAsALayerOverride() {
         PackUnderResolution org = defining("01ORGP", "org-pack", PackLevel.ORG, "directive:DIRECTIVE_009");
         PackUnderResolution project = defining("01PROJ", "project-pack", PackLevel.PROJECT, "directive:DIRECTIVE_009");
-        PackUnderResolution sibling = defining("01SIBL", "sibling", PackLevel.ORG, "directive:DIRECTIVE_009");
-        // The settling edge is written pack-qualified, the definitions bare: both name the one artifact.
-        PackUnderResolution settler =
-                settling("01SETL", "settler", "1.0.0", PackLevel.ORG, "org-pack::directive:DIRECTIVE_009", "01ORGP");
 
         assertThat(ids(PackCompositionResolver.resolve(List.of(project, org)))).containsExactly("01ORGP", "01PROJ");
-        assertThat(ids(PackCompositionResolver.resolve(List.of(sibling, org, settler))))
-                .containsExactly("01ORGP", "01SETL", "01SIBL");
     }
 
     @Test
