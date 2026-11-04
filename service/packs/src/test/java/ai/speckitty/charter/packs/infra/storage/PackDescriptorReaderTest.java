@@ -119,8 +119,18 @@ class PackDescriptorReaderTest {
                   - artifact: directive:DIRECTIVE_009
                     member: 01M4P01D5TWB5FKZGNNQG3943S
                 """;
+        String qualifiedTwice = VALID + """
+                overrides:
+                  - artifact: directive:DIRECTIVE_009
+                    member: 01M4P01D5TWB5FKZGNNQG3943R
+                  - artifact: core::directive:DIRECTIVE_009
+                    member: 01M4P01D5TWB5FKZGNNQG3943S
+                """;
 
         assertThat(details(twice)).containsExactly("pack.yaml of qa: '/overrides' breaks schema keyword 'uniqueItems'");
+        // the qualifier says where an artifact is read, not which it is: a qualified and a bare edge are one artifact
+        assertThat(details(qualifiedTwice))
+                .containsExactly("pack.yaml of qa: '/overrides' breaks schema keyword 'uniqueItems'");
     }
 
     @Test

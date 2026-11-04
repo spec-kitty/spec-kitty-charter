@@ -416,7 +416,9 @@ public final class PackCompositionResolver {
      * decision, not load order. Two packs contest an artifact when both change it (an {@code enhances} or
      * {@code overrides} relation on it) or when both define it (each holds an artifact with that id). An edge settles
      * a contest only when its {@code member} is one of the packs contesting that artifact at that level; an edge
-     * naming any other member settles nothing and the refusal says so. Packs at different levels are no siblings —
+     * naming any other member settles nothing and the refusal says so. The edges of the whole compose are read
+     * together, so a contest is settled only when they agree on one winner: two packs naming different winners leave
+     * the winner to load order, and the refusal says so. Packs at different levels are no siblings —
      * the layer merge across levels composes them (ADR-0048 decision 6) — and the pack named is the second contestant
      * in the stable order, so the refusal is deterministic.
      *
@@ -454,26 +456,28 @@ public final class PackCompositionResolver {
                         .map(pack -> pack.descriptor().packId())
                         .toList();
                 Set<String> staleMembers = new LinkedHashSet<>();
-                boolean settled = false;
+                Set<String> winners = new LinkedHashSet<>();
                 for (PackUnderResolution pack : ordered) {
                     for (PackOverride override : pack.descriptor().overrides()) {
                         if (!bare(override.artifact()).equals(artifact)) {
                             continue;
                         }
                         if (ids.contains(override.member())) {
-                            settled = true;
+                            winners.add(override.member());
                         } else {
                             staleMembers.add(override.member());
                         }
                     }
                 }
-                if (settled) {
+                if (winners.size() == 1) {
                     continue;
                 }
-                String reason = staleMembers.isEmpty()
-                        ? "no pack of the compose declares an overrides edge settling it"
-                        : "an overrides edge settling it names " + String.join(", ", staleMembers)
-                                + ", which is not a contestant";
+                String reason = winners.size() > 1
+                        ? "overrides edges settling it name different winners, " + String.join(", ", winners)
+                        : staleMembers.isEmpty()
+                                ? "no pack of the compose declares an overrides edge settling it"
+                                : "an overrides edge settling it names " + String.join(", ", staleMembers)
+                                        + ", which is not a contestant";
                 List<PackUnderResolution> named = new ArrayList<>(siblings);
                 named.addFirst(named.remove(1));
                 throw new Refusal(

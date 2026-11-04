@@ -345,6 +345,27 @@ class PackCompositionResolverTest {
     }
 
     @Test
+    void twoPacksNamingDifferentWinnersLeaveTheContestUnsettled() {
+        PackUnderResolution left = refining("01LEFT", "left", "1.0.0", PackLevel.ORG, "directive:DIRECTIVE_009");
+        PackUnderResolution right = refining("01RIGHT", "right", "1.0.0", PackLevel.ORG, "directive:DIRECTIVE_009");
+        PackUnderResolution first =
+                settling("01DONE", "done", "1.0.0", PackLevel.ORG, "directive:DIRECTIVE_009", "01LEFT");
+        PackUnderResolution second =
+                settling("01DTWO", "dtwo", "1.0.0", PackLevel.ORG, "org::directive:DIRECTIVE_009", "01RIGHT");
+
+        assertThatThrownBy(() -> PackCompositionResolver.resolve(List.of(second, first, right, left)))
+                .isInstanceOfSatisfying(PackCompositionResolver.Refusal.class, refusal -> {
+                    assertThat(refusal.failure()).isEqualTo(Failure.SIBLING_CONFLICT);
+                    assertThat(refusal.detail()).contains("different winners", "01LEFT", "01RIGHT");
+                });
+        // two packs naming the same winner still settle it
+        PackUnderResolution agreeing =
+                settling("01DTWO", "dtwo", "1.0.0", PackLevel.ORG, "org::directive:DIRECTIVE_009", "01LEFT");
+        assertThat(ids(PackCompositionResolver.resolve(List.of(agreeing, first, right, left))))
+                .contains("01LEFT", "01RIGHT");
+    }
+
+    @Test
     void aContestantMayDeclareTheOverridesEdgeThatSettlesItsOwnContest() {
         PackUnderResolution left = new PackUnderResolution(
                 new ConfiguredPack(new PackIdentifier("01LEFT"), PackLevel.ORG),

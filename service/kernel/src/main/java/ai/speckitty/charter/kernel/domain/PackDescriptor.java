@@ -1,8 +1,10 @@
 package ai.speckitty.charter.kernel.domain;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * The authored {@code pack.yaml} of a Charter Pack, as facts: what the file states, with nothing defaulted. The
@@ -116,6 +118,7 @@ public record PackDescriptor(
      * @param paths the declared paths
      * @param dependencies the declared dependencies
      * @param overrides the declared contests this pack settles
+     * @throws IllegalArgumentException when two {@code overrides} edges settle one artifact
      */
     public PackDescriptor {
         Objects.requireNonNull(packId, "packId");
@@ -129,5 +132,35 @@ public record PackDescriptor(
         Objects.requireNonNull(overrides, "overrides");
         dependencies = List.copyOf(dependencies);
         overrides = List.copyOf(overrides);
+        Optional<String> twice = artifactSettledTwice(overrides);
+        if (twice.isPresent()) {
+            throw new IllegalArgumentException("overrides settles the artifact `" + twice.get() + "` more than once");
+        }
+    }
+
+    /**
+     * The artifact a second {@code overrides} edge settles again, when there is one: a descriptor holds one edge per
+     * artifact. Artifacts are the same when their bare URNs are, so {@code directive:X} and {@code core::directive:X}
+     * name one artifact, since the {@code <pack>::} qualifier says where it is read, not which artifact it is.
+     *
+     * @param overrides the edges, in file order
+     * @return the second edge's artifact as written; empty when every edge settles a different artifact
+     */
+    public static Optional<String> artifactSettledTwice(List<PackOverride> overrides) {
+        Set<String> settled = new HashSet<>();
+        for (PackOverride override : overrides) {
+            if (!settled.add(identity(override.artifact()))) {
+                return Optional.of(override.artifact());
+            }
+        }
+        return Optional.empty();
+    }
+
+    private static String identity(String artifact) {
+        try {
+            return PackQualifiedReference.parse(artifact).urn();
+        } catch (IllegalArgumentException malformed) {
+            return artifact;
+        }
     }
 }
