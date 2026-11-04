@@ -2,8 +2,8 @@
 title: "ADR-0055: Cutover sequencing: the Java service first, then core's integration"
 description: "Operator rulings of 2026-11-03: build the Java service before core's integration, on the depends_on resolver, accepted against the design."
 doc_status: active
-updated: 2026-11-03T00:00:00Z
-decision_status: Accepted
+updated: 2026-11-04T00:00:00Z
+decision_status: Accepted; open question 1 answered by ADR-0059 (2026-11-04)
 decision_date: '2026-11-03'
 type: ADR
 kind: ADR
@@ -137,6 +137,8 @@ one, so matching it would pin the service to the design it replaces.
 
 1. **What gates each core switch in phase 2,** now that core's Python answers are not the reference (D3)? It is
    needed before the first shadow (#14), not before the service is built.
+   *Answered 2026-11-04 (operator): the design's BDD scenarios alone gate each switch
+   ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) decision 1).*
 
 ## Follow-ups
 
