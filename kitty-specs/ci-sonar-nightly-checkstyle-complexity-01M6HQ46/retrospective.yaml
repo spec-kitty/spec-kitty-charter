@@ -1,0 +1,377 @@
+schema_version: 1
+mission_id: 01M6HQ467X9NT5XZQESZK52BBK
+mission_slug: ci-sonar-nightly-checkstyle-complexity-01M6HQ46
+mission_number: 17
+friendly_name: Nightly SonarCloud and per-PR complexity gate
+mission_type: software-dev
+target_branch: ci-sonar-nightly-checkstyle-complexity
+created_at: '2026-11-04T13:51:57.563415+00:00'
+created_by:
+  kind: runtime
+  id: spec-kitty-generator
+  display: Spec Kitty Generator
+provenance:
+  kind: runtime_post_completion
+  invoked_at: '2026-11-04T13:51:57.563415+00:00'
+  policy_resolved_from:
+    enabled: <default>
+    timing: <default>
+    failure_policy: <default>
+    write_record: <default>
+    generate_proposals: <default>
+    apply_proposals: <default>
+    permissions.write_record: <default>
+    permissions.inspect_mission_artifacts: <default>
+    permissions.propose_glossary_changes: <default>
+    permissions.propose_drg_changes: <default>
+    permissions.propose_doctrine_changes: <default>
+    permissions.apply_low_risk_changes: <default>
+    permissions.apply_structural_changes: <default>
+    precedence: <default>
+    generator: <default>
+policy_source:
+  enabled: <default>
+  timing: <default>
+  failure_policy: <default>
+  write_record: <default>
+  generate_proposals: <default>
+  apply_proposals: <default>
+  permissions.write_record: <default>
+  permissions.inspect_mission_artifacts: <default>
+  permissions.propose_glossary_changes: <default>
+  permissions.propose_drg_changes: <default>
+  permissions.propose_doctrine_changes: <default>
+  permissions.apply_low_risk_changes: <default>
+  permissions.apply_structural_changes: <default>
+  precedence: <default>
+  generator: <default>
+findings_status: has_findings
+helped:
+- id: h-001
+  category: implementation
+  summary: WP03 completed without rejection cycles
+  evidence_refs:
+  - e-009
+- id: h-002
+  category: implementation
+  summary: WP04 completed without rejection cycles
+  evidence_refs:
+  - e-009
+not_helpful:
+- id: n-003
+  category: doc
+  summary: analysis-report.md records 3 finding(s)
+  evidence_refs:
+  - e-012
+  details: The analysis-report.md artifact for this mission records 3 finding(s) in its structured frontmatter. Review
+    them to understand documented issues and decisions.
+- id: n-001
+  category: review_loop
+  summary: WP01 required 1 rejection cycle(s) before approval
+  evidence_refs:
+  - e-010
+  details: WP WP01 was sent back to an earlier lane with documented review feedback 1 time(s).
+- id: n-002
+  category: review_loop
+  summary: WP02 required 1 rejection cycle(s) before approval
+  evidence_refs:
+  - e-011
+  details: WP WP02 was sent back to an earlier lane with documented review feedback 1 time(s).
+- id: n-010
+  category: tooling
+  summary: 'Tracer: Affected commits:'
+  evidence_refs:
+  - e-013
+  details: "- **Affected commits:** scaffold, plan, `map-requirements`, tasks, `record-analysis`, status\n     transitions
+    and the `finalize-tasks --refresh-planning-commit` commit."
+- id: n-016
+  category: tooling
+  summary: 'Tracer: Disposition: fixed'
+  evidence_refs:
+  - e-013
+  details: "- **Disposition: fixed** by the command the error named:\n     `finalize-tasks --refresh-planning-commit --allow-orphaned`.
+    The message was clear and actionable."
+- id: n-029
+  category: tooling
+  summary: 'Tracer: Disposition: fixed'
+  evidence_refs:
+  - e-013
+  details: "- **Disposition: fixed** by operator ruling (decision `01M6JKVNX57FSK0RHCKXX2KKJJ`): three methods\n      were
+    refactored (T017) to reach 15. The rest are logged as #367."
+- id: n-033
+  category: tooling
+  summary: 'Tracer: Disposition: fixed'
+  evidence_refs:
+  - e-013
+  details: '- **Disposition: fixed** in cycle 2.'
+- id: n-007
+  category: tooling
+  summary: 'Tracer: Disposition: worked around'
+  evidence_refs:
+  - e-013
+  details: "- **Disposition: worked around** by operator ruling. WP02 went back to `planned` with a feedback\n     note, was
+    re-claimed and resubmitted unchanged (`f4112a85`) as `claude::implementer-ivan`, and\n     the reviewer recorded its verdict
+    as `claude::reviewer-renata`. That cost one full lifecycle round\n     for no code change."
+- id: n-012
+  category: tooling
+  summary: 'Tracer: Disposition: worked around'
+  evidence_refs:
+  - e-013
+  details: "- **Disposition: worked around** with a local trailer rebase before any push (analysis finding C1),\n     repeated
+    at closeout for later CLI commits."
+- id: n-020
+  category: tooling
+  summary: 'Tracer: Disposition: worked around'
+  evidence_refs:
+  - e-013
+  details: "- **Disposition: worked around** by switching the main checkout to the mission branch and removing\n     the extra
+    worktree."
+- id: n-023
+  category: tooling
+  summary: 'Tracer: Disposition: worked around.'
+  evidence_refs:
+  - e-013
+  details: "- **Disposition: worked around.** The behavior is surprising when the rework touches one entry of\n     one subtask."
+- id: n-030
+  category: tooling
+  summary: 'Tracer: Lesson:'
+  evidence_refs:
+  - e-013
+  details: '- **Lesson:** measure per method before a cap goes into a spec.'
+- id: n-034
+  category: tooling
+  summary: 'Tracer: Lesson:'
+  evidence_refs:
+  - e-013
+  details: "- **Lesson:** the terminology rule covers prose. A literal reference to an existing identifier is\n      quoted
+    exactly."
+- id: n-017
+  category: tooling
+  summary: 'Tracer: Note:'
+  evidence_refs:
+  - e-013
+  details: '- **Note:** together with entry 2, any history hygiene after `finalize-tasks` costs a refresh.'
+- id: n-008
+  category: tooling
+  summary: 'Tracer: Suggested fix:'
+  evidence_refs:
+  - e-013
+  details: "- **Suggested fix:** a lifecycle move should inherit the identity of the claim it continues, instead\n     of
+    overwriting it with a less specific one. Profiles that differ should count as provably\n     different identities without
+    a model."
+- id: n-013
+  category: tooling
+  summary: 'Tracer: Suggested fix:'
+  evidence_refs:
+  - e-013
+  details: '- **Suggested fix:** a configurable commit trailer in `.kittify/config.yaml`.'
+- id: n-005
+  category: tooling
+  summary: 'Tracer: What happened:'
+  evidence_refs:
+  - e-013
+  details: "- **What happened:** WP02 was claimed as `--agent claude --profile implementer-ivan`, but its move to\n     `for_review`
+    used `--agent claude`. The gate then recorded the implementer as a bare `claude::`.\n     The independent reviewer (a
+    separate subagent, profile `reviewer-renata`) approved the code, and\n     the gate refused to record the approval, whether
+    passed as `claude`, `claude::reviewer-renata` or\n     with `--profile`."
+- id: n-015
+  category: tooling
+  summary: 'Tracer: What happened:'
+  evidence_refs:
+  - e-013
+  details: "- **What happened:** the next `agent action implement` failed with \"cannot merge the recorded\n     planning
+    commit … orphaned against the target-branch tip\"."
+- id: n-019
+  category: tooling
+  summary: 'Tracer: What happened:'
+  evidence_refs:
+  - e-013
+  details: "- **What happened:** the CLI would have written the mission's artifacts onto the main checkout's\n     branch,
+    which held the docs PR."
+- id: n-022
+  category: tooling
+  summary: 'Tracer: What happened:'
+  evidence_refs:
+  - e-013
+  details: "- **What happened:** after WP01's cycle-1 rejection, re-claiming the WP reset T001 to T004. The\n     move to
+    `for_review` was refused until they were marked done again."
+- id: n-028
+  category: tooling
+  summary: 'Tracer: What happened:'
+  evidence_refs:
+  - e-013
+  details: "- **What happened:** SC-002 capped the register at 15 from an estimate. The real measurement found\n      18 methods:
+    two nested-if sites were separate methods, and one test method was missed."
+- id: n-032
+  category: tooling
+  summary: 'Tracer: What happened:'
+  evidence_refs:
+  - e-013
+  details: "- **What happened:** the orchestrator told implementers never to write a retired term. The WP01\n      implementer
+    then encoded an existing class's file path as a glob, which the cycle-1 review\n      rejected: it was not a path, and
+    it would have exempted future files."
+- id: n-011
+  category: tooling
+  summary: 'Tracer: Why it matters:'
+  evidence_refs:
+  - e-013
+  details: '- **Why it matters:** this project requires a `Co-Authored-By` trailer on every commit.'
+- id: n-006
+  category: tooling
+  summary: 'Tracer: Why the ways past it were unacceptable:'
+  evidence_refs:
+  - e-013
+  details: "- **Why the ways past it were unacceptable:** the CLI offers a different agent tool (none is\n     configured),
+    full `<tool>:<model>:<profile>` identities (which write a model identifier into the\n     committed event log, against
+    this project's rule), or a forced self-review fallback."
+- id: n-038
+  category: tooling
+  summary: 'Tracer: [2026-11-03] Local cspell and markdownlint are not installed'
+  evidence_refs:
+  - e-013
+  details: "18. **[2026-11-03] Local cspell and markdownlint are not installed**, and \"install nothing\" applies.\n    **Disposition:
+    accepted.** The first CI run caught two unknown words (`hotspot`, `hotspots`),\n    fixed in one follow-up commit."
+- id: n-026
+  category: tooling
+  summary: "Tracer: [2026-11-03] The internal pack's `test-quality-scan` asset reads pytest only."
+  evidence_refs:
+  - e-013
+  details: "9. **[2026-11-03] The internal pack's `test-quality-scan` asset reads pytest only.** The\n   `test-suite-quality-assessment`
+    procedure cannot run its static pass on this Java suite; the\n   assessment used a throwaway Java port. **Disposition:
+    unresolved.** It is proposed as R9 in the\n   assessment, as an open-packs change.\n\n## Mission process"
+- id: n-024
+  category: tooling
+  summary: 'Tracer: [2026-11-03] `mission create` defaulted to `coord` topology'
+  evidence_refs:
+  - e-013
+  details: "6. **[2026-11-03] `mission create` defaulted to `coord` topology** although the brief asked for one\n   branch
+    and one PR. `--topology` was not passed, so this is partly operator error, but the default\n   added a coordination worktree
+    the mission never needed. **Disposition: accepted.**"
+- id: n-018
+  category: tooling
+  summary: 'Tracer: [2026-11-03] `mission create` run from a `git worktree` resolves `repo_root` to the main checkout.'
+  evidence_refs:
+  - e-013
+  details: 4. **[2026-11-03] `mission create` run from a `git worktree` resolves `repo_root` to the main checkout.**
+- id: n-025
+  category: tooling
+  summary: 'Tracer: [2026-11-03] `spec-commit` refuses a directory'
+  evidence_refs:
+  - e-013
+  details: "7. **[2026-11-03] `spec-commit` refuses a directory**, so every decision file has to be named. The\n   decision
+    commands also leave `decisions/index.json.lock` untracked in the checkout, which looks\n   like an uncommitted change
+    to hooks and to `git status`. **Disposition: worked around** by naming\n   the files and ignoring the lock.\n8. **[2026-11-04]
+    `agent action implement` and `review` print several identical\n   \"`spec-kitty doctor charter-packs` reports this as
+    an error\" lines** on every call. They are\n   unrelated to the command and bury the workspace and prompt lines that the
+    orchestrator has to parse.\n   **Disposition: unresolved** (noise)."
+- id: n-037
+  category: tooling
+  summary: "Tracer: [2026-11-04] A force-push to squash the docs PR's spelling-fix commit was refused."
+  evidence_refs:
+  - e-013
+  details: "17. **[2026-11-04] A force-push to squash the docs PR's spelling-fix commit was refused.**\n    **Disposition:
+    accepted.** PR #366 keeps two commits; squash on merge."
+- id: n-021
+  category: tooling
+  summary: 'Tracer: [2026-11-04] A re-claim after rejection resets the subtask marks.'
+  evidence_refs:
+  - e-013
+  details: 5. **[2026-11-04] A re-claim after rejection resets the subtask marks.**
+- id: n-036
+  category: tooling
+  summary: 'Tracer: [2026-11-04] A subagent stalled about 30 minutes waiting on background work'
+  evidence_refs:
+  - e-013
+  details: "13. **[2026-11-04] A subagent stalled about 30 minutes waiting on background work** that had already\n    finished
+    (the WP01 rework's `verifyAll`). **Disposition: worked around** by nudging it. Implementer\n    prompts now say to run
+    Gradle in the foreground.\n\n## Session environment\n\n14. **[2026-11-03] The Gradle mirror init script in `~/.gradle/init.d`
+    contains its own shell heredoc\n    wrapper** (the `mkdir`/`cat <<EOF` lines) and so does not parse. **Disposition: worked
+    around** with\n    `GRADLE_USER_HOME=/tmp/gradle-home` and only the Groovy body. The setup script that writes it should\n\
+    \    be fixed.\n15. **[2026-11-03] `patterns.sddevelopment.be` and `testdesiderata.com` are not in the session's\n   \
+    \ allowed domains.** **Disposition: worked around** by reading the pack artifacts that adopt them.\n16. **[2026-11-03]
+    Attaching `spec-kitty/spec-kitty` read-only was refused by the permission\n    classifier.** **Disposition: worked around**
+    with a read-only shallow clone into the scratchpad."
+- id: n-009
+  category: tooling
+  summary: 'Tracer: [2026-11-04] CLI-made commits carry no project trailers.'
+  evidence_refs:
+  - e-013
+  details: 2. **[2026-11-04] CLI-made commits carry no project trailers.**
+- id: n-035
+  category: tooling
+  summary: "Tracer: [2026-11-04] Checkstyle's `NestedIfDepth` reports on the inner `if`, not on the method."
+  evidence_refs:
+  - e-013
+  details: "12. **[2026-11-04] Checkstyle's `NestedIfDepth` reports on the inner `if`, not on the method.** A\n    method-scoped
+    `suppress-xpath` must therefore end in `//LITERAL_IF`. No such entry remains after\n    T017, but WP04 documents it for
+    future entries. **Disposition: documented.**"
+- id: n-031
+  category: tooling
+  summary: 'Tracer: [2026-11-04] The forbidden-word instruction was too broad.'
+  evidence_refs:
+  - e-013
+  details: 11. **[2026-11-04] The forbidden-word instruction was too broad.**
+- id: n-027
+  category: tooling
+  summary: 'Tracer: [2026-11-04] The register size was estimated from file:line sites, not methods.'
+  evidence_refs:
+  - e-013
+  details: 10. **[2026-11-04] The register size was estimated from file:line sites, not methods.**
+- id: n-014
+  category: tooling
+  summary: 'Tracer: [2026-11-04] The trailer rebase orphaned the recorded planning commit.'
+  evidence_refs:
+  - e-013
+  details: 3. **[2026-11-04] The trailer rebase orphaned the recorded planning commit.**
+- id: n-004
+  category: tooling
+  summary: 'Tracer: [2026-11-04] `REVIEW_NOT_INDEPENDENT` blocks a genuinely independent review.'
+  evidence_refs:
+  - e-013
+  details: 1. **[2026-11-04] `REVIEW_NOT_INDEPENDENT` blocks a genuinely independent review.**
+gaps: []
+proposals: []
+evidence_refs:
+- id: e-001
+  kind: file
+  path: kitty-specs/ci-sonar-nightly-checkstyle-complexity-01M6HQ46/meta.json
+- id: e-002
+  kind: file
+  path: kitty-specs/ci-sonar-nightly-checkstyle-complexity-01M6HQ46/spec.md
+- id: e-003
+  kind: file
+  path: kitty-specs/ci-sonar-nightly-checkstyle-complexity-01M6HQ46/plan.md
+- id: e-004
+  kind: file
+  path: kitty-specs/ci-sonar-nightly-checkstyle-complexity-01M6HQ46/tasks.md
+- id: e-005
+  kind: file
+  path: kitty-specs/ci-sonar-nightly-checkstyle-complexity-01M6HQ46/tasks/WP01-complexity-limits-and-register.md
+- id: e-006
+  kind: file
+  path: kitty-specs/ci-sonar-nightly-checkstyle-complexity-01M6HQ46/tasks/WP02-register-stale-check.md
+- id: e-007
+  kind: file
+  path: kitty-specs/ci-sonar-nightly-checkstyle-complexity-01M6HQ46/tasks/WP03-nightly-sonar-workflow.md
+- id: e-008
+  kind: file
+  path: kitty-specs/ci-sonar-nightly-checkstyle-complexity-01M6HQ46/tasks/WP04-documentation.md
+- id: e-009
+  kind: file
+  path: kitty-specs/ci-sonar-nightly-checkstyle-complexity-01M6HQ46/status.events.jsonl
+- id: e-010
+  kind: event_range
+  path: kitty-specs/ci-sonar-nightly-checkstyle-complexity-01M6HQ46/status.events.jsonl
+  range: 01M6JTFMTFQXD29NWY5GHAB7Y3
+- id: e-011
+  kind: event_range
+  path: kitty-specs/ci-sonar-nightly-checkstyle-complexity-01M6HQ46/status.events.jsonl
+  range: 01M6K7QN1H5H8EQ6CS6D5K5RKG
+- id: e-012
+  kind: file
+  path: kitty-specs/ci-sonar-nightly-checkstyle-complexity-01M6HQ46/analysis-report.md
+- id: e-013
+  kind: file
+  path: kitty-specs/ci-sonar-nightly-checkstyle-complexity-01M6HQ46/traces/tooling-friction.md
+generator_version: '1.0'
+provenance_history: []
