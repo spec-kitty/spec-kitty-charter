@@ -10,7 +10,7 @@ import javax.xml.XMLConstants
 import javax.xml.parsers.SAXParserFactory
 
 /**
- * The exception register of the hand-written Checkstyle gate (`config/checkstyle/suppressions.xml`, ADR-0056) and the
+ * The exception register of the hand-written Checkstyle gate (`config/checkstyle/suppressions.xml`, ADR-0058) and the
  * check that keeps it shrink-only. Checkstyle never reports a suppression that suppresses nothing, so the build runs
  * a probe: the same rules without the register, over the register's files only. An entry is live while the probe
  * reports each rule it lists on its method; any other entry is stale and fails the build, as does an entry that

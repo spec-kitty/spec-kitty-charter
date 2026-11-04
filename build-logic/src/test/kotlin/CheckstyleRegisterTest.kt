@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
 
-/** The exception register's stale-entry and format check (ADR-0056). */
+/** The exception register's stale-entry and format check (ADR-0058). */
 class CheckstyleRegisterTest {
 
     @TempDir
