@@ -30,8 +30,9 @@ the decisions are [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-spli
 [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/).
 
 The offering resolves the [compose](/glossary/charter/#compose): the
-[closure](/glossary/charter/#closure) of `depends_on` rooted at one level's configured packs, dependencies first,
-each level contiguous (built-in, then org, then project). It serves the compose whole or refuses it by name.
+[closure](/glossary/charter/#closure) of `depends_on` rooted at every configured pack, across levels, dependencies first,
+each level contiguous (built-in, then org, then project). It serves the compose whole or refuses it by name. Packs that
+no dependency relates keep the configured-level, then pack-id order.
 
 ## Migrating an existing pack
 
@@ -70,6 +71,8 @@ depends_on:
   `~=1.4` (1.4 or later in 1.x), `==1.3.*` (any 1.3 release), `>=2.0`.
 - Two dependents may declare ranges on one pack. A shared dependency loads once, so the ranges must share at least
   one version. Ranges that only touch, such as `<2` and `>=2`, share none.
+- A range does not exclude prereleases unless it names one: `>=1.0` admits `1.1a1`. This deliberately departs from the
+  default of `packaging`, so a pack at a prerelease version can satisfy a range written for its release line.
 - `parent_pack` is lineage only. It does not load anything; `depends_on` does.
 
 ## Respect the level rule
@@ -97,6 +100,9 @@ references:
   hold that artifact.
 - The pack is provenance, not identity. The artifact's own URN stays bare, and the relationship it mints records
   the qualifier you wrote.
+- A bare reference to the artifact's own id is a self-loop, and the pack is refused as unreadable (`pack_unreadable`).
+  A qualified reference to the same id in another pack, such as a project pack's `SHARE` writing `base-pack::SHARE`,
+  is legal: it names a different artifact.
 - When you register a relationship, its `to` may be qualified and its `from` may not: `from` is an artifact of the
   pack you register into.
 - Following a qualified reference across packs is part of a served read, the walk.
@@ -144,24 +150,31 @@ Every composition refusal answers **500** and is not retryable, like every offer
 ([HTTP status codes](/development/http-status-codes/)), with one exception: registering a relationship
 (`PUT /packs/{packId}/relationships`) answers its `to` that the compose cannot resolve with **422** and the same code
 (`pack_reference_pack_missing`, `pack_reference_unqualified` or `pack_reference_artifact_missing`), before anything is
-written, because there the request is what is wrong. Each carries a detail in words and a `packs` member, a list
-of `{descriptorPackId, packId, name}` that names the violating packs, the pack that broke the rule first. `descriptorPackId` is the `pack_id` its `pack.yaml` declares and `packId` the identifier
-it is configured under, the one the pack-scoped paths take.
+written, because there the request is what is wrong
+([ADR-0057](/adr/0057-a-refusal-code-may-declare-a-status-per-operation/)). Each carries a detail in words and a `packs`
+member, a list of `{descriptorPackId, packId, name}` that names the packs involved, the violating pack first.
+`descriptorPackId` is the `pack_id` its `pack.yaml` declares and `packId` the identifier it is configured under, the one
+the pack-scoped paths take.
 
 A broken compose refuses every composed read: the offering, and the walk that follows references. A pack-scoped
 read of one artifact by id still answers, so you can inspect a broken pack.
 
 A pack the service cannot read is a different refusal, `pack_unreadable` (also 500). `GET /offering` refuses with it
-when an artifact file or a graph file of a configured pack cannot be read, and when `depends_on` ranges,
-`requires_core` or `pack_version` are malformed, the same verdict validate mode gives. A pack-scoped read of an
-artifact that is readable still answers.
+when any file of a configured pack is invalid or cannot be read, an artifact file or a graph file included, and when
+`depends_on` ranges, `requires_core` or `pack_version` are malformed, the same verdict validate mode gives. A
+pack-scoped read of an artifact that is readable still answers.
+
+**Known gap:** the offering names and composes every configured pack whole, so one unreadable file refuses it. The
+pinned built-in pack of the open packs holds files that cannot load yet, so `GET /offering` cannot serve it until
+[spec-kitty-open-packs#75](https://github.com/spec-kitty/spec-kitty-open-packs/issues/75) lands. Its pack-scoped reads
+still answer.
 
 | Code | Cause | Fix |
 |---|---|---|
 | `pack_dependency_cycle` | `depends_on` edges lead from a pack back to itself. The detail names a pack on the cycle and the cycle path. | Remove an edge to break the cycle; a shared base belongs in a pack both depend on. |
-| `pack_dependency_unknown` | A `depends_on[].pack_id` names no pack the service holds. | Correct the ULID, or register the dependency's pack. |
-| `pack_dependency_out_of_range` | The held version misses the range; or two ranges on one dependency share no version; or a range is malformed. | Widen the range, update the held pack, align the dependents' ranges, or fix the PEP 440 syntax. |
-| `pack_parent_unresolved` | `parent_pack` names no pack the service holds. | Correct the ULID, register the parent, or set `parent_pack: null`. |
+| `pack_dependency_unknown` | A `depends_on[].pack_id` names no configured pack. | Correct the ULID, or configure the dependency's pack. |
+| `pack_dependency_out_of_range` | The held version misses the range, or two ranges on one dependency share no version. A malformed range is not this code: it makes `pack.yaml` unreadable (`pack_unreadable`). | Widen the range, update the held pack, or align the dependents' ranges. |
+| `pack_parent_unresolved` | `parent_pack` names no configured pack. | Correct the ULID, configure the parent pack, or set `parent_pack: null`. |
 | `pack_level_violation` | A `parent_pack` or `depends_on` target is not at the pack's own level or one nearer built-in. | Depend on a pack at your level or nearer built-in, or move your pack's level. |
 | `pack_duplicate_id` | Two packs declare the same descriptor `pack_id`. | Give each pack its own ULID; a copied `pack.yaml` is the usual cause. |
 | `pack_name_conflict` | Two packs declare the same `name`. | Rename one. Names are the qualifier of references and are unique without exception. |
@@ -172,6 +185,7 @@ artifact that is readable still answers.
 
 ## See also
 
+- [HTTP status codes](/development/http-status-codes/): the 422 a relationship registration answers.
 - [Descriptors](/architecture/descriptors/#packyaml--pack-descriptor): the `pack.yaml` fields.
 - [Resolution model](/architecture/resolution-model/): where the compose sits in the pipeline.
 - [Changelog: pack composition](/changelog/2026-11-03-pack-composition-depends-on-and-resolver/).
