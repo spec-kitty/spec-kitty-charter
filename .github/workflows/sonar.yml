@@ -1,6 +1,6 @@
 name: Sonar (nightly, reported)
 
-# A nightly SonarCloud analysis of trusted main (ADR-0056). It is reported only: it is never a required
+# A nightly SonarCloud analysis of trusted main (ADR-0058). It is reported only: it is never a required
 # check (ADR-0023, `CI gate / gate` is the one required check) and ci.yml never calls it. It has no
 # pull_request, pull_request_target, merge_group or push trigger (ADR-0047: a workflow that produces no
 # required check does not run in the merge queue), so it never builds or runs code from a pull request.
@@ -44,8 +44,8 @@ jobs:
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           else
             echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::SONAR_TOKEN is not configured, so the SonarCloud analysis is skipped. The operator creates the SonarCloud project and the SONAR_TOKEN repository secret to enable it (ADR-0056)."
-            echo "### SonarCloud analysis skipped: the SONAR_TOKEN secret is not configured (ADR-0056)." >> "$GITHUB_STEP_SUMMARY"
+            echo "::notice::SONAR_TOKEN is not configured, so the SonarCloud analysis is skipped. The operator creates the SonarCloud project and the SONAR_TOKEN repository secret to enable it (ADR-0058)."
+            echo "### SonarCloud analysis skipped: the SONAR_TOKEN secret is not configured (ADR-0058)." >> "$GITHUB_STEP_SUMMARY"
           fi
 
       # The full history: SonarCloud needs it for new-code detection and blame.

@@ -297,7 +297,7 @@ A failure names the file, the line and the measured value, for example:
 ```
 
 To fix it, simplify the method: extract a helper, replace a chain of conditions with a lookup, or
-return early. New code never gets a register entry. Proposed ADR-0056 (PR #366) records the limits.
+return early. New code never gets a register entry. Proposed ADR-0058 (PR #366) records the limits.
 
 ## Exceptions to a gate
 

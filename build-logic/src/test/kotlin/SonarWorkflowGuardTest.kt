@@ -3,7 +3,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 /**
- * The nightly SonarCloud workflow stays reported only (ADR-0056): it never runs on a pull request or in the merge
+ * The nightly SonarCloud workflow stays reported only (ADR-0058): it never runs on a pull request or in the merge
  * queue (ADR-0047), the CI gate never calls it (ADR-0023), every action is pinned to a commit (NFR-004) and the
  * token reaches only the steps that need it. The workflows are read as text: build-logic has no YAML library.
  */

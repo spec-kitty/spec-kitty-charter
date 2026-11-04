@@ -13,7 +13,7 @@
     reason: why the code is right and the rule is wrong for it
     sunset: the date by which the entry is removed or re-justified
 
-  Entries for the complexity rules (CyclomaticComplexity, NPathComplexity, MethodLength, NestedIfDepth; ADR-0056)
+  Entries for the complexity rules (CyclomaticComplexity, NPathComplexity, MethodLength, NestedIfDepth; ADR-0058)
   are `suppress-xpath` elements naming one method each through `query`, never a whole file. `checks` lists exactly
   the rules that method breaks. The list only shrinks: a new method over a limit is refactored, not registered.
   The complexity entries are worked down under spec-kitty/spec-kitty-charter#367.

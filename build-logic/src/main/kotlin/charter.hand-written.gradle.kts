@@ -48,7 +48,7 @@ checkstyle {
     maxErrors = 0
 }
 
-// The register is shrink-only (ADR-0056). Checkstyle never reports a suppression that suppresses nothing, so a probe
+// The register is shrink-only (ADR-0058). Checkstyle never reports a suppression that suppresses nothing, so a probe
 // runs the same rules with the register switched off over the register's files in this module, and
 // checkCheckstyleRegister (CheckstyleRegister) requires each entry here to be live: every rule it lists still fires on
 // its method. It also checks each entry's comment fields, that its file exists, and the header's Size. Part of `check`.
@@ -139,7 +139,7 @@ val checkCheckstyleRegister = tasks.register("checkCheckstyleRegister") {
         )
         if (findings.isNotEmpty()) {
             throw GradleException(
-                "config/checkstyle/suppressions.xml is out of date (ADR-0056):\n" + findings.joinToString("\n") { "  $it" },
+                "config/checkstyle/suppressions.xml is out of date (ADR-0058):\n" + findings.joinToString("\n") { "  $it" },
             )
         }
         val live = parsed.entries.count { entry -> entry.file?.let { root.resolve(it).canonicalFile.startsWith(module.canonicalFile) } == true }

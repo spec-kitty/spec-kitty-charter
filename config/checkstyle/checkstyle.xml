@@ -78,7 +78,7 @@
         <module name="ArrayTypeStyle"/>
         <module name="OuterTypeFilename"/>
 
-        <!-- Complexity (ADR-0056); every method over a limit is listed by XPath in suppressions.xml -->
+        <!-- Complexity (ADR-0058); every method over a limit is listed by XPath in suppressions.xml -->
         <module name="CyclomaticComplexity">
             <property name="max" value="15"/>
             <property name="switchBlockAsSingleDecisionPoint" value="true"/>
