@@ -53,7 +53,8 @@ public final class Relationship {
      * @param when the authored edge condition that must round-trip; empty when absent, never {@code null}
      * @param rationale the authored reason; empty when absent, never {@code null}
      * @throws IllegalArgumentException when any argument is {@code null}, a qualifier breaks the pack-name grammar, or
-     *     {@code from} equals {@code to} as bare identities (a self-loop, qualified or not)
+     *     {@code from} equals {@code to} with neither endpoint pack-qualified (a self-loop; a qualified endpoint names
+     *     another pack's artifact of the same id, which is legal)
      */
     public Relationship(
             Urn from,
@@ -70,7 +71,7 @@ public final class Relationship {
         this.type = requireArg(type, "type");
         this.when = requireArg(when, "when");
         this.rationale = requireArg(rationale, "rationale");
-        if (from.equals(to)) {
+        if (from.equals(to) && fromPack.isEmpty() && toPack.isEmpty()) {
             throw new IllegalArgumentException("A relationship cannot be a self-loop: " + from);
         }
     }

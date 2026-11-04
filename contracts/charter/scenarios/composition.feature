@@ -1093,7 +1093,9 @@ Feature: The compose resolves the configured packs' dependency graph
 
   Scenario: A bare reference is held by the pack that writes it, which shadows another pack's artifact of that id
     FR-014: alpha (project) and beta (org) both hold directive SHARE, and alpha's USE writes it bare. The read
-    answers alpha as the holding pack, with no refusal, and its artifact link reads alpha's directive.
+    answers alpha as the holding pack, with no refusal, and its artifact link reads alpha's directive. alpha's own
+    SHARE writes beta-pack::SHARE, a qualified reference to another pack's artifact of the same id: legal (R2), not
+    a self-loop, and it resolves to beta.
     Given the org pack "beta" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943S
@@ -1109,6 +1111,9 @@ Feature: The compose resolves the configured packs' dependency graph
       parent_pack: null
       name: alpha-pack
       pack_level: project
+      depends_on:
+      - pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+        range: '>=1.0'
       """
     And the org pack "beta" with the file "directives/SHARE.directive.yaml":
       """
@@ -1125,6 +1130,9 @@ Feature: The compose resolves the configured packs' dependency graph
       title: Alpha's share
       intent: Share it
       enforcement: required
+      references:
+      - type: directive
+        id: beta-pack::SHARE
       """
     And the project pack "alpha" with the file "directives/USE.directive.yaml":
       """
@@ -1145,6 +1153,10 @@ Feature: The compose resolves the configured packs' dependency graph
     When I GET "/packs/alpha/artifacts/directive/SHARE"
     Then the response status is 200
     And the field at "/directive/title" is "Alpha's share"
+    When I GET "/packs/alpha/artifacts/directive/SHARE/references"
+    Then the response status is 200
+    And the field at "/items/0/reference" is "beta-pack::directive:SHARE"
+    And the field at "/items/0/holdingPack/packId" is "beta"
 
   Scenario: A qualified reference naming a pack absent from the compose refuses the composed read
     The refusal is the compose's, raised when it resolves (FR-017): the references read is refused with the same
