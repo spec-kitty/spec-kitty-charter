@@ -143,20 +143,6 @@ class PackCompositionResolverTest {
                 .hasMessageContaining("01GONE");
     }
 
-    @Test
-    void aMalformedRangeIsRefusedNamingTheDeclaringPackNotTheTarget() {
-        PackUnderResolution base = pack("01BASE", "base", "1.0.0", PackLevel.BUILT_IN);
-        PackUnderResolution dependent =
-                pack("01DEP", "dependent", "1.0.0", PackLevel.ORG, List.of(new PackDependency("01BASE", "banana")));
-
-        assertThatThrownBy(() -> PackCompositionResolver.resolve(List.of(base, dependent)))
-                .isInstanceOfSatisfying(PackCompositionResolver.Refusal.class, refusal -> {
-                    assertThat(refusal.failure()).isEqualTo(Failure.OUT_OF_RANGE);
-                    assertThat(refusal.packId()).isEqualTo("01DEP");
-                    assertThat(refusal.detail()).contains("01DEP", "banana", "01BASE");
-                });
-    }
-
     /**
      * Two packs ask one pack for ranges; the held version satisfies the first in every row. Which ranges share a
      * version is {@code Pep440RangeTest}'s truth table, so two rows show the refusal wiring.
@@ -189,36 +175,20 @@ class PackCompositionResolverTest {
                 });
     }
 
-    /** A malformed range beside another declaration is refused naming its declarer, never thrown past the resolver. */
+    /** A descriptor the read would have called pack_unreadable never reaches the resolver; it is a programming error. */
     @ParameterizedTest
-    @ValueSource(strings = {">=2,banana", "~=1"})
-    void aMalformedRangeBesideAnotherDeclarationIsRefusedNamingItsDeclarer(String malformed) {
-        PackUnderResolution base = pack("01BASE", "base", "1.0.0", PackLevel.BUILT_IN);
-        PackUnderResolution first =
-                pack("01ONE", "one", "1.0.0", PackLevel.ORG, List.of(new PackDependency("01BASE", malformed)));
-        PackUnderResolution second =
-                pack("01TWO", "two", "1.0.0", PackLevel.ORG, List.of(new PackDependency("01BASE", ">=1")));
-
-        assertThatThrownBy(() -> PackCompositionResolver.resolve(List.of(second, first, base)))
-                .isInstanceOfSatisfying(PackCompositionResolver.Refusal.class, refusal -> {
-                    assertThat(refusal.failure()).isEqualTo(Failure.OUT_OF_RANGE);
-                    assertThat(refusal.packId()).isEqualTo("01ONE");
-                    assertThat(refusal.detail()).contains("not a PEP 440 range");
-                });
-    }
-
-    @Test
-    void aTargetVersionThatIsNoPep440VersionIsRefusedNamingTheTargetNotTheDeclarersRange() {
-        PackUnderResolution base = pack("01BASE", "base", "1.0.0-alpha.beta", PackLevel.BUILT_IN);
+    @CsvSource(
+            delimiter = '|',
+            value = {"1.0.0|banana", "1.0.0|~=1", "1.0.0-alpha.beta|>=1.0"})
+    void aDescriptorThatIsNotWellFormedIsAPreconditionFailureNotARefusal(String baseVersion, String range) {
+        PackUnderResolution base = pack("01BASE", "base", baseVersion, PackLevel.BUILT_IN);
         PackUnderResolution dependent =
-                pack("01DEP", "dependent", "1.0.0", PackLevel.ORG, List.of(new PackDependency("01BASE", ">=1.0")));
+                pack("01DEP", "dependent", "1.0.0", PackLevel.ORG, List.of(new PackDependency("01BASE", range)));
 
         assertThatThrownBy(() -> PackCompositionResolver.resolve(List.of(dependent, base)))
-                .isInstanceOfSatisfying(PackCompositionResolver.Refusal.class, refusal -> {
-                    assertThat(refusal.failure()).isEqualTo(Failure.OUT_OF_RANGE);
-                    assertThat(refusal.packId()).isEqualTo("01BASE");
-                    assertThat(refusal.detail()).contains("1.0.0-alpha.beta", "not a PEP 440 version");
-                });
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("well-formed")
+                .satisfies(failure -> assertThat(failure).isNotInstanceOf(PackCompositionResolver.Refusal.class));
     }
 
     @Test

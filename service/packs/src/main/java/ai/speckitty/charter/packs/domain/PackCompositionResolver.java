@@ -230,9 +230,21 @@ public final class PackCompositionResolver {
      * @param packs the configured packs with their descriptors
      * @return the closure, dependencies first, each pack once
      * @throws Refusal when the graph cannot be served
+     * @throws IllegalStateException when a descriptor is not well formed: the resolver decides the graph, not a
+     *     descriptor, so a pack whose {@code pack_version} is no PEP 440 version or whose {@code depends_on} range is
+     *     no specifier set is {@code pack_unreadable} at the read ({@link PackPolicy#descriptorFindings}, the one
+     *     predicate), and never reaches here
      */
     public static List<PackUnderResolution> resolve(List<PackUnderResolution> packs) {
         Objects.requireNonNull(packs, "packs");
+        for (PackUnderResolution pack : packs) {
+            List<PackFinding> findings =
+                    PackPolicy.descriptorFindings(pack.descriptor().name(), pack.descriptor());
+            if (!findings.isEmpty()) {
+                throw new IllegalStateException("the resolver takes only well-formed descriptors, and "
+                        + findings.getFirst().detail());
+            }
+        }
         List<PackUnderResolution> ordered = new ArrayList<>(packs);
         ordered.sort(STABLE_ORDER);
 
@@ -361,13 +373,13 @@ public final class PackCompositionResolver {
      * share no version, including ranges that only touch ({@code <2} and {@code >=2}), cannot both be honoured. The
      * refusal names both declaring packs and both ranges, and it comes before the held version is checked against
      * either range. A range pair that overlaps, even only partly, is fine and is not reported. A dependency on an
-     * unknown pack or with a malformed range is left to {@link #dependenciesOf}, which refuses it with its own reason.
+     * unknown pack is left to {@link #dependenciesOf}, which refuses it with its own reason.
      */
     private static void refuseDisjointRanges(List<PackUnderResolution> ordered, Map<String, PackUnderResolution> byId) {
         Map<String, List<Declared>> byTarget = new LinkedHashMap<>();
         for (PackUnderResolution pack : ordered) {
             for (PackDependency dependency : pack.descriptor().dependencies()) {
-                if (byId.containsKey(dependency.packId()) && Pep440Range.isWellFormed(dependency.range())) {
+                if (byId.containsKey(dependency.packId())) {
                     byTarget.computeIfAbsent(dependency.packId(), key -> new ArrayList<>())
                             .add(new Declared(pack, dependency.range()));
                 }
@@ -532,16 +544,7 @@ public final class PackCompositionResolver {
                         named(pack),
                         label(pack) + " depends on pack `" + targetId + "`, which no configured pack declares");
             }
-            if (!Pep440Range.isVersion(target.descriptor().packVersion())) {
-                throw new Refusal(
-                        Failure.OUT_OF_RANGE,
-                        named(target, pack),
-                        label(target) + " has pack_version `"
-                                + target.descriptor().packVersion()
-                                + "`, which is not a PEP 440 version, so the range `" + dependency.range() + "` of "
-                                + label(pack) + " cannot be decided against it");
-            }
-            if (!admits(pack, dependency, target)) {
+            if (!admits(dependency, target)) {
                 throw new Refusal(
                         Failure.OUT_OF_RANGE,
                         named(pack, target),
@@ -565,17 +568,8 @@ public final class PackCompositionResolver {
         return dependencies;
     }
 
-    private static boolean admits(
-            PackUnderResolution declaring, PackDependency dependency, PackUnderResolution target) {
-        try {
-            return Pep440Range.admits(dependency.range(), target.descriptor().packVersion());
-        } catch (IllegalArgumentException malformed) {
-            throw new Refusal(
-                    Failure.OUT_OF_RANGE,
-                    named(declaring, target),
-                    label(declaring) + " declares the range `" + dependency.range() + "` on " + label(target)
-                            + ", which is not a PEP 440 range: " + malformed.getMessage());
-        }
+    private static boolean admits(PackDependency dependency, PackUnderResolution target) {
+        return Pep440Range.admits(dependency.range(), target.descriptor().packVersion());
     }
 
     /**
