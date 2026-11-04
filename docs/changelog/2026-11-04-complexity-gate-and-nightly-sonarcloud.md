@@ -16,7 +16,7 @@ audience:
 
 # 2026-11-04 — Complexity limits block a pull request; SonarCloud reports nightly
 
-Proposed ADR-0058 (PR #366) sets limits on how complex a method may be. This change applies them.
+ADR-0058 (PR #366) sets limits on how complex a method may be. This change applies them.
 
 **Blocks a pull request:**
 

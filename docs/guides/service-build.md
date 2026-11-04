@@ -297,7 +297,7 @@ A failure names the file, the line and the measured value, for example:
 ```
 
 To fix it, simplify the method: extract a helper, replace a chain of conditions with a lookup, or
-return early. New code never gets a register entry. Proposed ADR-0058 (PR #366) records the limits.
+return early. New code never gets a register entry. ADR-0058 (PR #366) records the limits.
 
 ## Exceptions to a gate
 
@@ -334,12 +334,12 @@ lists still fires on its method. The check fails with one line per finding:
 | `MISSING_FILE` | The comment's `file:` does not exist. | Delete the entry, or correct its `file:` and `files`. |
 | `MISSING_FIELD` | The comment lacks `rule:`, `file:`, `reason:` or `sunset:`; the sunset is not an ISO date; `files` is not a regex; or `checks` is empty. | Add or correct the field. |
 | `SIZE_MISMATCH` | The header's `Size: N entries.` line is missing or does not match the count. | Correct the header. |
-| `UNMAPPED` | The check cannot tie a finding to a method: the entry scopes a rule other than the four limits to a method, or no method declaration can be read where the probe reports one. | Make a rule that is not one of the four a file-wide `suppress`; otherwise read the reported line, since the check cannot judge the register. |
+| `UNMAPPED` | The check cannot tie a finding to a method: the entry scopes a rule other than the four limits to a method, the probe reports a file outside the module, or no method declaration can be read where the probe reports one. | Make a rule that is not one of the four a file-wide `suppress`; otherwise read the reported line, since the check cannot judge the register. |
 
 ## The nightly SonarCloud report
 
 `.github/workflows/sonar.yml`, shown in Actions as **Sonar (nightly, reported)**, analyzes `main` at
-04:23 UTC every day, and on a manual run. It never runs on a pull request.
+04:23 UTC every day, and on a manual run from `main`. It never runs on a pull request.
 
 It is reported only. It is not part of `CI gate / gate`, and a red build, scan or quality gate never
 turns the run red. Each run writes a job summary, a table of the outcome of the pack sync, the

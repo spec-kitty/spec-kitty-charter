@@ -68,7 +68,8 @@ Entries 10 to 13 are about this mission's own process, and 14 to 18 about the se
     - **What happened:** SC-002 capped the register at 15 from an estimate. The real measurement found
       18 methods: two nested-if sites were separate methods, and one test method was missed.
     - **Disposition: fixed** by operator ruling (decision `01M6JKVNX57FSK0RHCKXX2KKJJ`): three methods
-      were refactored (T017) to reach 15. The rest are logged as #367.
+      were refactored (T017) to reach 15. The rest are logged as #367. A later rebase on main made one
+      more entry stale; the stale check flagged it and it was dropped, leaving 14.
     - **Lesson:** measure per method before a cap goes into a spec.
 11. **[2026-11-04] The forbidden-word instruction was too broad.**
     - **What happened:** the orchestrator told implementers never to write a retired term. The WP01
@@ -95,7 +96,7 @@ Entries 10 to 13 are about this mission's own process, and 14 to 18 about the se
 16. **[2026-11-03] Attaching `spec-kitty/spec-kitty` read-only was refused by the permission
     classifier.** **Disposition: worked around** with a read-only shallow clone into the scratchpad.
 17. **[2026-11-04] A force-push to squash the docs PR's spelling-fix commit was refused.**
-    **Disposition: accepted.** PR #366 keeps two commits; squash on merge.
+    **Disposition: accepted.** PR #366 keeps its separate commits; the operator's landing pass tidies its history.
 18. **[2026-11-03] Local cspell and markdownlint are not installed**, and "install nothing" applies.
     **Disposition: accepted.** The first CI run caught two unknown words (`hotspot`, `hotspots`),
     fixed in one follow-up commit.
