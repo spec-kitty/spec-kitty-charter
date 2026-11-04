@@ -42,7 +42,7 @@ declare `depends_on`.
 - Eleven composition refusals, each a 500 (not retryable), naming the violating pack in `detail` and in `packs`, a list
   of `{descriptorPackId, packId, name}` ([table](/guides/compose-packs/#read-a-refusal)).
 - Registering a relationship whose `to` the compose cannot resolve is refused with 422 before anything is written:
-  `pack_reference_*` ([ADR-0057](/adr/0057-a-refusal-code-may-declare-a-status-per-operation/)).
+  `pack_reference_*` ([ADR-0056](/adr/0056-a-refusal-code-may-declare-a-status-per-operation/)).
 - **Breaking:** `GET /offering` refuses with `pack_unreadable` when any file of a configured pack is invalid or cannot
   be read, not only its `pack.yaml`. Known gap: the pinned built-in pack cannot be served by it until open-packs#75 lands.
 - New: `GET /packs/{packId}/artifacts/{kind}/{artifactId}/references`

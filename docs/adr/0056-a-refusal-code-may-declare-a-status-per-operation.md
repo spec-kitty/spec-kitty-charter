@@ -1,5 +1,5 @@
 ---
-title: "ADR-0057: A refusal code may declare a different status for one operation"
+title: "ADR-0056: A refusal code may declare a different status for one operation"
 description: "Operator ruling of 2026-11-04: x-refusal gives a code one status and may override it per operation, so the reference refusals are 422 on registering a relationship."
 doc_status: active
 updated: 2026-11-04T00:00:00Z
@@ -22,7 +22,7 @@ audience:
     guidance_text: Read this to know why registering a relationship answers 422 where the offering answers 500 for the same code.
 ---
 
-# ADR-0057: A refusal code may declare a different status for one operation
+# ADR-0056: A refusal code may declare a different status for one operation
 
 ## Status
 
