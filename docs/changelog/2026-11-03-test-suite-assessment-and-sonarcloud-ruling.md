@@ -1,7 +1,7 @@
 ---
 okf_version: "0.2"
 title: "Test suite assessed; SonarCloud ruled nightly and reported only"
-description: "A dated assessment of the test suite against the packs' testing rubric, with ranked weaknesses, proposed issues and a Proposed ADR-0058 for SonarCloud."
+description: "A dated assessment of the test suite against the packs' testing rubric, with ranked weaknesses, proposed issues and the Accepted ADR-0058 for SonarCloud."
 doc_status: active
 updated: 2026-11-03T00:00:00Z
 type: Changelog
@@ -42,7 +42,7 @@ by risk:
 Nine follow-ups are proposed, not filed.
 
 The operator ruled on three questions. SonarCloud runs nightly and is reported only, and Checkstyle
-complexity rules gate each pull request; this is recorded as Proposed
+complexity rules gate each pull request; this is recorded as Accepted
 [ADR-0058](/adr/0058-sonarcloud-nightly-reported-and-checkstyle-complexity-per-pr/). The mutation
 floors of #239 are adopted as designed. New-code coverage is reported through SonarCloud instead of
 a JaCoCo threshold.

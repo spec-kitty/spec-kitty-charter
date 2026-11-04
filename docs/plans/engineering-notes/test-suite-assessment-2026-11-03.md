@@ -22,8 +22,8 @@ audience:
 
 **Status: assessment, not a decision.** It answers two operator questions: how good is the test
 suite, and should the charter add SonarCloud? It changes no code. The SonarCloud decision it feeds
-is drafted as [ADR-0058](/adr/0058-sonarcloud-nightly-reported-and-checkstyle-complexity-per-pr/)
-(Proposed). The issues it proposes are listed at the end and are not filed.
+is recorded as [ADR-0058](/adr/0058-sonarcloud-nightly-reported-and-checkstyle-complexity-per-pr/)
+(Accepted, 2026-11-03). The issues it proposes are listed at the end and are not filed.
 
 ## Short answer
 
@@ -363,7 +363,7 @@ Other findings, lower risk:
 
 | Question | Ruling |
 |---|---|
-| SonarCloud adoption and shape | **Nightly SonarCloud, reported only; per-PR complexity through Checkstyle** (R5, R6). Not implemented in this change: proposed as an issue and as [ADR-0058](/adr/0058-sonarcloud-nightly-reported-and-checkstyle-complexity-per-pr/) (Proposed). |
+| SonarCloud adoption and shape | **Nightly SonarCloud, reported only; per-PR complexity through Checkstyle** (R5, R6). Not implemented in this change: recorded as [ADR-0058](/adr/0058-sonarcloud-nightly-reported-and-checkstyle-complexity-per-pr/) (Accepted, 2026-11-03); the implementation is a follow-up mission. |
 | Mutation testing | **Adopt #239 as designed** (R1). |
 | Coverage gate | **No JaCoCo threshold. New-code coverage is reported by SonarCloud** (R6). |
 
@@ -380,7 +380,7 @@ proceeds as its own mission.
 | R3: "Pin refusal codes in exception assertions; shrink-only baseline for type-only checks" | S | Lists the 15 `CharterRefusal` sites. Applies `DIRECTIVE_041`. |
 | R4: "Close module-local test gaps in kernel.validation, profiles and packs.infra.fetch" | M | Acceptance: PIT no-coverage counts fall; each new test is proved by a planted break. |
 | R5: "Checkstyle complexity and length rules in the per-PR gate" | M | Limits measured first; 0 suppressions or a shrink-only register. |
-| R6: "Nightly reported-only SonarCloud scan (ADR-0058)" | M | Needs `SONAR_TOKEN` and the SonarCloud project from the operator. Accepting ADR-0058 comes first. |
+| R6: "Nightly reported-only SonarCloud scan (ADR-0058)" | M | Needs `SONAR_TOKEN` and the SonarCloud project from the operator. |
 | R7: "Remove the unused Mockito dependency and Java agent" | S | |
 | R8: "Coverage-gap analysis of the 27 promise-first scenarios" | M | `qa-coverage-gap-analysis`; wire, map or retire each one. |
 | R9: "Java support for the test-quality-scan asset" | L | An open-packs change; this repository consumes it. |
