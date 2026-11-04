@@ -16,6 +16,8 @@ related:
   - adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions
   - adr/0016-conformance-corpus-harness-over-core-cli
   - adr/0010-cutover-scope-and-seam-boundary
+  - adr/0021-contract-first-seam-generated-client-and-routing-proxy
+  - adr/0050-mission-types-and-lifecycles-as-declared-state-machines
 audience:
   - profile: governance-lead
     guidance_text: Read this for what proves an operation is ready for core to switch to it, and the activation rules the service builds to.
@@ -60,11 +62,11 @@ repository does not.
 
 ## Decision
 
-### D1. The design's BDD scenarios alone gate each core switch (ruled)
+### D1. The design's BDD scenarios and contract tests gate each core switch (ruled)
 
-An operation is ready for core to switch to it when its design-derived BDD scenarios pass against the service.
-These are the `@contract` scenarios in `contracts/charter/scenarios/`, accepted against the hand-authored and fixture
-packs of ADR-0055 D3. Nothing is run against core's Python answers as a gate:
+An operation is ready for core to switch to it when its design-derived BDD scenarios and its contract tests pass
+against the service. The scenarios are the `@contract` scenarios in `contracts/charter/scenarios/`, accepted against
+the hand-authored and fixture packs of ADR-0055 D3; the contract tests are those `./gradlew verifyAll` runs. Nothing is run against core's Python answers as a gate:
 
 - the conformance corpus over core's CLI ([ADR-0016](/adr/0016-conformance-corpus-harness-over-core-cli/)) is not
   a gate;
@@ -73,7 +75,7 @@ packs of ADR-0055 D3. Nothing is run against core's Python answers as a gate:
 
 Where the service's answer differs from core's on purpose, the
 [divergence register](/conformance/divergence-register/) records it, so core knows what changes when it switches. The
-register informs; it does not gate.
+register informs; it does not gate (a default that follows from the ruling).
 
 **Why.** ADR-0055 D3: core's Python implements the model the design replaces. A gate that compares against it would
 pin the service to that model.
@@ -87,15 +89,16 @@ loses its gating role. Those changes are follow-ups, not part of this record.
    and `instantiates` forward, as core does. It stops at a denied artifact and reports it (ADR-0013 D4).
 2. **`enhances`, in reverse.** The edge runs from the enhancing artifact to its target. When a target comes into
    force, by selection or by the cascade, every artifact that enhances it joins and is walked in turn. A
-   selected enhancer does not pull its target in. A denied enhancer is skipped and reported, as any denied
+   selected enhancer does not pull its target in (a default: an enhancer whose target is not in force is inert). A denied enhancer is skipped and reported, as any denied
    artifact is. The pulled enhancer's provenance names `enhances`.
 3. **Pack-qualified references are followed.** A `<pack-name>::<urn>` target is resolved in the compose and walked
    under the same relations (ADR-0053 d7).
 4. **`specializes_from` is walked as lineage, not as a candidate.** The walk passes through a profile's parent to
    reach what the parent `requires` or `scope`s, but the parent itself is not put in force.
-5. **No other edge is followed.** `overrides` and `replaces` are merge edges: following them would bring the
+5. **No other edge is followed.** `overrides` and `replaces` are replacement edges: following them would bring the
    replaced original back into force. `rejects` points at an anti-pattern (ADR-0052). `delegates_to` is a runtime
-   handoff. `vocabulary`, the tension edges and the derived `implemented_by` are not followed either. Pack-level
+   handoff. `vocabulary`, `applies`, `reconciles_tension`, the tension edges and the derived `implemented_by` are
+   not followed either, as in core. Pack-level
    `depends_on` is not an artifact edge: activation stays per artifact (ADR-0048).
 
 **Why.** The five relations keep core's reach, so a project activates what it activated before. `enhances` brings an
@@ -107,7 +110,7 @@ what must not be activated.
 When the same artifact id is in force at more than one level, the artifact from the level that applies (project
 over org over built-in) takes the place of the other one whole. Fields it does not declare are not inherited.
 A pack adds to an artifact without replacing it through an explicit `enhances` edge. The service reports each layer
-override in its diagnostics.
+override in its diagnostics (a default, in place of core's collision warning).
 
 This differs from core's field merge (core ADR `3.x/2026-05-16-1`). The divergence register records the
 difference.
@@ -124,12 +127,13 @@ already has `enhances` for additive change.
   required or locked artifact `409` (ADR-0020 D9). The client cleans the document up before it writes it back.
 
 ADR-0020 D6's round trip ("a `PUT` of a fetched `config` answers `200` with the same `ETag`") holds for a document
-the offering has not made stale.
+the offering has not made stale; ADR-0020 D6 carries a note.
 
 ### D5. The `Activation` answer's `ETag` is its revision, and the reads declare `304` (ruled; ADR-0020 questions 4 and 7)
 
-- `summary` moves out of the `Activation` answer to an effective read, so the answer's bytes depend only on the
-  stored document, and its strong `ETag` is the revision.
+- `summary` moves out of the `Activation` answer to an effective read, and `governanceFingerprint` moves with it,
+  because it follows the offering too. The answer's bytes then depend only on the stored document, and its strong
+  `ETag` is the revision. Which effective read carries them is settled with the contract change in #291.
 - `getActivation` and the four effective reads declare `If-None-Match` and `304 Not Modified` now. An effective
   read's `ETag` covers the revision and the `governanceFingerprint`, because its answer depends on both.
 
@@ -138,7 +142,7 @@ the offering has not made stale.
 
 ### D6. A preset replaces each key it lists (ruled; ADR-0020 question 6)
 
-`applyActivationPreset` replaces each key the preset lists, `activatedKinds` and `missionTypes` included, and
+`applyActivationPreset` replaces each key the preset lists, `activatedKinds` and `missionTypes` (or its [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) successor) included, and
 `ActivationChange.applied` reports them. Keys the preset does not list are left as they are. `force` clears the deny
 entries that match the preset's members (ADR-0020 D6). This is core's behavior.
 
@@ -155,13 +159,16 @@ entries that match the preset's members (ADR-0020 D6). This is core's behavior.
   be in the divergence register before core switches, or core finds it in use.
 - D3 and D2.2 depart from core. A project with a partial override, or with an artifact that enhances another,
   sees different content after the switch.
-- D5 changes the contract: `summary` leaves `Activation`, and `304` is added to five operations.
+- D5 changes the contract: `summary` and `governanceFingerprint` leave `Activation`, and `304` is added to five
+  operations.
 
 ## Follow-ups
 
 - Re-scope or close #9 and #72; drop the gating role from #14.
 - Add the divergence-register entries for D2.2, D3 and D4.
-- Update `docs/architecture/logical-model.md` (the cascade relations) and the glossary's layer override.
+- Change the contract for D5 (`summary` and `governanceFingerprint` leave `Activation`; `If-None-Match` and `304` on
+  five operations) and the round-trip text of `contracts/charter/paths/activations_activationId.yaml` for D4.
+- Note the answer on ADR-0010 and ADR-0021 D5 (done in this change).
 - Build D4 to D6 in #291 and D2 and D3 in #10 and #11.
 
 ## References
@@ -170,3 +177,7 @@ entries that match the preset's members (ADR-0020 D6). This is core's behavior.
 - [ADR-0020](/adr/0020-offering-and-activations/), open questions 4 to 7.
 - [ADR-0013](/adr/0013-persistent-deactivation/), cascade and deny-list.
 - [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) d6 and d7.
+- [ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/), the action-context walk, which is not the
+  activation cascade: its `suggests` depth and step order are unchanged.
+- [ADR-0010](/adr/0010-cutover-scope-and-seam-boundary/) and
+  [ADR-0021](/adr/0021-contract-first-seam-generated-client-and-routing-proxy/) D5, which named the corpus as the gate.

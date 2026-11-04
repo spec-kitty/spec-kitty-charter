@@ -1,6 +1,6 @@
 ---
 okf_version: "0.2"
-title: The design's BDD scenarios gate each core switch
+title: The design's BDD scenarios and contract tests gate each core switch
 description: ADR-0059 records the operator's rulings of 2026-11-04 on the switch gate, the cascade edges, the layer-override grain and ADR-0020's open questions 4 to 7.
 doc_status: active
 updated: 2026-11-04T00:00:00Z
@@ -15,14 +15,14 @@ audience:
     guidance_text: Read this before building the activation writes, the cascade or the layer merge.
 ---
 
-# 2026-11-04 — The design's BDD scenarios gate each core switch
+# 2026-11-04 — The design's BDD scenarios and contract tests gate each core switch
 
 **[ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) records six operator rulings** that
 clear the way for the activation writes ([#291](https://github.com/spec-kitty/spec-kitty-charter/issues/291)) and
 the resolution domain ([#10](https://github.com/spec-kitty/spec-kitty-charter/issues/10),
 [#11](https://github.com/spec-kitty/spec-kitty-charter/issues/11)):
 
-- An operation is ready for core to switch to it when its design-derived BDD scenarios pass. No corpus, shadow or
+- An operation is ready for core to switch to it when its design-derived BDD scenarios and contract tests pass. No corpus, shadow or
   observation period gates the switch (ADR-0055 open question 1).
 - The cascade follows `requires`, `suggests`, `refines`, `scope` and `instantiates`, brings an artifact's enhancers
   in with it, and passes through `specializes_from` without putting the parent in force.

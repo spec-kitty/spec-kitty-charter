@@ -37,7 +37,7 @@ a request to core; the part this repository owns is called out.
 
 Superseded in part by [ADR-0033](/adr/0033-local-active-charter-is-source-of-truth/) (2026-10-26): the project's local `activation.yaml` is the source of truth, written through to the service, which holds a copy (decision 1).
 
-Amended 2026-11-04 by [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/): the cascade follows `requires`, `suggests`, `refines`, `scope` and `instantiates`, plus `enhances` in reverse (decision 2), and a stored document a pack upgrade made stale is served and flagged (decision 4).
+Amended 2026-11-04 by [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/): the cascade follows `requires`, `suggests`, `refines`, `scope` and `instantiates`, plus `enhances` in reverse and qualified `<pack>::` targets, and passes through `specializes_from` without the parent (decision 2), and a stored document a pack upgrade made stale is served and flagged (decision 4). The switch gate is the design's BDD scenarios, not the regenerated corpus of decision 6 (decision 1).
 
 ## Context
 

@@ -299,6 +299,8 @@ in camelCase:
 
 **Round trip.** For every stored document, a `PUT` of its `config` answers `200` with the same
 `ETag`. A contract scenario and a property test pin this.
+*Narrowed 2026-11-04 ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) decision 4): the round trip holds for a document a pack upgrade has not made stale; a
+stale one's `PUT` is refused until the client removes the ids the offering no longer has.*
 
 `DELETE /activations/{activationId}` removes a document: `204`, honoring `If-Match`. A
 second `DELETE` is a `404` `activation_not_found` **(default**; rejected: `204` again, which hides
