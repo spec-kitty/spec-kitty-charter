@@ -1,7 +1,7 @@
 title: HoldingPack
 description: >-
   The pack of the compose that holds what a reference names: its configured identifier, the pack_id its pack.yaml
-  declares and its name, the three identities a client may join on, as an offering entry carries them.
+  declares and its name, the two identities and the name a client may join on, as an offering entry carries them.
 type: object
 additionalProperties: false
 required:

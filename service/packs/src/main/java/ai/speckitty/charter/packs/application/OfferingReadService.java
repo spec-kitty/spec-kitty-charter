@@ -40,7 +40,7 @@ public final class OfferingReadService {
 
     private final PackCatalogRepository catalog;
     private final PackDescriptorRepository descriptors;
-    private final PackArtifactRepository refinements;
+    private final PackArtifactRepository packArtifacts;
     private final ConsistentRead read;
 
     /**
@@ -84,22 +84,22 @@ public final class OfferingReadService {
     }
 
     /**
-     * A service over the catalog, the descriptors and the refinements.
+     * A service over the catalog, the descriptors and the pack-artifact port.
      *
      * @param catalog the port that lists the configured packs
      * @param descriptors the port that looks each pack's descriptor up
-     * @param refinements the port that reads the artifacts each pack's graphs say it changes
+     * @param packArtifacts the port that reads the artifacts each pack changes or defines and the references it writes
      * @param read the verifier that digests the inputs before and after the read
      */
     @Autowired
     public OfferingReadService(
             PackCatalogRepository catalog,
             PackDescriptorRepository descriptors,
-            PackArtifactRepository refinements,
+            PackArtifactRepository packArtifacts,
             ConsistentRead read) {
         this.catalog = Objects.requireNonNull(catalog, "catalog");
         this.descriptors = Objects.requireNonNull(descriptors, "descriptors");
-        this.refinements = Objects.requireNonNull(refinements, "refinements");
+        this.packArtifacts = Objects.requireNonNull(packArtifacts, "packArtifacts");
         this.read = Objects.requireNonNull(read, "read");
     }
 
@@ -176,7 +176,7 @@ public final class OfferingReadService {
             List<PackUnderResolution> closure = PackCompositionResolver.resolve(catalog.configured().stream()
                     .map(pack -> {
                         PackDescriptor descriptor = descriptorOf(pack);
-                        PackCompositionFacts read = refinements.compositionFacts(pack.id());
+                        PackCompositionFacts read = packArtifacts.compositionFacts(pack.id());
                         facts.put(pack.id().value(), read);
                         return new PackUnderResolution(pack, descriptor, read.changed(), read.defined());
                     })

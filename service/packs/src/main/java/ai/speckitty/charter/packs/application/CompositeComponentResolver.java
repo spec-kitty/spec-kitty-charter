@@ -138,7 +138,7 @@ public final class CompositeComponentResolver {
          * @param referringPack the pack whose artifact writes it
          * @return the holding pack; empty when no pack of the compose holds what a bare reference names
          * @throws CharterRefusal with {@link RefusalCode#PACK_REFERENCE_PACK_MISSING} when a qualified reference names
-         *     a pack outside the compose, or with {@link RefusalCode#PACK_REFERENCE_UNQUALIFIED} when a bare reference
+         *     a pack outside the referring pack's {@code depends_on} closure, or with {@link RefusalCode#PACK_REFERENCE_UNQUALIFIED} when a bare reference
          *     resolves only in another pack of the compose
          */
         public Optional<PackCompositionResolver.PackUnderResolution> holder(

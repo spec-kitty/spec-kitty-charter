@@ -86,7 +86,7 @@ final class PackDescriptorReader {
         return List.copyOf(declared);
     }
 
-    /** The declared contests the descriptor settles, in file order; the schema has already closed every entry. */
+    /** The declared sibling conflicts the descriptor settles, in file order; the schema has already closed every entry. */
     private static List<PackOverride> overrides(Map<?, ?> root) {
         @Nullable Object raw = root.get("overrides");
         if (!(raw instanceof List<?> items)) {

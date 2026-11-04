@@ -1,11 +1,12 @@
 @contract @composition
 Feature: The compose resolves the configured packs' dependency graph
-  One compose is one depends_on closure at one level (ADR-0048 decision 6): GET /offering answers
+  One compose is one depends_on closure rooted at every configured pack, across levels (ADR-0053
+  decision 6, as amended): GET /offering answers
   the closure in the resolver's order, dependencies before the packs that need them, each pack once
   (FR-019), and every entry carries the dependencies its pack.yaml declared, each with the range it
   declared and the version of the depended-on pack the compose resolved for it (FR-020, NFR-002).
   A graph the resolver cannot serve refuses the whole offering, never a partial compose: the refusal
-  names the pack that broke the graph and why (ADR-0048 decision 10, ADR-0053 decisions 4, 7, 8 and
+  names the pack that broke the graph and why (ADR-0048 decisions 1 and 10, ADR-0053 decisions 4, 7, 8 and
   9). Every refusal code here has a negative control on the same fixture shape — the happy path that
   would break if the refusal fired wrongly (NFR-005) — so a no-op resolver cannot pass this file.
 
@@ -776,7 +777,7 @@ Feature: The compose resolves the configured packs' dependency graph
 
   Scenario: An org pack and a project pack defining one artifact compose as a layer override
     The negative control of the duplicate-definition refusal: the same directive held at two
-    different levels is the layer override of ADR-0048 decision 6, not a contest. Both packs are
+    different levels is the layer override of ADR-0053 decision 6, not a sibling conflict. Both packs are
     served, the org pack first.
     Given the org pack "house" with the file "pack.yaml":
       """

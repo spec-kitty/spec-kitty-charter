@@ -18,8 +18,8 @@ import java.util.Set;
  * @param requiresCore the raw {@code requires_core} text; empty when the file has none
  * @param paths the declared {@code active_charter} and {@code pack_drg} paths, grouped
  * @param dependencies the packs this pack declares it depends on; empty when it declares none
- * @param overrides the sibling contests this distribution pack settles, each by the contested artifact and the
- *     winning member; empty when it settles none
+ * @param overrides the sibling conflicts this pack settles (any pack of the compose may declare one until #358), each
+ *     by the conflicting artifact and the member meant to win; empty when it settles none
  */
 public record PackDescriptor(
         String packId,
@@ -61,7 +61,7 @@ public record PackDescriptor(
     }
 
     /**
-     * Builds a descriptor that declares no dependencies and settles no contest.
+     * Builds a descriptor that declares no dependencies and settles no sibling conflict.
      *
      * @param packId the pack's {@code pack_id}
      * @param packVersion the pack's {@code pack_version}
@@ -83,7 +83,7 @@ public record PackDescriptor(
     }
 
     /**
-     * Builds a descriptor that settles no contest.
+     * Builds a descriptor that settles no sibling conflict.
      *
      * @param packId the pack's {@code pack_id}
      * @param packVersion the pack's {@code pack_version}
@@ -117,7 +117,7 @@ public record PackDescriptor(
      * @param requiresCore the raw {@code requires_core}, possibly empty
      * @param paths the declared paths
      * @param dependencies the declared dependencies
-     * @param overrides the declared contests this pack settles
+     * @param overrides the declared sibling conflicts this pack settles
      * @throws IllegalArgumentException when two {@code overrides} edges settle one artifact
      */
     public PackDescriptor {

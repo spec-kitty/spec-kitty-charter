@@ -1,7 +1,7 @@
 title: RefusalPack
 description: >-
-  A pack a refusal names: the pack that broke the rule, or a pack the rule relates it to. It carries both of the
-  pack's identities, as OfferingPack and HoldingPack do, so a client reads which pack to fix without parsing detail:
+  A pack a refusal names: the pack that broke the rule, or a pack the rule relates it to. It carries the pack's two
+  identities and its name, as OfferingPack and HoldingPack do, so a client reads which pack to fix without parsing detail:
   descriptorPackId is the pack_id its own pack.yaml declares, the one a dependency edge names, and packId is the
   identifier the pack is configured under, the one every pack-scoped path takes.
 type: object
