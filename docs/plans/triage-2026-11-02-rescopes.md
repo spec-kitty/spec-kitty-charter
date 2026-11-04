@@ -68,7 +68,7 @@ Applied on the tracker before this page was written:
 
 On 2026-11-04 the operator approved this cleanup, after each item was checked:
 
-- **#210** is closed as covered. Its closing comment names what stays uncovered: a neighbouring-path 404 scenario and a
+- **#210** is closed as covered. Its closing comment names what stays uncovered: a neighboring-path 404 scenario and a
   general check for undeclared headers.
 - **#333 to #342:** the `Parent: #69` line in each body now says `Parent: #361`.
 - **#111** is decided: a contract operation with no separate shape. The reason differs from the proposal's; see the
@@ -1240,7 +1240,7 @@ The answers these need, by issue. Each is repeated under its proposal.
   - Closed-response item (ContractConformance on every request).
 - **Evidence:** `service/deployable/src/test/java/ai/speckitty/charter/deployable/OpenApiDocumentTest.java:87-189`; `contracts/charter/scenarios/service.feature:44-55`; `contracts/charter/scenarios/README.md:128-136`; errors`.feature`:27-32; root`.feature`:88-94; #208, #209 closed
 - **Question:** Close #210 as covered, or keep it for one neighboring-path 404 scenario (and, if wanted, a check that no undeclared header appears)?
-- **Applied, 2026-11-04:** closed as covered, without the neighbouring-path scenario or the header check.
+- **Applied, 2026-11-04:** closed as covered, without the neighboring-path scenario or the header check.
 
 ### Issue #211
 
