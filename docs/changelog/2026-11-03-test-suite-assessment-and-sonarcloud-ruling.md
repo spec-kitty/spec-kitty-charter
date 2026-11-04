@@ -1,7 +1,7 @@
 ---
 okf_version: "0.2"
 title: "Test suite assessed; SonarCloud ruled nightly and report-only"
-description: "A dated assessment of the test suite against the packs' testing rubric, with ranked weaknesses, proposed issues and the Accepted ADR-0058 for SonarCloud."
+description: "A dated assessment of the test suite against the packs' testing rubric, with ranked weaknesses, follow-up issues and the Accepted ADR-0058 for SonarCloud."
 doc_status: active
 updated: 2026-11-03T00:00:00Z
 type: Changelog
@@ -11,7 +11,7 @@ related:
   - adr/0058-sonarcloud-nightly-reported-and-checkstyle-complexity-per-pr
 audience:
   - profile: charter-service-contributor
-    guidance_text: Read this for where the test suite stands and which follow-ups are proposed.
+    guidance_text: Read this for where the test suite stands and which follow-ups are filed.
   - profile: governance-lead
     guidance_text: Read this for the SonarCloud ruling and where its record lives.
 ---
@@ -39,7 +39,7 @@ by risk:
 4. A third of the exception assertions check only the type.
 5. Nothing measures complexity.
 
-Nine follow-ups are proposed, not filed.
+Its nine recommendations are filed as follow-ups, listed at the end of the note.
 
 The operator ruled on three questions. SonarCloud runs nightly and is report-only, and Checkstyle
 complexity rules gate each pull request; this is recorded as Accepted

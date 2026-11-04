@@ -169,5 +169,6 @@ the stronger signal.
   (spec-kitty/spec-kitty, pinned to commits on its `main`)
 - [#367](https://github.com/spec-kitty/spec-kitty-charter/issues/367) — refactor the existing
   over-limit methods; a prerequisite of the complexity gate
+- [#371](https://github.com/spec-kitty/spec-kitty-charter/issues/371) and [#372](https://github.com/spec-kitty/spec-kitty-charter/issues/372) — the complexity gate and the nightly scan
 - `.github/workflows/mutation-nightly.yml` — the local nightly, report-only shape
 - [#239](https://github.com/spec-kitty/spec-kitty-charter/issues/239) — mutation floors
