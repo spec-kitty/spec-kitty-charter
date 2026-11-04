@@ -8,6 +8,8 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadMXBean;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
@@ -20,7 +22,8 @@ import org.junit.jupiter.api.Test;
 /**
  * The resolution cost is bounded (NFR-003): a compose of fifty packs with two hundred dependency edges — levels mixed,
  * every range satisfied, a few diamonds — resolves within 250 ms at p95. This is a bounded smoke, not a benchmark
- * harness: a warm-up keeps JIT noise out of the number, and if the case ever flakes it is quarantined and recorded,
+ * harness: each resolution is measured in thread CPU time (the resolver is single-threaded, so GC and other
+ * load on the machine stay out of the number, as in {@code PackFileSetBudgetTest}), a warm-up keeps JIT noise out, and if the case ever flakes it is quarantined and recorded,
  * never deleted or weakened. Tagged {@code timing}: it runs under {@code :packs:timingBudgets}, alone, and not in the
  * unit tier.
  */
@@ -51,15 +54,19 @@ class ResolverCostBoundTest {
         for (int warm = 0; warm < WARM_UP; warm++) {
             PackCompositionResolver.resolve(fixture);
         }
+        ThreadMXBean threads = ManagementFactory.getThreadMXBean();
         long[] nanos = new long[MEASURED];
         for (int measured = 0; measured < MEASURED; measured++) {
-            long start = System.nanoTime();
+            long start = threads.getCurrentThreadCpuTime();
             PackCompositionResolver.resolve(fixture);
-            nanos[measured] = System.nanoTime() - start;
+            nanos[measured] = threads.getCurrentThreadCpuTime() - start;
         }
         Arrays.sort(nanos);
         // Nearest-rank p95: the 95th smallest of the measured resolutions.
         double p95Millis = nanos[(int) Math.ceil(0.95 * MEASURED) - 1] / 1_000_000.0;
+        System.out.printf(
+                "ResolverCostBoundTest: p95 %.3f ms CPU over %d resolutions (limit %.0f ms)%n",
+                p95Millis, MEASURED, P95_LIMIT_MILLIS);
         assertThat(p95Millis)
                 .as("p95 over %d resolutions of %d packs and %d edges", MEASURED, PACKS, EDGES)
                 .isLessThan(P95_LIMIT_MILLIS);
