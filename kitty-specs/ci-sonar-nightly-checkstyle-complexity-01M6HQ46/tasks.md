@@ -11,8 +11,8 @@
 | ID | Description | WP | Parallel |
 |----|-------------|----|----------|
 | T001 | Add the four complexity modules and `SuppressionXpathFilter` to `checkstyle.xml`; switch the register to the XPath DTD | WP01 | |
-| T002 | Measure every (rule, method) pair over the limits on main and test | WP01 | |
-| T003 | Write one `suppress-xpath` entry per pair, with rule, file, reason and sunset, and the Size count | WP01 | |
+| T002 | Measure every method over a limit on main and test, with the rules each one breaks | WP01 | |
+| T003 | Write one `suppress-xpath` entry per method, listing every rule it breaks, with rule, file, reason and sunset, and the Size count | WP01 | |
 | T004 | Prove each limit bites with a planted method, then remove it; record the evidence | WP01 | |
 | T005 | Pure register parser (entries, comment fields, Size) | WP02 | [P] |
 | T006 | Pure comparator: probe report and sources against the register (stale, missing field, wrong Size) | WP02 | [P] |
@@ -38,7 +38,7 @@
 - **Dependencies:** none
 
 T001 Add the four complexity modules and the XPath filter (WP01)
-T002 Measure every (rule, method) pair over the limits (WP01)
+T002 Measure every method over a limit, with the rules it breaks (WP01)
 T003 Write the register entries and the Size count (WP01)
 T004 Prove each limit bites with a planted method (WP01)
 
