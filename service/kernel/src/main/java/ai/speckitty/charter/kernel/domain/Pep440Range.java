@@ -204,48 +204,54 @@ public final class Pep440Range {
         Set<String> texts = new LinkedHashSet<>();
         texts.add("0.dev0");
         for (Spec spec : specs) {
-            Parsed operand = spec.version().orElseThrow();
-            List<BigInteger> release = operand.release();
-            texts.add((operand.epoch().signum() == 0 ? "" : operand.epoch() + "!") + "0.dev0");
-            String exact = canonical(operand.epoch(), release, operand.pre(), operand.post(), operand.dev());
-            texts.add(exact);
-            operand.local().ifPresent(local -> texts.add(exact + "+" + String.join(".", local)));
-            List<BigInteger> padded = new ArrayList<>(release);
-            while (padded.size() < depth) {
-                padded.add(BigInteger.ZERO);
-            }
-            texts.add(canonical(operand.epoch(), padded, Optional.empty(), Optional.empty(), Optional.empty()) + ".1");
-            texts.add(canonical(
-                    operand.epoch(), release, Optional.empty(), Optional.empty(), Optional.of(BigInteger.ZERO)));
-            operand.pre()
-                    .ifPresent(pre -> texts.add(canonical(
-                            operand.epoch(), release, Optional.of(pre.next()), Optional.empty(), Optional.empty())));
-            texts.add(canonical(
-                    operand.epoch(),
-                    release,
-                    operand.pre(),
-                    Optional.of(
-                            operand.post().map(post -> post.add(BigInteger.ONE)).orElse(BigInteger.ZERO)),
-                    Optional.empty()));
-            operand.dev()
-                    .ifPresent(dev -> texts.add(canonical(
-                            operand.epoch(),
-                            release,
-                            operand.pre(),
-                            operand.post(),
-                            Optional.of(dev.add(BigInteger.ONE)))));
-            texts.add(canonical(
-                    operand.epoch(), bumpLast(release), Optional.empty(), Optional.empty(), Optional.empty()));
-            if (spec.operator().equals("~=")) {
-                List<BigInteger> parent = release.subList(0, release.size() - 1);
-                texts.add(canonical(
-                        operand.epoch(), bumpLast(parent), Optional.empty(), Optional.empty(), Optional.empty()));
-            }
+            addCandidateTexts(texts, spec, depth);
         }
         for (String text : texts) {
             candidates.add(new Candidate(text, Parsed.parse(text)));
         }
         return candidates;
+    }
+
+    /**
+     * Adds to {@code texts} the versions around one operand that an overlap is decided on: the operand itself (and
+     * with its local label), and its nearest neighbours in each segment.
+     */
+    private static void addCandidateTexts(Set<String> texts, Spec spec, int depth) {
+        Parsed operand = spec.version().orElseThrow();
+        List<BigInteger> release = operand.release();
+        texts.add((operand.epoch().signum() == 0 ? "" : operand.epoch() + "!") + "0.dev0");
+        String exact = canonical(operand.epoch(), release, operand.pre(), operand.post(), operand.dev());
+        texts.add(exact);
+        operand.local().ifPresent(local -> texts.add(exact + "+" + String.join(".", local)));
+        List<BigInteger> padded = new ArrayList<>(release);
+        while (padded.size() < depth) {
+            padded.add(BigInteger.ZERO);
+        }
+        texts.add(canonical(operand.epoch(), padded, Optional.empty(), Optional.empty(), Optional.empty()) + ".1");
+        texts.add(
+                canonical(operand.epoch(), release, Optional.empty(), Optional.empty(), Optional.of(BigInteger.ZERO)));
+        operand.pre()
+                .ifPresent(pre -> texts.add(canonical(
+                        operand.epoch(), release, Optional.of(pre.next()), Optional.empty(), Optional.empty())));
+        texts.add(canonical(
+                operand.epoch(),
+                release,
+                operand.pre(),
+                Optional.of(operand.post().map(post -> post.add(BigInteger.ONE)).orElse(BigInteger.ZERO)),
+                Optional.empty()));
+        operand.dev()
+                .ifPresent(dev -> texts.add(canonical(
+                        operand.epoch(),
+                        release,
+                        operand.pre(),
+                        operand.post(),
+                        Optional.of(dev.add(BigInteger.ONE)))));
+        texts.add(canonical(operand.epoch(), bumpLast(release), Optional.empty(), Optional.empty(), Optional.empty()));
+        if (spec.operator().equals("~=")) {
+            List<BigInteger> parent = release.subList(0, release.size() - 1);
+            texts.add(
+                    canonical(operand.epoch(), bumpLast(parent), Optional.empty(), Optional.empty(), Optional.empty()));
+        }
     }
 
     private static List<BigInteger> bumpLast(List<BigInteger> release) {

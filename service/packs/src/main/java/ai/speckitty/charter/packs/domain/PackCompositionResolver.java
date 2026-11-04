@@ -381,33 +381,7 @@ public final class PackCompositionResolver {
         for (ResolvedReference resolved : references) {
             PackQualifiedReference reference = resolved.reference();
             if (reference.qualified()) {
-                String missing = reference.packName().orElseThrow();
-                PackUnderResolution target = byName.get(missing);
-                if (target == null) {
-                    throw new Refusal(
-                            Failure.REFERENCE_PACK_MISSING,
-                            referringPack,
-                            referringLabel + " writes the reference `" + reference + "`, but the compose holds no pack"
-                                    + " named `" + missing + "`");
-                }
-                if (!closure.contains(target.descriptor().packId())) {
-                    throw new Refusal(
-                            Failure.REFERENCE_PACK_MISSING,
-                            concat(referringPack, named(target)),
-                            referringLabel + " writes the reference `" + reference + "`, but " + label(target)
-                                    + " is outside its depends_on closure");
-                }
-                Optional<Urn> urn = reference.asUrn();
-                if (urn.isPresent()
-                        && urn.get().kind().authoredInGraphs()
-                        && urn.get().kind().artifactKind().isPresent()
-                        && !target.holds(urn.get().toString())) {
-                    throw new Refusal(
-                            Failure.REFERENCE_ARTIFACT_MISSING,
-                            concat(referringPack, named(target)),
-                            referringLabel + " writes the reference `" + reference + "`, but " + label(target)
-                                    + " does not hold `" + urn.get() + "`");
-                }
+                checkQualifiedReference(reference, byName, closure, referringPack, referringLabel);
             } else if (resolved.holdingPackId()
                     .filter(id -> !id.equals(referringPackId))
                     .isPresent()) {
@@ -421,6 +395,45 @@ public final class PackCompositionResolver {
                         referringLabel + " writes the bare reference `" + reference + "`, which resolves only in "
                                 + holdingLabel + "; a cross-pack reference is written pack-qualified");
             }
+        }
+    }
+
+    /**
+     * Refuses a pack-qualified reference whose pack the compose does not hold, whose pack lies outside the referring
+     * pack's {@code depends_on} closure, or whose pack does not hold the graph-authored artifact it names.
+     */
+    private static void checkQualifiedReference(
+            PackQualifiedReference reference,
+            Map<String, PackUnderResolution> byName,
+            Set<String> closure,
+            List<RefusalPack> referringPack,
+            String referringLabel) {
+        String missing = reference.packName().orElseThrow();
+        PackUnderResolution target = byName.get(missing);
+        if (target == null) {
+            throw new Refusal(
+                    Failure.REFERENCE_PACK_MISSING,
+                    referringPack,
+                    referringLabel + " writes the reference `" + reference + "`, but the compose holds no pack"
+                            + " named `" + missing + "`");
+        }
+        if (!closure.contains(target.descriptor().packId())) {
+            throw new Refusal(
+                    Failure.REFERENCE_PACK_MISSING,
+                    concat(referringPack, named(target)),
+                    referringLabel + " writes the reference `" + reference + "`, but " + label(target)
+                            + " is outside its depends_on closure");
+        }
+        Optional<Urn> urn = reference.asUrn();
+        if (urn.isPresent()
+                && urn.get().kind().authoredInGraphs()
+                && urn.get().kind().artifactKind().isPresent()
+                && !target.holds(urn.get().toString())) {
+            throw new Refusal(
+                    Failure.REFERENCE_ARTIFACT_MISSING,
+                    concat(referringPack, named(target)),
+                    referringLabel + " writes the reference `" + reference + "`, but " + label(target)
+                            + " does not hold `" + urn.get() + "`");
         }
     }
 
