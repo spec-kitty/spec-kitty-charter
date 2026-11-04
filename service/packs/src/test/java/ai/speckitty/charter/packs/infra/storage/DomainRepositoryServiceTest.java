@@ -84,7 +84,8 @@ class DomainRepositoryServiceTest {
     @Test
     void anUnconfiguredPackIsRefused() {
         assertThatThrownBy(() -> service.load(new PackIdentifier("unconfigured"), ALPHA))
-                .isInstanceOf(CharterRefusal.class);
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
     }
 
     /** Entity-level round-trip: save then load returns an equal entity, down to every field. */

@@ -150,7 +150,8 @@ class LinkedPackCommitTest {
 
         assertThatThrownBy(() -> new PackCommitStore(locations, strategy, recording)
                         .commit(PACK, null, toolguide("ripgrep"), SHARD))
-                .isInstanceOf(CharterRefusal.class);
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
 
         assertThat(swaps).hasSize(1);
         assertThat(swaps.getFirst()[1])

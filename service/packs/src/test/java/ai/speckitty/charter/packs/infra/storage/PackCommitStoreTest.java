@@ -136,7 +136,8 @@ class PackCommitStoreTest {
         Map<String, String> before = snapshot(packDir);
 
         assertThatThrownBy(() -> store.commit(PACK, null, toolguide("ripgrep"), SHARD))
-                .isInstanceOf(CharterRefusal.class);
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
 
         assertThat(snapshot(packDir))
                 .as("the live pack is byte-for-byte unchanged")
