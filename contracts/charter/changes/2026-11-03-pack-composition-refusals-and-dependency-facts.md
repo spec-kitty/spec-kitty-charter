@@ -4,7 +4,7 @@
   the eleven refusal codes of the dependency resolver are declared, and `GET /offering` raises all eleven:
   `pack_dependency_cycle`, `pack_dependency_unknown`, `pack_dependency_out_of_range` (which also covers two ranges on
   one pack that share no version), `pack_parent_unresolved`, `pack_level_violation`, `pack_name_conflict`,
-  `pack_duplicate_id`, `pack_reference_unqualified` (a bare reference, in a graph edge or a typed reference, that resolves only in
+  `pack_duplicate_id`, `pack_reference_unqualified` (a bare reference, in a graph edge, a typed reference, a directive's `procedures` or a paradigm's `directive_refs`, that resolves only in
   another pack) and `pack_reference_pack_missing` (a qualified reference whose pack is outside the referring pack's own
   `depends_on` closure), `pack_reference_artifact_missing` (a qualified reference to a pack of the closure that does not
   hold the artifact) and `pack_sibling_conflict`, all with 500 like `pack_unreadable`: the request is fine and the
@@ -23,7 +23,9 @@
   declared PEP 440 `range` and the `version` that satisfied it (`[]` for a pack that declares none), in a new
   `ResolvedDependency` schema, and the required `descriptorPackId`, the `pack_id` the pack's `pack.yaml` declares,
   which `dependsOn[].descriptorPackId` names (`packId` stays the configured identifier, so a client joins a dependency edge to
-  its offering entry by `descriptorPackId`). `PackPin` does not carry these facts yet: the activation reads that
+  its offering entry by `descriptorPackId`). The offering is in the merge order: a dependency comes before the packs that need it, each level stays
+  contiguous (built-in, then org, then project), and the packs no dependency relates stay in configured-level, then
+  pack-id code-point order. `PackPin` does not carry these facts yet: the activation reads that
   would fill them are reserved, and the member is deferred to #359. The additive response properties are graded `ERR` by
   `../compat/severity-levels.txt`, so `info.version` moves `0.1.0-SNAPSHOT` → `0.2.0-SNAPSHOT` (ADR-0022: a 0.x
   breaking change takes a minor bump and this `### Breaking` entry). No released contract is broken incompatibly:
