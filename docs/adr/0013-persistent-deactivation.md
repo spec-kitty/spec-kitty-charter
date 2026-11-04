@@ -2,8 +2,8 @@
 title: "ADR-0013: Deactivation persists in one activation ledger, and nothing silently reinstalls it"
 description: A deactivated charter element stays gone; one activation ledger holds allow and deny state, and cascade, upgrade and presets skip what a user excluded.
 doc_status: active
-updated: 2026-10-26T00:00:00Z
-decision_status: Accepted; superseded in part by ADR-0033 (2026-10-26)
+updated: 2026-11-04T00:00:00Z
+decision_status: Accepted; superseded in part by ADR-0033 (2026-10-26); cascade relations and stale documents settled by ADR-0059 (2026-11-04)
 decision_date: '2026-10-19'
 type: ADR
 kind: ADR
@@ -36,6 +36,8 @@ keeps `charter.activation` in core until its post-GA rework. Most of this record
 a request to core; the part this repository owns is called out.
 
 Superseded in part by [ADR-0033](/adr/0033-local-active-charter-is-source-of-truth/) (2026-10-26): the project's local `activation.yaml` is the source of truth, written through to the service, which holds a copy (decision 1).
+
+Amended 2026-11-04 by [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/): the cascade follows `requires`, `suggests`, `refines`, `scope` and `instantiates`, plus `enhances` in reverse (decision 2), and a stored document a pack upgrade made stale is served and flagged (decision 4).
 
 ## Context
 

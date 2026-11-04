@@ -1,0 +1,172 @@
+---
+title: "ADR-0059: The switch gate, the cascade edges, the layer-override grain and the activation write rulings"
+description: "Operator rulings of 2026-11-04: design BDD scenarios alone gate each core switch, the cascade edges, whole-artifact layer overrides, and ADR-0020 open questions 4 to 7."
+doc_status: active
+updated: 2026-11-04T00:00:00Z
+decision_status: Accepted
+decision_date: '2026-11-04'
+type: ADR
+kind: ADR
+related:
+  - adr/0055-cutover-sequencing-the-java-service-first
+  - adr/0020-offering-and-activations
+  - adr/0013-persistent-deactivation
+  - adr/0018-action-context-read-and-seam-access-surface
+  - adr/0048-pack-composition-and-the-named-packs-split
+  - adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions
+  - adr/0016-conformance-corpus-harness-over-core-cli
+  - adr/0010-cutover-scope-and-seam-boundary
+audience:
+  - profile: governance-lead
+    guidance_text: Read this for what proves an operation is ready for core to switch to it, and the activation rules the service builds to.
+  - profile: charter-service-contributor
+    guidance_text: Read this before building the activation writes (#291), the cascade or the layer merge (#10, #11).
+---
+
+# ADR-0059: The switch gate, the cascade edges, the layer-override grain and the activation write rulings
+
+## Status
+
+**Accepted**, 2026-11-04. Decider: Stijn Dejongh (operator). The operator ruled these points in one session on
+2026-11-04, before the activation writes ([#291](https://github.com/spec-kitty/spec-kitty-charter/issues/291)) and
+the resolution domain ([#10](https://github.com/spec-kitty/spec-kitty-charter/issues/10),
+[#11](https://github.com/spec-kitty/spec-kitty-charter/issues/11)) are built.
+
+This record answers [ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/) open question 1 and
+[ADR-0020](/adr/0020-offering-and-activations/) open questions 4 to 7. It also settles two points that
+[ADR-0013](/adr/0013-persistent-deactivation/), ADR-0020 and
+[ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) left open: the edges the cascade
+follows, and the grain of a layer override. Each of those records points here.
+
+Core's ADR `2026-10-03-1` still names the conformance corpus as the only gate. Core amends it to match; this
+repository does not.
+
+## Context
+
+- **The switch gate.** ADR-0055 D3 made this repository's design the acceptance oracle and retired core's Python
+  answers as the reference. Its open question 1 asked what then proves an operation ready for core to switch to it.
+  [#9](https://github.com/spec-kitty/spec-kitty-charter/issues/9),
+  [#72](https://github.com/spec-kitty/spec-kitty-charter/issues/72) and #74 were held on it.
+- **The cascade.** ADR-0013 D4 and ADR-0020 D6 fix the cascade's stop at a deny entry and its report buckets, but
+  name no relations. Core walks five relations (`requires`, `suggests`, `refines`, `scope`, `instantiates`)
+  with no depth limit. The pack ecosystem added edges core does not have: `enhances`, `overrides`,
+  `specializes_from`, and pack-qualified references (ADR-0048 to ADR-0054).
+- **The layer override.** ADR-0053 d6 ruled that across levels the same id is a legitimate layer override,
+  applied project over org over built-in, with no edge needed. It did not say whether the override takes the
+  place of the whole artifact or only of the fields it declares. Core's ADR `3.x/2026-05-16-1` chose a field
+  merge with a collision warning; this repository's glossary says a layer override "takes the place of" the
+  artifact.
+- **The activation writes.** ADR-0020 open questions 4 to 7 must be ruled before #291 builds the writes.
+
+## Decision
+
+### D1. The design's BDD scenarios alone gate each core switch (ruled)
+
+An operation is ready for core to switch to it when its design-derived BDD scenarios pass against the service.
+These are the `@contract` scenarios in `contracts/charter/scenarios/`, accepted against the hand-authored and fixture
+packs of ADR-0055 D3. Nothing is run against core's Python answers as a gate:
+
+- the conformance corpus over core's CLI ([ADR-0016](/adr/0016-conformance-corpus-harness-over-core-cli/)) is not
+  a gate;
+- no shadow comparison and no observation period gate a switch. Core's shadow route
+  ([#14](https://github.com/spec-kitty/spec-kitty-charter/issues/14)) may still report differences as diagnostics.
+
+Where the service's answer differs from core's on purpose, the
+[divergence register](/conformance/divergence-register/) records it, so core knows what changes when it switches. The
+register informs; it does not gate.
+
+**Why.** ADR-0055 D3: core's Python implements the model the design replaces. A gate that compares against it would
+pin the service to that model.
+
+**What follows.** #72 (conformance as a blocking gate) and #9 (the corpus harness) are re-scoped or closed, and #14
+loses its gating role. Those changes are follow-ups, not part of this record.
+
+### D2. The cascade follows five relations and `enhances` (ruled)
+
+1. **Five relations, no depth limit.** The activation cascade walks `requires`, `suggests`, `refines`, `scope`
+   and `instantiates` forward, as core does. It stops at a denied artifact and reports it (ADR-0013 D4).
+2. **`enhances`, in reverse.** The edge runs from the enhancing artifact to its target. When a target comes into
+   force, by selection or by the cascade, every artifact that enhances it joins and is walked in turn. A
+   selected enhancer does not pull its target in. A denied enhancer is skipped and reported, as any denied
+   artifact is. The pulled enhancer's provenance names `enhances`.
+3. **Pack-qualified references are followed.** A `<pack-name>::<urn>` target is resolved in the compose and walked
+   under the same relations (ADR-0053 d7).
+4. **`specializes_from` is walked as lineage, not as a candidate.** The walk passes through a profile's parent to
+   reach what the parent `requires` or `scope`s, but the parent itself is not put in force.
+5. **No other edge is followed.** `overrides` and `replaces` are merge edges: following them would bring the
+   replaced original back into force. `rejects` points at an anti-pattern (ADR-0052). `delegates_to` is a runtime
+   handoff. `vocabulary`, the tension edges and the derived `implemented_by` are not followed either. Pack-level
+   `depends_on` is not an artifact edge: activation stays per artifact (ADR-0048).
+
+**Why.** The five relations keep core's reach, so a project activates what it activated before. `enhances` brings an
+enhancing artifact into force with the artifact it adds to. The other edges either replace content or point at
+what must not be activated.
+
+### D3. A layer override takes the place of the whole artifact (ruled)
+
+When the same artifact id is in force at more than one level, the artifact from the level that applies (project
+over org over built-in) takes the place of the other one whole. Fields it does not declare are not inherited.
+A pack adds to an artifact without replacing it through an explicit `enhances` edge. The service reports each layer
+override in its diagnostics.
+
+This differs from core's field merge (core ADR `3.x/2026-05-16-1`). The divergence register records the
+difference.
+
+**Why.** The overriding artifact says everything that is in force, with no partial-field surprises. The design
+already has `enhances` for additive change.
+
+### D4. A stored document a pack upgrade made stale is served and flagged (ruled; ADR-0020 question 5)
+
+- **On read.** The service answers from the stored document as it stands. An id the offering no longer has is left
+  out and listed in the skipped report. A deny entry on an artifact that is now required or locked is not applied
+  (ADR-0013 D2), and the skipped report lists that too.
+- **On write.** A `PUT` that still carries an unknown id is refused `422 activation_invalid`, and one that denies a
+  required or locked artifact `409` (ADR-0020 D9). The client cleans the document up before it writes it back.
+
+ADR-0020 D6's round trip ("a `PUT` of a fetched `config` answers `200` with the same `ETag`") holds for a document
+the offering has not made stale.
+
+### D5. The `Activation` answer's `ETag` is its revision, and the reads declare `304` (ruled; ADR-0020 questions 4 and 7)
+
+- `summary` moves out of the `Activation` answer to an effective read, so the answer's bytes depend only on the
+  stored document, and its strong `ETag` is the revision.
+- `getActivation` and the four effective reads declare `If-None-Match` and `304 Not Modified` now. An effective
+  read's `ETag` covers the revision and the `governanceFingerprint`, because its answer depends on both.
+
+**Why.** A strong `ETag` must change with the bytes (RFC 9110). A success status added after 1.0.0 is breaking
+(ADR-0020 D8).
+
+### D6. A preset replaces each key it lists (ruled; ADR-0020 question 6)
+
+`applyActivationPreset` replaces each key the preset lists, `activatedKinds` and `missionTypes` included, and
+`ActivationChange.applied` reports them. Keys the preset does not list are left as they are. `force` clears the deny
+entries that match the preset's members (ADR-0020 D6). This is core's behavior.
+
+## Consequences
+
+### Positive
+
+- Each operation has one readiness test, which this repository owns and runs on every pull request.
+- The cascade, the merge and the writes can be built without waiting on further rulings.
+
+### Negative
+
+- Core switches without proof that the service agrees with its Python answers. Every deliberate difference must
+  be in the divergence register before core switches, or core finds it in use.
+- D3 and D2.2 depart from core. A project with a partial override, or with an artifact that enhances another,
+  sees different content after the switch.
+- D5 changes the contract: `summary` leaves `Activation`, and `304` is added to five operations.
+
+## Follow-ups
+
+- Re-scope or close #9 and #72; drop the gating role from #14.
+- Add the divergence-register entries for D2.2, D3 and D4.
+- Update `docs/architecture/logical-model.md` (the cascade relations) and the glossary's layer override.
+- Build D4 to D6 in #291 and D2 and D3 in #10 and #11.
+
+## References
+
+- [ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/), open question 1.
+- [ADR-0020](/adr/0020-offering-and-activations/), open questions 4 to 7.
+- [ADR-0013](/adr/0013-persistent-deactivation/), cascade and deny-list.
+- [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) d6 and d7.
