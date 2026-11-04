@@ -1,4 +1,6 @@
 {
+  "contracts": "none",
+  "contracts_rationale": "CI and build-gate change only: no API, schema or event contract is added or changed.",
   "coordination_branch": "kitty/mission-ci-sonar-nightly-checkstyle-complexity-01M6HQ46",
   "created_at": "2026-11-03T22:05:29.238764+00:00",
   "flattened": false,
@@ -14,6 +16,6 @@
   "slug": "ci-sonar-nightly-checkstyle-complexity-01M6HQ46",
   "target_branch": "ci-sonar-nightly-checkstyle-complexity",
   "topology": "coord",
-  "contracts": "none",
-  "contracts_rationale": "CI and build-gate change only: no API, schema or event contract is added or changed."
+  "vcs": "git",
+  "vcs_locked_at": "2026-11-04T06:11:39.513176+00:00"
 }
