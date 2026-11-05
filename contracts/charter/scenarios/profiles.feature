@@ -13,8 +13,8 @@
 #   pack_sibling_conflict (../schemas/CharterRefusalCode.yaml): deterministic, not retryable, its detail a
 #   sentence naming the enhancing pack, its packs member listing that pack first. No code of this version
 #   names this refusal, so #380 adds one. Should the enhancement be registered through a write instead, the
-#   request is at fault, and the write answers 422 validation_failed before any file is written, as every
-#   registration write answers a body it refuses.
+#   write keeps that same code and answers 422 through its operation's status override, as the pack_reference_*
+#   codes do for putPackRelationship, refused before any file is written.
 
 @WIP
 Feature: An agent profile is only ever added to, never quietly weakened

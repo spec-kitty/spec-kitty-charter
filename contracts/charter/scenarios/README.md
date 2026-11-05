@@ -186,9 +186,9 @@ that calls it. A run that selects only some scenarios reports the others' operat
   negative control (ADR-0048, ADR-0053).
 - `journeys/journey-NN-<slug>.feature`: the eleven user journeys, each a mix of runnable and `@WIP` scenarios.
 - `registration/`, `trust/`, `integrity/`, `distribution/`: the pack registration and distribution scenarios of
-  ADR-0005 and ADR-0019 (#43), every one `@WIP` and none `@contract`. The surface is decided, not built, and outside the cutover scope
-  (ADR-0055 D1), so they are not executed, by decision (#374); each file's header says what changes when they are
-  bound. Their fixtures stay in `src/test/resources/fixtures/`.
+  ADR-0005 and ADR-0019 (#43), every one `@WIP` and none `@contract`. The surface is decided, not built, and
+  outside the cutover scope (ADR-0055 D1), so they are not executed, by decision (#374); each file's header says
+  what changes when they are bound. Their fixtures stay in `src/test/resources/fixtures/`.
 - `profiles.feature`: the refusal of an agent profile enhancement that would drop fields of the profile it enhances
   (`PR-CHARTER-REFUSAL-001`), `@WIP` until the effective profile is built (#380); its header states the provisional
   target answer.
