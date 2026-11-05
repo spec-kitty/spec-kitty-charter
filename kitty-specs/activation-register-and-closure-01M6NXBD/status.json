@@ -1,7 +1,7 @@
 {
-  "event_count": 63,
-  "last_event_id": "01M6PPG4SE898X8XXS0WW5745F",
-  "materialized_at": "2026-11-05T20:30:41.454255+00:00",
+  "event_count": 64,
+  "last_event_id": "01M6PPK0FB4QQAZDMYJP3J5V2G",
+  "materialized_at": "2026-11-05T20:32:15.339461+00:00",
   "mission_number": "",
   "mission_slug": "activation-register-and-closure-01M6NXBD",
   "mission_type": "",
@@ -12,8 +12,8 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 0,
-    "in_progress": 1,
+    "for_review": 1,
+    "in_progress": 0,
     "in_review": 1,
     "planned": 9
   },
@@ -199,9 +199,9 @@
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
       "implementer_of_record": "claude:claude-opus-5-5:java-jenny",
-      "lane": "in_progress",
-      "last_event_id": "01M6PPDE0NXC09RYA77F3VERMK",
-      "last_transition_at": "2026-11-05T20:29:12.582520+00:00",
+      "lane": "for_review",
+      "last_event_id": "01M6PPK0FB4QQAZDMYJP3J5V2G",
+      "last_transition_at": "2026-11-05T20:32:15.339461+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "WP06 done (c65bfa2). Gates: :kernel:check 0 (2675 tests), :activations:check 0 (81), HexagonalArchitectureTest 0 (54); domain purity grep clean. Kernel: InForceWhenAbsent collapsed to NONE; SKILL loses its REQUIRED default (divergence-register entry for WP10). No domain port added, so the PORT_SIGNATURES per-slice generalisation is left for WP07. Notes: violation pointers index the canonical (sorted) lists, except builder shape violations (written order); builder throws IAE for schema-guaranteed shapes (schemaVersion!=1, empty packs); RequiringPack.via is empty (snapshot carries no chain); lists sort by code point per contract, JCS keys by UTF-16."
@@ -218,13 +218,13 @@
       "shell_pid": null,
       "shell_pid_created_at": null,
       "subtasks": {
-        "T034": "planned",
-        "T035": "planned",
-        "T036": "planned",
-        "T037": "planned",
-        "T038": "planned",
-        "T039": "planned",
-        "T040": "planned"
+        "T034": "done",
+        "T035": "done",
+        "T036": "done",
+        "T037": "done",
+        "T038": "done",
+        "T039": "done",
+        "T040": "done"
       }
     },
     "WP07": {
