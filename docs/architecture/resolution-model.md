@@ -72,6 +72,8 @@ flowchart LR
    does not raise it yet
    ([ADR-0012](/adr/0012-pack-mutability-policy/)). When org packs declare the same URN, the
    later-declared pack wins for every URN and every restated edge (core `59d190a7`, #87).
+   *2026-11-05: across levels the artifact from the level that applies takes the place of the other one whole; no
+   field merge ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) decision 3).*
 
    > **Partly built:** for sibling packs at one level,
    > [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) decision 9 is built: two siblings that both

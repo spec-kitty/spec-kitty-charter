@@ -36,17 +36,13 @@ import org.junit.jupiter.api.io.TempDir;
 /**
  * The whole-pack seam over the real packs (#189, SC-002; #193 FR-010, NFR-001): every open-packs pack that has a
  * {@code pack.yaml} loads with exactly the violations pinned for it as
- * known failures in {@code whole-pack/known-failures.yaml} (built-in only; none for every other pack), and every pack
+ * known failures in {@code whole-pack/known-failures.yaml} (none at this pin), and every pack
  * that loads clean writes to a fresh directory and reloads with the same meaning: every bound kind, the asset files,
  * the templates, the presets, the pack document and every DRG document. The files are compared too: asset sidecars and
  * presets by meaning (ADR-0036), the pack document by its Markdown model (#260), asset files and templates by SHA-256.
  *
- * <p>The built-in pack's six sidecars anchor {@code path} at the pack root and are refused (open-packs#75). Its presets
- * and its manifest are in the sanitized shapes at the pin (OP-1, OP-2, open-packs 213a059 and cfc9971) and load clean,
- * but the manifest lists the six refused sidecars, so only writing it back refuses — its known-failure entry is
- * {@code round_trip_only}, skipped by the load-refusal ratchet here and still pinned exactly by the gate. A temporary
- * copy with the six paths corrected and the manifest recomputed over it (the open-packs fix, applied here to a test
- * fixture only) round-trips whole, so built-in stays covered. The manifest's derived fields are verified on both sides
+ * <p>The built-in pack's six sidecars anchor {@code path} at {@code assets/} since open-packs#75, so nothing is pinned
+ * against it and it round-trips as it stands. The manifest's derived fields are verified on both sides
  * ({@link PackManifests#stale}) and the rest of it compared by meaning. A pinned refusal is one per file: the file's
  * reasons in the store's order, joined by {@code "; "}, as the gate pins them.
  *
@@ -137,7 +133,7 @@ class WholePackOpenPacksRoundTripTest {
     /**
      * The violations of a pack against its pinned refusals, matched by file and reason (R10): a violation nobody
      * pinned, and a pinned refusal that no longer occurs, are both problems. The refusals are the gate's own known
-     * failures ({@code known-failures.yaml}), which pin the open-packs built-in pack; every other pack has none.
+     * failures ({@code known-failures.yaml}), which can only pin the open-packs built-in pack, and hold none at this pin.
      */
     private List<String> unpinned(Path pack, WholePackStore.LoadedPack loaded) {
         Set<String> pinned =
@@ -309,9 +305,8 @@ class WholePackOpenPacksRoundTripTest {
     }
 
     /**
-     * #194: what the whole packs hold of procedures and toolguides at the pin, each toolguide with its guide. Built-in
-     * and internal are the open-packs packs with a {@code pack.yaml}; {@code qa} has none and is counted file by file by
-     * {@code ProcedureAndGuideCorpusTest}.
+     * #194: what built-in and internal hold of procedures and toolguides at the pin, each toolguide with its guide.
+     * {@code qa} is counted file by file by {@code ProcedureAndGuideCorpusTest}.
      */
     @Test
     void theProcedureAndToolguideCountsOfEveryWholePackArePinned() {
@@ -336,7 +331,7 @@ class WholePackOpenPacksRoundTripTest {
         assertThat(counts).containsExactly(Map.entry(BUILT_IN, List.of(22, 18)), Map.entry("internal", List.of(12, 3)));
     }
 
-    /** The counts as {@link PackFileSet} lists the files, for a pack no store loads (it has no {@code pack.yaml}). */
+    /** The counts as {@link PackFileSet} lists the files, without the store. */
     private static Counts listed(Path pack) throws IOException {
         List<String> files = PackFileSet.assetFiles(pack);
         int binary = 0;
@@ -422,49 +417,23 @@ class WholePackOpenPacksRoundTripTest {
         }
     }
 
-    // ---- built-in, as pinned and as corrected --------------------------------------------------------------------
+    // ---- built-in, as pinned ------------------------------------------------------------------------------------
 
     /**
-     * Acceptance checks 2 and 3: the built-in pack refuses exactly its six pinned sidecars, and nothing else — its
-     * presets and its manifest are sanitized at the pin (OP-1, OP-2) and load clean; a copy with the six {@code path}
-     * values corrected and the manifest recomputed over it (the open-packs fix, applied to a test fixture only) loads
-     * clean and round-trips whole, its manifest fresh on both sides.
+     * Acceptance checks 2 and 3, now on the real pack: built-in loads clean with every kind it holds, nothing is pinned
+     * against it, and it round-trips whole with its manifest fresh on both sides. A copy with one sidecar put back to the
+     * old root anchor is refused for exactly that file, so a load that stopped judging payloads cannot pass here.
      */
     @Test
-    void aCorrectedCopyOfBuiltInRoundTripsWholeWhileTheOriginalRefusesExactlyThePinnedSix(@TempDir Path host)
+    void theBuiltInPackRoundTripsWholeWhileASidecarPutBackToTheRootAnchorIsRefused(@TempDir Path host)
             throws IOException {
         Path builtIn = OpenPacksCorpus.packsDirectory().resolve(BUILT_IN);
-        WholePackStore.LoadedPack original = store.load(builtIn);
-
-        assertThat(pinnedRefusals()).hasSize(6);
-        assertThat(refusalsByFile(original)).hasSize(6);
-        assertThat(unpinned(builtIn, original)).isEmpty();
-        // OP-1 and OP-2 landed: the presets and the manifest load clean, so only the six #75 sidecar refusals remain.
-        assertThat(original.pack().violations()).hasSize(6).allSatisfy(v -> {
-            assertThat(v.kind()).isEqualTo("asset");
-            assertThat(v.file()).startsWith(PackFileSet.ASSETS).endsWith(SIDECAR_SUFFIX);
-        });
-
-        Path corrected = copyTree(builtIn, host.resolve("corrected").resolve(BUILT_IN));
-        int fixed = 0;
-        for (Path sidecar : regularFilesUnder(corrected.resolve("assets"))) {
-            if (sidecar.getFileName().toString().endsWith(SIDECAR_SUFFIX)) {
-                String text = Files.readString(sidecar);
-                String fixedText = text.replace("\npath: assets/", "\npath: ");
-                fixed += fixedText.equals(text) ? 0 : 1;
-                Files.writeString(sidecar, fixedText);
-            }
-        }
-        // The pinned manifest is sanitized (OP-2) but stale over the corrected sidecars; recompute it as the round
-        // trip recomputes its own.
-        Path manifest = corrected.resolve(PackFileSet.MANIFEST);
-        Files.writeString(manifest, recomputedManifest(Files.readString(manifest), corrected));
         long start = System.nanoTime();
-        WholePackStore.LoadedPack loaded = store.load(corrected);
-        System.out.println("NFR-004 whole-pack load of the corrected built-in pack, manifest included: "
+        WholePackStore.LoadedPack loaded = store.load(builtIn);
+        System.out.println("NFR-004 whole-pack load of the built-in pack, manifest included: "
                 + (System.nanoTime() - start) / 1_000_000 + " ms");
 
-        assertThat(fixed).isEqualTo(6);
+        assertThat(pinnedRefusals()).isEmpty();
         assertThat(loaded.pack().violations()).isEmpty();
         assertThat(loaded.pack().presets()).extracting(Preset::id).containsExactly("default", "minimal");
         assertThat(loaded.unmodelled())
@@ -479,40 +448,19 @@ class WholePackOpenPacksRoundTripTest {
                 .filteredOn(template -> template.missionType().isEmpty())
                 .extracting(template -> template.id().value())
                 .containsExactly("writing/meeting-discussion-notes.md", "writing/meeting-minutes.md");
-        assertThat(roundTrip(corrected, loaded, host.resolve("written").resolve(BUILT_IN)))
+        assertThat(roundTrip(builtIn, loaded, host.resolve("written").resolve(BUILT_IN)))
                 .isEmpty();
-        assertThat(payloadsLeftUnmodelled(corrected, loaded)).isEmpty();
-    }
+        assertThat(payloadsLeftUnmodelled(builtIn, loaded)).isEmpty();
 
-    /**
-     * The built-in manifest recomputed over the corrected copy. The pinned manifest is already in the sanitized shape
-     * (OP-2), so its constituents and preset entries (keyed by {@code id}) are kept exactly as listed — every listed
-     * kind is modelled since #194 binds procedures — and only the derived fields are stamped from the pack's bytes, as
-     * {@link PackManifests#recompute} stamps the round trip's own manifest.
-     */
-    private static String recomputedManifest(String text, Path pack) {
-        Map<?, ?> raw = (Map<?, ?>) Yaml.load(text);
-        List<PackManifestDso.Constituent> constituents = new ArrayList<>();
-        for (Object item : (List<?>) raw.get("constituents")) {
-            Map<?, ?> entry = (Map<?, ?>) item;
-            constituents.add(new PackManifestDso.Constituent(
-                    String.valueOf(entry.get("kind")),
-                    String.valueOf(entry.get("id")),
-                    String.valueOf(entry.get("path")),
-                    String.valueOf(entry.get("content_hash"))));
-        }
-        List<PackManifestDso.PresetEntry> presets = new ArrayList<>();
-        for (Object item : (List<?>) raw.get("presets")) {
-            Map<?, ?> entry = (Map<?, ?>) item;
-            presets.add(new PackManifestDso.PresetEntry(
-                    String.valueOf(entry.get("id")),
-                    String.valueOf(entry.get("path")),
-                    String.valueOf(entry.get("content_hash"))));
-        }
-        PackManifestDso manifest =
-                new PackManifestDso(String.valueOf(raw.get("schema_version")), "0".repeat(64), constituents, presets);
-        return PackManifestYaml.write(PackManifests.recompute(manifest, path -> bytesOf(pack.resolve(path)))
-                .stamped());
+        Path copy = copyTree(builtIn, host.resolve("root-anchored").resolve(BUILT_IN));
+        String file = "assets/audiences/line_manager.md" + SIDECAR_SUFFIX;
+        String sidecar = Files.readString(copy.resolve(file));
+        assertThat(sidecar).contains("\npath: audiences/line_manager.md");
+        Files.writeString(copy.resolve(file), sidecar.replace("\npath: ", "\npath: assets/"));
+
+        assertThat(refusalsByFile(store.load(copy)))
+                .containsExactly(
+                        file + ": " + REFUSED + "payload assets/assets/audiences/line_manager.md does not exist");
     }
 
     private static Path copyTree(Path source, Path target) throws IOException {
@@ -550,8 +498,7 @@ class WholePackOpenPacksRoundTripTest {
 
     /**
      * #190: every agent-profile file of every real pack is in the aggregate, so a walk that missed them cannot pass.
-     * The {@code qa} packs have no {@code pack.yaml} and are no whole pack; their profiles are covered file by file by
-     * {@code PackDoctrineCorpusRoundTripTest}.
+     * Every pack has a {@code pack.yaml} at this pin, so {@code qa}'s profiles are counted here too.
      */
     @Test
     void everyAgentProfileFileOfARealPackLoadsAsAProfile() throws IOException {
@@ -573,7 +520,7 @@ class WholePackOpenPacksRoundTripTest {
 
         assertThat(loaded).isEqualTo(onDisk);
         assertThat(loaded.values().stream().mapToInt(Integer::intValue).sum())
-                .as("the 26 built-in profiles")
-                .isEqualTo(26);
+                .as("the 26 built-in profiles and qa's 5")
+                .isEqualTo(31);
     }
 }
