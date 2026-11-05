@@ -312,6 +312,9 @@
       "last_event_id": "01M6PTY22RE9DXBZRC0J4KH400",
       "last_transition_at": "2026-11-05T21:48:11.736999+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "WP09 green (e9b9990). Gates: :deployable:test 755/0 fail (activation-register.feature 35 scenarios incl. 3 new: null item, version pin, stored deny now-required; composition closure scenario; success-status coverage; ReservedRefusalCodesTest 26/26); :contracts:check -PcontractBaseline=none green (checkRefusalExamples 0 findings); :activations:check 198 tests; :packs:check -x openPacksRoundTrip; :kernel:check. Four codes raised; reserved ops 9. Property test 1,000 docs seed 20261105. Snapshot counts asserted in ActivationServiceTest (1 per write/closure read, 0 get/delete). Fingerprint: getActivation/listActivationPacks declare/send none (contract, lint rules, hook exemption, changelog line). RequiringPack.via left [] (documented in DocumentRules). Unknown packs: adapter lists catalog only on IAE -> unresolved ClosureSnapshot. 400 class is MalformedPreconditionException (covers both validators and non-* If-None-Match). Header/path pattern ConstraintViolationException -> 400; body -> 422. Path kind param is String: no Converter needed (WP13). Cucumber suite now uses an in-memory register (it was writing to ~/.spec-kitty/charter/activations)."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 13288,
