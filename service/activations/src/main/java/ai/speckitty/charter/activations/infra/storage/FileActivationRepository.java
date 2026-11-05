@@ -18,8 +18,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
@@ -28,8 +26,12 @@ import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The activation documents on disk (FR-019): {@code <root>/<id>/activation.json}, holding exactly the canonical bytes
- * of {@link ActivationFileCodec}. Decision {@code DM-01M6P92QKYFZW9KDGGQGX9H9VS}: an atomic move under an in-process
+ * The activation documents on disk (FR-019): {@code <root>/<encoded id>/activation.json}, holding exactly the
+ * canonical bytes of {@link ActivationFileCodec}. The directory is named by {@link ActivationDirectoryName}, a
+ * reversible encoding that keeps ids differing only in case apart on a case-insensitive file system (T106). The file
+ * holds the document alone, not its id, since its bytes are the bytes its revision hashes (FR-005); a read checks
+ * instead that the directory's name decodes to the id asked for ({@link #checkedName}). No register was released
+ * before this layout, so nothing is migrated. Decision {@code DM-01M6P92QKYFZW9KDGGQGX9H9VS}: an atomic move under an in-process
  * per-id lock, for one replica (ADR-0060); several processes over one root are out of scope (#349).
  *
  * <p><b>A write</b> creates the id's directory, writes {@code activation.json.tmp-<uuid>} beside the target through a
@@ -38,10 +40,11 @@ import org.jspecify.annotations.Nullable;
  * the temporary file and leaves the previous document as it was; it is thrown as an {@link ActivationStorageException}.
  * A temporary file a crash left behind is never read and is deleted by the id's next write.
  *
- * <p><b>Locking:</b> every operation, {@link #find} included, holds the id's {@link ReentrantLock} across its
- * read-compare-write, which makes each id linearisable. The lock map grows by one lock per id ever touched, which is
- * acceptable at one activation per project; a lock is never removed, since removing one on delete would race a writer
- * that already holds it.
+ * <p><b>Locking:</b> every operation, {@link #find} included, holds its id's lock across its read-compare-write, which
+ * makes each id linearisable. The locks are striped (T107): a fixed array of {@value #LOCK_STRIPES}
+ * {@link ReentrantLock}s, an id's stripe chosen by the hash of its encoded directory name, so the structure never grows
+ * with the ids written and case variants never share a key by accident (they may share a stripe, which only serialises
+ * them). Striping is preferred to removing a lock on release, which would race a writer that already holds it.
  *
  * <p><b>Platform notes:</b> on POSIX the atomic move alone guarantees that a reader sees a whole file. On Windows a
  * move over a target another thread holds open fails with {@link AccessDeniedException}, which is why {@link #find}
@@ -64,6 +67,9 @@ public final class FileActivationRepository implements ActivationRepository {
     /** The pause before a denied move is attempted again. */
     static final long RETRY_PAUSE_MILLIS = 5;
 
+    /** How many locks the ids are striped over. */
+    static final int LOCK_STRIPES = 64;
+
     /**
      * The failure-injection seam: the second step of a write, moving the fully written temporary file over the
      * target. The default is an {@code ATOMIC_MOVE}; a test supplies one that throws.
@@ -80,12 +86,13 @@ public final class FileActivationRepository implements ActivationRepository {
         void move(Path temp, Path target) throws IOException;
     }
 
-    private static final Rename ATOMIC = (temp, target) ->
+    /** The production move: an atomic replace. */
+    static final Rename ATOMIC = (temp, target) ->
             Files.move(temp, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
 
     private final Path root;
     private final Rename rename;
-    private final ConcurrentMap<ActivationId, ReentrantLock> locks = new ConcurrentHashMap<>();
+    private final ReentrantLock[] locks = stripes();
 
     /**
      * A store over a directory, which the first write creates.
@@ -146,8 +153,26 @@ public final class FileActivationRepository implements ActivationRepository {
         });
     }
 
+    private static ReentrantLock[] stripes() {
+        ReentrantLock[] stripes = new ReentrantLock[LOCK_STRIPES];
+        for (int i = 0; i < LOCK_STRIPES; i++) {
+            stripes[i] = new ReentrantLock();
+        }
+        return stripes;
+    }
+
+    /** The stripe of an id: the hash of its encoded directory name, the same key its directory is found by. */
+    static int stripeOf(ActivationId id) {
+        return Math.floorMod(ActivationDirectoryName.encode(id).hashCode(), LOCK_STRIPES);
+    }
+
+    /** How many locks the store holds, whatever the ids written: the stripe count. */
+    int lockCount() {
+        return locks.length;
+    }
+
     private <T> T underLock(ActivationId id, Supplier<T> action) {
-        ReentrantLock lock = locks.computeIfAbsent(id, key -> new ReentrantLock());
+        ReentrantLock lock = locks[stripeOf(id)];
         lock.lock();
         try {
             return action.get();
@@ -158,15 +183,31 @@ public final class FileActivationRepository implements ActivationRepository {
 
     /** The id's directory, never outside the root (the id grammar already forbids it; this is defence in depth). */
     private Path directory(ActivationId id) {
-        Path directory = root.resolve(id.value()).normalize();
+        Path directory = root.resolve(ActivationDirectoryName.encode(id)).normalize();
         if (directory.equals(root) || !directory.startsWith(root)) {
             throw new ActivationStorageException(id, "resolves outside the store");
         }
         return directory;
     }
 
+    /**
+     * Checks that a directory holds the id's document: its name decodes to the id.
+     *
+     * @param id the id asked for
+     * @param name the directory's name
+     * @throws ActivationStorageException when the name decodes to another id, or to none
+     */
+    static void checkedName(ActivationId id, String name) {
+        if (!ActivationDirectoryName.tryDecode(name).filter(id::equals).isPresent()) {
+            throw new ActivationStorageException(
+                    id, "is stored under a directory named for another id, '" + name + "'");
+        }
+    }
+
     private Optional<StoredActivation> read(ActivationId id) {
-        Path file = directory(id).resolve(FILE);
+        Path directory = directory(id);
+        checkedName(id, directory.getFileName().toString());
+        Path file = directory.resolve(FILE);
         byte[] bytes;
         try {
             bytes = Files.readAllBytes(file);

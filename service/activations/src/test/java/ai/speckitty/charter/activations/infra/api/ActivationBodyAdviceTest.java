@@ -98,6 +98,28 @@ class ActivationBodyAdviceTest {
     }
 
     @Test
+    void everyUnknownMemberIsReportedSoTheClientFixesTheBodyInOneRoundTrip() throws Exception {
+        refused(
+                putBody(
+                        "{\"schemaVersion\": 1, \"favourite\": \"a-1\", \"packs\": [{\"packId\": \"fixture\", \"pin\": \"1\"}],"
+                                + " \"selected\": {\"directives\": [\"a-1\"]}, \"zz\": 0}"),
+                "/favourite",
+                "unknown_member",
+                "/packs/0/pin",
+                "unknown_member",
+                "/selected/directives",
+                "unknown_member",
+                "/zz",
+                "unknown_member");
+    }
+
+    @Test
+    void anUnbindableBodyWithoutAPathStillAnswersOneViolationNeverAnEmptyList() throws Exception {
+        refused(putBody("[1, 2]"), "", "unreadable_body");
+        refused(putBody("{\"schemaVersion\": 1, \"packs\": 5}"), "/packs", "unreadable_body");
+    }
+
+    @Test
     void aBodyThatIsNotJsonIsRefused() throws Exception {
         refused(putBody("{ not json"), "", "unreadable_body");
     }

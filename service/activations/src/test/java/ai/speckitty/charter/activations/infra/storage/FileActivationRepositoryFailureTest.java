@@ -52,7 +52,7 @@ class FileActivationRepositoryFailureTest {
     }
 
     private Path file(ActivationId id) {
-        return root.resolve(id.value()).resolve("activation.json");
+        return root.resolve(ActivationDirectoryName.encode(id)).resolve("activation.json");
     }
 
     private List<Path> filesOf(ActivationId id) throws IOException {

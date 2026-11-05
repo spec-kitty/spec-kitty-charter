@@ -41,9 +41,11 @@ import java.util.stream.Collectors;
  * <p>Only a document with no violation meets the floor (ADR-0012 D7): a deny entry on an artifact a pack locks is a
  * {@code 409 artifact_locked} naming each locking pack, and otherwise one on an artifact a pack requires is a
  * {@code 409 artifact_required} naming each requiring pack. Locked wins, since locked implies required. Each
- * {@link RequiringPack} names the pack by the id it is configured under, and has an empty {@code via}: the snapshot
- * carries no {@code depends_on} path from the document's packs to the requiring pack, and computing one would take a
- * second walk of the closure per refusal, so the chain is left empty (decided in WP09, recorded for WP11).
+ * {@link RequiringPack} names the pack by the id it is configured under, and its {@code via} is the extends chain
+ * ({@link ClosureSnapshot#extendsChain}) from the first pack the document names, in its order, whose
+ * {@code parent_pack} line reaches the requiring pack: empty when a pack the document names (or, without
+ * {@code packs}, any configured pack) is the requiring pack itself, and empty as well when the requiring pack is
+ * reached over {@code depends_on} only, which is no extends chain.
  *
  * <p>A snapshot that is not {@linkplain ClosureSnapshot#resolved() resolved} holds no closure: a pack the document
  * names is configured as nothing (research R4). Only those packs are judged then, each an {@code unknown_pack}
@@ -174,7 +176,7 @@ public final class DocumentRules {
             Set<String> locking = locked.stream()
                     .flatMap(urn -> snapshot.lockingPack(urn).stream())
                     .collect(Collectors.toCollection(LinkedHashSet::new));
-            return Optional.of(floor(RefusalCode.ARTIFACT_LOCKED, "locks", locked, locking));
+            return Optional.of(floor(RefusalCode.ARTIFACT_LOCKED, "locks", locked, via(document, snapshot, locking)));
         }
         List<String> required = denied.stream()
                 .filter(urn -> !snapshot.requiringPacks(urn).isEmpty())
@@ -184,7 +186,8 @@ public final class DocumentRules {
                 .collect(Collectors.toCollection(LinkedHashSet::new));
         return required.isEmpty()
                 ? Optional.empty()
-                : Optional.of(floor(RefusalCode.ARTIFACT_REQUIRED, "requires", required, requiring));
+                : Optional.of(
+                        floor(RefusalCode.ARTIFACT_REQUIRED, "requires", required, via(document, snapshot, requiring)));
     }
 
     private static List<String> deniedUrns(ActivationDocument document) {
@@ -194,9 +197,29 @@ public final class DocumentRules {
         return urns;
     }
 
-    private static CharterRefusal floor(RefusalCode code, String verb, List<String> urns, Set<String> packs) {
-        List<RequiringPack> requiredBy =
-                packs.stream().map(pack -> new RequiringPack(pack, List.of())).toList();
+    /** Each requiring pack with the extends chain it is reached through from the document's packs. */
+    private static List<RequiringPack> via(ActivationDocument document, ClosureSnapshot snapshot, Set<String> packs) {
+        List<String> roots = document.packs()
+                .map(list -> list.stream().map(PackRef::packId).toList())
+                .orElseGet(List::of);
+        return packs.stream()
+                .map(pack -> new RequiringPack(pack, chainTo(pack, roots, snapshot)))
+                .toList();
+    }
+
+    private static List<String> chainTo(String pack, List<String> roots, ClosureSnapshot snapshot) {
+        if (roots.contains(pack)) {
+            return List.of();
+        }
+        return roots.stream()
+                .map(root -> snapshot.extendsChain(root, pack))
+                .flatMap(Optional::stream)
+                .findFirst()
+                .orElseGet(List::of);
+    }
+
+    private static CharterRefusal floor(
+            RefusalCode code, String verb, List<String> urns, List<RequiringPack> requiredBy) {
         return CharterRefusal.withRequiredBy(
                 code,
                 "A pack " + verb + " " + String.join(", ", urns) + ", so the activation cannot deny it.",

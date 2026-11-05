@@ -800,7 +800,8 @@ class DomainRepositoryServiceTest {
         DomainRepositoryService over = new DomainRepositoryService(() -> locations, new YamlSerializationStrategy());
         OfferingReadService offerings = new OfferingReadService(
                 over, over, over, new ConsistentRead(new FileSystemPackSources(() -> locations)));
-        WritePolicyGate gate = new PackMutabilityPolicy(offerings, over, over, over);
+        WritePolicyGate gate = new PackMutabilityPolicy(
+                offerings, over, over, new ConsistentRead(new FileSystemPackSources(() -> locations)));
         Urn locked = new Urn(NodeKind.DIRECTIVE, "X");
 
         for (PackIdentifier addressed : List.of(new PackIdentifier("p"), new PackIdentifier(pId))) {

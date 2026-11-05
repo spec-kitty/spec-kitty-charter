@@ -5,12 +5,17 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 import ai.speckitty.charter.activations.infra.storage.InMemoryActivationRepository;
 import ai.speckitty.charter.web.ProblemHandler;
+import ai.speckitty.charter.web.RefusalHandler;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.MethodParameter;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -93,5 +98,24 @@ class ActivationProblemsTest {
                         .getAnnotation(RestControllerAdvice.class)
                         .assignableTypes())
                 .containsExactly(ActivationController.class);
+    }
+
+    @Test
+    void aValidationFailureWithNoFieldErrorStillAnswersOneViolationNeverAnEmptyList() throws Exception {
+        BeanPropertyBindingResult errors = new BeanPropertyBindingResult(new Object(), "body");
+        errors.reject("whole_body", "breaks its schema");
+        MethodParameter parameter = new MethodParameter(
+                ActivationProblems.class.getMethod("invalidBody", MethodArgumentNotValidException.class), 0);
+
+        ResponseEntity<ai.speckitty.charter.api.model.CharterRefusal> answer = new ActivationProblems(
+                        new RefusalHandler())
+                .invalidBody(new MethodArgumentNotValidException(parameter, errors));
+
+        assertThat(answer.getStatusCode().value()).isEqualTo(422);
+        assertThat(answer.getBody()).isNotNull();
+        assertThat(answer.getBody().getViolations()).singleElement().satisfies(violation -> {
+            assertThat(violation.getPointer()).isEmpty();
+            assertThat(violation.getCode()).isEqualTo("invalid_value");
+        });
     }
 }

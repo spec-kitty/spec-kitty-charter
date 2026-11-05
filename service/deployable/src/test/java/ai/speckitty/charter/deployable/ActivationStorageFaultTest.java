@@ -4,7 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
+import ai.speckitty.charter.activations.domain.ActivationId;
 import ai.speckitty.charter.activations.domain.ActivationRepository;
+import ai.speckitty.charter.activations.infra.storage.ActivationDirectoryName;
 import ai.speckitty.charter.activations.infra.storage.FileActivationRepository;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -56,7 +58,9 @@ class ActivationStorageFaultTest {
         ActivationRepository brokenActivationRepository() {
             try {
                 Path root = Files.createTempDirectory("charter-broken-activations");
-                Path file = Files.createDirectories(root.resolve(BROKEN)).resolve("activation.json");
+                Path file = Files.createDirectories(
+                                root.resolve(ActivationDirectoryName.encode(new ActivationId(BROKEN))))
+                        .resolve("activation.json");
                 Files.writeString(file, "{ this is not an activation", StandardCharsets.UTF_8);
                 return new FileActivationRepository(root);
             } catch (IOException e) {

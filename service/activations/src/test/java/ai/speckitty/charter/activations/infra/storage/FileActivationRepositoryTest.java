@@ -35,7 +35,7 @@ class FileActivationRepositoryTest extends ActivationRepositoryContract {
     }
 
     private Path file(ActivationId id) {
-        return root().resolve(id.value()).resolve("activation.json");
+        return root().resolve(ActivationDirectoryName.encode(id)).resolve("activation.json");
     }
 
     @Test
@@ -107,7 +107,7 @@ class FileActivationRepositoryTest extends ActivationRepositoryContract {
     @Test
     void aWriteRefusedByThePlatformIsAStoreFaultNamingTheId() throws IOException {
         Files.createDirectories(root());
-        Files.writeString(root().resolve(ID.value()), "a file where the directory belongs");
+        Files.writeString(root().resolve(ActivationDirectoryName.encode(ID)), "a file where the directory belongs");
         FileActivationRepository store = new FileActivationRepository(root());
 
         assertThatThrownBy(() -> store.create(ID, document(1)))

@@ -3,15 +3,12 @@ package ai.speckitty.charter.activations.infra.packs;
 import ai.speckitty.charter.activations.application.AvailablePacks;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
-import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
-import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.ClosureQueries;
 import ai.speckitty.charter.packs.application.ClosureView;
 import ai.speckitty.charter.packs.application.OfferingReadService.OfferingEntry;
-import ai.speckitty.charter.packs.domain.ConfiguredPack;
-import ai.speckitty.charter.packs.domain.PackCatalogRepository;
+import ai.speckitty.charter.packs.application.UnknownRootException;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.PresetItem;
 import java.util.EnumMap;
@@ -38,28 +35,28 @@ import org.springframework.stereotype.Component;
  * floor, the locks (only {@code LOCKED} levels) and the presets. The floor and the locks name each pack by the id it is
  * configured under, as a {@code 409}'s {@code requiredBy} does; a refusal of the compose propagates unchanged.
  *
- * <p>A root no pack is configured as is the one case the compose answers with an {@link IllegalArgumentException}
- * (research R4). Only then is the catalog listed, to name every such root: the answer is an
- * {@linkplain ClosureSnapshot#unresolved unresolved} snapshot, which a write refuses as {@code 422 activation_invalid}
- * and the closure read as {@code 500 pack_unreadable}. A root the catalog does configure after all was added between
- * the two looks, so the read is refused as {@code stale_input}.
+ * <p>A root no pack is configured as is answered by {@link ClosureQueries#snapshot} with the typed
+ * {@link UnknownRootException}, naming every such root (research R4), and only that exception is caught: the answer is
+ * an {@linkplain ClosureSnapshot#unresolved unresolved} snapshot, which a write refuses as
+ * {@code 422 activation_invalid} and the closure read as {@code 500 pack_unreadable}. Any other exception of the
+ * compose, an {@link IllegalArgumentException} included, propagates unchanged.
+ *
+ * <p>Each pack's {@code parent_pack} is copied as the configured id of its parent ({@link ClosureView#parentOf}), so
+ * the activation domain can name a refusal's extends chain ({@link ClosureSnapshot#extendsChain}).
  */
 @Component
 public class PacksAvailability implements AvailablePacks {
 
     private final ClosureQueries closures;
-    private final PackCatalogRepository catalog;
 
     /**
      * The adapter over the packs slice.
      *
      * @param closures the verified closure read
-     * @param catalog the configured packs, listed only to name a root no pack is configured as
      */
     @Autowired
-    public PacksAvailability(ClosureQueries closures, PackCatalogRepository catalog) {
+    public PacksAvailability(ClosureQueries closures) {
         this.closures = Objects.requireNonNull(closures, "closures");
-        this.catalog = Objects.requireNonNull(catalog, "catalog");
     }
 
     @Override
@@ -68,26 +65,9 @@ public class PacksAvailability implements AvailablePacks {
                 packIds.map(ids -> ids.stream().map(PackIdentifier::new).toList());
         try {
             return snapshotOf(closures.snapshot(roots));
-        } catch (IllegalArgumentException unknownRoot) {
-            return unresolved(packIds.orElseGet(List::of), unknownRoot);
+        } catch (UnknownRootException unknownRoot) {
+            return ClosureSnapshot.unresolved(new LinkedHashSet<>(unknownRoot.unknownIds()));
         }
-    }
-
-    private ClosureSnapshot unresolved(List<String> packIds, IllegalArgumentException unknownRoot) {
-        Set<String> configured = catalog.configured().stream()
-                .map(ConfiguredPack::id)
-                .map(PackIdentifier::value)
-                .collect(Collectors.toSet());
-        Set<String> unknown = packIds.stream()
-                .filter(id -> !configured.contains(id))
-                .collect(Collectors.toCollection(LinkedHashSet::new));
-        if (unknown.isEmpty()) {
-            throw new CharterRefusal(
-                    RefusalCode.STALE_INPUT,
-                    "The packs changed while the closure was read; read it again.",
-                    unknownRoot);
-        }
-        return ClosureSnapshot.unresolved(unknown);
     }
 
     /**
@@ -99,7 +79,9 @@ public class PacksAvailability implements AvailablePacks {
     static ClosureSnapshot snapshotOf(ClosureView view) {
         Map<String, String> configuredIdOf = configuredIds(view.packs());
         return new ClosureSnapshot(
-                view.packs().stream().map(PacksAvailability::entryOf).toList(),
+                view.packs().stream()
+                        .map(entry -> entryOf(entry, view, configuredIdOf))
+                        .toList(),
                 view.heldIds(),
                 view.missionTypes(),
                 requiredBy(view, configuredIdOf),
@@ -108,7 +90,8 @@ public class PacksAvailability implements AvailablePacks {
                 view.fingerprint());
     }
 
-    private static ClosureSnapshot.PackEntry entryOf(OfferingEntry entry) {
+    private static ClosureSnapshot.PackEntry entryOf(
+            OfferingEntry entry, ClosureView view, Map<String, String> configuredIdOf) {
         return new ClosureSnapshot.PackEntry(
                 entry.id().value(),
                 entry.descriptorPackId(),
@@ -117,7 +100,8 @@ public class PacksAvailability implements AvailablePacks {
                 entry.version(),
                 entry.dependencies().stream()
                         .map(edge -> new ClosureSnapshot.Dependency(edge.to(), edge.range(), edge.version()))
-                        .toList());
+                        .toList(),
+                view.parentOf(entry.descriptorPackId()).map(parent -> configuredIdOf.getOrDefault(parent, parent)));
     }
 
     /** Each closure pack's descriptor {@code pack_id} with the id it is configured under, the first in closure order. */

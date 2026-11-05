@@ -215,11 +215,19 @@ public class ActivationProblems {
                 .toList();
     }
 
+    /**
+     * The {@code 422}: never with an empty {@code violations}. A failure that names no member of the body (a constraint
+     * on the whole body, a validation result with no field error) is one violation at the whole body, pointer
+     * {@code ""}.
+     */
     private ResponseEntity<CharterRefusal> invalid(List<RefusalViolation> violations) {
+        List<RefusalViolation> named = violations.isEmpty()
+                ? List.of(new RefusalViolation("", "invalid_value", "The body breaks a constraint of its schema."))
+                : violations;
         return refusals.refused(ai.speckitty.charter.kernel.domain.CharterRefusal.withViolations(
                 RefusalCode.ACTIVATION_INVALID,
-                "The activation request body breaks its schema in " + violations.size() + " place(s).",
-                violations));
+                "The activation request body breaks its schema in " + named.size() + " place(s).",
+                named));
     }
 
     private static ResponseEntity<Problem> badRequest(String detail) {

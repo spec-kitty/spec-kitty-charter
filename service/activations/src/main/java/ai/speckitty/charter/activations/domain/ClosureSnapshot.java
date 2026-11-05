@@ -1,6 +1,7 @@
 package ai.speckitty.charter.activations.domain;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -145,6 +146,32 @@ public record ClosureSnapshot(
         return Optional.ofNullable(lockedBy.get(urn));
     }
 
+    /**
+     * The extends chain from a pack the activation names up its {@code parent_pack} line to a requiring pack, as a
+     * {@code 409}'s {@code RequiringPack.via} names it: the named pack first, then each parent up to, and without, the
+     * requiring pack (the contract's example: an activation of {@code team}, which extends {@code internal}, has
+     * {@code via: [team]} for {@code internal}).
+     *
+     * @param rootPackId the configured id of the pack the activation names
+     * @param requiringPackId the configured id of the requiring or locking pack
+     * @return the chain; empty when the root is the requiring pack itself (it declares the item), and absent when the
+     *     requiring pack is not on the root's {@code parent_pack} line (it is reached over {@code depends_on}, or not
+     *     at all)
+     */
+    public Optional<List<String>> extendsChain(String rootPackId, String requiringPackId) {
+        List<String> chain = new ArrayList<>();
+        Optional<String> at = Optional.of(rootPackId);
+        while (at.isPresent() && chain.size() <= packs.size()) {
+            String current = at.orElseThrow();
+            if (current.equals(requiringPackId)) {
+                return Optional.of(List.copyOf(chain));
+            }
+            chain.add(current);
+            at = pack(current).flatMap(PackEntry::parentPackId);
+        }
+        return Optional.empty();
+    }
+
     private static <K> Map<K, Set<String>> copyOfSets(Map<K, ? extends Set<String>> sets) {
         return sets.entrySet().stream()
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> Set.copyOf(e.getValue())));
@@ -159,6 +186,8 @@ public record ClosureSnapshot(
      * @param name its human-readable name
      * @param version its {@code pack_version}
      * @param dependsOn the dependencies the compose resolved for it
+     * @param parentPackId the configured id of the closure pack its {@code parent_pack} names; empty when it extends
+     *     none
      */
     public record PackEntry(
             String packId,
@@ -166,7 +195,8 @@ public record ClosureSnapshot(
             String level,
             String name,
             String version,
-            List<Dependency> dependsOn) {
+            List<Dependency> dependsOn,
+            Optional<String> parentPackId) {
 
         /**
          * Copies the dependencies.
@@ -177,6 +207,7 @@ public record ClosureSnapshot(
          * @param name the name
          * @param version the version
          * @param dependsOn the dependencies
+         * @param parentPackId the configured id of its parent
          */
         public PackEntry {
             Objects.requireNonNull(packId, "packId");
@@ -185,6 +216,27 @@ public record ClosureSnapshot(
             Objects.requireNonNull(name, "name");
             Objects.requireNonNull(version, "version");
             dependsOn = List.copyOf(dependsOn);
+            Objects.requireNonNull(parentPackId, "parentPackId");
+        }
+
+        /**
+         * A pack that extends none.
+         *
+         * @param packId the configured id
+         * @param descriptorPackId the declared {@code pack_id}
+         * @param level the level token
+         * @param name the name
+         * @param version the version
+         * @param dependsOn the dependencies
+         */
+        public PackEntry(
+                String packId,
+                String descriptorPackId,
+                String level,
+                String name,
+                String version,
+                List<Dependency> dependsOn) {
+            this(packId, descriptorPackId, level, name, version, dependsOn, Optional.empty());
         }
     }
 
