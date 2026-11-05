@@ -94,6 +94,7 @@ public final class YamlSerializationStrategy implements SerializationStrategy {
                 .scalar("requires_core", descriptor.requiresCore())
                 .scalar("active_charter", descriptor.activeCharter())
                 .scalar("pack_drg", descriptor.packDrg())
+                .scalar("mutability_policy", descriptor.mutabilityPolicy())
                 .mappings(
                         "depends_on",
                         descriptor.dependencies().stream()

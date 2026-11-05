@@ -53,6 +53,7 @@ class PackFileKindTest {
             Map.entry("project/charter.yaml", "charter"),
             Map.entry("core/presets/minimal.yaml", "preset"),
             Map.entry("core/pack-manifest.yaml", "pack-manifest"),
+            Map.entry("core/policy.yaml", "policy"),
             Map.entry("core/pack.md", "pack-document"));
 
     /** One sample path for each exclusion rule. */
@@ -232,7 +233,7 @@ class PackFileKindTest {
                 .doesNotContainKeys("guards", "lifecycles")
                 .containsEntry("directives", "directive")
                 .containsEntry("mission_types", "mission_type");
-        assertThat(KINDS.fileRules()).hasSize(25);
+        assertThat(KINDS.fileRules()).hasSize(26);
         assertThat(KINDS.fileRules())
                 .as("every files rule keeps the default form but the Markdown ones: the companions' (#194) and"
                         + " pack.md's (#260)")

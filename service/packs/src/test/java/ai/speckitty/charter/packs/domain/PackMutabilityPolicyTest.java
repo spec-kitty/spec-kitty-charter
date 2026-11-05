@@ -88,22 +88,18 @@ class PackMutabilityPolicyTest {
                 .kindDefault(NodeKind.DIRECTIVE, MutabilityLevel.EXTENDABLE)
                 .entry(locked, MutabilityLevel.LOCKED)
                 .build();
-        Pack pack = packWithDescriptor();
 
-        assertThat(source.levelOf(pack, locked)).as("URN entry wins").isEqualTo(MutabilityLevel.LOCKED);
-        assertThat(source.levelOf(pack, otherDirective))
+        assertThat(source.levelOf(locked)).as("URN entry wins").isEqualTo(MutabilityLevel.LOCKED);
+        assertThat(source.levelOf(otherDirective))
                 .as("kind default when no URN entry")
                 .isEqualTo(MutabilityLevel.EXTENDABLE);
-        assertThat(source.levelOf(pack, tactic))
-                .as("open when neither names it")
-                .isEqualTo(MutabilityLevel.OPEN);
+        assertThat(source.levelOf(tactic)).as("open when neither names it").isEqualTo(MutabilityLevel.OPEN);
     }
 
     @Test
     void anEmptySourceResolvesEverythingToOpen() {
         MutabilityPolicySource empty = MutabilityPolicySource.empty();
-        assertThat(empty.levelOf(packWithDescriptor(), new Urn(NodeKind.DIRECTIVE, "ANY")))
-                .isEqualTo(MutabilityLevel.OPEN);
+        assertThat(empty.levelOf(new Urn(NodeKind.DIRECTIVE, "ANY"))).isEqualTo(MutabilityLevel.OPEN);
     }
 
     // ---- T037/T038: the gate refuses an over-level write, allows a within-level one on the SAME fixture -----------
@@ -172,6 +168,77 @@ class PackMutabilityPolicyTest {
         Pack pack = packWithDescriptor();
         assertThatCode(() -> gate.authorize(pack, Operation.REPLACE, new Urn(NodeKind.DIRECTIVE, "ANY")))
                 .doesNotThrowAnyException();
+    }
+
+    // ---- WP03 T018: the gate judges the target at the highest level along the pack's composition closure ----------
+
+    @Test
+    void aLockDeclaredByADependencyRefusesARegistrationIntoTheDependentPackAndNamesTheLockingPack() {
+        Urn locked = new Urn(NodeKind.DIRECTIVE, "X");
+        PackIdentifier q = new PackIdentifier("q");
+        Map<PackIdentifier, MutabilityPolicySource> policies = Map.of(
+                q,
+                        MutabilityPolicySource.builder()
+                                .entry(locked, MutabilityLevel.LOCKED)
+                                .build(),
+                PACK, MutabilityPolicySource.empty());
+        List<PackMutabilityPolicy.Member> closure =
+                List.of(new PackMutabilityPolicy.Member(q, "Q"), new PackMutabilityPolicy.Member(PACK, "P"));
+        WritePolicyGate gate = new PackMutabilityPolicy(policies::get, pack -> closure);
+        Pack pack = packWithDescriptor();
+
+        assertThatThrownBy(() -> gate.authorize(pack, Operation.REGISTER, locked))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
+                    assertThat(refusal.getMessage())
+                            .contains("Q")
+                            .contains("locked")
+                            .contains(locked.toString());
+                });
+
+        // Same closure, a target Q does not name: the registration is allowed.
+        assertThatCode(() -> gate.authorize(pack, Operation.REGISTER, new Urn(NodeKind.DIRECTIVE, "Y")))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void theDependentPacksOwnOpenEntryDoesNotLowerTheDependencysLock() {
+        Urn target = new Urn(NodeKind.DIRECTIVE, "X");
+        PackIdentifier q = new PackIdentifier("q");
+        Map<PackIdentifier, MutabilityPolicySource> policies = Map.of(
+                q,
+                        MutabilityPolicySource.builder()
+                                .entry(target, MutabilityLevel.EXTENDABLE)
+                                .build(),
+                PACK,
+                        MutabilityPolicySource.builder()
+                                .entry(target, MutabilityLevel.OPEN)
+                                .build());
+        List<PackMutabilityPolicy.Member> closure =
+                List.of(new PackMutabilityPolicy.Member(q, "Q"), new PackMutabilityPolicy.Member(PACK, "P"));
+        WritePolicyGate gate = new PackMutabilityPolicy(policies::get, pack -> closure);
+
+        assertThatThrownBy(() -> gate.authorize(packWithDescriptor(), Operation.REPLACE, target))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.getMessage())
+                                .contains("extendable")
+                                .contains("Q"));
+        assertThatCode(() -> gate.authorize(packWithDescriptor(), Operation.RELATIONSHIP, target))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void withNoPolicyAnywhereAlongTheClosureEveryOperationIsPermitted() {
+        PackIdentifier q = new PackIdentifier("q");
+        List<PackMutabilityPolicy.Member> closure =
+                List.of(new PackMutabilityPolicy.Member(q, "Q"), new PackMutabilityPolicy.Member(PACK, "P"));
+        WritePolicyGate gate = new PackMutabilityPolicy(any -> MutabilityPolicySource.empty(), pack -> closure);
+
+        for (Operation operation : Operation.values()) {
+            assertThatCode(() -> gate.authorize(packWithDescriptor(), operation, new Urn(NodeKind.DIRECTIVE, "X")))
+                    .doesNotThrowAnyException();
+        }
     }
 
     // ---- T038: a thin integration through WP05's real registration service over the real gate ---------------------
