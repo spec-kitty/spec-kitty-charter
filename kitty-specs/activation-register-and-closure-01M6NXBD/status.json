@@ -1,20 +1,20 @@
 {
-  "event_count": 88,
-  "last_event_id": "01M6PVJ1AW99PCNH204J6SR73K",
-  "materialized_at": "2026-11-05T21:59:06.332546+00:00",
+  "event_count": 89,
+  "last_event_id": "01M6PVP1F3Z24BRZWKFS93Z617",
+  "materialized_at": "2026-11-05T22:01:17.539634+00:00",
   "mission_number": "",
   "mission_slug": "activation-register-and-closure-01M6NXBD",
   "mission_type": "",
   "schema_version": 2,
   "summary": {
-    "approved": 9,
+    "approved": 10,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
     "done": 0,
     "for_review": 0,
     "in_progress": 1,
-    "in_review": 1,
+    "in_review": 0,
     "planned": 4
   },
   "work_packages": {
@@ -343,14 +343,20 @@
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude:claude-opus-5-5:scribe-sally",
-      "lane": "in_review",
-      "last_event_id": "01M6PVJ1AW99PCNH204J6SR73K",
-      "last_transition_at": "2026-11-05T21:59:06.332546+00:00",
+      "lane": "approved",
+      "last_event_id": "01M6PVP1F3Z24BRZWKFS93Z617",
+      "last_transition_at": "2026-11-05T22:01:17.539634+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "WP10 done (88a3bd0). DIV-203..205 open in both register forms (DivergenceRegisterTest 3/3 green); DIV-201/202 stay proposed. Fingerprint omission on getActivation/listActivationPacks recorded as an un-numbered note in the activation block (not a core divergence; DIV-206/207 left for WP15). Amendment notes on ADR-0020 D6, ADR-0013 D2, ADR-0012 D2 (cites ADR-0062). offering-and-activation, logical-model, resolution-model updated; changelog fragment added. Gates: check_docs all clean except 4 findings for ADR-0062 not on this branch yet (resolves once lane merges; with 0062 present only ADR gaps 0060/0061 remain); wordlist ok; cspell 9.2.0 0 issues; markdownlint 0 errors. #360 re-point text (paste on issue): #360's acceptance says a pack an activation does not build on is 'absent from the offering'. That acceptance is met by the closure read, GET /activations/{activationId}/packs, not by /offering: the offering stays the catalog of every configured pack, and an activation's closure lists only the packs its document builds on, in dependency order (decision DM-01M6NXNBA1J808JV4SHT743SCF)."
       ],
       "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/activation-register-and-closure-01M6NXBD-coord/kitty-specs/activation-register-and-closure-01M6NXBD/tasks/WP10-docs-pr-a/review-cycle-1.md",
+        "reference": "review-cycle://activation-register-and-closure-01M6NXBD/WP10-docs-pr-a/review-cycle-1.md",
+        "reviewer": "claude:claude-opus-5-5:reviewer-renata",
+        "verdict": "approved"
+      },
       "role": "reviewer",
       "shell_pid": 28922,
       "shell_pid_created_at": "1793915942.5",
