@@ -1,4 +1,4 @@
-package ai.speckitty.charter.packs.infra.api;
+package ai.speckitty.charter.activations.infra.api;
 
 import ai.speckitty.charter.api.model.ActivationConfig;
 import ai.speckitty.charter.api.model.DeactivatedArtifacts;
@@ -11,6 +11,7 @@ import ai.speckitty.charter.api.model.SelectionRequest;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.ImportRuntimeHints;
 import tools.jackson.databind.JacksonModule;
 import tools.jackson.databind.module.SimpleModule;
 
@@ -19,10 +20,13 @@ import tools.jackson.databind.module.SimpleModule;
  * {@code null}, and an empty list stays {@code []}. The three states of the document (absent means the default,
  * {@code []} means empty, a list means that set) rest on the difference: the generator leaves an optional list
  * {@code null} until it is set ({@code containerDefaultToNull}), and this mix-in leaves a {@code null} member out.
- * As with {@link ProblemJson}, the rule reaches the generated DTOs only through the mix-in, and only the models with an
- * optional member and no required nullable one, which {@code NullOmissionTest} checks against the schemas.
+ * As with the packs adapter's {@code ProblemJson}, the rule reaches the generated DTOs only through the mix-in, and
+ * only the models with an optional member and no required nullable one, which {@code NullOmissionTest} checks against
+ * the schemas. The native executable reads the mix-in by reflection, so {@link ActivationRuntimeHints} registers it
+ * and the DTOs it reaches.
  */
 @Configuration(proxyBeanMethods = false)
+@ImportRuntimeHints(ActivationRuntimeHints.class)
 public class ActivationJson {
 
     /** For Spring, which finds the configuration by component scan. */
@@ -44,6 +48,15 @@ public class ActivationJson {
                 .setMixInAnnotation(ExclusionRequest.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(PresetApplication.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(Link.class, OmitAbsentMembers.class);
+    }
+
+    /**
+     * The mix-in, for the native executable's hints ({@link ActivationRuntimeHints}).
+     *
+     * @return the mix-in class
+     */
+    static Class<?> omitAbsentMembers() {
+        return OmitAbsentMembers.class;
     }
 
     /** The mix-in: every {@code null} member of the target is left out of the JSON. */

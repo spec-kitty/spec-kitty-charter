@@ -8,6 +8,7 @@ plugins {
 dependencies {
     implementation(project(":kernel"))
     implementation(project(":packs"))
+    implementation(project(":activations"))
     implementation(catalog.lib("spring-boot-starter-webmvc"))
     implementation(catalog.lib("spring-boot-starter-validation"))
 
