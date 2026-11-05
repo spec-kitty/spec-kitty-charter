@@ -134,7 +134,9 @@ jobs:
           echo "libraries=$HOME/.gradle/caches/modules-2/files-2.1/**/*.jar" >> "$GITHUB_OUTPUT"
 
       # The five hand-written service modules. charter-api is generated (no src/main/java) and contracts is the
-      # contract's own checker, not the service; the coverage aggregation leaves both out as well.
+      # contract's own checker, not the service; the coverage aggregation leaves both out as well. The generated
+      # charter-api classes are a library only: packs and deployable import them, so the analyzer must resolve
+      # them, but they are neither sources nor binaries to analyze.
       # The project key spec-kitty_spec-kitty-charter is an assumption the operator confirms when creating the project.
       - name: SonarCloud scan
         id: scan
@@ -150,7 +152,7 @@ jobs:
             -Dsonar.tests=service/kernel/src/test/java,service/packs/src/test/java,service/profiles/src/test/java,service/missions/src/test/java,service/deployable/src/test/java
             -Dsonar.java.binaries=service/kernel/build/classes/java/main,service/packs/build/classes/java/main,service/profiles/build/classes/java/main,service/missions/build/classes/java/main,service/deployable/build/classes/java/main
             -Dsonar.java.test.binaries=service/kernel/build/classes/java/test,service/packs/build/classes/java/test,service/profiles/build/classes/java/test,service/missions/build/classes/java/test,service/deployable/build/classes/java/test
-            -Dsonar.java.libraries=${{ steps.coverage.outputs.libraries }}
+            -Dsonar.java.libraries=${{ steps.coverage.outputs.libraries }},service/charter-api/build/classes/java/main
             -Dsonar.coverage.jacoco.xmlReportPaths=service/charter-reports/build/reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml
             -Dsonar.java.source=25
             -Dsonar.scm.revision=${{ github.sha }}
