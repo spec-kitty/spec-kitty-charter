@@ -133,12 +133,14 @@ versions, the HTML and XML reports and PIT's default mutators:
 | profiles | `profiles` | the whole module | 50 % |
 | packs | `domain+application` | `packs.domain`, `packs.application`, without `application.config` | 85 % |
 | packs | `infra.storage` | `packs.infra.storage`, `infra.storage.config` included | 85 % |
+| packs | `infra.fetch` | `packs.infra.fetch`, without `infra.fetch.config` | 70 % |
 
 Kernel, missions and profiles apply the plugin through `charter.domain-conventions`; packs applies it directly. Packs
-never mutates `application.config` (the Spring wiring) or `infra.api` (the REST adapter), and PIT runs only the unit
-tests of the mutated packages: no `*WiredTest`, and no test tagged `open-packs`, `whole-pack` or `timing`. Both packs
-groups come from the one `:packs:pitest` run, which took 45m54s on an idle 4-core machine; kernel, missions and
-profiles together take about 3 minutes, so the whole run takes about 49 minutes.
+never mutates the Spring wiring (`application.config`, `infra.fetch.config`) or `infra.api` (the REST adapter), and
+PIT runs only the unit tests of the mutated packages: no `*WiredTest`, and no test tagged `open-packs`, `whole-pack` or
+`timing`. The three packs groups come from the one `:packs:pitest` run, which took 45m54s on an idle 4-core machine
+before `infra.fetch` joined it and about 2 minutes more with it; kernel, missions and profiles together take about
+3 minutes, so the whole run takes about 51 minutes.
 
 **The floors** live in each module's `build.gradle.kts`, in a `mutationFloors { group("...") { ... } }` block. A
 floor is raised by a pull request once the nightly score clears it by 5 points, and lowered only by an amendment to
