@@ -1,4 +1,4 @@
-package ai.speckitty.charter.packs.domain.markdown;
+package ai.speckitty.charter.kernel.markdown;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -8,8 +8,9 @@ import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The line rules of the {@code markdown} form (research D6, D12), shared by the parser and by the model's
- * construction invariants so that both apply one rule.
+ * The line rules of the {@code markdown} form (research D6, D12), shared by the packs codec's parser and by
+ * {@link MarkdownLines}, which the packs model and the missions step texts check when they are built, so that all
+ * apply one rule.
  *
  * <p>A line is, in this order: part of a fence (opener, body or closer); blank; a heading (H1 or H2 at column 0); or
  * text. Fences follow CommonMark: a line whose first non-space characters are at least three backticks or at least
@@ -74,8 +75,8 @@ public final class MarkdownScanner {
     }
 
     /**
-     * A scan stopped by a refusal: the text is ambiguous at a named line. The codec reads it as its refusal; the model
-     * reads it as the problem of a block.
+     * A scan stopped by a refusal: the text is ambiguous at a named line. The codec reads it as its refusal;
+     * {@link MarkdownLines} reads it as the problem of a block.
      */
     public static final class Refused extends RuntimeException {
         private static final long serialVersionUID = 1L;

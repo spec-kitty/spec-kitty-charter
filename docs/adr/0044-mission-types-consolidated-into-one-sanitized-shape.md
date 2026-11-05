@@ -2,7 +2,7 @@
 title: "ADR-0044: Mission types consolidated into one sanitized shape"
 description: One mission-type file per type holds its steps as sub-items, with Markdown prompt and guideline companions; eight file families retired; a missions module.
 doc_status: active
-updated: 2026-11-02T00:00:00Z
+updated: 2026-11-05T00:00:00Z
 decision_status: Accepted (2026-10-31); decisions 3 to 6 superseded in part by ADR-0050 (2026-11-02)
 decision_date: '2026-10-30'
 type: ADR
@@ -369,7 +369,9 @@ deciding which of a template's id and its mission type owns its place is a recor
 *(Amended 2026-10-31, #277, see Status: the path is kept as written, spelled as its template's id, and resolved in
 the missions domain against the type's own templates; an unresolved one refuses the type at assembly and before a
 whole-pack write.)* The pack store binds the kind and depends on the module, never the other way; the ArchUnit slice
-rules cover it.
+rules cover it. *(Note 2026-11-05, [#299](https://github.com/spec-kitty/spec-kitty-charter/issues/299): a step's prompt
+and guidelines check the `markdown` form's line rules when they are built, through the kernel's `kernel.markdown`, so
+the module still reaches only the kernel; see ADR-0040's note of that date.)*
 
 ### 8. Migration by the service's own writer, then a re-pin
 

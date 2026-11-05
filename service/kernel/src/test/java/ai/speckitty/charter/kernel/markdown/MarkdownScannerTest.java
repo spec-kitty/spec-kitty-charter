@@ -1,4 +1,4 @@
-package ai.speckitty.charter.packs.domain.markdown;
+package ai.speckitty.charter.kernel.markdown;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

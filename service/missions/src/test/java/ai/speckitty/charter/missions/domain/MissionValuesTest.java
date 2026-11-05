@@ -53,6 +53,33 @@ class MissionValuesTest {
     }
 
     @Test
+    @DisplayName("#299: a step's text breaks no markdown line rule when it is built, field by field")
+    void stepTextsFollowTheMarkdownLineRules() {
+        assertThatThrownBy(() -> new StepDocument(Optional.of("Two\nlines"), Optional.empty(), "", List.of()))
+                .isInstanceOf(ConstraintBreachException.class)
+                .hasMessageEndingWith("A step document's title must be a single line");
+        assertThatThrownBy(() -> new StepDocument(Optional.of("T"), Optional.empty(), "\ntext", List.of()))
+                .isInstanceOf(ConstraintBreachException.class)
+                .hasMessageEndingWith("A step document's preamble must not start with a blank line");
+        assertThatThrownBy(() -> new StepDocument(Optional.empty(), Optional.empty(), "---\nx", List.of()))
+                .isInstanceOf(ConstraintBreachException.class)
+                .hasMessageContaining("A step document's preamble must not start with a --- line");
+        assertThatThrownBy(() -> new StepSection("Title ##", ""))
+                .isInstanceOf(ConstraintBreachException.class)
+                .hasMessageContaining("A step document's section title cannot be a heading's text");
+        assertThatThrownBy(() -> new StepSection("S", "text\n\n# Heading"))
+                .isInstanceOf(ConstraintBreachException.class)
+                .hasMessageContaining("A step document's section content cannot stand inside a document");
+        // The accepted neighbours, one per refusal above.
+        assertThat(new StepDocument(Optional.of("Two lines"), Optional.empty(), "text", List.of()).preamble())
+                .isEqualTo("text");
+        assertThat(new StepDocument(Optional.empty(), Optional.of("Detail."), "---\nx", List.of()).preamble())
+                .isEqualTo("---\nx");
+        assertThat(new StepSection("Release #1", "text\n\n### Heading").content())
+                .isEqualTo("text\n\n### Heading");
+    }
+
+    @Test
     @DisplayName("a step document's title is never blank")
     void stepDocumentTitlesAreNotBlank() {
         assertThatThrownBy(() -> new StepDocument(Optional.of(" "), Optional.empty(), "", List.of()))
