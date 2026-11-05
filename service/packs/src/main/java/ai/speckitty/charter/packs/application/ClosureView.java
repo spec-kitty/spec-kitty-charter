@@ -30,6 +30,8 @@ import java.util.Set;
  * @param presets each preset id with the preset and its holding pack. When two packs of the closure hold one preset id,
  *     the last in merge order wins, the rule ADR-0053 d6 applies to layer overrides
  * @param fingerprint the verified digest of the inputs every field was read from
+ * @param edges the typed edges of the closure's packs, indexed from the facts the same read holds (WP11); the reach and
+ *     the {@code enhances} lookups answer from it with no further read
  */
 public record ClosureView(
         List<OfferingReadService.OfferingEntry> packs,
@@ -40,7 +42,8 @@ public record ClosureView(
         PerPackPolicy policy,
         List<String> closurePackIds,
         Map<String, HeldPreset> presets,
-        String fingerprint) {
+        String fingerprint,
+        EdgeIndex edges) {
 
     /**
      * A preset of the closure with the pack that holds it.
@@ -74,6 +77,7 @@ public record ClosureView(
      * @param closurePackIds the closure's {@code pack_id}s
      * @param presets the presets by id
      * @param fingerprint the verified digest
+     * @param edges the closure's typed edges
      */
     public ClosureView {
         packs = List.copyOf(Objects.requireNonNull(packs, "packs"));
@@ -85,6 +89,74 @@ public record ClosureView(
         closurePackIds = List.copyOf(Objects.requireNonNull(closurePackIds, "closurePackIds"));
         presets = Collections.unmodifiableMap(new LinkedHashMap<>(Objects.requireNonNull(presets, "presets")));
         Objects.requireNonNull(fingerprint, "fingerprint");
+        Objects.requireNonNull(edges, "edges");
+    }
+
+    /**
+     * A view whose closure writes no typed edge.
+     *
+     * @param packs the closure's packs
+     * @param heldIds the held ids per kind
+     * @param holderOf the holder of each held URN
+     * @param missionTypes the held mission types
+     * @param floor the required floor
+     * @param policy the per-pack policies
+     * @param closurePackIds the closure's {@code pack_id}s
+     * @param presets the presets by id
+     * @param fingerprint the verified digest
+     */
+    public ClosureView(
+            List<OfferingReadService.OfferingEntry> packs,
+            Map<ArtifactKind, Set<String>> heldIds,
+            Map<Urn, String> holderOf,
+            Set<String> missionTypes,
+            RequiredFloor floor,
+            PerPackPolicy policy,
+            List<String> closurePackIds,
+            Map<String, HeldPreset> presets,
+            String fingerprint) {
+        this(
+                packs,
+                heldIds,
+                holderOf,
+                missionTypes,
+                floor,
+                policy,
+                closurePackIds,
+                presets,
+                fingerprint,
+                EdgeIndex.empty());
+    }
+
+    /**
+     * The forward reach over the closure's edges ({@link Reachability#reach}).
+     *
+     * @param request what to walk
+     * @return what the walk reached, stopped at, left behind a stop and passed through
+     */
+    public ReachResult reach(ReachRequest request) {
+        return Reachability.reach(edges, request);
+    }
+
+    /**
+     * What the {@code enhances} pull reaches from the artifacts, both ways and transitively
+     * ({@link Reachability#enhancesPull}).
+     *
+     * @param starts the artifacts the pull starts from
+     * @return each pulled artifact with every way it was reached
+     */
+    public Map<Urn, List<ReachResult.Pulled>> enhancesPull(Set<Urn> starts) {
+        return Reachability.enhancesPull(edges, starts);
+    }
+
+    /**
+     * The artifacts that enhance each target, one hop ({@link Reachability#enhancersOf}).
+     *
+     * @param targets the targets
+     * @return each target that has an enhancer, with its enhancers' places
+     */
+    public Map<Urn, List<EdgeIndex.Place>> enhancersOf(Set<Urn> targets) {
+        return Reachability.enhancersOf(edges, targets);
     }
 
     /**

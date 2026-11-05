@@ -12,6 +12,8 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.MutabilityLevel;
@@ -27,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
@@ -59,6 +62,19 @@ class ClosureQueriesTest {
                 version,
                 Optional.empty(),
                 packId + " pack",
+                Optional.empty(),
+                Optional.empty(),
+                PackPaths.none(),
+                List.of(dependencies));
+    }
+
+    /** A descriptor whose name is its {@code pack_id}, so a {@code <pack>::} qualifier can name it. */
+    private static PackDescriptor named(String packId, String version, PackDependency... dependencies) {
+        return new PackDescriptor(
+                packId,
+                version,
+                Optional.empty(),
+                packId,
                 Optional.empty(),
                 Optional.empty(),
                 PackPaths.none(),
@@ -262,5 +278,58 @@ class ClosureQueriesTest {
 
         assertThat(digests.get()).isEqualTo(2);
         assertThat(factsRead).containsExactlyInAnyOrder("alpha", "beta", "gamma");
+    }
+
+    /**
+     * WP11 T066: the view answers the reach and the enhances lookups from the edges of the facts the one verified read
+     * already holds; asking them reads nothing more.
+     */
+    @Test
+    void theViewAnswersReachAndEnhancersFromTheSameReadWithNoFurtherRead() {
+        Urn tacticT = new Urn(NodeKind.TACTIC, "t");
+        Urn tacticE = new Urn(NodeKind.TACTIC, "e");
+        pack(
+                "alpha",
+                PackLevel.ORG,
+                named("alpha", "1.0.0", new PackDependency("beta", ">=1.0")),
+                new PackCompositionFacts(
+                        List.of(),
+                        List.of("directive:A1", "tactic:e"),
+                        List.of(),
+                        MutabilityPolicySource.empty(),
+                        List.of(),
+                        List.of(
+                                new Relationship(
+                                        new Urn(NodeKind.DIRECTIVE, "A1"),
+                                        Optional.empty(),
+                                        tacticT,
+                                        Optional.of("beta"),
+                                        RelationType.REQUIRES,
+                                        Optional.empty(),
+                                        Optional.empty()),
+                                new Relationship(
+                                        tacticE,
+                                        Optional.empty(),
+                                        tacticT,
+                                        Optional.of("beta"),
+                                        RelationType.ENHANCES,
+                                        Optional.empty(),
+                                        Optional.empty()))));
+        pack("beta", PackLevel.ORG, named("beta", "1.2.0"), holding("directive:B1", "tactic:t"));
+        ClosureQueries queries = queries();
+
+        ClosureView view = queries.snapshot(roots("alpha"));
+        ReachResult reached = view.reach(new ReachRequest(
+                Set.of(new Urn(NodeKind.DIRECTIVE, "A1")),
+                Set.of(RelationType.REQUIRES),
+                urn -> false,
+                Optional.empty()));
+
+        assertThat(reached.reached()).containsOnlyKeys(new Urn(NodeKind.DIRECTIVE, "A1"), tacticT);
+        assertThat(view.enhancesPull(Set.of(tacticT))).containsOnlyKeys(tacticE);
+        assertThat(view.enhancersOf(Set.of(tacticT)))
+                .containsEntry(tacticT, List.of(new EdgeIndex.Place(new PackIdentifier("alpha"), tacticE)));
+        assertThat(digests.get()).as("still one ConsistentRead").isEqualTo(2);
+        assertThat(factsRead).as("each closure pack's facts read once").containsExactlyInAnyOrder("alpha", "beta");
     }
 }

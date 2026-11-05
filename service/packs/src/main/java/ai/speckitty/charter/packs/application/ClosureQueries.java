@@ -91,7 +91,8 @@ public final class ClosureQueries {
                 policyOf(composed),
                 packs.stream().map(pack -> pack.descriptor().packId()).toList(),
                 presetsOf(presetsByPack),
-                fingerprint);
+                fingerprint,
+                EdgeIndex.of(packs, composed.facts()));
     }
 
     /** The held ids per kind, and the first holder of each URN in closure order. */
