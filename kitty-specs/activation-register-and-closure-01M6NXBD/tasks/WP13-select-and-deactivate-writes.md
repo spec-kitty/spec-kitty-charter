@@ -184,6 +184,9 @@ Implementation command:
      T, which the walk selects: ADR-0059 D2.2), and that E is **absent** from `selected` and from `applied`.
    - **US4 AS2 (R6):** the starting document has `selected.tactic` holding **E2** (and T3 through D's cascade).
      Deactivating D with a cascade keeps T3, and `skippedShared` names E2 in `referencedBy`.
+   - **`applied` (A1):** US3 AS5 (unselect) asserts `applied` lists the id and `cleared` is empty; US4 AS1 asserts
+     `applied` is [D, T]; US4 AS4 (reactivate) asserts the id is in both `applied` and `cleared`; every no-op scenario
+     asserts both are empty and the `ETag` is unchanged.
 3. Add the edge cases: a missing `If-Match` answers 428; a no-op answers 200 with the same `ETag`; a cascade cycle
    (A requires B requires A) answers 200 and selects both once; an unknown kind in the path answers 422.
    **Cross-pack follow (FR-012, R7):** selecting D with a cascade `["all"]` selects `XT` from the `shared` pack through
@@ -223,8 +226,13 @@ pins. Move the binding pin to `PUT "/activations/a-1/presets/event-driven"` with
    result (a cleared deny entry cannot violate it, but the rules run on every write).
 3. Select `mission_type`: add to `missionTypes` (absent becomes `[id]`); no cascade applies (mission types have no
    cascade edges here; document that), and `applied` lists `{kind: mission_type, artifactId}`.
-4. Unselect: remove from `selected` (or `missionTypes`); `applied` lists it; `cleared` is empty; a no-op when it was not
-   selected.
+4. Unselect: remove from `selected` (or `missionTypes`); `applied` lists it (removed from `selected`); `cleared` is
+   empty; a no-op when it was not selected (empty `applied` and `cleared`, same revision).
+5. **`applied` and `cleared` (A1, the contract rule):** `applied` lists every id the write **added to or removed from**
+   `selected`, `deactivated` or `missionTypes` (`contracts/charter/schemas/ActivationChange.yaml`); `cleared` lists the
+   deny entries removed. A kind (`activatedKinds`) is not an `ArtifactReference` and never appears. A no-op has both
+   empty and keeps the revision. Build `applied` with WP12's `ActivationChange.of(before, after, …)`, never by hand
+   in the service.
 
 ### Subtask T080: `ActivationExclusionService` (deactivate, reactivate)
 
@@ -233,8 +241,8 @@ pins. Move the binding pin to `PUT "/activations/a-1/presets/event-driven"` with
    `requiredBy` packs) **before** planning, and keep the revision. Otherwise `planDeactivate`, reach, `planShared`,
    reach, `enhancersOf(candidates)`, then `applyDeactivate` with the floor from the snapshot.
 2. Without a cascade: deny the target and unselect it.
-3. Reactivate: remove the deny entry (`cleared` lists it); drop the key when its list empties; a no-op when not
-   denied.
+3. Reactivate: remove the deny entry (`cleared` lists it, and `applied` lists it as removed from `deactivated`, A1);
+   drop the key when its list empties; a no-op when not denied (empty `applied` and `cleared`).
 4. A no-op deactivate (already denied, nothing selected to remove) answers the same revision.
 
 ### Subtask T081: The controller and the `ActivationChange` mapper

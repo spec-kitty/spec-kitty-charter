@@ -2,6 +2,7 @@
 work_package_id: WP15
 title: Documentation and divergences for PR B
 dependencies:
+- WP10
 - WP14
 requirement_refs:
 - C-006
@@ -74,7 +75,8 @@ Implementation command:
 ## Branch Strategy
 
 - Planning branch and merge target: `issue-360-activated-closure` (PR B).
-- Lane worktree from `lanes.json`. It depends on WP14, so the docs describe merged behaviour.
+- Lane worktree from `lanes.json`. It depends on WP14, so the docs describe merged behaviour, and on WP10, whose files
+  it edits out of map (A2).
 - Rebase onto the lane base before review.
 
 ## Out-of-map edits (sequenced by dependency)

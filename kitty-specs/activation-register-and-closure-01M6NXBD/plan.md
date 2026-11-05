@@ -1,6 +1,6 @@
 # Implementation Plan: Activation register and activated-pack closure
 
-**Branch**: `issue-360-activated-closure` (cut from PR #368's branch) | **Date**: 2026-11-05 | **Spec**: [spec.md](spec.md)
+**Branch**: `issue-360-activated-closure` (on `main`, which now carries the merged PR #368 and PR #376) | **Date**: 2026-11-05 | **Spec**: [spec.md](spec.md)
 **Input**: Mission specification from `kitty-specs/activation-register-and-closure-01M6NXBD/spec.md`
 **Revision**: post-plan squad (architect-alphonso, reviewer-renata, researcher-robbie) folded 2026-11-05; see
 research.md "Squad dispositions".
@@ -50,7 +50,7 @@ injected-failure durability test on the file adapter, ArchUnit, `ReservedOperati
 **Target Platform**: the charter service (JVM jar and GraalVM native image, loopback daemon per worktree)
 **Project Type**: single multi-module Gradle service (`service/*`)
 **Performance Goals**: cascading select over a 500-artifact fixture < 200 ms p95 on CI, report-only (ADR-0057)
-**Constraints**: PR #368's Checkstyle limits (CC ≤ 15, NPath ≤ 1000, ≤ 60 lines, nested-if depth ≤ 1); no new
+**Constraints**: the Checkstyle limits PR #368 defined, still off on `main` and held by construction (CC ≤ 15, NPath ≤ 1000, ≤ 60 lines, nested-if depth ≤ 1); no new
 suppressions; no disabled tests; native-image friendly
 **Scale/Scope**: 10 operations served, 4 kept reserved with contract changes; one new module; changes in `packs`,
 `kernel`, `deployable`, contracts and docs
@@ -273,6 +273,6 @@ It never adds an enhancer to `selected`.
 
 ## Rebase order
 
-PR #368 (base) → PR #376 (ADR-0059) → PR #377 / PR #390 / PR #391 / PR #393 as they merge → PR A → PR B.
+`main` (with the merged PR #368 and PR #376, ADR-0059) → PR #377 / #379 / #384 / #390 / #391 / #392 / #393 / #394 as they merge → PR A → PR B.
 
 Each WP rebases onto the current lane base before review.

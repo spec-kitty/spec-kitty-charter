@@ -239,7 +239,7 @@ one delegation test stays to prove the wiring.
    so its default scan includes the new class. Confirm it with the BDD suite.
 
 **Validation:** `./gradlew :deployable:test --tests '*ReservedOperationInterceptorTest*' --tests
-'*CharterContractSuite*'`. All 14 `@reserved` scenarios of `activations.feature` still answer 501, including the
+'*CharterContractSuite*'`. All 14 `@reserved` scenarios (13 operations plus the binding pin) of `activations.feature` still answer 501, including the
 "answers 501 before it reads its request" pin.
 
 **Edge cases:** the interceptor must run before argument resolution. `preHandle` does, so keep it a
@@ -329,7 +329,7 @@ generalisation.
 **Steps:**
 1. Run the module gates listed below, all green.
 2. `git grep -n "packs.infra.api.ReservedOperation\|packs.application.PreconditionException"` returns nothing.
-3. Record in the review notes: the 14 `@reserved` scenarios pass, and the registration 412/428 scenarios in
+3. Record in the review notes: the 14 `@reserved` scenarios (13 operations plus the binding pin) pass, and the registration 412/428 scenarios in
    `directives.feature` and `relationships.feature` pass unchanged.
 
 ## Checkstyle limits (NFR-001)
@@ -359,7 +359,7 @@ entry in `config/checkstyle/suppressions.xml`, no `@SuppressWarnings` added to d
 - [ ] `CharterRefusal` carries `violations` and `requiredBy`; `RefusalHandler` renders them and omits them when
       empty.
 - [ ] `JsonBodyGuard` is public and generic; the registration advices use it; the behaviour is unchanged.
-- [ ] Every gate command above is green; the reserved count is still 13 and all 14 pins pass.
+- [ ] Every gate command above is green; the reserved count is still 13 and all 14 pins (13 operations plus the binding pin) pass.
 - [ ] No new suppression, no disabled test.
 
 ## Risks

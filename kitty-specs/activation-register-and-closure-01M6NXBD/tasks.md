@@ -442,7 +442,8 @@ T089 Evidence (WP14)
 - **Goal:** the divergences and architecture docs for the cascade, the changelog, and the PR B notes.
 - **Prompt:** [tasks/WP15-docs-pr-b.md](tasks/WP15-docs-pr-b.md)
 - **Requirements:** C-006, FR-013, FR-014, FR-015
-- **Dependencies:** depends on WP14. It touches no WP10-owned file except its listed out-of-map edits (P1).
+- **Dependencies:** depends on WP14 and WP10 (A2: it edits WP10-owned files out of map). It touches no WP10-owned
+  file except its listed out-of-map edits (P1).
 
 T090 DIV-206 and DIV-207 (WP15)
 T091 Architecture docs for the cascade (WP15)
@@ -450,6 +451,21 @@ T092 Changelog fragment (WP15)
 T093 PR description notes and docs gates (WP15)
 
 - **Risks:** describing the superseded decisions.
+
+## Orchestrator closeout (not a WP)
+
+These steps are the orchestrator's; no WP owns them:
+
+1. **Squads after each phase.** Run the post-phase adversarial squad after each PR's WPs are approved (PR A after
+   WP10, PR B after WP15), and fold its findings into the artifacts.
+2. **Pre-PR squad.** Run one before each pull request opens.
+3. **Per-PR gate.** Run `./gradlew verifyAll` once per PR, on the replayed branch. No WP runs it
+   (NO_FULL_HEAVY_SUITES_IN_MISSION).
+4. **History replay.** Build PR A by replaying WP01–WP10's commits onto `main`. Build PR B by stacking WP11–WP15's
+   commits on PR A (see "the cut").
+5. **Operator approval.** Each PR opens only with the operator's approval. Flag the open review items in each PR
+   description: the closure-scoped floor; refusing a differing pin; ADR-0059 open questions 1 and 4; and the
+   preset "listed key" rule.
 
 ## Parallelization
 
@@ -519,3 +535,15 @@ Every finding has exactly one disposition: **accepted** (the artifact changed, a
 | J8 | Kernel and generated DTO name clash in `RefusalHandler` | accepted | WP01 T004 |
 | J9 | JCS vectors from §3.2.2.2; lone surrogates and the 2^53 bound | accepted | WP06 T036, Reviewer guidance, DoD |
 | J10 | Controller 304 versus Spring's weak compare; a non-`*` `If-None-Match` on PUT | accepted | WP08 T047 step 6 and T048; WP09 T051, T052 (`ActivationConditionalRequestTest`) |
+
+## Analyze dispositions
+
+| # | Finding | Disposition | Where |
+|---|---|---|---|
+| A1 | `applied` follows the contract: every id added to or removed from `selected`, `deactivated` or `missionTypes`; `cleared` lists the removed deny entries; kinds never appear; a no-op has both empty | accepted | spec US3 AS5, US4 AS1, US4 AS4, US5 AS1, FR-011, FR-015, FR-016; WP12 T068 and T070 (one `ActivationChange.of(before, after, …)`), T074; WP13 T076, T079, T080; WP14 Objective, T085, T087 |
+| A2 | WP15 must depend on WP10 | accepted | WP15 frontmatter and Branch Strategy; tasks.md WP15 entry |
+| A3 | The base is `main` (#368 and #376 merged); rebase over the open PRs | accepted | spec C-004, NFR-001 and Context; plan header, Constraints and Rebase order |
+| A5 | An orchestrator closeout note | accepted | tasks.md "Orchestrator closeout (not a WP)" |
+| A6 | The superseded 13:15 decisions are recorded in research | changed (a disposition row, B1b) | research.md "Squad dispositions" |
+| A7 | A preset key with an empty list counts as not listed | accepted (an assumed default, logged) | spec FR-016; research.md open review item 4; WP14 Grounding, T085, T087, DoD |
+| Low | Research R9 count; "14 pins" wording; name drift (spec US4 AS2 E → E2) | accepted | research R9 (13 → 9 → 5 → 4); WP01 and WP05 ("13 operations plus the binding pin"); spec US4 AS2 |

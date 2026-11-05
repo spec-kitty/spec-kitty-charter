@@ -132,7 +132,7 @@ flowchart LR
 ## R9. The reserved-operation machinery
 
 - **Finding:** building an operation means removing its `x-reserved` marker and its `@reserved` pin in
-  `activations.feature`, and lowering the count in `ReservedOperationCoverageTest` (13 → 8 after PR A, → 4 after
+  `activations.feature`, and lowering the count in `ReservedOperationCoverageTest` (13 → 9 after PR A, → 5 after the per-artifact writes, → 4 after
   PR B). The `ReservedOperationInterceptor` keeps serving the effective reads.
 
 ## Squad dispositions (post-plan, 2026-11-05)
@@ -181,6 +181,7 @@ Every finding has exactly one disposition:
 | A8 | thin mirrors; kinds from `ArtifactKind.activatable()` | accepted | plan IC-05 (no new kind list) |
 | A9 | cross-slice adapter rule undocumented | accepted | plan IC-04 |
 | A10–12 | notes (offering unchanged, wiring feasible, PR split coherent) | accepted (no change) | — |
+| B1b | The 13:15 discovery decisions (`DM-01M6NXERTNKMWK4MTDTX48358B` write-time `enhances`, `DM-01M6NXKAHRQNR4RK14FFJN2TVM` lineage over every relation) are superseded by ADR-0059 D2.2/D2.4 as revised 2026-11-05 | changed (decision records kept as history; the spec, plan and WPs follow ADR-0059) | spec Context; tasks.md header; WP12 Risks |
 
 ## Open review items (logged, not silent)
 
@@ -189,3 +190,6 @@ Every finding has exactly one disposition:
 3. ADR-0059 open questions 1 and 4 (do reserved `501` pins count toward the gate; edges of an overridden artifact)
    remain unruled. This mission's NFR-002 keeps every built operation on a behavioural scenario, and no layer merge is
    built here.
+4. A preset "lists" a key when its file holds at least one member for it; a key with an empty list counts as not
+   listed (the packs `Preset` record cannot tell an absent key from an empty one). Assumed default, applied in FR-016
+   and WP14.

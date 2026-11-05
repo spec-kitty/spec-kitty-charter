@@ -214,7 +214,7 @@ Implementation command:
    repository bean in `deployable/ActivationStorageWiring` (P6).
 
 **Validation:** `./gradlew :deployable:test --tests '*CharterContractSuite*' --tests '*ReservedOperationCoverageTest*'
---tests '*NullOmissionTest*'`. All 14 pins still answer 501 (now through method-level marks).
+--tests '*NullOmissionTest*'`. All 14 pins (13 operations plus the binding pin) still answer 501 (now through method-level marks).
 
 ### Subtask T029: The `AvailablePacks` port and the adapter stub
 
@@ -345,7 +345,7 @@ python3 scripts/docs/check_docs.py all
 
 - [ ] `:activations` is a module in settings, charter-reports, deployable and `sonar.yml`.
 - [ ] `ActivationController` and `ActivationJson` live in `activations.infra.api`. Every method is marked reserved,
-      and all 14 pins answer 501.
+      and all 14 pins (13 operations plus the binding pin) answer 501.
 - [ ] `ActivationStorageRoot` gives `<config-root>/activations` or in-memory, with its test.
 - [ ] `HexagonalArchitectureTest` covers `activations` with per-slice rules, the generated-type rule for any
       `infra.api`, the adapter-only `packs` rule and the method-scoped reserved rule; each new rule bites on a fixture.

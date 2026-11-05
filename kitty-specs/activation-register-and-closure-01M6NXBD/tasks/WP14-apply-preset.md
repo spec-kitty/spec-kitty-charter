@@ -70,7 +70,9 @@ Build `applyActivationPreset` (`PUT /activations/{id}/presets/{presetId}`), red 
   are untouched (ADR-0059 D6);
 - `force` also clears the deny entries that match the preset's members, reported in `cleared`;
 - without `force`, a denied member is not selected, and its deny entry stays;
-- `applied` lists the members the write selected;
+- `applied` lists every id the write added to or removed from `selected`, `deactivated` or `missionTypes` (the
+  contract rule, A1), so a replaced key's dropped ids appear too; `activatedKinds` changes do not (a kind is not an
+  `ArtifactReference`);
 - a preset id no pack in the closure holds answers `404 preset_not_found`.
 
 The contract drops the last write's `x-reserved`. The reserved count goes 5 → 4: only the four effective reads remain.
@@ -88,11 +90,10 @@ Implementation command:
 - **Grounding:**
   - The packs `Preset` record has `activatedKinds` (a `List`, `List.copyOf`), `artifacts` (an `EnumMap` per kind) and
     `missionTypes`. An absent `activated_kinds` in the YAML and `activated_kinds: []` both become `[]` there. So
-    "the preset lists the key" can only be read as "the list is non-empty" unless the storage DSO keeps the
-    distinction. Check `PresetDso` and `PresetFiles.toPreset`. If the DSO keeps absence, carry an
-    `Optional`/"listed" flag through WP04's `ClosureSnapshot.PresetView`. If not, rule "listed = present and
-    non-empty", record it as an open review item in the PR description, and pin it with a test. Do not widen the
-    packs `Preset` record in this WP without the operator's agreement.
+    "the preset lists the key" cannot see an explicitly empty list. **Rule (A7, spec FR-016, research.md open
+    review item 4):** a preset lists a key when its file holds at least one member for it; a key with an empty list
+    counts as **not listed**, and the document's key is left untouched. Pin it with a test, and name it in the PR
+    description. Do not widen the packs `Preset` record.
   - WP04's `ClosureView.presets` resolves a preset id to its holding pack (the last in merge order wins).
   - WP13 moved the binding pin to this operation; it is the last reserved operation with a request body.
   - `ActivationBodyAdvice` (WP09) already guards `PresetApplication`.
@@ -143,7 +144,10 @@ Implementation command:
    `composition.feature` or from `contracts/packs/schemas/preset.schema.json`.
 2. Scenarios:
    - US5 AS1: from `selected.directive` [A] and `selected.tactic` [T], apply `team` → `selected.directive` [B, C],
-     `activatedKinds` [directive], tactic [T] untouched, `applied` [B, C];
+     `activatedKinds` [directive], tactic [T] untouched, `applied` [A, B, C] (A removed, B and C added, A1), and no
+     kind in `applied`;
+   - **an empty list is not listed (A7):** a preset whose file has `activated_kinds: []` leaves the document's
+     `activatedKinds` untouched;
    - US5 AS2: without `force`, M is not selected, the deny entry stays, and M is absent from `applied`; with `force`,
      M is in `cleared` and selected;
    - US5 AS3: an unknown preset answers 404 `preset_not_found`;
@@ -175,8 +179,11 @@ Implementation command:
 2. Without `force`, members that are denied are left out of the replaced list, and their deny entries stay (US5 AS2).
 3. With `force`, the deny entries of members are cleared (`cleared`), a deny list that empties is dropped, and the
    members are selected.
-4. `applied` lists the members that are selected after the write and were not before (state changes, as for select),
-   sorted.
+4. `applied` is WP12's `ActivationChange.of(before, after, …)`: every id added to or removed from `selected`,
+   `deactivated` or `missionTypes`, sorted (A1). Test: from [A] to [B, C], `applied` is [A, B, C]; a forced member's
+   deny entry appears in `cleared` and the member in `applied`; `activatedKinds` changes are absent.
+4a. Listed keys (A7): a key with no member in the preset file is not listed. Test `activated_kinds: []` and an absent
+    key alike.
 5. A member the closure does not hold (a stale preset): it is not selected, and it is reported as a violation by
    `DocumentRules` when the service checks the result. Decide: skip it with no error, or refuse 422. Recommended:
    `DocumentRules` refuses 422 at `/presets/{presetId}`, since a broken preset is a pack fault; record the choice.
@@ -223,7 +230,8 @@ CC ≤ 15, NPath ≤ 1000, ≤ 60 lines, nested-if depth ≤ 1, by construction.
 - [ ] `activation-presets.feature` covers US5 AS1–AS3 and the edge cases; each was seen red first.
 - [ ] The reserved count is 4; the binding pin is gone; `noReservedOperationTakesABody` holds.
 - [ ] `preset_not_found` is raised, and the contract B fragment is written.
-- [ ] The "listed key" reading of a preset is decided, tested and recorded.
+- [ ] The "listed key" rule (A7) is applied and tested: an empty list counts as not listed.
+- [ ] `applied` follows the contract rule (A1): removed ids are listed too.
 - [ ] No new suppression, no disabled test, and no `@WIP`.
 
 ## Risks

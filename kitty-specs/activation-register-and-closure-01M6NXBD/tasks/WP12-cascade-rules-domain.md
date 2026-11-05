@@ -137,10 +137,14 @@ Implementation command:
    kernel type.
 3. `ReachPlan(Set<ArtifactRef> starts, Set<RelationType> relations, Set<ArtifactRef> stopAt, boolean lineage)`: what
    the application asks `packs` to walk.
-4. `SkippedReport` (four sorted lists, with `SkippedDeactivated(ref, viaRequires, List<ArtifactRef> requiredBy)` and
+4. **`applied` and `cleared` (A1, the contract rule):** `applied` lists every id the write **added to or removed from**
+   `selected`, `deactivated` or `missionTypes` (`contracts/charter/schemas/ActivationChange.yaml`); `cleared` lists the
+   deny entries removed. A kind (`activatedKinds`) is not an `ArtifactReference` and never appears. A no-op has both
+   empty and keeps the revision.
+5. `SkippedReport` (four sorted lists, with `SkippedDeactivated(ref, viaRequires, List<ArtifactRef> requiredBy)` and
    `SharedSkip(ref, ArtifactRef referencedBy)`), and `ActivationChange(ActivationDocument after, List<ArtifactRef>
    applied, List<ArtifactRef> cleared, SkippedReport skipped)`.
-5. `Reaches`, a test builder for `Reach` values, mirroring `ClosureSnapshots`.
+6. `Reaches`, a test builder for `Reach` values, mirroring `ClosureSnapshots`.
 
 ### Subtask T069: `CascadeScope`
 
@@ -172,7 +176,11 @@ T):**
 5. Select clears the **target's own** deny entry (FR-011): D denied, then selected, gives D in `cleared`.
 6. `viaRequires` is true when **any** `Via` of the stopped node has relation `REQUIRES`; `requiredBy` lists every
    `Via.from`, sorted.
-7. Already-selected reached artifacts are not re-listed in `applied` (`applied` is what changed state).
+7. Already-selected reached artifacts are not re-listed in `applied`: `applied` is what changed state (A1). It lists
+   every id added to or removed from `selected`, `deactivated` or `missionTypes`. Compute it as one function,
+   `ActivationChange.of(before, after, cleared, skipped)`, from the before and after documents, so select,
+   deactivate, reactivate and preset share one definition. Pin it with a unit test: an unselect lists the id; a
+   deactivate lists D and T; a reactivate lists the id (also in `cleared`); a no-op lists nothing.
 
 ### Subtask T071: `unreachedBehindDeactivated`
 
@@ -239,7 +247,9 @@ enhancers, floor)` returns an `ActivationChange`.
 3. An enhancer that is **not** active (not selected, not on the floor) does not keep T3.
 4. A floor artifact (required by a governing preset) referencing a candidate keeps it shared (the active set includes
    the floor, squad R13).
-5. Without a cascade: only D leaves `selected` and gets a deny entry.
+5. Without a cascade: only D leaves `selected` and gets a deny entry; `applied` is [D].
+1a. Case 1's `applied` is [D, T]: D was added to `deactivated` and removed from `selected`, and T was removed from
+    `selected`. T2 is not in `applied` (A1).
 6. Scope: candidates outside the cascade scope are left alone and reported in `skippedByScope`.
 7. The 409 for a required or locked target is **not** here: it is `DocumentRules` (WP06), applied by the service
    before planning. Add a test that `applyDeactivate` is never reached in that case at the service level (WP13).
