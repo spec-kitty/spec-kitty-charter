@@ -8,7 +8,9 @@ name: Sonar (nightly, reported)
 # It skips green until the operator has created the SonarCloud project and the SONAR_TOKEN repository
 # secret: the first step probes for the token and, without it, writes a notice and a job-summary line and
 # every later step is skipped. With the token, every step after the probe is continue-on-error, so a red
-# build, scan or quality gate is reported in the job summary and never turns the night red.
+# build, scan or quality gate is reported in the job summary and never turns the night red. The job is
+# continue-on-error too, so a hung night that hits a timeout is not red either; Verify and the scan have
+# their own step timeouts so the summary is still written. A cancelled night starts no scan (!cancelled()).
 #
 # Schedule: 04:23 UTC every day. Not on minute 0 or 30 (the busiest scheduler minutes), outside
 # 13:00-16:00 UTC (06:00-09:00 PT), and not next to mutation-nightly.yml at 02:43 UTC.
@@ -29,10 +31,12 @@ concurrency:
 
 jobs:
   scan:
-    # Only the canonical repository's main: a fork or another ref has no reason to analyse.
+    # Only the canonical repository's main: a fork or another ref has no reason to analyze.
     if: github.repository == 'spec-kitty/spec-kitty-charter' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    # A step's continue-on-error does not cover this timeout, so the job has its own: a hung night is not red.
+    continue-on-error: true
     steps:
       # Without the secret this is the only step that runs, and it exits 0: the job is green and says why.
       - name: Check the SonarCloud token
@@ -110,13 +114,14 @@ jobs:
         id: build
         if: steps.sonar_token.outputs.enabled == 'true' && steps.sync.outcome == 'success'
         continue-on-error: true
+        timeout-minutes: 20
         run: ./gradlew verifyAll -PopenPacksDir="$GITHUB_WORKSPACE/.open-packs" -PrequireSymlinks=true
 
       # The scan runs only on a build that produced the coverage report: without it the analysis would report
       # zero coverage. It also resolves the Gradle cache path, which `args` cannot expand.
       - name: Look for the coverage report
         id: coverage
-        if: always() && steps.sonar_token.outputs.enabled == 'true'
+        if: ${{ !cancelled() && steps.sonar_token.outputs.enabled == 'true' }}
         continue-on-error: true
         run: |
           report=service/charter-reports/build/reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml
@@ -133,8 +138,9 @@ jobs:
       # The project key spec-kitty_spec-kitty-charter is an assumption the operator confirms when creating the project.
       - name: SonarCloud scan
         id: scan
-        if: always() && steps.sonar_token.outputs.enabled == 'true' && steps.coverage.outputs.present == 'true'
+        if: ${{ !cancelled() && steps.sonar_token.outputs.enabled == 'true' && steps.coverage.outputs.present == 'true' }}
         continue-on-error: true
+        timeout-minutes: 8
         uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f # v8.2.1
         with:
           args: >
@@ -154,13 +160,14 @@ jobs:
       # Reported, not enforced: a red quality gate shows in the summary below and in SonarCloud only.
       - name: SonarCloud quality gate
         id: quality_gate
-        if: always() && steps.sonar_token.outputs.enabled == 'true' && steps.scan.outcome == 'success'
+        if: ${{ !cancelled() && steps.sonar_token.outputs.enabled == 'true' && steps.scan.outcome == 'success' }}
         continue-on-error: true
         timeout-minutes: 5
         uses: SonarSource/sonarqube-quality-gate-action@7a5fffe8e523c40e0c740b6bc2712ab503e52efa # v1.2.1
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
+      # The only step that runs on a cancelled night too (always, not !cancelled): it writes the summary.
       - name: Report the outcomes
         if: always() && steps.sonar_token.outputs.enabled == 'true'
         continue-on-error: true
