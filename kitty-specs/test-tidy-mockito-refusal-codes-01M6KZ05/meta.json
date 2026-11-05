@@ -1,0 +1,37 @@
+{
+  "accept_commit": "bb430a6c81c59e3a714127717b40018b2319f6ce",
+  "acceptance_history": [
+    {
+      "accept_commit": "bb430a6c81c59e3a714127717b40018b2319f6ce",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-11-04T20:51:06.100564+00:00",
+      "accepted_by": "claude",
+      "accepted_from_commit": "903810acdc5bb050dac5e4f04a5dfb0bdad2197d"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-11-04T20:51:06.100564+00:00",
+  "accepted_by": "claude",
+  "accepted_from_commit": "903810acdc5bb050dac5e4f04a5dfb0bdad2197d",
+  "baseline_merge_commit": "d617b6d60d91184b0504eb976ca3d6f11b9561de",
+  "contracts": "none",
+  "contracts_rationale": "Test-hygiene and build-dependency mission: no API, event or schema interface is added or changed.",
+  "created_at": "2026-11-04T19:01:32.511776+00:00",
+  "flattened": true,
+  "friendly_name": "Test-suite tidy: keep Mockito at Spring Boot's version, pin refusal codes",
+  "merged_at": "2026-11-04T20:51:44.466582+00:00",
+  "merged_commit": "194b4bd8d0ccf2e0de3739c6da4c323d0ceab472",
+  "mid8": "01M6KZ05",
+  "mission_id": "01M6KZ0553DQBYH16HZDEWFH87",
+  "mission_number": 17,
+  "mission_slug": "test-tidy-mockito-refusal-codes-01M6KZ05",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "The 2026-11-03 test suite assessment found Mockito declared and attached as a Java agent to every test JVM though no test uses it (R7, #373), and 15 tests that accept any CharterRefusal regardless of its code (R3, #369). Spring Boot's test starter brings Mockito anyway, so the operator ruled to keep it: this tidy-first mission aligns its version to the one Spring Boot manages and records why it stays, then strengthens those 15 checks in place so a wrong refusal code fails a test.",
+  "purpose_tldr": "Keep Mockito at the version Spring Boot manages, with the reason recorded, and pin the refusal code on 15 type-only refusal assertions.",
+  "slug": "test-tidy-mockito-refusal-codes-01M6KZ05",
+  "status_phase": "1",
+  "target_branch": "test-tidy-mockito-refusal-codes",
+  "vcs": "git",
+  "vcs_locked_at": "2026-11-04T19:25:08.108994+00:00"
+}
