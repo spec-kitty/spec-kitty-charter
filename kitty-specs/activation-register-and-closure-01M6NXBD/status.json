@@ -407,7 +407,7 @@
     },
     "WP12": {
       "actor": "claude",
-      "agent": "claude:claude-opus-5-5:reviewer-renata",
+      "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -420,6 +420,7 @@
         "CascadeRules pure over Reach values (no packs import, no traversal). planSelect/walkSelected/applySelect; planDeactivate/planShared/applyDeactivate; ActivationChange.of(before, after, skipped) derives applied and cleared. Choices: planSelect takes includeDeactivated (stopAt empty); no cascade => ReachPlan.none (walks()==false), app skips the call; planShared walks with lineage, stops at target+deny entries; candidates = selected in-scope nodes the target reached; reached mission types land in skippedByScope; non-selectable kinds dropped; deactivate of a non-deny kind throws IAE. Document rebuilt via public Builder (ActivationDocument untouched). Property helper in every clearing test + 50-case randomized property. Gates: :activations:check, javadoc, HexagonalArchitectureTest green."
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/activation-register-and-closure-01M6NXBD-coord/kitty-specs/activation-register-and-closure-01M6NXBD/tasks/WP12-cascade-rules-domain/review-cycle-1.md",
         "reference": "review-cycle://activation-register-and-closure-01M6NXBD/WP12-cascade-rules-domain/review-cycle-1.md",
@@ -427,16 +428,16 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 859,
-      "shell_pid_created_at": "1793922741.96",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T068": "done",
-        "T069": "done",
-        "T070": "done",
-        "T071": "done",
-        "T072": "done",
-        "T073": "done",
-        "T074": "done"
+        "T068": "planned",
+        "T069": "planned",
+        "T070": "planned",
+        "T071": "planned",
+        "T072": "planned",
+        "T073": "planned",
+        "T074": "planned"
       }
     },
     "WP13": {
