@@ -1,7 +1,7 @@
 {
-  "event_count": 6,
-  "last_event_id": "01M6PHGEEQ7GCJ683TX7FR5HNN",
-  "materialized_at": "2026-11-05T19:03:28.471034+00:00",
+  "event_count": 7,
+  "last_event_id": "01M6PHGFYMF62DD29RJ3Y606B4",
+  "materialized_at": "2026-11-05T19:03:30.004646+00:00",
   "mission_number": "",
   "mission_slug": "activation-register-and-closure-01M6NXBD",
   "mission_type": "",
@@ -15,7 +15,7 @@
     "for_review": 0,
     "in_progress": 0,
     "in_review": 0,
-    "planned": 6
+    "planned": 7
   },
   "work_packages": {
     "WP01": {
@@ -59,6 +59,13 @@
       "lane": "planned",
       "last_event_id": "01M6PHGEEQ7GCJ683TX7FR5HNN",
       "last_transition_at": "2026-11-05T19:03:28.471034+00:00"
+    },
+    "WP07": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01M6PHGFYMF62DD29RJ3Y606B4",
+      "last_transition_at": "2026-11-05T19:03:30.004646+00:00"
     }
   }
 }
