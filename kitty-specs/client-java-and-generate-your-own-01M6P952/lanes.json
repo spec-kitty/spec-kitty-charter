@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "mission_slug": "client-java-and-generate-your-own-01M6P952",
+  "mission_id": "01M6P952X7VYBH3A6ZVF5J2CAZ",
+  "mission_branch": "claude/client-java-218-224",
+  "target_branch": "claude/client-java-218-224",
+  "lanes": [
+    {
+      "lane_id": "lane-planning",
+      "wp_ids": [
+        "WP01",
+        "WP02",
+        "WP03"
+      ],
+      "write_scope": [
+        ".github/workflows/ci.yml",
+        ".github/workflows/service.yml",
+        "build-logic/src/main/kotlin/CheckTreesIdentical.kt",
+        "build-logic/src/main/kotlin/SchemaWalker.kt",
+        "build-logic/src/main/kotlin/SingleModelPerSchemaNormalizer.kt",
+        "build-logic/src/main/kotlin/TolerantClientNormalizer.kt",
+        "build-logic/src/main/kotlin/charter.client-java.gradle.kts",
+        "build-logic/src/test/kotlin/TolerantClientNormalizerTest.kt",
+        "client-java/build.gradle.kts",
+        "client-java/src/main/**",
+        "client-java/src/test/java/ai/speckitty/charter/client/AdditiveMinorTest.java",
+        "client-java/src/test/java/ai/speckitty/charter/client/ClientOutputTest.java",
+        "client-java/src/test/java/ai/speckitty/charter/client/HowToTest.java",
+        "client-java/src/test/java/ai/speckitty/charter/client/ProblemDetailsTest.java",
+        "client-java/templates/**",
+        "docs/_meta/spelling-words.txt",
+        "docs/changelog/2026-11-05-generated-java-client.md",
+        "docs/guides/README.md",
+        "docs/guides/generate-a-client.md",
+        "docs/guides/service-build.md",
+        "gradle/libs.versions.toml",
+        "gradle/verification-metadata.xml",
+        "settings.gradle.kts"
+      ],
+      "predicted_surfaces": [],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    }
+  ],
+  "computed_at": "2026-11-05T16:55:34.911235+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "planning_commit_sha": "20638994bef7038ab2f1a98bc56f818cef613eb0"
+}
