@@ -3,6 +3,9 @@
 plugins {
     id("charter.spring-conventions")
     id("charter.hand-written")
+    // The nightly mutation floor (#239). Packs cannot use charter.domain-conventions, which refuses external
+    // dependencies, so it applies the mutation conventions itself; the PIT scope and its floors are below.
+    id("charter.mutation-conventions")
 }
 
 dependencies {
@@ -227,3 +230,52 @@ tasks.test {
 // this repository sets no coverage threshold (the charter's min_coverage is 0). The tag narrows the report, not a gate.
 tasks.check { dependsOn(openPacksRoundTrip) }
 
+// The nightly mutation floor (#239; operator ruling of 2026-11-05). PIT mutates domain, application and infra.storage,
+// infra.storage.config included, but never the application's Spring wiring (application.config) nor the inbound REST
+// adapter (infra.api), and runs only the unit tests of those packages: the Spring-wired tests (*WiredTest, the only
+// @SpringBootTest among them) and the tagged suites that `test` leaves out (open-packs, whole-pack, timing) stay out of
+// PIT too. pit-targets.init.gradle narrows this scope further for a run of one work package's classes.
+val packsPackage = "ai.speckitty.charter.packs"
+val mutatedPackages = listOf("domain", "application", "infra.storage").map { "$packsPackage.$it.*" }.toSet()
+pitest {
+    targetClasses = mutatedPackages
+    excludedClasses = setOf(
+        "$packsPackage.application.config.*",
+        "$packsPackage.infra.api.*",
+    )
+    targetTests = mutatedPackages
+    excludedTestClasses = setOf("*WiredTest")
+    excludedGroups = setOf("open-packs", "whole-pack", "timing")
+    // PIT runs the tests in its own JVMs, which need the system properties `test` gives them (see tasks.test below).
+    val repositoryRoot = rootProject.layout.projectDirectory
+    jvmArgs.addAll(
+        "-Dcharter.repositoryRoot=${repositoryRoot.asFile.absolutePath}",
+        "-Dcharter.contractSchemas=${repositoryRoot.dir("contracts/charter/schemas").asFile.absolutePath}",
+        "-Dcharter.offering=${repositoryRoot.dir("contracts/offering").asFile.absolutePath}",
+        "-Dcharter.requireSymlinks=${providers.gradleProperty("requireSymlinks").getOrElse("false")}",
+    )
+}
+// The repository files those tests read are inputs, as they are of `test`, so a cached PIT result never outlives them.
+tasks.named("pitest") {
+    val root = rootProject.layout.projectDirectory
+    listOf("contracts/packs/schemas", "contracts/charter/schemas", "contracts/offering", "docs/conformance").forEach {
+        inputs.dir(root.dir(it)).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("repository:$it")
+    }
+    inputs.file(root.file(".kittify/charter/charter.yaml")).withPathSensitivity(PathSensitivity.RELATIVE)
+        .withPropertyName("projectCharterYaml")
+    inputs.property("requireSymlinks", providers.gradleProperty("requireSymlinks").orElse("false"))
+}
+
+// Two floor groups, as the operator ruled them on 2026-11-05 (C-001): 85 each, at or below floor5(score - 3) of the
+// first measured run.
+mutationFloors {
+    group("domain+application") {
+        packages.addAll("$packsPackage.domain", "$packsPackage.application")
+        excludes.add("$packsPackage.application.config")
+        floor = 85
+    }
+    group("infra.storage") {
+        packages.add("$packsPackage.infra.storage")
+        floor = 85
+    }
+}
