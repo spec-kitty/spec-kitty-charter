@@ -60,6 +60,18 @@
       "verdict": "in-mission",
       "wp": "WP09"
     },
+    "#316": {
+      "evidence_ref": "Cited for timing-budget conventions",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
     "#323": {
       "evidence_ref": "1 MiB / null-list body guard on activation bodies (WP01/WP09)",
       "fr": null,
