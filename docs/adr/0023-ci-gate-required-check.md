@@ -3,12 +3,12 @@ title: "ADR-0023: An always-on CI gate is the single required status check"
 description: Adds an always-on orchestrator workflow that aggregates the path-filtered service and docs checks into one status context, so branch protection can gate merges on green.
 doc_status: active
 updated: 2026-11-05T00:00:00Z
-decision_status: 'Accepted, with Amendment 2026-11-01 (ADR-0047: merge queue, pr:pause-ci); the native extension superseded by ADR-0061 (2026-11-05)'
+decision_status: 'Accepted, with Amendment 2026-11-01 (ADR-0047: merge queue, pr:pause-ci); the native extension superseded by ADR-0060 (2026-11-05)'
 decision_date: '2026-10-22'
 type: ADR
 kind: ADR
 related:
-  - adr/0061-native-build-runs-nightly-and-per-release
+  - adr/0060-native-build-runs-nightly-and-per-release
   - development/service-architecture-orientation
   - adr/0006-onion-vertical-slices-archunit
 audience:
@@ -28,7 +28,7 @@ Extended 2026-10-31 by [ADR-0046](/adr/0046-service-release-line-and-native-pack
 `native`, calls `service-native.yml` (the four native executables) for changes to the contract, the service, the
 build and `scripts/release/`; `CI gate / gate` counts it like the other two. The required check is unchanged.
 
-*2026-11-05: superseded by [ADR-0061](/adr/0061-native-build-runs-nightly-and-per-release/): the `native` concern
+*2026-11-05: superseded by [ADR-0060](/adr/0060-native-build-runs-nightly-and-per-release/): the `native` concern
 group is removed from the gate. `service-native.yml` runs nightly and per release, and `CI gate / gate` no longer
 waits for it. The required check is unchanged.*
 

@@ -1,5 +1,5 @@
 ---
-title: "ADR-0061: The native executables are built nightly and per release, not on each pull request"
+title: "ADR-0060: The native executables are built nightly and per release, not on each pull request"
 description: "Operator ruling of 2026-11-05: the slow native build leaves CI gate / gate and runs nightly on main, on each service release and on demand."
 doc_status: active
 updated: 2026-11-05T00:00:00Z
@@ -18,7 +18,7 @@ audience:
     guidance_text: Read this for when the four native executables are built and checked before a release is cut.
 ---
 
-# ADR-0061: The native executables are built nightly and per release, not on each pull request
+# ADR-0060: The native executables are built nightly and per release, not on each pull request
 
 ## Status
 

@@ -4,7 +4,7 @@ name: service-native
 # core pins (linux-x64, linux-arm64, macos-arm64, windows-x64), each started and checked by
 # scripts/release/smoke-service.sh before it is uploaded as the workflow artifact `native-<target>`. A missing native
 # reachability hint shows up only in a native build, so it is built nightly on main and on every service release, not
-# on a pull request (ADR-0061, superseding the per-PR build of ADR-0046 decision 5): it was too slow for each PR. The
+# on a pull request (ADR-0060, superseding the per-PR build of ADR-0046 decision 5): it was too slow for each PR. The
 # release calls it from service-release.yml with the Gradle cache off; `workflow_dispatch` runs it on demand on any
 # branch, for a change that risks the native build. It is not part of `CI gate / gate` and ci.yml does not call it.
 # A red night is reported as a red run of this workflow, as mutation-nightly.yml's is. No notification is wired.
