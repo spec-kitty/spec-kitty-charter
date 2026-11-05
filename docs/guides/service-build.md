@@ -103,8 +103,9 @@ Today that is `PackFileSetBudgetTest`, the 10 s CPU-time budget of the generated
 source fingerprint). The checks themselves, whether the fingerprint changes exactly when it must and the store loads
 exactly the planted files, stay in `:packs:test` (`PackFileSetExactnessTest`). A test that holds work to a time or
 CPU-time budget is tagged `timing`. A hang cap (`@Timeout`) and a deadline check, which proves a guard cuts work off
-within a bound far above the work's own time, are not budgets and need no tag
-([#320](https://github.com/spec-kitty/spec-kitty-charter/issues/320) tracks the tight ones).
+within a bound far above the work's own time, are not budgets and need no tag. A deadline check is written as a hang
+cap of 30 s that cuts the work off, next to an assertion of the cause it proves
+([#320](https://github.com/spec-kitty/spec-kitty-charter/issues/320)).
 
 ## Syncing the packs
 

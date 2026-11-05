@@ -21,6 +21,11 @@ All eight sites from #320's comment of 2026-11-04 are present at the stated line
   runner cannot miss it; a real regression still fails within 30 s.
 - **Alternatives considered**: 60 s (matches the existing `@Timeout(60)` caps, but doubles a regression's cost);
   tagging `timing` (rejected by ADR-0057 and the landing pass: it would make security guards report-only).
+- **Correction (2026-11-05)**: as first merged, the claim above did not hold everywhere. The pre-PR squad found
+  that the fetcher's elapsed checks ran only after the fetch returned, so a broken deadline waited out the 60 s
+  slow work, and that two 2 s bounds in the fetcher's `Deadline` tests and the 10 s latch helpers of
+  `InterruptedCommitRepairTest` fired before the cap. The fetches now run under `assertTimeoutPreemptively` with
+  the cap, and those bounds and helpers wait up to it; planted breaks now fail at about 30 s or on their cause.
 
 ## R-03 Overlap
 
