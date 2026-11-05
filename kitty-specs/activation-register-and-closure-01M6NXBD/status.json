@@ -371,7 +371,7 @@
     },
     "WP11": {
       "actor": "claude",
-      "agent": "claude:claude-opus-5-5:reviewer-renata",
+      "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -384,6 +384,7 @@
         "WP11 done (fdd6e0e). PackCompositionFacts.edges (graph docs, components, registered shard; dedup by from/type/to/qualifiers). EdgeIndex: edge-backed ComposeResolver keyed by (descriptor pack_id, URN); qualified endpoints checked by the compose's checkReferences. Reachability.reach on GraphWalk only (no Deque/recursion of its own): every Via recorded in onRelationship, stopped+Vias, behindStopped via unstopped second run, lineage as a separate GraphWalk passing requires+scope up the whole chain (J4 test passes). enhancesPull both ways transitive via reversed enhances edges; enhancersOf one-hop. ClosureView.reach/enhancesPull/enhancersOf from the same read (call-count test extended). GraphWalk untouched. Out-of-map touched packs files (PR #377 collision): DomainRepositoryService(+Test), PackCompositionFacts, ClosureView, ClosureQueries(+Test). Gates: :packs:check (incl openPacksRoundTrip) 0, :activations:check 0, deployable Hexagonal(55)+CharterContractSuite 0. NFR-006 report-only p95 16.433 ms CPU (500 artifacts, 20 starts, 50 runs)."
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/activation-register-and-closure-01M6NXBD-coord/kitty-specs/activation-register-and-closure-01M6NXBD/tasks/WP11-packs-typed-edges-and-reach/review-cycle-1.md",
         "reference": "review-cycle://activation-register-and-closure-01M6NXBD/WP11-packs-typed-edges-and-reach/review-cycle-1.md",
@@ -391,15 +392,15 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 381,
-      "shell_pid_created_at": "1793920006.98",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T062": "done",
-        "T063": "done",
-        "T064": "done",
-        "T065": "done",
-        "T066": "done",
-        "T067": "done"
+        "T062": "planned",
+        "T063": "planned",
+        "T064": "planned",
+        "T065": "planned",
+        "T066": "planned",
+        "T067": "planned"
       }
     },
     "WP12": {
