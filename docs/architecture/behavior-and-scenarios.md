@@ -31,14 +31,14 @@ scenarios come before the contract and before any implementation choice.
 
 The suite is organized by consumer outcome. The three offering outcomes are:
 
-| Outcome | Guarantee |
-|---|---|
-| **The governance in force is what I chose** | The governance in force is the set the charter puts in force — sharing a pack does not silently add its commands everywhere, and a team's org-wide requirement is honored on top of the project's own choices. |
-| **The system refuses unsound governance with a clear reason** | Governance that would silently weaken a profile, a mistyped reference between pieces of governance, or a broken charter is refused and the reason named — never quietly accepted or half-applied. |
-| **I can share governance across a team or project safely** | An unsound shared pack is not reported healthy, a project's own choice wins over a team pack it adopts, and reserved namespaces and pack-escaping assets are refused. |
+| Outcome | Guarantee | Status (2026-11-05, [#374](https://github.com/spec-kitty/spec-kitty-charter/issues/374)) |
+|---|---|---|
+| **The governance in force is what I chose** | The governance in force is the set the charter puts in force — sharing a pack does not silently add its commands everywhere, and a team's org-wide requirement is honored on top of the project's own choices. | Both promises retired: to the activation surface, and to a required preset (ADR-0031). |
+| **The system refuses unsound governance with a clear reason** | Governance that would silently weaken a profile, a mistyped reference between pieces of governance, or a broken charter is refused and the reason named — never quietly accepted or half-applied. | The weakened profile is a gap ([#380](https://github.com/spec-kitty/spec-kitty-charter/issues/380)); the mistyped reference is mapped to contract scenarios; the broken charter is retired to the activation surface. |
+| **I can share governance across a team or project safely** | An unsound shared pack is not reported healthy, a project's own choice wins over a team pack it adopts, and reserved namespaces and pack-escaping assets are refused. | The unsound pack and the escaping asset are contract scenarios; the project's own choice is mapped in part; reserved namespaces are a gap ([#381](https://github.com/spec-kitty/spec-kitty-charter/issues/381)). |
 
-Each promise has an id, `PR-CHARTER-<AREA>-NNN`, and the suite's `PROMISES.md` index names what
-accounts for it now: the contract scenario that covers it, the placeholder that holds its place, or the
+Each promise has an id, `PR-CHARTER-<AREA>-NNN`, and the suite's `PROMISES.md` index gives each one's
+verdict and names what accounts for it now: the contract scenario that covers it, the placeholder that holds its place, or the
 issue that tracks it.
 
 ## Where they live
@@ -49,7 +49,7 @@ pointers (operator rulings of 2026-10-18 and 2026-11-05; [open question 16](/pla
 | Home | What it holds | State |
 |---|---|---|
 | `contracts/charter/scenarios/` | The **contract scenarios**: the behavior half of the charter contract; each names pack files, calls one operation of `contracts/charter/openapi.yaml` and states the answer | Bound. The Cucumber suite in `charter-service` runs every scenario tagged `@contract` in `./gradlew verifyAll` and leaves out every one tagged `@WIP`; a scenario tagged `@provisional` pins behavior the conformance corpus has yet to decide. Its rules are in the folder's `README.md` |
-| `contracts/charter/scenarios/registration/`, `trust/`, `integrity/`, `distribution/` | The pack registration and distribution scenarios of #43 (ADR-0005, ADR-0019), moved from `src/test/resources/features/` | Not executed, by decision: tagged `@WIP`, because the surface is decided but not built and outside the cutover scope (ADR-0055 D1). Their fixtures stay in `src/test/resources/fixtures/` |
+| `contracts/charter/scenarios/registration/`, `trust/`, `integrity/`, `distribution/` | The pack registration and distribution scenarios of #43 (ADR-0005, ADR-0019), moved from `src/test/resources/features/` | Not executed, by decision: tagged `@WIP` and not `@contract`, because the surface is decided but not built and outside the cutover scope (ADR-0055 D1). Their fixtures stay in `src/test/resources/fixtures/`, whose `README.md` lists them |
 | `tests/scenarios/charter/` | Pointers only: `PROMISES.md` names, for each of the nine acceptance promises copied from core, the contract scenario that covers it, the `@WIP` scenario or reserved pin that holds its place, or the follow-up issue that tracks it | No scenarios left to run; two promises are now `@contract` scenarios of `offering.feature`, and two are gaps ([#380](https://github.com/spec-kitty/spec-kitty-charter/issues/380), [#381](https://github.com/spec-kitty/spec-kitty-charter/issues/381)) |
 
 The three acceptance outcomes above are still the way the promises are grouped in

@@ -1,7 +1,22 @@
-# Pack registration and distribution scenarios: moved
+# Pack registration and distribution fixtures
 
-The promise-first scenarios of #43 for pack registration and distribution now live next to the
-contract, one folder per cluster, tagged `@WIP`:
+The files the pack registration and distribution scenarios of #43 name: the operator configuration,
+the lockfile and its stale copy, and the packs. They stay here, outside the contract tree, because a
+YAML file under `contracts/charter/` is read as part of the contract. Their hashes and digests are
+illustrative.
+
+- `operator-config/charter-offering.config.yaml`: allowlist, engine version and trust floor.
+- `lockfile/charter.lock.yaml`: the configuration-level two-tier lockfile, one entry per pack.
+- `lockfile/charter.lock.stale.yaml`: the same with a mismatched snapshot digest (integrity failure).
+- `packs/<id>/pack.yaml` and `pack-manifest.yaml`: a pack per source kind and tier.
+- `packs/acme-review-pack/acme-review-pack.source.yaml`: a per-pack source descriptor (where
+  `requires_core` and the pin live, outside `pack.yaml`).
+- `packs/acme-review-pack-tampered/`: a constituent altered after pinning (integrity failure).
+
+## The scenarios that use them
+
+The scenarios moved from `src/test/resources/features/` (#374) and now live next to the contract, one
+folder per cluster, tagged `@WIP` and not `@contract`:
 
 | Scenarios | Cluster | Surface they need |
 |---|---|---|
@@ -10,12 +25,10 @@ contract, one folder per cluster, tagged `@WIP`:
 | `contracts/charter/scenarios/integrity/pin-and-verify.feature` | Two-tier integrity checked when a pack is distributed; fail closed on a mismatch. | `POST /packs/{packId}/distributions`, `GET /packs/{packId}/resolution` |
 | `contracts/charter/scenarios/distribution/resolve-and-distribute.feature` | One canonical path for every pack; engine gate; offline cache; unreachable source. | `POST /packs/{packId}/distributions`, `GET /packs/{packId}/resolution` |
 
-## Status
-
 These scenarios are not executed, by decision (#374). They specify the pack registration and
 distribution surface of ADR-0005 and ADR-0019, which is decided but not built
 (`docs/api/service-contract.md`, "Decided, not built") and outside the cutover scope (ADR-0055 D1).
-`CharterContractSuite` excludes `@WIP`, so their steps are not bound.
+`CharterContractSuite` runs only `@contract` and excludes `@WIP`, so their steps are not bound.
 
 What already holds for configured packs is covered by contract scenarios:
 
@@ -31,16 +44,3 @@ When the surface is scheduled, each cluster is bound where it now lives (open qu
 codes take the contract's snake_case names, its tiers become levels, and a slug collision is refused at
 one level only. ADR-0048 has core fetch the built-in pack itself, against ADR-0005 decisions 2 and 7;
 that tension affects TRUST-003 and DISTRIBUTE-002 and is noted, not ruled.
-
-## Fixtures (`../fixtures/`)
-
-The fixtures stay here, outside the contract tree, where a YAML file would be read as part of the
-contract. Their hashes and digests are illustrative.
-
-- `operator-config/charter-offering.config.yaml`: allowlist, engine version and trust floor.
-- `lockfile/charter.lock.yaml`: the configuration-level two-tier lockfile, one entry per pack.
-- `lockfile/charter.lock.stale.yaml`: the same with a mismatched snapshot digest (integrity failure).
-- `packs/<id>/pack.yaml` and `pack-manifest.yaml`: a pack per source kind and tier.
-- `packs/acme-review-pack/acme-review-pack.source.yaml`: a per-pack source descriptor (where
-  `requires_core` and the pin live, outside `pack.yaml`).
-- `packs/acme-review-pack-tampered/`: a constituent altered after pinning (integrity failure).
