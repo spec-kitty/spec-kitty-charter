@@ -117,6 +117,78 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-05T15:56:31.770284Z",
+      "decision_id": "01M6P6T4MTB6SPK0F0F6BSBR7N",
+      "final_answer": "Top-level slice over packs: new service/activations module depending on packs, with its own infra.api controller naming generated types; generalize the ArchUnit generated-type rule now (#140)",
+      "input_key": "slice_placement",
+      "mission_id": "01M6NXBD9RVJS9WD7KYM31W5GG",
+      "mission_slug": "activation-register-and-closure-01M6NXBD",
+      "opened_by": "cli",
+      "options": [
+        "New activations module",
+        "Inside packs",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Where does the activation domain live: a new activations Gradle module depending on packs, or a package inside packs?",
+      "rationale": null,
+      "resolved_at": "2026-11-05T16:36:07.529786Z",
+      "resolved_by": null,
+      "slot_key": "plan.architecture.slice-placement",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-05T16:36:10.494073Z",
+      "decision_id": "01M6P92QKYFZW9KDGGQGX9H9VS",
+      "final_answer": "Atomic temp+fsync+atomic move, in-process per-activation-id lock; multi-process stays #349",
+      "input_key": "file_write_safety",
+      "mission_id": "01M6NXBD9RVJS9WD7KYM31W5GG",
+      "mission_slug": "activation-register-and-closure-01M6NXBD",
+      "opened_by": "cli",
+      "options": [
+        "Atomic rename + in-process lock",
+        "Also a FileChannel lock now (#349)",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "File adapter write safety and concurrency: atomic temp+rename with an in-process per-id lock, multi-process (#349) out of scope?",
+      "rationale": null,
+      "resolved_at": "2026-11-05T16:36:40.503358Z",
+      "resolved_by": null,
+      "slot_key": "plan.storage.file-writes",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-05T16:36:43.079501Z",
+      "decision_id": "01M6P93QE757VJB2FKA1DB1D4A",
+      "final_answer": "Two stacked PRs: A = module/slice, storage, CRUD, closure read, contract A; B = select/unselect, deactivate/reactivate, presets, cascade, contract B",
+      "input_key": "pr_slicing",
+      "mission_id": "01M6NXBD9RVJS9WD7KYM31W5GG",
+      "mission_slug": "activation-register-and-closure-01M6NXBD",
+      "opened_by": "cli",
+      "options": [
+        "Two stacked PRs",
+        "One PR",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Land this mission as one PR or two stacked PRs (CRUD+storage+closure read, then verbs+cascade+presets)?",
+      "rationale": null,
+      "resolved_at": "2026-11-05T16:36:58.093900Z",
+      "resolved_by": null,
+      "slot_key": "plan.delivery.pr-slicing",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M6NXBD9RVJS9WD7KYM31W5GG",
