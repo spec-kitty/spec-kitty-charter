@@ -38,6 +38,9 @@ import org.junit.jupiter.api.io.TempDir;
  */
 class InterruptedCommitRepairTest {
 
+    /** Only a hang cap, far above the work's time so load cannot trip it; the cause assertion is the guard (#320). */
+    private static final Duration HANG_CAP = Duration.ofSeconds(30);
+
     private static final PackIdentifier PACK = new PackIdentifier("pack-a");
     private static final String SHARD =
             "schema_version: '1.0'\ngenerated_at: '2026-01-01T00:00:00Z'\nnodes: []\nedges: []\n";
@@ -163,7 +166,7 @@ class InterruptedCommitRepairTest {
 
         assertThat(read)
                 .as("the read waited for the swap and served the committed state")
-                .succeedsWithin(Duration.ofSeconds(10))
+                .succeedsWithin(HANG_CAP)
                 .satisfies(pack -> assertThat(pack.toolguides())
                         .extracting(guide -> guide.id().value())
                         .contains("fd"));
@@ -198,7 +201,7 @@ class InterruptedCommitRepairTest {
         List<String> listed;
         try {
             listed = assertTimeoutPreemptively(
-                    Duration.ofSeconds(10),
+                    HANG_CAP,
                     () -> writeStore.exclusively(new PackIdentifier("pack-descriptor-only"), () -> {
                         start.countDown();
                         await(halfSwapped);
