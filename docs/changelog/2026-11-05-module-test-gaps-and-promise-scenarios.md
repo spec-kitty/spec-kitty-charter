@@ -1,7 +1,7 @@
 ---
 okf_version: "0.2"
 title: "Module-local test gaps closed; every promise-first scenario has a verdict"
-description: "Kernel validation, agent profiles and the fetcher's body cap get their own tests; each of the 27 unrun promise-first scenarios gets a verdict."
+description: "Kernel validation, agent profiles and the fetcher's body cap get their own tests; each of the 27 promise-first scenarios no runner ran gets a verdict."
 doc_status: active
 updated: 2026-11-05T00:00:00Z
 type: Changelog
