@@ -1,0 +1,124 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-11-05T13:11:26.299249Z",
+      "decision_id": "01M6NXBVAVN8WYQ4FER962YE4K",
+      "final_answer": "All nine writes now (incl. cascade; requires ruling ADR-0059 OQ2/OQ3 first)",
+      "input_key": "write_slice",
+      "mission_id": "01M6NXBD9RVJS9WD7KYM31W5GG",
+      "mission_slug": "activation-register-and-closure-01M6NXBD",
+      "opened_by": "cli",
+      "options": [
+        "Document CRUD + closure; per-artifact verbs and presets next mission",
+        "All nine writes now",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Which activation writes does this mission build: only create/get/replace/delete (record and read a document), or all nine including select/unselect, deactivate/reactivate and apply-preset?",
+      "rationale": null,
+      "resolved_at": "2026-11-05T13:12:59.724993Z",
+      "resolved_by": null,
+      "slot_key": "specify.scope.write-slice",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-05T13:13:02.037820Z",
+      "decision_id": "01M6NXERTNKMWK4MTDTX48358B",
+      "final_answer": "Like the other cascade relations: scoped by cascade kinds (out of scope -> skippedByScope), write-time into selected, symmetric on cascading deactivate, provenance via: enhances (new reason value), requiredBy empty",
+      "input_key": "enhancer_pull",
+      "mission_id": "01M6NXBD9RVJS9WD7KYM31W5GG",
+      "mission_slug": "activation-register-and-closure-01M6NXBD",
+      "opened_by": "cli",
+      "options": [
+        "Like the other cascade relations",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "ADR-0059 OQ2: scope, timing, deactivate symmetry and provenance of the enhances pull",
+      "rationale": null,
+      "resolved_at": "2026-11-05T13:15:28.513797Z",
+      "resolved_by": null,
+      "slot_key": "specify.cascade.enhancer-pull",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-05T13:15:31.256472Z",
+      "decision_id": "01M6NXKAHRQNR4RK14FFJN2TVM",
+      "final_answer": "All D2.1 relations plus the enhances pull, transitive through every ancestor; a denied ancestor stops the walk and is reported in skippedDeactivated",
+      "input_key": "lineage_pass",
+      "mission_id": "01M6NXBD9RVJS9WD7KYM31W5GG",
+      "mission_slug": "activation-register-and-closure-01M6NXBD",
+      "opened_by": "cli",
+      "options": [
+        "All D2.1 relations, transitive, denied parent stops",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "ADR-0059 OQ3: which relations pass through a specializes_from parent, is it transitive, and what if the parent is denied",
+      "rationale": null,
+      "resolved_at": "2026-11-05T13:16:35.262286Z",
+      "resolved_by": null,
+      "slot_key": "specify.cascade.lineage-pass",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-05T13:16:37.569757Z",
+      "decision_id": "01M6NXNBA1J808JV4SHT743SCF",
+      "final_answer": "New GET /activations/{id}/packs sub-read: closure rooted at the activation's packs in dependency order with version and depends_on facts; /offering stays the available catalog; writes and cascade see only the closure (outside -> 422); @WIP scenario rewritten against the new read",
+      "input_key": "closure_exposure",
+      "mission_id": "01M6NXBD9RVJS9WD7KYM31W5GG",
+      "mission_slug": "activation-register-and-closure-01M6NXBD",
+      "opened_by": "cli",
+      "options": [
+        "Writes validate against the closure; facts on a closure sub-resource",
+        "Facts on the Activation answer",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Where do the activated-pack closure (#360) and the PackPin depends_on facts (#359) show, given ADR-0059 D5 keeps offering-derived data out of the Activation answer?",
+      "rationale": null,
+      "resolved_at": "2026-11-05T13:17:44.415930Z",
+      "resolved_by": null,
+      "slot_key": "specify.closure.exposure",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-05T13:17:50.145045Z",
+      "decision_id": "01M6NXQJ61D2GSFJFK02XW6F9N",
+      "final_answer": "None, now: absent and [] mean nothing in force for every selected kind, activatedKinds and missionTypes; select adds; kernel InForceWhenAbsent changes; absent packs still means every configured pack; divergence entry until the split",
+      "input_key": "absent_key_meaning",
+      "mission_id": "01M6NXBD9RVJS9WD7KYM31W5GG",
+      "mission_slug": "activation-register-and-closure-01M6NXBD",
+      "opened_by": "cli",
+      "options": [
+        "None, now (ADR-0053 d10)",
+        "Per-kind default until the split",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "What does an absent activation key mean in the service now: ADR-0053 d10 'none' or the contract's per-kind default?",
+      "rationale": null,
+      "resolved_at": "2026-11-05T13:18:40.990415Z",
+      "resolved_by": null,
+      "slot_key": "specify.document.absent-key",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M6NXBD9RVJS9WD7KYM31W5GG",
+  "version": 1
+}
