@@ -51,8 +51,8 @@ repository does not.
   [#72](https://github.com/spec-kitty/spec-kitty-charter/issues/72) and #74 were held on it.
 - **The cascade.** ADR-0013 D4 and ADR-0020 D6 fix the cascade's stop at a deny entry and its report buckets, but
   name no relations. Core walks five relations (`requires`, `suggests`, `refines`, `scope`, `instantiates`)
-  with no depth limit. The pack ecosystem added edges core does not have: `enhances`, `overrides`,
-  `specializes_from`, and pack-qualified references (ADR-0048 to ADR-0054).
+  with no depth limit. Core also declares `enhances`, `overrides` and `specializes_from`, but its cascade does not
+  follow them. The pack ecosystem uses them, and adds pack-qualified references (ADR-0048 to ADR-0054).
 - **The layer override.** ADR-0053 d6 ruled that across levels the same id is a legitimate layer override,
   applied project over org over built-in, with no edge needed. It did not say whether the override takes the
   place of the whole artifact or only of the fields it declares. Core's ADR `3.x/2026-05-16-1` chose a field
