@@ -2,7 +2,7 @@
 title: Behavior and acceptance scenarios
 description: The contract and acceptance scenarios that define the charter offering's role and boundary, and how they become the conformance net that survives the repository split.
 doc_status: draft
-updated: 2026-10-19T00:00:00Z
+updated: 2026-11-05T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -37,31 +37,24 @@ The suite is organized by consumer outcome. The three offering outcomes are:
 | **The system refuses unsound governance with a clear reason** | Governance that would silently weaken a profile, a mistyped reference between pieces of governance, or a broken charter is refused and the reason named — never quietly accepted or half-applied. |
 | **I can share governance across a team or project safely** | An unsound shared pack is not reported healthy, a project's own choice wins over a team pack it adopts, and reserved namespaces and pack-escaping assets are refused. |
 
-Each scenario is tagged `@promise:PR-CHARTER-<AREA>-NNN` and mapped to the authority that states
-it (an FR or ADR) in the suite's `PROMISES.md` index, so the set doubles as a frozen-contract
-map for the surface under test.
+Each promise has an id, `PR-CHARTER-<AREA>-NNN`, and the suite's `PROMISES.md` index names what
+accounts for it now: the contract scenario that covers it, the placeholder that holds its place, or the
+issue that tracks it.
 
 ## Where they live
 
-Scenarios live in three homes, each with its own state (operator ruling, 2026-10-18;
-[open question 16](/plans/open-questions/)):
+Every scenario now lives in `contracts/charter/scenarios/`, and `tests/scenarios/charter/` keeps only
+pointers (operator rulings of 2026-10-18 and 2026-11-05; [open question 16](/plans/open-questions/); #374):
 
 | Home | What it holds | State |
 |---|---|---|
-| `contracts/charter/scenarios/` | The **contract scenarios**: the behavior half of the charter contract; each names pack files, calls one operation of `contracts/charter/openapi.yaml` and states the answer | Bound. The Cucumber suite in `charter-service` runs every scenario tagged `@contract` in `./gradlew verifyAll`; a scenario tagged `@provisional` pins behavior the conformance corpus has yet to decide. Its rules are in the folder's `README.md` |
-| `src/test/resources/features/` | The pack registration and distribution suites of #43, one folder per behavior cluster | Not bound. Each cluster moves to `contracts/charter/scenarios/<cluster>/` when its harness is bound, renamed for the terms guard, moved and bound in one change |
-| `tests/scenarios/charter/` | The **acceptance scenarios**, copied from core's charter-offering suite, one folder per outcome | Not bound; they bind with the harness of [#31](https://github.com/spec-kitty/spec-kitty-charter/issues/31) |
+| `contracts/charter/scenarios/` | The **contract scenarios**: the behavior half of the charter contract; each names pack files, calls one operation of `contracts/charter/openapi.yaml` and states the answer | Bound. The Cucumber suite in `charter-service` runs every scenario tagged `@contract` in `./gradlew verifyAll` and leaves out every one tagged `@WIP`; a scenario tagged `@provisional` pins behavior the conformance corpus has yet to decide. Its rules are in the folder's `README.md` |
+| `contracts/charter/scenarios/registration/`, `trust/`, `integrity/`, `distribution/` | The pack registration and distribution scenarios of #43 (ADR-0005, ADR-0019), moved from `src/test/resources/features/` | Not executed, by decision: tagged `@WIP`, because the surface is decided but not built and outside the cutover scope (ADR-0055 D1). Their fixtures stay in `src/test/resources/fixtures/` |
+| `tests/scenarios/charter/` | Pointers only: `PROMISES.md` names, for each of the nine acceptance promises copied from core, the contract scenario that covers it, the `@WIP` scenario or reserved pin that holds its place, or the follow-up issue that tracks it | No scenarios left to run; two promises are now `@contract` scenarios of `offering.feature`, and two are gaps ([#380](https://github.com/spec-kitty/spec-kitty-charter/issues/380), [#381](https://github.com/spec-kitty/spec-kitty-charter/issues/381)) |
 
-The acceptance scenarios are grouped by the three outcomes above:
-
-- `governance-in-force/` — the governance in force is what I chose.
-- `refuses-unsound-governance/` — the system refuses unsound governance with a clear reason.
-- `share-governance-safely/` — I can share governance across a team or project safely.
-- `PROMISES.md` — each `@promise` id mapped to its offering authority.
-
-The unbound suites are implementation-free Gherkin: they import no code and are valid the
-moment they land. A suite that is placed in `contracts/charter/scenarios/` before it is bound
-is not run, because the suite selects only the `@contract` tag.
+The three acceptance outcomes above are still the way the promises are grouped in
+`tests/scenarios/charter/PROMISES.md`. A scenario placed in `contracts/charter/scenarios/` is not run until it
+is tagged `@contract`, and not while it is tagged `@WIP`.
 
 ## From scenario to contract
 

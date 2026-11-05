@@ -1,48 +1,46 @@
-# Pack registration & distribution — BDD feature suite
+# Pack registration and distribution scenarios: moved
 
-Promise-first BDD scenarios that define **what the charter offering service does for a consumer**
-when it registers, verifies, resolves and distributes packs — independent of the implementation
-that delivers it. They are the behavioral contract this mission specifies *before* the OpenAPI
-surface is authored: the scenarios are the public-surface design input (per the mission brief and
-`docs/architecture/behavior-and-scenarios.md`).
+The promise-first scenarios of #43 for pack registration and distribution now live next to the
+contract, one folder per cluster, tagged `@WIP`:
 
-Authority: the 13 decisions in
-`kitty-specs/pack-registration-distribution-01M56M49/decisions-ledger.md`. The v1 public surface is
-**REST (OpenAPI-HATEOAS)**; GraphQL is planned-later (DM-13) and is **not** scenarioed here.
+| Scenarios | Cluster | Surface they need |
+|---|---|---|
+| `contracts/charter/scenarios/registration/register-pack.feature` | Pin and record a pack from each of the four source kinds; fail closed on an id or slug conflict. | `POST /packs` |
+| `contracts/charter/scenarios/trust/source-trust.feature` | The operator allowlist admits or refuses git sources; built-in is high-trust; the pin-to-rev floor. | `POST /packs` |
+| `contracts/charter/scenarios/integrity/pin-and-verify.feature` | Two-tier integrity checked when a pack is distributed; fail closed on a mismatch. | `POST /packs/{packId}/distributions`, `GET /packs/{packId}/resolution` |
+| `contracts/charter/scenarios/distribution/resolve-and-distribute.feature` | One canonical path for every pack; engine gate; offline cache; unreachable source. | `POST /packs/{packId}/distributions`, `GET /packs/{packId}/resolution` |
 
 ## Status
 
-- **Layer A — the contract (here now):** the `.feature` files and the `fixtures/` tree. They are
-  implementation-free Gherkin; they import no code and are valid as they stand.
-- **Layer B — the harness (not yet wired):** no Cucumber-JVM runner or step definitions exist in
-  this repository yet (no Java in this mission). Standing up the runner and binding the steps is a
-  later mission. The fixtures below are the data those steps will bind to; hash/digest values are
-  illustrative until the harness recomputes them.
+These scenarios are not executed, by decision (#374). They specify the pack registration and
+distribution surface of ADR-0005 and ADR-0019, which is decided but not built
+(`docs/api/service-contract.md`, "Decided, not built") and outside the cutover scope (ADR-0055 D1).
+`CharterContractSuite` excludes `@WIP`, so their steps are not bound.
 
-## Layout
+What already holds for configured packs is covered by contract scenarios:
 
-One feature per behavior cluster:
+- REGISTER-003 by `composition.feature` "Two configured packs declaring one pack_id refuse the compose".
+- REGISTER-004, at one level, by `composition.feature` "Two siblings defining one artifact, unsettled,
+  refuse the compose". Across levels the same id is a layer override (ADR-0053 decision 6).
+- DISTRIBUTE-002's read side, built-in with no shortcut, by the ordering scenarios of `offering.feature`
+  and `composition.feature` "The single built-in tree still loads".
 
-| Feature | Cluster | Implied REST surface (v1 source of record) |
-|---------|---------|---------------------------------------------|
-| `registration/register-pack.feature` | Intake: pin & record a pack from each of the four source kinds; fail closed on id/slug conflict. | `POST /api/v1/packs` |
-| `trust/source-trust.feature` | Mixed-granularity allowlist admits/refuses git sources; high-trust built-in bypasses; pin-to-rev floor. | `POST /api/v1/packs` (pre-fetch allowlist check) |
-| `integrity/pin-and-verify.feature` | Two-tier integrity verified during distribute; fail closed on constituent-hash or snapshot-digest mismatch. | `POST .../distributions` (write) + `GET .../resolution` (read-only projection) |
-| `distribution/resolve-and-distribute.feature` | One canonical path across the four tiers; built-in catfooding; engine gate; offline cache; unreachable fail-closed; one `@deferred` tenancy placeholder. | `POST /api/v1/packs/{packId}/distributions` + `GET .../resolution` |
+DISTRIBUTE-006 is deferred (decision `01M5781ER9V60RN0KVBJH0EQRM`).
 
-## Fixtures (`fixtures/`)
+When the surface is scheduled, each cluster is bound where it now lives (open question 16): its refusal
+codes take the contract's snake_case names, its tiers become levels, and a slug collision is refused at
+one level only. ADR-0048 has core fetch the built-in pack itself, against ADR-0005 decisions 2 and 7;
+that tension affects TRUST-003 and DISTRIBUTE-002 and is noted, not ruled.
 
-- `operator-config/charter-offering.config.yaml` — allowlist + engine version + trust floor.
-- `lockfile/charter.lock.yaml` — the config-level two-tier lockfile (one entry per pack).
-- `lockfile/charter.lock.stale.yaml` — variant with a mismatched snapshot digest (integrity fail).
-- `packs/<id>/pack.yaml` + `pack-manifest.yaml` — a pack per source kind / tier.
-- `packs/acme-review-pack/acme-review-pack.source.yaml` — per-pack source descriptor (shows where
-  `requires_core`/pin live, outside `pack.yaml`).
-- `packs/acme-review-pack-tampered/` — a constituent altered after pinning (integrity fail).
+## Fixtures (`../fixtures/`)
 
-## Authoring
+The fixtures stay here, outside the contract tree, where a YAML file would be read as part of the
+contract. Their hashes and digests are illustrative.
 
-Follows the house style in `tests/scenarios/charter/` and
-`docs/architecture/behavior-and-scenarios.md`: outcomes rather than output surfaces, one promise per
-scenario, the consumer's language, `@promise:` tags mapped to their authority. The authority map for
-this suite is `kitty-specs/pack-registration-distribution-01M56M49/bdd-scenarios.md`.
+- `operator-config/charter-offering.config.yaml`: allowlist, engine version and trust floor.
+- `lockfile/charter.lock.yaml`: the configuration-level two-tier lockfile, one entry per pack.
+- `lockfile/charter.lock.stale.yaml`: the same with a mismatched snapshot digest (integrity failure).
+- `packs/<id>/pack.yaml` and `pack-manifest.yaml`: a pack per source kind and tier.
+- `packs/acme-review-pack/acme-review-pack.source.yaml`: a per-pack source descriptor (where
+  `requires_core` and the pin live, outside `pack.yaml`).
+- `packs/acme-review-pack-tampered/`: a constituent altered after pinning (integrity failure).

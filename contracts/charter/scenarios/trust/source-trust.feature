@@ -1,3 +1,25 @@
+# Decided, not built (#374; operator ruling 2026-11-05, decision 01M6NE5YW0Y4G60B62YTX08WXT):
+# - ADR-0005 and ADR-0019 decide that the service registers and distributes packs. The operations these
+#   scenarios need (POST /packs, POST /packs/{packId}/distributions, GET /packs/{packId}/resolution) are
+#   listed under "Decided, not built" in docs/api/service-contract.md, with no inventory issue, and are
+#   outside the cutover scope of ADR-0055 D1. They are not in ../../openapi.yaml.
+# - So every scenario here is tagged @WIP: the suite excludes it (CharterContractSuite, @ExcludeTags("WIP")),
+#   and its steps are not bound. Moved here from src/test/resources/features/ so the scenarios keep a home
+#   next to the contract without running; no runner executed them there either.
+# - When the surface is built, the scenarios change before @WIP comes off:
+#   - the refusal codes take the contract's snake_case names (../../schemas/CharterRefusalCode.yaml), not
+#     SOURCE_CONFLICT, SOURCE_NOT_ALLOWLISTED, INTEGRITY_FAILURE, PACK_ENGINE_INCOMPATIBLE or SOURCE_UNREACHABLE;
+#   - the requester tiers (built_in, org, consumer, private) become pack levels (built-in, org, project;
+#     ADR-0053 decision 1), plus an identity model the service does not have yet;
+#   - a constituent collision is refused only at one level: across levels the same id is a layer override
+#     (ADR-0053 decision 6, as amended).
+# - Fixtures: the files the steps name (operator configuration, lockfiles, packs) stay in
+#   src/test/resources/fixtures/, outside the contract tree, because a YAML file here is read as part of the
+#   contract (README "Rules"). Their hashes and digests are illustrative.
+# - Noted, not ruled: ADR-0048 (consequences, lines 195-197) has core pin and fetch the built-in pack itself,
+#   against ADR-0005 decisions 2 and 7 (built-in registered and distributed through the service like any
+#   other pack). This affects the wording of PR-PACK-TRUST-003 and PR-PACK-DISTRIBUTE-002 only.
+#
 # Maintainer notes (not part of the behavior description):
 # - Consumer-outcome scenarios for the trust promise "only sources I have authorized can enter,
 #   and high-trust built-in content is not gated behind my allowlist". Promise-first.
@@ -14,6 +36,7 @@
 # - The allowlist governs WHO may be a source; it does not prove authorship (tamper-evidence, not
 #   tamper-proofing — research Q3). Integrity is a separate promise (see pin-and-verify.feature).
 
+@contract @WIP @trust
 Feature: Only sources I have authorized can enter
   As an operator responsible for what doctrine my service will fetch and distribute
   I want unlisted git sources refused and high-trust built-in content let through

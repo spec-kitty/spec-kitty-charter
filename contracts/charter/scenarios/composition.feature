@@ -855,6 +855,19 @@ Feature: The compose resolves the configured packs' dependency graph
     And the field at "/packs/1/packId" is "alpha"
     And the offering holds exactly 2 packs
 
+  # Deferred to #380 (operator ruling 2026-11-05, decision 01M6NE62FJ43XT0VC78YJ128NP): the service does not
+  # resolve an agent profile's enhances yet (ADR-0032; AgentProfile), so the effective profile this refusal
+  # judges does not exist. PR-CHARTER-REFUSAL-001 of #374. Steps are enhancement adds only (ADR-0053 decision 22),
+  # so this concerns profiles alone.
+  @WIP
+  Scenario: An agent profile enhancement that would drop fields of the profile it enhances is refused
+    A pack's profile that enhances another profile may add to it, never silently drop part of it: governance
+    that would quietly weaken a profile is refused, naming the profile and the fields it would drop.
+    Given the org pack "base" holds the agent profile "reviewer" with the specialization "review"
+    And the org pack "team" holds an agent profile that enhances "reviewer" and leaves out its specialization
+    When I read the effective agent profile "reviewer"
+    Then the request is refused naming the pack "team" and the field "specialization"
+
   Scenario: A bare cross-pack reference is refused naming the holding pack
     SC-004's refusal half (FR-015), on the two-pack fixture shared with the two scenarios below: alpha's
     graph writes the bare reference directive:SHARE, which only beta holds. A reference to another
