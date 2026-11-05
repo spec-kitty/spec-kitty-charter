@@ -416,6 +416,9 @@
       "last_event_id": "01M6Q20CRC8NFF69K0EP9NEFFC",
       "last_transition_at": "2026-11-05T23:51:48.236498+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "CascadeRules pure over Reach values (no packs import, no traversal). planSelect/walkSelected/applySelect; planDeactivate/planShared/applyDeactivate; ActivationChange.of(before, after, skipped) derives applied and cleared. Choices: planSelect takes includeDeactivated (stopAt empty); no cascade => ReachPlan.none (walks()==false), app skips the call; planShared walks with lineage, stops at target+deny entries; candidates = selected in-scope nodes the target reached; reached mission types land in skippedByScope; non-selectable kinds dropped; deactivate of a non-deny kind throws IAE. Document rebuilt via public Builder (ActivationDocument untouched). Property helper in every clearing test + 50-case randomized property. Gates: :activations:check, javadoc, HexagonalArchitectureTest green."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 30054,
