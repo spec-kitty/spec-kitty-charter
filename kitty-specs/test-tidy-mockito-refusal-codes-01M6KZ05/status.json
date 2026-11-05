@@ -1,0 +1,55 @@
+{
+  "event_count": 26,
+  "last_event_id": "01M6M59QXR3N5A358C37BBH7N9",
+  "materialized_at": "2026-11-04T20:51:37.016072+00:00",
+  "mission_number": "",
+  "mission_slug": "test-tidy-mockito-refusal-codes-01M6KZ05",
+  "mission_type": "",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 2,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M6M59N92V6F29H033A7500ES",
+      "last_transition_at": "2026-11-04T20:51:34.306501+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/test-tidy-mockito-refusal-codes-01M6KZ05-coord/kitty-specs/test-tidy-mockito-refusal-codes-01M6KZ05/tasks/WP01-mockito-at-spring-version-and-metadata-regen/review-cycle-2.md",
+        "reference": "review-cycle://test-tidy-mockito-refusal-codes-01M6KZ05/WP01-mockito-at-spring-version-and-metadata-regen/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 17485,
+      "shell_pid_created_at": "1793824430.86"
+    },
+    "WP02": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M6M59QXR3N5A358C37BBH7N9",
+      "last_transition_at": "2026-11-04T20:51:37.016072+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/test-tidy-mockito-refusal-codes-01M6KZ05-coord/kitty-specs/test-tidy-mockito-refusal-codes-01M6KZ05/tasks/WP02-pin-refusal-codes/review-cycle-2.md",
+        "reference": "review-cycle://test-tidy-mockito-refusal-codes-01M6KZ05/WP02-pin-refusal-codes/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 23812,
+      "shell_pid_created_at": "1793825324.03"
+    }
+  }
+}
