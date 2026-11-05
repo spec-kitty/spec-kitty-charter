@@ -17,9 +17,13 @@ import ai.speckitty.charter.packs.domain.PackCompositionResolver.Failure;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -525,6 +529,159 @@ class PackCompositionResolverTest {
                     assertThat(refusal.failure()).isEqualTo(Failure.REFERENCE_PACK_MISSING);
                     assertThat(refusal.detail()).contains("writing");
                 });
+    }
+
+    /**
+     * The compose rooted at a set of packs (#360): only the {@code depends_on} and {@code parent_pack} closure of the
+     * roots is judged, so a broken pack outside it never refuses the roots' compose. Fixture: alpha depends on beta,
+     * gamma is unrelated.
+     */
+    @Nested
+    class Rooted {
+
+        private final PackUnderResolution beta = pack("01BETA", "beta", "1.0.0", PackLevel.ORG);
+        private final PackUnderResolution alpha =
+                pack("01ALPHA", "alpha", "1.0.0", PackLevel.ORG, List.of(new PackDependency("01BETA", ">=1.0")));
+        private final PackUnderResolution gamma = pack("01GAMMA", "gamma", "1.0.0", PackLevel.ORG);
+
+        private List<PackUnderResolution> rooted(List<PackUnderResolution> available, String... roots) {
+            return PackCompositionResolver.resolveRooted(available, configuredIds(roots));
+        }
+
+        @Test
+        void aRootComposesOnlyWhatItBuildsOn() {
+            assertThat(ids(rooted(List.of(gamma, alpha, beta), "01ALPHA"))).containsExactly("01BETA", "01ALPHA");
+        }
+
+        @Test
+        void severalRootsComposeInTheOrderTheWholeComposeGives() {
+            List<PackUnderResolution> all = List.of(gamma, alpha, beta);
+
+            assertThat(rooted(all, "01ALPHA", "01GAMMA")).isEqualTo(PackCompositionResolver.resolve(all));
+        }
+
+        @Test
+        void theParentPackIsInTheCompositionClosure() {
+            PackUnderResolution delta = withParent("01DELTA", "delta", "01BETA");
+
+            assertThat(ids(rooted(List.of(gamma, alpha, beta, delta), "01DELTA")))
+                    .containsExactly("01BETA", "01DELTA");
+        }
+
+        @Test
+        void aDuplicatePackIdOutsideTheClosureIsNeverJudged() {
+            PackUnderResolution twin = configuredAs("twin", "01GAMMA", "gamma-twin");
+            List<PackUnderResolution> all = List.of(alpha, beta, gamma, twin);
+
+            assertThat(ids(rooted(all, "01ALPHA"))).containsExactly("01BETA", "01ALPHA");
+            assertThat(refusalOf(() -> PackCompositionResolver.resolve(all)).failure())
+                    .as("the whole compose still refuses it")
+                    .isEqualTo(Failure.DUPLICATE_ID);
+        }
+
+        @Test
+        void aDuplicateNameOutsideTheClosureIsNeverJudged() {
+            PackUnderResolution namesake = pack("01OTHER", "gamma", "1.0.0", PackLevel.ORG);
+            List<PackUnderResolution> all = List.of(alpha, beta, gamma, namesake);
+
+            assertThat(ids(rooted(all, "01ALPHA"))).containsExactly("01BETA", "01ALPHA");
+            assertThat(refusalOf(() -> PackCompositionResolver.resolve(all)).failure())
+                    .isEqualTo(Failure.NAME_CONFLICT);
+        }
+
+        @Test
+        void aRootsMissingDependencyIsRefusedAsTheWholeComposeRefusesIt() {
+            PackUnderResolution dependent =
+                    pack("01DEP", "dependent", "1.0.0", PackLevel.ORG, List.of(new PackDependency("01GONE", ">=1.0")));
+
+            PackCompositionResolver.Refusal rooted = refusalOf(() -> rooted(List.of(dependent, gamma), "01DEP"));
+            PackCompositionResolver.Refusal whole =
+                    refusalOf(() -> PackCompositionResolver.resolve(List.of(dependent)));
+
+            assertThat(rooted.failure()).isEqualTo(Failure.UNKNOWN_DEPENDENCY);
+            assertThat(rooted.packs())
+                    .isEqualTo(whole.packs())
+                    .containsExactly(new RefusalPack("01DEP", "01DEP", "dependent"));
+            assertThat(rooted.detail()).isEqualTo(whole.detail());
+        }
+
+        @Test
+        void aDuplicatePackIdInsideTheClosureIsRefusedNamingBoth() {
+            PackUnderResolution twin = configuredAs("beta-twin", "01BETA", "beta-twin");
+
+            PackCompositionResolver.Refusal refusal =
+                    refusalOf(() -> rooted(List.of(alpha, beta, twin, gamma), "01ALPHA"));
+
+            assertThat(refusal.failure()).isEqualTo(Failure.DUPLICATE_ID);
+            assertThat(refusal.packs())
+                    .extracting(RefusalPack::packId)
+                    .containsExactlyInAnyOrder("01BETA", "beta-twin");
+        }
+
+        @Test
+        void theCompositionClosureTerminatesOnACycleAndTheRootedComposeRefusesIt() {
+            PackUnderResolution first =
+                    pack("01FIRST", "first", "1.0.0", PackLevel.ORG, List.of(new PackDependency("01SECOND", ">=1.0")));
+            PackUnderResolution second =
+                    pack("01SECOND", "second", "1.0.0", PackLevel.ORG, List.of(new PackDependency("01FIRST", ">=1.0")));
+
+            assertThat(PackCompositionResolver.compositionClosure(List.of("01FIRST"), byPackId(first, second)))
+                    .containsExactly("01FIRST", "01SECOND");
+            assertThat(refusalOf(() -> rooted(List.of(first, second, gamma), "01FIRST"))
+                            .failure())
+                    .isEqualTo(Failure.CYCLE);
+        }
+
+        @Test
+        void theCompositionClosureRecordsAMissingTargetWithoutDescendingFromIt() {
+            PackUnderResolution orphan = withParent("01ORPH", "orphan", "01MISSING");
+
+            assertThat(PackCompositionResolver.compositionClosure(
+                            List.of("01ALPHA", "01ORPH"), byPackId(alpha, beta, orphan)))
+                    .containsExactly("01ALPHA", "01ORPH", "01BETA", "01MISSING");
+        }
+
+        @Test
+        void aRootNoAvailablePackIsConfiguredAsIsAnArgumentErrorNotARefusal() {
+            assertThatThrownBy(() -> rooted(List.of(alpha, beta), "nowhere"))
+                    .isExactlyInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("nowhere");
+        }
+
+        private PackUnderResolution withParent(String id, String name, String parent) {
+            return new PackUnderResolution(
+                    new ConfiguredPack(new PackIdentifier(id), PackLevel.ORG),
+                    new PackDescriptor(
+                            id, "1.0.0", Optional.of(parent), name, Optional.of(PackLevel.ORG), Optional.empty()));
+        }
+
+        /** A pack configured under one id whose descriptor declares another {@code pack_id}. */
+        private PackUnderResolution configuredAs(String configuredId, String packId, String name) {
+            return new PackUnderResolution(
+                    new ConfiguredPack(new PackIdentifier(configuredId), PackLevel.ORG),
+                    new PackDescriptor(
+                            packId, "1.0.0", Optional.empty(), name, Optional.of(PackLevel.ORG), Optional.empty()));
+        }
+
+        private Map<String, PackUnderResolution> byPackId(PackUnderResolution... packs) {
+            Map<String, PackUnderResolution> index = new LinkedHashMap<>();
+            Arrays.stream(packs)
+                    .forEach(each -> index.putIfAbsent(each.descriptor().packId(), each));
+            return index;
+        }
+
+        private Collection<PackIdentifier> configuredIds(String... ids) {
+            return Arrays.stream(ids).map(PackIdentifier::new).toList();
+        }
+
+        private PackCompositionResolver.Refusal refusalOf(Runnable compose) {
+            try {
+                compose.run();
+            } catch (PackCompositionResolver.Refusal refusal) {
+                return refusal;
+            }
+            throw new AssertionError("the compose was expected to refuse");
+        }
     }
 
     /** The references one pack writes, each with the pack the compose says holds it, checked as the offering checks. */
