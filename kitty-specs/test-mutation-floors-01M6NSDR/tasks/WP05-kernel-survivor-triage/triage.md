@@ -1,6 +1,6 @@
 # WP05 kernel survivor triage
 
-The triage of every `kernel.domain` mutant that survived `:kernel:pitest` (#239, ADR-0060 decision 7). It records each
+The triage of every `kernel.domain` mutant that survived `:kernel:pitest` (#239, ADR-0062 decision 7). It records each
 verdict, so a later run can tell a known equivalent from a new gap. Main code is unchanged; no test method was added.
 The new cases are rows in existing parameterised tables (`Pep440RangeTest`) or assertions in existing tests
 (`PackQualifiedReferenceTest`).

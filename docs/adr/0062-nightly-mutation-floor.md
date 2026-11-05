@@ -1,5 +1,5 @@
 ---
-title: "ADR-0060: Nightly mutation floor"
+title: "ADR-0062: Nightly mutation floor"
 description: "The nightly PIT run stops being an experiment: each mutated module and packs group has a fixed floor that turns the nightly red, never a pull request."
 doc_status: active
 updated: 2026-11-05T00:00:00Z
@@ -20,7 +20,7 @@ audience:
     guidance_text: Read this for why mutation testing gates the nightly but never a pull request, and how a floor moves.
 ---
 
-# ADR-0060: Nightly mutation floor
+# ADR-0062: Nightly mutation floor
 
 ## Status
 
@@ -109,7 +109,7 @@ characters in mutator descriptions, so it is not well-formed XML.
    three groups are scored from the one `:packs:pitest` run.
 5. **The floor check.** `pitest` is finalized by `checkMutationFloors`, which reads `build/reports/pitest/mutations.xml`
    with a lenient scan, never a strict XML parser, and writes `build/reports/mutation-floors/floors.json`. A group
-   below its floor fails the task with `<path> <group>: mutation score S % is below its floor F % (#239, ADR-0060)`.
+   below its floor fails the task with `<path> <group>: mutation score S % is below its floor F % (#239, ADR-0062)`.
    A group without mutants, a missing report and `<mutation>` elements that cannot be read each fail too, so a broken
    run is never scored as a pass.
 6. **Moving a floor.**
