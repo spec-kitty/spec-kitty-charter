@@ -37,6 +37,10 @@ on:
       - "deploy/**"
       - ".gitignore"
       - "**/.env*"
+      # The generated Java client (#218): checked by verifyAll with the rest of the build.
+      - "client-java/**"
+      # HowToTest reads the how-to's generator version.
+      - "docs/guides/generate-a-client.md"
   workflow_call:
     inputs:
       cache-disabled:
