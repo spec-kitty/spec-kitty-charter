@@ -13,6 +13,7 @@ related:
   - adr/0046-service-release-line-and-native-packaging
   - adr/0060-native-build-runs-nightly-and-per-release
   - guides/generate-a-client
+  - adr/0060-nightly-mutation-floor
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this before you build, test or change the contract.
@@ -83,9 +84,8 @@ so it is exempt by construction and still compiles. A new hand-written module un
 also be listed in `service/charter-reports/build.gradle.kts`; the build fails, naming it,
 until it is.
 
-Not in `verifyAll`: mutation testing. `./gradlew pitest` runs PIT on the hand-written
-service modules; `.github/workflows/mutation-nightly.yml` runs it nightly, and no pull
-request runs it.
+Not in `verifyAll`: mutation testing. It runs nightly, against a floor per module, and no pull request runs it; see
+[Mutation testing](#mutation-testing).
 
 Not in `verifyAll` either, yet: the whole-pack round-trip gate (below).
 
@@ -108,6 +108,71 @@ CPU-time budget is tagged `timing`. A hang cap (`@Timeout`) and a deadline check
 within a bound far above the work's own time, are not budgets and need no tag. A deadline check is written as a hang
 cap of 30 s, next to an assertion of the cause it proves; the cap stops the test's wait, not work that ignores an
 interrupt; the deadline tests with no cap of their own stop at a whole-test cap of 90 s ([#320](https://github.com/spec-kitty/spec-kitty-charter/issues/320)).
+
+## Mutation testing
+
+PIT mutates the service's logic and checks each module's mutation score against a fixed floor
+([ADR-0060](/adr/0060-nightly-mutation-floor/), [#239](https://github.com/spec-kitty/spec-kitty-charter/issues/239)).
+It is its own task, never part of `check` or `verifyAll`:
+
+```bash
+# packs reads the synced open-packs checkout (-PopenPacksDir; see "Syncing the packs")
+./gradlew pitest --continue                            # every mutated module
+./gradlew :kernel:pitest                               # one module
+```
+
+`--continue` lets every module run and report even when one is below its floor.
+
+**What is mutated.** Every module that applies `charter.mutation-conventions` (`build-logic`), which holds PIT's
+versions, the HTML and XML reports and PIT's default mutators:
+
+| Module | Floor group | Mutated | Floor |
+|---|---|---|--:|
+| kernel | `kernel` | the whole module | 65 % |
+| missions | `missions` | the whole module | 70 % |
+| profiles | `profiles` | the whole module | 50 % |
+| packs | `domain+application` | `packs.domain`, `packs.application`, without `application.config` | 85 % |
+| packs | `infra.storage` | `packs.infra.storage`, `infra.storage.config` included | 85 % |
+
+Kernel, missions and profiles apply the plugin through `charter.domain-conventions`; packs applies it directly. Packs
+never mutates `application.config` (the Spring wiring) or `infra.api` (the REST adapter), and PIT runs only the unit
+tests of the mutated packages: no `*WiredTest`, and no test tagged `open-packs`, `whole-pack` or `timing`. Both packs
+groups come from the one `:packs:pitest` run, which takes about 45 minutes on four cores; kernel, missions and
+profiles together take about 3 minutes.
+
+**The floors** live in each module's `build.gradle.kts`, in a `mutationFloors { group("...") { ... } }` block. A
+floor is raised by a pull request once the nightly score clears it by 5 points, and lowered only by an amendment to
+ADR-0060.
+
+**The floor check.** `pitest` is finalized by `checkMutationFloors`, which reads `build/reports/pitest/mutations.xml`
+leniently (PIT writes raw `<` into it), logs each group's mutants, score, test strength and floor, and writes
+`build/reports/mutation-floors/floors.json`. The score is PIT's mutation score: the detected mutants (KILLED,
+TIMED_OUT, NON_VIABLE, MEMORY_ERROR, RUN_ERROR, EQUIVALENT) over all mutants, uncovered ones included. Test strength,
+detected over covered mutants, is reported and never gated. A group passes when its exact score is at or above its
+floor; printed figures are truncated to one decimal, never rounded up. A group below its floor fails the task:
+
+```text
+:kernel kernel: mutation score 64.9 % is below its floor 65 % (#239, ADR)
+```
+
+A group with no mutants, a missing `mutations.xml` and `<mutation>` elements without a status or a mutated class each
+fail the check too.
+
+**Narrowing a run.** `service/packs/pit-targets.init.gradle` narrows PIT to the classes and tests named with
+`-Dpit.classes` and `-Dpit.tests`, for one work package's classes; its header has the full command. A narrowed run is
+not a floor measurement: it skips `checkMutationFloors`, and the `floors.json` left from an earlier run may be stale.
+
+**The nightly.** `.github/workflows/mutation-nightly.yml` runs on a schedule and on `workflow_dispatch` only, with a
+90-minute timeout. It syncs the packs at the pin, runs the summary script's unit tests, then
+`./gradlew pitest --continue`. Whatever the result, `scripts/ci/mutation_summary.py` turns every `floors.json` into a
+job-summary table (score, strength, uncovered mutants, floor, verdict and the classes with the most surviving or
+uncovered mutants), and every module's report goes up as the `mutation-report` artifact. When a scheduled run does not
+succeed, a timeout included, the workflow opens one issue labelled `mutation-nightly`, or comments on the open one; a
+`workflow_dispatch` with `force_issue` tests that path.
+
+**A surviving mutant** is triaged in this order: kill it by strengthening an existing test's assertion; mark it
+equivalent, with a one-line reason; or accept it, naming an owner. Never add a test whose only purpose is killing a
+mutant (DIRECTIVE_041).
 
 ## Syncing the packs
 
