@@ -102,9 +102,11 @@ loses its gating role. Those changes are follow-ups, not part of this record.
    not followed either, as in core. Pack-level
    `depends_on` is not an artifact edge: activation stays per artifact (ADR-0048).
 
-**Why.** The five relations keep core's reach, so a project activates what it activated before. `enhances` brings an
-enhancing artifact into force with the artifact it adds to. The other edges either replace content or point at
-what must not be activated.
+**Why.** The five relations keep core's reach, so a project activates what it activated before. In this repository's
+[logical model](/architecture/logical-model/#relations) each of them points from an artifact to what it needs in
+force with it: a hard dependency, a recommendation, the target it narrows, what it puts in force within its scope,
+or its template. `enhances` brings an enhancing artifact into force with the artifact it adds to. The other edges
+either replace content or point at what must not be activated.
 
 ### D3. A layer override takes the place of the whole artifact (ruled)
 
@@ -189,6 +191,22 @@ entries that match the preset's members (ADR-0020 D6). This is core's behavior.
   change.
 - Note the answer on ADR-0010 and ADR-0021 D5 (done in this change).
 - Build D4 to D6 in #291 and D2 and D3 in #10 and #11.
+
+## Open questions
+
+None of these is ruled. Each needs an operator ruling before the code that meets it is built.
+
+1. **D1, reserved pins and vacuous passes.** Do the `@reserved` scenarios that pin a `501` count toward the gate,
+   and must an operation have at least one behavioral `@contract` scenario? Read literally, every reserved
+   activation operation passes the gate now, with nothing proven.
+2. **D2.2, the enhancer pull.** Does it respect the `cascade` scope and report `skippedByScope`? Does it expand
+   `selected` when the write runs, or the effective set when a read runs? Does a cascading deactivate walk
+   `enhances` in reverse? Where does the pulled enhancer's provenance appear: no `EffectiveArtifactReason` value
+   names it, and `SkippedDeactivated.requiredBy` has no meaning on a reverse edge.
+3. **D2.4, the lineage pass-through.** Is the parent passed through for `requires` and `scope` only, or for every
+   relation of D2.1? Does it reach a grandparent, and what happens when the parent is denied?
+4. **D3, edges of an overridden artifact.** Do graph-shard edges from a lower level that start or end at an
+   overridden id still apply?
 
 ## References
 
