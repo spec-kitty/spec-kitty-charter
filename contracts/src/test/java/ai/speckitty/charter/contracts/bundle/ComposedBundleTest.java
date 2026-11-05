@@ -157,11 +157,19 @@ class ComposedBundleTest {
                       responses:
                         '200':
                           $ref: ../responses/Probe.yaml
+                components:
+                  schemas:
+                    Probe:
+                      allOf:
+                        - $ref: ../schemas/Part.yaml
                 """));
 
         assertThat(normalized.problems())
-                .containsExactly("/paths/~1probe/get/responses/200/$ref: ../responses/Probe.yaml is not a reference"
-                        + " to a component of the bundle; the bundle must be self-contained");
+                .containsExactly(
+                        "/paths/~1probe/get/responses/200/$ref: ../responses/Probe.yaml is not a reference"
+                                + " to a component of the bundle; the bundle must be self-contained",
+                        "/components/schemas/Probe/allOf/0/$ref: ../schemas/Part.yaml is not a reference"
+                                + " to a component of the bundle; the bundle must be self-contained");
     }
 
     @Test
@@ -214,7 +222,8 @@ class ComposedBundleTest {
                           items:
                             $ref: '#/components/schemas/Node'
                     Node:
-                      $ref: '#/components/schemas/Tree'
+                      allOf:
+                        - $ref: '#/components/schemas/Tree'
                     Leaf:
                       $ref: '#/components/schemas/Tree'
                 """));
