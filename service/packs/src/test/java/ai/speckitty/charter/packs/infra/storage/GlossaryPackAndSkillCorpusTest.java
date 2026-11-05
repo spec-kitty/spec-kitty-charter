@@ -60,7 +60,7 @@ class GlossaryPackAndSkillCorpusTest {
                 .containsExactlyInAnyOrder(
                         "spec-kitty-core.glossary-pack.yaml",
                         "evd-glossary.glossary-pack.yaml",
-                        "spk-internal.glossary-pack.yaml",
+                        "spk-internal-glossary.glossary-pack.yaml",
                         "qa-glossary.glossary-pack.yaml");
     }
 
