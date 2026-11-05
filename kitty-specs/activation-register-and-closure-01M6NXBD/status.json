@@ -1,21 +1,21 @@
 {
-  "event_count": 45,
-  "last_event_id": "01M6PN2TMDHY646DHN83039XCW",
-  "materialized_at": "2026-11-05T20:05:56.493463+00:00",
+  "event_count": 51,
+  "last_event_id": "01M6PNAQ3KT43ZME7TMKMVC75K",
+  "materialized_at": "2026-11-05T20:10:15.016259+00:00",
   "mission_number": "",
   "mission_slug": "activation-register-and-closure-01M6NXBD",
   "mission_type": "software-dev",
   "schema_version": 2,
   "summary": {
-    "approved": 2,
+    "approved": 3,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
-    "in_review": 2,
-    "planned": 11
+    "in_progress": 2,
+    "in_review": 0,
+    "planned": 10
   },
   "work_packages": {
     "WP01": {
@@ -91,32 +91,39 @@
     },
     "WP03": {
       "actor": "claude",
-      "agent": "claude:claude-opus-5-5:reviewer-renata",
+      "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
-      "force_count": 0,
+      "force_count": 1,
       "implementer_of_record": "claude:claude-opus-5-5:java-jenny",
-      "lane": "in_review",
-      "last_event_id": "01M6PN2TMDHY646DHN83039XCW",
-      "last_transition_at": "2026-11-05T20:05:56.493463+00:00",
+      "lane": "in_progress",
+      "last_event_id": "01M6PNAQ3KT43ZME7TMKMVC75K",
+      "last_transition_at": "2026-11-05T20:10:15.016259+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "Commit 8fe11d1. ADR numbered 0062 (main has 0060; open #392/#393 hold 0061; #394's 0060 collides with main). WP10 amendment notes must cite ADR-0062. Gates: :kernel:check 0 (2655 tests); :packs:check -x openPacksRoundTrip 0 (2813 tests, 0 fail, 4 pre-existing skips); :deployable:test CharterContractSuite+HexagonalArchitectureTest 0 (300 tests); :contracts:check 1 (shallow clone baseline) then 0 with -PcontractBaseline=none; :packs:openPacksRoundTrip 0; check_docs all: only adr numbering-gap findings (0060 missing from lane base, 0061 held by open PRs); cspell 0 issues. Decision: mutability_policy const policy.yaml (FR-022). Touched packs files: PackMutabilityPolicy, MutabilityPolicySource, PackCompositionFacts, MutabilityPolicyRepository(new), PerPackPolicy(new), DomainRepositoryService(+DomainRepositoryServiceTest; #377 overlap: compositionFacts split into edgeFacts + policyOf), PackDescriptorDso, PackDescriptorReader, PackFileSet, PolicyYaml(new), PackMutabilityPolicyTest. Out-of-map edits: YamlSerializationStrategy (writes mutability_policy), PackRoundTripTest (DSO arity), PackSchemasTest 25->26, PackFileKindTest (26 rules + sample), SchemaKeywordCoverageTest (patternProperties silent). Follow-up: WholePackStore does not copy policy.yaml (unmodelled); recorded in ADR Consequences."
       ],
       "provider": "__resolved_provider_absent__",
-      "role": "reviewer",
-      "shell_pid": 13156,
-      "shell_pid_created_at": "1793909151.99",
+      "review": null,
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/activation-register-and-closure-01M6NXBD-coord/kitty-specs/activation-register-and-closure-01M6NXBD/tasks/WP03-packs-mutability-policy-file/review-cycle-1.md",
+        "reference": "review-cycle://activation-register-and-closure-01M6NXBD/WP03-packs-mutability-policy-file/review-cycle-1.md",
+        "reviewer": "claude:claude-opus-5-5:reviewer-renata",
+        "verdict": "changes_requested"
+      },
+      "role": "implementer",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T013": "done",
-        "T014": "done",
-        "T015": "done",
-        "T016": "done",
-        "T017": "done",
-        "T018": "done",
-        "T019": "done",
-        "T094": "done",
-        "T095": "done"
+        "T013": "planned",
+        "T014": "planned",
+        "T015": "planned",
+        "T016": "planned",
+        "T017": "planned",
+        "T018": "planned",
+        "T019": "planned",
+        "T094": "planned",
+        "T095": "planned"
       }
     },
     "WP04": {
@@ -133,14 +140,21 @@
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude:claude-opus-5-5:java-jenny",
-      "lane": "in_review",
-      "last_event_id": "01M6PN055E8WPMQQ9FN8148NQW",
-      "last_transition_at": "2026-11-05T20:04:28.974458+00:00",
+      "lane": "approved",
+      "last_event_id": "01M6PN5HC204QZGQPJYX5YNJYV",
+      "last_transition_at": "2026-11-05T20:07:25.314106+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Ready for review. Commits c21f0e2, e6e69f6. New :activations module (settings, charter-reports serviceModules, deployable dep, sonar.yml x4). ActivationController+ActivationJson moved to activations.infra.api; 13 method-level @ReservedOperation, no class mark; ActivationRuntimeHints (+test). AvailablePacks port (no method) + PacksAvailability stub; ActivationStorageRoot (+test) in deployable. HexagonalArchitectureTest: SLICES+activations, DOMAIN_RINGS+activations.domain, per-slice factories (domainIsPure, applicationIsEdge, entrypointOverApplication, onlyDeployableComposesAdapters, port placement x2, storageReturnsDomain) run over SLICES beside the old constants; ACTIVATIONS_NAME_PACKS_ONLY_FROM_ADAPTER / ACTIVATIONS_ADAPTER_NAMES_PACKS_APPLICATION; RESERVED_METHOD_READS_NOTHING; TRANSPORT allows any infra.api + deployable. No assertBites removed; old type-level reserved test runs with allowEmptyShould(true) (no type-marked controller remains). ReservedActivationOperationTest proves the routed HandlerMethod is the marked override of ActivationApi. Out-of-map: settings.gradle.kts and deployable/build.gradle.kts (PRs #391/#393 collide, one line each). Note for WP07: PORT_SIGNATURES_NAME_ONLY_DOMAIN_TYPES allows only packs.domain types and now selects activations.domain interfaces; WP07's first activations port interface needs it generalised."
+        "Ready for review. Commits c21f0e2, e6e69f6. New :activations module (settings, charter-reports serviceModules, deployable dep, sonar.yml x4). ActivationController+ActivationJson moved to activations.infra.api; 13 method-level @ReservedOperation, no class mark; ActivationRuntimeHints (+test). AvailablePacks port (no method) + PacksAvailability stub; ActivationStorageRoot (+test) in deployable. HexagonalArchitectureTest: SLICES+activations, DOMAIN_RINGS+activations.domain, per-slice factories (domainIsPure, applicationIsEdge, entrypointOverApplication, onlyDeployableComposesAdapters, port placement x2, storageReturnsDomain) run over SLICES beside the old constants; ACTIVATIONS_NAME_PACKS_ONLY_FROM_ADAPTER / ACTIVATIONS_ADAPTER_NAMES_PACKS_APPLICATION; RESERVED_METHOD_READS_NOTHING; TRANSPORT allows any infra.api + deployable. No assertBites removed; old type-level reserved test runs with allowEmptyShould(true) (no type-marked controller remains). ReservedActivationOperationTest proves the routed HandlerMethod is the marked override of ActivationApi. Out-of-map: settings.gradle.kts and deployable/build.gradle.kts (PRs #391/#393 collide, one line each). Note for WP07: PORT_SIGNATURES_NAME_ONLY_DOMAIN_TYPES allows only packs.domain types and now selects activations.domain interfaces; WP07's first activations port interface needs it generalised.",
+        "Review passed: :activations:check, :charter-reports:check (serviceModules guard) green; :deployable:test fresh rerun green - HexagonalArchitectureTest 54/0, ReservedActivationOperationTest 4, ReservedOperationInterceptorTest 4, ReservedOperationCoverageTest 2, activation-set pins 15, CharterRuntimeHintsTest 7, ActivationRuntimeHintsTest 11, ProductionWiringTest 5, ActivationStorageRootTest 3, NullOmissionTest 54; check_docs all ok. P4: no assertBites or old rule body removed (only DOMAIN_RINGS/SLICES extended, TRANSPORT rule widened per J2, allowEmptyShould at the check site only - no production class-level reserved controller remains, fixture assertBites still runs the unchanged constant). Every new rule bites (per-slice domain/app/entrypoint/ports/storage, both cross-slice rules, method-scoped reserved, generated-API on activations.application). Controller has no class mark, 13 methods marked. Planned stubs only (AvailablePacks, PacksAvailability, ActivationStorageRoot until WP07/WP09). Shared-file note: HexagonalArchitectureTest/ActivationController are WP01-owned sanctioned out-of-map edits; DeployableConfiguration will be touched by WP07. Forward notes: PORT_SIGNATURES_NAME_ONLY_DOMAIN_TYPES now selects activations.domain interfaces but allows only PACKS_DOMAIN - generalise per slice in WP06/WP07; RESERVED_METHOD_READS_NOTHING does not follow lambda bodies; DEPLOYABLE may name generated types wholesale (pre-emptive for WP09; no deployable main class does today)."
       ],
       "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/activation-register-and-closure-01M6NXBD-coord/kitty-specs/activation-register-and-closure-01M6NXBD/tasks/WP05-activations-module-and-architecture/review-cycle-1.md",
+        "reference": "review-cycle://activation-register-and-closure-01M6NXBD/WP05-activations-module-and-architecture/review-cycle-1.md",
+        "reviewer": "claude:claude-opus-5-5:reviewer-renata",
+        "verdict": "approved"
+      },
       "role": "reviewer",
       "shell_pid": 10123,
       "shell_pid_created_at": "1793909063.86",
@@ -157,11 +171,20 @@
       }
     },
     "WP06": {
-      "actor": "finalize-tasks",
+      "actor": "claude:claude-opus-5-5:java-jenny",
+      "agent": "claude:claude-opus-5-5:java-jenny",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M6PHGEEQ7GCJ683TX7FR5HNN",
-      "last_transition_at": "2026-11-05T19:03:28.471034+00:00"
+      "implementer_of_record": "claude:claude-opus-5-5:java-jenny",
+      "lane": "in_progress",
+      "last_event_id": "01M6PN68H3CGV802DES56S1SQ3",
+      "last_transition_at": "2026-11-05T20:07:49.017821+00:00",
+      "model": "__resolved_model_absent__",
+      "provider": "__resolved_provider_absent__",
+      "role": "implementer",
+      "shell_pid": 14694,
+      "shell_pid_created_at": "1793909261.87"
     },
     "WP07": {
       "actor": "finalize-tasks",
