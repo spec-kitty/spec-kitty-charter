@@ -211,7 +211,7 @@ class InterruptedCommitRepairTest {
             start.countDown();
             release.countDown();
         }
-        holder.get(10, TimeUnit.SECONDS);
+        holder.get(HANG_CAP.toMillis(), TimeUnit.MILLISECONDS);
 
         assertThat(listed).containsExactly("pack-descriptor-only");
         assertThat(locations.all()).extracting(PackLocation::name).contains("pack-a");
@@ -419,10 +419,10 @@ class InterruptedCommitRepairTest {
 
     /**
      * Spins until {@code thread} waits on the write lock of the pack at {@code entry}, or has finished (it answered
-     * without waiting, which the test then reports); fails after ten seconds.
+     * without waiting, which the test then reports); fails after the hang cap.
      */
     private static void awaitQueuedOnTheLockOf(Path entry, Thread thread) {
-        Instant deadline = Instant.now().plusSeconds(10);
+        Instant deadline = Instant.now().plus(HANG_CAP);
         while (!PackWriteLocks.of(entry).hasQueuedThread(thread) && thread.getState() != Thread.State.TERMINATED) {
             if (Instant.now().isAfter(deadline)) {
                 throw new AssertionError("the reader neither waited on the pack's lock nor answered");
@@ -441,7 +441,7 @@ class InterruptedCommitRepairTest {
 
     private static void await(CountDownLatch latch) {
         try {
-            assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+            assertThat(latch.await(HANG_CAP.toMillis(), TimeUnit.MILLISECONDS)).isTrue();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException(e);
