@@ -130,10 +130,9 @@ class WholePackRoundTripTest {
     }
 
     /**
-     * #193, exact: every built-in sidecar is refused because its {@code path} names {@code assets/assets/…}, a known
-     * failure until spec-kitty/spec-kitty-open-packs#75 lands, while every asset file and template round-trips byte for
-     * byte. A no-op adapter cannot match: each refusal must name
-     * the very path its sidecar declares.
+     * #193, exact: every built-in sidecar, every asset file and every template round-trips, the sidecars since
+     * spec-kitty/spec-kitty-open-packs#75 anchored their {@code path} at {@code assets/}. A no-op adapter cannot match:
+     * each sidecar must name a payload that is in the census as one.
      */
     private static void assertAssetsAndTemplates(
             Path pack,
@@ -141,7 +140,7 @@ class WholePackRoundTripTest {
             Evaluation evaluation,
             Map<String, Optional<String>> observed) {
         SortedMap<String, SortedMap<Status, Integer>> byKind = evaluation.byKind();
-        assertThat(byKind.get("asset")).as("asset").isEqualTo(Map.of(Status.KNOWN_FAILURE, 6));
+        assertThat(byKind.get("asset")).as("asset").isEqualTo(Map.of(Status.GREEN, 6));
         assertThat(byKind.get("asset-payload")).as("asset-payload").isEqualTo(Map.of(Status.GREEN, 7));
         // Two top-level templates and 25 mission-type templates (#194).
         assertThat(byKind.get("template")).as("template").isEqualTo(Map.of(Status.GREEN, 27));
@@ -153,10 +152,8 @@ class WholePackRoundTripTest {
                 .toList();
         assertThat(sidecars).hasSize(6).allSatisfy(sidecar -> {
             String named = String.valueOf(((Map<?, ?>) Yaml.load(read(pack.resolve(sidecar)))).get("path"));
-            assertThat(named).as(sidecar).startsWith("assets/");
-            assertThat(observed.get(sidecar))
-                    .as(sidecar)
-                    .hasValue("refused: payload assets/" + named + " does not exist");
+            assertThat(census).as(sidecar).containsEntry(PackFileSet.ASSETS + named, "asset-payload");
+            assertThat(observed.get(sidecar)).as(sidecar).isEmpty();
         });
     }
 
