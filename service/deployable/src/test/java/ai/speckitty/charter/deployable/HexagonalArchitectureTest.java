@@ -1,6 +1,7 @@
 package ai.speckitty.charter.deployable;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -10,8 +11,11 @@ import ai.speckitty.charter.kernel.transport.ReservedOperation;
 import ai.speckitty.charter.packs.domain.Diagnostic;
 import ai.speckitty.charter.packs.domain.PackFindingCode;
 import com.tngtech.archunit.base.DescribedPredicate;
+import com.tngtech.archunit.core.domain.JavaAccess;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
+import com.tngtech.archunit.core.domain.JavaFieldAccess;
+import com.tngtech.archunit.core.domain.JavaMethod;
 import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
@@ -55,6 +59,12 @@ class HexagonalArchitectureTest {
     private static final String PROFILES_DOMAIN = ROOT + ".profiles.domain..";
     /** The missions slice's domain (ADR-0044). */
     private static final String MISSIONS_DOMAIN = ROOT + ".missions.domain..";
+    /** The activations slice's domain (ADR-0020), over the packs slice. */
+    private static final String ACTIVATIONS_DOMAIN = ROOT + ".activations.domain..";
+    /** The activations slice's adapter over the packs slice: the one package of the slice that may name packs. */
+    private static final String ACTIVATIONS_PACKS_ADAPTER = ROOT + ".activations.infra.packs..";
+    /** The inbound REST adapter of every slice. */
+    private static final String SLICE_APIS = ROOT + "..infra.api..";
 
     private static final String GENERATED_API = ROOT + ".api..";
     private static final String DEPLOYABLE = ROOT + ".deployable..";
@@ -62,9 +72,11 @@ class HexagonalArchitectureTest {
     private static final String FRAMEWORK = "org.springframework..";
     private static final String JSPECIFY = "org.jspecify.annotations..";
     /** Every slice domain and the shared kernel (including {@code kernel.validation}). */
-    private static final String[] DOMAIN_RINGS = {KERNEL, PACKS_DOMAIN, PROFILES_DOMAIN, MISSIONS_DOMAIN};
+    private static final String[] DOMAIN_RINGS = {
+        KERNEL, PACKS_DOMAIN, PROFILES_DOMAIN, MISSIONS_DOMAIN, ACTIVATIONS_DOMAIN
+    };
     /** The vertical slices; each slice's domain may depend only on itself and the kernel. */
-    private static final List<String> SLICES = List.of("packs", "profiles", "missions");
+    private static final List<String> SLICES = List.of("packs", "profiles", "missions", "activations");
 
     private static void assertBites(ArchRule rule, String fixturePackage, String... violators) {
         JavaClasses fixtures = new ClassFileImporter().importPackages(fixturePackage);
@@ -268,15 +280,67 @@ class HexagonalArchitectureTest {
                             JavaClass.Predicates.resideInAnyPackage(GENERATED_API, JAVA, JSPECIFY, FRAMEWORK))
                     .and(DescribedPredicate.not(JavaClass.Predicates.belongToAnyOf(ReservedOperation.class))));
 
+    // No production controller is reserved whole since the activation set marks each operation (WP05); the type-level
+    // rule still gates one that is, so it may select nothing here. Its control below runs it unchanged.
     @Test
     void aReservedControllerReadsAndStoresNothing() {
-        RESERVED_CONTROLLER_READS_NOTHING.check(classes);
+        RESERVED_CONTROLLER_READS_NOTHING.allowEmptyShould(true).check(classes);
     }
 
     @Test
     void theReservedControllerRuleFailsOnOneThatReachesAUseCase() {
         assertBites(
                 RESERVED_CONTROLLER_READS_NOTHING, ROOT + ".packs.infra.api.badfixture", "ReservedReachesApplication");
+    }
+
+    /** What a reserved operation never reaches: a use case, a domain type or a store. */
+    private static final DescribedPredicate<JavaClass> USE_CASE_DOMAIN_OR_STORE =
+            JavaClass.Predicates.resideInAnyPackage("..application..", "..domain..", "..infra.storage..");
+
+    /** The types an access reaches: its target's owner and, for a field, the field's own type. */
+    private static Stream<JavaClass> reachedTypes(JavaAccess<?> access) {
+        Stream<JavaClass> owner = Stream.of(access.getTargetOwner());
+        return access instanceof JavaFieldAccess field
+                ? Stream.concat(owner, Stream.of(field.getTarget().getRawType()))
+                : owner;
+    }
+
+    /**
+     * RESERVED_METHOD_READS_NOTHING (ADR-0020 D8): an operation is reserved one method at a time, so a method marked
+     * {@link ReservedOperation} calls no application, domain or storage method, touches no field of such a type, and
+     * neither takes nor returns one. Its controller may serve built operations beside it.
+     */
+    private static final ArchRule RESERVED_METHOD_READS_NOTHING = methods()
+            .that()
+            .areAnnotatedWith(ReservedOperation.class)
+            .should(new ArchCondition<JavaMethod>("reach no application, domain or storage type") {
+                @Override
+                public void check(JavaMethod method, ConditionEvents events) {
+                    Stream.of(
+                                    method.getAccessesFromSelf().stream().flatMap(a -> reachedTypes(a)),
+                                    Stream.of(method.getRawReturnType()),
+                                    method.getRawParameterTypes().stream())
+                            .flatMap(s -> s)
+                            .filter(USE_CASE_DOMAIN_OR_STORE)
+                            .distinct()
+                            .forEach(t -> events.add(SimpleConditionEvent.violated(
+                                    method, method.getFullName() + " reaches " + t.getName())));
+                }
+            });
+
+    @Test
+    @DisplayName("RESERVED_METHOD_READS_NOTHING")
+    void aReservedOperationReadsAndStoresNothing() {
+        RESERVED_METHOD_READS_NOTHING.check(classes);
+    }
+
+    @Test
+    void theReservedMethodRuleFailsOnAMarkedMethodThatReachesAUseCase() {
+        assertBites(
+                RESERVED_METHOD_READS_NOTHING,
+                ROOT + ".activations.infra.api.badfixture",
+                "ReservedMethodReachesApplication.reads",
+                "AvailablePacks");
     }
 
     /**
@@ -476,6 +540,10 @@ class HexagonalArchitectureTest {
                 sliceDomainDoesNotCross("profiles"), ROOT + ".profiles.domain.badfixture", "ProfileDomainReachesPacks");
         assertBites(
                 sliceDomainDoesNotCross("missions"), ROOT + ".missions.domain.badfixture", "MissionDomainReachesPacks");
+        assertBites(
+                sliceDomainDoesNotCross("activations"),
+                ROOT + ".activations.domain.badfixture",
+                "ActivationDomainNamesPacks");
     }
 
     /**
@@ -528,9 +596,8 @@ class HexagonalArchitectureTest {
      * would be silently skipped by the slice-scoped rules ({@code SLICES_DO_NOT_CROSS}, and the {@code packs}-pinned
      * {@code APPLICATION_IS_EDGE} / {@code PACKS_DOMAIN_IS_PURE}) and ship ungated on a green build. This rule closes
      * that gap in one direction — a present slice absent from {@code SLICES} fails the build — which makes the list
-     * self-checking. Parameterizing the {@code packs}-pinned rules over {@code SLICES} so each registered slice is
-     * also purity- and edge-gated is the companion follow-up (#140); until then, registering a slice here is
-     * necessary but not on its own sufficient to gate it.
+     * self-checking. The per-slice rule factories ({@code domainIsPure}, {@code applicationIsEdge} and the others of
+     * SLICE_RINGS, #140) run over {@code SLICES}, so a registered slice is purity- and edge-gated too.
      *
      * <p>Scope: a slice is discovered only by its {@code domain} ring at {@code charter.<owner>.domain}. A would-be
      * slice with no {@code domain} ring yet, or whose domain ring sits at a non-conventional path, is out of scope
@@ -564,10 +631,14 @@ class HexagonalArchitectureTest {
         assertBites(EVERY_SLICE_IS_REGISTERED, ROOT + ".foreign.domain.badfixture", "ForeignSliceType");
     }
 
-    /** TRANSPORT_STAYS_IN_ADAPTER: the generated contract types are referenced only by the inbound adapter. */
+    /**
+     * TRANSPORT_STAYS_IN_ADAPTER: the generated contract types are referenced only by an inbound adapter, of any slice
+     * ({@code <slice>.infra.api}), and by the composition root, whose request-body advice and problem mapping of the
+     * activation set name them (#140).
+     */
     private static final ArchRule TRANSPORT_STAYS_IN_ADAPTER = noClasses()
             .that()
-            .resideOutsideOfPackages(GENERATED_API, PACKS_API)
+            .resideOutsideOfPackages(GENERATED_API, SLICE_APIS, DEPLOYABLE)
             .should()
             .dependOnClassesThat()
             .resideInAPackage(GENERATED_API);
@@ -581,6 +652,10 @@ class HexagonalArchitectureTest {
     @Test
     void theTransportRuleFailsOnAClassOutsideTheInboundAdapterThatNamesADto() {
         assertBites(TRANSPORT_STAYS_IN_ADAPTER, ROOT + ".packs.application.badfixture", "UsesTransportDto");
+        assertBites(
+                TRANSPORT_STAYS_IN_ADAPTER,
+                ROOT + ".activations.application.badfixture",
+                "ApplicationNamesGeneratedApi");
     }
 
     /** GENERATED_API_NOT_IN_DOMAIN: no domain ring imports anything from the generated {@code charter-api} package. */
@@ -600,6 +675,253 @@ class HexagonalArchitectureTest {
     @Test
     void theGeneratedApiRuleFailsOnADomainClassThatNamesAGeneratedType() {
         assertBites(GENERATED_API_NOT_IN_DOMAIN, ROOT + ".packs.domain.badfixture", "DomainUsesGeneratedApi");
+    }
+
+    // ---- Per-slice rings (#140) -------------------------------------------------------------------------------
+    // The packs-pinned rules above stay as they are; each factory below holds every registered slice to the same ring,
+    // and its packs instance runs beside the old constant. A ring a slice lacks selects nothing (allowEmptyShould).
+
+    /** The packages of one ring of a slice, for example {@code ring("activations", "infra.api")}. */
+    private static String ring(String slice, String ring) {
+        return ROOT + "." + slice + "." + ring + "..";
+    }
+
+    /** DOMAIN_IS_PURE per slice: a slice's domain depends only on itself, the kernel, {@code java} and JSpecify. */
+    private static ArchRule domainIsPure(String slice) {
+        return noClasses()
+                .that()
+                .resideInAPackage(ring(slice, "domain"))
+                .should()
+                .dependOnClassesThat()
+                .resideOutsideOfPackages(ring(slice, "domain"), KERNEL, JAVA, JSPECIFY)
+                .allowEmptyShould(true);
+    }
+
+    /** APPLICATION_IS_EDGE per slice: itself, its domain, the kernel, {@code java}, JSpecify and Spring only. */
+    private static ArchRule applicationIsEdge(String slice) {
+        return noClasses()
+                .that()
+                .resideInAPackage(ring(slice, "application"))
+                .should()
+                .dependOnClassesThat()
+                .resideOutsideOfPackages(
+                        ring(slice, "application"), ring(slice, "domain"), KERNEL, JAVA, JSPECIFY, FRAMEWORK)
+                .allowEmptyShould(true);
+    }
+
+    /** ENTRYPOINT_OVER_APPLICATION per slice: the inbound adapter names no other adapter of its slice. */
+    private static ArchRule entrypointOverApplication(String slice) {
+        return noClasses()
+                .that()
+                .resideInAPackage(ring(slice, "infra.api"))
+                .should()
+                .dependOnClassesThat(JavaClass.Predicates.resideInAPackage(ring(slice, "infra"))
+                        .and(JavaClass.Predicates.resideOutsideOfPackage(ring(slice, "infra.api"))))
+                .allowEmptyShould(true);
+    }
+
+    /** ONION_ONLY_DEPLOYABLE_COMPOSES_ADAPTERS per slice: only the slice's adapters and the root name them. */
+    private static ArchRule onlyDeployableComposesAdapters(String slice) {
+        return noClasses()
+                .that()
+                .resideOutsideOfPackages(ring(slice, "infra"), DEPLOYABLE)
+                .should()
+                .dependOnClassesThat()
+                .resideInAPackage(ring(slice, "infra"))
+                .allowEmptyShould(true);
+    }
+
+    /** A repository or gateway port of the slice's domain, by its name. */
+    private static boolean isPortOf(String slice, JavaClass type) {
+        return type.getPackageName().startsWith(ROOT + "." + slice + ".domain")
+                && (type.getSimpleName().endsWith("Repository")
+                        || type.getSimpleName().endsWith("Gateway"));
+    }
+
+    /** PORTS_LIVE_IN_DOMAIN (1/2) per slice: a repository or gateway interface of the slice is in its domain. */
+    private static ArchRule portInterfacesResideInDomain(String slice) {
+        return classes()
+                .that()
+                .resideInAPackage(ROOT + "." + slice + "..")
+                .and()
+                .areInterfaces()
+                .and(DescribedPredicate.describe(
+                        "are named as a repository or gateway",
+                        (JavaClass c) -> c.getSimpleName().endsWith("Repository")
+                                || c.getSimpleName().endsWith("Gateway")))
+                .should()
+                .resideInAPackage(ring(slice, "domain"))
+                .allowEmptyShould(true);
+    }
+
+    /** PORTS_LIVE_IN_DOMAIN (2/2) per slice: a class implementing a port of the slice's domain is in its storage. */
+    private static ArchRule portImplementationsResideInStorage(String slice) {
+        return noClasses()
+                .that()
+                .resideOutsideOfPackage(ring(slice, "infra.storage"))
+                .and()
+                .areNotInterfaces()
+                .should(new ArchCondition<JavaClass>("implement a repository or gateway port of " + slice) {
+                    @Override
+                    public void check(JavaClass item, ConditionEvents events) {
+                        item.getAllRawInterfaces().stream()
+                                .filter(i -> isPortOf(slice, i))
+                                .forEach(i -> events.add(SimpleConditionEvent.satisfied(
+                                        item, item.getName() + " implements the port " + i.getName())));
+                    }
+                })
+                .allowEmptyShould(true);
+    }
+
+    /** A type a storage method of the slice may return: a JDK, kernel, JSpecify or own-domain type. */
+    private static boolean isDomainReturnable(String slice, JavaClass type) {
+        String name = type.getPackageName();
+        return type.isPrimitive()
+                || name.startsWith("java.")
+                || name.startsWith(ROOT + ".kernel")
+                || name.startsWith(ROOT + "." + slice + ".domain")
+                || name.startsWith("org.jspecify");
+    }
+
+    /** STORAGE_RETURNS_DOMAIN per slice: a storage class implementing a domain port returns only domain types. */
+    private static ArchRule storageReturnsDomain(String slice) {
+        return classes()
+                .that()
+                .resideInAPackage(ring(slice, "infra.storage"))
+                .and()
+                .areNotInterfaces()
+                .and(DescribedPredicate.describe(
+                        "implement a domain port of " + slice,
+                        (JavaClass c) -> c.getAllRawInterfaces().stream()
+                                .anyMatch(i -> i.getPackageName().startsWith(ROOT + "." + slice + ".domain"))))
+                .should(new ArchCondition<JavaClass>("return only domain, kernel and java types from public methods") {
+                    @Override
+                    public void check(JavaClass item, ConditionEvents events) {
+                        item.getMethods().stream()
+                                .filter(m -> m.getModifiers().contains(JavaModifier.PUBLIC))
+                                .forEach(m -> m.getReturnType().getAllInvolvedRawTypes().stream()
+                                        .filter(t -> !isDomainReturnable(slice, t))
+                                        .forEach(t -> events.add(SimpleConditionEvent.violated(
+                                                m, m.getFullName() + " returns the non-domain type " + t.getName()))));
+                    }
+                })
+                .allowEmptyShould(true);
+    }
+
+    @Test
+    @DisplayName("SLICE_RINGS")
+    void everySliceIsHeldToTheSameRings() {
+        for (String slice : SLICES) {
+            domainIsPure(slice).check(classes);
+            applicationIsEdge(slice).check(classes);
+            entrypointOverApplication(slice).check(classes);
+            onlyDeployableComposesAdapters(slice).check(classes);
+            portInterfacesResideInDomain(slice).check(classes);
+            portImplementationsResideInStorage(slice).check(classes);
+            storageReturnsDomain(slice).check(classes);
+        }
+    }
+
+    @Test
+    void thePerSliceDomainRuleFailsOnEachSlicesKnownBad() {
+        String packs = ROOT + ".packs.domain.badfixture";
+        assertBites(domainIsPure("packs"), packs, "DomainUsesSpring", "DomainReachesOutward");
+        assertBites(domainIsPure("profiles"), ROOT + ".profiles.domain.badfixture", "ProfileDomainReachesPacks");
+        assertBites(domainIsPure("missions"), ROOT + ".missions.domain.badfixture", "MissionDomainReachesPacks");
+        String activations = ROOT + ".activations.domain.badfixture";
+        assertBites(
+                domainIsPure("activations"),
+                activations,
+                "ActivationDomainReachesApplication",
+                "ActivationDomainNamesPacks");
+        assertBites(ONION_DOMAIN_DEPENDS_ON_NOTHING_OUTWARD, activations, "ActivationDomainReachesApplication");
+    }
+
+    @Test
+    void thePerSliceApplicationRuleFailsOnEachSlicesKnownBad() {
+        assertBites(applicationIsEdge("packs"), ROOT + ".packs.application.badfixture", "ReachesStorage");
+        assertBites(
+                applicationIsEdge("activations"),
+                ROOT + ".activations.application.badfixture",
+                "ApplicationNamesPacks",
+                "ApplicationNamesGeneratedApi");
+    }
+
+    @Test
+    void thePerSliceAdapterRulesFailOnTheKnownBads() {
+        String api = ROOT + ".packs.infra.api.badfixture";
+        assertBites(entrypointOverApplication("packs"), api, "EntrypointReachesStorage", "EntrypointReachesFetcher");
+        assertBites(onlyDeployableComposesAdapters("packs"), ROOT + ".packs.application.badfixture", "ReachesStorage");
+        assertBites(
+                ONION_ONLY_DEPLOYABLE_COMPOSES_ADAPTERS,
+                ROOT + ".activations.infra.packs.badfixture",
+                "AdapterNamesPacksStorage");
+    }
+
+    @Test
+    void thePerSlicePortRulesFailOnAMisplacedPortOrImplementation() {
+        assertBites(
+                portInterfacesResideInDomain("packs"), ROOT + ".packs.application.badfixture", "MisplacedRepository");
+        assertBites(
+                portImplementationsResideInStorage("packs"),
+                ROOT + ".packs.infra.api.badfixture",
+                "ImplementsPortInEntrypoint");
+        assertBites(
+                storageReturnsDomain("packs"),
+                ROOT + ".packs.infra.storage.badfixture",
+                "StorageLeaksTransportType",
+                "org.springframework.http.ResponseEntity");
+    }
+
+    /**
+     * A SLICE OVER ANOTHER SLICE (1/2): the activations slice names the packs slice from one adapter package only,
+     * {@code activations.infra.packs}, which implements the slice's own {@code AvailablePacks} port.
+     */
+    private static final ArchRule ACTIVATIONS_NAME_PACKS_ONLY_FROM_ADAPTER = noClasses()
+            .that()
+            .resideInAPackage(ROOT + ".activations..")
+            .and()
+            .resideOutsideOfPackage(ACTIVATIONS_PACKS_ADAPTER)
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage(ROOT + ".packs..");
+
+    /**
+     * A SLICE OVER ANOTHER SLICE (2/2): that adapter names only the packs application ring and the packs domain values
+     * its answers expose ({@code ClosureView}), never a packs adapter.
+     */
+    private static final ArchRule ACTIVATIONS_ADAPTER_NAMES_PACKS_APPLICATION = noClasses()
+            .that()
+            .resideInAPackage(ACTIVATIONS_PACKS_ADAPTER)
+            .should()
+            .dependOnClassesThat(JavaClass.Predicates.resideInAPackage(ROOT + ".packs..")
+                    .and(JavaClass.Predicates.resideOutsideOfPackages(PACKS_APPLICATION, PACKS_DOMAIN)));
+
+    @Test
+    @DisplayName("A_SLICE_OVER_ANOTHER_SLICE")
+    void theActivationsSliceNamesPacksOnlyThroughItsAdapter() {
+        ACTIVATIONS_NAME_PACKS_ONLY_FROM_ADAPTER.check(classes);
+        ACTIVATIONS_ADAPTER_NAMES_PACKS_APPLICATION.check(classes);
+    }
+
+    @Test
+    void theCrossSliceRulesFailOnTheKnownBads() {
+        assertBites(
+                ACTIVATIONS_NAME_PACKS_ONLY_FROM_ADAPTER,
+                ROOT + ".activations.application.badfixture",
+                "ApplicationNamesPacks");
+        assertBites(
+                ACTIVATIONS_NAME_PACKS_ONLY_FROM_ADAPTER,
+                ROOT + ".activations.infra.api.badfixture",
+                "ApiNamesPacksApplication");
+        assertBites(
+                ACTIVATIONS_NAME_PACKS_ONLY_FROM_ADAPTER,
+                ROOT + ".activations.domain.badfixture",
+                "ActivationDomainNamesPacks");
+        assertBites(
+                ACTIVATIONS_ADAPTER_NAMES_PACKS_APPLICATION,
+                ROOT + ".activations.infra.packs.badfixture",
+                "AdapterNamesPacksStorage");
     }
 
     // ---- Code-ownership supplements (kept from the incremental rules) ---------------------------------------
