@@ -2,12 +2,13 @@
 title: "ADR-0023: An always-on CI gate is the single required status check"
 description: Adds an always-on orchestrator workflow that aggregates the path-filtered service and docs checks into one status context, so branch protection can gate merges on green.
 doc_status: active
-updated: 2026-10-31T00:00:00Z
+updated: 2026-11-05T00:00:00Z
 decision_status: 'Accepted, with Amendment 2026-11-01 (ADR-0047: merge queue, pr:pause-ci); the native extension superseded by ADR-0061 (2026-11-05)'
 decision_date: '2026-10-22'
 type: ADR
 kind: ADR
 related:
+  - adr/0061-native-build-runs-nightly-and-per-release
   - development/service-architecture-orientation
   - adr/0006-onion-vertical-slices-archunit
 audience:

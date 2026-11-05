@@ -2,12 +2,13 @@
 title: "ADR-0046: The service releases on its own service-v* line, native per OS with the jar as fallback"
 description: A service-v tag line apart from the contract's; the service's own SemVer; four native executables and the jar under names core pins, with SHA256SUMS and provenance.
 doc_status: active
-updated: 2026-10-31T00:00:00Z
+updated: 2026-11-05T00:00:00Z
 decision_status: Accepted; decision 5's build-on-every-change superseded by ADR-0061 (2026-11-05)
 decision_date: '2026-10-31'
 type: ADR
 kind: ADR
 related:
+  - adr/0061-native-build-runs-nightly-and-per-release
   - adr/0011-seam-runtime-fail-closed-daemon-and-freshness
   - adr/0022-contract-versions-start-at-0-x
   - adr/0041-containerized-configuration-model
@@ -169,6 +170,7 @@ Core's requests that follow from it are
 - **Each release builds on five runners**, one per target plus the jar. A failed target blocks the release.
 - **A missing native reachability hint shows up only in a native build.** CI therefore builds the native
   executables on every change to the service or the build, not only on release.
+  *2026-11-05: superseded by [ADR-0061](/adr/0061-native-build-runs-nightly-and-per-release/): nightly and per release.*
 - **A final service release waits for its contract release** (decision 3).
 
 ### Risks
