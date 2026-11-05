@@ -287,6 +287,12 @@ purpose: an HTML comment is text, so a column-0 `##` inside one is a heading.
 gates. It holds no entry today. An entry names the rule, the file, the reason and a sunset
 date; no gate is relaxed anywhere else, and blanket suppressions are not allowed.
 
+`checkCheckstyleRegister`, part of `check`, keeps the register in order. It fails when an entry's comment
+lacks one of `rule:`, `file:`, `reason:` or `sunset:`, when a sunset date has passed, or when the `Size:`
+line in the header does not count the entries. An entry is a `<suppress>` or `<suppress-xpath>`
+element or a comment-only entry (a comment with a `rule:` line); all are checked and counted alike. It does
+not run Checkstyle and does not ask whether an entry is still needed; an empty register passes.
+
 The four complexity limits decided in
 [ADR-0058](/adr/0058-sonarcloud-nightly-reported-and-checkstyle-complexity-per-pr/) are not on yet:
 cyclomatic complexity 15, NPath 1000, 60 non-empty lines per method and nested-if depth 1. No build

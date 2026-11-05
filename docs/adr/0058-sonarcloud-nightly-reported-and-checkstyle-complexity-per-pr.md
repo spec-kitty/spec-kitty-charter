@@ -89,6 +89,10 @@ The required-check rules this must respect:
    - **The register is unchanged.** `config/checkstyle/suppressions.xml` stays the one register of
      exceptions, for "the code is right and the rule is wrong", each with a sunset date. It is not
      a place to park existing over-limit methods.
+   - **The register is checked for its own fields only.** `checkCheckstyleRegister`, part of `check`,
+     fails on an entry lacking `rule:`, `file:`, `reason:` or `sunset:`, on a passed sunset date and on a
+     `Size:` header that does not count the entries, comment-only entries included. It runs no probe and does not detect a stale
+     entry.
    - The rules run inside `verifyAll`, so `CI gate / gate` enforces them with no new job or tool.
 2. **SonarCloud runs nightly and is report-only.** A new `.github/workflows/sonar.yml` runs on a
    schedule and on manual dispatch, on `main` only.
