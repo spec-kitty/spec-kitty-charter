@@ -166,11 +166,16 @@
     "WP06": {
       "actor": "claude:claude-opus-5-5:java-jenny",
       "agent": "claude:claude-opus-5-5:java-jenny",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude:claude-opus-5-5:java-jenny",
       "lane": "in_progress",
       "last_event_id": "01M6PN68H3CGV802DES56S1SQ3",
       "last_transition_at": "2026-11-05T20:07:49.017821+00:00",
+      "model": "__resolved_model_absent__",
+      "provider": "__resolved_provider_absent__",
+      "role": "implementer",
       "shell_pid": 14694,
       "shell_pid_created_at": "1793909261.87"
     },
