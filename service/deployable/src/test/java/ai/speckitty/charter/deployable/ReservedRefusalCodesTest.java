@@ -192,6 +192,11 @@ class ReservedRefusalCodesTest {
         // raised; drg_schema_error is raised only off the wire (WholePackStore, PackFindingCode), so it is not.
         assertThat(raisedCodes()).contains("GOVERNANCE_POLICY_VIOLATION");
         assertThat(unraisedCodes()).contains("DRG_SCHEMA_ERROR");
+        // #125, #360: the activation register raises four of the activation set's six codes; the two whose
+        // operations are still reserved (ADR-0020 D8), and the action-context code, stay unraised.
+        assertThat(raisedCodes())
+                .contains("ACTIVATION_NOT_FOUND", "ACTIVATION_INVALID", "ARTIFACT_REQUIRED", "ARTIFACT_LOCKED");
+        assertThat(unraisedCodes()).contains("ARTIFACT_NOT_FOUND", "MISSION_TYPE_NOT_FOUND", "PRESET_NOT_FOUND");
     }
 
     @ParameterizedTest

@@ -20,8 +20,6 @@ get:
           $ref: ../headers/CharterContractVersion.yaml
         Charter-Worktree: &id002
           $ref: ../headers/CharterWorktree.yaml
-        Charter-Source-Fingerprint: &id003
-          $ref: ../headers/CharterSourceFingerprint.yaml
         ETag: &id004
           $ref: ../headers/ActivationETag.yaml
       content:

@@ -2,11 +2,14 @@ package ai.speckitty.charter.deployable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ai.speckitty.charter.activations.application.ActivationService;
 import ai.speckitty.charter.activations.infra.api.ActivationController;
+import ai.speckitty.charter.activations.infra.api.ActivationMapper;
 import ai.speckitty.charter.api.ActivationApi;
 import ai.speckitty.charter.kernel.transport.ReservedOperation;
 import org.junit.jupiter.api.Test;
@@ -27,24 +30,31 @@ import org.springframework.web.server.ResponseStatusException;
  */
 class ReservedActivationOperationTest {
 
-    private final MockMvc mvc = MockMvcBuilders.standaloneSetup(new ActivationController())
+    private static final String SELECTION = "/api/v1/activations/a1/selections/directive/D1";
+
+    /** A controller whose use cases a reserved operation never reaches. */
+    private static ActivationController controller() {
+        return new ActivationController(mock(ActivationService.class), new ActivationMapper("/api/v1"));
+    }
+
+    private final MockMvc mvc = MockMvcBuilders.standaloneSetup(controller())
             .addInterceptors(new ReservedOperationInterceptor())
             .build();
 
     @Test
     void theRoutedHandlerIsTheControllersMarkedOverrideNotTheUnmarkedInterfaceMethod() throws Exception {
-        Object routed = MockMvcBuilders.standaloneSetup(new ActivationController())
+        Object routed = MockMvcBuilders.standaloneSetup(controller())
                 .build()
-                .perform(get("/api/v1/activations/a1").accept(MediaType.APPLICATION_JSON))
+                .perform(get("/api/v1/activations/a1/graph").accept(MediaType.APPLICATION_JSON))
                 .andReturn()
                 .getHandler();
 
         assertThat(routed).isInstanceOf(HandlerMethod.class);
         HandlerMethod handler = (HandlerMethod) routed;
         assertThat(handler.getMethod())
-                .isEqualTo(ActivationController.class.getMethod("getActivation", String.class, String.class));
+                .isEqualTo(ActivationController.class.getMethod("getEffectiveGraph", String.class, String.class));
         assertThat(ActivationApi.class
-                        .getMethod("getActivation", String.class, String.class)
+                        .getMethod("getEffectiveGraph", String.class, String.class)
                         .isAnnotationPresent(ReservedOperation.class))
                 .as("the generated interface method that carries the mapping is unmarked")
                 .isFalse();
@@ -60,7 +70,8 @@ class ReservedActivationOperationTest {
 
     @Test
     void aReservedActivationOperationAnswers501BeforeItsBodyIsRead() throws Exception {
-        mvc.perform(post("/api/v1/activations")
+        mvc.perform(put(SELECTION)
+                        .header("If-Match", "*")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{ not json"))
                 .andExpect(status().isNotImplemented());
@@ -68,15 +79,16 @@ class ReservedActivationOperationTest {
 
     @Test
     void aReservedActivationReadAnswers501() throws Exception {
-        mvc.perform(get("/api/v1/activations/a1").accept(MediaType.APPLICATION_JSON))
+        mvc.perform(get("/api/v1/activations/a1/skipped").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotImplemented());
     }
 
     @Test
     void withoutTheInterceptorTheSameBodyIsRefusedWhenItIsBound() throws Exception {
-        MockMvcBuilders.standaloneSetup(new ActivationController())
+        MockMvcBuilders.standaloneSetup(controller())
                 .build()
-                .perform(post("/api/v1/activations")
+                .perform(put(SELECTION)
+                        .header("If-Match", "*")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{ not json"))
                 .andExpect(status().isBadRequest());

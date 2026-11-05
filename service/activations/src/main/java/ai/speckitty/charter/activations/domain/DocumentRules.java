@@ -41,8 +41,13 @@ import java.util.stream.Collectors;
  * <p>Only a document with no violation meets the floor (ADR-0012 D7): a deny entry on an artifact a pack locks is a
  * {@code 409 artifact_locked} naming each locking pack, and otherwise one on an artifact a pack requires is a
  * {@code 409 artifact_required} naming each requiring pack. Locked wins, since locked implies required. Each
- * {@link RequiringPack} has an empty {@code via}: the snapshot carries no extends chain yet (a known gap, for the
- * closure read of WP09 to fill).
+ * {@link RequiringPack} names the pack by the id it is configured under, and has an empty {@code via}: the snapshot
+ * carries no {@code depends_on} path from the document's packs to the requiring pack, and computing one would take a
+ * second walk of the closure per refusal, so the chain is left empty (decided in WP09, recorded for WP11).
+ *
+ * <p>A snapshot that is not {@linkplain ClosureSnapshot#resolved() resolved} holds no closure: a pack the document
+ * names is configured as nothing (research R4). Only those packs are judged then, each an {@code unknown_pack}
+ * violation at its first position; the ids cannot be judged against a closure that does not exist.
  *
  * <p>A stored document is not judged here: a read serves it unchanged.
  */
@@ -74,8 +79,10 @@ public final class DocumentRules {
     public static Optional<CharterRefusal> check(ActivationDocument.Built built, ClosureSnapshot snapshot) {
         List<RefusalViolation> violations = new ArrayList<>(built.violations());
         violations.addAll(packViolations(built.written(), snapshot));
-        violations.addAll(idViolations(built.written(), snapshot));
-        violations.addAll(denyViolations(built.written(), snapshot));
+        if (snapshot.resolved()) {
+            violations.addAll(idViolations(built.written(), snapshot));
+            violations.addAll(denyViolations(built.written(), snapshot));
+        }
         if (violations.isEmpty()) {
             return floorRefusal(built.document(), snapshot);
         }
@@ -100,6 +107,9 @@ public final class DocumentRules {
     }
 
     private static Optional<RefusalViolation> packViolation(PackRef pack, String pointer, ClosureSnapshot snapshot) {
+        if (!snapshot.resolved() && !snapshot.unknownPacks().contains(pack.packId())) {
+            return Optional.empty();
+        }
         Optional<ClosureSnapshot.PackEntry> entry = snapshot.pack(pack.packId());
         if (entry.isEmpty()) {
             return Optional.of(new RefusalViolation(
