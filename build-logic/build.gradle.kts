@@ -38,4 +38,12 @@ tasks.test {
     inputs.dir(layout.projectDirectory.dir("../.github/workflows"))
         .withPathSensitivity(PathSensitivity.RELATIVE)
         .withPropertyName("workflows")
+    // MutationFloorsTest holds this fixture, read by scripts/ci/test_mutation_summary.py, to what
+    // MutationFloors.toJson writes; -PupdateMutationFixture=true rewrites it.
+    val fixture = layout.projectDirectory.file("../scripts/ci/fixtures/floors.json").asFile
+    inputs.files(fixture).withPathSensitivity(PathSensitivity.NONE).withPropertyName("mutationFloorsFixture")
+    systemProperty("mutationFloors.fixture", fixture.absolutePath)
+    val update = providers.gradleProperty("updateMutationFixture").orElse("false")
+    inputs.property("updateMutationFixture", update)
+    systemProperty("mutationFloors.updateFixture", update.get())
 }
