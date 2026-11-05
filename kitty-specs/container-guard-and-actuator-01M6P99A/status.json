@@ -2,10 +2,9 @@
   "event_count": 53,
   "last_event_id": "01M6PDPM05T17JG5NP9DV30JR8",
   "materialized_at": "2026-11-05T17:56:56.453552+00:00",
-  "mission_number": "17",
+  "mission_number": "",
   "mission_slug": "container-guard-and-actuator-01M6P99A",
-  "mission_type": "software-dev",
-  "schema_version": 2,
+  "mission_type": "",
   "summary": {
     "approved": 0,
     "blocked": 0,
@@ -20,219 +19,115 @@
   "work_packages": {
     "WP01": {
       "actor": "merge",
-      "agent": "reviewer-renata",
-      "agent_profile": "__resolved_profile_absent__",
-      "agent_profile_version": "__resolved_profile_version_absent__",
+      "agent": "claude",
       "force_count": 0,
       "implementer_of_record": "claude",
       "lane": "done",
       "last_event_id": "01M6PDPBP8E318YRSED2K509T1",
       "last_transition_at": "2026-11-05T17:56:47.944449+00:00",
-      "model": "__resolved_model_absent__",
-      "notes": [
-        "ADR-0060 written; docs checks green except the 0059 gap until PR #376 merges",
-        "Review passed (reviewer-renata subagent): APPROVE; LOW findings folded"
-      ],
-      "provider": "__resolved_provider_absent__",
       "review_result": {
         "reference": "review-cycle://container-guard-and-actuator-01M6P99A/WP01-one-replica-adr/review-cycle-1.md",
         "reviewer": "reviewer-renata",
         "verdict": "approved"
       },
-      "role": "reviewer",
       "shell_pid": 7250,
-      "shell_pid_created_at": "1793897325.21",
-      "subtasks": {
-        "T001": "done",
-        "T002": "done",
-        "T003": "done",
-        "T004": "done"
-      }
+      "shell_pid_created_at": "1793897325.21"
     },
     "WP02": {
       "actor": "merge",
-      "agent": "reviewer-renata",
-      "agent_profile": "__resolved_profile_absent__",
-      "agent_profile_version": "__resolved_profile_version_absent__",
+      "agent": "claude",
       "force_count": 0,
       "implementer_of_record": "claude",
       "lane": "done",
       "last_event_id": "01M6PDP36X804WVYH5QB1XPD90",
       "last_transition_at": "2026-11-05T17:56:39.261890+00:00",
-      "model": "__resolved_model_absent__",
-      "notes": [
-        "GuardPolicy + guard; packs suite green",
-        "Review passed (reviewer-renata subagent): APPROVE; LOW findings folded"
-      ],
-      "provider": "__resolved_provider_absent__",
       "review_result": {
         "reference": "review-cycle://container-guard-and-actuator-01M6P99A/WP02-guard-policy/review-cycle-1.md",
         "reviewer": "reviewer-renata",
         "verdict": "approved"
       },
-      "role": "reviewer",
       "shell_pid": 8252,
-      "shell_pid_created_at": "1793897429.61",
-      "subtasks": {
-        "T005": "done",
-        "T006": "done",
-        "T007": "done",
-        "T008": "done"
-      }
+      "shell_pid_created_at": "1793897429.61"
     },
     "WP03": {
       "actor": "merge",
-      "agent": "reviewer-renata",
-      "agent_profile": "__resolved_profile_absent__",
-      "agent_profile_version": "__resolved_profile_version_absent__",
+      "agent": "claude",
       "force_count": 0,
       "implementer_of_record": "claude",
       "lane": "done",
       "last_event_id": "01M6PDPEFF7BWXCRW33M64KSPH",
       "last_transition_at": "2026-11-05T17:56:50.799074+00:00",
-      "model": "__resolved_model_absent__",
-      "notes": [
-        "GuardWiring policy, host grammar, 403 text; ContainerSecretsTest guardStatus gains a Host header (out-of-map, 1 line)",
-        "Review passed: APPROVE; LOW any-address hardening folded"
-      ],
-      "provider": "__resolved_provider_absent__",
       "review_result": {
         "reference": "review-cycle://container-guard-and-actuator-01M6P99A/WP03-container-composition/review-cycle-1.md",
         "reviewer": "reviewer-renata",
         "verdict": "approved"
       },
-      "role": "reviewer",
       "shell_pid": 15415,
-      "shell_pid_created_at": "1793898174.73",
-      "subtasks": {
-        "T009": "done",
-        "T010": "done",
-        "T011": "done",
-        "T012": "done"
-      }
+      "shell_pid_created_at": "1793898174.73"
     },
     "WP04": {
       "actor": "merge",
-      "agent": "reviewer-renata",
-      "agent_profile": "__resolved_profile_absent__",
-      "agent_profile_version": "__resolved_profile_version_absent__",
+      "agent": "claude",
       "force_count": 1,
       "implementer_of_record": "claude",
       "lane": "done",
       "last_event_id": "01M6PDP60K8SECWEFKNR2PR27K",
       "last_transition_at": "2026-11-05T17:56:42.131782+00:00",
-      "model": "__resolved_model_absent__",
-      "notes": [
-        "ExposureStartupCheck + profile tests; deployable suite green",
-        "Review cycle 2: boolean bypass fixed (1/on/yes), health groups checked, literal-only loopback",
-        "Review cycle 2: APPROVE; javadoc wrap nit folded"
-      ],
-      "provider": "__resolved_provider_absent__",
-      "review": null,
       "review_result": {
         "reference": "review-cycle://container-guard-and-actuator-01M6P99A/WP04-exposure-startup-check/review-cycle-2.md",
         "reviewer": "reviewer-renata",
         "verdict": "approved"
       },
-      "role": "reviewer",
-      "shell_pid": null,
-      "shell_pid_created_at": null,
-      "subtasks": {
-        "T013": "done",
-        "T014": "done",
-        "T015": "done",
-        "T016": "done"
-      }
+      "shell_pid": 22930,
+      "shell_pid_created_at": "1793899057.26"
     },
     "WP05": {
       "actor": "merge",
-      "agent": "reviewer-renata",
-      "agent_profile": "__resolved_profile_absent__",
-      "agent_profile_version": "__resolved_profile_version_absent__",
+      "agent": "claude",
       "force_count": 0,
       "implementer_of_record": "claude",
       "lane": "done",
       "last_event_id": "01M6PDPH8NTKEWHPJ0V0DF8RX7",
       "last_transition_at": "2026-11-05T17:56:53.653949+00:00",
-      "model": "__resolved_model_absent__",
-      "notes": [
-        "Actuator health-only; probes off; verifyAll green on Java 25; out-of-map: ExposureStartupCheck probes rule, ShippedConfigurationTest key list",
-        "Review passed: APPROVE; test-strength LOWs folded; native smoke gains the health check (out-of-map)"
-      ],
-      "provider": "__resolved_provider_absent__",
       "review_result": {
         "reference": "review-cycle://container-guard-and-actuator-01M6P99A/WP05-actuator-health/review-cycle-1.md",
         "reviewer": "reviewer-renata",
         "verdict": "approved"
       },
-      "role": "reviewer",
       "shell_pid": 26683,
-      "shell_pid_created_at": "1793899520.32",
-      "subtasks": {
-        "T017": "done",
-        "T018": "done",
-        "T019": "done",
-        "T020": "done"
-      }
+      "shell_pid_created_at": "1793899520.32"
     },
     "WP06": {
       "actor": "merge",
-      "agent": "reviewer-renata",
-      "agent_profile": "__resolved_profile_absent__",
-      "agent_profile_version": "__resolved_profile_version_absent__",
+      "agent": "claude",
       "force_count": 0,
       "implementer_of_record": "claude",
       "lane": "done",
       "last_event_id": "01M6PDP8Y0ZK2043EV81S9S24G",
       "last_transition_at": "2026-11-05T17:56:45.120234+00:00",
-      "model": "__resolved_model_absent__",
-      "notes": [
-        "Shared CVE handler; test lives in deployable (ValidationProblemTest, out-of-map: packs has no validator provider)",
-        "Review passed: APPROVE; test lives in deployable ValidationProblemTest (packs has no validator provider)"
-      ],
-      "provider": "__resolved_provider_absent__",
       "review_result": {
         "reference": "review-cycle://container-guard-and-actuator-01M6P99A/WP06-shared-validation-400/review-cycle-1.md",
         "reviewer": "reviewer-renata",
         "verdict": "approved"
       },
-      "role": "reviewer",
       "shell_pid": 17124,
-      "shell_pid_created_at": "1793898379.25",
-      "subtasks": {
-        "T021": "done",
-        "T022": "done"
-      }
+      "shell_pid_created_at": "1793898379.25"
     },
     "WP07": {
       "actor": "merge",
-      "agent": "curator-carla",
-      "agent_profile": "__resolved_profile_absent__",
-      "agent_profile_version": "__resolved_profile_version_absent__",
+      "agent": "claude",
       "force_count": 0,
       "implementer_of_record": "claude",
       "lane": "done",
       "last_event_id": "01M6PDPM05T17JG5NP9DV30JR8",
       "last_transition_at": "2026-11-05T17:56:56.453552+00:00",
-      "model": "__resolved_model_absent__",
-      "notes": [
-        "Guide, compose, changelog; docs checks green except the expected 0059 gap",
-        "Pre-PR squad docs lens: READY; findings folded (P2, P8–P11)"
-      ],
-      "provider": "__resolved_provider_absent__",
       "review_result": {
         "reference": "review-cycle://container-guard-and-actuator-01M6P99A/WP07-guide-and-compose/review-cycle-1.md",
         "reviewer": "curator-carla",
         "verdict": "approved"
       },
-      "role": "reviewer",
       "shell_pid": 2601,
-      "shell_pid_created_at": "1793900388.49",
-      "subtasks": {
-        "T023": "done",
-        "T024": "done",
-        "T025": "done"
-      }
+      "shell_pid_created_at": "1793900388.49"
     }
   }
 }
