@@ -4,6 +4,7 @@ import static ai.speckitty.charter.packs.infra.fetch.AddressClasses.GLOBAL;
 import static ai.speckitty.charter.packs.infra.fetch.AddressClasses.PRIVATE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 import ai.speckitty.charter.packs.application.GuideFetchRefusal;
 import ai.speckitty.charter.packs.application.GuideFetchRefusal.Reason;
@@ -32,6 +33,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Flow;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -503,7 +505,10 @@ class HttpsGuideFetcherTest {
     @Nested
     class Deadline {
 
-        /** A hang cap far above the deadline's own time: TIMEOUT and the cut-off lookup prove the guard (#320). */
+        /**
+         * A hang cap far above the deadline's own time (#320). The fetches it bounds are cut off when it passes, so a
+         * broken deadline fails at the cap; the refusal's reason and the interrupted lookup prove the guard.
+         */
         private static final Duration HANG_CAP = Duration.ofSeconds(30);
 
         @Test
@@ -521,7 +526,8 @@ class HttpsGuideFetcherTest {
         }
 
         @Test
-        void aSlowLookupCountsAgainstTheSameDeadline() {
+        void aSlowLookupCountsAgainstTheSameDeadline() throws InterruptedException {
+            CountDownLatch cutOff = new CountDownLatch(1);
             HttpsGuideFetcher slowDns = new HttpsGuideFetcher(
                     GuideAllowlist.of(List.of(HOST)),
                     Duration.ofMillis(200),
@@ -531,22 +537,26 @@ class HttpsGuideFetcherTest {
                         try {
                             Thread.sleep(60_000);
                         } catch (InterruptedException e) {
+                            cutOff.countDown();
                             Thread.currentThread().interrupt();
                         }
                         return List.of(GLOBAL);
                     },
                     transport,
                     HttpsGuideFetcher.LOOKUP_SLOTS);
-            long started = System.nanoTime();
 
-            assertRefused(slowDns, "https://guide.example/g.md", Reason.TIMEOUT);
-            assertThat(Duration.ofNanos(System.nanoTime() - started)).isLessThan(HANG_CAP);
+            assertTimeoutPreemptively(
+                    HANG_CAP, () -> assertRefused(slowDns, "https://guide.example/g.md", Reason.TIMEOUT));
+            assertThat(cutOff.await(HANG_CAP.toMillis(), TimeUnit.MILLISECONDS))
+                    .as("the deadline interrupted the sleeping lookup")
+                    .isTrue();
             assertThat(transport.requests).isEmpty();
         }
 
         @Test
         void aLookupThatOutrunsTheDeadlineIsInterruptedAndDoesNotOutliveIt() throws InterruptedException {
             AtomicReference<Thread> lookup = new AtomicReference<>();
+            CountDownLatch entered = new CountDownLatch(1);
             HttpsGuideFetcher slowDns = new HttpsGuideFetcher(
                     GuideAllowlist.of(List.of(HOST)),
                     Duration.ofMillis(200),
@@ -554,6 +564,7 @@ class HttpsGuideFetcherTest {
                     3,
                     host -> {
                         lookup.set(Thread.currentThread());
+                        entered.countDown();
                         try {
                             Thread.sleep(60_000);
                         } catch (InterruptedException e) {
@@ -565,8 +576,11 @@ class HttpsGuideFetcherTest {
                     HttpsGuideFetcher.LOOKUP_SLOTS);
 
             assertRefused(slowDns, "https://guide.example/g.md", Reason.TIMEOUT);
-            assertThat(lookup.get()).isNotNull();
-            assertThat(lookup.get().join(Duration.ofSeconds(2)))
+            // On a loaded runner the lookup's thread may only start after the deadline; its interrupt is still pending.
+            assertThat(entered.await(HANG_CAP.toMillis(), TimeUnit.MILLISECONDS))
+                    .as("the lookup ran")
+                    .isTrue();
+            assertThat(lookup.get().join(HANG_CAP))
                     .as("the interrupted lookup ended")
                     .isTrue();
         }
@@ -605,7 +619,7 @@ class HttpsGuideFetcherTest {
             answer.countDown();
             transport.route("https://guide.example/g.md", Canned.ok(GUIDE));
             // The answered lookup frees its slot: the next fetch resolves again.
-            long until = System.nanoTime() + Duration.ofSeconds(2).toNanos();
+            long until = System.nanoTime() + HANG_CAP.toNanos();
             String fetched = null;
             while (fetched == null) {
                 try {
