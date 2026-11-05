@@ -1,7 +1,7 @@
 {
-  "event_count": 97,
-  "last_event_id": "01M6PXHC4B82VMMKJY3YJBPFJV",
-  "materialized_at": "2026-11-05T22:33:41.771456+00:00",
+  "event_count": 99,
+  "last_event_id": "01M6PXJ2X98JB0RDXQ013KGHYA",
+  "materialized_at": "2026-11-05T22:34:05.091161+00:00",
   "mission_number": "",
   "mission_slug": "activation-register-and-closure-01M6NXBD",
   "mission_type": "",
@@ -13,9 +13,9 @@
     "claimed": 0,
     "done": 0,
     "for_review": 1,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 5
+    "planned": 4
   },
   "work_packages": {
     "WP01": {
@@ -461,11 +461,15 @@
       }
     },
     "WP17": {
-      "actor": "finalize-tasks",
+      "actor": "claude:claude-opus-5-5:java-jenny",
+      "agent": "claude:claude-opus-5-5:java-jenny",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M6PVTTQ8PB1A3R992D63K0XC",
-      "last_transition_at": "2026-11-05T22:03:54.472264+00:00"
+      "implementer_of_record": "claude:claude-opus-5-5:java-jenny",
+      "lane": "in_progress",
+      "last_event_id": "01M6PXJ2X98JB0RDXQ013KGHYA",
+      "last_transition_at": "2026-11-05T22:34:05.091161+00:00",
+      "shell_pid": 23087,
+      "shell_pid_created_at": "1793918039.01"
     }
   }
 }
