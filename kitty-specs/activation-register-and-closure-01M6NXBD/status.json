@@ -435,6 +435,9 @@
       "last_event_id": "01M6PX81D1WBMFGQNKHZ1EYC0F",
       "last_transition_at": "2026-11-05T22:28:35.873251+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "WP16 ready: new :web-transport (ai.speckitty.charter.web) holds RefusalHandler/ProblemHandler/Problems/JsonBodyGuard/ProblemJson(Problem,CharterRefusal,Link)/ProblemRuntimeHints (git mv, 1-line package diffs; @Order unchanged). packs keeps ArtifactJson (own mix-in+hints). ActivationBodyAdvice/ActivationProblems moved deployable->activations.infra.api; ActivationBodyAdviceTest now standalone MockMvc (validation-proxied controller), 14 tests identical expectations; new ActivationProblemsTest (422/400/400/415 + order). Registered in settings, charter-reports, sonar.yml, packs/activations/deployable builds, DeployableConfiguration scan. Arch: TRANSPORT_STAYS_IN_ADAPTER exempts WEB not DEPLOYABLE (RootNamesGeneratedDto bites); +WEB_IS_AN_ADAPTER_RING, WEB_NAMES_NO_SLICE, DOMAIN_NAMES_NO_TRANSPORT with fixtures; NON_SLICE_OWNERS+web. Forced deviation from P4: internal_error rule and PACK_LEVEL_MISMATCH rule B extended to the web package (RefusalHandler moved). No domain named kernel.transport. Gates green: web-transport/charter-reports/packs(-x openPacks)/activations check, full deployable:test 745/0 fail, docs check (only pre-existing ADR 0060/0061 gap), cspell clean. Docs: hexagonal-service.md decision record + module row; offering-and-activation.md flowchart+table."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 2144,
