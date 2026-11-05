@@ -23,9 +23,8 @@
   "baseline_merge_commit": "962a66b504e2de2debaaa66b07a68b28263a0198",
   "contracts": "none",
   "contracts_rationale": "No new interface. The only contract change is the 403 description in contracts/charter (responses/Forbidden.yaml, openapi.yaml securitySchemes) plus a changelog fragment; /actuator/health is not a contract operation (ADR-0041 D7).",
-  "coordination_branch": "kitty/mission-container-guard-and-actuator-01M6P99A",
   "created_at": "2026-11-05T16:39:47.380060+00:00",
-  "flattened": false,
+  "flattened": true,
   "friendly_name": "Container guard, actuator and single-replica ruling",
   "merged_at": "2026-11-05T17:57:03.917504+00:00",
   "merged_commit": "e4c3546699313f47073f9c45e69fdeaa931520e0",
@@ -40,7 +39,6 @@
   "slug": "container-guard-and-actuator-01M6P99A",
   "status_phase": "1",
   "target_branch": "feat/container-guard-and-actuator",
-  "topology": "coord",
   "vcs": "git",
   "vcs_locked_at": "2026-11-05T16:50:33.194231+00:00"
 }
