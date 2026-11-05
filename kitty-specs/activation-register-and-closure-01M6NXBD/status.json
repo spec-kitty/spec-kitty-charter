@@ -100,6 +100,9 @@
       "last_event_id": "01M6PN1XR7M4NN9HXBBQZB6T2Q",
       "last_transition_at": "2026-11-05T20:05:26.919480+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Commit 8fe11d1. ADR numbered 0062 (main has 0060; open #392/#393 hold 0061; #394's 0060 collides with main). WP10 amendment notes must cite ADR-0062. Gates: :kernel:check 0 (2655 tests); :packs:check -x openPacksRoundTrip 0 (2813 tests, 0 fail, 4 pre-existing skips); :deployable:test CharterContractSuite+HexagonalArchitectureTest 0 (300 tests); :contracts:check 1 (shallow clone baseline) then 0 with -PcontractBaseline=none; :packs:openPacksRoundTrip 0; check_docs all: only adr numbering-gap findings (0060 missing from lane base, 0061 held by open PRs); cspell 0 issues. Decision: mutability_policy const policy.yaml (FR-022). Touched packs files: PackMutabilityPolicy, MutabilityPolicySource, PackCompositionFacts, MutabilityPolicyRepository(new), PerPackPolicy(new), DomainRepositoryService(+DomainRepositoryServiceTest; #377 overlap: compositionFacts split into edgeFacts + policyOf), PackDescriptorDso, PackDescriptorReader, PackFileSet, PolicyYaml(new), PackMutabilityPolicyTest. Out-of-map edits: YamlSerializationStrategy (writes mutability_policy), PackRoundTripTest (DSO arity), PackSchemasTest 25->26, PackFileKindTest (26 rules + sample), SchemaKeywordCoverageTest (patternProperties silent). Follow-up: WholePackStore does not copy policy.yaml (unmodelled); recorded in ADR Consequences."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 32474,
