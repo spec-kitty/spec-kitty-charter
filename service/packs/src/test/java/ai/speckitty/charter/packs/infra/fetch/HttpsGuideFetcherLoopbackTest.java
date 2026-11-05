@@ -85,9 +85,9 @@ class HttpsGuideFetcherLoopbackTest {
 
     @Test
     void aBodyThatDripsPastTheDeadlineIsRefusedThoughItsHeadersArriveAtOnce() throws GuideFetchRefusal {
-        // A fast fetch first: on a loaded runner, the first fetch's client start-up and connection could otherwise
-        // use up the whole deadline before the request reaches the server, refusing it for the wrong reason.
-        assertThat(fetcher(DRIP_DEADLINE).fetch(URI.create("https://guide.example/fast")))
+        // A fast fetch first, with the hang cap as its deadline: on a loaded runner, the first fetch's client start-up
+        // and connection could otherwise use up the short drip deadline before the request reaches the server.
+        assertThat(fetcher(HANG_CAP).fetch(URI.create("https://guide.example/fast")))
                 .isEqualTo(GUIDE);
 
         // The drip lasts sixty seconds; a refusal within the cap, well before it ends, is the deadline's.

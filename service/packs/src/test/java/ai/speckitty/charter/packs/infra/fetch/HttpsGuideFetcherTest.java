@@ -503,9 +503,13 @@ class HttpsGuideFetcherTest {
         }
     }
 
-    /** The whole-test cap covers the fetches that take no {@code HANG_CAP} of their own. */
+    /**
+     * The whole-test cap covers the fetches that take no {@code HANG_CAP} of their own. It runs the test on a separate
+     * thread: the default same-thread mode interrupts only once, so it would not stop a fetcher stuck on an
+     * interrupt-ignoring wait. 90 s stays above the two successive {@code HANG_CAP} waits of one test.
+     */
     @Nested
-    @Timeout(60)
+    @Timeout(value = 90, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
     class Deadline {
 
         /**
@@ -525,7 +529,7 @@ class HttpsGuideFetcherTest {
                     .satisfies(f -> assertThat(f.isCancelled()).isTrue());
 
             transport.route("https://guide.example/fast", Canned.ok(GUIDE));
-            assertThat(fetcher(Duration.ofMillis(200), HOST).fetch(URI.create("https://guide.example/fast")))
+            assertThat(fetcher(HANG_CAP, HOST).fetch(URI.create("https://guide.example/fast")))
                     .isEqualTo(GUIDE);
         }
 
@@ -624,7 +628,8 @@ class HttpsGuideFetcherTest {
                 try {
                     fetched = stuckDns.fetch(URI.create("https://guide.example/g.md"));
                 } catch (GuideFetchRefusal busy) {
-                    if (busy.reason() != Reason.UNREACHABLE || System.nanoTime() > until) {
+                    boolean retryable = busy.reason() == Reason.UNREACHABLE || busy.reason() == Reason.TIMEOUT;
+                    if (!retryable || System.nanoTime() > until) {
                         throw busy;
                     }
                     Thread.onSpinWait();

@@ -36,7 +36,7 @@ bounds of 2 to 10 seconds could be missed by a loaded CI runner, the way the CPU
   parsed, so a broken budget fails on that cause in about 3 seconds; under the wider cap alone, the bomb
   would run the test JVM out of memory first. The
   fetcher's slow lookup and dripping body now last 60 seconds, and the fetch is cut off at the cap, so a
-  broken deadline fails at 30 s.
+  broken deadline fails at 30 s; the deadline tests with no cap of their own stop at a whole-test cap of 90 s.
   The commit-lock test now checks that a listing holding one pack's lock never waits on another pack's, so a
   listing that waits fails on that cause; under the wider cap alone, its wait of 10 s would pass. Every other
   listed bound fails on its cause, or at the 30 s cap at the latest. A green run takes as long as before.
