@@ -15,7 +15,10 @@ import org.junit.jupiter.api.Test;
 @DisplayName("Embedded config schemas are checked against the metaschema and never fetch (ADR-0054 decision 4)")
 class EmbeddedSchemasTest {
 
-    /** Only a hang cap, far above the work's time so load cannot trip it; the cause assertion is the guard (#320). */
+    /**
+     * A hang cap far above the work's time, so load cannot trip it; a guard that stops cutting the work off fails at
+     * it (#320).
+     */
     private static final Duration HANG_CAP = Duration.ofSeconds(30);
 
     private static ConfigValue tree(String yaml) {

@@ -40,7 +40,10 @@ import org.junit.jupiter.api.io.TempDir;
  */
 class InterruptedCommitRepairTest {
 
-    /** Only a hang cap, far above the work's time so load cannot trip it; the cause assertion is the guard (#320). */
+    /**
+     * A hang cap far above the work's time, so load cannot trip it; a guard that stops cutting the work off fails at
+     * it (#320).
+     */
     private static final Duration HANG_CAP = Duration.ofSeconds(30);
 
     private static final PackIdentifier PACK = new PackIdentifier("pack-a");
