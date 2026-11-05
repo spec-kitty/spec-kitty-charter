@@ -37,8 +37,8 @@ concurrency:
 jobs:
   pitest:
     runs-on: ubuntu-24.04
-    # Packs mutation run measured ~53 min on 4 cores (domain+application 25, infra.storage 28),
-    # plus ~3 min for kernel, missions and profiles. 90 gives >25 % headroom (NFR-002).
+    # A full :packs:pitest measured 45m54s on an idle 4-core machine, plus ~3 min for kernel, missions and
+    # profiles: ~49 min of mutation testing. 90 gives >25 % headroom (NFR-002).
     # A timeout raises the mutation-nightly issue.
     timeout-minutes: 90
     outputs:

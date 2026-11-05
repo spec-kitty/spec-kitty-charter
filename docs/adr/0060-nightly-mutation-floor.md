@@ -153,7 +153,8 @@ measurement: it skips the floor check, and the `floors.json` it leaves may be st
 
 ### Negative
 
-- The nightly takes about 50 minutes of runner time, most of it `:packs:pitest`.
+- The nightly takes about 49 minutes of mutation testing on four cores, 46 of them `:packs:pitest`, plus the
+  set-up steps.
 - Mutation coverage of a change is seen a day late, never in the pull request that caused it.
 - Floors of 50 to 70 on kernel, missions and profiles sit well below packs until the follow-up raises them.
 - A floor does not catch a single weakened test: the margins of packs and kernel absorb tens of mutants. Missions and
@@ -179,7 +180,7 @@ Not chosen. Test strength ignores uncovered mutants, so it can stay high while c
 
 ### Option C: Running mutation testing per pull request
 
-Not chosen. A full run takes about 50 minutes and would add that to every pull request, and
+Not chosen. A full run takes about 49 minutes and would add that to every pull request, and
 `DM-01M57RMMBAS7275PXGNSYJZBQY` keeps mutation testing out of the merge gate.
 [ADR-0057](/adr/0057-performance-budgets-never-block-a-pull-request/) and
 [ADR-0058](/adr/0058-sonarcloud-nightly-reported-and-checkstyle-complexity-per-pr/) keep slow or noisy signals off pull
