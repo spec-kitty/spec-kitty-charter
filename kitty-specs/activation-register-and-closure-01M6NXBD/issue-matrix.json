@@ -60,6 +60,18 @@
       "verdict": "in-mission",
       "wp": "WP09"
     },
+    "#349": {
+      "evidence_ref": "Cited only to scope out multi-process writers",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
     "#359": {
       "evidence_ref": "Closure read carries depends_on facts (WP04/WP09)",
       "fr": null,
