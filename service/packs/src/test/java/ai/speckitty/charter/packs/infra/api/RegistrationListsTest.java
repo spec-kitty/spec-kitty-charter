@@ -9,6 +9,7 @@ import ai.speckitty.charter.api.model.StyleguideRegistration;
 import ai.speckitty.charter.api.model.ToolguideRegistration;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.transport.BodyLimit;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -73,17 +74,16 @@ class RegistrationListsTest {
 
     @Test
     void aNullItemInsideAListIsFoundAndNamesTheListAndTheItem() {
-        assertThat(firstNullValue("{\"references\":[null]}"))
-                .contains(new RegistrationLists.NullValue("references", 0));
+        assertThat(firstNullValue("{\"references\":[null]}")).contains(new JsonBodyGuard.NullValue("references", 0));
         assertThat(firstNullValue("{\"procedures\":[\"a\",\"b\",null,null]}"))
                 .as("the first null item, counted from 0")
-                .contains(new RegistrationLists.NullValue("procedures", 2));
+                .contains(new JsonBodyGuard.NullValue("procedures", 2));
         assertThat(firstNullValue("{\"references\":[{\"id\":\"a\",\"refs\":[null]},null]}"))
                 .as("an object item is skipped whole; the null after it is the list's")
-                .contains(new RegistrationLists.NullValue("references", 1));
+                .contains(new JsonBodyGuard.NullValue("references", 1));
         assertThat(firstNullValue("{\"procedures\":[null],\"references\":null}"))
                 .as("the first member in the order given, whichever way it is null")
-                .contains(new RegistrationLists.NullValue("references", RegistrationLists.NullValue.WHOLE));
+                .contains(new JsonBodyGuard.NullValue("references", JsonBodyGuard.NullValue.WHOLE));
         assertThat(firstNull("{\"references\":[{\"id\":null}],\"procedures\":[[null]]}"))
                 .as("a null inside an item, or a list where an item belongs, is the converter's and the domain's")
                 .isEmpty();
@@ -95,10 +95,10 @@ class RegistrationListsTest {
     @Test
     void aNullItemIsLookedForOnlyInAList() {
         // A guide field is a string: an array there is the converter's type error (400), not a null item.
-        assertThat(RegistrationLists.firstNull(bytes("{\"guide\":[null]}"), null, List.of("guide"), MEMBERS))
+        assertThat(JsonBodyGuard.firstNull(bytes("{\"guide\":[null]}"), null, List.of("guide"), MEMBERS))
                 .isEmpty();
-        assertThat(RegistrationLists.firstNull(bytes("{\"guide\":null}"), null, List.of("guide"), MEMBERS))
-                .contains(new RegistrationLists.NullValue("guide", RegistrationLists.NullValue.WHOLE));
+        assertThat(JsonBodyGuard.firstNull(bytes("{\"guide\":null}"), null, List.of("guide"), MEMBERS))
+                .contains(new JsonBodyGuard.NullValue("guide", JsonBodyGuard.NullValue.WHOLE));
     }
 
     @Test
@@ -111,11 +111,21 @@ class RegistrationListsTest {
 
     @Test
     void theDetailNamesTheListAndTheItem() {
-        assertThat(new RegistrationLists.NullValue("references", RegistrationLists.NullValue.WHOLE).detail())
+        assertThat(new JsonBodyGuard.NullValue("references", JsonBodyGuard.NullValue.WHOLE).detail())
                 .isEqualTo("The references list is null; a list is sent as an array, [] when it is empty, and an"
                         + " optional one may be left out.");
-        assertThat(new RegistrationLists.NullValue("references", 3).detail())
+        assertThat(new JsonBodyGuard.NullValue("references", 3).detail())
                 .isEqualTo("Item 3 of the references list is null; a list holds no null item.");
+    }
+
+    @Test
+    void thePointerNamesTheListAndTheItem() {
+        assertThat(new JsonBodyGuard.NullValue("references", JsonBodyGuard.NullValue.WHOLE).pointer())
+                .isEqualTo("/references");
+        assertThat(new JsonBodyGuard.NullValue("references", 3).pointer()).isEqualTo("/references/3");
+        assertThat(new JsonBodyGuard.NullValue("a/b~c", 0).pointer())
+                .as("escaped as RFC 6901 requires")
+                .isEqualTo("/a~1b~0c/0");
     }
 
     @Test
@@ -171,7 +181,8 @@ class RegistrationListsTest {
     void theBoundedReadRefusesABodyOverTheLimitAndReadsNoMoreThanOneBytePastIt() throws IOException {
         HttpHeaders declared = new HttpHeaders();
         declared.setContentLength(9);
-        assertThatThrownBy(() -> RegistrationLists.readBounded(message(new byte[0], declared), 8, "directive"))
+        assertThatThrownBy(() -> JsonBodyGuard.readBounded(
+                        message(new byte[0], declared), 8, RegistrationLists.refusal("directive")))
                 .as("by its Content-Length, before a byte is read")
                 .isInstanceOfSatisfying(CharterRefusal.class, r -> {
                     assertThat(r.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
@@ -179,15 +190,17 @@ class RegistrationListsTest {
                 });
 
         ByteArrayInputStream over = new ByteArrayInputStream(bytes("0123456789abcdef"));
-        assertThatThrownBy(() -> RegistrationLists.readBounded(message(over, new HttpHeaders()), 8, "paradigm"))
+        assertThatThrownBy(() -> JsonBodyGuard.readBounded(
+                        message(over, new HttpHeaders()), 8, RegistrationLists.refusal("paradigm")))
                 .as("without one, one byte past the limit")
                 .isInstanceOf(CharterRefusal.class);
         assertThat(over.available()).as("the rest is never read").isEqualTo(16 - 9);
 
-        assertThat(RegistrationLists.readBounded(message(bytes("01234567"), new HttpHeaders()), 8, "styleguide"))
+        assertThat(JsonBodyGuard.readBounded(
+                        message(bytes("01234567"), new HttpHeaders()), 8, RegistrationLists.refusal("styleguide")))
                 .as("a body at the limit is read whole")
                 .isEqualTo(bytes("01234567"));
-        assertThat(RegistrationLists.BODY_LIMIT).isEqualTo(1024 * 1024);
+        assertThat(BodyLimit.MAX_BYTES).isEqualTo(1024 * 1024);
     }
 
     @Test
@@ -200,12 +213,11 @@ class RegistrationListsTest {
     }
 
     private static Optional<String> firstNull(byte[] body, @Nullable MediaType contentType) {
-        return RegistrationLists.firstNull(body, contentType, List.of(), MEMBERS)
-                .map(RegistrationLists.NullValue::member);
+        return JsonBodyGuard.firstNull(body, contentType, MEMBERS).map(JsonBodyGuard.NullValue::member);
     }
 
-    private static Optional<RegistrationLists.NullValue> firstNullValue(String json) {
-        return RegistrationLists.firstNull(bytes(json), null, List.of(), MEMBERS);
+    private static Optional<JsonBodyGuard.NullValue> firstNullValue(String json) {
+        return JsonBodyGuard.firstNull(bytes(json), null, MEMBERS);
     }
 
     private static HttpInputMessage message(byte[] body, HttpHeaders headers) {
