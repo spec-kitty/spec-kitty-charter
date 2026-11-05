@@ -22,10 +22,10 @@ clear the way for the activation writes ([#291](https://github.com/spec-kitty/sp
 the resolution domain ([#10](https://github.com/spec-kitty/spec-kitty-charter/issues/10),
 [#11](https://github.com/spec-kitty/spec-kitty-charter/issues/11)):
 
-- An operation is ready for core to switch to it when its design-derived BDD scenarios and contract tests pass. No corpus, shadow or
+- An operation is ready for core to switch to it when its design-derived BDD scenarios and contract tests pass, with at least one behavioral scenario. No corpus, shadow or
   observation period gates the switch (ADR-0055 open question 1).
-- The cascade follows `requires`, `suggests`, `refines`, `scope` and `instantiates`, brings an artifact's enhancers
-  in with it, and passes through `specializes_from` without putting the parent in force.
+- The cascade follows `requires`, `suggests`, `refines`, `scope` and `instantiates`, brings an artifact and its enhancers
+  into force together, and passes through `specializes_from` without putting the parent in force.
 - A layer override takes the place of the whole artifact; there is no field merge.
 - A document a pack upgrade made stale is served and flagged; writing it back unchanged is refused.
 - The `Activation` answer's `ETag` is its revision: `summary` moves to an effective read and `governanceFingerprint`
