@@ -151,7 +151,8 @@ entries that match the preset's members (ADR-0020 D6). This is core's behavior.
 ### Positive
 
 - Each operation has one readiness test, which this repository owns and runs on every pull request.
-- The cascade, the merge and the writes can be built without waiting on further rulings.
+- The cascade, the merge and the writes can be built without waiting on further rulings, once the contract
+  changes below land.
 
 ### Negative
 
@@ -159,8 +160,10 @@ entries that match the preset's members (ADR-0020 D6). This is core's behavior.
   be in the divergence register before core switches, or core finds it in use.
 - D3 and D2.2 depart from core. A project with a partial override, or with an artifact that enhances another,
   sees different content after the switch.
-- D5 changes the contract: `summary` and `governanceFingerprint` leave `Activation`, and `304` is added to five
-  operations.
+- D3, D4 and D5 change the contract. D5: `summary` and `governanceFingerprint` leave `Activation`, and `304` is
+  added to five operations. D4: the skipped report, closed with four buckets in
+  `contracts/charter/schemas/SkippedReport.yaml`, has no bucket for a dropped id or an unapplied deny entry. D3: no
+  `DiagnosticCode` value reports a layer override (today only `pack_level_missing` and `pack_unknown_key`).
 
 ## Follow-ups
 
@@ -168,6 +171,9 @@ entries that match the preset's members (ADR-0020 D6). This is core's behavior.
 - Add the divergence-register entries for D2.2, D3 and D4.
 - Change the contract for D5 (`summary` and `governanceFingerprint` leave `Activation`; `If-None-Match` and `304` on
   five operations) and the round-trip text of `contracts/charter/paths/activations_activationId.yaml` for D4.
+- Add the skipped-report bucket or buckets for D4 and a `DiagnosticCode` value for D3's layer-override report, as
+  0.x contract changes under [ADR-0022](/adr/0022-contract-versions-start-at-0-x/) in the #291 contract
+  change.
 - Note the answer on ADR-0010 and ADR-0021 D5 (done in this change).
 - Build D4 to D6 in #291 and D2 and D3 in #10 and #11.
 
