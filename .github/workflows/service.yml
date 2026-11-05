@@ -20,6 +20,8 @@ on:
       - "contracts/**"
       - "service/**"
       - "build-logic/**"
+      # build-logic's MutationFloorsTest holds this fixture to what the floor check writes.
+      - "scripts/ci/fixtures/**"
       - "config/**"
       - "gradle/**"
       - "*.gradle.kts"

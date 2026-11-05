@@ -2,7 +2,8 @@ name: Docs cleanliness
 
 # The gates that keep docs/ from drifting: lint, spelling, terminology, frontmatter,
 # freshness, link and anchor integrity, ADR/changelog indexes, orphans and diagram freshness.
-# Each check is its own job or step so a failure names itself. The docsite build and its
+# Each check is its own job or step so a failure names itself. It also runs the unit tests of scripts/ci
+# (the mutation nightly's summary script), which no other pull-request workflow runs. The docsite build and its
 # deploy live in docs-site.yml. Rule -> check table: docs/_meta/doc-rules.yaml.
 # Run the same checks locally: docs/guides/docsite.md.
 
@@ -16,10 +17,12 @@ on:
       - 'docs/**'
       - 'site/**'
       - 'scripts/docs/**'
+      - 'scripts/ci/**'
       - '.markdownlint-cli2.jsonc'
       - 'cspell.json'
       - 'lychee.toml'
       - '.github/workflows/docs-cleanliness.yml'
+      - '.github/workflows/mutation-nightly.yml'
   schedule:
     # Weekly, so a link that rots on its own is noticed without a docs change.
     - cron: '17 5 * * 1'
@@ -59,6 +62,10 @@ jobs:
       - name: Check unit tests
         if: always()
         run: python -m pytest -p no:cacheprovider scripts/docs/tests -q
+      # The mutation nightly's summary script (standard library only); never PIT itself, which runs nightly only.
+      - name: CI script unit tests
+        if: always()
+        run: python -m unittest discover -s scripts/ci -p 'test_*.py'
       - name: Frontmatter (required keys, description length, audience)
         if: always()
         run: python scripts/docs/check_docs.py frontmatter
