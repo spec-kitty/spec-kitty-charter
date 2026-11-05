@@ -139,6 +139,9 @@
       "last_event_id": "01M6PPF2GHXSZBRNF528WKB5VD",
       "last_transition_at": "2026-11-05T20:30:06.353058+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "ClosureQueries.snapshot(Optional roots)/allConfigured(): one ConsistentRead (call-count test: 2 digests, facts once per closure pack), stale -> STALE_INPUT. ClosureView (packs, heldIds, holderOf, missionTypes, RequiredFloor, PerPackPolicy lockOf/isLocked, isRequired = floor or locked, presets last-in-merge-order wins per ADR-0053 d6, fingerprint). Out-of-map: PackCompositionFacts.presets (defaulted ctors), DomainRepositoryService.compositionFacts fills from assembled.presets() (broken preset still pack_unreadable via readable()), OfferingReadService.entriesOf public + ComposedClosure/composedWithFacts(); /offering unchanged. Tests touched: DomainRepositoryServiceTest +1, OfferingReadServiceTest +1. ProductionWiringTest/WiringRoundTripTest run green, not edited. Production consumer of ClosureQueries is WP09's activations adapter. Gates: packs:check -x openPacksRoundTrip exit 0 (2831 tests, 0 fail); deployable CharterContractSuite/Hexagonal/WiringRoundTrip/ProductionWiring exit 0."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 21368,
