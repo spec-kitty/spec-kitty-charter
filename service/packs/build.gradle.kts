@@ -242,17 +242,20 @@ tasks.test {
 // this repository sets no coverage threshold (the charter's min_coverage is 0). The tag narrows the report, not a gate.
 tasks.check { dependsOn(openPacksRoundTrip) }
 
-// The nightly mutation floor (#239; operator ruling of 2026-11-05). PIT mutates domain, application and infra.storage,
-// infra.storage.config included, but never the application's Spring wiring (application.config) nor the inbound REST
-// adapter (infra.api), and runs only the unit tests of those packages: the Spring-wired tests (*WiredTest, the only
-// @SpringBootTest among them) and the tagged suites that `test` leaves out (open-packs, whole-pack, timing) stay out of
-// PIT too. pit-targets.init.gradle narrows this scope further for a run of one work package's classes.
+// The nightly mutation floor (#239; operator rulings of 2026-11-05). PIT mutates domain, application, infra.storage
+// (infra.storage.config included) and infra.fetch, but never the Spring wiring (application.config,
+// infra.fetch.config) nor the inbound REST adapter (infra.api), and runs only the unit tests of those packages: the
+// Spring-wired tests (*WiredTest, the only @SpringBootTest among them) and the tagged suites that `test` leaves out
+// (open-packs, whole-pack, timing) stay out of PIT too. pit-targets.init.gradle narrows this scope further for a run of
+// one work package's classes.
 val packsPackage = "ai.speckitty.charter.packs"
-val mutatedPackages = listOf("domain", "application", "infra.storage").map { "$packsPackage.$it.*" }.toSet()
+val mutatedPackages =
+    listOf("domain", "application", "infra.storage", "infra.fetch").map { "$packsPackage.$it.*" }.toSet()
 pitest {
     targetClasses = mutatedPackages
     excludedClasses = setOf(
         "$packsPackage.application.config.*",
+        "$packsPackage.infra.fetch.config.*",
         "$packsPackage.infra.api.*",
     )
     targetTests = mutatedPackages
@@ -263,8 +266,8 @@ pitest {
 }
 tasks.named("pitest") { readsTheUnitTestInputs() }
 
-// Two floor groups, as the operator ruled them on 2026-11-05 (C-001): 85 each, at or below floor5(score - 3) of the
-// first measured run.
+// Three floor groups, as the operator ruled them on 2026-11-05 (C-001): each at or below floor5(score - 3) of its first
+// measured run. domain+application (92.7 %) and infra.storage (90.7 %) take 85; infra.fetch (77.3 %) takes 70.
 mutationFloors {
     group("domain+application") {
         packages.addAll("$packsPackage.domain", "$packsPackage.application")
@@ -274,5 +277,10 @@ mutationFloors {
     group("infra.storage") {
         packages.add("$packsPackage.infra.storage")
         floor = 85
+    }
+    group("infra.fetch") {
+        packages.add("$packsPackage.infra.fetch")
+        excludes.add("$packsPackage.infra.fetch.config")
+        floor = 70
     }
 }

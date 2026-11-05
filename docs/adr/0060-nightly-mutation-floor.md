@@ -27,7 +27,8 @@ audience:
 **Accepted**, operator rulings of 2026-11-03, 2026-11-04 and 2026-11-05. Decider: Stijn Dejongh (operator). On
 2026-11-03 the operator adopted [#239](https://github.com/spec-kitty/spec-kitty-charter/issues/239) as designed (R1 and
 W1 of the [test suite assessment](/plans/engineering-notes/test-suite-assessment-2026-11-03/)). On 2026-11-04 and
-2026-11-05 the operator ruled the floors and put `packs.infra.storage` in scope with its own floor. The implementation
+2026-11-05 the operator ruled the floors and put `packs.infra.storage`, then `packs.infra.fetch`, in scope with floors
+of their own. The implementation
 is the mission `test-mutation-floors-01M6NSDR`, in the same pull request as this ADR.
 
 This ADR ends the "experiment" status of mutation testing, decided as `DM-01M57RMMBAS7275PXGNSYJZBQY`
@@ -60,9 +61,10 @@ Measured on main's tests (JDK 25):
 | profiles | 66 | 53.0 % |
 | packs `domain+application` | 1638 | 92.7 % |
 | packs `infra.storage` | 2092 | 90.7 % |
+| packs `infra.fetch` | 269 | 77.3 % |
 
-A full `:packs:pitest` took 45m54s on an idle 4-core machine; kernel, missions and profiles together take about
-3 minutes. PIT's `mutations.xml` holds raw `<` characters in mutator descriptions, so it is not well-formed XML.
+A full `:packs:pitest` took 45m54s on an idle 4-core machine without `infra.fetch`, whose own run takes about
+2 minutes more; kernel, missions and profiles together take about 3 minutes. PIT's `mutations.xml` holds raw `<` characters in mutator descriptions, so it is not well-formed XML.
 
 ## Decision
 
@@ -86,22 +88,25 @@ A full `:packs:pitest` took 45m54s on an idle 4-core machine; kernel, missions a
    | profiles | `profiles` | `ai.speckitty.charter.profiles` | 50 | 2 |
    | packs | `domain+application` | `packs.domain`, `packs.application`, without `application.config` | 85 | 126 |
    | packs | `infra.storage` | `packs.infra.storage` | 85 | 120 |
+   | packs | `infra.fetch` | `packs.infra.fetch`, without `infra.fetch.config` | 70 | 19 |
 
-   The packs floors follow `floor5(score − 3)` of the first measured run (92.7 % and 90.7 % give 85 each). Kernel,
+   The packs floors follow `floor5(score − 3)` of the first measured run (92.7 % and 90.7 % give 85 each, 77.3 % gives
+   70). Kernel,
    missions and profiles take the floors the operator ruled.
 
    - **The margin** is how many detected mutants a group can lose and still pass, in the run that set its floor:
      `detected − ⌈floor × mutants / 100⌉` (kernel 289 of 378 with this pull request's triage, missions 108 of 144,
-     profiles 35 of 66, `domain+application` 1519 of 1638, `infra.storage` 1899 of 2092).
+     profiles 35 of 66, `domain+application` 1519 of 1638, `infra.storage` 1899 of 2092, `infra.fetch` 208 of 269).
    - **What a floor catches.** A floor backstops a large regression: a deleted test class, a module's tests no longer
      running, a large piece of code arriving untested. It does not catch a single weakened test, which costs a few
      mutants, well inside every packs and kernel margin.
    - **Missions and profiles are near the trigger.** A margin of 7 and of 2 mutants means a small change there, even
      moving a few lines of covered code, can turn the nightly red.
-4. **The packs scope.** PIT mutates `packs.domain.*`, `packs.application.*` and `packs.infra.storage.*`,
-   `infra.storage.config` included (operator ruling), and never `application.config.*` (the Spring wiring) or
-   `infra.api.*` (the REST adapter). It runs only the unit tests of those packages: no `*WiredTest`, and no test
-   tagged `open-packs`, `whole-pack` or `timing`. Both groups are scored from the one `:packs:pitest` run.
+4. **The packs scope.** PIT mutates `packs.domain.*`, `packs.application.*`, `packs.infra.storage.*`
+   (`infra.storage.config` included, operator ruling) and `packs.infra.fetch.*` (operator ruling), and never the
+   Spring wiring (`application.config.*`, `infra.fetch.config.*`) or `infra.api.*` (the REST adapter). It runs only
+   the unit tests of those packages: no `*WiredTest`, and no test tagged `open-packs`, `whole-pack` or `timing`. The
+   three groups are scored from the one `:packs:pitest` run.
 5. **The floor check.** `pitest` is finalized by `checkMutationFloors`, which reads `build/reports/pitest/mutations.xml`
    with a lenient scan, never a strict XML parser, and writes `build/reports/mutation-floors/floors.json`. A group
    below its floor fails the task with
@@ -154,7 +159,7 @@ measurement: it skips the floor check, and the `floors.json` it leaves may be st
 
 ### Negative
 
-- The nightly takes about 49 minutes of mutation testing on four cores, 46 of them `:packs:pitest`, plus the
+- The nightly takes about 51 minutes of mutation testing on four cores, 48 of them `:packs:pitest`, plus the
   set-up steps.
 - Mutation coverage of a change is seen a day late, never in the pull request that caused it.
 - Floors of 50 to 70 on kernel, missions and profiles sit well below packs until the follow-up raises them.
@@ -181,7 +186,7 @@ Not chosen. Test strength ignores uncovered mutants, so it can stay high while c
 
 ### Option C: Running mutation testing per pull request
 
-Not chosen. A full run takes about 49 minutes and would add that to every pull request, and
+Not chosen. A full run takes about 51 minutes and would add that to every pull request, and
 `DM-01M57RMMBAS7275PXGNSYJZBQY` keeps mutation testing out of the merge gate.
 [ADR-0057](/adr/0057-performance-budgets-never-block-a-pull-request/) and
 [ADR-0058](/adr/0058-sonarcloud-nightly-reported-and-checkstyle-complexity-per-pr/) keep slow or noisy signals off pull
