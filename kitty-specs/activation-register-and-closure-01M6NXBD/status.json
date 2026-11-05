@@ -92,11 +92,16 @@
     "WP03": {
       "actor": "claude:claude-opus-5-5:java-jenny",
       "agent": "claude:claude-opus-5-5:java-jenny",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude:claude-opus-5-5:java-jenny",
       "lane": "in_progress",
       "last_event_id": "01M6PKV4NHZBETTRK21SAW6XX9",
       "last_transition_at": "2026-11-05T19:44:16.042525+00:00",
+      "model": "__resolved_model_absent__",
+      "provider": "__resolved_provider_absent__",
+      "role": "implementer",
       "shell_pid": 32474,
       "shell_pid_created_at": "1793907850.05"
     },
