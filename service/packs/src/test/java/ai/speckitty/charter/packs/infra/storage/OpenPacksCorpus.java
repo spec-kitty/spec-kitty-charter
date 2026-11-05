@@ -1,14 +1,12 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.kernel.domain.PackLevel;
-import ai.speckitty.charter.packs.domain.Diagnostic;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -20,27 +18,10 @@ import java.util.stream.Stream;
  */
 public final class OpenPacksCorpus {
 
-    /**
-     * The load diagnostics of every pack of the pinned corpus, under the ratified strict rule: a pack without
-     * pack.yaml is diagnosed at every level. A pack added to or fixed in the corpus changes this table on purpose.
-     */
-    static final Map<String, List<Diagnostic>> DIAGNOSTICS = Map.of(
-            "built-in", List.of(),
-            "cave-kitty", List.of(noPackYaml("cave-kitty")),
-            "event-driven", List.of(noPackYaml("event-driven")),
-            "internal", List.of(),
-            "qa", List.of(noPackYaml("qa")));
-
     private static final Pattern SHA = Pattern.compile("[0-9a-f]{40}");
     private static final long GIT_TIMEOUT_SECONDS = 30;
 
     private OpenPacksCorpus() {}
-
-    private static Diagnostic noPackYaml(String orgPack) {
-        return new Diagnostic(
-                Diagnostic.Code.PACK_LEVEL_MISSING,
-                "org pack " + orgPack + " has no pack.yaml; the configured level org is used");
-    }
 
     /**
      * The checkout root; requires the current layout, {@code <root>/packs/built-in}. Gradle passes it absolute, a relative
