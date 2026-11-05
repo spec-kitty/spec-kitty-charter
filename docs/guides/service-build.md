@@ -12,6 +12,7 @@ related:
   - adr/0043-sanitized-artifact-shapes-procedures-and-toolguide-guides
   - adr/0046-service-release-line-and-native-packaging
   - adr/0060-native-build-runs-nightly-and-per-release
+  - guides/generate-a-client
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this before you build, test or change the contract.
@@ -64,6 +65,7 @@ How to build the charter service and run every check CI runs.
 | `:contracts:check` | The charter's own contract checks: `bundleContract`, `lintContract`, `lintFixtures`, `checkClosedResponseObjects`, `compatibilityFixtures` and `checkContractCompatibility` ([`contracts/lint/README.md`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/lint/README.md) says what each one does) |
 | `:charter-api:validateContract` | The split OpenAPI document parses and validates |
 | `:charter-api:generateContract` | Spring interfaces and DTOs are generated; controllers that drift from the contract fail to compile |
+| `:client-java:check` | The Java client is generated from the contract bundle and compiles for Java 21; `ProblemDetails` passes every gate and its tests; two generations are byte-identical ([The Java client](#the-java-client)) |
 | `:<module>:spotlessCheck` | Hand-written main and test sources are formatted by palantir-java-format |
 | `:<module>:checkstyleMain`, `checkstyleTest` | The Checkstyle rules in `config/checkstyle/checkstyle.xml`; any violation fails |
 | `:<module>:compileJava` | `-Xlint:all -Werror`, Error Prone, and NullAway on `@NullMarked` code (test sources get Error Prone without NullAway) |
@@ -433,6 +435,34 @@ risks the native build (a new reflective path, a dependency bump, a change to `s
 `workflow_dispatch`. Locally,
 `./gradlew :deployable:nativeCompile -Pcharter.native=true`
 needs a GraalVM 25 with `native-image` on `JAVA_HOME`. `verifyAll` never needs one.
+
+## The Java client
+
+`client-java/` generates the charter client for Java consumers ([#218](https://github.com/spec-kitty/spec-kitty-charter/issues/218)),
+with openapi-generator's `java` generator and `okhttp-gson` library at the version pinned in `gradle/libs.versions.toml`.
+Its build is the `charter.client-java` convention plugin.
+
+- **Input:** the single-file bundle `:contracts:bundleContract` writes, through the `contractBundle` variant, never the
+  split files under `contracts/charter/`. The client matches what is published, byte for byte.
+- **Tolerance:** a client generated today must read what a later 0.x minor adds. `TolerantClientNormalizer` reads every
+  closed object (`additionalProperties: false`) as open, so a member the client does not know lands in the model's
+  additional properties instead of failing the decode. `enumUnknownDefaultCase=true` maps an enum value it does not
+  know to `UNKNOWN_DEFAULT_OPEN_API`. The server build keeps the closed objects. Two consequences: a model that
+  carries an unknown member serializes it back (a request built from such a model can carry a member an older service
+  refuses), and it compares unequal to one without it.
+- **Java 21:** everything compiles with `--release 21` on the Java 25 toolchain; `ClientOutputTest` fails if a class
+  file targets a later release.
+- **Header:** `client-java/templates/licenseInfo.mustache` puts `SPDX-License-Identifier: MIT` and a do-not-edit note
+  in every generated file.
+- **Gates:** generated sources sit in their own source set, `generated`, outside the gates. The one hand-written class,
+  `ProblemDetails.from(ApiException)`, reads an error body as the contract's `Problem` and keeps every gate.
+- **Reproducible:** `checkClientReproducible` generates a second time and fails unless the sources are identical.
+
+Never edit generated code: change the contract, and the next build regenerates the client. The coordinates are group
+`ai.speckitty.charter`, artifact `charter-client`, package `ai.speckitty.charter.client`, version the contract's
+`info.version`. Nothing is published yet: the release zip, the JDK 21/25 matrix and the quickstart wait for contract
+0.1.0 ([#217](https://github.com/spec-kitty/spec-kitty-charter/issues/217)). Consumers in other languages, or who want
+their own Java client, follow [Generate your own client](/guides/generate-a-client/).
 
 ## Change a dependency
 
