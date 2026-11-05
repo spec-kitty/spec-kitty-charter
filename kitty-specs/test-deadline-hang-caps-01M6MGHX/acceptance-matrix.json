@@ -1,0 +1,39 @@
+{
+  "mission_slug": "test-deadline-hang-caps-01M6MGHX",
+  "mission_number": "",
+  "mission_type": "",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP01: ParsedYamlTest 130/146/153, EmbeddedSchemasTest 80, InterruptedCommitRepairTest 166/200 use HANG_CAP=30 s; cause assertions kept and, for the alias bomb, added at the ParsedYaml.parse seam; reviewed in 2 cycles",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-05T07:21:46.789294+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP02 288772cc: HttpsGuideFetcherTest lookup 60 s + elapsed < HANG_CAP, Loopback drip 60 s + elapsed < HANG_CAP; TIMEOUT kept; green durations equal to base (0.202 s; 2.47 vs 2.50 s)",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-05T07:21:53.592062+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "Planted breaks red: alias budget (fails cleanly at the parse seam in ~3 s, reviewer reproduced), ReDoS (cap at 30 s), lock skip (10 s latch helper, bounded red), swap wait (cause), lookup deadline and body deadline (cap at ~60 s, implementer and reviewer each)",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-05T07:22:00.467617+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}

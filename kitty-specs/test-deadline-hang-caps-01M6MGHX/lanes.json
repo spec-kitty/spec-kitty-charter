@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "mission_slug": "test-deadline-hang-caps-01M6MGHX",
+  "mission_id": "01M6MGHX20KBZ80BNT75KV35ZY",
+  "mission_branch": "kitty/mission-test-deadline-hang-caps-01M6MGHX",
+  "target_branch": "test-deadline-hang-caps",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/EmbeddedSchemasTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/InterruptedCommitRepairTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ParsedYamlTest.java"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/fetch/HttpsGuideFetcherLoopbackTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/fetch/HttpsGuideFetcherTest.java"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    }
+  ],
+  "computed_at": "2026-11-05T06:45:35.029055+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "planning_commit_sha": "785f9903997863ce8348b193b03a0320345030f0"
+}
