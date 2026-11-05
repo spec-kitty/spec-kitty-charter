@@ -183,7 +183,7 @@
     },
     "WP06": {
       "actor": "claude",
-      "agent": "claude:claude-opus-5-5:reviewer-renata",
+      "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -196,6 +196,7 @@
         "WP06 done (c65bfa2). Gates: :kernel:check 0 (2675 tests), :activations:check 0 (81), HexagonalArchitectureTest 0 (54); domain purity grep clean. Kernel: InForceWhenAbsent collapsed to NONE; SKILL loses its REQUIRED default (divergence-register entry for WP10). No domain port added, so the PORT_SIGNATURES per-slice generalisation is left for WP07. Notes: violation pointers index the canonical (sorted) lists, except builder shape violations (written order); builder throws IAE for schema-guaranteed shapes (schemaVersion!=1, empty packs); RequiringPack.via is empty (snapshot carries no chain); lists sort by code point per contract, JCS keys by UTF-16."
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/activation-register-and-closure-01M6NXBD-coord/kitty-specs/activation-register-and-closure-01M6NXBD/tasks/WP06-activation-document-domain/review-cycle-1.md",
         "reference": "review-cycle://activation-register-and-closure-01M6NXBD/WP06-activation-document-domain/review-cycle-1.md",
@@ -203,16 +204,16 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 23655,
-      "shell_pid_created_at": "1793910092.39",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T034": "done",
-        "T035": "done",
-        "T036": "done",
-        "T037": "done",
-        "T038": "done",
-        "T039": "done",
-        "T040": "done"
+        "T034": "planned",
+        "T035": "planned",
+        "T036": "planned",
+        "T037": "planned",
+        "T038": "planned",
+        "T039": "planned",
+        "T040": "planned"
       }
     },
     "WP07": {
