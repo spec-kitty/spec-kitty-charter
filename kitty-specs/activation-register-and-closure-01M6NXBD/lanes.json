@@ -396,7 +396,8 @@
       ],
       "predicted_surfaces": [
         "api",
-        "artifact-rendering"
+        "artifact-rendering",
+        "legacy-cleanup"
       ],
       "depends_on_lanes": [
         "lane-j"
@@ -483,11 +484,11 @@
       "parallel_group": 10
     }
   ],
-  "computed_at": "2026-11-05T19:03:42.908709+00:00",
+  "computed_at": "2026-11-05T19:10:53.311434+00:00",
   "computed_from": "dependency_graph+ownership",
   "planning_artifact_wps": [
     "WP10",
     "WP15"
   ],
-  "planning_commit_sha": "5d4dff285214bc5b07c46807b0f980e2e745c354"
+  "planning_commit_sha": "4e41477b38ac4524bec39e814d62fe3aacdf3691"
 }
