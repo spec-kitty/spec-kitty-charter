@@ -726,6 +726,44 @@ class DomainRepositoryServiceTest {
                         "directive:D9 scope tactic:t1");
     }
 
+    /**
+     * The dedup key is (from, relation, to, qualifiers), not the kernel {@link Relationship#equals}, which ignores the
+     * relation and the qualifiers: one (from, to) written with two relations, or once bare and once {@code <pack>::}
+     * qualified, is two edges; only a true repeat is dropped.
+     */
+    @Test
+    void edgesThatDifferOnlyInTheirRelationOrAQualifierAreAllKept(@TempDir Path host) throws IOException {
+        Path pack = PackFixtures.copyOf("pack-descriptor-only", host);
+        Files.writeString(pack.resolve("edges.graph.yaml"), """
+                schema_version: '1.0'
+                generated_at: STATIC
+                nodes: []
+                edges:
+                - {source: directive:D, target: tactic:t1, relation: requires}
+                - {source: directive:D, target: tactic:t1, relation: suggests}
+                - {source: directive:D, target: 'other::tactic:t1', relation: requires}
+                - {source: 'other::directive:D', target: tactic:t1, relation: requires}
+                """);
+        Files.writeString(
+                pack.resolve(RelationshipShard.SHARD_PATH),
+                RelationshipShard.write(List.of(
+                        Relationship.of(
+                                new Urn(NodeKind.DIRECTIVE, "D"), new Urn(NodeKind.TACTIC, "t1"), RelationType.SCOPE),
+                        Relationship.of(
+                                new Urn(NodeKind.DIRECTIVE, "D"),
+                                new Urn(NodeKind.TACTIC, "t1"),
+                                RelationType.SUGGESTS))));
+
+        assertThat(typed(overOne("pack-descriptor-only", pack)
+                        .compositionFacts(new PackIdentifier("pack-descriptor-only"))))
+                .containsExactly(
+                        "directive:D requires tactic:t1",
+                        "directive:D suggests tactic:t1",
+                        "directive:D requires other::tactic:t1",
+                        "other::directive:D requires tactic:t1",
+                        "directive:D scope tactic:t1");
+    }
+
     /** A typed reference with no graph edge beside it is still an edge of the facts. */
     @Test
     void aComponentsTypedReferenceIsAnEdgeOnItsOwn(@TempDir Path host) throws IOException {

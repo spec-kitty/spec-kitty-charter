@@ -15,7 +15,9 @@ import java.util.Set;
  *
  * @param reached each node the walk put in force, with every {@link Via} it was reached by; a start has none of its own
  * @param stopped each node the stop predicate matched, with every {@link Via} that led to it
- * @param behindStopped the nodes the walk would have reached through a stopped node and reached no other way
+ * @param behindStopped the nodes the walk would have reached through a stopped node and reached no other way. It
+ *     lists only what the unstopped walk would put in force: a lineage pass-through target behind a stop is listed, but
+ *     an ancestor that would only be passed through (never in force) is not, even when it lies behind a stop
  * @param ancestorsPassed the lineage ancestors walked through; an ancestor is never put in force by the lineage
  */
 public record ReachResult(
