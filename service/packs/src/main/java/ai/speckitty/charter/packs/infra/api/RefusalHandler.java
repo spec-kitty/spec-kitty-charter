@@ -3,8 +3,10 @@ package ai.speckitty.charter.packs.infra.api;
 import ai.speckitty.charter.api.model.CharterRefusal;
 import ai.speckitty.charter.api.model.Problem;
 import ai.speckitty.charter.api.model.RefusalPack;
+import ai.speckitty.charter.api.model.RefusalViolation;
+import ai.speckitty.charter.api.model.RequiringPack;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.packs.application.PreconditionException;
+import ai.speckitty.charter.kernel.transport.PreconditionException;
 import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -162,6 +164,16 @@ public class RefusalHandler {
         if (!refusal.packs().isEmpty()) {
             body.setPacks(refusal.packs().stream()
                     .map(pack -> new RefusalPack(pack.descriptorPackId(), pack.packId(), pack.name()))
+                    .toList());
+        }
+        if (!refusal.violations().isEmpty()) {
+            body.setViolations(refusal.violations().stream()
+                    .map(violation -> new RefusalViolation(violation.pointer(), violation.code(), violation.detail()))
+                    .toList());
+        }
+        if (!refusal.requiredBy().isEmpty()) {
+            body.setRequiredBy(refusal.requiredBy().stream()
+                    .map(pack -> new RequiringPack(pack.packId(), pack.via()))
                     .toList());
         }
         return ResponseEntity.status(status)
