@@ -41,6 +41,7 @@ import javax.net.ssl.SSLSession;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -502,7 +503,9 @@ class HttpsGuideFetcherTest {
         }
     }
 
+    /** The whole-test cap covers the fetches that take no {@code HANG_CAP} of their own. */
     @Nested
+    @Timeout(60)
     class Deadline {
 
         /**
