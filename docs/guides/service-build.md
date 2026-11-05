@@ -13,7 +13,7 @@ related:
   - adr/0046-service-release-line-and-native-packaging
   - adr/0060-native-build-runs-nightly-and-per-release
   - guides/generate-a-client
-  - adr/0060-nightly-mutation-floor
+  - adr/0062-nightly-mutation-floor
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this before you build, test or change the contract.
@@ -112,7 +112,7 @@ interrupt; the deadline tests with no cap of their own stop at a whole-test cap 
 ## Mutation testing
 
 PIT mutates the service's logic and checks each module's mutation score against a fixed floor
-([ADR-0060](/adr/0060-nightly-mutation-floor/), [#239](https://github.com/spec-kitty/spec-kitty-charter/issues/239)).
+([ADR-0062](/adr/0062-nightly-mutation-floor/), [#239](https://github.com/spec-kitty/spec-kitty-charter/issues/239)).
 It is its own task, never part of `check` or `verifyAll`:
 
 ```bash
@@ -144,7 +144,7 @@ before `infra.fetch` joined it and about 2 minutes more with it; kernel, mission
 
 **The floors** live in each module's `build.gradle.kts`, in a `mutationFloors { group("...") { ... } }` block. A
 floor is raised by a pull request once the nightly score clears it by 5 points, and lowered only by an amendment to
-ADR-0060.
+ADR-0062.
 
 **The floor check.** `pitest` is finalized by `checkMutationFloors`, which reads `build/reports/pitest/mutations.xml`
 leniently (PIT writes raw `<` into it), logs each group's mutants, score, test strength and floor, and writes
@@ -154,7 +154,7 @@ detected over covered mutants, is reported and never gated. A group passes when 
 floor; printed figures are truncated to one decimal, never rounded up. A group below its floor fails the task:
 
 ```text
-:kernel kernel: mutation score 64.9 % is below its floor 65 % (#239, ADR-0060)
+:kernel kernel: mutation score 64.9 % is below its floor 65 % (#239, ADR-0062)
 ```
 
 A group with no mutants, a missing `mutations.xml` and `<mutation>` elements without a status or a mutated class each

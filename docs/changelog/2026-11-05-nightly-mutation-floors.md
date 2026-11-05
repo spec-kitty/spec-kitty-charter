@@ -7,7 +7,7 @@ updated: 2026-11-05T00:00:00Z
 type: Changelog
 kind: Changelog
 related:
-  - adr/0060-nightly-mutation-floor
+  - adr/0062-nightly-mutation-floor
   - guides/service-build
 audience:
   - profile: charter-service-contributor
@@ -17,7 +17,7 @@ audience:
 # 2026-11-05 — The mutation nightly turns red below a floor, and mutates packs
 
 **A falling mutation score now turns the nightly red and raises an issue**
-([ADR-0060](/adr/0060-nightly-mutation-floor/), [#239](https://github.com/spec-kitty/spec-kitty-charter/issues/239)).
+([ADR-0062](/adr/0062-nightly-mutation-floor/), [#239](https://github.com/spec-kitty/spec-kitty-charter/issues/239)).
 Mutation testing is no longer an experiment: each mutated module has a fixed floor, and `./gradlew pitest` fails a
 module whose score is below it, naming the module, the group, the score and the floor. It still never runs on a pull
 request or in the required check.

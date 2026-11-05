@@ -52,7 +52,7 @@ object MutationFloors {
     private const val NO_COVERAGE = "NO_COVERAGE"
 
     /** Where the floor and its raise rule are recorded, quoted in every failure. */
-    private const val REFERENCE = "(#239, ADR-0060)"
+    private const val REFERENCE = "(#239, ADR-0062)"
 
     /** How many classes the summary lists per group. */
     const val TOP_CLASSES = 5
