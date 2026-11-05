@@ -1,0 +1,69 @@
+{
+  "mission_slug": "test-module-gaps-and-promise-scenarios-01M6NDHM",
+  "mission_number": "",
+  "mission_type": "",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP01: ConstrainedTest, RationaleTest, ChecksTest, strengthened ModularRulesetTest; kernel.validation PIT 45/45 killed; 18 implementer + 4 reviewer planted breaks red",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-05T09:27:08.286715+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP02: AgentProfileEntityTest full-field round trip, builder detachment, record null refusal, :101-109 FIX, hash; profiles PIT NC 29 -> 1 (toString accepted), 1 equivalent survivor",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-05T09:27:14.856077+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP03: CappedBodySubscriberTest pins 6 behaviours; 4 implementer + 4 reviewer planted breaks red",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-05T09:27:21.277099+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "Planted-break records in each WP's for_review note and review: every new or strengthened test shown red on a real regression",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-05T09:27:27.653584+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP04: 27/27 verdicts; no unaccounted scenario file; 'not yet wired' gone; CharterContractSuite 255 -> 257",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-05T09:27:34.495421+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "Operator rulings 01M6NE5YW0Y4G60B62YTX08WXT, 01M6NE62FJ43XT0VC78YJ128NP, 01M6NE65TB47HSWMTMJTY5KXGT; follow-ups #380 (+ @WIP placeholder) and #381 filed",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-05T09:27:41.135587+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}

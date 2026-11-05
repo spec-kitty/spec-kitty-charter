@@ -1,0 +1,37 @@
+{
+  "accept_commit": "d23712f6f9cf1c0159edee5f82fd44378a7c9ee0",
+  "acceptance_history": [
+    {
+      "accept_commit": "d23712f6f9cf1c0159edee5f82fd44378a7c9ee0",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-11-05T09:27:48.337094+00:00",
+      "accepted_by": "claude",
+      "accepted_from_commit": "ea5843e1d5554aa6b7bc72f4082668e9e456bd16"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-11-05T09:27:48.337094+00:00",
+  "accepted_by": "claude",
+  "accepted_from_commit": "ea5843e1d5554aa6b7bc72f4082668e9e456bd16",
+  "baseline_merge_commit": "06da679be3687432fa262cf67a07b42ecc276cf4",
+  "contracts": "none",
+  "contracts_rationale": "Test and scenario-hygiene mission: no API, event or schema interface is added or changed.",
+  "created_at": "2026-11-05T08:35:00.143504+00:00",
+  "flattened": true,
+  "friendly_name": "Module-local test gaps and promise-first scenario verdicts",
+  "merged_at": "2026-11-05T09:28:48.072639+00:00",
+  "merged_commit": "bc153d63dadaa07a62127649f8085034d474cb6d",
+  "mid8": "01M6NDHM",
+  "mission_id": "01M6NDHMB267DR71GJF4K0PAES",
+  "mission_number": 17,
+  "mission_slug": "test-module-gaps-and-promise-scenarios-01M6NDHM",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "The 2026-11-03 test suite assessment found that each module's own tests reach less than the aggregate coverage suggests (W1, W2, R4, #370): kernel.validation has 58 % branch coverage, profiles a 53 % mutation score with 29 untouched mutants, and packs.infra.fetch's CappedBodySubscriber no test of its own. It also found 27 promise-first scenarios that predate the Cucumber harness and run under no runner (R8, #374). This mission closes the module gaps with tests proved by planted breaks and gives each of the 27 scenarios a recorded map, wire or retire verdict.",
+  "purpose_tldr": "Give kernel validation, profiles and the guide fetcher's body cap tests of their own, and decide what happens to 27 scenarios no test runner executes.",
+  "slug": "test-module-gaps-and-promise-scenarios-01M6NDHM",
+  "status_phase": "1",
+  "target_branch": "test-module-gaps-and-promise-scenarios",
+  "vcs": "git",
+  "vcs_locked_at": "2026-11-05T08:55:00.111754+00:00"
+}
