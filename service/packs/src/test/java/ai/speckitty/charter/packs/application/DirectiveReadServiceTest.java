@@ -103,6 +103,14 @@ class DirectiveReadServiceTest {
                     .isInstanceOfSatisfying(
                             CharterRefusal.class, c -> assertThat(c.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
         });
+        assertThatThrownBy(() -> service.directive(UNREADABLE, ALPHA))
+                .isInstanceOfSatisfying(CharterRefusal.class, r -> {
+                    assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
+                    assertThat(r.getCause())
+                            .isInstanceOfSatisfying(
+                                    CharterRefusal.class,
+                                    c -> assertThat(c.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+                });
     }
 
     @Test

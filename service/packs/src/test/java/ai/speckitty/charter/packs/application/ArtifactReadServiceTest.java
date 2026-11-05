@@ -338,12 +338,6 @@ class ArtifactReadServiceTest {
     }
 
     @Test
-    void anUnconfiguredPackIsStillNotFoundOnTheItemOfAServedKind() {
-        assertThat(codeOf(() -> service.item(ABSENT, "tactic", "rehearse"))).isEqualTo(RefusalCode.PACK_NOT_FOUND);
-        assertThat(codeOf(() -> service.item(ABSENT, "directive", "GUARD"))).isEqualTo(RefusalCode.PACK_NOT_FOUND);
-    }
-
-    @Test
     void aListWhoseInputsChangeIsStale() {
         assertThatThrownBy(() -> serviceWhoseInputsChange().list(PACK, Optional.empty(), Optional.empty(), 50))
                 .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
