@@ -1,7 +1,19 @@
 {
   "rows": {
+    "#103": {
+      "evidence_ref": "Follow-up: effective reads mission (#103), per spec FR-021",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
+      "wp": null
+    },
     "#125": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Closed; cited as the origin of the reserved operations",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -9,11 +21,35 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#140": {
+      "evidence_ref": "ArchUnit generalised per slice (WP05)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "in-mission",
+      "wp": "WP05"
+    },
+    "#195": {
+      "evidence_ref": "Cited for the pack-level-files rule (prior mission)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
       "wp": null
     },
     "#291": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Nine #125 operations built across WP09/WP13/WP14",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -21,11 +57,23 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "in-mission",
+      "wp": "WP09"
+    },
+    "#316": {
+      "evidence_ref": "Cited for timing-budget conventions",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
       "wp": null
     },
     "#323": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "1 MiB / null-list body guard on activation bodies (WP01/WP09)",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -33,11 +81,23 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "in-mission",
+      "wp": "WP09"
+    },
+    "#349": {
+      "evidence_ref": "Cited only to scope out multi-process writers",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
       "wp": null
     },
     "#359": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Closure read carries depends_on facts (WP04/WP09)",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -45,11 +105,11 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "verdict": "in-mission",
+      "wp": "WP09"
     },
     "#360": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Closure rooted at the activation's packs (WP02/WP09)",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -57,8 +117,8 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "verdict": "in-mission",
+      "wp": "WP09"
     },
     "#368": {
       "evidence_ref": "<auto-classified: no action required>",
@@ -81,6 +141,102 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<auto-classified: pr_or_commit_ref>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#377": {
+      "evidence_ref": "PR reference for rebase order",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#379": {
+      "evidence_ref": "PR reference for rebase order",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#384": {
+      "evidence_ref": "PR reference for rebase order",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#390": {
+      "evidence_ref": "PR reference for rebase order",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#391": {
+      "evidence_ref": "PR reference for rebase order",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#392": {
+      "evidence_ref": "PR reference for rebase order",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#393": {
+      "evidence_ref": "PR reference for rebase order",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#394": {
+      "evidence_ref": "PR reference for rebase order",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
       "verdict": "not-applicable",
       "wp": null
     }
