@@ -28,6 +28,7 @@
   "purpose_context": "Under epic #226 the containerized charter service refuses every request reached by a real host name, has no health endpoint a platform can probe, and has no recorded answer on replicas. This mission makes the container usable behind a named host, adds a minimal health probe without leaking configuration or secrets, pins the local loopback and missing-secret start-up rules with tests, and records the operator's one-replica ruling.",
   "purpose_tldr": "Let a container serve requests by its real host name, expose only an up/down health check, and record that a deployment runs one replica.",
   "slug": "container-guard-and-actuator-01M6P99A",
+  "status_phase": "1",
   "target_branch": "feat/container-guard-and-actuator",
   "topology": "coord",
   "vcs": "git",
