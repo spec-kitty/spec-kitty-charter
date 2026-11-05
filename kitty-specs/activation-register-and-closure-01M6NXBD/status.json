@@ -281,6 +281,9 @@
       "last_event_id": "01M6PRTSJVKVYDTV1TYG1TR3MB",
       "last_transition_at": "2026-11-05T21:11:27.579928+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "WP08 committed a27a166. RED BY DESIGN: :deployable:test fails 37 = 32 new activation-register.feature scenarios (all 501: CRUD still @ReservedOperation in controller; listActivationPacks is a 501 stub) + composition \"The compose is the closure of the activated packs, not every available pack\" (501 on PUT /activations/project) + CharterContractSuite OperationCoverage (no 2xx for POST /activations 201, PUT 200/201, GET 200, DELETE 204, GET packs 200) + 3 PRE-EXISTING ReservedRefusalCodesTest failures (ACTIVATION_INVALID, ARTIFACT_LOCKED, ARTIFACT_REQUIRED named by WP06 DocumentRules while raised:false; verified failing on the unmodified lane base). All other tests green; reserved ops 9, @reserved scenarios 11. :contracts:check: everything green except checkRefusalExamples (18 findings: activation_not_found/activation_invalid/artifact_required/artifact_locked not raised) - resolved when WP09 flips the four flags (also update errors.feature pins). Out-of-map: responses/UnknownActivation.yaml (404 naming only activation_not_found, since shared ActivationNotFound names PR-B codes), ActivationControllerTest (14 ops), ReservedActivationOperationTest, OperationCoverageTest, LinkChecksTest (repointed at still-reserved ops), scenarios/README steps. WP09 watch: fingerprint after-hook expects /info fingerprint on GET 200 of getActivation/listActivationPacks (gamma-broken scenario: /info fails)."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 5184,
