@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.application;
 
+import ai.speckitty.charter.kernel.transport.EntityTags;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -82,56 +83,16 @@ public final class PackRevision {
 
     /**
      * Whether an {@code If-Match} field value names the current revision, by the strong comparison RFC 9110 &sect;13.1.1
-     * requires: {@code *} matches (the caller has already found the pack); otherwise the value is a comma-separated
-     * list of entity-tags and it matches when any <em>strong</em> member's opaque tag equals the current token. A weak
-     * member ({@code W/"..."}) never matches. A member written without its quotes is compared as its bare text, a
-     * tolerance kept for clients that echo the token unquoted; it is never weak.
-     *
-     * <p>This is the one place an {@code If-Match} value is interpreted: the inbound edge passes the header through
-     * verbatim.
+     * requires: {@code *} matches (the caller has already found the pack); otherwise it matches when any
+     * <em>strong</em> member names the current token. The one parser is {@link EntityTags#matches}, which every slice
+     * shares; the inbound edge passes the header through verbatim.
      *
      * @param ifMatch the {@code If-Match} field value the request carried, or null when it carried none
      * @param current the revision of the committed state
      * @return {@code true} when {@code ifMatch} is {@code *} or lists the current revision as a strong entity-tag
      */
     public static boolean matches(@Nullable String ifMatch, PackRevision current) {
-        Objects.requireNonNull(current, "current");
-        if (ifMatch == null) {
-            return false;
-        }
-        if (ifMatch.strip().equals("*")) {
-            return true;
-        }
-        int at = 0;
-        int length = ifMatch.length();
-        while (at < length) {
-            char c = ifMatch.charAt(at);
-            if (c == ',' || c == ' ' || c == '\t') {
-                at++;
-                continue;
-            }
-            boolean weak = ifMatch.startsWith("W/", at);
-            int start = weak ? at + 2 : at;
-            int end;
-            String opaque;
-            if (start < length && ifMatch.charAt(start) == '"') {
-                end = ifMatch.indexOf('"', start + 1);
-                if (end < 0) {
-                    return false; // an unterminated entity-tag is malformed and matches nothing
-                }
-                opaque = ifMatch.substring(start + 1, end);
-                end++;
-            } else {
-                end = ifMatch.indexOf(',', start);
-                end = end < 0 ? length : end;
-                opaque = ifMatch.substring(start, end).strip();
-            }
-            if (!weak && current.token.equals(opaque)) {
-                return true;
-            }
-            at = end;
-        }
-        return false;
+        return EntityTags.matches(ifMatch, Objects.requireNonNull(current, "current").token);
     }
 
     @Override

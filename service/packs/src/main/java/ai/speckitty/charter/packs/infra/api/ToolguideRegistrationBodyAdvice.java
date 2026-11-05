@@ -3,10 +3,13 @@ package ai.speckitty.charter.packs.infra.api;
 import ai.speckitty.charter.api.model.ToolguideRegistration;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.transport.BodyLimit;
+import ai.speckitty.charter.packs.infra.api.JsonBodyGuard.BodyFault;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -54,7 +57,10 @@ public class ToolguideRegistrationBodyAdvice extends RequestBodyAdviceAdapter {
     private static final int ESCAPE_FACTOR = 6;
 
     /** The room left for the fields beside the guide: every registration's own body limit. */
-    private static final long OTHER_FIELDS = RegistrationLists.BODY_LIMIT;
+    private static final long OTHER_FIELDS = BodyLimit.MAX_BYTES;
+
+    /** The registration's refusal of an oversized body or a {@code null} list. */
+    private static final Function<BodyFault, CharterRefusal> REFUSAL = RegistrationLists.refusal("toolguide");
 
     private final long bodyLimit;
 
@@ -102,16 +108,16 @@ public class ToolguideRegistrationBodyAdvice extends RequestBodyAdviceAdapter {
             Class<? extends HttpMessageConverter<?>> converterType)
             throws IOException {
         HttpHeaders headers = inputMessage.getHeaders();
-        byte[] body = RegistrationLists.readBounded(inputMessage, bodyLimit, "toolguide");
+        byte[] body = JsonBodyGuard.readBounded(inputMessage, bodyLimit, REFUSAL);
         explicitNull(body, headers.getContentType()).ifPresent(nul -> {
-            throw new CharterRefusal(
-                    RefusalCode.VALIDATION_FAILED,
-                    GUIDE_FIELDS.contains(nul.member())
-                            ? "The " + nul.member() + " is null; a toolguide registration leaves out the guide field"
-                                    + " it does not carry."
-                            : nul.detail());
+            throw GUIDE_FIELDS.contains(nul.member())
+                    ? new CharterRefusal(
+                            RefusalCode.VALIDATION_FAILED,
+                            "The " + nul.member() + " is null; a toolguide registration leaves out the guide field"
+                                    + " it does not carry.")
+                    : REFUSAL.apply(new BodyFault.NullFound(nul));
         });
-        return RegistrationLists.replay(headers, body);
+        return JsonBodyGuard.replay(headers, body);
     }
 
     /**
@@ -123,7 +129,7 @@ public class ToolguideRegistrationBodyAdvice extends RequestBodyAdviceAdapter {
      * @return the field and what is {@code null} in it; empty when nothing is, or the body is not a readable JSON
      *     object
      */
-    static Optional<RegistrationLists.NullValue> explicitNull(byte[] body, @Nullable MediaType contentType) {
-        return RegistrationLists.firstNull(body, contentType, GUIDE_FIELDS, LISTS);
+    static Optional<JsonBodyGuard.NullValue> explicitNull(byte[] body, @Nullable MediaType contentType) {
+        return JsonBodyGuard.firstNull(body, contentType, GUIDE_FIELDS, LISTS);
     }
 }
