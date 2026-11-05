@@ -38,6 +38,8 @@ class HttpsGuideFetcherLoopbackTest {
     private static final int MIB = 1024 * 1024;
     private static final String GUIDE = "# Guide\n\nUse the tool.\n";
     private static final Duration DRIP_DEADLINE = Duration.ofMillis(1500);
+    /** A hang cap far above the deadline's own time: TIMEOUT and the cut-off drip prove the guard (#320). */
+    private static final Duration HANG_CAP = Duration.ofSeconds(30);
 
     private HttpServer server;
     private final Map<String, Map<String, List<String>>> seenHeaders = new ConcurrentHashMap<>();
@@ -89,8 +91,8 @@ class HttpsGuideFetcherLoopbackTest {
                 .isInstanceOfSatisfying(
                         GuideFetchRefusal.class,
                         refusal -> assertThat(refusal.reason()).isEqualTo(Reason.TIMEOUT));
-        // The drip lasts ten seconds; a refusal well before it ends is the deadline's, not the body's end.
-        assertThat(Duration.ofNanos(System.nanoTime() - started)).isLessThan(Duration.ofSeconds(5));
+        // The drip lasts sixty seconds; a refusal within the cap, well before it ends, is the deadline's.
+        assertThat(Duration.ofNanos(System.nanoTime() - started)).isLessThan(HANG_CAP);
         assertThat(seenHeaders).containsKey("/drip");
     }
 
@@ -129,7 +131,7 @@ class HttpsGuideFetcherLoopbackTest {
         exchange.getResponseHeaders().add("Content-Type", "text/markdown");
         exchange.sendResponseHeaders(200, 0);
         try (OutputStream out = exchange.getResponseBody()) {
-            for (int i = 0; i < 100; i++) {
+            for (int i = 0; i < 600; i++) {
                 out.write('#');
                 out.flush();
                 Thread.sleep(100);

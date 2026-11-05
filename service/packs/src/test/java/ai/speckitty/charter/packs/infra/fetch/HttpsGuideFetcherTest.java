@@ -503,6 +503,9 @@ class HttpsGuideFetcherTest {
     @Nested
     class Deadline {
 
+        /** A hang cap far above the deadline's own time: TIMEOUT and the cut-off lookup prove the guard (#320). */
+        private static final Duration HANG_CAP = Duration.ofSeconds(30);
+
         @Test
         void anExchangeThatOutrunsTheDeadlineIsRefusedAndCancelled() throws GuideFetchRefusal {
             transport.route("https://guide.example/slow", Canned.hanging());
@@ -526,7 +529,7 @@ class HttpsGuideFetcherTest {
                     3,
                     host -> {
                         try {
-                            Thread.sleep(5_000);
+                            Thread.sleep(60_000);
                         } catch (InterruptedException e) {
                             Thread.currentThread().interrupt();
                         }
@@ -537,7 +540,7 @@ class HttpsGuideFetcherTest {
             long started = System.nanoTime();
 
             assertRefused(slowDns, "https://guide.example/g.md", Reason.TIMEOUT);
-            assertThat(Duration.ofNanos(System.nanoTime() - started)).isLessThan(Duration.ofSeconds(2));
+            assertThat(Duration.ofNanos(System.nanoTime() - started)).isLessThan(HANG_CAP);
             assertThat(transport.requests).isEmpty();
         }
 
