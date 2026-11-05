@@ -192,6 +192,33 @@ class PackFileSetTest {
                         "pack-manifest.yaml");
     }
 
+    /**
+     * ADR-0062 (T095): {@code policy.yaml} is digested after the manifest, so a lock edit moves the fingerprint and a
+     * stale read cannot serve the old level; a pack without one keeps its digest list.
+     */
+    @Test
+    void thePolicyFileIsDigestedAfterTheManifestAndALevelEditMovesTheFingerprint(@TempDir Path host)
+            throws IOException {
+        Path governed = Files.createDirectories(host.resolve("policy/qa"));
+        for (String file : List.of("pack.yaml", "a.tactic.yaml", "pack-manifest.yaml")) {
+            Files.writeString(governed.resolve(file), "a: 1\n");
+        }
+        List<String> without = PackFileSet.digested(governed);
+        assertThat(without).containsExactly("pack.yaml", "a.tactic.yaml", "pack-manifest.yaml");
+
+        Files.writeString(governed.resolve("policy.yaml"), "schema_version: 1\nartifacts: {directive:D1: open}\n");
+        assertThat(PackFileSet.digested(governed))
+                .containsExactly("pack.yaml", "a.tactic.yaml", "pack-manifest.yaml", "policy.yaml");
+
+        FileSystemPackSources sources =
+                new FileSystemPackSources(() -> List.of(new PackLocation("qa", PackLevel.ORG, governed)));
+        String before = sources.fingerprint();
+        Files.writeString(governed.resolve("policy.yaml"), "schema_version: 1\nartifacts: {directive:D1: locked}\n");
+        assertThat(sources.fingerprint())
+                .as("a lock edit moves the fingerprint")
+                .isNotEqualTo(before);
+    }
+
     @Test
     void aSubsetOfTheKindsLeavesTheOthersOutButKeepsThePackYamlAndTheGraphInputs() {
         assertThat(PackFileSet.digested(pack, EnumSet.of(ArtifactKind.PARADIGM, ArtifactKind.DIRECTIVE)))

@@ -12,6 +12,7 @@ files:
   - Offering.three-levels.yaml
   - RelationshipRegistered.requires.yaml
   - ServiceInfo.one-worktree.yaml
+  - ActivationPackList.two-packs.yaml
   - CharterRefusal.activation-invalid.yaml
   - CharterRefusal.activation-not-found.yaml
   - CharterRefusal.artifact-locked.yaml
