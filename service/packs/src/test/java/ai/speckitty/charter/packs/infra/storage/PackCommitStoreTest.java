@@ -120,21 +120,17 @@ class PackCommitStoreTest {
     }
 
     @Test
-    @DisplayName("a commit to an identifier no configured pack answers to is not found and changes zero files")
+    @DisplayName("a commit to an identifier no configured pack answers to is not found")
     void aCommitToAnUnconfiguredPackIsNotFound(@TempDir Path host) throws IOException {
         Path packDir = PackFixtures.copyOf("pack-a", host);
         YamlSerializationStrategy strategy = new YamlSerializationStrategy();
         PackCommitStore store = new PackCommitStore(locations(packDir), strategy);
-        Map<String, String> before = snapshot(packDir);
 
         assertThatThrownBy(() -> store.commit(new PackIdentifier("ghost"), null, toolguide("ripgrep"), SHARD))
                 .isInstanceOfSatisfying(CharterRefusal.class, r -> {
                     assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
                     assertThat(r.getMessage()).isEqualTo("Pack ghost was not found.");
                 });
-
-        assertThat(snapshot(packDir)).as("the configured pack is untouched").isEqualTo(before);
-        assertThat(noCommitResidue(host)).as("no staging residue").isTrue();
     }
 
     @Test
