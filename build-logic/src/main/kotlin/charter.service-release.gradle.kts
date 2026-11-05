@@ -6,11 +6,7 @@
 // release workflow. That the commit is on main, and that the tag still names it when publishing, are the workflow's
 // checks: they need the remote. scripts/release/rehearse-service-release.sh rehearses every refusal.
 
-val contractVersion: Provider<String> =
-    providers.fileContents(layout.projectDirectory.file("contracts/charter/openapi.yaml")).asText.map { text ->
-        Regex("""(?m)^info:\n(?:[ ]+.*\n)*?[ ]{2}version:[ ]*(\S+)""").find(text)?.groupValues?.get(1)
-            ?: throw GradleException("contracts/charter/openapi.yaml has no info.version")
-    }
+val contractVersion: Provider<String> = contractInfoVersion
 
 // Whether contract-charter-v<info.version> is an ancestor of HEAD; a tag that does not exist is not.
 val contractTagMerged: Provider<Boolean> = contractVersion.flatMap { version ->

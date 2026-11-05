@@ -1,3 +1,4 @@
+import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.Classpath
@@ -21,6 +22,14 @@ fun VersionCatalog.lib(alias: String): Provider<MinimalExternalModuleDependency>
  */
 val Project.charterJavaVersion: Int
     get() = (findProperty("charter.javaVersion") as String?)?.toInt() ?: 25
+
+/** The contract's `info.version`, read from `contracts/charter/openapi.yaml` (a configuration-cache input). */
+val Project.contractInfoVersion: Provider<String>
+    get() = providers.fileContents(rootProject.layout.projectDirectory.file("contracts/charter/openapi.yaml")).asText
+        .map { text ->
+            Regex("""(?m)^info:\n(?:[ ]+.*\n)*?[ ]{2}version:[ ]*(\S+)""").find(text)?.groupValues?.get(1)
+                ?: throw GradleException("contracts/charter/openapi.yaml has no info.version")
+        }
 
 fun VersionCatalog.version(alias: String): String =
     findVersion(alias).orElseThrow { IllegalStateException("No version '$alias' in gradle/libs.versions.toml") }.requiredVersion

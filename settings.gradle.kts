@@ -34,3 +34,6 @@ listOf(
 // The charter contract's own checks: lint, planted fixtures, bundle and breaking-change check
 // (contracts/build.gradle.kts), and the Java closure checker (contracts/src). Part of verifyAll through its check task.
 include("contracts")
+
+// The Java client generated from the published contract bundle (#218): client-java/, built by charter.client-java.
+include("client-java")
