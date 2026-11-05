@@ -64,7 +64,7 @@ it. Then re-run the alias-budget plant for **both** alias-bomb tests and record 
   339 and 382) are untouched.
 - `:packs:spotlessCheck :packs:checkstyleTest` green. `:packs:test --rerun` green: 2743 tests, 0 failures, 4
   skipped (none of them these tests).
-- The commit trailer is `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`, and no other model id appears.
+- The commit carries an attribution trailer naming the tool that wrote it, and no model id appears in the code or docs.
 
 ## Anti-pattern checklist
 1 Dead code N/A · 2 Synthetic fixture PASS · 3 Silent empty return N/A · 4 FR coverage: FR-001 PASS, FR-003 FAIL
