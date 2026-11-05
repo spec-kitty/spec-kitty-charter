@@ -26,6 +26,7 @@ on:
       - "gradle.properties"
       - "gradlew"
       - ".github/workflows/service.yml"
+      - ".github/workflows/sonar.yml"
       - ".github/workflows/contract-release.yml"
       - ".github/workflows/service-release.yml"
       - "scripts/release/**"
