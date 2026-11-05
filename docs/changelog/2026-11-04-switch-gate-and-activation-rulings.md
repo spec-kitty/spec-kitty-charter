@@ -28,8 +28,10 @@ the resolution domain ([#10](https://github.com/spec-kitty/spec-kitty-charter/is
   in with it, and passes through `specializes_from` without putting the parent in force.
 - A layer override takes the place of the whole artifact; there is no field merge.
 - A document a pack upgrade made stale is served and flagged; writing it back unchanged is refused.
-- The `Activation` answer's `ETag` is its revision (`summary` moves to an effective read), and the reads declare
-  `304`.
+- The `Activation` answer's `ETag` is its revision: `summary` moves to an effective read and `governanceFingerprint`
+  leaves `Activation`. `getActivation` and the four effective reads are to declare `If-None-Match` and `304` in
+  the contract change.
 - A preset replaces each key it lists.
 
-ADR-0013, ADR-0020 and ADR-0055 point to the rulings, and the logical model and the glossary use them.
+ADR-0010, ADR-0013, ADR-0020, ADR-0021 and ADR-0055 point to the rulings, and the logical model and the glossary
+use them.
