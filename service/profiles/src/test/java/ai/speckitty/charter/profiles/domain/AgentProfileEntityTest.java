@@ -76,7 +76,7 @@ class AgentProfileEntityTest {
                 .capability("maven-build")
                 .routingPriority(Optional.of(80))
                 .maxConcurrentTasks(Optional.of(5))
-                .model(Optional.of("claude-opus"))
+                .model(Optional.of("a-model"))
                 .effort(Optional.of("high"))
                 .purpose("Deliver idiomatic, well-tested Java code that faithfully implements specifications.")
                 .specialization(JENNY_SPECIALIZATION)
@@ -143,7 +143,7 @@ class AgentProfileEntityTest {
                     assertThat(p.capabilities()).containsExactly("java-implementation", "junit-testing", "maven-build");
                     assertThat(p.routingPriority()).contains(80);
                     assertThat(p.maxConcurrentTasks()).contains(5);
-                    assertThat(p.model()).contains("claude-opus");
+                    assertThat(p.model()).contains("a-model");
                     assertThat(p.effort()).contains("high");
                     assertThat(p.sentinel()).contains(true);
                     assertThat(p.appliesToLanguages()).containsExactly("java", "kotlin");
@@ -217,9 +217,11 @@ class AgentProfileEntityTest {
                 .modeDefault(new ModeDefault("planning", "Plans", "Before a mission"));
 
         assertThat(profile.roles()).containsExactly("implementer", "reviewer");
-        assertThat(profile.capabilities()).hasSize(3);
-        assertThat(profile.selfReviewSteps()).hasSize(3);
-        assertThat(profile.modeDefaults()).hasSize(2);
+        assertThat(profile.capabilities()).containsExactly("java-implementation", "junit-testing", "maven-build");
+        assertThat(profile.selfReviewSteps())
+                .extracting(SelfReviewStep::name)
+                .containsExactly("compile", "run-tests", "acceptance-review");
+        assertThat(profile.modeDefaults()).extracting(ModeDefault::mode).containsExactly("implementation", "debugging");
     }
 
     @Test
