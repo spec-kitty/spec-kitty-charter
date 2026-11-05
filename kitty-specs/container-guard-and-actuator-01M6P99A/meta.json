@@ -13,5 +13,7 @@
   "purpose_tldr": "Let a container serve requests by its real host name, expose only an up/down health check, and record that a deployment runs one replica.",
   "slug": "container-guard-and-actuator-01M6P99A",
   "target_branch": "feat/container-guard-and-actuator",
-  "topology": "coord"
+  "topology": "coord",
+  "contracts": "none",
+  "contracts_rationale": "No new interface. The only contract change is the 403 description in contracts/charter (responses/Forbidden.yaml, openapi.yaml securitySchemes) plus a changelog fragment; /actuator/health is not a contract operation (ADR-0041 D7)."
 }
