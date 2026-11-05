@@ -131,15 +131,25 @@ public final class CascadeRules {
     }
 
     /**
-     * The walk of the other active artifacts for a deactivate: from {@code selected} and the floor, less the target
-     * and the candidates (which must not keep one another), over the five relations with the lineage, stopping at the
-     * target and the deny entries.
+     * The walk of the other active artifacts for a deactivate, one step of a fixed point the application drives.
+     *
+     * <p>The walk starts from {@code selected} and the floor, less the target and the candidates (which must not keep
+     * one another), plus each candidate an active enhancer references: a kept candidate is active after the write, so
+     * what it reaches must stay too. It crosses the five relations with the lineage and stops at the target and the
+     * deny entries. An enhancer is active when it is one of the other active artifacts or the previous walk reached
+     * it, so a kept candidate that enhances another candidate keeps that one on the next step.
+     *
+     * <p>The application starts with {@code previous} = {@link Reach#empty()}, walks the plan, and calls again with
+     * the answer until the plan equals the one before (at most one step per candidate, since the starts only grow);
+     * the last answer is {@link #applyDeactivate}'s {@code othersReach}. Every step reads the same closure snapshot.
      *
      * @param document the document before the write
      * @param target the artifact deactivated
      * @param scope the cascade scope
      * @param ownReach the answer of the {@link #planDeactivate} walk
+     * @param enhancers for each candidate, its enhancers, one hop over the enhances relation
      * @param floor the artifacts the governing packs require
+     * @param previous the answer of the previous step's walk; {@link Reach#empty()} for the first step
      * @return the plan; one that walks nothing when there is no candidate
      */
     public static ReachPlan planShared(
@@ -147,25 +157,32 @@ public final class CascadeRules {
             ArtifactRef target,
             CascadeScope scope,
             Reach ownReach,
-            Set<ArtifactRef> floor) {
+            Map<ArtifactRef, Set<ArtifactRef>> enhancers,
+            Set<ArtifactRef> floor,
+            Reach previous) {
         Set<ArtifactRef> candidates = candidates(document, target, scope, ownReach);
         if (candidates.isEmpty()) {
             return ReachPlan.none(target);
         }
+        Set<ArtifactRef> starts = new TreeSet<>(others(document, target, candidates, floor));
+        starts.addAll(enhancerKept(
+                candidates, enhancers, union(starts, previous.reached().keySet())));
         Set<ArtifactRef> stops = new TreeSet<>(denied(document));
         stops.add(target);
-        return new ReachPlan(others(document, target, candidates, floor), CASCADE_RELATIONS, stops, true);
+        return new ReachPlan(starts, CASCADE_RELATIONS, stops, true);
     }
 
     /**
      * A deactivate: the target is denied and unselected, and with a cascade so is every candidate no other active
-     * artifact keeps.
+     * artifact keeps. A candidate is kept when the shared walk reached it (its {@code referencedBy} is the first
+     * predecessor) or an active enhancer references it. {@code skippedByScope} lists only the out-of-scope artifacts
+     * the target reached that are selected: one not selected is left alone and not reported.
      *
      * @param document the document before the write
      * @param target the artifact deactivated
      * @param scope the cascade scope
      * @param ownReach the answer of the {@link #planDeactivate} walk; ignored without a cascade
-     * @param othersReach the answer of the {@link #planShared} walk
+     * @param othersReach the answer of the last {@link #planShared} step's walk (its fixed point)
      * @param enhancers for each candidate, its enhancers, one hop over the enhances relation
      * @param floor the artifacts the governing packs require
      * @return the change
@@ -272,6 +289,17 @@ public final class CascadeRules {
                 .filter(active::contains)
                 .sorted()
                 .findFirst());
+    }
+
+    /** The candidates an active enhancer references. */
+    private static Set<ArtifactRef> enhancerKept(
+            Set<ArtifactRef> candidates, Map<ArtifactRef, Set<ArtifactRef>> enhancers, Set<ArtifactRef> active) {
+        Set<ArtifactRef> kept = new TreeSet<>();
+        candidates.stream()
+                .filter(candidate ->
+                        enhancers.getOrDefault(candidate, Set.of()).stream().anyMatch(active::contains))
+                .forEach(kept::add);
+        return kept;
     }
 
     private static Set<ArtifactRef> kept(List<SkippedReport.SharedSkip> shared) {

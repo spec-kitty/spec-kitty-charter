@@ -77,8 +77,8 @@ class CascadeRulesDeactivateTest {
 
     @Test
     void theSharedPlanStartsFromTheOtherActiveArtifactsAndStopsAtTheTarget() {
-        ReachPlan plan =
-                CascadeRules.planShared(US4.withDeny(TACTIC, "Z"), D, CascadeScope.all(), OWN, refs("procedure:F"));
+        ReachPlan plan = CascadeRules.planShared(
+                US4.withDeny(TACTIC, "Z"), D, CascadeScope.all(), OWN, Map.of(), refs("procedure:F"), Reach.empty());
 
         assertThat(plan.starts()).containsExactly(ref("directive:D2"), ref("procedure:F"), E2);
         assertThat(plan.stopAt()).containsExactly(D, ref("tactic:Z"));
@@ -145,7 +145,7 @@ class CascadeRulesDeactivateTest {
         ActivationChange change = deactivate(US4, CascadeScope.none(), Reach.empty(), Map.of(), Set.of());
 
         assertThat(plan.walks()).isFalse();
-        assertThat(CascadeRules.planShared(US4, D, CascadeScope.none(), OWN, Set.of())
+        assertThat(CascadeRules.planShared(US4, D, CascadeScope.none(), OWN, Map.of(), Set.of(), Reach.empty())
                         .walks())
                 .isFalse();
         assertThat(change.applied()).containsExactly(D);
@@ -164,7 +164,8 @@ class CascadeRulesDeactivateTest {
         assertThat(change.after().selected(TACTIC).orElseThrow()).containsExactly("T", "T2", "T3");
         assertThat(change.skipped().skippedByScope()).containsExactly(T, T2, T3);
         assertThat(change.applied()).containsExactly(D);
-        assertThat(CascadeRules.planShared(US4, D, directives, OWN, Set.of()).walks())
+        assertThat(CascadeRules.planShared(US4, D, directives, OWN, Map.of(), Set.of(), Reach.empty())
+                        .walks())
                 .isFalse();
     }
 
@@ -183,5 +184,98 @@ class CascadeRulesDeactivateTest {
 
         assertThatIllegalArgumentException()
                 .isThrownBy(() -> CascadeRules.planDeactivate(US4, missionType, CascadeScope.none()));
+    }
+
+    // The fixed point: a kept candidate is active after the write, so what it reaches stays too (FR-015).
+
+    /** Drives planShared to its fixed point as the application does, over one closure; answers the last walk. */
+    private static Reach fixedPoint(
+            ActivationDocument document,
+            Reach own,
+            Map<ArtifactRef, Set<ArtifactRef>> enhancers,
+            Reaches.Graph closure) {
+        ReachPlan plan =
+                CascadeRules.planShared(document, D, CascadeScope.all(), own, enhancers, Set.of(), Reach.empty());
+        Reach answer = closure.apply(plan);
+        ReachPlan next = CascadeRules.planShared(document, D, CascadeScope.all(), own, enhancers, Set.of(), answer);
+        while (!next.equals(plan)) {
+            plan = next;
+            answer = closure.apply(plan);
+            next = CascadeRules.planShared(document, D, CascadeScope.all(), own, enhancers, Set.of(), answer);
+        }
+        return answer;
+    }
+
+    @Test
+    void aCandidateKeptByAnActiveEnhancerKeepsWhatItRequires() {
+        Reaches.Graph closure =
+                new Reaches.Graph().edge("directive:D", REQUIRES, "tactic:C").edge("tactic:C", REQUIRES, "tactic:C2");
+        ActivationDocument document = selecting("directive:D", "tactic:C", "tactic:C2", "styleguide:E2");
+        Reach own = closure.apply(CascadeRules.planDeactivate(document, D, CascadeScope.all()));
+        Map<ArtifactRef, Set<ArtifactRef>> enhancers = Map.of(ref("tactic:C"), Set.of(E2));
+
+        Reach others = fixedPoint(document, own, enhancers, closure);
+        ActivationChange change =
+                CascadeRules.applyDeactivate(document, D, CascadeScope.all(), own, others, enhancers, Set.of());
+
+        assertThat(change.after().selected(TACTIC).orElseThrow()).containsExactly("C", "C2");
+        assertThat(change.skipped().skippedShared())
+                .containsExactly(
+                        new SkippedReport.SharedSkip(ref("tactic:C"), E2),
+                        new SkippedReport.SharedSkip(ref("tactic:C2"), ref("tactic:C")));
+        assertThat(change.applied()).containsExactly(D);
+    }
+
+    @Test
+    void aKeptCandidateThatEnhancesAnotherCandidateKeepsItAndWhatItReaches() {
+        Reaches.Graph closure = new Reaches.Graph()
+                .edge("directive:D", REQUIRES, "tactic:C")
+                .edge("directive:D", REQUIRES, "tactic:C3")
+                .edge("tactic:C3", REQUIRES, "tactic:C4")
+                .edge("directive:D", REQUIRES, "tactic:C5");
+        ActivationDocument document =
+                selecting("directive:D", "tactic:C", "tactic:C3", "tactic:C4", "tactic:C5", "styleguide:E2");
+        Reach own = closure.apply(CascadeRules.planDeactivate(document, D, CascadeScope.all()));
+        Map<ArtifactRef, Set<ArtifactRef>> enhancers =
+                Map.of(ref("tactic:C"), Set.of(E2), ref("tactic:C3"), Set.of(ref("tactic:C")));
+
+        Reach others = fixedPoint(document, own, enhancers, closure);
+        ActivationChange change =
+                CascadeRules.applyDeactivate(document, D, CascadeScope.all(), own, others, enhancers, Set.of());
+
+        assertThat(change.after().selected(TACTIC).orElseThrow()).containsExactly("C", "C3", "C4");
+        assertThat(change.skipped().skippedShared())
+                .containsExactly(
+                        new SkippedReport.SharedSkip(ref("tactic:C"), E2),
+                        new SkippedReport.SharedSkip(ref("tactic:C3"), ref("tactic:C")),
+                        new SkippedReport.SharedSkip(ref("tactic:C4"), ref("tactic:C3")));
+        assertThat(change.applied()).containsExactly(D, ref("tactic:C5"));
+        assertThat(closure.walks()).as("the own walk and two shared steps").isEqualTo(1 + 2);
+    }
+
+    @Test
+    void stoppingAfterTheFirstStepWouldDropWhatTheFixedPointKeeps() {
+        Reaches.Graph closure = new Reaches.Graph()
+                .edge("directive:D", REQUIRES, "tactic:C")
+                .edge("directive:D", REQUIRES, "tactic:C3")
+                .edge("tactic:C3", REQUIRES, "tactic:C4");
+        ActivationDocument document = selecting("directive:D", "tactic:C", "tactic:C3", "tactic:C4", "styleguide:E2");
+        Reach own = closure.apply(CascadeRules.planDeactivate(document, D, CascadeScope.all()));
+        Map<ArtifactRef, Set<ArtifactRef>> enhancers =
+                Map.of(ref("tactic:C"), Set.of(E2), ref("tactic:C3"), Set.of(ref("tactic:C")));
+        ReachPlan first =
+                CascadeRules.planShared(document, D, CascadeScope.all(), own, enhancers, Set.of(), Reach.empty());
+
+        Reach once = closure.apply(first);
+
+        assertThat(first.starts()).containsExactly(E2, ref("tactic:C"));
+        assertThat(CascadeRules.planShared(document, D, CascadeScope.all(), own, enhancers, Set.of(), once)
+                        .starts())
+                .containsExactly(E2, ref("tactic:C"), ref("tactic:C3"));
+        assertThat(CascadeRules.applyDeactivate(document, D, CascadeScope.all(), own, once, enhancers, Set.of())
+                        .after()
+                        .selected(TACTIC)
+                        .orElseThrow())
+                .doesNotContain("C4");
     }
 }

@@ -205,4 +205,18 @@ class CascadeRulesClearingTest {
         }
         return universe;
     }
+
+    @Test
+    void aDeniedArtifactOutsideTheScopeKeepsItsDenyEntry() {
+        CascadeScope directives =
+                CascadeScope.parse(Optional.of(List.of("directive"))).scope();
+        ActivationDocument before = denying("tactic:X");
+
+        ActivationChange change = CascadeRules.applySelect(before, D, directives, true, US3, Set.of());
+        assertNoEnhancerSelected(before, change, D, US3);
+
+        assertThat(change.cleared()).isEmpty();
+        assertThat(change.after().deactivated(TACTIC)).containsExactly("X");
+        assertThat(change.skipped().skippedByScope()).containsExactly(T, ref("tactic:X"));
+    }
 }
