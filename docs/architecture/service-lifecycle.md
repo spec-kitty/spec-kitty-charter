@@ -2,7 +2,7 @@
 title: Service lifecycle
 description: How the charter service runs — in the local deployment option, a daemon per worktree, loopback only, a capability credential, source fingerprints for freshness, and failing closed.
 doc_status: draft
-updated: 2026-11-02T00:00:00Z
+updated: 2026-11-05T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -14,6 +14,7 @@ related:
   - guides/run-in-a-container
   - adr/0038-one-configuration-root-a-directory-per-domain
   - adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions
+  - adr/0060-one-replica-per-deployment
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this for scope, binding, freshness and fallback of the running service.
@@ -41,6 +42,10 @@ Under the `container` profile, the service reads `application-container.yaml`:
   - A secret is a file named after its property, such as `/run/secrets/charter.worktree-token`, or an env var, which
     outranks the file.
   - A file in the directory may set only the token and `charter.container.*` keys.
+- **Host names.** The request guard accepts the names in `charter.container.allowed-hosts` instead of the loopback
+  names.
+- **Health check.** `GET /actuator/health` answers up or down without the token. Every other path needs it.
+- **One replica.** A deployment runs one replica ([ADR-0060](/adr/0060-one-replica-per-deployment/)).
 - **How-to.** [Run the service in a container](/guides/run-in-a-container/).
 
 ## One service per worktree
@@ -74,9 +79,8 @@ lower-impact items.
 - **What counts as a second writer.** Any of these:
   - a second daemon on the same worktree;
   - a container that shares the configuration root's volume;
-  - a replica over the same configuration root. Whether several hosted instances are ever supported is
-    [#233](https://github.com/spec-kitty/spec-kitty-charter/issues/233)
-    ([ADR-0041](/adr/0041-containerized-configuration-model/), out of scope);
+  - a replica over the same configuration root. A deployment runs one replica until a hosting option is chosen
+    ([ADR-0060](/adr/0060-one-replica-per-deployment/));
   - a hand edit to a pack's directory while a commit is copying or swapping that pack. The swap moves the
     directory that holds the edit aside and deletes it.
 - **What enforces it today.** Nothing.

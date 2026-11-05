@@ -7,7 +7,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import ai.speckitty.charter.api.model.Problem;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
@@ -52,18 +51,15 @@ import ai.speckitty.charter.packs.domain.Toolguide;
 import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
 import ai.speckitty.charter.packs.domain.ToolguideRepository;
 import ai.speckitty.charter.packs.infra.storage.MarkdownGuideFormat;
-import jakarta.validation.ConstraintViolationException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -355,18 +351,6 @@ class ArtifactControllerTest {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.code").doesNotExist());
-    }
-
-    @Test
-    void aParameterOutOfItsDeclaredBoundsIsA400ProblemWithoutACode() {
-        // The generated interface is @Validated: in the service a method validation proxy refuses a pageSize of 0
-        // or 201 before the controller runs (pinned by artifacts.feature); this slice has no validator, so the
-        // handler is asked directly.
-        ResponseEntity<Object> answer = controller.outOfBounds(new ConstraintViolationException(Set.of()));
-
-        assertThat(answer.getStatusCode().value()).isEqualTo(400);
-        assertThat(answer.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_PROBLEM_JSON);
-        assertThat(answer.getBody()).isEqualTo(new Problem("Bad Request", 400));
     }
 
     @Test
