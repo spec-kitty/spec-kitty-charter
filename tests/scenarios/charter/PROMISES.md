@@ -1,5 +1,7 @@
 # Charter-offering promises: where each one lives now
 
+<!-- cspell:ignore organisation (a contract scenario title quoted as written) -->
+
 <!-- Pointer index for the nine promises of core's charter-offering acceptance suite. The scenarios
 themselves were removed by #374; each row says what accounts for the promise now. Updated:
 2026-11-05. -->
