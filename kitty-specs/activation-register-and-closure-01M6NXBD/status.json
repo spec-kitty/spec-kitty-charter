@@ -1,7 +1,7 @@
 {
-  "event_count": 44,
-  "last_event_id": "01M6PN1XR7M4NN9HXBBQZB6T2Q",
-  "materialized_at": "2026-11-05T20:05:26.919480+00:00",
+  "event_count": 45,
+  "last_event_id": "01M6PN2TMDHY646DHN83039XCW",
+  "materialized_at": "2026-11-05T20:05:56.493463+00:00",
   "mission_number": "",
   "mission_slug": "activation-register-and-closure-01M6NXBD",
   "mission_type": "",
@@ -12,9 +12,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 0,
-    "in_review": 1,
+    "in_review": 2,
     "planned": 11
   },
   "work_packages": {
@@ -91,22 +91,22 @@
     },
     "WP03": {
       "actor": "claude",
-      "agent": "claude:claude-opus-5-5:java-jenny",
+      "agent": "claude:claude-opus-5-5:reviewer-renata",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude:claude-opus-5-5:java-jenny",
-      "lane": "for_review",
-      "last_event_id": "01M6PN1XR7M4NN9HXBBQZB6T2Q",
-      "last_transition_at": "2026-11-05T20:05:26.919480+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M6PN2TMDHY646DHN83039XCW",
+      "last_transition_at": "2026-11-05T20:05:56.493463+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "Commit 8fe11d1. ADR numbered 0062 (main has 0060; open #392/#393 hold 0061; #394's 0060 collides with main). WP10 amendment notes must cite ADR-0062. Gates: :kernel:check 0 (2655 tests); :packs:check -x openPacksRoundTrip 0 (2813 tests, 0 fail, 4 pre-existing skips); :deployable:test CharterContractSuite+HexagonalArchitectureTest 0 (300 tests); :contracts:check 1 (shallow clone baseline) then 0 with -PcontractBaseline=none; :packs:openPacksRoundTrip 0; check_docs all: only adr numbering-gap findings (0060 missing from lane base, 0061 held by open PRs); cspell 0 issues. Decision: mutability_policy const policy.yaml (FR-022). Touched packs files: PackMutabilityPolicy, MutabilityPolicySource, PackCompositionFacts, MutabilityPolicyRepository(new), PerPackPolicy(new), DomainRepositoryService(+DomainRepositoryServiceTest; #377 overlap: compositionFacts split into edgeFacts + policyOf), PackDescriptorDso, PackDescriptorReader, PackFileSet, PolicyYaml(new), PackMutabilityPolicyTest. Out-of-map edits: YamlSerializationStrategy (writes mutability_policy), PackRoundTripTest (DSO arity), PackSchemasTest 25->26, PackFileKindTest (26 rules + sample), SchemaKeywordCoverageTest (patternProperties silent). Follow-up: WholePackStore does not copy policy.yaml (unmodelled); recorded in ADR Consequences."
       ],
       "provider": "__resolved_provider_absent__",
-      "role": "implementer",
-      "shell_pid": 32474,
-      "shell_pid_created_at": "1793907850.05",
+      "role": "reviewer",
+      "shell_pid": 13156,
+      "shell_pid_created_at": "1793909151.99",
       "subtasks": {
         "T013": "done",
         "T014": "done",
