@@ -22,17 +22,18 @@ changed methods by hand.
 
 ## Two pull requests, and the cut (P1)
 
-- **PR A = WP01–WP10.**
+- **PR A = WP01–WP10, plus WP16 and WP17.**
   - Code: shared plumbing, the rooted compose and the closure read, the policy file (ADR-0061), the floor, the slice
     and its storage, contract A and its red scenarios (WP08), and CRUD (WP09).
+  - The post-PR-A squad fixes: the shared web-transport module (WP16) and the correctness fixes (WP17).
   - Docs: WP10.
 - **PR B = WP11–WP15.**
   - Code: typed edges and reach, the cascade rules, and the five per-artifact and preset writes, with contract B.
   - Docs: WP15.
   - PR B's first code WP (WP11) depends on the last PR A code WP (WP09). Every other PR B WP depends on WP11,
     directly or transitively.
-- **The cut at closeout.** WP01–WP10 form a dependency-closed prefix: no PR A WP depends on a PR B WP.
-  - PR A is built by replaying WP01–WP10's commits onto `main`.
+- **The cut at closeout.** WP01–WP10, WP16 and WP17 form a dependency-closed prefix: no PR A WP depends on a PR B WP.
+  - PR A is built by replaying WP01–WP10, WP16 and WP17's commits onto `main`.
   - PR B stacks WP11–WP15's commits on top of PR A.
   - WP15 touches no file WP10 owns, except through the out-of-map edits it lists. No PR B WP edits a PR A file except
     through a listed out-of-map edit, so the replay never carries PR B content.
@@ -148,8 +149,27 @@ changed methods by hand.
 | T094 | Contract changelog fragment for the pack-schema change (`mutability_policy`, `policy.schema.json`) | WP03 | [P] |
 | T095 | Digest `policy.yaml` in `PackFileSet.packLevelTail`; a policy edit moves the fingerprint | WP03 | |
 | T096 | `ActivationRuntimeHints` for the moved mix-ins, with its hints test | WP05 | [P] |
+| T097 | The `web-transport` module: build file, settings, charter-reports, `sonar.yml`, the dependent builds, config scan | WP16 | |
+| T098 | Move `Problems`, `ProblemHandler` and the `Problem` JSON and hints; split `ArtifactJson`; one `Link` mix-in | WP16 | |
+| T099 | Move `RefusalHandler` and `JsonBodyGuard`; `ReservedRefusalCodesTest` `HANDLER_CLASS` | WP16 | |
+| T100 | Move `ActivationBodyAdvice` and `ActivationProblems` from `deployable` into `activations.infra.api` | WP16 | |
+| T101 | Behaviour preservation: problem bodies and statuses byte-identical | WP16 | |
+| T102 | ArchUnit: no `DEPLOYABLE` exemption; the web ring is an adapter ring; `WEB_NAMES_NO_SLICE`; no domain names `kernel.transport` | WP16 | |
+| T103 | Bad fixtures for the new rules | WP16 | [P] |
+| T104 | Evidence; the `offering-and-activation.md` flowchart and table (out-of-map, WP10) | WP16 | |
+| T105 | Preconditions before content (412 before 422/409, no snapshot); the docs note (out-of-map, WP10) | WP17 | |
+| T106 | Reversible directory-name encoding; `ABC` and `abc` never alias | WP17 | |
+| T107 | Striped locks, bounded | WP17 | |
+| T108 | Typed `UnknownRootException`; `PacksAvailability` catches only it | WP17 | [P] |
+| T109 | One de-duplicated preset list for the presets map and `RequiredFloor` | WP17 | [P] |
+| T110 | The registration gate reads composition and policy in one `composedWithFacts` | WP17 | [P] |
+| T111 | Service-level races (8 writers through `put`; create against create) and a non-fakeable atomicity test | WP17 | |
+| T112 | `activation-register-guards.feature`: 401/403 and the precondition-order scenarios | WP17 | |
+| T113 | `RequiringPack.via` from the `parent_pack` chain (or documented), with a contract fragment | WP17 | |
+| T114 | 422 bodies: never empty `violations`; report every unknown member | WP17 | |
 
-T094–T096 were added by the post-tasks squad fold. They are appended after T093 so the existing ids stay stable,
+T094–T096 were added by the post-tasks squad fold, and T097–T114 by the post-PR-A squad: WP16 (T097–T104) and WP17
+(T105–T114). They are appended after T093 so the existing ids stay stable,
 and they belong to WP03 (T094, T095) and WP05 (T096); the per-WP lists below place them in their WPs.
 
 ## PR A
@@ -361,6 +381,66 @@ T061 Docs gates (WP10)
 
 - **Risks:** overclaiming the effective reads.
 
+### WP16 — Shared web transport and bounded architecture (post-PR-A squad)
+
+- **Goal:**
+  - move the service-wide Spring and Jackson transport out of `packs.infra.api` into `service/web-transport`
+    (`ai.speckitty.charter.web`);
+  - move the activation advices into `activations.infra.api`;
+  - drop `TRANSPORT_STAYS_IN_ADAPTER`'s `DEPLOYABLE` exemption;
+  - bound the web ring with ArchUnit, and forbid `..domain..` → `kernel.transport..`.
+
+  It is behaviour-preserving.
+- **Prompt:** [tasks/WP16-shared-web-transport.md](tasks/WP16-shared-web-transport.md)
+- **Requirements:** C-002, C-005, FR-006, NFR-001
+- **Dependencies:** depends on WP09
+
+T097 The module (WP16)
+T098 `Problems`, `ProblemHandler`, the `Problem` JSON and hints (WP16)
+T099 `RefusalHandler` and `JsonBodyGuard` (WP16)
+T100 The activation advices move into the slice (WP16)
+T101 Behaviour preservation (WP16)
+T102 The architecture rules (WP16)
+T103 Bad fixtures (WP16)
+T104 Evidence and the architecture doc (WP16)
+
+- **Risks:**
+  - advice ordering;
+  - native hints;
+  - #393 and #394 churn.
+
+### WP17 — Activation register correctness fixes (post-PR-A squad)
+
+- **Goal:**
+  - preconditions before content;
+  - case-safe directory names, and bounded striped locks;
+  - a typed unknown root;
+  - one preset list for the presets map and the floor;
+  - a verified registration gate;
+  - service-level races and a non-fakeable atomicity test;
+  - the 401/403 scenarios;
+  - `RequiringPack.via`;
+  - complete 422 bodies.
+- **Prompt:** [tasks/WP17-activation-register-correctness-fixes.md](tasks/WP17-activation-register-correctness-fixes.md)
+- **Requirements:** FR-001, FR-003, FR-006, FR-007, FR-019, FR-022, NFR-001, NFR-004, NFR-005, NFR-007, C-001, C-002
+- **Dependencies:** depends on WP16. WP13 (PR B) depends on it.
+
+T105 Preconditions before content (WP17)
+T106 Case-insensitive file systems (WP17)
+T107 Bounded locks (WP17)
+T108 `UnknownRootException` (WP17)
+T109 One preset list (WP17)
+T110 The registration gate's verified read (WP17)
+T111 Races and atomicity (WP17)
+T112 The guards feature (WP17)
+T113 `RequiringPack.via` (WP17)
+T114 The 422 body NOTEs (WP17)
+
+- **Risks:**
+  - the storage layout change;
+  - the `via` endpoint semantics;
+  - one extra file read per conditional write.
+
 ## PR B
 
 ### WP11 — packs typed edges and reach (IC-07)
@@ -408,7 +488,7 @@ T074 Deactivate `skippedShared`, where E2 is the active enhancer (WP12)
 - **Goal:** the four per-artifact writes, scenarios first; 9 → 5 reserved; write-time `skipped` only (R5).
 - **Prompt:** [tasks/WP13-select-and-deactivate-writes.md](tasks/WP13-select-and-deactivate-writes.md)
 - **Requirements:** FR-007, FR-010 to FR-015, C-001, NFR-001, NFR-002, NFR-007, SC-001, SC-002
-- **Dependencies:** depends on WP12
+- **Dependencies:** depends on WP12 and WP17 (the post-PR-A correctness fixes)
 
 T075 Contract B, part one; the R5 deferral recorded (WP13)
 T076 Red scenarios: US3 AS3 with E denied, US4 AS2 with E2 selected, the cross-pack follow (WP13)
@@ -465,7 +545,7 @@ These steps are the orchestrator's; no WP owns them:
 2. **Pre-PR squad.** Run one before each pull request opens.
 3. **Per-PR gate.** Run `./gradlew verifyAll` once per PR, on the replayed branch. No WP runs it
    (NO_FULL_HEAVY_SUITES_IN_MISSION).
-4. **History replay.** Build PR A by replaying WP01–WP10's commits onto `main`. Build PR B by stacking WP11–WP15's
+4. **History replay.** Build PR A by replaying WP01–WP10, WP16 and WP17's commits onto `main`. Build PR B by stacking WP11–WP15's
    commits on PR A (see "the cut").
 5. **Operator approval.** Each PR opens only with the operator's approval. Flag the open review items in each PR
    description: the closure-scoped floor; refusing a differing pin; ADR-0059 open questions 1 and 4; and the
@@ -479,8 +559,10 @@ These steps are the orchestrator's; no WP owns them:
   - WP04 joins WP02 and WP03;
   - WP06 follows WP05, and WP07 joins WP04 and WP06;
   - WP08 joins WP05 and WP07, and WP09 follows WP08.
-- **One chain after that:** WP10, then PR B's WP11 to WP15. WP11 hangs off WP09, so it can start while WP10, a docs WP,
-  runs.
+- **After WP09:**
+  - WP10 (docs), then WP16, then WP17, all in PR A;
+  - PR B's WP11 and WP12 hang off WP09, so they can run beside WP16 and WP17;
+  - WP13 joins WP12 and WP17, then WP14 and WP15 follow.
 
 ## Shared files (one owner each)
 
@@ -489,18 +571,26 @@ dependency)".
 
 | File | Owner | Later edits |
 |---|---|---|
-| `HexagonalArchitectureTest.java` | WP01 | WP05 |
-| `activations/infra/api/ActivationController.java` | WP05 | WP08 (stub), WP09, WP13, WP14 |
-| `AvailablePacks.java`, `PacksAvailability.java` | WP05 | WP09, WP13 |
+| `HexagonalArchitectureTest.java` | WP01 | WP05, WP16 |
+| `hexagonal-service.md` | WP05 | WP16 (the web ring; a recorded decision, no ADR) |
+| `activations/infra/api/ActivationController.java` | WP05 | WP08 (stub), WP09, WP16 (imports), WP13, WP14 |
+| `AvailablePacks.java`, `PacksAvailability.java` | WP05 | WP09, WP17, WP13 |
 | `PackCompositionFacts.java`, `DomainRepositoryService.java`, `DomainRepositoryServiceTest.java` | WP03 | WP04, WP11 |
-| `ClosureView.java`, `ClosureQueries.java` | WP04 | WP11 |
+| `ClosureView.java`, `ClosureQueries.java`, `ClosureQueriesTest.java` | WP04 | WP17, then WP11 (A4: WP17 lands first; WP11's review waits for WP17's approval and rebases over it; WP11's commits on these files go only into PR B) |
 | `OfferingReadService.java`, `OfferingReadServiceTest.java` | WP02 | WP04 |
 | `ProductionWiringTest.java`, `WiringRoundTripTest.java` | WP07 | none (WP04 only runs them) |
-| `ClosureSnapshot.java` | WP06 | WP09 |
+| `ClosureSnapshot.java`, `DocumentRules.java`, `DocumentRulesTest.java` | WP06 | WP09, WP17 |
 | `activations.feature`, `ReservedOperationCoverageTest.java`, `ActivationSteps.java`, the selections and exclusions path files | WP08 | WP13, WP14 |
-| `CharterRefusalCode.yaml`, `ReservedRefusalCodesTest.java`, `FakeAvailablePacks.java`, `PacksAvailabilityTest.java` | WP09 | WP13, WP14 |
+| `CharterRefusalCode.yaml`, `ReservedRefusalCodesTest.java`, `FakeAvailablePacks.java`, `PacksAvailabilityTest.java` | WP09 | WP16 (`HANDLER_CLASS`), WP17, WP13, WP14 |
+| `ActivationService.java`, `ActivationServiceTest.java` | WP09 | WP17 |
+| `deployable/ActivationBodyAdvice.java`, `ActivationProblems.java`, `ActivationBodyAdviceTest.java` | WP09 | WP16 (moved to `activations.infra.api`, where WP16 owns them; WP17 edits) |
+| `packs/infra/api/RefusalHandler.java`, `JsonBodyGuard.java`, `RefusalHandlerTest.java`, `RegistrationListsTest.java` | WP01 | WP16 (moved to `ai.speckitty.charter.web`) |
+| `settings.gradle.kts`, `charter-reports/build.gradle.kts`, `sonar.yml`, `activations/build.gradle.kts`, `deployable/build.gradle.kts`, `DeployableConfiguration.java`, `ActivationJson.java` | WP05 | WP16 |
+| `FileActivationRepository.java`, `FileActivationRepositoryConcurrencyTest.java`, `FileActivationRepositoryTest.java` | WP07 | WP17 |
+| `PackMutabilityPolicy.java`, `PackMutabilityPolicyTest.java` (on lane-i under `application/`) | WP03 | WP17 |
 | `ActivationWrites.java` | WP13 | WP14 |
-| `divergence-register.md`, `divergences.yaml`, `offering-and-activation.md`, `resolution-model.md`, `0013-persistent-deactivation.md` | WP10 | WP15 |
+| `divergence-register.md`, `divergences.yaml`, `resolution-model.md`, `0013-persistent-deactivation.md` | WP10 | WP15 |
+| `offering-and-activation.md` | WP10 | WP16 (flowchart and module table), WP17 (precondition order, storage layout), WP15 |
 
 ## MVP
 
@@ -570,3 +660,44 @@ Every finding has exactly one disposition: **accepted** (the artifact changed, a
 | A12 | The foreign NFR-002 id is named as such | accepted | WP03 T095 |
 | A13 | Index formatting and a note for T094–T096 | accepted | tasks.md Subtask Index |
 | A14 | Deny entries survive every write that does not explicitly clear them | accepted | spec US4 "Why this priority" |
+
+## PR A squad dispositions
+
+The post-PR-A squad ran on lane-i (WP01–WP09 combined). Every finding has one disposition.
+
+| Delegate | Finding | Disposition | Where |
+|---|---|---|---|
+| alphonso | MAJOR: the shared transport is owned by `packs.infra.api`, and `deployable` holds activation transport (the exemption) | accepted | WP16 (T097–T104) |
+| alphonso | MINOR: `PacksAvailability` catches every `IllegalArgumentException` | accepted | WP17 T108 (`UnknownRootException`) |
+| alphonso | MINOR: presets split-brain (the floor uses every copy, the map the last) | accepted | WP17 T109 |
+| alphonso | MINOR: the policy gate reads outside a verified compose | accepted | WP17 T110 (`composedWithFacts`) |
+| alphonso | MINOR: no rule keeps `kernel.transport` out of the domain | accepted | WP16 T102 step 6, T103 (`DomainNamesKernelTransport`) |
+| alphonso | NOTE: `RequiringPack.via` is always empty | accepted | WP17 T113 (from the `parent_pack` chain, or documented, with a fragment) |
+| alphonso | NOTE: presets are copied per pack and per map | accepted | WP17 T109 (one de-duplicated list; the map is a view) |
+| renata | MINOR: preconditions are judged after content (422 instead of 412) | accepted | WP17 T105, T112; docs out-of-map in `offering-and-activation.md` |
+| renata | MINOR: case-insensitive file systems alias ids | accepted | WP17 T106 (reversible encoding) |
+| renata | MINOR: the lock map grows unbounded | accepted | WP17 T107 (striped) |
+| renata | MINOR: `via` is not populated | accepted | WP17 T113 |
+| renata | MINOR: `PacksAvailability` catch is too broad | accepted | WP17 T108 |
+| renata | MINOR: fakeable readers-racing-writers test; no service-level races | accepted | WP17 T111 |
+| renata | NOTE: a 422 can carry empty `violations` | accepted | WP17 T114 step 1 |
+| renata | NOTE: only the first unknown member is reported | accepted (report all; documenting "first only" is the fallback) | WP17 T114 step 2 |
+| renata | NOTE: no 401/403 scenario for `/activations` | accepted | WP17 T112 |
+
+## Analyze dispositions (fourth pass)
+
+| # | Finding | Disposition | Where |
+|---|---|---|---|
+| A1 | Every PR A replay or prefix statement names WP01–WP10, WP16 and WP17 | accepted | tasks.md "The cut", Orchestrator closeout step 4; WP15 P1 note, Branch Strategy |
+| A2 | plan.md: the `web-transport` module, two new modules, the IC-01 note, IC-11 and IC-12, the Revision line | accepted | plan.md |
+| A3 | Encoded, case-safe storage path | accepted | spec FR-019; plan Storage; research R4 |
+| A4 | WP17 and WP11 ordering on `ClosureQueries`/`ClosureView`/`ClosureQueriesTest` (option b) | accepted | tasks.md shared-files table; WP11 and WP17 out-of-map sections |
+| A5 | `hexagonal-service.md` records the web ring (no ADR) | accepted | WP16 out-of-map, T104 step 5 |
+| A6 | WP16 depends on WP10 | accepted | WP16 frontmatter, Branch Strategy |
+| A7 | `ActivationBodyAdvice` location in WP13 and WP14 | accepted | WP13 Grounding; WP14 Grounding |
+| A8 | Preconditions before content in the requirements | accepted | spec FR-010 |
+| A9 | `RequiringPack.via` in the contract delta | accepted | contracts/contract-delta.md PR A |
+| A10 | A duplicated preset id: the last holder wins and the floor follows it | accepted | spec Assumptions; WP04 T021 annotation |
+| A11 | The index note names WP16 and WP17 ranges | accepted | tasks.md Subtask Index note |
+| A12 | `const: policy.yaml` as implemented; the stray `)` in FR-022 | accepted | WP03 T013 step 4, T095 step 3; spec FR-022 |
+

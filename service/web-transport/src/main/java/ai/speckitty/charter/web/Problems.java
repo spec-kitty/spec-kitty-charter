@@ -1,4 +1,4 @@
-package ai.speckitty.charter.packs.infra.api;
+package ai.speckitty.charter.web;
 
 import ai.speckitty.charter.api.model.Problem;
 import org.springframework.http.HttpHeaders;
@@ -13,7 +13,7 @@ import org.springframework.http.ResponseEntity;
  * the status and nothing else: no {@code code}, as no refusal applies, and no {@code detail}, so neither a
  * framework's wording nor an exception message reaches the wire.
  */
-final class Problems {
+public final class Problems {
 
     private Problems() {}
 
@@ -25,7 +25,7 @@ final class Problems {
      * @return the {@code application/problem+json} response: a {@code CharterRefusal} for 500, a {@code Problem}
      *     otherwise
      */
-    static ResponseEntity<Object> of(HttpStatusCode status, HttpHeaders headers) {
+    public static ResponseEntity<Object> of(HttpStatusCode status, HttpHeaders headers) {
         HttpHeaders kept = new HttpHeaders();
         kept.putAll(headers);
         kept.setContentType(MediaType.APPLICATION_PROBLEM_JSON);
@@ -35,8 +35,13 @@ final class Problems {
         return ResponseEntity.status(status).headers(kept).body(body);
     }
 
-    /** The reason phrase of a known status; {@code HTTP <n>} for a status the HTTP registry does not name. */
-    static String title(HttpStatusCode status) {
+    /**
+     * The reason phrase of a known status; {@code HTTP <n>} for a status the HTTP registry does not name.
+     *
+     * @param status the status
+     * @return its title
+     */
+    public static String title(HttpStatusCode status) {
         HttpStatus known = HttpStatus.resolve(status.value());
         return known == null ? "HTTP " + status.value() : known.getReasonPhrase();
     }

@@ -375,6 +375,79 @@
       "parallel_group": 6
     },
     {
+      "lane_id": "lane-n",
+      "wp_ids": [
+        "WP16"
+      ],
+      "write_scope": [
+        "service/activations/src/main/java/ai/speckitty/charter/activations/infra/api/ActivationBodyAdvice.java",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/infra/api/ActivationProblems.java",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/infra/api/ActivationBodyAdviceTest.java",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/infra/api/ActivationProblemsTest.java",
+        "service/deployable/src/main/java/ai/speckitty/charter/deployable/CharterRuntimeHints.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/activations/application/badfixture/ApplicationNamesWebTransport.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/activations/domain/badfixture/DomainNamesKernelTransport.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/transportfixture/RootNamesGeneratedDto.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/transportfixture/package-info.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/web/badfixture/WebNamesASlice.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/web/badfixture/package-info.java",
+        "service/packs/build.gradle.kts",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/ArtifactController.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/ArtifactCursor.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/ArtifactJson.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/ConnectorProblems.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/DirectiveController.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/OfferingController.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/ParadigmController.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/ProblemErrorController.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/ProblemErrorReportValve.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/ProblemHandler.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/ProblemJson.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/ProblemRuntimeHints.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/Problems.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/RelationshipController.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/StyleguideController.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/ToolguideController.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/WorktreeGuard.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/ArtifactControllerTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/DirectiveControllerTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/OfferingControllerTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/ParadigmControllerTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/ProblemRuntimeHintsTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/ProblemsTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/RefusalHandlerLoggingTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/RelationshipControllerTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/StyleguideControllerTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/ToolguideControllerTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/WorktreeGuardTest.java",
+        "service/web-transport/build.gradle.kts",
+        "service/web-transport/src/main/java/ai/speckitty/charter/web/JsonBodyGuard.java",
+        "service/web-transport/src/main/java/ai/speckitty/charter/web/ProblemHandler.java",
+        "service/web-transport/src/main/java/ai/speckitty/charter/web/ProblemJson.java",
+        "service/web-transport/src/main/java/ai/speckitty/charter/web/ProblemRuntimeHints.java",
+        "service/web-transport/src/main/java/ai/speckitty/charter/web/Problems.java",
+        "service/web-transport/src/main/java/ai/speckitty/charter/web/RefusalHandler.java",
+        "service/web-transport/src/main/java/ai/speckitty/charter/web/config/WebTransportConfiguration.java",
+        "service/web-transport/src/main/java/ai/speckitty/charter/web/config/package-info.java",
+        "service/web-transport/src/main/java/ai/speckitty/charter/web/package-info.java",
+        "service/web-transport/src/test/java/ai/speckitty/charter/web/JsonBodyGuardTest.java",
+        "service/web-transport/src/test/java/ai/speckitty/charter/web/ProblemRuntimeHintsTest.java",
+        "service/web-transport/src/test/java/ai/speckitty/charter/web/ProblemsTest.java",
+        "service/web-transport/src/test/java/ai/speckitty/charter/web/RefusalHandlerLoggingTest.java",
+        "service/web-transport/src/test/java/ai/speckitty/charter/web/RefusalHandlerTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-i"
+      ],
+      "parallel_group": 6
+    },
+    {
       "lane_id": "lane-k",
       "wp_ids": [
         "WP12"
@@ -405,6 +478,34 @@
       "parallel_group": 7
     },
     {
+      "lane_id": "lane-o",
+      "wp_ids": [
+        "WP17"
+      ],
+      "write_scope": [
+        "contracts/_shared/schemas/RequiringPack.yaml",
+        "contracts/charter/changes/2026-11-06-requiring-pack-via.md",
+        "contracts/charter/scenarios/activation-register-guards.feature",
+        "service/activations/src/main/java/ai/speckitty/charter/activations/infra/storage/ActivationDirectoryName.java",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/application/ActivationServiceRaceTest.java",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/infra/storage/ActivationDirectoryNameTest.java",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/infra/storage/FileActivationRepositoryAtomicityTest.java",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/infra/storage/FileActivationRepositoryCaseFoldTest.java",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/infra/storage/FileActivationRepositoryLockTest.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/UnknownRootException.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-n"
+      ],
+      "parallel_group": 7
+    },
+    {
       "lane_id": "lane-l",
       "wp_ids": [
         "WP13"
@@ -428,7 +529,8 @@
         "legacy-cleanup"
       ],
       "depends_on_lanes": [
-        "lane-k"
+        "lane-k",
+        "lane-o"
       ],
       "parallel_group": 8
     },
@@ -484,11 +586,11 @@
       "parallel_group": 10
     }
   ],
-  "computed_at": "2026-11-05T19:10:53.311434+00:00",
+  "computed_at": "2026-11-05T22:03:56.425342+00:00",
   "computed_from": "dependency_graph+ownership",
   "planning_artifact_wps": [
     "WP10",
     "WP15"
   ],
-  "planning_commit_sha": "4e41477b38ac4524bec39e814d62fe3aacdf3691"
+  "planning_commit_sha": "b7dd1d963a5e371cbf1d44a97eb92cb26bc1255c"
 }

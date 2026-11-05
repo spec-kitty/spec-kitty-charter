@@ -2,7 +2,8 @@ package ai.speckitty.charter.packs.infra.api;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.packs.infra.api.JsonBodyGuard.BodyFault;
+import ai.speckitty.charter.web.JsonBodyGuard;
+import ai.speckitty.charter.web.JsonBodyGuard.BodyFault;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;

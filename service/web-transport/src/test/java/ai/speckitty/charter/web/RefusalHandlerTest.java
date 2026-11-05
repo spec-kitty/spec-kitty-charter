@@ -1,4 +1,4 @@
-package ai.speckitty.charter.packs.infra.api;
+package ai.speckitty.charter.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;

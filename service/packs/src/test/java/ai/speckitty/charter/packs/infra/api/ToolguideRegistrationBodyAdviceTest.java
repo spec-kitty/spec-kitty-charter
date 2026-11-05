@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ai.speckitty.charter.api.model.ToolguideRegistration;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.web.JsonBodyGuard;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;

@@ -3,8 +3,6 @@ package ai.speckitty.charter.activations.infra.packs;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import ai.speckitty.charter.activations.domain.ActivationDocument;
@@ -21,10 +19,9 @@ import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.ClosureQueries;
 import ai.speckitty.charter.packs.application.ClosureView;
 import ai.speckitty.charter.packs.application.OfferingReadService.OfferingEntry;
-import ai.speckitty.charter.packs.domain.ConfiguredPack;
+import ai.speckitty.charter.packs.application.UnknownRootException;
 import ai.speckitty.charter.packs.domain.MutabilityLevel;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
-import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.PresetItem;
@@ -40,7 +37,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * The adapter over the packs slice: one {@link ClosureQueries#snapshot} per call, copied field by field, with each pack
- * of the floor and the locks named by its configured id; an unknown root named through the catalog (R4); and a refusal
+ * of the floor and the locks named by its configured id; an unknown root named by the typed UnknownRootException alone (R4); and a refusal
  * of the compose passed on unchanged.
  */
 class PacksAvailabilityTest {
@@ -49,8 +46,7 @@ class PacksAvailabilityTest {
     private static final String BETA = "01M4P01D5TWB5FKZGNNQG3943S";
 
     private final ClosureQueries closures = mock(ClosureQueries.class);
-    private final PackCatalogRepository catalog = mock(PackCatalogRepository.class);
-    private final PacksAvailability adapter = new PacksAvailability(closures, catalog);
+    private final PacksAvailability adapter = new PacksAvailability(closures);
 
     /** beta, then alpha, which depends on it; alpha locks D1 and its governing preset requires D2. */
     private static ClosureView view() {
@@ -94,7 +90,8 @@ class PacksAvailabilityTest {
                                         .entry(d2, MutabilityLevel.EXTENDABLE)
                                         .build())),
                 List.of(BETA, ALPHA),
-                Map.of("governing", new ClosureView.HeldPreset(governing, ALPHA)),
+                List.of(new ClosureView.HeldPreset(governing, ALPHA)),
+                Map.of(ALPHA, BETA),
                 "sha256:fingerprint");
     }
 
@@ -116,6 +113,11 @@ class PacksAvailabilityTest {
         assertThat(alpha.version()).isEqualTo("2.0.0");
         assertThat(alpha.dependsOn()).containsExactly(new ClosureSnapshot.Dependency(BETA, ">=1.0", "1.0.0"));
         assertThat(snapshot.pack("beta").orElseThrow().level()).isEqualTo("built-in");
+        assertThat(alpha.parentPackId())
+                .as("alpha's parent_pack, named by the id it is configured under")
+                .contains("beta");
+        assertThat(snapshot.pack("beta").orElseThrow().parentPackId()).isEmpty();
+        assertThat(snapshot.extendsChain("alpha", "beta")).contains(List.of("alpha"));
         assertThat(snapshot.held(ArtifactKind.DIRECTIVE)).containsExactlyInAnyOrder("D1", "D2");
         assertThat(snapshot.missionTypes()).containsExactly("software-dev");
         assertThat(snapshot.fingerprint()).isEqualTo("sha256:fingerprint");
@@ -129,7 +131,6 @@ class PacksAvailabilityTest {
 
         assertThat(snapshot.requiredBy()).containsExactly(Map.entry("directive:D2", List.of("alpha")));
         assertThat(snapshot.lockedBy()).containsExactly(Map.entry("directive:D1", "alpha"));
-        verify(catalog, never()).configured();
     }
 
     @Test
@@ -151,8 +152,7 @@ class PacksAvailabilityTest {
     @Test
     void anUnknownRootIsNamedAndTheWriteIsRefusedAtItsPosition() {
         when(closures.snapshot(Optional.of(List.of(new PackIdentifier("alpha"), new PackIdentifier("ghost")))))
-                .thenThrow(new IllegalArgumentException("no configured pack is configured as ghost"));
-        when(catalog.configured()).thenReturn(List.of(new ConfiguredPack(new PackIdentifier("alpha"), PackLevel.ORG)));
+                .thenThrow(new UnknownRootException(List.of("ghost")));
 
         ClosureSnapshot snapshot = adapter.snapshot(Optional.of(List.of("alpha", "ghost")));
 
@@ -171,15 +171,13 @@ class PacksAvailabilityTest {
     }
 
     @Test
-    void anUnknownRootTheCatalogConfiguresAfterAllIsStale() {
+    void anyOtherArgumentErrorOfTheComposeIsNoUnknownPackAndPropagatesUnchanged() {
+        IllegalArgumentException fault = new IllegalArgumentException("a fault of the compose");
         when(closures.snapshot(Optional.of(List.of(new PackIdentifier("alpha")))))
-                .thenThrow(new IllegalArgumentException("no configured pack is configured as alpha"));
-        when(catalog.configured()).thenReturn(List.of(new ConfiguredPack(new PackIdentifier("alpha"), PackLevel.ORG)));
+                .thenThrow(fault);
 
         assertThatThrownBy(() -> adapter.snapshot(Optional.of(List.of("alpha"))))
-                .isInstanceOfSatisfying(
-                        CharterRefusal.class,
-                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.STALE_INPUT));
+                .isSameAs(fault);
     }
 
     @Test
@@ -188,6 +186,5 @@ class PacksAvailabilityTest {
         when(closures.snapshot(Optional.empty())).thenThrow(missing);
 
         assertThatThrownBy(() -> adapter.snapshot(Optional.empty())).isSameAs(missing);
-        verify(catalog, never()).configured();
     }
 }

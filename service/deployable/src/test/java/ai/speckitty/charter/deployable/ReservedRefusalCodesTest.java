@@ -60,7 +60,7 @@ class ReservedRefusalCodesTest {
     private static final String PACK_FINDING_CODE = PackFindingCode.class.getName();
 
     private static final String ENUM = pattern(RefusalCode.class.getName());
-    private static final String HANDLER_CLASS = "ai.speckitty.charter.packs.infra.api.RefusalHandler";
+    private static final String HANDLER_CLASS = "ai.speckitty.charter.web.RefusalHandler";
     private static final String HANDLER = pattern(HANDLER_CLASS);
 
     /** The methods of {@code RefusalHandler} that map every code to its status and title, raising none. */

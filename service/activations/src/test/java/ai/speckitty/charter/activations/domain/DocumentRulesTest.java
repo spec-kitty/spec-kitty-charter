@@ -11,6 +11,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.RequiringPack;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -245,5 +246,46 @@ class DocumentRulesTest {
 
         assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_INVALID);
         assertThat(refusal.requiredBy()).isEmpty();
+    }
+
+    // ---- RequiringPack.via: the extends chain from the document's packs (T113)
+
+    /** team extends org, which extends internal; helper is only depended on. */
+    private static final ClosureSnapshot EXTENDED = snapshot()
+            .pack("internal", "1.0.0")
+            .extending("org", "1.0.0", "internal")
+            .extending("team", "1.0.0", "org")
+            .pack("helper", "1.0.0")
+            .held(DIRECTIVE, "D1", "D2", "D3", "D4")
+            .lockedBy("directive:D1", "internal")
+            .requiredBy("directive:D2", "team")
+            .requiredBy("directive:D3", "helper")
+            .requiredBy("directive:D4", "org")
+            .build();
+
+    private static CharterRefusal denying(String id, String... packs) {
+        ActivationDocument.Built built = ActivationDocument.builder()
+                .packs(Arrays.stream(packs).map(PackRef::of).toList())
+                .deactivated(DIRECTIVE, List.of(id))
+                .build();
+        return DocumentRules.check(built, EXTENDED).orElseThrow();
+    }
+
+    @Test
+    void aLockInheritedOverParentPackNamesTheChainFromTheNamedPackUpToTheLockingOne() {
+        assertThat(denying("D1", "team").requiredBy())
+                .containsExactly(new RequiringPack("internal", List.of("team", "org")));
+        assertThat(denying("D4", "team").requiredBy()).containsExactly(new RequiringPack("org", List.of("team")));
+    }
+
+    @Test
+    void aPackTheDocumentNamesThatDeclaresTheItemItselfHasAnEmptyChain() {
+        assertThat(denying("D2", "team").requiredBy()).containsExactly(new RequiringPack("team", List.of()));
+        assertThat(denying("D4", "team", "org").requiredBy()).containsExactly(new RequiringPack("org", List.of()));
+    }
+
+    @Test
+    void aPackReachedOverDependsOnOnlyHasAnEmptyChain() {
+        assertThat(denying("D3", "team").requiredBy()).containsExactly(new RequiringPack("helper", List.of()));
     }
 }

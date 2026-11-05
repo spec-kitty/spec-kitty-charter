@@ -128,7 +128,67 @@ class ActivationServiceTest {
                         stale -> assertThat(stale.kind()).isEqualTo(PreconditionException.Kind.STALE));
         assertThat(repository.find(ID).orElseThrow().document())
                 .isEqualTo(selecting("D1").document());
-        assertThat(packs.calls()).isEqualTo(2);
+        assertThat(packs.calls())
+                .as("the refused create-only write takes no snapshot")
+                .isEqualTo(1);
+    }
+
+    // ---- preconditions before content (RFC 9110 section 13.2.2)
+
+    @Test
+    void aStaleIfMatchIsRefusedBeforeAnInvalidBodyIsJudgedAndTakesNoSnapshot() {
+        StoredActivation old = stored(selecting("D1"));
+        StoredActivation current = service.put(ID, selecting("D2"), null, null).stored();
+        int before = packs.calls();
+
+        assertThatThrownBy(() -> service.put(ID, selecting("NO_SUCH"), quoted(old), null))
+                .isInstanceOfSatisfying(
+                        PreconditionException.class,
+                        stale -> assertThat(stale.kind()).isEqualTo(PreconditionException.Kind.STALE));
+        assertThat(packs.calls())
+                .as("no closure snapshot on a failed precondition")
+                .isEqualTo(before);
+        assertThat(repository.find(ID)).contains(current);
+    }
+
+    @Test
+    void anIfMatchOnAMissingDocumentIsRefusedBeforeAnInvalidBodyIsJudged() {
+        assertThatThrownBy(() -> service.put(ID, selecting("NO_SUCH"), "*", null))
+                .isInstanceOf(PreconditionException.class);
+        assertThat(packs.calls()).isZero();
+    }
+
+    @Test
+    void ifNoneMatchStarOnAnExistingIdIsRefusedBeforeAnInvalidBodyIsJudged() {
+        StoredActivation existing = stored(selecting("D1"));
+
+        assertThatThrownBy(() -> service.put(ID, selecting("NO_SUCH"), null, "*"))
+                .isInstanceOfSatisfying(
+                        PreconditionException.class,
+                        stale -> assertThat(stale.kind()).isEqualTo(PreconditionException.Kind.STALE));
+        assertThat(packs.calls()).isZero();
+        assertThat(repository.find(ID)).contains(existing);
+    }
+
+    @Test
+    void aStaleIfMatchOnADeleteIsJudgedFromTheHeadersAloneAndTakesNoSnapshot() {
+        StoredActivation old = stored(selecting("D1"));
+        service.put(ID, selecting("D2"), null, null);
+        int before = packs.calls();
+
+        assertThatThrownBy(() -> service.delete(ID, quoted(old))).isInstanceOf(PreconditionException.class);
+        assertThat(packs.calls()).isEqualTo(before);
+    }
+
+    @Test
+    void aFreshIfMatchWithAnInvalidBodyIsStillJudgedAfterThePrecondition() {
+        StoredActivation current = stored(selecting("D1"));
+
+        assertThatThrownBy(() -> service.put(ID, selecting("NO_SUCH"), quoted(current), null))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_INVALID));
+        assertThat(packs.calls()).isEqualTo(1);
     }
 
     @Test

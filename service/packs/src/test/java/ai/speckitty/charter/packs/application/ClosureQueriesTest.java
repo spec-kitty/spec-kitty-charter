@@ -18,6 +18,7 @@ import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.MutabilityLevel;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
+import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
@@ -81,6 +82,18 @@ class ClosureQueriesTest {
                 List.of(dependencies));
     }
 
+    private static PackDescriptor extending(String packId, String parent) {
+        return new PackDescriptor(
+                packId,
+                "1.0.0",
+                Optional.of(parent),
+                packId + " pack",
+                Optional.empty(),
+                Optional.empty(),
+                PackPaths.none(),
+                List.of());
+    }
+
     private static PackCompositionFacts holding(
             List<String> defined, MutabilityPolicySource policy, Preset... presets) {
         return new PackCompositionFacts(List.of(), defined, List.of(), policy, List.of(presets));
@@ -122,15 +135,20 @@ class ClosureQueriesTest {
             digests.incrementAndGet();
             return fingerprint.get();
         });
+        PackCatalogRepository catalog = () -> List.copyOf(configured);
         OfferingReadService offering = new OfferingReadService(
-                () -> List.copyOf(configured),
+                catalog,
                 repository,
                 pack -> {
                     factsRead.add(pack.value());
-                    return facts.get(pack.value());
+                    PackCompositionFacts held = facts.get(pack.value());
+                    if (held == null) {
+                        throw new IllegalArgumentException("a fault of the compose, not an unknown root");
+                    }
+                    return held;
                 },
                 read);
-        return new ClosureQueries(offering, read);
+        return new ClosureQueries(offering, catalog, read);
     }
 
     private ClosureQueries queries() {
@@ -246,6 +264,77 @@ class ClosureQueriesTest {
                 .as("the last holder in merge order wins (ADR-0053 d6)")
                 .isEqualTo(new ClosureView.HeldPreset(governing, "org"));
         assertThat(view.presets().get("builtin-only").descriptorPackId()).isEqualTo("builtin");
+    }
+
+    @Test
+    void aPresetTwoPacksHoldPutsOnlyTheWinningCopysMustHaveItemsOnTheFloor() {
+        Preset earlier = new Preset(
+                "team",
+                "earlier",
+                List.of(),
+                Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("A"))),
+                List.of());
+        Preset later = new Preset(
+                "team",
+                "later",
+                List.of(),
+                Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("B"))),
+                List.of());
+        pack(
+                "builtin",
+                PackLevel.BUILT_IN,
+                descriptor("builtin", "1.0.0"),
+                holding(List.of(), MutabilityPolicySource.empty(), earlier));
+        pack(
+                "org",
+                PackLevel.ORG,
+                descriptor("org", "1.0.0"),
+                holding(List.of(), MutabilityPolicySource.empty(), later));
+
+        ClosureView view = queries().allConfigured();
+
+        assertThat(view.presets().get("team"))
+                .as("the last holder in merge order wins (ADR-0053 d6)")
+                .isEqualTo(new ClosureView.HeldPreset(later, "org"));
+        assertThat(view.floor().requiringPacks(new Urn(NodeKind.DIRECTIVE, "B")))
+                .containsExactly("org");
+        assertThat(view.floor().isRequired(new Urn(NodeKind.DIRECTIVE, "A")))
+                .as("the losing copy requires nothing")
+                .isFalse();
+        assertThat(view.heldPresets()).as("each preset once").containsExactly(new ClosureView.HeldPreset(later, "org"));
+    }
+
+    @Test
+    void theParentOfEachClosurePackIsItsDescriptorsParentPack() {
+        pack("base-local", PackLevel.BUILT_IN, descriptor("base", "1.0.0"), holding());
+        pack("team", PackLevel.PROJECT, extending("team", "base"), holding());
+
+        ClosureView view = queries().snapshot(roots("team"));
+
+        assertThat(view.parentOf("team")).contains("base");
+        assertThat(view.parentOf("base")).isEmpty();
+    }
+
+    @Test
+    void aRootNoPackIsConfiguredAsIsAnUnknownRootNamingEveryOneAndComposesNothing() {
+        alphaBetaGamma();
+
+        assertThatThrownBy(() -> queries().snapshot(roots("ghost", "alpha", "phantom")))
+                .isInstanceOfSatisfying(UnknownRootException.class, unknown -> {
+                    assertThat(unknown.unknownIds()).containsExactly("ghost", "phantom");
+                    assertThat(unknown.getMessage()).contains("ghost", "phantom");
+                });
+        assertThat(factsRead).isEmpty();
+    }
+
+    @Test
+    void anyOtherArgumentErrorOfTheComposePropagatesUnchanged() {
+        alphaBetaGamma();
+        facts.remove("beta");
+
+        assertThatThrownBy(() -> queries().snapshot(roots("alpha")))
+                .isExactlyInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("a fault of the compose");
     }
 
     @Test

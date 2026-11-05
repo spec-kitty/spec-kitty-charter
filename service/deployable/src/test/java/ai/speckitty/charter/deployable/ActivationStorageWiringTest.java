@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ai.speckitty.charter.activations.domain.ActivationDocument;
 import ai.speckitty.charter.activations.domain.ActivationId;
 import ai.speckitty.charter.activations.domain.ActivationRepository;
+import ai.speckitty.charter.activations.infra.storage.ActivationDirectoryName;
 import ai.speckitty.charter.activations.infra.storage.FileActivationRepository;
 import ai.speckitty.charter.activations.infra.storage.InMemoryActivationRepository;
 import java.nio.file.Path;
@@ -31,7 +32,9 @@ class ActivationStorageWiringTest {
                     repository.create(
                             new ActivationId("wired"),
                             ActivationDocument.builder().build().document());
-                    assertThat(directory.resolve("wired").resolve("activation.json"))
+                    assertThat(directory
+                                    .resolve(ActivationDirectoryName.encode(new ActivationId("wired")))
+                                    .resolve("activation.json"))
                             .isRegularFile();
                 });
     }

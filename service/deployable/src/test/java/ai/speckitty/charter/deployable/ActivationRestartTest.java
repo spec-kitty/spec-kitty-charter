@@ -9,6 +9,7 @@ import ai.speckitty.charter.activations.domain.Jcs;
 import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.Revision;
 import ai.speckitty.charter.activations.domain.StoredActivation;
+import ai.speckitty.charter.activations.infra.storage.ActivationDirectoryName;
 import ai.speckitty.charter.activations.infra.storage.FileActivationRepository;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.packs.infra.storage.ConfigRoot;
@@ -57,7 +58,9 @@ class ActivationRestartTest {
     }
 
     private Path file(ActivationId id) {
-        return root.resolve(ConfigRoot.ACTIVATIONS).resolve(id.value()).resolve("activation.json");
+        return root.resolve(ConfigRoot.ACTIVATIONS)
+                .resolve(ActivationDirectoryName.encode(id))
+                .resolve("activation.json");
     }
 
     @Test

@@ -13,5 +13,7 @@
   "purpose_tldr": "The charter service records what a project activated and composes only the packs that activation reaches.",
   "slug": "activation-register-and-closure-01M6NXBD",
   "target_branch": "issue-360-activated-closure",
-  "topology": "coord"
+  "topology": "coord",
+  "vcs": "git",
+  "vcs_locked_at": "2026-11-05T19:20:13.955349+00:00"
 }

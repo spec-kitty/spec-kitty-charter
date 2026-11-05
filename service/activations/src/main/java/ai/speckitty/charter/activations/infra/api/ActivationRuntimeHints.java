@@ -3,7 +3,6 @@ package ai.speckitty.charter.activations.infra.api;
 import ai.speckitty.charter.api.model.ActivationConfig;
 import ai.speckitty.charter.api.model.DeactivatedArtifacts;
 import ai.speckitty.charter.api.model.ExclusionRequest;
-import ai.speckitty.charter.api.model.Link;
 import ai.speckitty.charter.api.model.PackPin;
 import ai.speckitty.charter.api.model.PresetApplication;
 import ai.speckitty.charter.api.model.SelectedArtifacts;
@@ -35,8 +34,7 @@ public class ActivationRuntimeHints implements RuntimeHintsRegistrar {
                         DeactivatedArtifacts.class,
                         SelectionRequest.class,
                         ExclusionRequest.class,
-                        PresetApplication.class,
-                        Link.class);
+                        PresetApplication.class);
         // The mix-in is read only for its class annotation, so the type alone is registered.
         hints.reflection().registerType(ActivationJson.omitAbsentMembers());
     }

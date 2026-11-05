@@ -30,6 +30,8 @@ dependencies {
 
     // infra.api: the inbound REST adapter implements the generated contract interfaces.
     api(project(":charter-api"))
+    // The service-wide transport: problem rendering, refusal mapping and the JSON body guard.
+    implementation(project(":web-transport"))
     implementation(catalog.lib("spring-boot-starter-webmvc"))
 
     testImplementation(catalog.lib("spring-boot-starter-test"))

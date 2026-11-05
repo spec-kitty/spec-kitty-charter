@@ -96,7 +96,7 @@ Implementation command:
     description. Do not widen the packs `Preset` record.
   - WP04's `ClosureView.presets` resolves a preset id to its holding pack (the last in merge order wins).
   - WP13 moved the binding pin to this operation; it is the last reserved operation with a request body.
-  - `ActivationBodyAdvice` (WP09) already guards `PresetApplication`.
+  - `ActivationBodyAdvice` (`activations.infra.api`, WP16) already guards `PresetApplication`.
 
 ## Branch Strategy
 

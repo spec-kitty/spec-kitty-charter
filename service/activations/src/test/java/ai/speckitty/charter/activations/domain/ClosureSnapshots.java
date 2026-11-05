@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -35,6 +36,13 @@ public final class ClosureSnapshots {
     /** A configured pack at {@code org}, its descriptor id derived from its configured id. */
     public ClosureSnapshots pack(String packId, String version) {
         packs.add(new PackEntry(packId, "PID-" + packId, "org", packId + " pack", version, List.of()));
+        return this;
+    }
+
+    /** A configured pack at {@code org} whose {@code parent_pack} is another pack of the closure, by configured id. */
+    public ClosureSnapshots extending(String packId, String version, String parentPackId) {
+        packs.add(new PackEntry(
+                packId, "PID-" + packId, "org", packId + " pack", version, List.of(), Optional.of(parentPackId)));
         return this;
     }
 

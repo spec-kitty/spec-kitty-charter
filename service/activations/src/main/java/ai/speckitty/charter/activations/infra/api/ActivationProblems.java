@@ -1,12 +1,11 @@
-package ai.speckitty.charter.deployable;
+package ai.speckitty.charter.activations.infra.api;
 
 import ai.speckitty.charter.activations.application.MalformedPreconditionException;
-import ai.speckitty.charter.activations.infra.api.ActivationController;
 import ai.speckitty.charter.api.model.CharterRefusal;
 import ai.speckitty.charter.api.model.Problem;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
-import ai.speckitty.charter.packs.infra.api.RefusalHandler;
+import ai.speckitty.charter.web.RefusalHandler;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Path;
@@ -216,11 +215,19 @@ public class ActivationProblems {
                 .toList();
     }
 
+    /**
+     * The {@code 422}: never with an empty {@code violations}. A failure that names no member of the body (a constraint
+     * on the whole body, a validation result with no field error) is one violation at the whole body, pointer
+     * {@code ""}.
+     */
     private ResponseEntity<CharterRefusal> invalid(List<RefusalViolation> violations) {
+        List<RefusalViolation> named = violations.isEmpty()
+                ? List.of(new RefusalViolation("", "invalid_value", "The body breaks a constraint of its schema."))
+                : violations;
         return refusals.refused(ai.speckitty.charter.kernel.domain.CharterRefusal.withViolations(
                 RefusalCode.ACTIVATION_INVALID,
-                "The activation request body breaks its schema in " + violations.size() + " place(s).",
-                violations));
+                "The activation request body breaks its schema in " + named.size() + " place(s).",
+                named));
     }
 
     private static ResponseEntity<Problem> badRequest(String detail) {
