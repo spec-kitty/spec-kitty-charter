@@ -8,14 +8,13 @@ import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.RequiringPack;
 import ai.speckitty.charter.kernel.domain.Urn;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.stream.Collectors;
 
 /**
@@ -23,8 +22,11 @@ import java.util.stream.Collectors;
  * pure functions over an {@link ClosureSnapshot}.
  *
  * <p>A {@code 422 activation_invalid} names every violation, in JSON Pointer order (segment by segment, an index
- * compared as a number). A pointer into a list indexes the canonical list the service stores and answers (sorted and
- * deduplicated), but for the builder's shape violations, which index the list as written. The codes:
+ * compared as a number). Every pointer is an RFC 6901 pointer into the request body: a list index is the position as
+ * written ({@link ActivationDocument.Built#written()}), a repeated unknown id has one violation per position, and a
+ * repeated pack is judged at its first position only (the later ones are {@code duplicate_pack}). A document checked
+ * without a written form ({@link #check(ActivationDocument, ClosureSnapshot)}) is indexed by its canonical lists.
+ * The codes:
  *
  * <ul>
  *   <li>{@code unknown_artifact}: a {@code selected} or {@code deactivated} id the closure does not hold;
@@ -38,7 +40,9 @@ import java.util.stream.Collectors;
  *
  * <p>Only a document with no violation meets the floor (ADR-0012 D7): a deny entry on an artifact a pack locks is a
  * {@code 409 artifact_locked} naming each locking pack, and otherwise one on an artifact a pack requires is a
- * {@code 409 artifact_required} naming each requiring pack. Locked wins, since locked implies required.
+ * {@code 409 artifact_required} naming each requiring pack. Locked wins, since locked implies required. Each
+ * {@link RequiringPack} has an empty {@code via}: the snapshot carries no extends chain yet (a known gap, for the
+ * closure read of WP09 to fill).
  *
  * <p>A stored document is not judged here: a read serves it unchanged.
  */
@@ -69,9 +73,9 @@ public final class DocumentRules {
      */
     public static Optional<CharterRefusal> check(ActivationDocument.Built built, ClosureSnapshot snapshot) {
         List<RefusalViolation> violations = new ArrayList<>(built.violations());
-        violations.addAll(packViolations(built.document(), snapshot));
-        violations.addAll(idViolations(built.document(), snapshot));
-        violations.addAll(denyViolations(built.document(), snapshot));
+        violations.addAll(packViolations(built.written(), snapshot));
+        violations.addAll(idViolations(built.written(), snapshot));
+        violations.addAll(denyViolations(built.written(), snapshot));
         if (violations.isEmpty()) {
             return floorRefusal(built.document(), snapshot);
         }
@@ -82,11 +86,15 @@ public final class DocumentRules {
                 violations));
     }
 
-    private static List<RefusalViolation> packViolations(ActivationDocument document, ClosureSnapshot snapshot) {
-        List<PackRef> packs = document.packs().orElse(List.of());
+    private static List<RefusalViolation> packViolations(ActivationDocument.Written written, ClosureSnapshot snapshot) {
+        List<PackRef> packs = written.packs();
+        Set<String> seen = new HashSet<>();
         List<RefusalViolation> violations = new ArrayList<>();
         for (int i = 0; i < packs.size(); i++) {
-            packViolation(packs.get(i), "/packs/" + i, snapshot).ifPresent(violations::add);
+            PackRef pack = packs.get(i);
+            if (seen.add(pack.packId())) {
+                packViolation(pack, "/packs/" + i, snapshot).ifPresent(violations::add);
+            }
         }
         return violations;
     }
@@ -106,39 +114,36 @@ public final class DocumentRules {
                         "The pack '" + pack.packId() + "' is held at " + held + ", not " + pinned + "."));
     }
 
-    private static List<RefusalViolation> idViolations(ActivationDocument document, ClosureSnapshot snapshot) {
+    private static List<RefusalViolation> idViolations(ActivationDocument.Written written, ClosureSnapshot snapshot) {
         List<RefusalViolation> violations = new ArrayList<>(unknown(
                 "/missionTypes",
-                document.missionTypes().map(List::copyOf).orElse(List.of()),
+                written.missionTypes(),
                 snapshot.missionTypes(),
                 "unknown_mission_type",
                 "mission type"));
-        for (Map.Entry<ArtifactKind, SortedSet<String>> list :
-                document.selected().entrySet()) {
+        for (Map.Entry<ArtifactKind, List<String>> list : written.selected().entrySet()) {
             violations.addAll(unknownArtifacts("/selected", list, snapshot));
         }
         return violations;
     }
 
-    private static List<RefusalViolation> denyViolations(ActivationDocument document, ClosureSnapshot snapshot) {
+    private static List<RefusalViolation> denyViolations(ActivationDocument.Written written, ClosureSnapshot snapshot) {
         List<RefusalViolation> violations = new ArrayList<>();
-        for (Map.Entry<ArtifactKind, SortedSet<String>> list :
-                document.deactivated().entrySet()) {
+        for (Map.Entry<ArtifactKind, List<String>> list : written.deactivated().entrySet()) {
             violations.addAll(unknownArtifacts("/deactivated", list, snapshot));
         }
         return violations;
     }
 
     private static List<RefusalViolation> unknownArtifacts(
-            String member, Map.Entry<ArtifactKind, SortedSet<String>> list, ClosureSnapshot snapshot) {
+            String member, Map.Entry<ArtifactKind, List<String>> list, ClosureSnapshot snapshot) {
         ArtifactKind kind = list.getKey();
         return unknown(
                 member + "/" + kind.token(), list.getValue(), snapshot.held(kind), "unknown_artifact", kind.token());
     }
 
     private static List<RefusalViolation> unknown(
-            String pointer, Collection<String> ids, Set<String> held, String code, String noun) {
-        List<String> listed = List.copyOf(ids);
+            String pointer, List<String> listed, Set<String> held, String code, String noun) {
         List<RefusalViolation> violations = new ArrayList<>();
         for (int i = 0; i < listed.size(); i++) {
             String id = listed.get(i);

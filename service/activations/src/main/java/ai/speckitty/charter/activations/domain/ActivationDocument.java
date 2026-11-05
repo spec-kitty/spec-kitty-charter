@@ -327,23 +327,90 @@ public final class ActivationDocument {
     }
 
     /**
-     * A document built, and the shape violations met on the way (ADR-0020 D10). The document is always built: a part
-     * with a violation is left out of it.
+     * A document built, the shape violations met on the way (ADR-0020 D10), and the lists as the request body wrote them,
+     * so that every violation points into the body (RFC 6901). The document is always built: a part with a shape
+     * violation is left out of it, and out of the written form.
      *
      * @param document the document
      * @param violations the shape violations, in the order met; empty when the shape is valid
+     * @param written the lists as written, which {@link DocumentRules} indexes
      */
-    public record Built(ActivationDocument document, List<RefusalViolation> violations) {
+    public record Built(ActivationDocument document, List<RefusalViolation> violations, Written written) {
 
         /**
          * Copies the violations.
          *
          * @param document the document
          * @param violations the shape violations
+         * @param written the lists as written
          */
         public Built {
             Objects.requireNonNull(document, "document");
+            Objects.requireNonNull(written, "written");
             violations = List.copyOf(violations);
+        }
+
+        /**
+         * A document with no written form of its own, such as one a per-artifact write derives: its canonical lists
+         * stand in for the written ones, so a pointer indexes the canonical document.
+         *
+         * @param document the document
+         * @param violations the shape violations
+         */
+        public Built(ActivationDocument document, List<RefusalViolation> violations) {
+            this(document, violations, Written.canonical(document));
+        }
+    }
+
+    /**
+     * The lists of a request body in the order written, duplicates included, for the members whose ids
+     * {@link DocumentRules} checks against the closure.
+     *
+     * @param packs the packs as written, a repeated pack included; empty when absent
+     * @param missionTypes the mission type ids as written; empty when absent
+     * @param selected the allow lists as written, per kind the document keeps
+     * @param deactivated the deny lists as written, per kind the document keeps
+     */
+    public record Written(
+            List<PackRef> packs,
+            List<String> missionTypes,
+            Map<ArtifactKind, List<String>> selected,
+            Map<ArtifactKind, List<String>> deactivated) {
+
+        /**
+         * Copies every list.
+         *
+         * @param packs the packs
+         * @param missionTypes the mission types
+         * @param selected the allow lists
+         * @param deactivated the deny lists
+         */
+        public Written {
+            packs = List.copyOf(packs);
+            missionTypes = List.copyOf(missionTypes);
+            selected = copyOfLists(selected);
+            deactivated = copyOfLists(deactivated);
+        }
+
+        /**
+         * A document's canonical lists, standing in for a written form it does not have.
+         *
+         * @param document the document
+         * @return its canonical lists
+         */
+        public static Written canonical(ActivationDocument document) {
+            return new Written(
+                    document.packs().orElse(List.of()),
+                    document.missionTypes().map(List::copyOf).orElse(List.of()),
+                    copyOfLists(document.selected()),
+                    copyOfLists(document.deactivated()));
+        }
+
+        private static Map<ArtifactKind, List<String>> copyOfLists(
+                Map<ArtifactKind, ? extends Collection<String>> lists) {
+            Map<ArtifactKind, List<String>> copy = new EnumMap<>(ArtifactKind.class);
+            lists.forEach((kind, ids) -> copy.put(kind, List.copyOf(ids)));
+            return Collections.unmodifiableMap(copy);
         }
     }
 
@@ -352,7 +419,8 @@ public final class ActivationDocument {
      * {@code unknown_kind} for a kind outside {@link #kinds()}, {@code duplicate_pack} for a pack named twice and
      * {@code empty_deny_list} for a deny list written empty. Shapes the contract's schema already refuses
      * ({@code schemaVersion} other than 1, an empty {@code packs} list) are programming errors here and throw.
-     * Pointers index the list as written.
+     * Every pointer indexes the body as written; {@link Built#written()} keeps the written lists for
+     * {@link DocumentRules}.
      */
     public static final class Builder {
 
@@ -364,6 +432,9 @@ public final class ActivationDocument {
         private final Map<ArtifactKind, SortedSet<String>> selected = new EnumMap<>(ArtifactKind.class);
         private final Map<ArtifactKind, SortedSet<String>> deactivated = new EnumMap<>(ArtifactKind.class);
         private final List<RefusalViolation> violations = new ArrayList<>();
+        private List<PackRef> writtenPacks = List.of();
+        private final Map<ArtifactKind, List<String>> writtenSelected = new EnumMap<>(ArtifactKind.class);
+        private final Map<ArtifactKind, List<String>> writtenDeactivated = new EnumMap<>(ArtifactKind.class);
 
         private Builder() {}
 
@@ -399,6 +470,7 @@ public final class ActivationDocument {
                 keepOnce(written.get(i), i, seen, kept);
             }
             this.packs = Optional.of(kept);
+            this.writtenPacks = List.copyOf(written);
             return this;
         }
 
@@ -463,6 +535,7 @@ public final class ActivationDocument {
         public Builder selected(ArtifactKind kind, Collection<String> ids) {
             if (knownKind(kind, "/selected/" + kind.token())) {
                 selected.put(kind, frozen(ids));
+                writtenSelected.put(kind, List.copyOf(ids));
             }
             return this;
         }
@@ -479,6 +552,7 @@ public final class ActivationDocument {
             String pointer = "/deactivated/" + kind.token();
             if (knownKind(kind, pointer) && nonEmptyDenyList(ids, pointer)) {
                 deactivated.put(kind, frozen(ids));
+                writtenDeactivated.put(kind, List.copyOf(ids));
             }
             return this;
         }
@@ -507,7 +581,9 @@ public final class ActivationDocument {
          * @return the built document
          */
         public Built build() {
-            return new Built(new ActivationDocument(this), violations);
+            Written written =
+                    new Written(writtenPacks, missionTypes.orElse(List.of()), writtenSelected, writtenDeactivated);
+            return new Built(new ActivationDocument(this), violations, written);
         }
     }
 }

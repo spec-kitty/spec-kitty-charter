@@ -106,7 +106,7 @@ class DocumentRulesTest {
                 .containsExactly(tuple("/activatedKinds/0", "unknown_kind"));
     }
 
-    /** An index points into the canonical list the service stores and answers: sorted, deduplicated. */
+    /** Every index points into the body as written. */
     @Test
     void everyViolationIsCollectedInJsonPointerOrder() {
         ActivationDocument.Builder builder = ActivationDocument.builder()
@@ -146,7 +146,74 @@ class DocumentRulesTest {
                         "/packs/9/packId",
                         "/packs/10/packId",
                         "/selected/directive/0",
-                        "/selected/directive/2");
+                        "/selected/directive/1");
+    }
+
+    @Test
+    void anUnknownIdWrittenBeforeASortedKnownOneIsNamedWhereWritten() {
+        List<RefusalViolation> violations =
+                violations(ActivationDocument.builder().selected(DIRECTIVE, List.of("Z", "D1")));
+
+        assertThat(violations)
+                .extracting(RefusalViolation::pointer, RefusalViolation::code)
+                .containsExactly(tuple("/selected/directive/0", "unknown_artifact"));
+        assertThat(violations.getFirst().detail()).contains("'Z'");
+    }
+
+    @Test
+    void aRepeatedUnknownIdIsNamedAtEveryWrittenPosition() {
+        assertThat(violations(ActivationDocument.builder()
+                        .deactivated(TACTIC, List.of("X", "T1", "X"))
+                        .missionTypes(List.of("software-dev", "ghost"))))
+                .extracting(RefusalViolation::pointer)
+                .containsExactly("/deactivated/tactic/0", "/deactivated/tactic/2", "/missionTypes/1");
+    }
+
+    @Test
+    void aDuplicatePackThenAnUnknownPackHaveDistinctPointers() {
+        assertThat(violations(ActivationDocument.builder()
+                        .packs(List.of(PackRef.of("org-a"), PackRef.of("org-a"), PackRef.of("zeta")))))
+                .extracting(RefusalViolation::pointer, RefusalViolation::code)
+                .containsExactly(tuple("/packs/1/packId", "duplicate_pack"), tuple("/packs/2/packId", "unknown_pack"));
+    }
+
+    @Test
+    void aDuplicatePackThenAMismatchedPinPointAtTheirOwnPositions() {
+        assertThat(violations(ActivationDocument.builder()
+                        .packs(List.of(
+                                PackRef.of("org-a"),
+                                PackRef.pinned("org-a", "9.9.9"),
+                                PackRef.pinned("built-in", "0.1")))))
+                .extracting(RefusalViolation::pointer, RefusalViolation::code)
+                .containsExactly(
+                        tuple("/packs/1/packId", "duplicate_pack"), tuple("/packs/2/version", "version_not_held"));
+    }
+
+    @Test
+    void mixedKindsAndMembersEachPointWhereWritten() {
+        assertThat(violations(ActivationDocument.builder()
+                        .selected(TACTIC, List.of("T2", "NOPE", "T1"))
+                        .selected(DIRECTIVE, List.of("D3", "D2", "Q"))
+                        .deactivated(DIRECTIVE, List.of("D3", "GONE"))
+                        .activatedKinds(List.of(DIRECTIVE, ArtifactKind.ASSET))))
+                .extracting(RefusalViolation::pointer, RefusalViolation::code)
+                .containsExactly(
+                        tuple("/activatedKinds/1", "unknown_kind"),
+                        tuple("/deactivated/directive/1", "unknown_artifact"),
+                        tuple("/selected/directive/2", "unknown_artifact"),
+                        tuple("/selected/tactic/1", "unknown_artifact"));
+    }
+
+    @Test
+    void aDocumentWithoutAWrittenFormIsIndexedByItsCanonicalLists() {
+        ActivationDocument document = ActivationDocument.builder()
+                .selected(DIRECTIVE, List.of("Z", "A", "D1"))
+                .build()
+                .document();
+
+        assertThat(DocumentRules.check(document, CLOSURE).orElseThrow().violations())
+                .extracting(RefusalViolation::pointer)
+                .containsExactly("/selected/directive/0", "/selected/directive/2");
     }
 
     @Test
