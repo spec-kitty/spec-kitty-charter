@@ -270,15 +270,12 @@ class ArtifactReadServiceTest {
     }
 
     @Test
-    void anUnconfiguredPackIsNotFoundOnTheListWithTheStorageRefusalAsCause() {
+    void anUnconfiguredPackIsNotFoundOnTheListWithNothingChained() {
         assertThatThrownBy(() -> service.list(ABSENT, Optional.empty(), Optional.empty(), 50))
                 .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
                     assertThat(refused.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
                     assertThat(refused.getMessage()).isEqualTo("Pack absent was not found.");
-                    assertThat(refused.getCause())
-                            .isInstanceOfSatisfying(
-                                    CharterRefusal.class,
-                                    cause -> assertThat(cause.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+                    assertThat(refused.getCause()).isNull();
                 });
     }
 
@@ -634,7 +631,7 @@ class ArtifactReadServiceTest {
                 .build();
     }
 
-    /** Every port the generic and the per-kind reads ask, over the one map of packs; an unknown pack is unreadable. */
+    /** Every port the generic and the per-kind reads ask, over the one map of packs; an unknown pack is not found. */
     private final class InMemoryStore
             implements PackRepository,
                     TacticRepository,
@@ -659,7 +656,7 @@ class ArtifactReadServiceTest {
         private Pack contents(PackIdentifier pack) {
             Pack found = stored.get(pack);
             if (found == null) {
-                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "no pack " + pack.value());
+                throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + pack.value() + " was not found.");
             }
             return found;
         }

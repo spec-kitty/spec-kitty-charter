@@ -561,7 +561,7 @@ class ToolguideControllerTest {
         @Override
         public Optional<Toolguide> load(PackIdentifier id, ToolguideIdentifier toolguide) {
             if (!PACK.equals(id)) {
-                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "no pack " + id.value());
+                throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + id.value() + " was not found.");
             }
             return pack.toolguides().stream()
                     .filter(t -> t.id().equals(toolguide))

@@ -379,7 +379,7 @@ class ArtifactControllerTest {
                 .andExpect(jsonPath("$.status").value(404));
     }
 
-    /** Every port the reads ask, over the one pack; another pack is unreadable, as storage refuses it. */
+    /** Every port the reads ask, over the one pack; another pack is not found, as storage refuses it. */
     private final class InMemoryStore
             implements PackRepository,
                     TacticRepository,
@@ -394,7 +394,7 @@ class ArtifactControllerTest {
         @Override
         public Pack load(PackIdentifier asked) {
             if (!asked.equals(PACK)) {
-                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "no pack " + asked.value());
+                throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + asked.value() + " was not found.");
             }
             return pack;
         }
