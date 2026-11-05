@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.infra.fetch;
 import static ai.speckitty.charter.packs.infra.fetch.AddressClasses.GLOBAL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 import ai.speckitty.charter.packs.application.GuideFetchRefusal;
 import ai.speckitty.charter.packs.application.GuideFetchRefusal.Reason;
@@ -38,7 +39,10 @@ class HttpsGuideFetcherLoopbackTest {
     private static final int MIB = 1024 * 1024;
     private static final String GUIDE = "# Guide\n\nUse the tool.\n";
     private static final Duration DRIP_DEADLINE = Duration.ofMillis(1500);
-    /** A hang cap far above the deadline's own time: TIMEOUT and the cut-off drip prove the guard (#320). */
+    /**
+     * A hang cap far above the deadline's own time (#320). The fetch it bounds is cut off when it passes, so a broken
+     * deadline fails at the cap rather than after the minute-long drip; the TIMEOUT refusal proves the guard.
+     */
     private static final Duration HANG_CAP = Duration.ofSeconds(30);
 
     private HttpServer server;
@@ -85,14 +89,14 @@ class HttpsGuideFetcherLoopbackTest {
         // use up the whole deadline before the request reaches the server, refusing it for the wrong reason.
         assertThat(fetcher(DRIP_DEADLINE).fetch(URI.create("https://guide.example/fast")))
                 .isEqualTo(GUIDE);
-        long started = System.nanoTime();
 
-        assertThatThrownBy(() -> fetcher(DRIP_DEADLINE).fetch(URI.create("https://guide.example/drip")))
-                .isInstanceOfSatisfying(
-                        GuideFetchRefusal.class,
-                        refusal -> assertThat(refusal.reason()).isEqualTo(Reason.TIMEOUT));
         // The drip lasts sixty seconds; a refusal within the cap, well before it ends, is the deadline's.
-        assertThat(Duration.ofNanos(System.nanoTime() - started)).isLessThan(HANG_CAP);
+        assertTimeoutPreemptively(
+                HANG_CAP,
+                () -> assertThatThrownBy(() -> fetcher(DRIP_DEADLINE).fetch(URI.create("https://guide.example/drip")))
+                        .isInstanceOfSatisfying(
+                                GuideFetchRefusal.class,
+                                refusal -> assertThat(refusal.reason()).isEqualTo(Reason.TIMEOUT)));
         assertThat(seenHeaders).containsKey("/drip");
     }
 
