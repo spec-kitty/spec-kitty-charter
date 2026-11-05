@@ -36,5 +36,7 @@ Two follow-ups from the [test suite assessment](/plans/engineering-notes/test-su
   [build guide](/guides/service-build/) now says how to prune the file.
 - **A pack that is not configured is not found on the read side too.** The storage's read side refused an
   identifier that matches no configured pack as `pack_unreadable`, while the write side refused it as
-  `pack_not_found`. Both now refuse it as `pack_not_found`, "Pack X was not found.". The HTTP answer does
-  not change: the read services already turned it into a 404 `pack_not_found`.
+  `pack_not_found`. Both now refuse it as `pack_not_found`, "Pack X was not found.". On a read, the HTTP
+  answer does not change: the read services already turned it into a 404 `pack_not_found`. On a write, a
+  pack directory that disappears between taking the pack's lock and loading the pack now answers 404
+  `pack_not_found` instead of 500 `pack_unreadable`, as `PackNotFound.yaml` describes.
