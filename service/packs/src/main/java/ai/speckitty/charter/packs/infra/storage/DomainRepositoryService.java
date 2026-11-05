@@ -64,7 +64,8 @@ import org.springframework.stereotype.Service;
  * <p>It serves every configured pack through an explicit {@link PackIdentifier}. The identifier is resolved to a pack
  * directory through the configured {@link Locations}: a location whose configured name equals the identifier wins,
  * otherwise the location whose {@code pack.yaml} declares that {@code pack_id}. A directory name is therefore never
- * assumed to be the id. An identifier that no location resolves is refused as an unreadable pack.
+ * assumed to be the id. An identifier that no location resolves is refused {@code PACK_NOT_FOUND}, as the write side
+ * refuses it.
  *
  * <p>The persistence shapes ({@link TacticDso}, {@link PackDescriptorDso}) stay inside this package. Each kind is
  * mapped to and from its domain entity by its {@link KindBinding}, and assembled and committed through the
