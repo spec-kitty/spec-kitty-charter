@@ -1,9 +1,9 @@
 ---
 okf_version: "0.2"
 title: The design's BDD scenarios and contract tests gate each core switch
-description: ADR-0059 records the operator's rulings of 2026-11-04 on the switch gate, the cascade edges, the layer-override grain and ADR-0020's open questions 4 to 7.
+description: ADR-0059 records the operator's rulings of 2026-11-04 and 2026-11-05 on the switch gate, the cascade edges, the layer-override grain and ADR-0020's open questions 4 to 7.
 doc_status: active
-updated: 2026-11-04T00:00:00Z
+updated: 2026-11-05T00:00:00Z
 type: Changelog
 kind: Changelog
 related:
@@ -17,7 +17,7 @@ audience:
 
 # 2026-11-04 — The design's BDD scenarios and contract tests gate each core switch
 
-**[ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) records six operator rulings** that
+**[ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) records six operator rulings** of 2026-11-04 and 2026-11-05 that
 clear the way for the activation writes ([#291](https://github.com/spec-kitty/spec-kitty-charter/issues/291)) and
 the resolution domain ([#10](https://github.com/spec-kitty/spec-kitty-charter/issues/10),
 [#11](https://github.com/spec-kitty/spec-kitty-charter/issues/11)):
@@ -25,7 +25,7 @@ the resolution domain ([#10](https://github.com/spec-kitty/spec-kitty-charter/is
 - An operation is ready for core to switch to it when its design-derived BDD scenarios and contract tests pass, with at least one behavioral scenario. No corpus, shadow or
   observation period gates the switch (ADR-0055 open question 1).
 - The cascade follows `requires`, `suggests`, `refines`, `scope` and `instantiates`, brings an artifact and its enhancers
-  into force together, and passes through `specializes_from` without putting the parent in force.
+  into force together (the `enhances` pull runs at read, within `activatedKinds`), and passes through `specializes_from` without putting the parent in force.
 - A layer override takes the place of the whole artifact; there is no field merge.
 - A document a pack upgrade made stale is served and flagged; writing it back unchanged is refused.
 - The `Activation` answer's `ETag` is its revision: `summary` moves to an effective read and `governanceFingerprint`
@@ -33,5 +33,5 @@ the resolution domain ([#10](https://github.com/spec-kitty/spec-kitty-charter/is
   the contract change.
 - A preset replaces each key it lists.
 
-ADR-0010, ADR-0013, ADR-0020, ADR-0021 and ADR-0055 point to the rulings, and the logical model and the glossary
-use them.
+ADR-0010, ADR-0013, ADR-0020, ADR-0021, ADR-0053 and ADR-0055 point to the rulings, and the logical model,
+the resolution model and the glossary use them.

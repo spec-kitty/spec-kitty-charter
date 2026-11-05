@@ -457,7 +457,7 @@ The middle layer of the three-layer CRG model, contributed by one or more org Ch
 
 ## Overlay Enhancement — `enhances` (CRG Relation)
 
-A directional org-pack overlay relation: a pack artifact field-merges additional content into a built-in artifact, preserving the built-in's existing action sequence and step I/O rather than discarding them. No built-in artifact emits this edge — by design, `enhances` only ever originates from an org- or project-tier pack fragment layered on top of a shipped artifact, never between two built-in nodes. Distinct from Overlay Override, which replaces rather than merges. Canonical source: `RELATION_DESCRIPTIONS[Relation.ENHANCES]` in `src/charter/offering/drg/models.py`.
+A directional org-pack overlay relation: a pack artifact field-merges additional content into a built-in artifact, preserving the built-in's existing action sequence and step I/O rather than discarding them. No built-in artifact emits this edge — by design, `enhances` only ever originates from an org- or project-tier pack fragment layered on top of a shipped artifact, never between two built-in nodes. An activation pulls an enhancer and its target into force together (ADR-0059 decision 2). Distinct from Overlay Override, which replaces rather than merges. Canonical source: `RELATION_DESCRIPTIONS[Relation.ENHANCES]` in `src/charter/offering/drg/models.py`.
 
 {#overlay-override-overrides-crg-relation}
 

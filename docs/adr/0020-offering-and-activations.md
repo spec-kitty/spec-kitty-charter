@@ -179,6 +179,8 @@ Two schemas, both closed, both minted in this repository (ADR-0015):
   contract references it. *(Amended 2026-10-31: the contract mirrors it, and three checks keep the two equal;
   `contextActivations` and `appliedPresets` are left out, `packs` holds `{packId, version?}`, and `Activation`
   carries `governanceFingerprint`. See the amendment.)*
+  *2026-11-05: `governanceFingerprint` leaves `Activation` under [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/)
+  decision 5; the effective reads carry it.*
 - **`Activation`** is the resource: `activationId`, `revision`, `config` (an `ActivationConfig`),
   a derived `summary` (counts of active, inactive, excluded, required, locked and skipped
   artifacts) and `_links`. A config file carries no links and no server fields, so it is wrapped,
