@@ -3,6 +3,7 @@ work_package_id: WP13
 title: select, unselect, deactivate and reactivate (scenarios first)
 dependencies:
 - WP12
+- WP17
 requirement_refs:
 - FR-010
 - FR-011
@@ -121,7 +122,8 @@ Implementation command:
 ## Branch Strategy
 
 - Planning branch and merge target: `issue-360-activated-closure` (PR B).
-- Lane worktree from `lanes.json`. It depends on WP12.
+- Lane worktree from `lanes.json`. It depends on WP12 and on WP17 (the post-PR-A correctness fixes: the precondition
+  order, the typed unknown-root handling, and the striped locks its writes run under).
 - Rebase onto the lane base before review.
 
 ## Out-of-map edits (sequenced by dependency)
