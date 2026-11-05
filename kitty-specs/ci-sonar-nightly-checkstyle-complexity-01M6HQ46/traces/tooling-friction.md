@@ -100,3 +100,6 @@ Entries 10 to 13 are about this mission's own process, and 14 to 18 about the se
 18. **[2026-11-03] Local cspell and markdownlint are not installed**, and "install nothing" applies.
     **Disposition: accepted.** The first CI run caught two unknown words (`hotspot`, `hotspots`),
     fixed in one follow-up commit.
+19. **[2026-11-05] The mission was specified before the no-grandfathering ruling, so its register and stale
+    check came out at landing.** **Disposition: fixed in landing folds.** Spec and plan record the state
+    before the ruling; the note at the top of `spec.md` says what landed.
