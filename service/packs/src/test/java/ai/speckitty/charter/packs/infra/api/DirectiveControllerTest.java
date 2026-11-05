@@ -275,7 +275,7 @@ class DirectiveControllerTest {
         @Override
         public Pack load(PackIdentifier id) {
             if (!PACK.equals(id)) {
-                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "no pack " + id.value());
+                throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + id.value() + " was not found.");
             }
             return pack;
         }
@@ -288,7 +288,7 @@ class DirectiveControllerTest {
         @Override
         public Optional<Directive> load(PackIdentifier id, DirectiveIdentifier directive) {
             if (!PACK.equals(id)) {
-                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "no pack " + id.value());
+                throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + id.value() + " was not found.");
             }
             return pack.directives().stream()
                     .filter(d -> d.id().equals(directive))

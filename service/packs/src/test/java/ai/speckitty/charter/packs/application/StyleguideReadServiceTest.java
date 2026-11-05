@@ -30,6 +30,8 @@ class StyleguideReadServiceTest {
     private static final PackIdentifier PACK_A = new PackIdentifier("pack-a");
     private static final PackIdentifier PACK_B = new PackIdentifier("pack-b");
     private static final PackIdentifier ABSENT = new PackIdentifier("absent");
+    // Configured, but its files cannot be read: the storage refuses it PACK_UNREADABLE.
+    private static final PackIdentifier UNREADABLE = new PackIdentifier("unreadable");
     private static final StyleguideIdentifier JAVA_STYLE = new StyleguideIdentifier("java-style");
 
     private final Styleguide javaStyle = styleguideWithFields(PACK_A, "java-style");
@@ -91,19 +93,25 @@ class StyleguideReadServiceTest {
     }
 
     @Test
-    void anAbsentPackIsAClientSideNotFoundNotAnInternalError() {
+    void anAbsentOrUnreadablePackIsAClientSideNotFoundNotAnInternalError() {
         // Control: the present pack answers, so the refusal is the absence's, not a broken setup.
         assertThat(service.styleguidesOf(PACK_A).value()).isNotEmpty();
 
+        // The storage refuses an unknown pack PACK_NOT_FOUND itself; it passes through, with nothing chained.
         assertThatThrownBy(() -> service.styleguidesOf(ABSENT)).isInstanceOfSatisfying(CharterRefusal.class, r -> {
+            assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
+            assertThat(r.getCause()).isNull();
+        });
+        assertThatThrownBy(() -> service.styleguide(ABSENT, JAVA_STYLE))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND));
+        // A configured pack that cannot be read is not found too, and keeps the storage refusal as its cause.
+        assertThatThrownBy(() -> service.styleguidesOf(UNREADABLE)).isInstanceOfSatisfying(CharterRefusal.class, r -> {
             assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
             assertThat(r.getCause())
                     .isInstanceOfSatisfying(
                             CharterRefusal.class, c -> assertThat(c.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
         });
-        assertThatThrownBy(() -> service.styleguide(ABSENT, JAVA_STYLE))
-                .isInstanceOfSatisfying(
-                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND));
     }
 
     @Test
@@ -170,19 +178,24 @@ class StyleguideReadServiceTest {
                 .build();
     }
 
-    private Pack packOf(PackIdentifier pack) {
-        Pack.Builder builder = Pack.builder().id(pack).descriptor(descriptor(pack));
-        stored.getOrDefault(pack, List.of()).forEach(builder::styleguide);
-        return builder.build();
+    /** The stored styleguides of a pack, refused as the storage refuses an unknown or an unreadable pack. */
+    private List<Styleguide> storedIn(PackIdentifier pack) {
+        if (pack.equals(UNREADABLE)) {
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack unreadable has no pack.yaml");
+        }
+        List<Styleguide> found = stored.get(pack);
+        if (found == null) {
+            throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + pack.value() + " was not found.");
+        }
+        return found;
     }
 
     private final class InMemoryPacks implements PackRepository {
         @Override
         public Pack load(PackIdentifier pack) {
-            if (!stored.containsKey(pack)) {
-                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "no pack " + pack.value());
-            }
-            return packOf(pack);
+            Pack.Builder builder = Pack.builder().id(pack).descriptor(descriptor(pack));
+            storedIn(pack).forEach(builder::styleguide);
+            return builder.build();
         }
     }
 
@@ -194,11 +207,9 @@ class StyleguideReadServiceTest {
 
         @Override
         public Optional<Styleguide> load(PackIdentifier pack, StyleguideIdentifier styleguide) {
-            List<Styleguide> found = stored.get(pack);
-            if (found == null) {
-                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "no pack " + pack.value());
-            }
-            return found.stream().filter(s -> s.id().equals(styleguide)).findFirst();
+            return storedIn(pack).stream()
+                    .filter(s -> s.id().equals(styleguide))
+                    .findFirst();
         }
     }
 }

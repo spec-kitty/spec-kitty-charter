@@ -175,7 +175,7 @@ class ParadigmRegistrationServiceTest {
         public Pack load(PackIdentifier pack) {
             Pack found = packs.get(pack);
             if (found == null) {
-                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "no pack " + pack.value());
+                throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + pack.value() + " was not found.");
             }
             return found;
         }
