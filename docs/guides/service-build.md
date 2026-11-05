@@ -2,7 +2,7 @@
 title: Building the service
 description: How to build and test the charter service, what each verification task checks, how to change the contract or a dependency, and how a release is cut.
 doc_status: active
-updated: 2026-11-04T00:00:00Z
+updated: 2026-11-05T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -64,8 +64,7 @@ How to build the charter service and run every check CI runs.
 | `:charter-api:validateContract` | The split OpenAPI document parses and validates |
 | `:charter-api:generateContract` | Spring interfaces and DTOs are generated; controllers that drift from the contract fail to compile |
 | `:<module>:spotlessCheck` | Hand-written main and test sources are formatted by palantir-java-format |
-| `:<module>:checkstyleMain`, `checkstyleTest` | The Checkstyle rules in `config/checkstyle/checkstyle.xml`, the [complexity limits](#complexity-limits) among them; any violation fails |
-| `:<module>:checkCheckstyleRegister` | Every entry of the exception register is still needed ([the stale check](#the-stale-check)) |
+| `:<module>:checkstyleMain`, `checkstyleTest` | The Checkstyle rules in `config/checkstyle/checkstyle.xml`; any violation fails |
 | `:<module>:compileJava` | `-Xlint:all -Werror`, Error Prone, and NullAway on `@NullMarked` code (test sources get Error Prone without NullAway) |
 | `:<module>:javadoc` | Javadoc of main sources with doclint on and warnings as errors |
 | `:<module>:test`, `jacocoTestReport` | Unit tests of each module, and its coverage report |
@@ -278,63 +277,17 @@ it is derived from the title), no text before `## Overview`, then the fixed bloc
 (ADR-0043 decision 4). The `markdown` content form reads it, and diverges from CommonMark on
 purpose: an HTML comment is text, so a column-0 `##` inside one is a heading.
 
-## Complexity limits
-
-Four Checkstyle rules limit the size of a method. They apply to main and test sources alike, and a
-violation fails `checkstyleMain` or `checkstyleTest`, so it blocks the pull request.
-
-| Rule | Limit |
-|---|---|
-| `CyclomaticComplexity` | 15. A whole `switch` counts as one decision point. |
-| `NPathComplexity` | 1000 paths through the method. |
-| `MethodLength` | 60 lines, not counting blank lines and comments. |
-| `NestedIfDepth` | 1. One `if` inside another is fine; an `if` at the third level fails. An `else if` chain does not nest. |
-
-A failure names the file, the line and the measured value, for example:
-
-```text
-[ant:checkstyle] [ERROR] /…/Resolver.java:42:5: Cyclomatic Complexity is 17 (max allowed is 15). [CyclomaticComplexity]
-```
-
-To fix it, simplify the method: extract a helper, replace a chain of conditions with a lookup, or
-return early. New code never gets a register entry. ADR-0058 (PR #366) records the limits.
-
 ## Exceptions to a gate
 
 `config/checkstyle/suppressions.xml` is the one register of exceptions to the hand-written
-gates. No gate is relaxed anywhere else, and blanket suppressions are not allowed.
+gates. It holds no entry today. An entry names the rule, the file, the reason and a sunset
+date; no gate is relaxed anywhere else, and blanket suppressions are not allowed.
 
-The register lists the methods that were over a complexity limit when the limits landed. It holds
-14 entries, and it only shrinks: [#367](https://github.com/spec-kitty/spec-kitty-charter/issues/367)
-works it down. Each entry is a `suppress-xpath` element for one method, never a whole file:
-
-- `checks` lists exactly the rules that method breaks, joined by `|`;
-- `files` is a regex that matches the file's path;
-- `query` names the method, as `//CLASS_DEF//METHOD_DEF[./IDENT[@text='run']]`. Checkstyle reports
-  `NestedIfDepth` on the inner `if`, so an entry for it adds `//LITERAL_IF` to that query.
-
-The comment directly above each entry carries four fields: `rule:`, `file:` (relative to the
-repository root), `reason:` and `sunset:` (an ISO date by which the entry goes or is justified
-again). The header states the count, `Size: 14 entries.`
-
-To shrink the register, simplify a method until it passes, then delete its entry (or drop the rules
-it no longer breaks from `checks`) and lower the `Size:` count in the same change.
-
-### The stale check
-
-Checkstyle does not report a suppression that suppresses nothing, so `checkCheckstyleRegister`
-does. It is part of `check`, so `verifyAll` runs it in every module. It runs the same rules without
-the register over the register's files (`checkstyleRegisterProbeMain` and `checkstyleRegisterProbeTest`,
-on a configuration that `checkstyleRegisterProbeConfig` writes). An entry is live while each rule it
-lists still fires on its method. The check fails with one line per finding:
-
-| Finding | Meaning | What to do |
-|---|---|---|
-| `STALE` | A rule the entry lists no longer fires on its method. | Delete the entry, or narrow `checks` to the rules that still fire, as the message says. |
-| `MISSING_FILE` | The comment's `file:` does not exist. | Delete the entry, or correct its `file:` and `files`. |
-| `MISSING_FIELD` | The comment lacks `rule:`, `file:`, `reason:` or `sunset:`; the sunset is not an ISO date; `files` is not a regex; or `checks` is empty. | Add or correct the field. |
-| `SIZE_MISMATCH` | The header's `Size: N entries.` line is missing or does not match the count. | Correct the header. |
-| `UNMAPPED` | The check cannot tie a finding to a method: the entry scopes a rule other than the four limits to a method, the probe reports a file outside the module, or no method declaration can be read where the probe reports one. | Make a rule that is not one of the four a file-wide `suppress`; otherwise read the reported line, since the check cannot judge the register. |
+The four complexity limits decided in
+[ADR-0058](/adr/0058-sonarcloud-nightly-reported-and-checkstyle-complexity-per-pr/) are not on yet.
+[#367](https://github.com/spec-kitty/spec-kitty-charter/issues/367) first refactors the methods over
+them, with no register entry, and
+[#371](https://github.com/spec-kitty/spec-kitty-charter/issues/371) then turns them on.
 
 ## The nightly SonarCloud report
 
