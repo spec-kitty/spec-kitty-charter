@@ -274,3 +274,5 @@ stdin
 stdout
 kebab
 rescopes
+okhttp
+gson

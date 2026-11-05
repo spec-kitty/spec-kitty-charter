@@ -29,5 +29,8 @@ audience:
 - [Compose packs](/guides/compose-packs/) — declaring `depends_on`, qualifying references across packs, settling
   a sibling conflict, and the table of the eleven composition refusals.
 
-Consumer how-tos (depending on a contract release, running the service locally) will be
-added when there is something to depend on and run.
+- [Generate your own client](/guides/generate-a-client/) — fetch and verify the published contract, and generate a Java
+  or Python client with the pinned generator and the options that tolerate additive 0.x changes.
+
+More consumer how-tos (depending on a contract release, running the service locally) will be added when there is
+something to depend on and run.
