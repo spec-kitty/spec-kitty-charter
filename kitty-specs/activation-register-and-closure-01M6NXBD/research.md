@@ -135,6 +135,53 @@ flowchart LR
   `activations.feature`, and lowering the count in `ReservedOperationCoverageTest` (13 → 8 after PR A, → 4 after
   PR B). The `ReservedOperationInterceptor` keeps serving the effective reads.
 
+## Squad dispositions (post-plan, 2026-11-05)
+
+Cast: `architect-alphonso`, whose verdict was SOUND-WITH-FIXES; `reviewer-renata`, NOT-READY; `researcher-robbie`,
+GAPS-FOUND.
+
+Every finding has exactly one disposition:
+
+- **accepted**: the finding is valid and the artifact changed. The location of the change is given.
+- **changed**: the concern was resolved another way.
+- **deferred**: the finding is valid but deferred, with a reason.
+
+| # | Finding | Disposition | Where |
+|---|---|---|---|
+| R1 | FR-003 428 on an unconditional replace contradicts ADR-0020 D6 | accepted | spec FR-003, US1 AS4; plan IC-06 |
+| R2 | `via` is not a contract field | accepted (dropped; provenance is effective-read work per ADR-0059 D2.2) | spec FR-012/013, US3; data-model |
+| R3 | stale-id flag has no home and breaks the strong ETag | accepted (read half moves to the effective reads) | spec FR-017, Edge Cases |
+| R4 | empty deny list is a 422 | accepted | spec FR-006, US1 AS7 |
+| R5 | path unknown id is 404; `includeDeactivated`, `mission_type` and the `["all", kind]` mix are missing | accepted | spec FR-010–013, US3 AS3/7/8 |
+| R6 | absent-means-none contract text drift; ADR-0050 | accepted / changed (ADR-0050 move out of scope, assumption) | plan IC-06 contract A; spec Assumptions |
+| R7 | durability not provable on the in-memory adapter | accepted | spec NFR-005; plan IC-06 |
+| R8 | FR-022/023 have no scenarios | accepted | spec US1 AS6, US6 |
+| R9 | BDD wiring: coverage scan and binding pin | accepted | plan IC-06, IC-09 |
+| R10 | reserved count | accepted (13 → 9 → 4) | plan IC-06, IC-09 |
+| R11 | vacuous US3 AS4 and missing no-op cases | accepted | spec US3 AS5, US4 AS4, US5 AS2 |
+| R12 | both validators sent; `<pack>::` outside the closure | accepted | spec Edge Cases |
+| R13 | `skippedShared` active set inconsistent | accepted (selected + floor) | spec Assumptions; plan IC-08 |
+| R14 | `summary` home and 304 left unsettled; ADR-0059 not on the base | accepted | plan IC-06 contract A; spec C-004 |
+| B1 | ADR-0059 revised 2026-11-05 contradicts the 13:15 decisions | accepted (later operator rulings supersede) | spec Context, FR-013/014, US3/US4; plan IC-08 |
+| B2 | `dependsOn` must reuse the offering shape | accepted (items are `OfferingPack`) | spec FR-009; plan IC-03/06 |
+| B3 | #360's acceptance points at the offering | accepted (issue comment at PR A) | spec Assumptions; plan IC-10 |
+| B4 | the plan rebuilds If-Match and the body guard | accepted (moved and shared) | plan IC-01 |
+| B5 | `MutabilityPolicySource` is global; the write gate; ADR-0012 D4/D5 | accepted (`PerPackPolicy`, shared function, ADR-0061 cites D4/D5) / deferred (built-in policy file and migration: no pack ships one; follow-up issue) | plan IC-03 |
+| B6 | open-PR collisions | accepted | plan "Rebase order" and the IC notes |
+| B7 | `ReservedRefusalCodesTest`, raised flags, #125 build notes | accepted | plan IC-06, IC-09 |
+| B8 | doc list incomplete; DIV numbering | accepted | plan IC-10; spec C-006 |
+| B9 | skill's REQUIRED default disappears | accepted (divergence entry) | spec C-006 |
+| A1 | domain must not reach the application port | accepted (`ClosureSnapshot` value) | plan Structure Decision, IC-05 |
+| A2 | N composes per request | accepted (one verified snapshot) | spec NFR-007; plan IC-03 |
+| A3 | rooted compose still reads every pack | accepted | plan IC-02; spec US2 AS2 |
+| A4 | reserved-operation machinery cannot be split per method | accepted | plan IC-01 |
+| A5 | traversal split-brain risk | accepted (`reach` in packs only) | plan IC-07/08 |
+| A6 | per-pack policy and a shared resolution | accepted | plan IC-03 |
+| A7 | shared transport home | accepted | plan IC-01 |
+| A8 | thin mirrors; kinds from `ArtifactKind.activatable()` | accepted | plan IC-05 (no new kind list) |
+| A9 | cross-slice adapter rule undocumented | accepted | plan IC-04 |
+| A10–12 | notes (offering unchanged, wiring feasible, PR split coherent) | accepted (no change) | — |
+
 ## Open review items (logged, not silent)
 
 1. The required floor is closure-scoped (R5), an assumed default flagged to the operator on 2026-11-05.

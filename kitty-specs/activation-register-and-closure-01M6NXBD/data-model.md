@@ -17,13 +17,13 @@
 | missionTypes | absent \| set of id | as above |
 | languages | absent \| set of token | absent means no language filter |
 | selected | map kind → absent \| set of id | as above, per kind |
-| deactivated | map kind → set of id | an empty list is omitted |
+| deactivated | map kind → non-empty set of id | an incoming empty list is a `422`; a list a reactivate empties is dropped |
 
 **Invariants**
 
 - **Canonical form.**
-  - Sets are sorted and deduplicated, and ids are stored as declared ids.
-  - An empty deny list is dropped. `[]` is kept on every allow list.
+  - Allow lists are sorted and deduplicated (`packs` keeps its written order), and ids are stored as declared ids.
+  - A deny list is never empty. `[]` is kept on every allow list.
 - **Validation is closure-scoped.** Every id names an artifact held in the document's closure.
 - **The floor is never denied.** No deny entry is written for a required or locked artifact. A stored one is tolerated
   but not applied.
@@ -43,9 +43,9 @@
 ### ActivationChange (result of a per-artifact or preset write)
 
 - `revision`: the new revision.
-- `applied`: entries of `{kind, id, via}`, where `via` is one of `selected`, `requires`, `suggests`, `refines`,
-  `scope`, `instantiates`, `enhances` or `preset`.
-- `cleared`: the deny entries removed.
+- `applied`: `ArtifactReference` entries `{kind, artifactId}` selected by the write. The contract has no
+  provenance member; the `enhances` reason belongs to the effective reads (ADR-0059 D2.2).
+- `cleared`: the deny entries removed, as `ArtifactReference` entries.
 - `skipped`: the skipped report.
 
 ### SkippedReport
@@ -73,10 +73,11 @@ Each transition is a compare-and-set on the revision, under the per-id lock.
 |---|---|
 | `PackCompositionResolver` | `resolveRooted(available, roots)`; public `closureOf` (depends_on and parent_pack) |
 | `PackCompositionFacts` | gains `edges: List<(source urn, relation, target ref)>` as written in graph documents |
-| `ClosureFacts` (new answer of the rooted compose) | per pack: id, name, version, level, `dependsOn: [{packId, range}]`, in dependency order |
-| `PolicyFile` (new) | `kind_defaults: Map<NodeKind, MutabilityLevel>`, `artifacts: Map<Urn, MutabilityLevel>`; becomes a `MutabilityPolicySource` |
+| Closure facts (rooted compose) | per pack, in the offering's shape (`OfferingPack`: `packId`, `descriptorPackId`, level, name, version, `dependsOn: [ResolvedDependency]`), in dependency order |
+| `PolicyFile` / `PerPackPolicy` (new) | `kind_defaults: Map<NodeKind, MutabilityLevel>`, `artifacts: Map<Urn, MutabilityLevel>`, keyed by pack; `levelIn(closure, urn)` returns the highest level along the closure and the pack that set it, shared with the registration write gate |
 | `PackDescriptor` | gains optional `mutabilityPolicy` (pack-relative path) |
-| Queries (application) | `lockOf(closure, urn) -> (level, pack)` (the maximum level along the closure, owner first); `requiredIn(closure) -> Map<urn, pack>`; `presetIn(closure, presetId) -> (Preset, pack)`; `holds(closure, urn)`; edge helpers (forward filtered, reverse enhances, ancestors) |
+| `ClosureQueries` (application) | one verified read → the closure snapshot: closure facts, held URNs per kind, `requiredIn`, lock levels, presets |
+| `Reachability` (application, PR B) | `reach(snapshot, starts, relations, stop, lineage)` on `GraphWalk` over typed edges; `enhancersOf(snapshot, urns)` |
 
 ## Kernel
 
