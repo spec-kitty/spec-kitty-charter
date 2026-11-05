@@ -17,11 +17,14 @@ audience:
 
 # 2026-11-05 — Deadline checks in the packs tests become hang caps
 
+**A loaded CI runner can no longer fail the packs deadline checks**
+([#320](https://github.com/spec-kitty/spec-kitty-charter/issues/320)), and each still fails when the guard it proves
+breaks.
+
 Eight checks in the `packs` tests bounded the time of work that proves a guard: the YAML alias budget, the
 linear-time pattern engine, the commit lock, and the guide fetcher's deadline on the lookup and the body. Their
 bounds of 2 to 10 seconds could be missed by a loaded CI runner, the way the CPU-time budget of
-[#316](https://github.com/spec-kitty/spec-kitty-charter/issues/316) was
-([#320](https://github.com/spec-kitty/spec-kitty-charter/issues/320)).
+[#316](https://github.com/spec-kitty/spec-kitty-charter/issues/316) was.
 
 - **Each bound is now a 30 s hang cap**, far above the time of the work it bounds: a few milliseconds, or for
   the fetcher, its own deadline of 0.2 s or 1.5 s. Two more 2 s bounds in the fetcher's deadline tests, and the
