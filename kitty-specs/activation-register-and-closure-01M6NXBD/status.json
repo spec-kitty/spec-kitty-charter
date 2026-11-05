@@ -48,7 +48,7 @@
     },
     "WP02": {
       "actor": "claude",
-      "agent": "claude:claude-opus-5-5:java-jenny",
+      "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -62,6 +62,7 @@
         "Resubmitted unchanged (cfb05c9) with full implementer identity"
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/activation-register-and-closure-01M6NXBD-coord/kitty-specs/activation-register-and-closure-01M6NXBD/tasks/WP02-packs-rooted-compose/review-cycle-1.md",
         "reference": "review-cycle://activation-register-and-closure-01M6NXBD/WP02-packs-rooted-compose/review-cycle-1.md",
@@ -69,14 +70,14 @@
         "verdict": "changes_requested"
       },
       "role": "implementer",
-      "shell_pid": 20789,
-      "shell_pid_created_at": "1793907158.26",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T008": "done",
-        "T009": "done",
-        "T010": "done",
-        "T011": "done",
-        "T012": "done"
+        "T008": "planned",
+        "T009": "planned",
+        "T010": "planned",
+        "T011": "planned",
+        "T012": "planned"
       }
     },
     "WP03": {
