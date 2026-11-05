@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "mission_slug": "test-module-gaps-and-promise-scenarios-01M6NDHM",
+  "mission_id": "01M6NDHMB267DR71GJF4K0PAES",
+  "mission_branch": "kitty/mission-test-module-gaps-and-promise-scenarios-01M6NDHM",
+  "target_branch": "test-module-gaps-and-promise-scenarios",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "service/kernel/src/test/java/ai/speckitty/charter/kernel/validation/**"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "service/profiles/src/test/java/ai/speckitty/charter/profiles/**"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/fetch/CappedBodySubscriberTest.java"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "contracts/charter/changes/**",
+        "contracts/charter/scenarios/**",
+        "docs/architecture/behavior-and-scenarios.md",
+        "src/test/resources/features/**",
+        "tests/scenarios/charter/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    }
+  ],
+  "computed_at": "2026-11-05T08:53:05.104169+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "planning_commit_sha": "e2b90c60f34081969dda06b17d40dbdb217cf6d8"
+}

@@ -1,0 +1,161 @@
+{
+  "rows": {
+    "#115": {
+      "evidence_ref": "Cited for context or overlap only",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#149": {
+      "evidence_ref": "Cited for context or overlap only",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#239": {
+      "evidence_ref": "Cited for context or overlap only",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#291": {
+      "evidence_ref": "Cited for context or overlap only",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#31": {
+      "evidence_ref": "Cited for context: the #31 rescope asks the tests/scenarios/charter files to become pointers, which WP04 does under #374",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#359": {
+      "evidence_ref": "Cited for context or overlap only",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#360": {
+      "evidence_ref": "Cited for context or overlap only",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#367": {
+      "evidence_ref": "Cited for context or overlap only",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#370": {
+      "evidence_ref": "WP01 1a3e09f1 (kernel.validation 45/45 killed, was 24/18 NC/3 survived), WP02 ba5be3a2 (profiles 64 killed / 1 NC / 1 equivalent, was 35/29/2), WP03 8122228e (CappedBodySubscriberTest, 6 behaviours); every test proved by planted breaks",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "fixed",
+      "wp": "WP01"
+    },
+    "#374": {
+      "evidence_ref": "WP04: 27/27 verdicts applied (18 @WIP under contracts, 9 pointers, 2 wired @contract, gaps #380/#381)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "fixed",
+      "wp": "WP04"
+    },
+    "#379": {
+      "evidence_ref": "Cited for context or overlap only",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#380": {
+      "evidence_ref": "Follow-up filed by this mission for the REFUSAL-001 product gap; WP04 adds its @WIP placeholder",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#381": {
+      "evidence_ref": "Follow-up filed by this mission for the SHARING-003 product gap",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    }
+  },
+  "schema_version": 1
+}
