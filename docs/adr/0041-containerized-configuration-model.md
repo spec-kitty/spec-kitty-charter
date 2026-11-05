@@ -2,7 +2,7 @@
 title: "ADR-0041: The containerized service is configured through a container profile, validated properties and mounted secrets"
 description: A container profile that is never the default; validated properties fail the start; secrets only from env or /run/secrets; Spring Cloud Config rejected.
 doc_status: active
-updated: 2026-10-30T00:00:00Z
+updated: 2026-11-05T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-10-28'
 type: ADR
@@ -210,7 +210,8 @@ it: a developer can run the same container on their own machine.
   optimistic-concurrency consistency across replicas (ADR-0018), source fingerprint and cache
   coherence, auth and session state, readiness and liveness probes, and draining. Because one
   instance may serve many projects, state the service holds (the activation copy, the ETags) will
-  need to be keyed per project; #233 decides how.
+  need to be keyed per project; #233 decides how. [ADR-0060](/adr/0060-one-replica-per-deployment/) answers it for
+  now: one replica per deployment.
 - **The container image**, its tags and its version reporting: #234 and its own ADR.
 - Platform-specific manifests (Kubernetes, PaaS).
 
