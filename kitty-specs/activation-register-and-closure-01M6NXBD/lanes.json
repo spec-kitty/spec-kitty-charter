@@ -484,11 +484,11 @@
       "parallel_group": 10
     }
   ],
-  "computed_at": "2026-11-05T19:10:53.311434+00:00",
+  "computed_at": "2026-11-05T19:15:12.592708+00:00",
   "computed_from": "dependency_graph+ownership",
   "planning_artifact_wps": [
     "WP10",
     "WP15"
   ],
-  "planning_commit_sha": "4e41477b38ac4524bec39e814d62fe3aacdf3691"
+  "planning_commit_sha": "fd5d7f074c29499060e9c2b263dfb04e1f17c2b1"
 }
