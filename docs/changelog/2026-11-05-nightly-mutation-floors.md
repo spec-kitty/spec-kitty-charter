@@ -1,7 +1,7 @@
 ---
 okf_version: "0.2"
 title: The mutation nightly turns red below a floor, and mutates packs
-description: A falling mutation score now turns the nightly red and opens an issue; PIT mutates packs domain, application and storage, each module held to a fixed floor.
+description: A score below its fixed floor now turns the mutation nightly red and opens an issue; PIT also mutates packs domain, application, storage and fetch.
 doc_status: active
 updated: 2026-11-05T00:00:00Z
 type: Changelog
@@ -22,10 +22,12 @@ Mutation testing is no longer an experiment: each mutated module has a fixed flo
 module whose score is below it, naming the module, the group, the score and the floor. It still never runs on a pull
 request or in the required check.
 
-- **Floors:** kernel 65 %, missions 70 %, profiles 50 %, and 85 % for each packs group. A floor is raised by pull
+- **Floors:** kernel 65 %, missions 70 %, profiles 50 %, 85 % for packs `domain+application` and `infra.storage`,
+  and 70 % for packs `infra.fetch`. A floor is raised by pull
   request once the score clears it by 5 points, and lowered only by amending the ADR.
-- **Packs is mutated:** `packs.domain` and `packs.application` (without the Spring wiring) as one group, and
-  `packs.infra.storage` as another, with their unit tests only. They scored 92.7 % and 90.7 % on the first run.
+- **Packs is mutated:** `packs.domain` and `packs.application` (without the Spring wiring) as one group,
+  `packs.infra.storage` as a second and `packs.infra.fetch` (without `infra.fetch.config`) as a third, with their unit
+  tests only. They scored 92.7 %, 90.7 % and 77.3 % on the first run.
 - **The nightly reports every module:** it runs `pitest --continue`, writes a job summary per module and group,
   uploads every module's report, and opens or comments on one `mutation-nightly` issue when a scheduled run does not
   succeed. Its timeout is 90 minutes.

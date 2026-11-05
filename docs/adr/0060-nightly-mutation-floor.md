@@ -28,8 +28,7 @@ audience:
 2026-11-03 the operator adopted [#239](https://github.com/spec-kitty/spec-kitty-charter/issues/239) as designed (R1 and
 W1 of the [test suite assessment](/plans/engineering-notes/test-suite-assessment-2026-11-03/)). On 2026-11-04 and
 2026-11-05 the operator ruled the floors and put `packs.infra.storage`, then `packs.infra.fetch`, in scope with floors
-of their own. The implementation
-is the mission `test-mutation-floors-01M6NSDR`, in the same pull request as this ADR.
+of their own. The implementation is the mission `test-mutation-floors-01M6NSDR`, in the same pull request as this ADR.
 
 This ADR ends the "experiment" status of mutation testing, decided as `DM-01M57RMMBAS7275PXGNSYJZBQY`
 ("Nightly, as an experiment; never on every pull request and never a merge gate"). It supersedes the "experiment"
@@ -63,8 +62,10 @@ Measured on main's tests (JDK 25):
 | packs `infra.storage` | 2092 | 90.7 % |
 | packs `infra.fetch` | 269 | 77.3 % |
 
-A full `:packs:pitest` took 45m54s on an idle 4-core machine without `infra.fetch`, whose own run takes about
-2 minutes more; kernel, missions and profiles together take about 3 minutes. PIT's `mutations.xml` holds raw `<` characters in mutator descriptions, so it is not well-formed XML.
+A full `:packs:pitest` took 45m54s on an idle 4-core machine without `infra.fetch`, which adds about 2 minutes: its
+narrowed run (the `infra.fetch` classes against every packs target test) took 116 s in the `pitest` task, 311 s for the
+whole Gradle run. Kernel, missions and profiles together take about 3 minutes. PIT's `mutations.xml` holds raw `<`
+characters in mutator descriptions, so it is not well-formed XML.
 
 ## Decision
 
@@ -91,8 +92,7 @@ A full `:packs:pitest` took 45m54s on an idle 4-core machine without `infra.fetc
    | packs | `infra.fetch` | `packs.infra.fetch`, without `infra.fetch.config` | 70 | 19 |
 
    The packs floors follow `floor5(score − 3)` of the first measured run (92.7 % and 90.7 % give 85 each, 77.3 % gives
-   70). Kernel,
-   missions and profiles take the floors the operator ruled.
+   70). Kernel, missions and profiles take the floors the operator ruled.
 
    - **The margin** is how many detected mutants a group can lose and still pass, in the run that set its floor:
      `detected − ⌈floor × mutants / 100⌉` (kernel 289 of 378 with this pull request's triage, missions 108 of 144,
@@ -109,9 +109,9 @@ A full `:packs:pitest` took 45m54s on an idle 4-core machine without `infra.fetc
    three groups are scored from the one `:packs:pitest` run.
 5. **The floor check.** `pitest` is finalized by `checkMutationFloors`, which reads `build/reports/pitest/mutations.xml`
    with a lenient scan, never a strict XML parser, and writes `build/reports/mutation-floors/floors.json`. A group
-   below its floor fails the task with
-   `<path> <group>: mutation score S % is below its floor F % (#239, ADR-0060)`. A group without mutants, a missing report
-   and `<mutation>` elements that cannot be read each fail too, so a broken run is never scored as a pass.
+   below its floor fails the task with `<path> <group>: mutation score S % is below its floor F % (#239, ADR-0060)`.
+   A group without mutants, a missing report and `<mutation>` elements that cannot be read each fail too, so a broken
+   run is never scored as a pass.
 6. **Moving a floor.**
    - **Raise** a floor by pull request when the nightly score is 5 or more points above it.
    - **Lower** a floor only by an amendment to this ADR.
@@ -126,9 +126,9 @@ A full `:packs:pitest` took 45m54s on an idle 4-core machine without `infra.fetc
    applies the order to `kernel.domain`: 14 survivors killed, 11 marked equivalent.
 
    An equivalent verdict is recorded in a triage file beside the work that made it; this pull request's is
-   `kitty-specs/test-mutation-floors-01M6NSDR/tasks/WP05-kernel-survivor-triage/triage.md`. PIT cannot be told that a
-   mutant is equivalent, so an equivalent mutant still counts as SURVIVED: it stays in the score's denominator and
-   in every run's survivor count.
+   `kitty-specs/test-mutation-floors-01M6NSDR/tasks/WP05-kernel-survivor-triage/triage.md`. Stock PIT, as configured
+   here, cannot mark a mutant equivalent: the `EQUIVALENT` status comes only from PIT extensions. So an equivalent
+   mutant still counts as SURVIVED: it stays in the score's denominator and in every run's survivor count.
 8. **The nightly** (`.github/workflows/mutation-nightly.yml`) runs on a schedule and on `workflow_dispatch` only.
    - It syncs open-packs at the pin, then runs `./gradlew pitest --continue`, so every module reports even when one
      fails. The summary script's unit tests run after PIT, whatever its result, so they never keep PIT from running.
@@ -162,7 +162,8 @@ measurement: it skips the floor check, and the `floors.json` it leaves may be st
 - The nightly takes about 51 minutes of mutation testing on four cores, 48 of them `:packs:pitest`, plus the
   set-up steps.
 - Mutation coverage of a change is seen a day late, never in the pull request that caused it.
-- Floors of 50 to 70 on kernel, missions and profiles sit well below packs until the follow-up raises them.
+- Floors of 50 to 70 on kernel, missions and profiles sit well below the packs `domain+application` and
+  `infra.storage` floors until the follow-up raises them.
 - A floor does not catch a single weakened test: the margins of packs and kernel absorb tens of mutants. Missions and
   profiles, with margins of 7 and 2 mutants, are close to the trigger instead.
 
@@ -197,7 +198,7 @@ requests for the same reason.
 The first design of [#239](https://github.com/spec-kitty/spec-kitty-charter/issues/239) set `mutationThreshold` per
 module, and asked whether the thresholds should live in `gradle.properties`. Not chosen:
 
-- PIT's threshold is one rounded integer per module, so it cannot hold the two packs groups to their own floors;
+- PIT's threshold is one rounded integer per module, so it cannot hold the packs groups to their own floors;
 - it writes no machine-readable summary for the nightly's job summary and issue;
 - a floor belongs in the build file of the module it holds, beside that module's PIT scope, not in a shared
   properties file.
