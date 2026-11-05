@@ -407,7 +407,7 @@
     },
     "WP12": {
       "actor": "claude",
-      "agent": null,
+      "agent": "claude:claude-opus-5-5:java-jenny",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -417,7 +417,8 @@
       "last_transition_at": "2026-11-05T23:59:47.077581+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "CascadeRules pure over Reach values (no packs import, no traversal). planSelect/walkSelected/applySelect; planDeactivate/planShared/applyDeactivate; ActivationChange.of(before, after, skipped) derives applied and cleared. Choices: planSelect takes includeDeactivated (stopAt empty); no cascade => ReachPlan.none (walks()==false), app skips the call; planShared walks with lineage, stops at target+deny entries; candidates = selected in-scope nodes the target reached; reached mission types land in skippedByScope; non-selectable kinds dropped; deactivate of a non-deny kind throws IAE. Document rebuilt via public Builder (ActivationDocument untouched). Property helper in every clearing test + 50-case randomized property. Gates: :activations:check, javadoc, HexagonalArchitectureTest green."
+        "CascadeRules pure over Reach values (no packs import, no traversal). planSelect/walkSelected/applySelect; planDeactivate/planShared/applyDeactivate; ActivationChange.of(before, after, skipped) derives applied and cleared. Choices: planSelect takes includeDeactivated (stopAt empty); no cascade => ReachPlan.none (walks()==false), app skips the call; planShared walks with lineage, stops at target+deny entries; candidates = selected in-scope nodes the target reached; reached mission types land in skippedByScope; non-selectable kinds dropped; deactivate of a non-deny kind throws IAE. Document rebuilt via public Builder (ActivationDocument untouched). Property helper in every clearing test + 50-case randomized property. Gates: :activations:check, javadoc, HexagonalArchitectureTest green.",
+        "Rework 2: FR-015 fixed point. planShared(document, target, scope, ownReach, enhancers, floor, previous) adds candidates an active enhancer references (active = others ∪ previous.reached) to the starts; the application starts with Reach.empty(), walks, and calls again with the answer until the plan equals the previous one (starts only grow, bounded by the candidates; one snapshot), then passes the last answer to applyDeactivate. Tests: D/C/C2/E2 (C kept by E2, C2 kept by C), chain (kept C enhances C3, C3 keeps C4), first-step-only mutation check. Non-blocking: includeDeactivated out-of-scope deny entry pinned; skippedByScope Javadoc. WP13 note: refuse mission_type on exclusions before the domain (it throws IAE)."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
