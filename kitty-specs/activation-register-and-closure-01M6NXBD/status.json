@@ -1,7 +1,7 @@
 {
-  "event_count": 51,
-  "last_event_id": "01M6PNAQ3KT43ZME7TMKMVC75K",
-  "materialized_at": "2026-11-05T20:10:15.016259+00:00",
+  "event_count": 53,
+  "last_event_id": "01M6PNPYM31N187BVQZ7A2HSSY",
+  "materialized_at": "2026-11-05T20:16:55.940038+00:00",
   "mission_number": "",
   "mission_slug": "activation-register-and-closure-01M6NXBD",
   "mission_type": "software-dev",
@@ -13,8 +13,8 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 2,
-    "in_review": 0,
+    "in_progress": 1,
+    "in_review": 1,
     "planned": 10
   },
   "work_packages": {
@@ -91,17 +91,18 @@
     },
     "WP03": {
       "actor": "claude",
-      "agent": null,
+      "agent": "claude:claude-opus-5-5:reviewer-renata",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
       "implementer_of_record": "claude:claude-opus-5-5:java-jenny",
-      "lane": "in_progress",
-      "last_event_id": "01M6PNAQ3KT43ZME7TMKMVC75K",
-      "last_transition_at": "2026-11-05T20:10:15.016259+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M6PNPYM31N187BVQZ7A2HSSY",
+      "last_transition_at": "2026-11-05T20:16:55.940038+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Commit 8fe11d1. ADR numbered 0062 (main has 0060; open #392/#393 hold 0061; #394's 0060 collides with main). WP10 amendment notes must cite ADR-0062. Gates: :kernel:check 0 (2655 tests); :packs:check -x openPacksRoundTrip 0 (2813 tests, 0 fail, 4 pre-existing skips); :deployable:test CharterContractSuite+HexagonalArchitectureTest 0 (300 tests); :contracts:check 1 (shallow clone baseline) then 0 with -PcontractBaseline=none; :packs:openPacksRoundTrip 0; check_docs all: only adr numbering-gap findings (0060 missing from lane base, 0061 held by open PRs); cspell 0 issues. Decision: mutability_policy const policy.yaml (FR-022). Touched packs files: PackMutabilityPolicy, MutabilityPolicySource, PackCompositionFacts, MutabilityPolicyRepository(new), PerPackPolicy(new), DomainRepositoryService(+DomainRepositoryServiceTest; #377 overlap: compositionFacts split into edgeFacts + policyOf), PackDescriptorDso, PackDescriptorReader, PackFileSet, PolicyYaml(new), PackMutabilityPolicyTest. Out-of-map edits: YamlSerializationStrategy (writes mutability_policy), PackRoundTripTest (DSO arity), PackSchemasTest 25->26, PackFileKindTest (26 rules + sample), SchemaKeywordCoverageTest (patternProperties silent). Follow-up: WholePackStore does not copy policy.yaml (unmodelled); recorded in ADR Consequences."
+        "Commit 8fe11d1. ADR numbered 0062 (main has 0060; open #392/#393 hold 0061; #394's 0060 collides with main). WP10 amendment notes must cite ADR-0062. Gates: :kernel:check 0 (2655 tests); :packs:check -x openPacksRoundTrip 0 (2813 tests, 0 fail, 4 pre-existing skips); :deployable:test CharterContractSuite+HexagonalArchitectureTest 0 (300 tests); :contracts:check 1 (shallow clone baseline) then 0 with -PcontractBaseline=none; :packs:openPacksRoundTrip 0; check_docs all: only adr numbering-gap findings (0060 missing from lane base, 0061 held by open PRs); cspell 0 issues. Decision: mutability_policy const policy.yaml (FR-022). Touched packs files: PackMutabilityPolicy, MutabilityPolicySource, PackCompositionFacts, MutabilityPolicyRepository(new), PerPackPolicy(new), DomainRepositoryService(+DomainRepositoryServiceTest; #377 overlap: compositionFacts split into edgeFacts + policyOf), PackDescriptorDso, PackDescriptorReader, PackFileSet, PolicyYaml(new), PackMutabilityPolicyTest. Out-of-map edits: YamlSerializationStrategy (writes mutability_policy), PackRoundTripTest (DSO arity), PackSchemasTest 25->26, PackFileKindTest (26 rules + sample), SchemaKeywordCoverageTest (patternProperties silent). Follow-up: WholePackStore does not copy policy.yaml (unmodelled); recorded in ADR Consequences.",
+        "Rework cycle 2, commit 1d70d02. Fix (a): WholePackStore models the descriptor-named policy.yaml: load reads it via shared PolicyYaml.readNamed (schema-checked), marks it modelled, carries its text on LoadedPack.policy (new 6th component; 4/5-arg ctors kept); write puts it right after pack.yaml (putDescriptor); a missing or invalid named file is an aggregate violation so write refuses VALIDATION_FAILED; a LoadedPack naming but not carrying it is refused naming the file. New PolicyRoundTripTest (4): round trip policyOf(target)==policyOf(source), unmodelled excludes policy.yaml; control without key unchanged (stray policy.yaml stays unmodelled); missing/invalid refused, no target; dropped policy refused. load() 44 lines (manifest read extracted); write() 71, down from 75 pre-existing. ADR-0062 Consequences updated, follow-up removed. Gates: :packs:check -x openPacksRoundTrip 0 (2817 tests, 0 fail, 4 pre-existing skips); :packs:openPacksRoundTrip 0; :deployable:test CharterContractSuite+Hexagonal 0 (300); check_docs all: only ADR gap findings (0060/0061 absent from lane base); cspell 0. Packs files touched this cycle: WholePackStore, PolicyYaml, DomainRepositoryService, PolicyRoundTripTest (new)."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
@@ -111,19 +112,19 @@
         "reviewer": "claude:claude-opus-5-5:reviewer-renata",
         "verdict": "changes_requested"
       },
-      "role": "implementer",
-      "shell_pid": null,
-      "shell_pid_created_at": null,
+      "role": "reviewer",
+      "shell_pid": 19741,
+      "shell_pid_created_at": "1793909811.46",
       "subtasks": {
-        "T013": "planned",
-        "T014": "planned",
-        "T015": "planned",
-        "T016": "planned",
-        "T017": "planned",
-        "T018": "planned",
-        "T019": "planned",
-        "T094": "planned",
-        "T095": "planned"
+        "T013": "done",
+        "T014": "done",
+        "T015": "done",
+        "T016": "done",
+        "T017": "done",
+        "T018": "done",
+        "T019": "done",
+        "T094": "done",
+        "T095": "done"
       }
     },
     "WP04": {
