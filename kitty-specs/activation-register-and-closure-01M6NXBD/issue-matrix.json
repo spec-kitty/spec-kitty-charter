@@ -13,7 +13,7 @@
       "wp": null
     },
     "#291": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Nine #125 operations built across WP09/WP13/WP14",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -21,8 +21,8 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "verdict": "in-mission",
+      "wp": "WP09"
     },
     "#323": {
       "evidence_ref": "<link or commit>",
