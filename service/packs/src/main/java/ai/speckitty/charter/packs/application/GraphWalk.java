@@ -134,7 +134,8 @@ public final class GraphWalk {
      * other endpoint. Its reference resolves to (holding pack, bare URN) before anything is compared: a qualified one
      * names its pack, a bare one is in the pack of the component that writes it.
      *
-     * @return the neighbour's place, or empty when the compose holds no pack for its qualified reference
+     * @return the neighbour's place, or empty when the compose holds no pack for its qualified reference; the
+     *     compose's own refusal (a pack outside the writer's {@code depends_on} closure) is thrown, not returned
      */
     private Optional<Held> neighbourOf(CharterArtifact component, Relationship relationship) {
         boolean forward = relationship.from().equals(component.urn());

@@ -214,7 +214,9 @@ public final class Pep440Range {
 
     /**
      * Adds to {@code texts} the versions around one operand that an overlap is decided on: the operand itself (and
-     * with its local label), and its nearest neighbours in each segment.
+     * with its local label), and its nearest neighbours in each segment. The epoch floor ({@code E!0.dev0}, the lowest
+     * version of the operand's epoch) is added too, and for a {@code ~=} operand the bump of its parent release (the
+     * first version past the prefix the operator implies).
      */
     private static void addCandidateTexts(Set<String> texts, Spec spec, int depth) {
         Parsed operand = spec.version().orElseThrow();
