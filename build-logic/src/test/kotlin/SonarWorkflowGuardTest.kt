@@ -14,7 +14,7 @@ class SonarWorkflowGuardTest {
         .first { File(it, "ci.yml").isFile }
 
     private val sonar get() = File(workflows, "sonar.yml").readText()
-    private val ci get() = File(workflows, "ci.yml").readText()
+    private val ci get() = File(workflows, "ci.yml").readText() + "\n" + File(workflows, "service.yml").readText()
 
     @Test
     fun sonarRunsOnTheScheduleAndOnDispatchOnly() {
@@ -231,6 +231,7 @@ private object SonarWorkflowGuard {
     }
 
     fun ciViolations(ci: String): List<String> =
-        lines(ci).filter { "sonar" in it.lowercase() }.map { "ci.yml mentions sonar: ${it.trim()}" } +
+        lines(ci).filter { Regex("""^\s*(-\s+)?(uses|needs):.*sonar""", RegexOption.IGNORE_CASE).containsMatchIn(it) }
+            .map { "a gate workflow calls or waits for sonar: ${it.trim()}" } +
             gateNeeds(ci).filter { "sonar" in it.lowercase() }.map { "the gate needs $it" }
 }

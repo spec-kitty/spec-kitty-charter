@@ -32,4 +32,10 @@ dependencies {
     testRuntimeOnly(libs.junit.platform.launcher)
 }
 
-tasks.test { useJUnitPlatform() }
+tasks.test {
+    useJUnitPlatform()
+    // SonarWorkflowGuardTest reads the workflows; without them as inputs a bad workflow gets a cached pass.
+    inputs.dir(layout.projectDirectory.dir("../.github/workflows"))
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+        .withPropertyName("workflows")
+}
