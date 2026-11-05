@@ -168,9 +168,8 @@ class GraphWalkTest {
     }
 
     @Test
-    @DisplayName(
-            "a walk across packs keys its visited set by (holding pack, bare urn) and keeps a bare reference in the"
-                    + " pack of the artifact that writes it")
+    @DisplayName("a walk across packs keys its visited set by (holding pack, bare urn), keeps a bare reference in the"
+            + " pack of the artifact that writes it and reads a reverse edge's pack from its from side")
     void crossPackWalkTerminatesAndResolvesBareReferencesInTheHoldingPack() {
         PackIdentifier packA = new PackIdentifier("pack-a");
         PackIdentifier packB = new PackIdentifier("pack-b");
@@ -178,9 +177,8 @@ class GraphWalkTest {
         Urn y = urn("Y");
         Urn z = urn("Z");
         // X (a) -> b::Y; Y (b) -> a::X (back where it started) and bare Z; Z (b) -> a::X again and a::Y, the Y that
-        // pack
-        // a holds beside pack b's own Y; absent::W is passed over. X also holds an edge authored from b::R that names
-        // X as its bare "to": it is crossed backwards, and R is found in the pack its "from" side names.
+        // pack a holds beside pack b's own Y; absent::W is passed over. X also holds an edge authored from b::R that
+        // names X as its bare "to": it is crossed backwards, and R is found in the pack its "from" side names.
         Urn r = urn("R");
         Relationship reverse = new Relationship(
                 r, Optional.of("b"), x, Optional.empty(), RelationType.REQUIRES, Optional.empty(), Optional.empty());
