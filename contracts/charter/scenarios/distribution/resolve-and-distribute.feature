@@ -3,9 +3,11 @@
 #   scenarios need (POST /packs, POST /packs/{packId}/distributions, GET /packs/{packId}/resolution) are
 #   listed under "Decided, not built" in docs/api/service-contract.md, with no inventory issue, and are
 #   outside the cutover scope of ADR-0055 D1. They are not in ../../openapi.yaml.
-# - So every scenario here is tagged @WIP: the suite excludes it (CharterContractSuite, @ExcludeTags("WIP")),
-#   and its steps are not bound. Moved here from src/test/resources/features/ so the scenarios keep a home
-#   next to the contract without running; no runner executed them there either.
+# - So every scenario here is tagged @WIP, and the file carries no @contract because its steps are not bound
+#   (operator ruling 2026-11-05): the suite selects none of it (CharterContractSuite, @IncludeTags("contract"),
+#   @ExcludeTags("WIP")). Moved here from src/test/resources/features/ so the scenarios keep a home next to
+#   the contract without running; no runner executed them there either. When the surface is built and the
+#   steps are bound, @contract goes on as @WIP comes off.
 # - When the surface is built, the scenarios change before @WIP comes off:
 #   - the refusal codes take the contract's snake_case names (../../schemas/CharterRefusalCode.yaml), not
 #     SOURCE_CONFLICT, SOURCE_NOT_ALLOWLISTED, INTEGRITY_FAILURE, PACK_ENGINE_INCOMPATIBLE or SOURCE_UNREACHABLE;
@@ -41,7 +43,7 @@
 # - requires_core example values track the engine at v4.0.0rc7 (CLAUDE.md): a pack requiring
 #   ">=4.0.0rc7,<5" is compatible; one requiring ">=3.0.0,<4" (fixtures/packs/legacy-pack) is not.
 
-@contract @WIP @distribution
+@WIP @distribution
 Feature: Every tier pulls a registered pack through one canonical path
   As any consumer of the charter offering service
   I want built-in, org, consumer and private packs distributed by the same resolve-and-verify path
