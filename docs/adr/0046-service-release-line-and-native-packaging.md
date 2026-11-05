@@ -3,7 +3,7 @@ title: "ADR-0046: The service releases on its own service-v* line, native per OS
 description: A service-v tag line apart from the contract's; the service's own SemVer; four native executables and the jar under names core pins, with SHA256SUMS and provenance.
 doc_status: active
 updated: 2026-10-31T00:00:00Z
-decision_status: Accepted
+decision_status: Accepted; decision 5's build-on-every-change superseded by ADR-0061 (2026-11-05)
 decision_date: '2026-10-31'
 type: ADR
 kind: ADR
@@ -117,6 +117,9 @@ Core's requests that follow from it are
      - starts under the container profile, which must refuse a missing setting.
    - Behavior that Spring AOT would fix when the image is built is decided at run time instead, for example
      the container profile ([ADR-0041](/adr/0041-containerized-configuration-model/)).
+   - *2026-11-05: superseded in part by [ADR-0061](/adr/0061-native-build-runs-nightly-and-per-release/): the
+     executables are built and started nightly on `main` and for each release, no longer on every change to the
+     service or the build.*
 6. **Every asset is attested.**
    - The release attests the build provenance of every asset in `SHA256SUMS`.
    - Anyone can check an asset with:

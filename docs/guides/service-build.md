@@ -11,6 +11,7 @@ related:
   - adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts
   - adr/0043-sanitized-artifact-shapes-procedures-and-toolguide-guides
   - adr/0046-service-release-line-and-native-packaging
+  - adr/0061-native-build-runs-nightly-and-per-release
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this before you build, test or change the contract.
@@ -420,7 +421,11 @@ gh attestation verify spec-kitty-charter-service-0.2.0-linux-x64 --repo spec-kit
   --source-ref refs/tags/service-v0.2.0
 ```
 
-The native executables are built in CI only, on each runner. Locally,
+The native executables are built in CI only, on each runner, by `.github/workflows/service-native.yml`. It runs
+nightly on `main` and for each service release, not on a pull request, and it is not part of `CI gate / gate`
+([ADR-0061](/adr/0061-native-build-runs-nightly-and-per-release/)). To build them for a branch whose change
+risks the native build (a new reflective path, a dependency bump), run the workflow on that branch with
+`workflow_dispatch`. Locally,
 `./gradlew :deployable:nativeCompile -Pcharter.native=true`
 needs a GraalVM 25 with `native-image` on `JAVA_HOME`. `verifyAll` never needs one.
 
