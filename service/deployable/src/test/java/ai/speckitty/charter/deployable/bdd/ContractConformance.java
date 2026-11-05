@@ -249,6 +249,12 @@ final class ContractConformance {
     List<String> violations(
             String method, String path, int status, @Nullable String contentType, @Nullable JsonNode body) {
         Located response = response(method, path, status);
+        if (response.node().get("content") == null) {
+            // A response declared without content (a 204, a 304) conforms when it has no body.
+            return body == null && contentType == null
+                    ? List.of()
+                    : List.of(response.file() + " declares no content for " + status + ", but the answer has a body");
+        }
         Map<String, Object> content = mapping(response.node().get("content"), response.file() + " content");
         String mediaType = contentType == null ? "" : contentType.split(";", 2)[0].strip();
         Object media = content.get(mediaType);

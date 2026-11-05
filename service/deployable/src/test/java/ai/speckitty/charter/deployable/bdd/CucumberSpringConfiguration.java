@@ -1,5 +1,6 @@
 package ai.speckitty.charter.deployable.bdd;
 
+import ai.speckitty.charter.activations.infra.storage.InMemoryActivationRepository;
 import ai.speckitty.charter.deployable.CharterServiceApplication;
 import ai.speckitty.charter.deployable.CharterWiring;
 import ai.speckitty.charter.packs.application.ConsistentRead;
@@ -49,6 +50,17 @@ public class CucumberSpringConfiguration {
         @Primary
         ConsistentRead driftingConsistentRead(DriftingSources sources) {
             return new ConsistentRead(sources);
+        }
+
+        /**
+         * The activation register of the scenarios: in memory, emptied before each scenario by {@code ActivationSteps}.
+         * Without it the production wiring would store the documents under the default configuration root, in the
+         * user's home directory.
+         */
+        @Bean
+        @Primary
+        InMemoryActivationRepository scenarioActivationRepository() {
+            return new InMemoryActivationRepository();
         }
 
         /** The guide fetcher every registration goes through: armed per scenario, it opens no socket. */

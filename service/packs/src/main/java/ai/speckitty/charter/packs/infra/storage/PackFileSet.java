@@ -35,8 +35,8 @@ import org.jspecify.annotations.Nullable;
  * each kind bound in {@link KindBindings}, the asset files and the templates; the source fingerprint digests {@code
  * pack.yaml}, every file of every bound kind, each followed by the companions it names (ADR-0039), the declared graph
  * inputs (the root {@code *.graph.yaml} shards and {@code drg/fragment.yaml}), then the asset files, then the
- * templates, then the presets, the pack document ({@code pack.md}) and the manifest (the pack-level tail, ADR-0042),
- * then the retired files (ADR-0044 decision 6). Both take their list from here, so a file the service loads cannot
+ * templates, then the presets, the pack document ({@code pack.md}), the manifest and the mutability policy (the
+ * pack-level tail, ADR-0042, ADR-0062), then the retired files (ADR-0044 decision 6). Both take their list from here, so a file the service loads cannot
  * escape the fingerprint. Binding a kind is all it takes for the digest to cover it. The asset files, templates,
  * presets, pack document and retired files come last, so a pack that
  * holds none keeps its exact digest list.
@@ -215,8 +215,8 @@ final class PackFileSet {
 
     /**
      * Everything the fingerprint digests for a pack: {@code pack.yaml}, the files of every bound kind, the
-     * root graph shards, {@code drg/fragment.yaml}, the asset files, the templates, the presets, {@code pack.md} and
-     * the manifest.
+     * root graph shards, {@code drg/fragment.yaml}, the asset files, the templates, the presets, {@code pack.md}, the
+     * manifest and {@code policy.yaml}.
      *
      * @param packDir the pack directory
      * @return the pack-relative paths, in digest order
@@ -233,7 +233,7 @@ final class PackFileSet {
      * @return the pack-relative paths: {@code pack.yaml} when a regular file; the files of each kind in declaration
      *     order; the root {@code *.graph.yaml} regular files by name; {@code drg/fragment.yaml} when a regular file;
      *     the asset files; the templates; the presets; {@code pack.md} when a regular file; {@code pack-manifest.yaml}
-     *     when a regular file; the retired files. None of those is a bound kind, and they are always included.
+     *     when a regular file; {@code policy.yaml} when a regular file; the retired files. None of those is a bound kind, and they are always included.
      */
     static List<String> digested(Path packDir, Set<ArtifactKind> kinds) {
         return digested(packDir, kinds, nameOf(normalized(packDir)), PackFileKind.bundled());
@@ -297,7 +297,8 @@ final class PackFileSet {
         out.addAll(loaded.assetFiles());
         out.addAll(loaded.templates());
         out.addAll(packLevelTail(directory, loaded));
-        // After the manifest, in path order, so a pack without a retired file keeps its digest; a refused file that is
+        // After the manifest and the policy, in path order, so a pack without a retired file keeps its digest; a
+        // refused file that is
         // read but not digested could change unseen (ADR-0039, ADR-0044 decision 6).
         out.addAll(loaded.retired().sequencedKeySet());
         return out;
@@ -306,7 +307,8 @@ final class PackFileSet {
     /**
      * The pack-level files the digest ends with, after every other input, in one ordered step: the presets, in path
      * order, then the pack document ({@code pack.md}, #260), then {@code pack-manifest.yaml} when it is a regular file
-     * (ADR-0042 decision 9). A pack without them keeps its digest list (NFR-002). The document is digested by its
+     * (ADR-0042 decision 9), then {@code policy.yaml} when it is a regular file (ADR-0062), so a lock edit moves the
+     * fingerprint and a read cannot serve a stale level. A pack without them keeps its digest list (NFR-002). The document is digested by its
      * bytes, whatever the load makes of them, so a change to a {@code pack.md} the load refuses still moves the
      * fingerprint; one that cannot be read refuses the digest, as any digested file does.
      */
@@ -315,6 +317,9 @@ final class PackFileSet {
         loaded.document().ifPresent(out::add);
         if (Files.isRegularFile(directory.resolve(MANIFEST))) {
             out.add(MANIFEST);
+        }
+        if (Files.isRegularFile(directory.resolve(PolicyYaml.FILE))) {
+            out.add(PolicyYaml.FILE);
         }
         return out;
     }
