@@ -32,6 +32,7 @@ files:
   - ActivationChange.yaml
   - ActivationConfig.yaml
   - ActivationId.yaml
+  - ActivationPackList.yaml
   - ActivationSkippedReport.yaml
   - ActivationSummary.yaml
   - ArtifactId.yaml

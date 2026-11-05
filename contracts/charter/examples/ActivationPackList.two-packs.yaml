@@ -1,0 +1,28 @@
+summary: >-
+  An activation of alpha, which depends on beta: the closure lists beta, then alpha. self is the closure read.
+value:
+  packs:
+    - packId: beta
+      descriptorPackId: 01M4P01D5TWB5FKZGNNQG3943S
+      level: org
+      name: beta-pack
+      version: 1.0.0
+      dependsOn: []
+      _links:
+        artifacts:
+          href: /api/v1/packs/beta/artifacts
+    - packId: alpha
+      descriptorPackId: 01M4P01D5TWB5FKZGNNQG3943R
+      level: org
+      name: alpha-pack
+      version: 1.0.0
+      dependsOn:
+        - descriptorPackId: 01M4P01D5TWB5FKZGNNQG3943S
+          range: '>=1.0'
+          version: 1.0.0
+      _links:
+        artifacts:
+          href: /api/v1/packs/alpha/artifacts
+  _links:
+    self:
+      href: /api/v1/activations/project/packs

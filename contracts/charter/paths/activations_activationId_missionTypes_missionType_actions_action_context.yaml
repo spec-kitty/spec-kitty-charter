@@ -17,6 +17,7 @@ get:
     contractSet: activation
     issue: '#125'
   parameters:
+  - $ref: ../parameters/IfNoneMatch.yaml
   - $ref: ../parameters/Depth.yaml
   responses:
     '200':
@@ -37,6 +38,8 @@ get:
           examples:
             implement:
               $ref: ../examples/EffectiveActionContext.implement.yaml
+    '304':
+      $ref: ../responses/NotModified.yaml
     '401':
       $ref: ../responses/Unauthorized.yaml
     '403':
