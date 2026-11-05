@@ -1,6 +1,6 @@
 ---
 title: "ADR-0059: The switch gate, the cascade edges, the layer-override grain and the activation write rulings"
-description: "Operator rulings of 2026-11-04: design BDD scenarios alone gate each core switch, the cascade edges, whole-artifact layer overrides, and ADR-0020 open questions 4 to 7."
+description: "Operator rulings of 2026-11-04: design BDD scenarios and contract tests gate each core switch, the cascade edges, whole-artifact layer overrides, ADR-0020 questions 4 to 7."
 doc_status: active
 updated: 2026-11-04T00:00:00Z
 decision_status: Accepted
@@ -86,7 +86,8 @@ loses its gating role. Those changes are follow-ups, not part of this record.
 ### D2. The cascade follows five relations and `enhances` (ruled)
 
 1. **Five relations, no depth limit.** The activation cascade walks `requires`, `suggests`, `refines`, `scope`
-   and `instantiates` forward, as core does. It stops at a denied artifact and reports it (ADR-0013 D4).
+   and `instantiates` forward, as core does. It stops at a denied artifact and reports it (ADR-0013 D4). Each
+   artifact is visited once (the ADR-0025 visited-URN guard), so a cycle through reverse `enhances` ends.
 2. **`enhances`, in reverse.** The edge runs from the enhancing artifact to its target. When a target comes into
    force, by selection or by the cascade, every artifact that enhances it joins and is walked in turn. A
    selected enhancer does not pull its target in (a default: an enhancer whose target is not in force is inert). A denied enhancer is skipped and reported, as any denied
@@ -162,8 +163,9 @@ entries that match the preset's members (ADR-0020 D6). This is core's behavior.
 
 - Core switches without proof that the service agrees with its Python answers. Every deliberate difference must
   be in the divergence register before core switches, or core finds it in use.
-- D3 and D2.2 depart from core. A project with a partial override, or with an artifact that enhances another,
-  sees different content after the switch.
+- D3, D2.2 and D2.4 depart from core. A project with a partial override, with an artifact that enhances another,
+  or with a profile whose parent `requires` or `scope`s more, sees different content after the switch. Core's
+  cascade excludes lineage, so it does not pass through `specializes_from`.
 - D3, D4 and D5 change the contract. D5: `summary` and `governanceFingerprint` leave `Activation`, and `304` is
   added to five operations. D4: the skipped report, closed with four buckets in
   `contracts/charter/schemas/SkippedReport.yaml`, has no bucket for a dropped id or an unapplied deny entry. D3: no
@@ -172,7 +174,7 @@ entries that match the preset's members (ADR-0020 D6). This is core's behavior.
 ## Follow-ups
 
 - Re-scope or close #9 and #72; drop the gating role from #14.
-- Add the divergence-register entries for D2.2, D3 and D4.
+- Add the divergence-register entries for D2.2, D2.4, D3 and D4.
 - Change the contract for D5 (`summary` and `governanceFingerprint` leave `Activation`; `If-None-Match` and `304` on
   five operations) and the round-trip text of `contracts/charter/paths/activations_activationId.yaml` for D4.
 - Add the skipped-report bucket or buckets for D4 and a `DiagnosticCode` value for D3's layer-override report, as
