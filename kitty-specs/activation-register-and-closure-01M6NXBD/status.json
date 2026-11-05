@@ -1,7 +1,7 @@
 {
-  "event_count": 111,
-  "last_event_id": "01M6Q19BEQAQ3PHQMWBN0VJ13E",
-  "materialized_at": "2026-11-05T23:39:13.234264+00:00",
+  "event_count": 113,
+  "last_event_id": "01M6Q21HT1TN9NYS150PYW36FW",
+  "materialized_at": "2026-11-05T23:52:26.177254+00:00",
   "mission_number": "",
   "mission_slug": "activation-register-and-closure-01M6NXBD",
   "mission_type": "software-dev",
@@ -13,8 +13,8 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 1,
-    "in_review": 0,
+    "in_progress": 0,
+    "in_review": 1,
     "planned": 3
   },
   "work_packages": {
@@ -406,20 +406,32 @@
       }
     },
     "WP12": {
-      "actor": "claude:claude-opus-5-5:java-jenny",
-      "agent": "claude:claude-opus-5-5:java-jenny",
+      "actor": "claude",
+      "agent": "claude:claude-opus-5-5:reviewer-renata",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude:claude-opus-5-5:java-jenny",
-      "lane": "in_progress",
-      "last_event_id": "01M6Q19BEQAQ3PHQMWBN0VJ13E",
-      "last_transition_at": "2026-11-05T23:39:13.234264+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M6Q21HT1TN9NYS150PYW36FW",
+      "last_transition_at": "2026-11-05T23:52:26.177254+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "CascadeRules pure over Reach values (no packs import, no traversal). planSelect/walkSelected/applySelect; planDeactivate/planShared/applyDeactivate; ActivationChange.of(before, after, skipped) derives applied and cleared. Choices: planSelect takes includeDeactivated (stopAt empty); no cascade => ReachPlan.none (walks()==false), app skips the call; planShared walks with lineage, stops at target+deny entries; candidates = selected in-scope nodes the target reached; reached mission types land in skippedByScope; non-selectable kinds dropped; deactivate of a non-deny kind throws IAE. Document rebuilt via public Builder (ActivationDocument untouched). Property helper in every clearing test + 50-case randomized property. Gates: :activations:check, javadoc, HexagonalArchitectureTest green."
+      ],
       "provider": "__resolved_provider_absent__",
-      "role": "implementer",
-      "shell_pid": 30054,
-      "shell_pid_created_at": "1793921944.5"
+      "role": "reviewer",
+      "shell_pid": 859,
+      "shell_pid_created_at": "1793922741.96",
+      "subtasks": {
+        "T068": "done",
+        "T069": "done",
+        "T070": "done",
+        "T071": "done",
+        "T072": "done",
+        "T073": "done",
+        "T074": "done"
+      }
     },
     "WP13": {
       "actor": "finalize-tasks",
