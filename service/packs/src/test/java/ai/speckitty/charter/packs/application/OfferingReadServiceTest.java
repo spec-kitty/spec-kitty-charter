@@ -315,6 +315,23 @@ class OfferingReadServiceTest {
         }
 
         @Test
+        void theComposeWithFactsReturnsTheFactsItReadOncePerClosurePack() {
+            defined.put("beta", List.of("directive:B1"));
+
+            OfferingReadService.ComposedClosure composed =
+                    service(alphaBetaGamma()).composedWithFacts(roots("alpha"));
+
+            assertThat(composed.packs())
+                    .extracting(pack -> pack.configured().id().value())
+                    .containsExactly("beta", "alpha");
+            assertThat(composed.facts()).containsOnlyKeys("alpha", "beta");
+            assertThat(composed.facts().get("beta").defined()).containsExactly("directive:B1");
+            assertThat(factsRead).as("each closure pack once").containsExactlyInAnyOrder("alpha", "beta");
+            assertThat(OfferingReadService.entriesOf(composed.packs()))
+                    .isEqualTo(service(alphaBetaGamma()).closure(roots("alpha")).value());
+        }
+
+        @Test
         void theVerifiedClosureListsTheRootsClosureWithTheFingerprint() {
             ConsistentRead.Verified<List<OfferingReadService.OfferingEntry>> closure =
                     service(alphaBetaGamma()).closure(roots("alpha"));
