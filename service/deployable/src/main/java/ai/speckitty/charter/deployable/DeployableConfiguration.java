@@ -5,8 +5,10 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * The aggregate of the layer configurations: one scan over the per-layer {@code config} packages (application,
- * storage adapter, guide fetch adapter, inbound adapter), so a test can wire a layer slice from its own {@code config} package without
- * listing beans. An empty package scans to nothing; each layer's configuration lands in its own package.
+ * storage adapter, guide fetch adapter, inbound adapter) of each slice, and over the shared web transport's, so a
+ * test can wire a layer slice from its own {@code config} package without listing beans. An empty package scans to
+ * nothing; each layer's configuration lands in its own package. The activations slice has no storage {@code config}
+ * package: the composition root picks its repository from the {@link ActivationStorageRoot}.
  *
  * <p>This aggregates only the layers' own beans, including the storage layer's {@code DomainRepositoryService.Locations}
  * bound from {@code charter.config-root}. The remaining property-bound composition-root beans (for example
@@ -20,7 +22,11 @@ import org.springframework.context.annotation.Configuration;
     "ai.speckitty.charter.packs.application.config",
     "ai.speckitty.charter.packs.infra.storage.config",
     "ai.speckitty.charter.packs.infra.fetch.config",
-    "ai.speckitty.charter.packs.infra.api.config"
+    "ai.speckitty.charter.packs.infra.api.config",
+    "ai.speckitty.charter.activations.application.config",
+    "ai.speckitty.charter.activations.infra.api.config",
+    "ai.speckitty.charter.activations.infra.packs.config",
+    "ai.speckitty.charter.web.config"
 })
 public class DeployableConfiguration {
 

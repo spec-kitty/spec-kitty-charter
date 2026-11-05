@@ -13,7 +13,8 @@ import org.springframework.boot.context.properties.bind.BindableRuntimeHintsRegi
  * the controllers' signatures and {@code application*.yaml}; it does not see a resource the service opens itself, a
  * body written outside a controller, or a JDK service provider. A missing hint fails only the native executable, at
  * the first use, so each one here is tested ({@code CharterRuntimeHintsTest}) and the executable is started in CI.
- * The API adapter registers the hints of its own transport bodies ({@code ProblemRuntimeHints}): only it names them.
+ * The shared web transport registers the hints of the problem bodies ({@code ProblemRuntimeHints}), and each slice's
+ * inbound adapter those of its own bodies: only they name them.
  */
 public class CharterRuntimeHints implements RuntimeHintsRegistrar {
 

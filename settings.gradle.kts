@@ -22,7 +22,10 @@ listOf(
     "packs",
     "profiles",
     "missions",
+    "activations",
     "charter-api",
+    // The service-wide HTTP transport shared by every slice's inbound adapter (problems, refusals, body guard).
+    "web-transport",
     "deployable",
     // Aggregation only, no sources: one Javadoc site and one coverage report over the hand-written service modules.
     "charter-reports",

@@ -16,6 +16,8 @@ import ai.speckitty.charter.packs.application.OfferingReadService;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
+import ai.speckitty.charter.web.ProblemHandler;
+import ai.speckitty.charter.web.RefusalHandler;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
