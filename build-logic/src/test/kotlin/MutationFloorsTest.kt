@@ -1,3 +1,4 @@
+import java.io.File
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
@@ -16,6 +17,26 @@ class MutationFloorsTest {
         assertThat(mutants).hasSize(4)
         assertThat(mutants.map { it.status }).containsExactly("KILLED", "KILLED", "SURVIVED", "NO_COVERAGE")
         assertThat(mutants).allSatisfy { assertThat(it.mutatedClass).isEqualTo("ai.speckitty.charter.kernel.domain.A") }
+    }
+
+    @Test
+    fun everyPitStatusIsCountedAsPitCountsIt() {
+        val xml = mutations(*PIT_STATUSES.keys.map { mutation("ai.speckitty.charter.kernel.domain.A", it) }.toTypedArray())
+
+        val result = MutationFloors.score(MutationFloors.parse(xml).mutants, listOf(kernel)).single()
+
+        assertThat(MutationFloors.DETECTED).isEqualTo(PIT_STATUSES.filterValues { it }.keys)
+        assertThat(result.mutants).isEqualTo(10)
+        assertThat(result.detected).isEqualTo(6)
+        assertThat(result.survived).isEqualTo(1)
+        assertThat(result.noCoverage).isEqualTo(1)
+        for ((status, detected) in PIT_STATUSES) {
+            val one = MutationFloors.score(
+                MutationFloors.parse(mutations(mutation("ai.speckitty.charter.kernel.domain.A", status))).mutants,
+                listOf(kernel),
+            ).single()
+            assertThat(one.detected).describedAs(status).isEqualTo(if (detected) 1 else 0)
+        }
     }
 
     @Test
@@ -146,12 +167,14 @@ class MutationFloorsTest {
     fun theSummaryHoldsOneEntryPerGroupWithItsFigures() {
         val result = scoreKernel(killed = 2, survived = 1, noCoverage = 1)
 
-        val json = MutationFloors.toJson(":kernel", 4, listOf(result))
+        // The module has 7 mutants, the group 4 of them: the top-level count and the group's are told apart.
+        val json = MutationFloors.toJson(":kernel", 7, listOf(result))
 
+        assertThat(json).contains("\n  \"mutants\": 7,\n  \"groups\": [\n", "\n      \"mutants\": 4,\n")
+        assertThat(json).doesNotContain("\"mutants\": 4,\n  \"groups\"", "      \"mutants\": 7")
         assertThat(json).contains(
             "\"project\": \":kernel\"",
             "\"group\": \"kernel\"",
-            "\"mutants\": 4",
             "\"detected\": 2",
             "\"survived\": 1",
             "\"noCoverage\": 1",
@@ -237,7 +260,54 @@ class MutationFloorsTest {
             .hasMessageContaining("not a percentage")
     }
 
+    /**
+     * The key contract with `scripts/ci/mutation_summary.py`: this summary, written by [MutationFloors.toJson], is the
+     * committed fixture `scripts/ci/fixtures/floors.json` that the Python tests read. A change to the summary's keys or
+     * layout fails here until the fixture is rewritten, and then fails the Python tests until the reader follows:
+     *
+     *     ./gradlew -p build-logic test --tests MutationFloorsTest -PupdateMutationFixture=true
+     */
+    @Test
+    fun theCommittedSummaryFixtureIsWhatToJsonWrites() {
+        val packs = MutationFloors.Group(
+            "domain+application",
+            listOf("ai.speckitty.charter.packs.application", "ai.speckitty.charter.packs.domain"),
+            listOf("ai.speckitty.charter.packs.application.config"),
+            85,
+        )
+        val storage = MutationFloors.Group("infra.storage", listOf("ai.speckitty.charter.packs.infra.storage"), emptyList(), 85)
+        val xml = mutations(
+            *(List(9) { mutation("ai.speckitty.charter.packs.domain.Pack", "KILLED") } +
+                mutation("ai.speckitty.charter.packs.domain.Pack", "SURVIVED") +
+                List(3) { mutation("ai.speckitty.charter.packs.infra.storage.FileStore", "KILLED") } +
+                mutation("ai.speckitty.charter.packs.infra.storage.FileStore\$Entry", "NO_COVERAGE")).toTypedArray(),
+        )
+        val mutants = MutationFloors.parse(xml).mutants
+        val json = MutationFloors.toJson(":packs", mutants.size, MutationFloors.score(mutants, listOf(packs, storage)))
+
+        val fixture = File(checkNotNull(System.getProperty("mutationFloors.fixture")) { "mutationFloors.fixture is not set" })
+        if (System.getProperty("mutationFloors.updateFixture") == "true") {
+            fixture.parentFile.mkdirs()
+            fixture.writeText(json)
+        }
+        assertThat(fixture).describedAs("rewrite it with -PupdateMutationFixture=true").hasContent(json)
+    }
+
     private companion object {
+        /** Every status PIT writes, and whether PIT counts it as detected (`DetectionStatus.isDetected`). */
+        val PIT_STATUSES: Map<String, Boolean> = linkedMapOf(
+            "KILLED" to true,
+            "TIMED_OUT" to true,
+            "NON_VIABLE" to true,
+            "MEMORY_ERROR" to true,
+            "RUN_ERROR" to true,
+            "EQUIVALENT" to true,
+            "SURVIVED" to false,
+            "NO_COVERAGE" to false,
+            "NOT_STARTED" to false,
+            "STARTED" to false,
+        )
+
         const val EMPTY_REPORT = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<mutations partial=\"true\">\n</mutations>\n"
     }
 
@@ -256,7 +326,7 @@ class MutationFloorsTest {
             mutation.joinToString("\n") + "\n</mutations>\n"
 
     private fun mutation(mutatedClass: String, status: String): String =
-        "<mutation detected='${status in MutationFloors.DETECTED}' status='$status' numberOfTestsRun='1'>" +
+        "<mutation detected='${checkNotNull(PIT_STATUSES[status]) { status }}' status='$status' numberOfTestsRun='1'>" +
             "<sourceFile>A.java</sourceFile><mutatedClass>$mutatedClass</mutatedClass><mutatedMethod>m</mutatedMethod>" +
             "<methodDescription>(I)Z</methodDescription><lineNumber>3</lineNumber>" +
             "<mutator>org.pitest.mutationtest.engine.gregor.mutators.ConditionalsBoundaryMutator</mutator>" +

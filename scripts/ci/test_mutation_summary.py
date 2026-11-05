@@ -6,7 +6,9 @@ Standard library only (unittest), so it runs with either runner from the reposit
     python3 -m pytest -p no:cacheprovider scripts/ci -q
 
 The fixtures copy the shape ``checkMutationFloors`` (build-logic ``MutationFloors.toJson``) writes; the profiles one
-is a real ``./gradlew :profiles:pitest`` summary.
+is a real ``./gradlew :profiles:pitest`` summary. ``fixtures/floors.json`` is the key contract: build-logic's
+``MutationFloorsTest`` holds it to exactly what ``MutationFloors.toJson`` writes, and the tests below hold this reader
+to its keys.
 """
 
 from __future__ import annotations
@@ -23,6 +25,15 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import mutation_summary as ms  # noqa: E402
+
+# Written by MutationFloors.toJson, through build-logic's MutationFloorsTest (the key contract).
+KOTLIN_FIXTURE = Path(__file__).resolve().parent / "fixtures" / "floors.json"
+SUMMARY_KEYS = {"project", "mutants", "groups"}
+GROUP_KEYS = {
+    "group", "packages", "excludes", "mutants", "detected", "survived", "noCoverage", "score", "strength", "floor",
+    "passed", "topClasses",
+}
+TOP_CLASS_KEYS = {"class", "survived", "noCoverage"}
 
 # A real summary, from `./gradlew :profiles:pitest` (MutationFloors.toJson's exact layout).
 PROFILES = """{
@@ -170,6 +181,47 @@ class RenderTest(unittest.TestCase):
         self.write("kernel", summary(":kernel", group("kernel", score="72.4", floor=65, passed=True, top=top)))
         row = self.row(ms.render(self.root), "| `:kernel` kernel |")
         self.assertIn("`RefusalCode` (14 uncovered)<br>`Pep440Range` (22 survived)", row)
+
+    def test_a_module_with_no_group_shows_no_report(self) -> None:
+        self.write("kernel", json.dumps({"project": ":kernel", "mutants": 0, "groups": []}))
+        text = ms.render(self.root)
+        self.assertIn("⚠️ **no report**", self.row(text, "| `:kernel` |"))
+        self.assertIn("`:kernel` (no group)", text)
+
+    def test_a_group_without_a_verdict_is_a_failure(self) -> None:
+        unjudged = group("kernel", score="72.4", floor=65, passed=True)
+        del unjudged["passed"]
+        self.write("kernel", summary(":kernel", unjudged))
+        text = ms.render(self.root)
+        self.assertIn("❌ **FAIL**", self.row(text, "| `:kernel` kernel |"))
+        self.assertIn("**❌ Not every group is at its floor:** `:kernel` kernel", text)
+
+    def test_a_group_that_is_not_an_object_makes_the_summary_unreadable(self) -> None:
+        self.write("kernel", json.dumps({"project": ":kernel", "mutants": 1, "groups": ["kernel"]}))
+        text = ms.render(self.root)
+        self.assertIn("⚠️ **unreadable report**", self.row(text, "| `:kernel` |"))
+        self.assertIn("`:kernel` (unreadable report)", text)
+
+    def test_the_kotlin_summary_has_exactly_the_keys_this_reader_knows(self) -> None:
+        data = json.loads(KOTLIN_FIXTURE.read_text(encoding="utf-8"))
+        self.assertEqual(set(data), SUMMARY_KEYS)
+        self.assertEqual(len(data["groups"]), 2)
+        for entry in data["groups"]:
+            self.assertEqual(set(entry), GROUP_KEYS)
+            for gaps in entry["topClasses"]:
+                self.assertEqual(set(gaps), TOP_CLASS_KEYS)
+
+    def test_the_kotlin_summary_renders_its_figures(self) -> None:
+        self.write("packs", KOTLIN_FIXTURE.read_text(encoding="utf-8"))
+        text = ms.render(self.root)
+        self.assertEqual(
+            self.row(text, "| `:packs` domain+application |"),
+            "| `:packs` domain+application | 10 | 90.0 % | 90.0 % | 0 | 85 % | ✅ pass | `Pack` (1 survived) |",
+        )
+        self.assertEqual(
+            self.row(text, "| `:packs` infra.storage |"),
+            "| `:packs` infra.storage | 4 | 75.0 % | 100.0 % | 1 | 85 % | ❌ **FAIL** | `FileStore` (1 uncovered) |",
+        )
 
     def test_main_appends_to_the_step_summary_and_exits_zero_even_when_red(self) -> None:
         step_summary = self.root / "step-summary.md"
