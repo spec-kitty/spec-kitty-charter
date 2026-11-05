@@ -148,6 +148,10 @@ changed methods by hand.
 | T094 | Contract changelog fragment for the pack-schema change (`mutability_policy`, `policy.schema.json`) | WP03 | [P] |
 | T095 | Digest `policy.yaml` in `PackFileSet.packLevelTail`; a policy edit moves the fingerprint | WP03 | |
 | T096 | `ActivationRuntimeHints` for the moved mix-ins, with its hints test | WP05 | [P] |
+
+T094–T096 were added by the post-tasks squad fold. They are appended after T093 so the existing ids stay stable,
+and they belong to WP03 (T094, T095) and WP05 (T096); the per-WP lists below place them in their WPs.
+
 ## PR A
 
 ### WP01 — Shared transport plumbing (IC-01)
@@ -492,7 +496,7 @@ dependency)".
 | `ClosureView.java`, `ClosureQueries.java` | WP04 | WP11 |
 | `OfferingReadService.java`, `OfferingReadServiceTest.java` | WP02 | WP04 |
 | `ProductionWiringTest.java`, `WiringRoundTripTest.java` | WP07 | none (WP04 only runs them) |
-| `ClosureSnapshot.java` | WP06 | WP09, WP14 |
+| `ClosureSnapshot.java` | WP06 | WP09 |
 | `activations.feature`, `ReservedOperationCoverageTest.java`, `ActivationSteps.java`, the selections and exclusions path files | WP08 | WP13, WP14 |
 | `CharterRefusalCode.yaml`, `ReservedRefusalCodesTest.java`, `FakeAvailablePacks.java`, `PacksAvailabilityTest.java` | WP09 | WP13, WP14 |
 | `ActivationWrites.java` | WP13 | WP14 |
@@ -547,3 +551,22 @@ Every finding has exactly one disposition: **accepted** (the artifact changed, a
 | A6 | The superseded 13:15 decisions are recorded in research | changed (a disposition row, B1b) | research.md "Squad dispositions" |
 | A7 | A preset key with an empty list counts as not listed | accepted (an assumed default, logged) | spec FR-016; research.md open review item 4; WP14 Grounding, T085, T087, DoD |
 | Low | Research R9 count; "14 pins" wording; name drift (spec US4 AS2 E → E2) | accepted | research R9 (13 → 9 → 5 → 4); WP01 and WP05 ("13 operations plus the binding pin"); spec US4 AS2 |
+
+## Analyze dispositions (second pass)
+
+| # | Finding | Disposition | Where |
+|---|---|---|---|
+| A1 | A cleared enhancer is in `cleared` **and** `applied` (removed from `deactivated`), never in `selected` | accepted | spec US3 AS3; WP12 T073 cases 2, 3a, 3b; WP13 T075 fragment, T076, Reviewer guidance |
+| A2 | `data-model.md` `applied` follows the contract rule | accepted | data-model.md ActivationChange |
+| A3 | Contract A raises four codes | accepted | plan.md IC-06 |
+| A4 | Pin counts: 15 `@reserved` scenarios today (`select` pinned twice, plus the binding pin). Operations go 13 → 9 → 5 → 4; scenarios go 15 → 11 → 6 → 4 | accepted | WP01, WP05, WP08 T049 and Grounding, WP13 T077 and out-of-map, WP14 T086 |
+| A5 | `closureOf` renamed `compositionClosure`; WP14's conditional "listed" flag edit dropped | accepted | data-model.md, plan.md, research.md R2; WP14 out-of-map; the shared-files table |
+| A6 | "Nine writes" becomes "the nine operations #125 reserved (eight writes and `getActivation`)" | accepted | spec Input, Context, NFR-002; WP15 T093 |
+| A7 | The policy path is pack-relative, constrained to `policy.yaml` for now | accepted | spec FR-022; research R6 |
+| A8 | 428 and the path-kind 422 in the requirements | accepted | spec FR-010 |
+| A9 | FR-020 is paired with US2 AS1 and AS2 | accepted | spec FR-020 |
+| A10 | `enhances` at write in C-006 | accepted | spec C-006 |
+| A11 | Check the free ADR number at write time | accepted | WP03 T019 step 1 |
+| A12 | The foreign NFR-002 id is named as such | accepted | WP03 T095 |
+| A13 | Index formatting and a note for T094–T096 | accepted | tasks.md Subtask Index |
+| A14 | Deny entries survive every write that does not explicitly clear them | accepted | spec US4 "Why this priority" |

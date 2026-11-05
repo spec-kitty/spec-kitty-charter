@@ -244,7 +244,11 @@ ships a file, so no answer changes).
 ### Subtask T019: ADR-0061 and the open-packs note
 
 **Steps:**
-1. Write `docs/adr/0061-pack-mutability-policy-file.md` with the same frontmatter shape as
+1. **Number check (A11):** at write time, list `docs/adr/` on `main` and the ADR files of the open PRs
+   (`gh pr list --state open` then `gh pr diff <n> --name-only | grep docs/adr/`). Take the next free number. 0061 is
+   expected (0059 is on `main`, and #392 holds 0060); if it is taken, renumber the file and every reference to it
+   (WP10's amendment notes, the T094 fragment), and say so in the review notes.
+   Write `docs/adr/0061-pack-mutability-policy-file.md` with the same frontmatter shape as
    `docs/adr/0058-*.md` (`okf_version`, `title`, `description`, `doc_status`, `updated`, `decision_status:
    Accepted`, `decision_date: '2026-11-05'`, `type: ADR`, `kind: ADR`, `related`, `audience`).
 2. Sections: Status, Context, Decision (D1 the descriptor key; D2 the file and its closed schema; D3 the highest
@@ -283,7 +287,7 @@ CHANGELOG.
 
 **Steps (red first, `PackFileSetTest`):**
 1. A pack with `policy.yaml`: editing a level changes the digest list's bytes, so the fingerprint moves.
-2. A pack without `policy.yaml`: its digest list is unchanged from before this WP. This is the NFR-002 rule the
+2. A pack without `policy.yaml`: its digest list is unchanged from before this WP. This is the rule of the pack-level-files mission (#195, ADR-0042: NFR-002 there, not this mission's NFR-002) that the
    `packLevelTail` Javadoc states.
 3. In `PackFileSet.packLevelTail`, append the descriptor-named policy file after the manifest, when it is a regular
    file. If T013 chose `const: policy.yaml`, append `policy.yaml`. Update the Javadoc's ordered list.

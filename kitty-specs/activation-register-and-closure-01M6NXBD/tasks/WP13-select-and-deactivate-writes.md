@@ -106,7 +106,8 @@ Implementation command:
 - **Collisions:** rebase PR B onto PR A, and onto `main` once PR A merges. #393 (`ProblemHandler`) may move under
   `ActivationProblems`.
 - **Grounding:**
-  - After WP08 and WP09, `activations.feature` holds 9 pins; the binding pin ("answers 501 before it reads its request") is on
+  - After WP08 and WP09, `activations.feature` holds 11 `@reserved` scenarios over 9 reserved operations
+    (`selectActivationArtifact` has two pins, artifact and mission type, plus the binding pin); the binding pin ("answers 501 before it reads its request") is on
     `selectActivationArtifact`. When select is built, that pin must move to the last reserved operation that takes a
     body, `applyActivationPreset`, and WP14 retires it.
   - `ActivationBodyAdvice` (WP09) already guards `SelectionRequest` and `ExclusionRequest`.
@@ -132,7 +133,8 @@ Implementation command:
   become `raised: true`; update the reserved-codes paragraph.
 - `contracts/charter/scenarios/activations.feature` (owner WP08): remove the six select, unselect, deactivate and
   reactivate pins (select artifact, select mission type, unselect, deactivate, re-activate, and the binding pin); add
-  the binding pin back on `applyActivationPreset`.
+  the binding pin back on `applyActivationPreset`. The result is 6 `@reserved` scenarios (preset, the four effective
+  reads, and the binding pin) over 5 reserved operations.
 - `service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/ReservedOperationCoverageTest.java` (owner
   WP08): 9 → 5.
 - `service/deployable/src/test/java/ai/speckitty/charter/deployable/ReservedRefusalCodesTest.java` (owner WP09): the two
@@ -156,8 +158,9 @@ Implementation command:
    is missing), `409` (exclusions) and `422`.
 2. `CharterRefusalCode.yaml`: `artifact_not_found` and `mission_type_not_found` become `raised: true`.
 3. Fragment `contracts/charter/changes/2026-11-05-activation-selections-and-exclusions.md` (date it the day you write
-   it): `### Changed`, saying the four writes are served and the two codes are raised; note that `enhances` is not
-   written into `selected` (ADR-0059 D2.2), so `applied` never lists an enhancer.
+   it): `### Changed`, saying the four writes are served and the two codes are raised; note that an enhancer is never
+   added to `selected` (ADR-0059 D2.2). With `includeDeactivated`, a denied enhancer's entry is cleared, so the
+   enhancer appears in `cleared` and in `applied` (removed from `deactivated`), but never in `selected`.
    **R5, deferred and recorded:** `ActivationChange.skipped` reports the **write-time** walk only. What the read-time
    `enhances` pull leaves out is reported by the effective reads (`getActivationSkippedReport`, the next mission).
    Say so in this fragment, and add one sentence to the `skipped` member description in
@@ -181,7 +184,8 @@ Implementation command:
    report bucket, plus a new `ETag`.
    - **US3 AS3 (R2):** the starting document **denies E** (`deactivated.tactic: [E]`) as well as X. Selecting D with
      a cascade and `includeDeactivated: true` selects D, T and X. Assert that `cleared` holds X **and E** (E enhances
-     T, which the walk selects: ADR-0059 D2.2), and that E is **absent** from `selected` and from `applied`.
+     T, which the walk selects: ADR-0059 D2.2), that E is in `applied` (removed from `deactivated`, A1), and that E
+     is **absent** from `selected`.
    - **US4 AS2 (R6):** the starting document has `selected.tactic` holding **E2** (and T3 through D's cascade).
      Deactivating D with a cascade keeps T3, and `skippedShared` names E2 in `referencedBy`.
    - **`applied` (A1):** US3 AS5 (unselect) asserts `applied` lists the id and `cleared` is empty; US4 AS1 asserts
@@ -199,7 +203,9 @@ Implementation command:
 
 **Steps:** in `activations.feature`, remove the select (artifact and mission type), unselect, deactivate and reactivate
 pins. Move the binding pin to `PUT "/activations/a-1/presets/event-driven"` with `If-Match` and the unbindable body
-`{"force": "yes"}`. `ReservedOperationCoverageTest`: `theActivationSetReservesFiveOperations`, with `hasSize(5)`.
+`{"force": "yes"}`. `ReservedOperationCoverageTest`: `theActivationSetReservesFiveOperations`, with `hasSize(5)`
+(operations). The feature file goes from 11 to 6 `@reserved` scenarios. Count them with
+`grep -c '@reserved' contracts/charter/scenarios/activations.feature` and record both numbers.
 
 ### Subtask T078: The session port
 
@@ -305,10 +311,11 @@ CC ≤ 15, NPath ≤ 1000, ≤ 60 lines, nested-if depth ≤ 1, by construction.
 
 - **Red first:** demand the T076 red-run names (each answered 501) and the commit order (feature before services).
 - **One read:** check the session test asserts one `ClosureQueries.snapshot` per request.
-- **The enhancer rule end to end:** US3 AS1 must assert E is **absent** from `selected` and from `applied`.
-- **Shared by an enhancer:** US4 AS2 must start with E2 selected and name E2 in `skippedShared.referencedBy` (R6).
-- **Clearing (R2):** US3 AS3 must start with E denied, and assert E in `cleared` and absent from `selected` and
+- **The enhancer rule end to end:** US3 AS1 (E not denied) must assert E is **absent** from `selected` and from
   `applied`.
+- **Shared by an enhancer:** US4 AS2 must start with E2 selected and name E2 in `skippedShared.referencedBy` (R6).
+- **Clearing (R2, A1):** US3 AS3 must start with E denied, and assert E in `cleared` **and** in `applied`, and absent
+  from `selected`.
 - **Cross-pack (R7):** the `shared::XT` scenario exists and passes.
 - **Non-fakeable evidence:** the suite summary with the new scenario count, `ReservedOperationCoverageTest` asserting 5,
   and the 428 and 412 scenario names.

@@ -83,7 +83,7 @@ service/
 │           ├── api/      ActivationController (moved), ActivationJson (moved), mappers, config/
 │           ├── packs/    PacksAvailability (adapter: one verified packs read → ClosureSnapshot; reach calls)
 │           └── storage/  InMemoryActivationRepository, FileActivationRepository, config/
-├── packs/   domain:      PackCompositionResolver.resolveRooted + public closureOf (tolerant of unreadable packs
+├── packs/   domain:      PackCompositionResolver.resolveRooted + public compositionClosure (tolerant of unreadable packs
 │                         outside the closure); PackCompositionFacts.edges (PR B); PolicyFile; PerPackPolicy
 │            application: OfferingReadService.composed(roots) reading facts only for closure packs;
 │                         ClosureQueries (one verified read → closure facts, held URNs, floor, levels, presets);
@@ -135,7 +135,7 @@ The concerns are listed in dependency order. A concern belongs to PR **A** or PR
 
 ### IC-02 (A) — packs: rooted compose, tolerant of the outside
 
-- `PackCompositionResolver.resolveRooted(available, roots)` and a public `closureOf` (`depends_on` + `parent_pack`).
+- `PackCompositionResolver.resolveRooted(available, roots)` and a public `compositionClosure` (`depends_on` + `parent_pack`; the existing private `closureOf` stays `depends_on`-only as `dependsOnClosure`).
 - `OfferingReadService.composed(roots)` reads descriptors and facts **only for packs in the closure**. An unreadable,
   duplicate-id or duplicate-name pack outside the closure is never judged.
 - `/offering` calls it with every configured pack, so its behaviour is unchanged.
@@ -210,8 +210,8 @@ The concerns are listed in dependency order. A concern belongs to PR **A** or PR
   - `If-None-Match`/`304` on `getActivation` and the four effective reads.
   - The absent-means-none texts in `ActivationConfig`, `SelectedArtifacts`, `activatedKinds` and the
     select/unselect/deactivate paths.
-  - `x-reserved` is removed from the four CRUD operations. `CharterRefusalCode` raises `activation_not_found` and
-    `activation_invalid`, and `ReservedRefusalCodesTest` follows.
+  - `x-reserved` is removed from the four CRUD operations. `CharterRefusalCode` raises `activation_not_found`, `activation_invalid`, `artifact_required` and `artifact_locked`,
+    and `ReservedRefusalCodesTest` follows.
   - A changelog fragment.
 - **Scenarios.** `activation-register.feature` carries the US1, US2 and US6 scenarios.
 - **The reserved pins.** `ReservedOperationCoverageTest` counts only `@reserved` blocks and goes from 13 to 9. The

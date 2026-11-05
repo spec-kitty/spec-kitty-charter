@@ -132,7 +132,9 @@ Implementation command:
   - The generated `ActivationApi` uses `skipDefaultInterface=true`. Adding `listActivationPacks` to the contract
     **breaks compilation** until `ActivationController` declares it. Add the reserved stub in the same commit.
   - `ReservedOperationCoverageTest` scans **every** request line of `activations.feature`, not only the `@reserved`
-    blocks, and pins `hasSize(13)`.
+    blocks, and pins `hasSize(13)` **operations**. The file holds 15 `@reserved` scenarios: 13 operations, with
+    `selectActivationArtifact` pinned twice (artifact and mission type), plus the binding pin on `replaceActivation`.
+    Verify with `grep -c '@reserved' contracts/charter/scenarios/activations.feature` before editing.
   - `OperationCoverageTest` requires every declared `(method, path, 2xx)` of a non-reserved operation to be
     exercised by a scenario. The new scenarios provide them; run it and record the result.
   - The step vocabulary in `CharterSteps`, `RegistrationSteps` and `SecuritySteps` already covers:
@@ -276,7 +278,7 @@ Implementation command:
 
 **Steps:**
 1. In `activations.feature`:
-   - delete the four CRUD pins;
+   - delete the four CRUD pins (create, register, read, remove): 15 → 11 scenarios once the binding pin has moved;
    - move "A reserved operation answers 501 before it reads its request" to `selectActivationArtifact`:
      `PUT "/activations/a-1/selections/directive/DIRECTIVE_001"` with `If-Match` and the unbindable body
      `{"cascade": 5, "includeDeactivated": "no"}`;
@@ -285,7 +287,8 @@ Implementation command:
    `RESERVED_TAG`, keep the blocks that contain `Scenario:`, and scan their lines. Rename the count test to
    `theActivationSetReservesNineOperations` and assert `hasSize(9)`.
 3. `listActivationPacks` is **not** `x-reserved` in the contract, yet it answers 501 through its stub. The coverage
-   test keys on `x-reserved`, so it ignores the operation. The pin set and the reserved set stay equal (9).
+   test keys on `x-reserved`, so it ignores the operation. The pin set and the reserved set stay equal (9 operations,
+   11 `@reserved` scenarios). Record both counts in the evidence.
 
 ## Checkstyle limits (NFR-001)
 

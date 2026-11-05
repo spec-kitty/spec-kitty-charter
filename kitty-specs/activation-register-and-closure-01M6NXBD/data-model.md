@@ -43,7 +43,8 @@
 ### ActivationChange (result of a per-artifact or preset write)
 
 - `revision`: the new revision.
-- `applied`: `ArtifactReference` entries `{kind, artifactId}` selected by the write. The contract has no
+- `applied`: `ArtifactReference` entries `{kind, artifactId}`, every id the write added to or removed from
+  `selected`, `deactivated` or `missionTypes` (the contract's rule). A kind is never an entry, and a no-op has none. The contract has no
   provenance member; the `enhances` reason belongs to the effective reads (ADR-0059 D2.2).
 - `cleared`: the deny entries removed, as `ArtifactReference` entries.
 - `skipped`: the skipped report.
@@ -71,7 +72,7 @@ Each transition is a compare-and-set on the revision, under the per-id lock.
 
 | Element | Change |
 |---|---|
-| `PackCompositionResolver` | `resolveRooted(available, roots)`; public `closureOf` (depends_on and parent_pack) |
+| `PackCompositionResolver` | `resolveRooted(available, roots)`; public `compositionClosure` (depends_on and parent_pack; renamed from `closureOf`, whose private `depends_on`-only form stays as `dependsOnClosure`) |
 | `PackCompositionFacts` | gains `edges: List<(source urn, relation, target ref)>` as written in graph documents |
 | Closure facts (rooted compose) | per pack, in the offering's shape (`OfferingPack`: `packId`, `descriptorPackId`, level, name, version, `dependsOn: [ResolvedDependency]`), in dependency order |
 | `PolicyFile` / `PerPackPolicy` (new) | `kind_defaults: Map<NodeKind, MutabilityLevel>`, `artifacts: Map<Urn, MutabilityLevel>`, keyed by pack; `levelIn(closure, urn)` returns the highest level along the closure and the pack that set it, shared with the registration write gate |

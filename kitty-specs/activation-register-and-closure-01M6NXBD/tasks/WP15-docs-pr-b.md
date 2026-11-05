@@ -156,7 +156,7 @@ before writing it down:
 
 **Steps:**
 1. Write in the review notes (not a file) the PR B description paragraphs:
-   - **#291:** the nine activation writes are built across PR A (CRUD) and PR B (select, unselect, deactivate,
+   - **#291:** the nine operations #125 reserved (eight writes and `getActivation`) are built across PR A (CRUD) and PR B (select, unselect, deactivate,
      reactivate, preset). List the operations and their scenario files. PR B closes #291 if the effective reads are
      tracked elsewhere (#103); say so.
    - **#360:** confirm the acceptance re-point made in PR A (the closure read), and that the writes see only the

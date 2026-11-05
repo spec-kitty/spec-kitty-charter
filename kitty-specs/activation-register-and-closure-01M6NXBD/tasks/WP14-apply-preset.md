@@ -118,8 +118,6 @@ Implementation command:
   WP05): implement `applyActivationPreset`.
 - `service/activations/src/main/java/ai/speckitty/charter/activations/application/ActivationWrites.java` (owner WP13):
   reuse it; add a hook only if the preset flow needs one.
-- `service/activations/src/main/java/ai/speckitty/charter/activations/domain/ClosureSnapshot.java` (owner WP06), and
-  the adapter (owner WP05): the "listed" flags, only if the DSO keeps absence.
 
 ## Subtask Guidance
 
@@ -163,7 +161,9 @@ Implementation command:
 ### Subtask T086: Retire the binding pin (5 → 4)
 
 **Steps:**
-1. `activations.feature`: remove the preset pin and the "answers 501 before it reads its request" pin.
+1. `activations.feature`: remove the preset pin and the "answers 501 before it reads its request" pin. The file goes
+   from 6 to 4 `@reserved` scenarios, one per remaining operation (the four effective reads); record the
+   `grep -c '@reserved'` count.
 2. `ReservedOperationCoverageTest`: `theActivationSetReservesFourOperations` with `hasSize(4)`. Add
    `noReservedOperationTakesABody`, which asserts that no `x-reserved` operation in the contract declares a
    `requestBody`. It is the reason the binding pin can go: if a future reserved write with a body appears, the test

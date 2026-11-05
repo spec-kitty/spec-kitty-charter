@@ -212,12 +212,15 @@ relations (R1).
 **Steps (red first, `CascadeRulesClearingTest`):**
 1. Selecting D with a cascade and `includeDeactivated`: X is selected, and X's deny entry is in `cleared`.
 2. An enhancer F of T that is denied: F's deny entry is cleared (it appears in `cleared`), and F is **not** added to
-   `selected`.
+   `selected`. Expected `applied`: D, T, X and **F** (F was removed from `deactivated`, A1); F is in `applied` and
+   `cleared`, not in `selected`.
 3. An enhancer that is not denied: nothing happens to it (it stays out of `selected`, and is not in `cleared`).
 3a. **A selected enhancer of a denied target (R1, the other direction):** the walk selects E, E enhances T, and T is
-    denied. T's deny entry is cleared, and T is not selected (unless the five-relation walk also reaches it).
+    denied. T's deny entry is cleared, and T is not selected (unless the five-relation walk also reaches it). Expected
+    `applied`: the walk's selections plus T (removed from `deactivated`); `cleared`: [T].
 3b. **A chain (R1, transitive):** E1 enhances E2, E2 enhances T, the walk selects T, and E1 and E2 are both denied.
-    Both deny entries are cleared; neither is selected.
+    Both deny entries are cleared; neither is selected. Expected `applied` includes E1 and E2 (removed from
+    `deactivated`), and `cleared` is [E1, E2].
 3c. The pull does not cross five-relation edges: E enhances T, E requires Z, Z is denied, and the walk selects T. Z's
     deny entry stays.
 4. A deny list that empties is dropped from the document (the canonical form).

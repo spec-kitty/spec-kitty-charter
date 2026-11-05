@@ -35,7 +35,7 @@ flowchart LR
 ## R2. Rooting the compose (#360)
 
 - **Decision:** `PackCompositionResolver` gains `resolveRooted(available, roots)`. It runs the existing checks over
-  the closure of the roots, where the closure follows `depends_on` and `parent_pack` through a public `closureOf`,
+  the closure of the roots, where the closure follows `depends_on` and `parent_pack` through a public `compositionClosure` (renamed from `closureOf`),
   today private at `PackCompositionResolver.java:441`. `OfferingReadService.composed(roots)` reuses the fact reads at
   `OfferingReadService.java:173-199`, and `/offering` calls it with every configured pack, so its answer and its
   refusals do not change.
@@ -84,7 +84,8 @@ flowchart LR
 
 ## R6. The policy-file format (ADR-0061)
 
-- **Decision:** an optional descriptor key `mutability_policy: <pack-relative path>`. The file is validated by a
+- **Decision:** an optional descriptor key `mutability_policy: <pack-relative path>`, naming the policy file; the
+  descriptor schema constrains the path to `policy.yaml` for now, and ADR-0061 records the choice. The file is validated by a
   closed `policy.schema.json`:
 
   ```yaml
