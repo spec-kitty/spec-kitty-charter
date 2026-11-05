@@ -192,6 +192,9 @@
       "last_event_id": "01M6PNYJJG3E5GENDP1AZ3JS8W",
       "last_transition_at": "2026-11-05T20:21:05.744353+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "WP06 done (c65bfa2). Gates: :kernel:check 0 (2675 tests), :activations:check 0 (81), HexagonalArchitectureTest 0 (54); domain purity grep clean. Kernel: InForceWhenAbsent collapsed to NONE; SKILL loses its REQUIRED default (divergence-register entry for WP10). No domain port added, so the PORT_SIGNATURES per-slice generalisation is left for WP07. Notes: violation pointers index the canonical (sorted) lists, except builder shape violations (written order); builder throws IAE for schema-guaranteed shapes (schemaVersion!=1, empty packs); RequiringPack.via is empty (snapshot carries no chain); lists sort by code point per contract, JCS keys by UTF-16."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 14694,
