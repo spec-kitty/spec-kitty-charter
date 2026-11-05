@@ -586,11 +586,11 @@
       "parallel_group": 10
     }
   ],
-  "computed_at": "2026-11-05T22:03:56.425342+00:00",
+  "computed_at": "2026-11-05T22:08:07.776244+00:00",
   "computed_from": "dependency_graph+ownership",
   "planning_artifact_wps": [
     "WP10",
     "WP15"
   ],
-  "planning_commit_sha": "b7dd1d963a5e371cbf1d44a97eb92cb26bc1255c"
+  "planning_commit_sha": "b0d0cfa7edbb0b528beeced07d9c81189313949e"
 }

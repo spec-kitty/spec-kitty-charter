@@ -3,7 +3,6 @@ work_package_id: WP16
 title: Shared web transport module and bounded architecture
 dependencies:
 - WP09
-- WP10
 requirement_refs:
 - C-002
 - C-005
