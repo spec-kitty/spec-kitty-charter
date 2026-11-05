@@ -366,17 +366,12 @@ public final class DomainRepositoryService
         if (named.isEmpty()) {
             return MutabilityPolicySource.empty();
         }
-        String which = pack.value() + " names mutability_policy " + named.get() + ", which ";
-        Path file = resolved.directory.resolve(named.get());
-        if (!Files.isRegularFile(file)) {
-            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, which + "is missing");
-        }
-        String text = FilesystemPackStore.readText(file)
-                .orElseThrow(() -> new CharterRefusal(RefusalCode.PACK_UNREADABLE, which + "is not UTF-8 text"));
         try {
-            return PolicyYaml.read(text);
+            return PolicyYaml.readNamed(resolved.directory, named.get()).source();
         } catch (PolicyYaml.Unreadable invalid) {
-            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, which + "cannot be read: " + invalid.getMessage());
+            throw new CharterRefusal(
+                    RefusalCode.PACK_UNREADABLE,
+                    pack.value() + " names mutability_policy " + named.get() + ", which " + invalid.getMessage());
         }
     }
 

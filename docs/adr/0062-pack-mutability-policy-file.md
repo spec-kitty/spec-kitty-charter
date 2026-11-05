@@ -110,13 +110,16 @@ record adds them.
 - One function decides the level for writes and activations, so they cannot disagree.
 - The file is digested in the source fingerprint after the manifest, so a lock edit moves the fingerprint and a
   consistent read never serves a stale level. A pack without the file keeps its digest list (ADR-0042).
+- The whole-pack store (`WholePackStore`) models the named file as a pack-level file: the load reads it and checks
+  it against its schema, and the write puts it right after `pack.yaml`, as it was read. A named file that is missing
+  or invalid is a violation on the loaded pack, so the write refuses it with `validation_failed` and stores nothing; a
+  stored pack never names a policy file it does not hold. A `policy.yaml` that the descriptor does not name stays
+  unmodelled.
 
 ### Negative
 
 - The write gate composes the written pack's closure once per registration. Registrations are rare, so the cost is
   accepted; a closure that cannot be composed refuses the write.
-- The whole-pack write surface (`WholePackStore`) lists `policy.yaml` among the unmodelled files and does not copy it,
-  as it does any file it does not model. Carrying it through a whole-pack write is follow-up work.
 
 ### Notes for pack authors and open-packs
 

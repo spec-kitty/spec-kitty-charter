@@ -7,6 +7,8 @@ import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -37,7 +39,38 @@ final class PolicyYaml {
         }
     }
 
+    /**
+     * A named policy file, read and checked.
+     *
+     * @param text the file's text, as read
+     * @param source the policy it declares
+     */
+    record Named(String text, MutabilityPolicySource source) {}
+
     private PolicyYaml() {}
+
+    /**
+     * Reads the policy file a descriptor names, from the pack directory: the one read the compose and the whole-pack
+     * load share, so they refuse the same files.
+     *
+     * @param directory the pack directory
+     * @param named the pack-relative path the descriptor's {@code mutability_policy} names
+     * @return the file's text and the policy it declares
+     * @throws Unreadable when the file is missing (no regular file), is not UTF-8 text, is not YAML or breaks the
+     *     {@code policy} schema; the message completes "the file ..."
+     */
+    static Named readNamed(Path directory, String named) {
+        Path file = directory.resolve(named);
+        if (!Files.isRegularFile(file)) {
+            throw new Unreadable("is missing");
+        }
+        String text = FilesystemPackStore.readText(file).orElseThrow(() -> new Unreadable("is not UTF-8 text"));
+        try {
+            return new Named(text, read(text));
+        } catch (Unreadable invalid) {
+            throw new Unreadable("cannot be read: " + invalid.getMessage());
+        }
+    }
 
     /**
      * Reads a policy file's text.
