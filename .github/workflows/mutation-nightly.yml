@@ -9,11 +9,13 @@ name: Mutation testing (nightly)
 #   build/reports/mutation-floors/floors.json.
 # - The job summary (scripts/ci/mutation_summary.py) shows every module and group, red or green, and "no report"
 #   for a module that wrote no floors.json.
-# - Every module's PIT report and floors.json go up as the `mutation-report` artifact, on a red run too.
-# - On a scheduled run that does not succeed (red, timed out or cancelled), the alert job opens one issue labelled `mutation-nightly`, or comments on the open one.
-#   A green scheduled run never touches the issue. A workflow_dispatch with force_issue takes the same path whatever
-#   the result, marked as a forced test run, so the open-or-comment path can be proven without breaking a floor.
-# - The summary script's own unit tests run first, so a broken summary turns the nightly red.
+# - Every module's PIT report and floors.json go up as the `mutation-report` artifact, on a red run too, kept 14 days.
+# - On a scheduled run that does not succeed (red, timed out or cancelled), the alert job opens one issue labelled
+#   `mutation-nightly`, or comments on the open one. A green scheduled run never touches the issue. A workflow_dispatch
+#   with force_issue takes the same path whatever the result, marked as a forced test run, so the open-or-comment path
+#   can be proven without breaking a floor.
+# - The summary script's own unit tests run after PIT, whatever its result, so a broken summary turns the nightly red
+#   but can never stop PIT from running. Pull requests run the same tests (docs-cleanliness.yml, through ci.yml).
 # spec-kitty-open-packs is checked out at the pin and synced, as in service.yml: the packs storage tests read it.
 
 on:
@@ -39,6 +41,7 @@ jobs:
     runs-on: ubuntu-24.04
     # A full :packs:pitest measured 45m54s on an idle 4-core machine, plus ~3 min for kernel, missions and
     # profiles: ~49 min of mutation testing. 90 gives >25 % headroom (NFR-002).
+    # The mutation step has 80 of the 90 minutes, so the summary and the upload still run when PIT runs out of time.
     # A timeout raises the mutation-nightly issue.
     timeout-minutes: 90
     outputs:
@@ -82,14 +85,17 @@ jobs:
       - name: Sync and verify the packs
         run: ./gradlew syncPacks -PopenPacksDir="$GITHUB_WORKSPACE/.open-packs"
 
-      # The summary script's own tests (standard library only), so a broken summary turns the nightly red here.
-      - name: Test the summary script
-        run: python3 -m unittest discover -s scripts/ci -p 'test_*.py'
-
       # --continue: a module below its floor does not stop the others, so every module reports.
       # -PrequireSymlinks=true: the link tests fail, rather than skip, on a runner that cannot make links (#286).
       - name: Mutation testing
+        timeout-minutes: 80
         run: ./gradlew pitest --continue -PopenPacksDir="$GITHUB_WORKSPACE/.open-packs" -PrequireSymlinks=true
+
+      # The summary script's own tests (standard library only): a broken summary turns the nightly red. They run after
+      # PIT, whatever its result, so they can never keep PIT from running.
+      - name: Test the summary script
+        if: always()
+        run: python3 -m unittest discover -s scripts/ci -p 'test_*.py'
 
       # Report-only: it exits 0 whatever the verdicts; the step above is what makes the run red. The same table is
       # passed to the alert job as the `summary` output.
@@ -117,6 +123,7 @@ jobs:
             service/*/build/reports/pitest
             service/*/build/reports/mutation-floors
           if-no-files-found: error
+          retention-days: 14
 
   # One open issue labelled `mutation-nightly` at a time: opened on the first red night, commented on after that.
   # Closing it is the maintainers' call once the nightly is green again. A scheduled run that is red, timed out or

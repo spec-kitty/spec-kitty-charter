@@ -125,16 +125,17 @@ A full `:packs:pitest` took 45m54s on an idle 4-core machine; kernel, missions a
    mutant is equivalent, so an equivalent mutant still counts as SURVIVED: it stays in the score's denominator and
    in every run's survivor count.
 8. **The nightly** (`.github/workflows/mutation-nightly.yml`) runs on a schedule and on `workflow_dispatch` only.
-   - It syncs open-packs at the pin, tests its summary script, then runs `./gradlew pitest --continue`, so every
-     module reports even when one fails.
+   - It syncs open-packs at the pin, then runs `./gradlew pitest --continue`, so every module reports even when one
+     fails. The summary script's unit tests run after PIT, whatever its result, so they never keep PIT from running.
    - An `if: always()` step writes a job summary of every module and group from the `floors.json` files: mutants,
      score, test strength, uncovered mutants, floor, verdict and the classes with the most surviving or uncovered
      mutants.
-   - Every module's report and `floors.json` are uploaded, on a red run too.
+   - Every module's report and `floors.json` are uploaded, on a red run too, and kept for 14 days.
    - When a scheduled run does not succeed, a timeout included, an alert job with only `issues: write` opens one
      issue labelled `mutation-nightly`, or comments on the open one. A `workflow_dispatch` with `force_issue` takes
      the same path, marked as a forced test run.
-   - `timeout-minutes` is 90 (operator ruling).
+   - `timeout-minutes` is 90 (operator ruling). The mutation step has 80 of them, so the summary and the upload
+     still run when PIT runs out of time.
 9. **Never on a pull request.** No pull-request or `merge_group` trigger runs PIT, `verifyAll` contains no `pitest` or
    `checkMutationFloors` task, and the nightly is never part of the required check of
    [ADR-0023](/adr/0023-ci-gate-required-check/).

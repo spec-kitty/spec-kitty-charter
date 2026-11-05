@@ -163,10 +163,11 @@ fail the check too.
 not a floor measurement: it skips `checkMutationFloors`, and the `floors.json` left from an earlier run may be stale.
 
 **The nightly.** `.github/workflows/mutation-nightly.yml` runs on a schedule and on `workflow_dispatch` only, with a
-90-minute timeout. It syncs the packs at the pin, runs the summary script's unit tests, then
-`./gradlew pitest --continue`. Whatever the result, `scripts/ci/mutation_summary.py` turns every `floors.json` into a
-job-summary table (score, strength, uncovered mutants, floor, verdict and the classes with the most surviving or
-uncovered mutants), and every module's report goes up as the `mutation-report` artifact. When a scheduled run does not
+90-minute timeout, 80 of them for the mutation step. It syncs the packs at the pin, then runs
+`./gradlew pitest --continue`. Whatever the result, it runs the summary script's unit tests,
+`scripts/ci/mutation_summary.py` turns every `floors.json` into a job-summary table (score, strength, uncovered
+mutants, floor, verdict and the classes with the most surviving or uncovered mutants), and every module's report goes
+up as the `mutation-report` artifact, kept for 14 days. When a scheduled run does not
 succeed, a timeout included, the workflow opens one issue labelled `mutation-nightly`, or comments on the open one; a
 `workflow_dispatch` with `force_issue` tests that path.
 
