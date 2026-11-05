@@ -48,7 +48,7 @@
     },
     "WP02": {
       "actor": "claude",
-      "agent": "claude:claude-opus-5-5:reviewer-renata",
+      "agent": "claude:claude-opus-5-5:java-jenny",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
@@ -58,7 +58,8 @@
       "last_transition_at": "2026-11-05T19:40:51.997871+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "WP02 ready (commit cfb05c9). Red first: with value-returning stubs, 22 new tests failed (12 OfferingReadServiceTest Rooted/Ratchet-equality, 10 PackCompositionResolverTest$Rooted); the 11 per-Failure ratchet cases passed on the pre-WP code, as a ratchet should. Green gates: ./gradlew :packs:test --tests '*PackCompositionResolverTest*' --tests '*OfferingReadServiceTest*' exit 0 (90 tests, 0 failed); ./gradlew :packs:check -x openPacksRoundTrip exit 0 (packs 2776 tests, 4 skipped pre-existing, 0 failed); ./gradlew :deployable:test --tests '*CharterContractSuite*' exit 0 (255 scenarios, 0 failed; offering.feature 11, composition.feature 31). checkReferences uses dependsOnClosure (depends_on only); compositionClosure is public (depends_on+parent_pack). Unknown root -> IllegalArgumentException. Facts-read call log asserted. composed() = composed(all configured) and per-code refusals compared as whole values (code, detail, packs) against the unrooted resolve oracle. closure(roots) has only test callers until WP04."
+        "WP02 ready (commit cfb05c9). Red first: with value-returning stubs, 22 new tests failed (12 OfferingReadServiceTest Rooted/Ratchet-equality, 10 PackCompositionResolverTest$Rooted); the 11 per-Failure ratchet cases passed on the pre-WP code, as a ratchet should. Green gates: ./gradlew :packs:test --tests '*PackCompositionResolverTest*' --tests '*OfferingReadServiceTest*' exit 0 (90 tests, 0 failed); ./gradlew :packs:check -x openPacksRoundTrip exit 0 (packs 2776 tests, 4 skipped pre-existing, 0 failed); ./gradlew :deployable:test --tests '*CharterContractSuite*' exit 0 (255 scenarios, 0 failed; offering.feature 11, composition.feature 31). checkReferences uses dependsOnClosure (depends_on only); compositionClosure is public (depends_on+parent_pack). Unknown root -> IllegalArgumentException. Facts-read call log asserted. composed() = composed(all configured) and per-code refusals compared as whole values (code, detail, packs) against the unrooted resolve oracle. closure(roots) has only test callers until WP04.",
+        "Resubmitted unchanged (cfb05c9) with full implementer identity"
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
