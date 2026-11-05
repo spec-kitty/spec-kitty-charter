@@ -12,6 +12,18 @@
       "verdict": "unknown",
       "wp": null
     },
+    "#140": {
+      "evidence_ref": "ArchUnit generalised per slice (WP05)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "in-mission",
+      "wp": "WP05"
+    },
     "#291": {
       "evidence_ref": "Nine #125 operations built across WP09/WP13/WP14",
       "fr": null,
