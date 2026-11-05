@@ -94,6 +94,9 @@ Among other checks, the service refuses to start, naming the property, file or d
   ([#232](https://github.com/spec-kitty/spec-kitty-charter/issues/232)).
 - **Configuration root.** The example's root, `/var/lib/spec-kitty/charter`, is local to the example until the image
   sets its own (#234).
+- **Single replica.** A deployment runs exactly one replica. The service keeps each project's active charter and
+  its ETags in memory, so a second replica would serve stale reads
+  ([ADR-0060](/adr/0060-one-replica-per-deployment/)).
 - **One container per configuration root.** Never start two containers, or a container and a local daemon, over
   the same configuration root or volume. Only one process may write a pack, and nothing refuses a second one yet
   ([one writer per pack](/architecture/service-lifecycle/#one-writer-per-pack); #349).
