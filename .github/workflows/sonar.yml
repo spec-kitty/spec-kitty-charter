@@ -8,9 +8,10 @@ name: Sonar (nightly, reported)
 # It skips green until the operator has created the SonarCloud project and the SONAR_TOKEN repository
 # secret: the first step probes for the token and, without it, writes a notice and a job-summary line and
 # every later step is skipped. With the token, every step after the probe is continue-on-error, so a red
-# build, scan or quality gate is reported in the job summary and never turns the night red. The job is
-# continue-on-error too, so a hung night that hits a timeout is not red either; Verify and the scan have
-# their own step timeouts so the summary is still written. A cancelled night starts no scan (!cancelled()).
+# build, scan or quality gate is reported in the job summary and never turns the night red. Verify, the scan
+# and the gate have step timeouts so that the summary is still written before the job's own timeout. The job is
+# continue-on-error too, but what the result of a job timeout is has not been checked. A cancelled night
+# starts no scan (!cancelled()).
 #
 # Schedule: 04:23 UTC every day. Not on minute 0 or 30 (the busiest scheduler minutes), outside
 # 13:00-16:00 UTC (06:00-09:00 PT), and not next to mutation-nightly.yml at 02:43 UTC.
@@ -34,8 +35,10 @@ jobs:
     # Only the canonical repository's main: a fork or another ref has no reason to analyze.
     if: github.repository == 'spec-kitty/spec-kitty-charter' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    # A step's continue-on-error does not cover this timeout, so the job has its own: a hung night is not red.
+    # Above the step budgets (Verify 20, scan 8, gate 5) plus the setup steps, so the step timeouts fire first.
+    timeout-minutes: 40
+    # A step's continue-on-error does not cover the job's timeout; this setting is kept, but whether it makes a
+    # timed-out job not red has not been checked.
     continue-on-error: true
     steps:
       # Without the secret this is the only step that runs, and it exits 0: the job is green and says why.
