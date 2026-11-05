@@ -56,6 +56,10 @@ contract and packs, as if core did not exist (operator, 2026-10-28; epic #186):
 - No compatibility with core's current formats or behavior, and no "core first" ordering.
 - No core issues as prerequisites; pack divergences are fixed in `spec-kitty-open-packs`.
 - Core changes when the service is incorporated into core; that work is planned then.
+- This repository's own org layer is lost under the as-is CLI, and that is accepted (operator,
+  2026-11-05; open-packs #118). `.kittify/config.yaml` registers `packs/internal` and `packs/qa` by
+  path, and once synced they declare `depends_on`, which CLI 4.0.0rc8 rejects. `charter status` and
+  `charter context` still exit 0; `doctor charter-packs` exits 1 and names the fault.
 
 ## Orchestrating cloud sessions
 
@@ -99,8 +103,5 @@ Everything else in the offering stays available, but not in force.
 
 ## Known gaps
 
-- The internal org pack requires glossary pack `spk-internal-glossary`, but the vendored
-  pack's file stem is `spk-internal`. It is activated under the stem until the pack is
-  fixed upstream ([spec-kitty-open-packs#47](https://github.com/spec-kitty/spec-kitty-open-packs/issues/47)) and re-vendored.
 - `charter consistency-check` reports the two activated glossary packs as missing from
   the compiled catalog: `generate` does not compile glossary packs.
