@@ -2,7 +2,7 @@
 title: Compose packs
 description: "Declare depends_on, qualify cross-pack references, see how they resolve, settle a sibling conflict, and fix each of the eleven composition refusals."
 doc_status: draft
-updated: 2026-11-03T00:00:00Z
+updated: 2026-11-05T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -14,6 +14,7 @@ related:
   - architecture/resolution-model
   - development/http-status-codes
   - changelog/2026-11-03-pack-composition-depends-on-and-resolver
+  - changelog/2026-11-05-open-packs-real-compose
 audience:
   - profile: pack-author
     guidance_text: Follow this when your pack builds on another pack, references its artifacts, or meets a composition refusal.
@@ -48,11 +49,10 @@ An **org or project pack that references a built-in artifact bare is now refused
 
 1. Add `depends_on` on built-in, with a range:
    `{pack_id: 01ARWG13C000000000000000FG, range: ">=1.0"}`. Declare `pack_level` too.
-2. Write each such reference as `built-in::<urn>`, for example `built-in::directive:DIRECTIVE_001`.
+2. Qualify each such reference in the form its place takes: `built-in::directive:DIRECTIVE_001` on a graph edge, and
+   `built-in::DIRECTIVE_001` in a typed reference's `id`. See [Reference another pack's artifact](#reference-another-packs-artifact).
 
-The `internal` pack is migrated through open-packs#113 and
-[#363](https://github.com/spec-kitty/spec-kitty-charter/issues/363); until then a compose that holds it with
-`built-in` is refused.
+The packs in spec-kitty-open-packs are migrated, and `OpenPacksComposeTest` composes the real ones at the pin.
 
 ## Declare a dependency
 
@@ -83,14 +83,19 @@ on org or built-in packs; a built-in pack on built-in packs only.
 
 ## Reference another pack's artifact
 
-Write `<pack-name>::<urn>` on either end of a graph edge (`source` or `target`), in the `id` of a typed reference,
-and in an entry of a directive's `procedures` or a paradigm's `directive_refs`. The `<pack-name>` is the `name` in the
-other pack's `pack.yaml`. Those two lists take an optional qualifier and no other `::`.
+The form depends on where the reference is written, and the schemas refuse the other one. The `<pack-name>` is the
+`name` in the other pack's `pack.yaml`, whatever its directory is called.
+
+| Where | Form | Example |
+|---|---|---|
+| Either end of a graph edge (`source` or `target`) | `<pack-name>::<kind>:<id>` | `built-in::directive:DIRECTIVE_001` |
+| The `id` of a typed reference, whose `type` already says the kind | `<pack-name>::<id>` | `built-in::DIRECTIVE_001` |
+| An entry of a directive's `procedures` or a paradigm's `directive_refs`, whose field already says the kind | `<pack-name>::<id>` | `built-in::mission-wrap-up-sequence` |
 
 ```yaml
 references:
   - type: directive
-    id: built-in::directive:DIRECTIVE_001
+    id: built-in::DIRECTIVE_001
 ```
 
 - A bare reference resolves in this order. If your own pack holds the artifact, it is yours, even when another pack
@@ -165,10 +170,8 @@ when any file of a configured pack is invalid or cannot be read, an artifact fil
 `depends_on` ranges, `requires_core` or `pack_version` are malformed, the same verdict validate mode gives. A
 pack-scoped read of an artifact that is readable still answers.
 
-**Known gap:** the offering names and composes every configured pack whole, so one unreadable file refuses it. The
-pinned built-in pack of the open packs holds files that cannot load yet, so `GET /offering` cannot serve it until
-[spec-kitty-open-packs#75](https://github.com/spec-kitty/spec-kitty-open-packs/issues/75) lands. Its pack-scoped reads
-still answer.
+The offering names and composes every configured pack whole, so one unreadable file refuses it, while that pack's
+pack-scoped reads still answer.
 
 | Code | Cause | Fix |
 |---|---|---|

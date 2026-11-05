@@ -626,30 +626,10 @@ class FileSystemPackInspectorTest {
 
         PackVerdict verdict = PackPolicy.judge(INSPECTOR.inspect(root, Scope.FULL));
 
-        // OP-1 and OP-2 landed (open-packs 213a059, cfc9971): the presets and the manifest are in the sanitized
-        // shape (ADR-0042), so main at 90de8f9's "no findings" is back for them. Only the six #75 sidecars the load
-        // refuses (known-failures.yaml, open-packs#75) are found, each as an artifact schema error (ADR-0036
-        // decision 3) naming a payload that does not exist.
-        assertThat(verdict.findings())
-                .hasSize(6)
-                .allSatisfy(f -> assertThat(f.code()).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR))
-                .extracting(PackFinding::file)
-                .containsOnly(
-                        "assets/docs_structural_lint.py.asset.yaml",
-                        "assets/audiences/agentic-framework-core-team.md.asset.yaml",
-                        "assets/audiences/automation_agent.md.asset.yaml",
-                        "assets/audiences/line_manager.md.asset.yaml",
-                        "assets/audiences/nontech_educator.md.asset.yaml",
-                        "assets/audiences/software_engineer.md.asset.yaml");
-        assertThat(verdict.findings())
-                .extracting(PackFinding::detail)
-                .containsExactlyInAnyOrder(
-                        "built-in/assets/docs_structural_lint.py.asset.yaml payload assets/assets/docs_structural_lint.py does not exist",
-                        "built-in/assets/audiences/agentic-framework-core-team.md.asset.yaml payload assets/assets/audiences/agentic-framework-core-team.md does not exist",
-                        "built-in/assets/audiences/automation_agent.md.asset.yaml payload assets/assets/audiences/automation_agent.md does not exist",
-                        "built-in/assets/audiences/line_manager.md.asset.yaml payload assets/assets/audiences/line_manager.md does not exist",
-                        "built-in/assets/audiences/nontech_educator.md.asset.yaml payload assets/assets/audiences/nontech_educator.md does not exist",
-                        "built-in/assets/audiences/software_engineer.md.asset.yaml payload assets/assets/audiences/software_engineer.md does not exist");
+        // OP-1, OP-2 and open-packs#75 landed: the presets, the manifest and the six sidecars are all in the shapes the
+        // store reads (ADR-0042, ADR-0040 decision 6), so main at 90de8f9's "no findings" is back.
+        assertThat(verdict.findings()).isEmpty();
+
         // Unchanged from the previous pin: 386 at 5df92a5d, less the 74 YAML files the mission-type migration (#194,
         // open-packs#95) retired, plus its 4 mission-type files, plus the payloads and templates #251 lists whatever
         // their extension (the 7 asset payloads and 27 templates the whole-pack census counts, less the YAML payload
