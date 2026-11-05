@@ -131,11 +131,15 @@ the offering has not made stale; ADR-0020 D6 carries a note.
 
 ### D5. The `Activation` answer's `ETag` is its revision, and the reads declare `304` (ruled; ADR-0020 questions 4 and 7)
 
-- `summary` moves out of the `Activation` answer to an effective read, and `governanceFingerprint` moves with it,
-  because it follows the offering too. The answer's bytes then depend only on the stored document, and its strong
-  `ETag` is the revision. Which effective read carries them is settled with the contract change in #291.
-- `getActivation` and the four effective reads declare `If-None-Match` and `304 Not Modified` now. An effective
-  read's `ETag` covers the revision and the `governanceFingerprint`, because its answer depends on both.
+- `summary` moves out of the `Activation` answer to an effective read, because it follows the offering. Which
+  effective read carries it is settled with the contract change in #291. `governanceFingerprint` leaves
+  `Activation`; the effective reads already carry it (a default: it follows the offering, so the strong `ETag` would
+  not otherwise match the bytes). The answer's bytes then depend only on the stored document, and its strong `ETag`
+  is the revision.
+- `getActivation` and the four effective reads, `listEffectiveArtifacts`, `getActivationSkippedReport`,
+  `getEffectiveGraph` and `getEffectiveActionContext`, are to declare `If-None-Match` and `304 Not Modified` in the
+  contract change; today only `getOpenApiDocument` declares them. An effective read's `ETag` covers the revision and
+  the `governanceFingerprint`, because its answer depends on both.
 
 **Why.** A strong `ETag` must change with the bytes (RFC 9110). A success status added after 1.0.0 is breaking
 (ADR-0020 D8).
