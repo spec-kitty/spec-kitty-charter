@@ -60,8 +60,8 @@ Shared storage or sticky routing would fix that. Either is a platform choice, an
 1. **A deployment runs exactly one replica.** A deployment is one container (or process) serving one configuration
    root. The container guide and the image's documentation
    ([#234](https://github.com/spec-kitty/spec-kitty-charter/issues/234)) say "single replica".
-2. **More than one replica is unsupported.** Neither is a second process over the same configuration root, which
-   the guide already forbids ("one container per configuration root",
+2. **More than one replica is unsupported.** A second process over the same configuration root is unsupported
+   too, as the guide already says ("one container per configuration root",
    [#349](https://github.com/spec-kitty/spec-kitty-charter/issues/349)). Nothing in the service detects a second
    replica. The rule is documented, not enforced.
 3. **The state stays in memory, keyed per project.** Nothing is moved to shared storage or made sticky now.
@@ -79,7 +79,8 @@ Shared storage or sticky routing would fix that. Either is a platform choice, an
 ### Positive
 
 - No new infrastructure, and no change to the state model of ADR-0033 or ADR-0018.
-- The health check of ADR-0041 decision 7 is enough for one replica: it says whether the process is up.
+- The health check of ADR-0041 decision 7 is enough for one replica: it says whether the process is up. It is a
+  liveness answer only. There is no readiness gate and no draining, because no second replica takes the traffic.
 
 ### Negative
 
