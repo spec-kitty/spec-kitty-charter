@@ -7,7 +7,8 @@
 //
 // The one register of exceptions to these gates is config/checkstyle/suppressions.xml (rule, file, reason,
 // sunset); no gate is relaxed anywhere else for hand-written code. Generated sources stay outside them by
-// construction: charter-api, and the AOT source sets of charter.native-image.
+// construction: charter-api, the AOT source sets of charter.native-image, and the `generated` source set of
+// charter.client-java (the generated Java client).
 import net.ltgt.gradle.errorprone.CheckSeverity
 import net.ltgt.gradle.errorprone.errorprone
 

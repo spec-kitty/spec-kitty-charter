@@ -27,3 +27,6 @@ kitty-specs/**/canary-evidence/** linguist-generated=true
 # Shell scripts and the Gradle wrapper run under bash on every OS, the Windows CI runner included (ADR-0046).
 *.sh text eol=lf
 gradlew text eol=lf
+
+# The generated client's header template: ClientOutputTest reads the header byte for byte.
+client-java/templates/** text eol=lf
