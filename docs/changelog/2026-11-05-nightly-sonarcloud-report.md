@@ -17,10 +17,11 @@ audience:
 
 # 2026-11-05 — SonarCloud reports on main every night; the complexity limits wait for the refactors
 
-[ADR-0058](/adr/0058-sonarcloud-nightly-reported-and-checkstyle-complexity-per-pr/) decides two things. This change
-delivers the first and prepares the second.
+[ADR-0058](/adr/0058-sonarcloud-nightly-reported-and-checkstyle-complexity-per-pr/) decides that SonarCloud reports
+nightly and that Checkstyle gates complexity on every pull request. This change delivers the report and prepares the
+gate.
 
-**Reported only:**
+**Report-only:**
 
 - **Sonar (nightly, reported)** analyzes `main` at 04:23 UTC with SonarCloud. It is not part of `CI gate / gate`, and
   a red build, scan or quality gate never turns it red. The job summary shows each outcome and the quality-gate verdict.
