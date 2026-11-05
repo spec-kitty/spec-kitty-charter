@@ -132,6 +132,8 @@ one, so matching it would pin the service to the design it replaces.
 
 - Contract shape mismatches surface later, when core adopts the client, not as the contract evolves. The contract
   tests on this side, and the corpus, carry that risk until then.
+  *2026-11-05: [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) decision 1 removes the corpus
+  as a gate; the contract tests and the design's BDD scenarios carry the risk.*
 
 ## Open questions
 
