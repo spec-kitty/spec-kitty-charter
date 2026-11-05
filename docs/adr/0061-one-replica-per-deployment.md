@@ -1,6 +1,6 @@
 ---
-title: "ADR-0060: A deployment of the charter service runs exactly one replica for now"
-description: "One replica per deployment: the write-through activation copy and the ETags live in memory per project, so more replicas wait until a hosting option is chosen."
+title: "ADR-0061: A deployment of the charter service runs exactly one replica for now"
+description: "One replica per deployment: pack writes are serialized inside one JVM, so a second replica could lose a write. More replicas wait until a hosting option is chosen."
 doc_status: active
 updated: 2026-11-05T00:00:00Z
 decision_status: Accepted
@@ -21,7 +21,7 @@ audience:
     guidance_text: Read this for why a containerized charter service runs one instance, and what changes that.
 ---
 
-# ADR-0060: A deployment of the charter service runs exactly one replica for now
+# ADR-0061: A deployment of the charter service runs exactly one replica for now
 
 ## Status
 
@@ -45,15 +45,18 @@ Two kinds of state make a second process over the same files unsafe:
 
 - **Pack writes are serialized in one process only.** A registration takes the pack's write lock, checks `If-Match`
   against the pack's revision, and commits the files by copy and swap
-  ([ADR-0026](/adr/0026-write-surface-is-functional-registration/)). The lock lives in the JVM. A second replica
+  (`PackWriteLocks`; see [one writer per pack](/architecture/service-lifecycle/#one-writer-per-pack)).
+  [ADR-0026](/adr/0026-write-surface-is-functional-registration/) covers `If-Match` only. The lock lives in the JVM. A second replica
   over the same configuration root could pass the same `If-Match` between that check and the commit, so one of two
   writes would be lost without a `412`. The revision itself is a digest of the committed files, so both replicas
   compute the same `ETag`: the conditional request is only as safe as the single writer behind it. That is the
   service lifecycle's [one writer per pack](/architecture/service-lifecycle/#one-writer-per-pack) rule.
-- **The active charter will be held per project in the process**
-  ([ADR-0033](/adr/0033-local-active-charter-is-source-of-truth/)). A write updates the copy and the file, and a read
-  answers from the copy. The activation operations are reserved today (`501`), so the copy is not built yet. Once it
-  is, a write on one replica would not be seen by the other until it re-read the file.
+
+  A replica that only serves reads is a writer too: a listing can repair an interrupted commit by renaming
+  directories, and on a read-only mount the repair just fails ([ADR-0038](/adr/0038-one-configuration-root-a-directory-per-domain/)).
+- **The active charter's service-side copy is not built yet** ([ADR-0033](/adr/0033-local-active-charter-is-source-of-truth/);
+  the activation operations answer `501`). ADR-0038 reserves `activations/` for its documents. Once it is built, the
+  same one-writer rule applies, and anything a replica holds in memory would not see another replica's write.
 
 Shared storage, a lock across processes or sticky routing would fix that. Each depends on the platform, and there
 is no platform yet.
@@ -66,9 +69,10 @@ is no platform yet.
 2. **More than one replica is unsupported.** A second process over the same configuration root is unsupported
    too, as the guide already says ("one container per configuration root",
    [#349](https://github.com/spec-kitty/spec-kitty-charter/issues/349)). Nothing in the service detects a second
-   replica. The rule is documented, not enforced.
-3. **Nothing is shared across processes now.** The write lock stays in the JVM, and the activation copy is held in
-   the process, keyed per project, when it is built. Nothing is moved to shared storage or made sticky.
+   replica yet. The rule is documented, not enforced.
+3. **Nothing is shared across processes now.** The write lock stays in the JVM. How the activation copy is stored and
+   keyed is decided when it is built ([#125](https://github.com/spec-kitty/spec-kitty-charter/issues/125)), and it
+   assumes a single writer.
 4. **This is revisited when a hosting option is chosen.** At that point a record decides:
    - a lock across processes, shared storage or sticky routing for pack writes and the activation copy;
    - source-fingerprint and cache coherence (`projectConfigDir`);
@@ -76,25 +80,27 @@ is no platform yet.
    - readiness, liveness and draining;
    - the tenancy model.
 
-   These are #233's remaining scope items. They are deferred, not dropped.
+   These are #233's remaining scope items, deferred to [#396](https://github.com/spec-kitty/spec-kitty-charter/issues/396).
 
 ## Consequences
 
 ### Positive
 
 - No new infrastructure, and no change to the state model of ADR-0033 or ADR-0018.
-- The health check of ADR-0041 decision 7 is enough for one replica: it says whether the process is up. It is a
+- The health check of ADR-0041 decision 7, once built ([#232](https://github.com/spec-kitty/spec-kitty-charter/issues/232)), is enough for one replica: it will say whether the process is up. It is a
   liveness answer only. There is no readiness gate and no draining, because no second replica takes the traffic.
 
 ### Negative
 
 - No horizontal scaling and no zero-downtime rolling deploy: a redeploy is a short outage.
-- An operator could still start two replicas. Only the documentation stops them.
+- An operator could still start two replicas. Only the documentation stops them until the guard of [#349](https://github.com/spec-kitty/spec-kitty-charter/issues/349) is built.
 
 ### Risks
 
 - A platform default, such as two replicas in a Kubernetes Deployment, is used unchanged. Mitigation: the guide says
   "single replica" next to the compose example. The future image documentation repeats it.
+  A rolling update also overlaps the old and new process, even at one replica. A redeploy must stop the old process
+  before starting the new one (Kubernetes: `strategy: Recreate`).
 
 ## Alternatives considered
 
@@ -105,7 +111,7 @@ configuration root would still write the same packs, so it does not serialize pa
 
 ### Shared storage now
 
-Not chosen. It means choosing a store or a lock across processes, and changing the write path of ADR-0026 and the
+Not chosen. It means choosing a store or a lock across processes, and changing the write path (`PackWriteLocks`) and the
 state model of ADR-0033, before the hosting option they must fit is known.
 
 ## References

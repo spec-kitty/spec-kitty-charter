@@ -14,6 +14,7 @@ related:
   - adr/0033-local-active-charter-is-source-of-truth
   - adr/0034-local-and-hosted-deployment-options
   - adr/0038-one-configuration-root-a-directory-per-domain
+  - adr/0061-one-replica-per-deployment
   - architecture/service-lifecycle
 audience:
   - profile: charter-service-contributor
@@ -65,7 +66,8 @@ The operator ruled on 2026-10-27 (#226, the later of the two comments that day i
 - **Platform:** a platform-neutral container, configured only through env vars and mounted
   secrets, proven with docker compose. It must run unchanged on Kubernetes or a PaaS later. No
   platform-specific manifests now.
-- **Tenancy:** undecided. [#233](https://github.com/spec-kitty/spec-kitty-charter/issues/233)
+- **Tenancy:** undecided (2026-11-05: [ADR-0061](/adr/0061-one-replica-per-deployment/) rules one replica for now and
+  defers tenancy to [#396](https://github.com/spec-kitty/spec-kitty-charter/issues/396)). [#233](https://github.com/spec-kitty/spec-kitty-charter/issues/233)
   designs for one team per deployment without ruling out more later. The registration endpoints
   for packs and for projects can be shared, so one instance may serve many projects.
 - **Settings without a redeploy:** none. Configuration is immutable per release and deployment.
@@ -205,13 +207,14 @@ it: a developer can run the same container on their own machine.
 
 ### Out of scope
 
-- **Running more than one instance**, tracked in #233: the per-worktree tenancy model, the
+- **Running more than one instance**, tracked in #233 (2026-11-05: ruled one replica for now in
+  [ADR-0061](/adr/0061-one-replica-per-deployment/); the rest is deferred to #396): the per-worktree tenancy model, the
   write-through activation copy of ADR-0033 (shared storage or sticky routing), ETag and
   optimistic-concurrency consistency across replicas (ADR-0018), source fingerprint and cache
   coherence, auth and session state, readiness and liveness probes, and draining. Because one
   instance may serve many projects, state the service holds (the activation copy, the ETags) will
-  need to be keyed per project; #233 decides how. [ADR-0060](/adr/0060-one-replica-per-deployment/) answers it for
-  now: one replica per deployment.
+  need to be keyed per project; #233 decides how. [ADR-0061](/adr/0061-one-replica-per-deployment/) rules one
+  replica per deployment for now and defers this to [#396](https://github.com/spec-kitty/spec-kitty-charter/issues/396).
 - **The container image**, its tags and its version reporting: #234 and its own ADR.
 - Platform-specific manifests (Kubernetes, PaaS).
 

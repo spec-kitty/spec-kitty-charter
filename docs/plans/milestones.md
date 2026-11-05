@@ -2,7 +2,7 @@
 title: Milestones
 description: The tracker's milestones, what closes each one, and the proposed distribution of the open spec-kitty-charter issues across them.
 doc_status: draft
-updated: 2026-11-03T00:00:00Z
+updated: 2026-11-05T00:00:00Z
 type: Plan
 kind: Planning
 related:
@@ -99,7 +99,7 @@ surface), #114 (canonical pack schemas) and #124 (0.x versioning, PR #129). The
 |---|---|---|
 | #6 | Epic: Java charter service built against an OpenAPI contract | Stages 0 to 2 of the cutover |
 | #127 | The hosted-first reshape, as a 0.x minor | The contract must not assume a worktree or project files at 1.0.0 |
-| #233 | Spike: the multi-instance state model for hosted | Its answers (activation store, ETag consistency across replicas, tenancy) can change the contract, so it lands before 1.0.0 with #127. Moved from Infra & Enablers (operator, 2026-10-27) |
+| #233 | Spike: the multi-instance state model for hosted | Ruled 2026-11-05: one replica per deployment for now ([ADR-0061](/adr/0061-one-replica-per-deployment/)). The remaining scope is deferred to [#396](https://github.com/spec-kitty/spec-kitty-charter/issues/396), which may follow 1.0.0; multi-tenancy would then be a contract change after 1.0.0 |
 | #128 | Mint contract 1.0.0 | The first route switched to the service needs it (ADR-0022 D6) |
 | #9 | Conformance corpus: a harness over core's CLI | Roadmap step 3, now superseded: the corpus over core's CLI is no longer the acceptance oracle (ADR-0055 D3; [ADR-0016](/adr/0016-conformance-corpus-harness-over-core-cli/)). To be re-scoped |
 | #94, #95 to #112 | Epic and steps: the cutover read inventory (R1 to R18) | Decides what the contract, and so the corpus, must cover |

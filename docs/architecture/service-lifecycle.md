@@ -14,7 +14,7 @@ related:
   - guides/run-in-a-container
   - adr/0038-one-configuration-root-a-directory-per-domain
   - adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions
-  - adr/0060-one-replica-per-deployment
+  - adr/0061-one-replica-per-deployment
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this for scope, binding, freshness and fallback of the running service.
@@ -76,7 +76,7 @@ lower-impact items.
   - a second daemon on the same worktree;
   - a container that shares the configuration root's volume;
   - a replica over the same configuration root. A deployment runs one replica until a hosting option is chosen
-    ([ADR-0060](/adr/0060-one-replica-per-deployment/));
+    ([ADR-0061](/adr/0061-one-replica-per-deployment/));
   - a hand edit to a pack's directory while a commit is copying or swapping that pack. The swap moves the
     directory that holds the edit aside and deletes it.
 - **What enforces it today.** Nothing.

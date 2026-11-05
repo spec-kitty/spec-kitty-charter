@@ -2,12 +2,13 @@
 title: Run the service in a container
 description: Run the charter service under the container profile with docker compose, with its token as a mounted secret file and nothing secret committed.
 doc_status: draft
-updated: 2026-11-02T00:00:00Z
+updated: 2026-11-05T00:00:00Z
 type: Guide
 kind: How-To
 related:
   - adr/0041-containerized-configuration-model
   - architecture/service-lifecycle
+  - adr/0061-one-replica-per-deployment
 audience:
   - profile: governance-lead
     guidance_text: Follow this to run the charter service for a team in a container, and to see where its secrets go.
@@ -96,7 +97,8 @@ Among other checks, the service refuses to start, naming the property, file or d
   sets its own (#234).
 - **Single replica.** A deployment runs exactly one replica. Pack writes are serialized inside one process only, so
   a second replica could lose a write that `If-Match` should have refused
-  ([ADR-0060](/adr/0060-one-replica-per-deployment/)).
+  ([ADR-0061](/adr/0061-one-replica-per-deployment/)). Stop the old container before starting a new one; do not use a
+  rolling update that overlaps them.
 - **One container per configuration root.** Never start two containers, or a container and a local daemon, over
   the same configuration root or volume. Only one process may write a pack, and nothing refuses a second one yet
   ([one writer per pack](/architecture/service-lifecycle/#one-writer-per-pack); #349).
