@@ -1,7 +1,7 @@
 {
-  "event_count": 31,
-  "last_event_id": "01M6PKRZEZZ3RA28ZZRYV9BXX1",
-  "materialized_at": "2026-11-05T19:43:05.183790+00:00",
+  "event_count": 32,
+  "last_event_id": "01M6PKSK66R70FR7E5FJ4RDT3D",
+  "materialized_at": "2026-11-05T19:43:25.383041+00:00",
   "mission_number": "",
   "mission_slug": "activation-register-and-closure-01M6NXBD",
   "mission_type": "",
@@ -14,8 +14,8 @@
     "done": 0,
     "for_review": 0,
     "in_progress": 0,
-    "in_review": 1,
-    "planned": 13
+    "in_review": 0,
+    "planned": 14
   },
   "work_packages": {
     "WP01": {
@@ -23,16 +23,22 @@
       "agent": "claude",
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
-      "force_count": 0,
+      "force_count": 1,
       "implementer_of_record": "claude",
-      "lane": "in_review",
-      "last_event_id": "01M6PKE6058JAGPHPEE88C2F36",
-      "last_transition_at": "2026-11-05T19:37:11.429743+00:00",
+      "lane": "planned",
+      "last_event_id": "01M6PKSK66R70FR7E5FJ4RDT3D",
+      "last_transition_at": "2026-11-05T19:43:25.383041+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "Commit 7f942c4. Moves: kernel.transport {ReservedOperation(TYPE+METHOD), PreconditionException, EntityTags(matches/noneMatch/isWildcard/quote), BodyLimit}; kernel.domain {RefusalViolation, RequiringPack, CharterRefusal.withViolations/withRequiredBy}; deployable.ReservedOperationInterceptor (method mark, then bean type); packs JsonBodyGuard (public; BodyFault sealed TooLarge/NullFound; NullValue.pointer/detail). Old packs ReservedOperation/Interceptor/PreconditionException deleted; git grep finds no old names. Gates: :kernel:check exit 0 (2674 tests; EntityTagsTest 14, CharterRefusalTest 5); :packs:check -x openPacksRoundTrip exit 0 (2747 tests, 0 fail, 4 pre-existing skips; openPacksRoundTrip not run: no ../spec-kitty-open-packs checkout beside the worktree); :deployable:test Hexagonal+ReservedOperationInterceptorTest exit 0; :deployable:test CharterContractSuite+ReservedOperationCoverage+ReservedRefusalCodes+ProblemResponses(25)+NullOmission(54) exit 0, activations.feature 15/15 reserved pins pass, directives/relationships 412/428 scenarios pass; deployable checkstyle/spotless/javadoc exit 0. Packs files touched (P3): import only: PackWriteStore, Directive/Paradigm/Relationship/Styleguide/ToolguideRegistrationService, PackCommitStore, *RegistrationServiceTest x5, PackCommitStoreTest, LinkedPackCommitTest, BinaryPayloadRevisionTest; call site: ActivationController, RegistrationBodyAdvice, ToolguideRegistrationBodyAdvice, RegistrationListsTest (+1 pointer test), ToolguideRegistrationBodyAdviceTest, PackRevisionTest (+1 weak assertion); body: PackRevision.matches (delegation), RefusalHandler (render violations/requiredBy, +3 tests), RegistrationLists (reduced to of() + refusal()), new JsonBodyGuard. noneMatch/quote/withViolations/withRequiredBy have test-only callers until WP05/WP09."
       ],
       "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/activation-register-and-closure-01M6NXBD-coord/kitty-specs/activation-register-and-closure-01M6NXBD/tasks/WP01-shared-transport-plumbing/review-cycle-1.md",
+        "reference": "review-cycle://activation-register-and-closure-01M6NXBD/WP01-shared-transport-plumbing/review-cycle-1.md",
+        "reviewer": "claude:claude-opus-5-5:reviewer-renata",
+        "verdict": "changes_requested"
+      },
       "role": "reviewer",
       "shell_pid": 24119,
       "shell_pid_created_at": "1793907426.65",
