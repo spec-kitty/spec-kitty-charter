@@ -174,6 +174,13 @@ entries that match the preset's members (ADR-0020 D6). This is core's behavior.
 ## Follow-ups
 
 - Re-scope or close #9 and #72; drop the gating role from #14.
+- Drop #72 and #14 from #74's dependencies; #74 is held on the old gate.
+- Ask core to amend its ADR `2026-10-03-1`, which still names the corpus as the only gate.
+- Update the gate wording that still has the corpus or #72 gate consult the register or decide behavior:
+  `docs/conformance/divergence-register.md` (the conformance gate paragraphs),
+  `docs/conformance/README.md` (the corpus as what holds the service to core),
+  `contracts/charter/scenarios/README.md` (`@provisional`, decided by the corpus) and
+  [ADR-0016](/adr/0016-conformance-corpus-harness-over-core-cli/) D4.
 - Add the divergence-register entries for D2.2, D2.4, D3 and D4.
 - Change the contract for D5 (`summary` and `governanceFingerprint` leave `Activation`; `If-None-Match` and `304` on
   five operations) and the round-trip text of `contracts/charter/paths/activations_activationId.yaml` for D4.
