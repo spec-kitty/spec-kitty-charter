@@ -30,6 +30,6 @@ All eight sites from #320's comment of 2026-11-04 are present at the stated line
 ## R-03 Overlap
 
 - `HttpsGuideFetcherTest.send` (nested class) is on #367's refactor list, owned by draft PR #368's mission;
-  this mission edits only `aSlowLookupCountsAgainstTheSameDeadline`.
-- PR #377 (Mission A) edits `InterruptedCommitRepairTest` at lines ~339 and ~382; this mission at ~166 and ~200.
-  Separate hunks; whichever lands second rebases trivially.
+  this mission edits only the nested `Deadline` class of that file, never `FakeTransport.send`.
+- PR #377 (Mission A) edits `InterruptedCommitRepairTest` at lines ~336–344 and ~381–390; this mission at ~166,
+  ~200, ~214, ~418–426 and ~441. Separate hunks; whichever lands second rebases trivially.

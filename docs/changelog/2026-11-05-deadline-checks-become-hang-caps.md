@@ -34,4 +34,5 @@ bounds of 2 to 10 seconds could be missed by a loaded CI runner, the way the CPU
   would run the test JVM out of memory first. The
   fetcher's slow lookup and dripping body now last 60 seconds, and the fetch is cut off at the cap, so a
   broken deadline fails at 30 s; the slow-lookup test also checks that the deadline interrupted the lookup.
-  Every other listed bound fails at the 30 s cap too. A green run takes as long as before.
+  Every other listed bound fails on its cause, or at the 30 s cap at the latest. A green run takes as long as
+  before.
