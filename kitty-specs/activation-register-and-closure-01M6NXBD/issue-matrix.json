@@ -1,5 +1,17 @@
 {
   "rows": {
+    "#103": {
+      "evidence_ref": "Follow-up: effective reads mission (#103), per spec FR-021",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
+      "wp": null
+    },
     "#125": {
       "evidence_ref": "Closed; cited as the origin of the reserved operations",
       "fr": null,
