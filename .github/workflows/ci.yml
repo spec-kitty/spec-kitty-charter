@@ -12,7 +12,7 @@ name: CI gate
 # they no longer trigger on `pull_request` directly — this orchestrator is the PR entry point, so
 # nothing double-runs. See docs/adr/0023-ci-gate-required-check.md.
 # The native executables are not part of the gate: service-native.yml runs nightly, per release and on demand
-# (ADR-0061).
+# (ADR-0060).
 #
 # Merge queue (ADR-0047): the gate also runs on `merge_group`, so the queue tests each pull request (or
 # group of them) against the main it will land on. The called workflows inherit the event. On a queue
@@ -86,7 +86,7 @@ jobs:
           printf 'changed files:\n%s\n' "$changed"
           # Mirror the path filters of service.yml and docs-cleanliness.yml exactly; a
           # change to this gate workflow itself re-runs every group (fail-safe). The four native executables are
-          # not a concern group: service-native.yml builds them nightly and per release (ADR-0061).
+          # not a concern group: service-native.yml builds them nightly and per release (ADR-0060).
           service_re='^(contracts/|service/|build-logic/|config/|gradle/|deploy/|\.gitignore$|(.*/)?\.env|[^/]+\.gradle\.kts$|gradle\.properties$|gradlew$|scripts/release/|scripts/packs/|packs/open-packs\.lock\.yaml$|\.github/workflows/(service|ci|sonar|contract-release|service-release)\.yml$)'
           docs_re='^(docs/|site/|scripts/docs/|\.markdownlint-cli2\.jsonc$|cspell\.json$|lychee\.toml$|\.github/workflows/(docs-cleanliness|ci)\.yml$)'
           if printf '%s\n' "$changed" | grep -Eq "$service_re"; then echo "service=true"; else echo "service=false"; fi >> "$GITHUB_OUTPUT"

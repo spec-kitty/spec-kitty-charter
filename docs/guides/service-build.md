@@ -11,7 +11,7 @@ related:
   - adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts
   - adr/0043-sanitized-artifact-shapes-procedures-and-toolguide-guides
   - adr/0046-service-release-line-and-native-packaging
-  - adr/0061-native-build-runs-nightly-and-per-release
+  - adr/0060-native-build-runs-nightly-and-per-release
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this before you build, test or change the contract.
@@ -370,7 +370,7 @@ Core's service pin fetches and verifies these assets by name.
    It names the cause of a refusal, or writes `build/service-release/gate.properties`.
 4. **Merge the pull request.** Run `service-native.yml` on `main` with `workflow_dispatch` at the merge commit, and tag
    only when it is green. `CI gate / gate` no longer proves the native build
-   ([ADR-0061](/adr/0061-native-build-runs-nightly-and-per-release/)). The operator then tags the merge commit on
+   ([ADR-0060](/adr/0060-native-build-runs-nightly-and-per-release/)). The operator then tags the merge commit on
    `main` and pushes the tag:
 
    ```bash
@@ -426,7 +426,7 @@ gh attestation verify spec-kitty-charter-service-0.2.0-linux-x64 --repo spec-kit
 
 The native executables are built in CI only, on each runner, by `.github/workflows/service-native.yml`. It runs
 nightly on `main` and for each service release, not on a pull request, and it is not part of `CI gate / gate`
-([ADR-0061](/adr/0061-native-build-runs-nightly-and-per-release/)). To build them for a branch whose change
+([ADR-0060](/adr/0060-native-build-runs-nightly-and-per-release/)). To build them for a branch whose change
 risks the native build (a new reflective path, a dependency bump, a change to `service-native.yml`,
 `scripts/release/smoke-service.sh` or `charter.native-image.gradle.kts`), run the workflow on that branch with
 `workflow_dispatch`. Locally,
