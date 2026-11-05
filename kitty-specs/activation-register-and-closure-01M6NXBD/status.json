@@ -371,7 +371,7 @@
     },
     "WP11": {
       "actor": "claude",
-      "agent": null,
+      "agent": "claude:claude-opus-5-5:java-jenny",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -381,7 +381,8 @@
       "last_transition_at": "2026-11-05T23:35:57.355775+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "WP11 done (fdd6e0e). PackCompositionFacts.edges (graph docs, components, registered shard; dedup by from/type/to/qualifiers). EdgeIndex: edge-backed ComposeResolver keyed by (descriptor pack_id, URN); qualified endpoints checked by the compose's checkReferences. Reachability.reach on GraphWalk only (no Deque/recursion of its own): every Via recorded in onRelationship, stopped+Vias, behindStopped via unstopped second run, lineage as a separate GraphWalk passing requires+scope up the whole chain (J4 test passes). enhancesPull both ways transitive via reversed enhances edges; enhancersOf one-hop. ClosureView.reach/enhancesPull/enhancersOf from the same read (call-count test extended). GraphWalk untouched. Out-of-map touched packs files (PR #377 collision): DomainRepositoryService(+Test), PackCompositionFacts, ClosureView, ClosureQueries(+Test). Gates: :packs:check (incl openPacksRoundTrip) 0, :activations:check 0, deployable Hexagonal(55)+CharterContractSuite 0. NFR-006 report-only p95 16.433 ms CPU (500 artifacts, 20 starts, 50 runs)."
+        "WP11 done (fdd6e0e). PackCompositionFacts.edges (graph docs, components, registered shard; dedup by from/type/to/qualifiers). EdgeIndex: edge-backed ComposeResolver keyed by (descriptor pack_id, URN); qualified endpoints checked by the compose's checkReferences. Reachability.reach on GraphWalk only (no Deque/recursion of its own): every Via recorded in onRelationship, stopped+Vias, behindStopped via unstopped second run, lineage as a separate GraphWalk passing requires+scope up the whole chain (J4 test passes). enhancesPull both ways transitive via reversed enhances edges; enhancersOf one-hop. ClosureView.reach/enhancesPull/enhancersOf from the same read (call-count test extended). GraphWalk untouched. Out-of-map touched packs files (PR #377 collision): DomainRepositoryService(+Test), PackCompositionFacts, ClosureView, ClosureQueries(+Test). Gates: :packs:check (incl openPacksRoundTrip) 0, :activations:check 0, deployable Hexagonal(55)+CharterContractSuite 0. NFR-006 report-only p95 16.433 ms CPU (500 artifacts, 20 starts, 50 runs).",
+        "Cycle 2: new DomainRepositoryServiceTest case pins relation + both qualifiers in the dedup key (relation/toPack/fromPack constant mutants each fail it; restored). ReachResult.behindStopped Javadoc: lists only what the unstopped walk puts in force; a pass-through target behind a stop is listed, a merely passed-through ancestor is not (the walk records ancestors apart from reached). Gates: :packs:check incl openPacksRoundTrip 2796 tests/0 failed/4 pre-existing skips; deployable CharterContractSuite+Hexagonal 351/0."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
