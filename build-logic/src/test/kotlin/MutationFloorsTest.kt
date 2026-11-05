@@ -48,7 +48,7 @@ class MutationFloorsTest {
 
         assertThat(result.passes).isFalse()
         assertThat(MutationFloors.failures(":kernel", listOf(result))).containsExactly(
-            ":kernel kernel: mutation score 64.0 % is below its floor 65 % (#239, ADR)",
+            ":kernel kernel: mutation score 64.0 % is below its floor 65 % (#239, ADR-0060)",
         )
     }
 
@@ -58,7 +58,7 @@ class MutationFloorsTest {
         val result = scoreKernel(killed = 129, survived = 71, noCoverage = 0)
 
         assertThat(result.failure(":kernel")).isEqualTo(
-            ":kernel kernel: mutation score 64.5 % is below its floor 65 % (#239, ADR)",
+            ":kernel kernel: mutation score 64.5 % is below its floor 65 % (#239, ADR-0060)",
         )
     }
 
@@ -107,7 +107,7 @@ class MutationFloorsTest {
         assertThat(infraStorage.mutants).isEqualTo(1)
         assertThat(infraStorage.noCoverage).isEqualTo(1)
         assertThat(infraStorage.failure(":packs")).isEqualTo(
-            ":packs infra.storage: mutation score 0.0 % is below its floor 50 % (#239, ADR)",
+            ":packs infra.storage: mutation score 0.0 % is below its floor 50 % (#239, ADR-0060)",
         )
     }
 
@@ -139,7 +139,7 @@ class MutationFloorsTest {
         assertThat(result.passes).isFalse()
         assertThat(result.failure(":kernel"))
             .startsWith(":kernel kernel: no mutant lies in its packages")
-            .endsWith("(#239, ADR)")
+            .endsWith("(#239, ADR-0060)")
     }
 
     @Test
@@ -170,7 +170,7 @@ class MutationFloorsTest {
         val result = scoreKernel(killed = 1299, survived = 701, noCoverage = 0)
 
         assertThat(result.failure(":kernel")).isEqualTo(
-            ":kernel kernel: mutation score 64.9 % is below its floor 65 % (#239, ADR)",
+            ":kernel kernel: mutation score 64.9 % is below its floor 65 % (#239, ADR-0060)",
         )
         assertThat(MutationFloors.percent(2, 3)).isEqualTo("66.6")
         assertThat(MutationFloors.percent(13, 20)).isEqualTo("65.0")
@@ -190,7 +190,7 @@ class MutationFloorsTest {
         assertThat(outcome.summary).isNull()
         assertThat(outcome.failures).containsExactly(
             ":kernel: 2 <mutation> element(s) in build/reports/pitest/mutations.xml lack a status or a mutatedClass," +
-                " so the report cannot be scored (#239, ADR)",
+                " so the report cannot be scored (#239, ADR-0060)",
         )
     }
 
@@ -226,7 +226,7 @@ class MutationFloorsTest {
 
         assertThat(outcome.lines).containsExactly(":kernel kernel: 4 mutants, score 50.0 %, strength 66.6 %, floor 65 %")
         assertThat(outcome.summary).contains("\"group\": \"kernel\"", "\"passed\": false")
-        assertThat(outcome.failures).containsExactly(":kernel kernel: mutation score 50.0 % is below its floor 65 % (#239, ADR)")
+        assertThat(outcome.failures).containsExactly(":kernel kernel: mutation score 50.0 % is below its floor 65 % (#239, ADR-0060)")
     }
 
     @Test

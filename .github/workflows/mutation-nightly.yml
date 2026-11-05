@@ -1,6 +1,6 @@
 name: Mutation testing (nightly)
 
-# The nightly mutation floor (#239, ADR): PIT on every module that applies charter.mutation-conventions
+# The nightly mutation floor (#239, ADR-0060): PIT on every module that applies charter.mutation-conventions
 # (kernel, missions, profiles and packs). `./gradlew pitest` is its own task, never part of `check` or `verifyAll`,
 # and this workflow has only the schedule and workflow_dispatch triggers, so no pull-request run invokes it or
 # waits for it.

@@ -152,7 +152,7 @@ detected over covered mutants, is reported and never gated. A group passes when 
 floor; printed figures are truncated to one decimal, never rounded up. A group below its floor fails the task:
 
 ```text
-:kernel kernel: mutation score 64.9 % is below its floor 65 % (#239, ADR)
+:kernel kernel: mutation score 64.9 % is below its floor 65 % (#239, ADR-0060)
 ```
 
 A group with no mutants, a missing `mutations.xml` and `<mutation>` elements without a status or a mutated class each
