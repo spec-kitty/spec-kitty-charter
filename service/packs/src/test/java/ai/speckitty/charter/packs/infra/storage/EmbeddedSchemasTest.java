@@ -77,7 +77,8 @@ class EmbeddedSchemasTest {
     @DisplayName("a pack-written pattern runs in linear time, and one the engine cannot run is refused (ReDoS)")
     void aCatastrophicPatternIsEvaluatedInLinearTime() {
         ConfigValue schema = tree("{type: object, properties: {a: {type: string, pattern: '^(.*a){12}$'}}}");
-        ConfigValue value = ConfigValue.of(Map.of("a", "a".repeat(40) + "!"));
+        // A backtracking engine needs minutes on this input even on a fast CPU, far past the hang cap.
+        ConfigValue value = ConfigValue.of(Map.of("a", "a".repeat(48) + "!"));
 
         assertThat(EmbeddedSchemas.schemaProblems(schema)).isEmpty();
         assertTimeoutPreemptively(
