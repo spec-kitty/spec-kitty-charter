@@ -20,7 +20,7 @@
   "work_packages": {
     "WP01": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": null,
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 1,
@@ -33,6 +33,7 @@
         "Commit 7f942c4. Moves: kernel.transport {ReservedOperation(TYPE+METHOD), PreconditionException, EntityTags(matches/noneMatch/isWildcard/quote), BodyLimit}; kernel.domain {RefusalViolation, RequiringPack, CharterRefusal.withViolations/withRequiredBy}; deployable.ReservedOperationInterceptor (method mark, then bean type); packs JsonBodyGuard (public; BodyFault sealed TooLarge/NullFound; NullValue.pointer/detail). Old packs ReservedOperation/Interceptor/PreconditionException deleted; git grep finds no old names. Gates: :kernel:check exit 0 (2674 tests; EntityTagsTest 14, CharterRefusalTest 5); :packs:check -x openPacksRoundTrip exit 0 (2747 tests, 0 fail, 4 pre-existing skips; openPacksRoundTrip not run: no ../spec-kitty-open-packs checkout beside the worktree); :deployable:test Hexagonal+ReservedOperationInterceptorTest exit 0; :deployable:test CharterContractSuite+ReservedOperationCoverage+ReservedRefusalCodes+ProblemResponses(25)+NullOmission(54) exit 0, activations.feature 15/15 reserved pins pass, directives/relationships 412/428 scenarios pass; deployable checkstyle/spotless/javadoc exit 0. Packs files touched (P3): import only: PackWriteStore, Directive/Paradigm/Relationship/Styleguide/ToolguideRegistrationService, PackCommitStore, *RegistrationServiceTest x5, PackCommitStoreTest, LinkedPackCommitTest, BinaryPayloadRevisionTest; call site: ActivationController, RegistrationBodyAdvice, ToolguideRegistrationBodyAdvice, RegistrationListsTest (+1 pointer test), ToolguideRegistrationBodyAdviceTest, PackRevisionTest (+1 weak assertion); body: PackRevision.matches (delegation), RefusalHandler (render violations/requiredBy, +3 tests), RegistrationLists (reduced to of() + refusal()), new JsonBodyGuard. noneMatch/quote/withViolations/withRequiredBy have test-only callers until WP05/WP09."
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/activation-register-and-closure-01M6NXBD-coord/kitty-specs/activation-register-and-closure-01M6NXBD/tasks/WP01-shared-transport-plumbing/review-cycle-1.md",
         "reference": "review-cycle://activation-register-and-closure-01M6NXBD/WP01-shared-transport-plumbing/review-cycle-1.md",
@@ -40,16 +41,16 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 24119,
-      "shell_pid_created_at": "1793907426.65",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T001": "done",
-        "T002": "done",
-        "T003": "done",
-        "T004": "done",
-        "T005": "done",
-        "T006": "done",
-        "T007": "done"
+        "T001": "planned",
+        "T002": "planned",
+        "T003": "planned",
+        "T004": "planned",
+        "T005": "planned",
+        "T006": "planned",
+        "T007": "planned"
       }
     },
     "WP02": {
