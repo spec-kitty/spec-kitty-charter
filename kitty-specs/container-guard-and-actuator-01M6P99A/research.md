@@ -38,3 +38,27 @@ All three reported that the org-layer packs (`internal`, `qa`) are missing on di
   the ADR-0018 ETags.
 - ADR-0041 D4, D6 and D7. D4 wins over #231's "hosted ⇒ non-loopback" wording: loopback stays allowed in a
   container.
+
+## Pre-PR squad (2026-11-05)
+
+Three profile-loaded delegates reviewed the integrated lane:
+
+- security and tests: `reviewer-renata`, verdict READY with one MEDIUM;
+- architecture and contract: `architect-alphonso`, verdict NOT READY on one MEDIUM;
+- docs accuracy: `curator-carla`, verdict READY.
+
+| # | Lens | Finding | Disposition |
+|---|---|---|---|
+| P1 | architecture | ADR-0060's Context claimed the ETags and the fingerprint live in memory and differ per replica. They are digests of the committed files. The activation copy is not built (`501`). The real hazard is the in-process pack-write lock (ADR-0026, "one writer per pack"). | accepted: the ADR-0060 Context rewritten around that hazard; the decision is unchanged; the guide bullet is corrected. The correction is noted to the operator on #233. |
+| P2 | security | Publishing beyond loopback exposes the token over plain HTTP. | accepted: a TLS note in the guide ("Plain HTTP") and in the compose comment |
+| P3 | security | A configured health group adds `groups` to the unauthenticated body. | accepted: any `management.endpoint.health.group.*` fails the start |
+| P4 | security | Re-enabling JMX was not refused. | accepted: `spring.jmx.enabled` on, or a JMX exposure, fails the start |
+| P5 | security | The base path was compared without case. | accepted: compared exactly |
+| P6 | security | `freePort` has a race in `ContainerHealthTest`. | accepted: a start that loses the port is retried, up to 3 attempts |
+| P7 | security | The native smoke did not check that the exemption is narrow. | accepted: `/info` without the token is 401 and `/actuator/env` with it is 404 |
+| P8 | architecture, docs | "Refuses a request without Host" ignores Tomcat's HTTP/1.1 400. | accepted: the contract and the fragment say HTTP/1.0; the guide drops the clause |
+| P9 | architecture | The 403 description opened with "A browser made the request". | accepted: reworded and re-wrapped |
+| P10 | architecture | `service-lifecycle.md` was stale (container summary, the replica bullet). ADR-0041 had no pointer to the answer. | accepted: both updated, linking ADR-0060 |
+| P11 | docs | The guide's "see Limits" link was stale, and "exact request" was imprecise (the query is ignored). | accepted: the link is retargeted; the wording is now "exact path" |
+| P12 | architecture | The docs branch and the code branch both edit the container guide. | changed: the docs PR (ADR-0060) is synced to the corrected text; the code PR rebases on main after it merges |
+| P13 | architecture | Run `HexagonalArchitectureTest` in isolation (the delegates' Gradle runs collided). | accepted: run with `verifyAll` in lane-f, 45/45 green |
