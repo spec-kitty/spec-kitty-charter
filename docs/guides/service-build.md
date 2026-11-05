@@ -368,7 +368,10 @@ Core's service pin fetches and verifies these assets by name.
    ```
 
    It names the cause of a refusal, or writes `build/service-release/gate.properties`.
-4. **Merge the pull request.** The operator then tags the merge commit on `main` and pushes the tag:
+4. **Merge the pull request.** Run `service-native.yml` on `main` with `workflow_dispatch` at the merge commit, and tag
+   only when it is green. `CI gate / gate` no longer proves the native build
+   ([ADR-0061](/adr/0061-native-build-runs-nightly-and-per-release/)). The operator then tags the merge commit on
+   `main` and pushes the tag:
 
    ```bash
    git tag service-v0.2.0 <merge-commit> && git push origin service-v0.2.0
@@ -424,7 +427,8 @@ gh attestation verify spec-kitty-charter-service-0.2.0-linux-x64 --repo spec-kit
 The native executables are built in CI only, on each runner, by `.github/workflows/service-native.yml`. It runs
 nightly on `main` and for each service release, not on a pull request, and it is not part of `CI gate / gate`
 ([ADR-0061](/adr/0061-native-build-runs-nightly-and-per-release/)). To build them for a branch whose change
-risks the native build (a new reflective path, a dependency bump), run the workflow on that branch with
+risks the native build (a new reflective path, a dependency bump, a change to `service-native.yml`,
+`scripts/release/smoke-service.sh` or `charter.native-image.gradle.kts`), run the workflow on that branch with
 `workflow_dispatch`. Locally,
 `./gradlew :deployable:nativeCompile -Pcharter.native=true`
 needs a GraalVM 25 with `native-image` on `JAVA_HOME`. `verifyAll` never needs one.

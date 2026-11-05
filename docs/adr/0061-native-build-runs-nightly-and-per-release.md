@@ -10,7 +10,6 @@ kind: ADR
 related:
   - adr/0023-ci-gate-required-check
   - adr/0046-service-release-line-and-native-packaging
-  - adr/0058-sonarcloud-nightly-reported-and-checkstyle-complexity-per-pr
   - guides/service-build
 audience:
   - profile: charter-service-contributor
@@ -44,9 +43,7 @@ is the slowest part of a pull request, and it is paid again on each merge queue 
    - **nightly** on `main`, at 03:11 UTC, by `schedule`;
    - **per release**, called by `service-release.yml`, as before: a failed target still blocks the release;
    - **on demand**, by `workflow_dispatch` on any branch.
-3. **A red night is a red run of the workflow.** It is reported as
-   [ADR-0058](/adr/0058-sonarcloud-nightly-reported-and-checkstyle-complexity-per-pr/) and the mutation nightly are,
-   with no other notification.
+3. **A red night is a red run of the workflow,** as the mutation nightly's is. No notification is wired.
 
 ## Consequences
 
@@ -62,11 +59,16 @@ is the slowest part of a pull request, and it is paid again on each merge queue 
     `nativeImageTestClasspath` verification, is found up to a day after the merge, not on the pull request.
   - Until the fix lands, `main` can hold a change that does not build natively.
   - A release can still catch it, because the release builds all four targets.
-- **Nobody is told.** A red night shows as a red run; someone has to look.
+- **A native failure found by the release fails after the tag is pushed.** The fix lands on a later commit, so that
+  version's tag cannot be published as it stands. The release procedure therefore checks the native build before
+  tagging ([Service build](/guides/service-build/)).
+- **No notification is wired.** Only a green run proves a night. A cancelled, timed-out or missing run is not a pass,
+  and nothing flags it.
 
 ### Mitigation
 
-- For a change that risks the native build (a new reflective path, a resource or service loader, a dependency bump),
+- For a change that risks the native build (a new reflective path, a resource or service loader, a dependency bump, a change to `service-native.yml`,
+  `scripts/release/smoke-service.sh` or `charter.native-image.gradle.kts`),
   run `service-native.yml` on the branch with `workflow_dispatch` before merging.
 - The service's own hints stay unit-tested (`CharterRuntimeHintsTest`) on every pull request.
 
