@@ -1,7 +1,7 @@
 {
-  "event_count": 17,
-  "last_event_id": "01M6PJF6CXK58VMPWXM2PRE7W8",
-  "materialized_at": "2026-11-05T19:20:16.022476+00:00",
+  "event_count": 19,
+  "last_event_id": "01M6PJFP73J69T7051DBKTQSW0",
+  "materialized_at": "2026-11-05T19:20:32.221699+00:00",
   "mission_number": "",
   "mission_slug": "activation-register-and-closure-01M6NXBD",
   "mission_type": "",
@@ -13,9 +13,9 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 1,
+    "in_progress": 2,
     "in_review": 0,
-    "planned": 14
+    "planned": 13
   },
   "work_packages": {
     "WP01": {
@@ -35,11 +35,15 @@
       "shell_pid_created_at": "1793906410.01"
     },
     "WP02": {
-      "actor": "finalize-tasks",
+      "actor": "claude",
+      "agent": "claude",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M6PHG8BGKDB7KVBT8E8SXBG0",
-      "last_transition_at": "2026-11-05T19:03:22.224135+00:00"
+      "implementer_of_record": "claude",
+      "lane": "in_progress",
+      "last_event_id": "01M6PJFP73J69T7051DBKTQSW0",
+      "last_transition_at": "2026-11-05T19:20:32.221699+00:00",
+      "shell_pid": 13981,
+      "shell_pid_created_at": "1793906410.01"
     },
     "WP03": {
       "actor": "finalize-tasks",
