@@ -107,7 +107,6 @@ class ArtifactReadServiceTest {
         return new ArtifactReadService(
                 store,
                 store,
-                store,
                 read,
                 new TacticReadService(store, store, read),
                 new DirectiveReadService(store, store, read, revisions),
