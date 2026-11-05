@@ -33,6 +33,11 @@ scenarios** in `contracts/charter/scenarios/`; the copied acceptance suite in
 ([Behavior and acceptance scenarios](/architecture/behavior-and-scenarios/#where-they-live)).
 The title keeps its wording because it names the accepted record.
 
+Clarification 2026-11-05 ([#374](https://github.com/spec-kitty/spec-kitty-charter/issues/374); the
+decision is unchanged): the acceptance scenarios are gone from `tests/scenarios/charter/`. Its
+`PROMISES.md` now names, for each promise, the contract scenario, placeholder or issue that accounts
+for it.
+
 ## Context
 
 Two routes were open for getting from the Python charter in core to a Java service here:

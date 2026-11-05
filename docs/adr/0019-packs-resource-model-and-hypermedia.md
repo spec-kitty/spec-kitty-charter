@@ -71,6 +71,10 @@ suites under `src/test/resources/features/`) adds three more operations:
 - `GET /packs/{packId}/resolution` is the read-only resolution state
   ([ADR-0007](/adr/0007-rest-hateoas-contract-of-record/) decision 7).
 
+*Clarified 2026-11-05 (#374; the decision is unchanged): the suites under
+`src/test/resources/features/` moved to `contracts/charter/scenarios/` (`registration/`, `trust/`,
+`integrity/`, `distribution/`) as `@WIP` scenarios, not run until these operations are built.*
+
 Two gaps follow:
 
 - **`/packs` would mean two things.** The listing answers the packs the service loaded; the

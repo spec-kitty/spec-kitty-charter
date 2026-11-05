@@ -157,8 +157,11 @@ introduces. Today:
 - Packs authored before this decision carry no policy file, so all their artifacts are `open`.
   Org authors must add policy files before the levels protect anything.
 - Acceptance scenario `PR-CHARTER-SHARING-002` ("a project's own governance choice wins over
-  the team pack it adopts", `tests/scenarios/charter/PROMISES.md:34`) now holds only "unless
+  the team pack it adopts", `tests/scenarios/charter/PROMISES.md`) now holds only "unless
   the pack author locked it". The scenario needs that qualifier.
+  *Clarified 2026-11-05 (#374): the scenario is now a pointer in `PROMISES.md`, and the
+  qualifier lives in the `@WIP` scenario it points to, journey 04's "A locked directive cannot
+  be deactivated by a project".*
 
 ## Alternatives considered
 
