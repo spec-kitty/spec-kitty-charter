@@ -14,6 +14,9 @@ requirement_refs:
 planning_base_branch: issue-360-activated-closure
 merge_target_branch: issue-360-activated-closure
 branch_strategy: Planning artifacts for this mission were generated on issue-360-activated-closure. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-360-activated-closure unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-activation-register-and-closure-01M6NXBD
+base_commit: 8c789ca072e746253b1a3b936213bdd5cb107730
+created_at: '2026-11-05T20:19:21.233961+00:00'
 subtasks:
 - T020
 - T021
