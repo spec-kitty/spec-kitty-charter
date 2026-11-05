@@ -16,7 +16,8 @@ lists it so the work packages and the reviewers share one view.
 - **`If-None-Match` / `304`** on `getActivation` and the four effective reads.
 - **Absent-means-none texts** in `ActivationConfig`, `SelectedArtifacts`, `activatedKinds` and the select, unselect and
   deactivate path descriptions.
-- **`CharterRefusalCode`**: `activation_not_found` and `activation_invalid` become raised.
+- **`CharterRefusalCode`**: `activation_not_found`, `activation_invalid`, `artifact_required` and `artifact_locked` become
+  raised (create and replace refuse a denied floor artifact).
 - **`ActivationConfig` descriptions:** absent and `[]` mean none (ADR-0053 d10). The `packs` text drops "a later pack
   wins" (ADR-0053 d5/d6).
 - **Remove `x-reserved`** from `createActivation`, `getActivation`, `replaceActivation` and `deleteActivation` (13 → 9 reserved).
@@ -25,7 +26,6 @@ lists it so the work packages and the reviewers share one view.
 ## PR B
 
 - **Remove `x-reserved`** from the five per-artifact and preset writes.
-- **`CharterRefusalCode`**: `artifact_required`, `artifact_locked`, `artifact_not_found`, `mission_type_not_found` and
-  `preset_not_found` become raised.
+- **`CharterRefusalCode`**: `artifact_not_found`, `mission_type_not_found` and `preset_not_found` become raised.
 - **Refusals stay as declared:** `409 artifact_required` and `artifact_locked` with `requiredBy`;
   `404 preset_not_found`.
