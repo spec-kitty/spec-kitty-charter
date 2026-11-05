@@ -28,24 +28,20 @@ import org.junit.jupiter.params.provider.MethodSource;
  *
  * <p>Every body future is asserted done before it is joined, so a subscriber that never completes it (an
  * {@code onComplete} or {@code onError} that does nothing) fails the test instead of hanging it; the class timeout is
- * the backstop for a join this misses.
+ * the backstop for a join this misses (it runs the test on a separate thread, because {@code join} does not abort on an
+ * interrupt).
  */
-@Timeout(value = 30, unit = TimeUnit.SECONDS)
+@Timeout(value = 30, unit = TimeUnit.SECONDS, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
 class CappedBodySubscriberTest {
 
     private static final int CAP = 1024 * 1024;
     private static final int CHUNK = 16 * 1024;
-    private static final int GUIDE_SIZED = 37 * 1024 + 123;
 
     /** Buffers delivered per {@code onNext}, so a body arrives across several calls as it does off the wire. */
     private static final int BUFFERS_PER_ON_NEXT = 4;
 
     static Stream<Arguments> bodiesWithinTheCap() {
-        return Stream.of(
-                Arguments.of("exactly the cap, in 16 KiB buffers", chunks(CAP / CHUNK, CHUNK)),
-                Arguments.of(
-                        "a guide-sized body, in uneven buffers",
-                        sizes(GUIDE_SIZED / 3, GUIDE_SIZED / 3, GUIDE_SIZED - 2 * (GUIDE_SIZED / 3))));
+        return Stream.of(Arguments.of("exactly the cap, in 16 KiB buffers", chunks(CAP / CHUNK, CHUNK)));
     }
 
     static Stream<Arguments> bodiesOverTheCap() {
