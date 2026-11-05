@@ -7,6 +7,9 @@ requirement_refs:
 planning_base_branch: feat/container-guard-and-actuator
 merge_target_branch: feat/container-guard-and-actuator
 branch_strategy: Planning artifacts for this mission were generated on feat/container-guard-and-actuator. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/container-guard-and-actuator unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-container-guard-and-actuator-01M6P99A
+base_commit: 88a6600e92e1454449ae8cd86b814f81e5f7acb8
+created_at: '2026-11-05T17:06:40.978110+00:00'
 subtasks:
 - T021
 - T022
