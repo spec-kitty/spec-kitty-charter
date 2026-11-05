@@ -356,7 +356,6 @@ service it is the node of the `mission_type` artifact kind (DIV-501):
 |---|---|
 | `requires` | Hard dependency. Cascade activation follows it. |
 | `suggests` | Soft recommendation. Cascade activation also follows it. |
-
 | `applies` | An action applies a directive or tactic. |
 | `scope` | Governance scope: the target is in force within the source's scope (for example a mission type). |
 | `vocabulary` | Links to the glossary that supplies a node's terms. |
