@@ -25,6 +25,7 @@ class PackQualifiedReferenceTest {
         assertThat(PackQualifiedReference.parse("open_packs-2::directive:DIRECTIVE_009")
                         .packName())
                 .isEqualTo(Optional.of("open_packs-2"));
+        assertThat(PackQualifiedReference.isPackName("open_packs-2")).isTrue();
     }
 
     @Test
@@ -73,5 +74,6 @@ class PackQualifiedReferenceTest {
         assertThatThrownBy(() -> PackQualifiedReference.parse("Writing::directive:DIRECTIVE_009"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("^[a-z0-9][a-z0-9_-]*$");
+        assertThat(PackQualifiedReference.isPackName("Writing")).isFalse();
     }
 }
