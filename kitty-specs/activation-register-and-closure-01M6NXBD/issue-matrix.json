@@ -227,6 +227,18 @@
       "title": null,
       "verdict": "not-applicable",
       "wp": null
+    },
+    "#394": {
+      "evidence_ref": "PR reference for rebase order",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
     }
   },
   "schema_version": 1
