@@ -135,7 +135,7 @@ def render(root: Path, expected: tuple[str, ...] = EXPECTED_MODULES) -> str:
     lines += [
         "",
         "Score: detected over all mutants; strength: detected over covered mutants (PIT's definitions). "
-        "Floors and their raise rule: #239 and the ADR. The HTML reports are in the `mutation-report` artifact.",
+        "Floors and their raise rule: #239 and ADR-0060. The HTML reports are in the `mutation-report` artifact.",
         "",
         *HEADER,
         *rows,

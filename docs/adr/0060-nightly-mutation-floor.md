@@ -79,16 +79,25 @@ A full `:packs:pitest` took 45m54s on an idle 4-core machine; kernel, missions a
      stays JaCoCo's to report.
 3. **Fixed floors per module, declared in its build file** (`mutationFloors { group(...) { ... } }`):
 
-   | Module | Group | Packages | Floor |
-   |---|---|---|--:|
-   | kernel | `kernel` | `ai.speckitty.charter.kernel` | 65 |
-   | missions | `missions` | `ai.speckitty.charter.missions` | 70 |
-   | profiles | `profiles` | `ai.speckitty.charter.profiles` | 50 |
-   | packs | `domain+application` | `packs.domain`, `packs.application`, without `application.config` | 85 |
-   | packs | `infra.storage` | `packs.infra.storage` | 85 |
+   | Module | Group | Packages | Floor | Margin |
+   |---|---|---|--:|--:|
+   | kernel | `kernel` | `ai.speckitty.charter.kernel` | 65 | 43 |
+   | missions | `missions` | `ai.speckitty.charter.missions` | 70 | 7 |
+   | profiles | `profiles` | `ai.speckitty.charter.profiles` | 50 | 2 |
+   | packs | `domain+application` | `packs.domain`, `packs.application`, without `application.config` | 85 | 126 |
+   | packs | `infra.storage` | `packs.infra.storage` | 85 | 120 |
 
    The packs floors follow `floor5(score − 3)` of the first measured run (92.7 % and 90.7 % give 85 each). Kernel,
    missions and profiles take the floors the operator ruled.
+
+   - **The margin** is how many detected mutants a group can lose and still pass, in the run that set its floor:
+     `detected − ⌈floor × mutants / 100⌉` (kernel 289 of 378 with this pull request's triage, missions 108 of 144,
+     profiles 35 of 66, `domain+application` 1519 of 1638, `infra.storage` 1899 of 2092).
+   - **What a floor catches.** A floor backstops a large regression: a deleted test class, a module's tests no longer
+     running, a large piece of code arriving untested. It does not catch a single weakened test, which costs a few
+     mutants, well inside every packs and kernel margin.
+   - **Missions and profiles are near the trigger.** A margin of 7 and of 2 mutants means a small change there, even
+     moving a few lines of covered code, can turn the nightly red.
 4. **The packs scope.** PIT mutates `packs.domain.*`, `packs.application.*` and `packs.infra.storage.*`,
    `infra.storage.config` included (operator ruling), and never `application.config.*` (the Spring wiring) or
    `infra.api.*` (the REST adapter). It runs only the unit tests of those packages: no `*WiredTest`, and no test
@@ -96,7 +105,7 @@ A full `:packs:pitest` took 45m54s on an idle 4-core machine; kernel, missions a
 5. **The floor check.** `pitest` is finalized by `checkMutationFloors`, which reads `build/reports/pitest/mutations.xml`
    with a lenient scan, never a strict XML parser, and writes `build/reports/mutation-floors/floors.json`. A group
    below its floor fails the task with
-   `<path> <group>: mutation score S % is below its floor F % (#239, ADR)`. A group without mutants, a missing report
+   `<path> <group>: mutation score S % is below its floor F % (#239, ADR-0060)`. A group without mutants, a missing report
    and `<mutation>` elements that cannot be read each fail too, so a broken run is never scored as a pass.
 6. **Moving a floor.**
    - **Raise** a floor by pull request when the nightly score is 5 or more points above it.
@@ -110,6 +119,11 @@ A full `:packs:pitest` took 45m54s on an idle 4-core machine; kernel, missions a
 
    A new test whose only purpose is killing a mutant is never an allowed outcome (DIRECTIVE_041). This pull request
    applies the order to `kernel.domain`: 14 survivors killed, 11 marked equivalent.
+
+   An equivalent verdict is recorded in a triage file beside the work that made it; this pull request's is
+   `kitty-specs/test-mutation-floors-01M6NSDR/tasks/WP05-kernel-survivor-triage/triage.md`. PIT cannot be told that a
+   mutant is equivalent, so an equivalent mutant still counts as SURVIVED: it stays in the score's denominator and
+   in every run's survivor count.
 8. **The nightly** (`.github/workflows/mutation-nightly.yml`) runs on a schedule and on `workflow_dispatch` only.
    - It syncs open-packs at the pin, tests its summary script, then runs `./gradlew pitest --continue`, so every
      module reports even when one fails.
@@ -132,7 +146,8 @@ measurement: it skips the floor check, and the `floors.json` it leaves may be st
 
 ### Positive
 
-- A falling mutation score turns the nightly red, names the module and group, and raises one issue.
+- A fall in a mutation score that takes a group below its floor turns the nightly red, names the module and group,
+  and raises one issue. A smaller fall, inside the group's margin, leaves the nightly green.
 - The logic in `packs` is mutated, with floors where its scores are.
 - The floors ratchet up by ordinary pull requests and only move down by a recorded decision.
 
@@ -141,6 +156,8 @@ measurement: it skips the floor check, and the `floors.json` it leaves may be st
 - The nightly takes about 50 minutes of runner time, most of it `:packs:pitest`.
 - Mutation coverage of a change is seen a day late, never in the pull request that caused it.
 - Floors of 50 to 70 on kernel, missions and profiles sit well below packs until the follow-up raises them.
+- A floor does not catch a single weakened test: the margins of packs and kernel absorb tens of mutants. Missions and
+  profiles, with margins of 7 and 2 mutants, are close to the trigger instead.
 
 ### Risks
 
