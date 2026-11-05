@@ -8,6 +8,11 @@
 recorded as Proposed ADR-0056: "Nightly Sonar, per PR CheckStyle"; new-code coverage reported through
 SonarCloud instead of a coverage threshold.
 
+> **Superseded in part at landing (2026-11-05).** The operator ruled that there is no grandfathering
+> (ADR-0058). The 14-entry register, its stale check and the four limits described below did not land.
+> The limits turn on through #371, once #367 has refactored the methods over them. The nightly SonarCloud
+> analysis and the six refactors landed as specified.
+
 ## Intent Summary (confirmed 2026-11-03)
 
 - **Primary actors:** a contributor who opens a pull request, and the operator, who reads the nightly
