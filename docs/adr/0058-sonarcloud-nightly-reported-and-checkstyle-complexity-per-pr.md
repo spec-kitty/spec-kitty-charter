@@ -2,7 +2,7 @@
 title: "ADR-0058: SonarCloud runs nightly and report-only; complexity is gated per pull request by Checkstyle"
 description: "Static analysis beyond correctness: a nightly, never-required SonarCloud scan with new-code coverage, and Checkstyle complexity rules in the per-PR gate."
 doc_status: active
-updated: 2026-11-03T00:00:00Z
+updated: 2026-11-05T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-11-03'
 type: ADR
@@ -29,8 +29,9 @@ audience:
 per PR CheckStyle", with new-code coverage reported through SonarCloud instead of a coverage
 threshold.
 
-This ADR records that ruling. The implementation is the follow-up mission
-`ci-sonar-nightly-checkstyle-complexity`, in its own pull request.
+This ADR records that ruling. The mission `ci-sonar-nightly-checkstyle-complexity` (#368) delivers
+the nightly SonarCloud workflow. The complexity limits are not on yet: #367 refactors the methods
+over them, and #371 then turns them on.
 
 ## Context
 
@@ -81,8 +82,8 @@ The required-check rules this must respect:
    `CyclomaticComplexity`, `NPathComplexity`, `MethodLength` and `NestedIfDepth`.
    - **Limits.** As ruled by the operator: cyclomatic complexity 15, NPath 1000, 60 lines per
      method and nested-if depth 1.
-   - **No grandfathering.** Operator ruling of 2026-11-04. The roughly 15 existing methods over a
-     limit, tracked in [#367](https://github.com/spec-kitty/spec-kitty-charter/issues/367), are
+   - **No grandfathering.** Operator ruling of 2026-11-04. The existing methods over a limit,
+     listed in [#367](https://github.com/spec-kitty/spec-kitty-charter/issues/367), are
      refactored below the limits before the gate turns on, so #367 is a prerequisite of the gate.
      They get no suppression and no baseline entry.
    - **The register is unchanged.** `config/checkstyle/suppressions.xml` stays the one register of
@@ -96,16 +97,18 @@ The required-check rules this must respect:
    - **Inputs.** It passes the modules' `build/classes/java/main` as `sonar.java.binaries`, and the
      aggregated report as `sonar.coverage.jacoco.xmlReportPaths`. It excludes the generated
      `charter-api`.
-   - **Report-only.** Every step is `continue-on-error`. The quality-gate result goes to the job
+   - **Report-only.** Every step after the token probe is `continue-on-error`. The quality-gate result goes to the job
      summary. The job is never part of `CI gate / gate` and never runs on `merge_group` or a pull
      request.
    - **Without a token.** It skips green with a notice when `SONAR_TOKEN` is absent, so it can land
      before the SonarCloud project exists.
    - **Supply chain.**
      - The action is pinned by full commit SHA, with a version comment.
-     - The scanner version is pinned through the action's input.
+     - The action's SHA pin also fixes the scanner version: the workflow leaves the action's
+       `scannerVersion` input at its default.
      - The job has `permissions: contents: read`.
-     - `SONAR_TOKEN` is exposed only to the scan step, never to the build or `verifyAll` steps.
+     - `SONAR_TOKEN` is exposed only to the token probe, the scan and the quality-gate steps, never
+       to the build or `verifyAll` steps.
      - The scanner and SonarCloud's analyzers are analysis tools outside the build's dependency
        graph, so the build's strict SHA-256 dependency verification is unchanged.
 3. **Coverage stays a report.** No JaCoCo threshold is added. New-code coverage is read from
@@ -121,8 +124,8 @@ The required-check rules this must respect:
   reports them.
 - The required check and the merge queue are unchanged.
 - The charter is unchanged: Checkstyle is already among `verifyAll`'s gates, and SonarCloud never
-  gates. When the follow-up is implemented, [the service build guide](/guides/service-build/) gains
-  the complexity rules and a nightly SonarCloud line.
+  gates. [The service build guide](/guides/service-build/) describes the nightly report, and gains the
+  complexity rules when #371 lands.
 - The gate turns on only after #367 has refactored the existing over-limit methods, so the
   complexity gate arrives later than the SonarCloud workflow.
 
@@ -139,7 +142,7 @@ The required-check rules this must respect:
 - Complexity limits set too loosely gate nothing. The limits are the ones the operator ruled, and
   change only by a reviewed change to this ADR.
 - A compromised action or scanner sees the source and the token. Mitigations: the SHA pin, minimal
-  permissions, the token scoped to one step, and report-only status, so it never gates.
+  permissions, the token kept away from the build steps, and report-only status, so it never gates.
 
 ## Alternatives considered
 

@@ -284,7 +284,9 @@ gates. It holds no entry today. An entry names the rule, the file, the reason an
 date; no gate is relaxed anywhere else, and blanket suppressions are not allowed.
 
 The four complexity limits decided in
-[ADR-0058](/adr/0058-sonarcloud-nightly-reported-and-checkstyle-complexity-per-pr/) are not on yet.
+[ADR-0058](/adr/0058-sonarcloud-nightly-reported-and-checkstyle-complexity-per-pr/) are not on yet:
+cyclomatic complexity 15, NPath 1000, 60 non-empty lines per method and nested-if depth 1. No build
+fails on them today, so keep new methods within them.
 [#367](https://github.com/spec-kitty/spec-kitty-charter/issues/367) first refactors the methods over
 them, with no register entry, and
 [#371](https://github.com/spec-kitty/spec-kitty-charter/issues/371) then turns them on.
@@ -294,8 +296,8 @@ them, with no register entry, and
 `.github/workflows/sonar.yml`, shown in Actions as **Sonar (nightly, reported)**, analyzes `main` at
 04:23 UTC every day, and on a manual run from `main`. It never runs on a pull request.
 
-It is reported only. It is not part of `CI gate / gate`, and a red build, scan or quality gate never
-turns the run red. Each run writes a job summary, a table of the outcome of the pack sync, the
+It is report-only. It is not part of `CI gate / gate`, and a red build, scan or quality gate never
+turns the run red. With the token, each run writes a job summary, a table of the outcome of the pack sync, the
 build, the coverage report, the scan and the quality gate. The quality-gate verdict appears in that
 table and on SonarCloud.
 
