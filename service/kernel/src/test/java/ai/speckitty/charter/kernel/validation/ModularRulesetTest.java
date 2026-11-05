@@ -11,8 +11,9 @@ import org.junit.jupiter.api.Test;
 
 class ModularRulesetTest {
 
-    // Instance fields, not static ones: the factories run inside each test, so a factory that stopped returning its
-    // constraint fails the tests that use it instead of hiding behind a class initialised once per JVM.
+    // Instance fields, not static ones, so the factories run inside each test and PIT can attribute their coverage to
+    // the individual tests that use them. A broken factory would not hide behind a static field either: the class
+    // would fail to initialise, and every test with it (ExceptionInInitializerError).
     private final Constraint<String> notBlank = Constraints.isNotBlank();
     private final Constraint<String> shortText = Constraints.of("must be at most 3 characters", s -> s.length() <= 3);
     private final Constraint<String> lower =
@@ -67,7 +68,7 @@ class ModularRulesetTest {
     @Test
     void theReadyMadeNotBlankConstraintRefusesNullAndBlankTextAndAcceptsText() {
         assertThat(Constraints.isNotBlank().applyTo(" \t")).isEqualTo(Reason.failed("mustn't be blank"));
-        assertThat(Constraints.isNotBlank().predicate().test(null)).isFalse();
+        assertThat(Constraints.isNotBlank().applyTo(null)).isEqualTo(Reason.failed("mustn't be blank"));
         // control: the same constraint accepts text
         assertThat(Constraints.isNotBlank().applyTo("abc")).isEqualTo(Reason.passed("mustn't be blank"));
     }

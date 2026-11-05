@@ -12,9 +12,11 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Flow;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -23,7 +25,12 @@ import org.junit.jupiter.params.provider.MethodSource;
  * The guide fetcher's fail-closed byte cap, driven directly: a hand-written subscription records what the subscriber
  * asks of the publisher ({@code request(n)} and {@code cancel()}), and the test plays the publisher's part, buffer by
  * buffer. No HTTP client and no mocks: every assertion reads either the body future or that record.
+ *
+ * <p>Every body future is asserted done before it is joined, so a subscriber that never completes it (an
+ * {@code onComplete} or {@code onError} that does nothing) fails the test instead of hanging it; the class timeout is
+ * the backstop for a join this misses.
  */
+@Timeout(value = 30, unit = TimeUnit.SECONDS)
 class CappedBodySubscriberTest {
 
     private static final int CAP = 1024 * 1024;
@@ -59,7 +66,7 @@ class CappedBodySubscriberTest {
 
         subscriber.onComplete();
 
-        assertThat(result(subscriber).join()).as(body).isEqualTo(expected);
+        assertThat(completed(subscriber).join()).as(body).isEqualTo(expected);
         assertThat(subscription.requests).containsExactly(Long.MAX_VALUE);
         assertThat(subscription.cancels).isZero();
     }
@@ -113,7 +120,8 @@ class CappedBodySubscriberTest {
 
         subscriber.onError(reset);
 
-        assertThatThrownBy(() -> result(subscriber).join())
+        CompletableFuture<byte[]> future = completed(subscriber);
+        assertThatThrownBy(future::join)
                 .isInstanceOf(CompletionException.class)
                 .cause()
                 .isSameAs(reset);
@@ -128,7 +136,7 @@ class CappedBodySubscriberTest {
 
         subscriber.onComplete();
 
-        assertThat(result(subscriber).join()).isEmpty();
+        assertThat(completed(subscriber).join()).isEmpty();
         assertThat(subscription.requests).containsExactly(Long.MAX_VALUE);
         assertThat(subscription.cancels).isZero();
     }
@@ -146,6 +154,13 @@ class CappedBodySubscriberTest {
 
     private static CompletableFuture<byte[]> result(CappedBodySubscriber subscriber) {
         return subscriber.getBody().toCompletableFuture();
+    }
+
+    /** The body future, asserted done: joining one that is not would wait forever. */
+    private static CompletableFuture<byte[]> completed(CappedBodySubscriber subscriber) {
+        CompletableFuture<byte[]> future = result(subscriber);
+        assertThat(future).as("the body future is completed").isDone();
+        return future;
     }
 
     /**
