@@ -16,6 +16,8 @@ import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.DirectiveRepository;
+import ai.speckitty.charter.packs.domain.MutabilityPolicyRepository;
+import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
@@ -57,7 +59,8 @@ import org.springframework.stereotype.Service;
 
 /**
  * The edge concretization of the pack persistence ports: one service that realizes {@link TacticRepository},
- * {@link PackDescriptorRepository}, {@link PackCatalogRepository} and {@link PackRepository} over the filesystem.
+ * {@link PackDescriptorRepository}, {@link PackCatalogRepository}, {@link PackRepository} and
+ * {@link MutabilityPolicyRepository} over the filesystem.
  * The Spring stereotype lives only here; the ports in the domain stay plain interfaces, and a database-backed
  * sibling would carry its own stereotype.
  *
@@ -82,7 +85,8 @@ public final class DomainRepositoryService
                 PackDescriptorRepository,
                 PackCatalogRepository,
                 PackArtifactRepository,
-                PackRepository {
+                PackRepository,
+                MutabilityPolicyRepository {
 
     /** The seam that supplies the configured pack locations, read on every call so a reconfiguration is seen. */
     @FunctionalInterface
@@ -302,11 +306,13 @@ public final class DomainRepositoryService
      *   <li>the references it writes, as written, {@code [<pack-name>::]<kind>:<id>}: both endpoints of every edge of its
      *       graph documents, then what each of its artifacts writes ({@link CharterArtifact#writtenReferences()}, which
      *       is the targets of the relationships the walk follows, so the check and the walk cannot disagree, and the
-     *       references a kind keeps without minting an edge).
+     *       references a kind keeps without minting an edge);
+     *   <li>the mutability policy its descriptor names by {@code mutability_policy} (ADR-0062), or the empty policy.
      * </ul>
      *
      * <p>The answer fails closed: a graph document or a file of the pack that cannot be read refuses it
-     * {@code pack_unreadable}, naming the first such file, since what an unreadable file holds or writes cannot be
+     * {@code pack_unreadable}, naming the first such file, and so does a named policy file that is missing or invalid
+     * ({@link #policyOf(PackIdentifier)}), since what an unreadable file holds or writes cannot be
      * judged and a compose that skipped it would pass what it never saw. The whole-pack load and the pack-scoped reads
      * still answer for such a pack, so its author can inspect it.
      */
@@ -319,18 +325,12 @@ public final class DomainRepositoryService
                     RefusalCode.PACK_UNREADABLE, "a graph document of " + pack.value() + " cannot be read");
         }
         Pack assembled = readable(pack);
+        MutabilityPolicySource policy = policyOf(resolved, pack, assembled.descriptor());
         Set<String> changed = new LinkedHashSet<>();
         Set<String> references = new LinkedHashSet<>();
         Set<String> declared = new LinkedHashSet<>();
         for (GraphDocument document : graphs.documents()) {
-            for (GraphDocument.Edge edge : document.edges()) {
-                if (refines(edge.relation())) {
-                    changed.add(edge.target());
-                }
-                refuseSelfLoop(pack, assembled.descriptor().name(), document.file(), edge);
-                references.add(edge.source());
-                references.add(edge.target());
-            }
+            edgeFacts(pack, assembled.descriptor().name(), document, changed, references);
             declaredWithoutFile(document).forEach(declared::add);
         }
         Set<String> defined = new LinkedHashSet<>();
@@ -341,7 +341,59 @@ public final class DomainRepositoryService
             }
         }
         defined.addAll(declared);
-        return new PackCompositionFacts(List.copyOf(changed), List.copyOf(defined), List.copyOf(references));
+        return new PackCompositionFacts(List.copyOf(changed), List.copyOf(defined), List.copyOf(references), policy);
+    }
+
+    /**
+     * The policy the pack's descriptor names (ADR-0062), read through the same resolution as the compose's facts, so
+     * the offering and every closure judge the file. A pack is refused {@code pack_unreadable} when its descriptor
+     * cannot be read, or names a policy file that is missing or invalid.
+     */
+    @Override
+    public MutabilityPolicySource policyOf(PackIdentifier pack) {
+        Resolved resolved = resolve(pack);
+        return policyOf(
+                resolved, pack, resolved.store.readDescriptor(resolved.key).toDescriptor());
+    }
+
+    /**
+     * The policy file {@code descriptor} names, read from the resolved pack's directory; the empty policy when it names
+     * none. A named file that is no regular file, is not UTF-8 text, is not YAML or breaks the {@code policy} schema
+     * makes the pack unreadable: a lock that cannot be read is never taken as open.
+     */
+    private static MutabilityPolicySource policyOf(Resolved resolved, PackIdentifier pack, PackDescriptor descriptor) {
+        Optional<String> named = descriptor.paths().mutabilityPolicy();
+        if (named.isEmpty()) {
+            return MutabilityPolicySource.empty();
+        }
+        String which = pack.value() + " names mutability_policy " + named.get() + ", which ";
+        Path file = resolved.directory.resolve(named.get());
+        if (!Files.isRegularFile(file)) {
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, which + "is missing");
+        }
+        String text = FilesystemPackStore.readText(file)
+                .orElseThrow(() -> new CharterRefusal(RefusalCode.PACK_UNREADABLE, which + "is not UTF-8 text"));
+        try {
+            return PolicyYaml.read(text);
+        } catch (PolicyYaml.Unreadable invalid) {
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, which + "cannot be read: " + invalid.getMessage());
+        }
+    }
+
+    /**
+     * What one graph document's edges tell the compose: the targets of its {@code enhances} and {@code overrides}
+     * relations into {@code changed}, both endpoints of every edge into {@code references}; a self-loop is refused.
+     */
+    private static void edgeFacts(
+            PackIdentifier pack, String packName, GraphDocument document, Set<String> changed, Set<String> references) {
+        for (GraphDocument.Edge edge : document.edges()) {
+            if (refines(edge.relation())) {
+                changed.add(edge.target());
+            }
+            refuseSelfLoop(pack, packName, document.file(), edge);
+            references.add(edge.source());
+            references.add(edge.target());
+        }
     }
 
     /**
