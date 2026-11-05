@@ -29,7 +29,7 @@ scenarios come before the contract and before any implementation choice.
 
 ## The offering promises
 
-The suite is organized by consumer outcome. The three offering outcomes are:
+The promises are grouped by consumer outcome. The three offering outcomes are:
 
 | Outcome | Guarantee | Status (2026-11-05, [#374](https://github.com/spec-kitty/spec-kitty-charter/issues/374)) |
 |---|---|---|
@@ -52,8 +52,7 @@ pointers (operator rulings of 2026-10-18 and 2026-11-05; [open question 16](/pla
 | `contracts/charter/scenarios/registration/`, `trust/`, `integrity/`, `distribution/` | The pack registration and distribution scenarios of #43 (ADR-0005, ADR-0019), moved from `src/test/resources/features/` | Not executed, by decision: tagged `@WIP` and not `@contract`, because the surface is decided but not built and outside the cutover scope (ADR-0055 D1). Their fixtures stay in `src/test/resources/fixtures/`, whose `README.md` lists them |
 | `tests/scenarios/charter/` | Pointers only: `PROMISES.md` names, for each of the nine acceptance promises copied from core, the contract scenario that covers it, the `@WIP` scenario or reserved pin that holds its place, or the follow-up issue that tracks it | No scenarios left to run; two promises are now `@contract` scenarios of `offering.feature`, and two are gaps ([#380](https://github.com/spec-kitty/spec-kitty-charter/issues/380), [#381](https://github.com/spec-kitty/spec-kitty-charter/issues/381)) |
 
-The three acceptance outcomes above are still the way the promises are grouped in
-`tests/scenarios/charter/PROMISES.md`. A scenario placed in `contracts/charter/scenarios/` is not run until it
+`tests/scenarios/charter/PROMISES.md` groups its promises under the same three outcomes. A scenario placed in `contracts/charter/scenarios/` is not run until it
 is tagged `@contract`, and not while it is tagged `@WIP`.
 
 ## From scenario to contract

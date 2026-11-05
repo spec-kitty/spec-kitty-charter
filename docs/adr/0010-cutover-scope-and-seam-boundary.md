@@ -119,6 +119,10 @@ Four facts shape what that means:
 - Corpus coverage gaps. Mitigation: the corpus covers every contract operation and every
   refusal code before the gate turns blocking, and acceptance scenarios (#31) run against
   both implementations.
+
+  Clarification 2026-11-05 (the decision is unchanged): the in-repo acceptance suite of #31 was
+  re-scoped by the verdicts of #374 (`tests/scenarios/charter/PROMISES.md`), and ADR-0059 D1 now
+  gates each switch.
 - Rollback after the switch-over means a release downgrade, or restoring deleted code.
   Mitigation: delete the Python read code in the release after the switch-over, not the same
   one.
