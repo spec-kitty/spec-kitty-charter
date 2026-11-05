@@ -1,5 +1,4 @@
 {
-  "accept_commit": "b51cd433a8bbc3eebc5fad234e6d0028c7cae016",
   "acceptance_history": [
     {
       "accept_commit": "b51cd433a8bbc3eebc5fad234e6d0028c7cae016",
@@ -7,12 +6,18 @@
       "accepted_at": "2026-11-05T17:55:39.658768+00:00",
       "accepted_by": "system",
       "accepted_from_commit": "3eefacbc7a2fbb220fea612aaf25e737fcff5713"
+    },
+    {
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-11-05T17:55:50.960106+00:00",
+      "accepted_by": "system",
+      "accepted_from_commit": "51408ab4ff8d9daa37aacdfaece4becc77afa13f"
     }
   ],
   "acceptance_mode": "pr",
-  "accepted_at": "2026-11-05T17:55:39.658768+00:00",
+  "accepted_at": "2026-11-05T17:55:50.960106+00:00",
   "accepted_by": "system",
-  "accepted_from_commit": "3eefacbc7a2fbb220fea612aaf25e737fcff5713",
+  "accepted_from_commit": "51408ab4ff8d9daa37aacdfaece4becc77afa13f",
   "contracts": "none",
   "contracts_rationale": "No new interface. The only contract change is the 403 description in contracts/charter (responses/Forbidden.yaml, openapi.yaml securitySchemes) plus a changelog fragment; /actuator/health is not a contract operation (ADR-0041 D7).",
   "coordination_branch": "kitty/mission-container-guard-and-actuator-01M6P99A",
