@@ -24,6 +24,8 @@ import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -184,13 +186,15 @@ class InterruptedCommitRepairTest {
         CountDownLatch start = new CountDownLatch(1);
         CountDownLatch halfSwapped = new CountDownLatch(1);
         CountDownLatch release = new CountDownLatch(1);
-        // Another thread holds pack-a's lock with pack-a moved aside, as a swap in flight does, until released.
+        AtomicBoolean waitedOn = new AtomicBoolean();
+        // Another thread holds pack-a's lock with pack-a moved aside, as a swap in flight does, until released; it
+        // notes whether any thread waits on that lock meanwhile.
         CompletableFuture<Void> holder = CompletableFuture.runAsync(() -> {
             await(start);
             writeStore.exclusively(PACK, () -> {
                 move(live, live.resolveSibling("pack-a.pack-old-held"));
                 halfSwapped.countDown();
-                await(release);
+                noteWaitersUntil(release, PackWriteLocks.of(live), waitedOn);
                 move(live.resolveSibling("pack-a.pack-old-held"), live);
                 return null;
             });
@@ -213,6 +217,9 @@ class InterruptedCommitRepairTest {
         }
         holder.get(HANG_CAP.toMillis(), TimeUnit.MILLISECONDS);
 
+        assertThat(waitedOn)
+                .as("the listing only tried the held lock; it never waited on it")
+                .isFalse();
         assertThat(listed).containsExactly("pack-descriptor-only");
         assertThat(locations.all()).extracting(PackLocation::name).contains("pack-a");
     }
@@ -428,6 +435,20 @@ class InterruptedCommitRepairTest {
                 throw new AssertionError("the reader neither waited on the pack's lock nor answered");
             }
             Thread.onSpinWait();
+        }
+    }
+
+    /** Waits for {@code release}, noting every ten milliseconds whether a thread is waiting on {@code lock}. */
+    private static void noteWaitersUntil(CountDownLatch release, ReentrantLock lock, AtomicBoolean waitedOn) {
+        try {
+            while (!release.await(10, TimeUnit.MILLISECONDS)) {
+                if (lock.hasQueuedThreads()) {
+                    waitedOn.set(true);
+                }
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(e);
         }
     }
 
