@@ -32,8 +32,8 @@ changed methods by hand.
   - Docs: WP15.
   - PR B's first code WP (WP11) depends on the last PR A code WP (WP09). Every other PR B WP depends on WP11,
     directly or transitively.
-- **The cut at closeout.** WP01–WP10 form a dependency-closed prefix: no PR A WP depends on a PR B WP.
-  - PR A is built by replaying WP01–WP10's commits onto `main`.
+- **The cut at closeout.** WP01–WP10, WP16 and WP17 form a dependency-closed prefix: no PR A WP depends on a PR B WP.
+  - PR A is built by replaying WP01–WP10, WP16 and WP17's commits onto `main`.
   - PR B stacks WP11–WP15's commits on top of PR A.
   - WP15 touches no file WP10 owns, except through the out-of-map edits it lists. No PR B WP edits a PR A file except
     through a listed out-of-map edit, so the replay never carries PR B content.
@@ -168,7 +168,8 @@ changed methods by hand.
 | T113 | `RequiringPack.via` from the `parent_pack` chain (or documented), with a contract fragment | WP17 | |
 | T114 | 422 bodies: never empty `violations`; report every unknown member | WP17 | |
 
-T094–T096 were added by the post-tasks squad fold, and T097–T114 by the post-PR-A squad (WP16, WP17). They are appended after T093 so the existing ids stay stable,
+T094–T096 were added by the post-tasks squad fold, and T097–T114 by the post-PR-A squad: WP16 (T097–T104) and WP17
+(T105–T114). They are appended after T093 so the existing ids stay stable,
 and they belong to WP03 (T094, T095) and WP05 (T096); the per-WP lists below place them in their WPs.
 
 ## PR A
@@ -544,7 +545,7 @@ These steps are the orchestrator's; no WP owns them:
 2. **Pre-PR squad.** Run one before each pull request opens.
 3. **Per-PR gate.** Run `./gradlew verifyAll` once per PR, on the replayed branch. No WP runs it
    (NO_FULL_HEAVY_SUITES_IN_MISSION).
-4. **History replay.** Build PR A by replaying WP01–WP10's commits onto `main`. Build PR B by stacking WP11–WP15's
+4. **History replay.** Build PR A by replaying WP01–WP10, WP16 and WP17's commits onto `main`. Build PR B by stacking WP11–WP15's
    commits on PR A (see "the cut").
 5. **Operator approval.** Each PR opens only with the operator's approval. Flag the open review items in each PR
    description: the closure-scoped floor; refusing a differing pin; ADR-0059 open questions 1 and 4; and the
@@ -571,10 +572,11 @@ dependency)".
 | File | Owner | Later edits |
 |---|---|---|
 | `HexagonalArchitectureTest.java` | WP01 | WP05, WP16 |
+| `hexagonal-service.md` | WP05 | WP16 (the web ring; a recorded decision, no ADR) |
 | `activations/infra/api/ActivationController.java` | WP05 | WP08 (stub), WP09, WP16 (imports), WP13, WP14 |
 | `AvailablePacks.java`, `PacksAvailability.java` | WP05 | WP09, WP17, WP13 |
 | `PackCompositionFacts.java`, `DomainRepositoryService.java`, `DomainRepositoryServiceTest.java` | WP03 | WP04, WP11 |
-| `ClosureView.java`, `ClosureQueries.java`, `ClosureQueriesTest.java` | WP04 | WP17, WP11 |
+| `ClosureView.java`, `ClosureQueries.java`, `ClosureQueriesTest.java` | WP04 | WP17, then WP11 (A4: WP17 lands first; WP11's review waits for WP17's approval and rebases over it; WP11's commits on these files go only into PR B) |
 | `OfferingReadService.java`, `OfferingReadServiceTest.java` | WP02 | WP04 |
 | `ProductionWiringTest.java`, `WiringRoundTripTest.java` | WP07 | none (WP04 only runs them) |
 | `ClosureSnapshot.java`, `DocumentRules.java`, `DocumentRulesTest.java` | WP06 | WP09, WP17 |
@@ -681,3 +683,21 @@ The post-PR-A squad ran on lane-i (WP01–WP09 combined). Every finding has one 
 | renata | NOTE: a 422 can carry empty `violations` | accepted | WP17 T114 step 1 |
 | renata | NOTE: only the first unknown member is reported | accepted (report all; documenting "first only" is the fallback) | WP17 T114 step 2 |
 | renata | NOTE: no 401/403 scenario for `/activations` | accepted | WP17 T112 |
+
+## Analyze dispositions (fourth pass)
+
+| # | Finding | Disposition | Where |
+|---|---|---|---|
+| A1 | Every PR A replay or prefix statement names WP01–WP10, WP16 and WP17 | accepted | tasks.md "The cut", Orchestrator closeout step 4; WP15 P1 note, Branch Strategy |
+| A2 | plan.md: the `web-transport` module, two new modules, the IC-01 note, IC-11 and IC-12, the Revision line | accepted | plan.md |
+| A3 | Encoded, case-safe storage path | accepted | spec FR-019; plan Storage; research R4 |
+| A4 | WP17 and WP11 ordering on `ClosureQueries`/`ClosureView`/`ClosureQueriesTest` (option b) | accepted | tasks.md shared-files table; WP11 and WP17 out-of-map sections |
+| A5 | `hexagonal-service.md` records the web ring (no ADR) | accepted | WP16 out-of-map, T104 step 5 |
+| A6 | WP16 depends on WP10 | accepted | WP16 frontmatter, Branch Strategy |
+| A7 | `ActivationBodyAdvice` location in WP13 and WP14 | accepted | WP13 Grounding; WP14 Grounding |
+| A8 | Preconditions before content in the requirements | accepted | spec FR-010 |
+| A9 | `RequiringPack.via` in the contract delta | accepted | contracts/contract-delta.md PR A |
+| A10 | A duplicated preset id: the last holder wins and the floor follows it | accepted | spec Assumptions; WP04 T021 annotation |
+| A11 | The index note names WP16 and WP17 ranges | accepted | tasks.md Subtask Index note |
+| A12 | `const: policy.yaml` as implemented; the stray `)` in FR-022 | accepted | WP03 T013 step 4, T095 step 3; spec FR-022 |
+

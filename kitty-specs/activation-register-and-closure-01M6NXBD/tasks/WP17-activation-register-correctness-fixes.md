@@ -145,6 +145,10 @@ Implementation command:
 
 ## Out-of-map edits (sequenced by dependency)
 
+**Ordering rule with WP17 (A4, option b):** WP17 lands first on `ClosureQueries.java`, `ClosureView.java` and
+`ClosureQueriesTest.java`. WP11's review waits until WP17 is approved; WP11 rebases its lane over WP17 before review;
+and at replay WP11's commits on these files go only into PR B.
+
 - `service/activations/src/main/java/ai/speckitty/charter/activations/application/ActivationService.java`, and its
   `ActivationServiceTest.java` and `FakeAvailablePacks.java` (owner WP09): T105, T111.
 - `service/activations/src/main/java/ai/speckitty/charter/activations/infra/storage/FileActivationRepository.java`, and

@@ -60,9 +60,10 @@ flowchart LR
 
 ## R4. File storage safety
 
-- **Decision:** the file adapter writes `activation.json.tmp-<uuid>` in the activation's directory, fsyncs it, then
+- **Decision:** the activation's directory is `<config-root>/activations/<encoded id>/`, a reversible, case-safe
+  encoding of the id (post-PR-A squad, WP17), holding `activation.json`. The file adapter writes `activation.json.tmp-<uuid>` in the activation's directory, fsyncs it, then
   moves it with `Files.move(..., ATOMIC_MOVE, REPLACE_EXISTING)` and fsyncs the directory where the OS allows. A
-  `ConcurrentHashMap<ActivationId, ReentrantLock>` serialises compare-and-set per id. Delete removes the file, then
+  per-id lock serialises compare-and-set per id (striped and bounded since WP17). Delete removes the file, then
   the directory. Stray temp files are ignored and cleaned up on the next write.
 - **Rationale:** NFR-004 and NFR-005; a second process stays out of scope (#349, planning decision).
 - **Alternatives considered:** an OS file lock now (rejected, planning decision); a single-file store holding all

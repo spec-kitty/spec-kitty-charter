@@ -3,7 +3,8 @@
 **Branch**: `issue-360-activated-closure` (on `main`, which now carries the merged PR #368 and PR #376) | **Date**: 2026-11-05 | **Spec**: [spec.md](spec.md)
 **Input**: Mission specification from `kitty-specs/activation-register-and-closure-01M6NXBD/spec.md`
 **Revision**: post-plan squad (architect-alphonso, reviewer-renata, researcher-robbie) folded 2026-11-05; see
-research.md "Squad dispositions".
+research.md "Squad dispositions". The PR A squad (architect-alphonso, reviewer-renata, on lane-i) added IC-11 and
+IC-12 (WP16, WP17); see tasks.md "PR A squad dispositions".
 
 ## Summary
 
@@ -41,7 +42,8 @@ The mission lands as two stacked PRs:
 **Primary Dependencies**: Spring Boot web (existing stack), generated `charter-api` interfaces/DTOs, Jackson (existing
 `ActivationJson` NON_NULL mix-ins), networknt JSON Schema for pack files; no new external library (JCS canonicaliser
 in-house, research R3)
-**Storage**: files under `<config-root>/activations/<activationId>/activation.json` (temp file + fsync + atomic move;
+**Storage**: files under `<config-root>/activations/<encoded id>/activation.json` (a reversible, case-safe directory
+name) (temp file + fsync + atomic move;
 per-id in-process lock; one replica, ADR-0060 of PR #392); in-memory adapter for unit tests and the scenario suite
 **Testing**: Cucumber `@contract` scenarios in a new `contracts/charter/scenarios/activation-register.feature` (red
 first), JUnit 5 unit tests, a property test (≥1,000 documents), an 8-writer concurrency test and a context-restart +
@@ -52,7 +54,7 @@ injected-failure durability test on the file adapter, ArchUnit, `ReservedOperati
 **Performance Goals**: cascading select over a 500-artifact fixture < 200 ms p95 on CI, report-only (ADR-0057)
 **Constraints**: the Checkstyle limits PR #368 defined, still off on `main` and held by construction (CC ≤ 15, NPath ≤ 1000, ≤ 60 lines, nested-if depth ≤ 1); no new
 suppressions; no disabled tests; native-image friendly
-**Scale/Scope**: 10 operations served, 4 kept reserved with contract changes; one new module; changes in `packs`,
+**Scale/Scope**: 10 operations served, 4 kept reserved with contract changes; two new modules (`activations`, `web-transport`); changes in `packs`,
 `kernel`, `deployable`, contracts and docs
 
 ## Charter Check
@@ -91,8 +93,11 @@ service/
 │            infra:       PolicyYaml, descriptor `mutability_policy`, DomainRepositoryService edges (PR B)
 ├── kernel/  ArtifactKind.InForceWhenAbsent → NONE; PreconditionException + If-Match parsing (moved from packs);
 │            ReservedOperation annotation (method- and type-level, moved from packs)
-└── deployable/ ReservedOperationInterceptor (moved, method-aware); shared body-limit advice applied to activation
-             bodies; DeployableConfiguration scans; activation storage root from ConfigRoot.activations();
+├── web-transport/  NEW shared adapter ring, package ai.speckitty.charter.web (WP16): RefusalHandler, ProblemHandler,
+│                   Problems, JsonBodyGuard, the Problem JSON and hints; used by packs.infra.api and
+│                   activations.infra.api, names no slice
+└── deployable/ ReservedOperationInterceptor (moved, method-aware); activation advices moved out to
+             activations.infra.api (WP16); DeployableConfiguration scans; activation storage root from ConfigRoot.activations();
              HexagonalArchitectureTest generalised; ActivationSteps glue
 contracts/charter/  openapi.yaml, paths/activations*.yaml, schemas (ActivationPackList, Activation,
                     ActivationConfig, SelectedArtifacts, effective reads +304), CharterRefusalCode raised flags,
@@ -132,6 +137,8 @@ The concerns are listed in dependency order. A concern belongs to PR **A** or PR
   and applied to activation bodies (#323).
 - **Requirements:** C-002, FR-006 (body part).
 - **Collisions:** PR #393 touches `ProblemHandler`. Rebase onto it if it merges first.
+- **Later (IC-11, WP16):** the Spring transport pieces (`RefusalHandler`, `ProblemHandler`, `Problems`,
+  `JsonBodyGuard`) move from `packs.infra.api` to `service/web-transport`.
 
 ### IC-02 (A) — packs: rooted compose, tolerant of the outside
 
@@ -270,6 +277,37 @@ It never adds an enhancer to `selected`.
 - **Changelogs.** A docs changelog fragment per PR.
 - **Issue #360.** An acceptance re-point comment when PR A opens.
 - **Open review items** (research.md).
+
+### IC-11 (A) — shared web transport (WP16, post-PR-A squad)
+
+- **The new module.** `service/web-transport` (`ai.speckitty.charter.web`) holds the service-wide HTTP transport:
+  - `RefusalHandler`, `ProblemHandler` and `Problems`;
+  - `JsonBodyGuard`;
+  - the `Problem` JSON and its hints.
+
+  `packs.infra.api` and `activations.infra.api` both depend on it.
+- **The activation advices** (`ActivationBodyAdvice`, `ActivationProblems`) move from `deployable` into
+  `activations.infra.api`.
+- **ArchUnit:**
+  - `TRANSPORT_STAYS_IN_ADAPTER` loses its `DEPLOYABLE` exemption;
+  - the web ring is an adapter ring that no domain or application ring may depend on, and it names no slice;
+  - no `..domain..` class depends on `kernel.transport..`.
+
+  The decision is recorded in `hexagonal-service.md`.
+- **Behaviour-preserving.**
+- **Requirements:** C-002, C-005, FR-006, NFR-001.
+
+### IC-12 (A) — activation register correctness fixes (WP17, post-PR-A squad)
+
+- **Preconditions before content:** 412 before 422 or 409, with no snapshot taken.
+- **Storage:** a reversible, case-safe directory name, and striped (bounded) locks.
+- **Packs:**
+  - a typed `UnknownRootException`;
+  - one de-duplicated preset list for the presets map and the floor;
+  - the registration gate composes and reads its policy in one `composedWithFacts`.
+- **Tests:** service-level races, and a non-fakeable atomicity test; 401/403 scenarios.
+- **Refusal bodies:** `RequiringPack.via` from the `parent_pack` chain; complete 422 `violations`.
+- **Requirements:** FR-001, FR-003, FR-006, FR-007, FR-019, FR-022, NFR-001, NFR-004, NFR-005, NFR-007, C-001, C-002.
 
 ## Rebase order
 

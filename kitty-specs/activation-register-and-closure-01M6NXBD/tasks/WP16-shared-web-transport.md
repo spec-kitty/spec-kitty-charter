@@ -3,6 +3,7 @@ work_package_id: WP16
 title: Shared web transport module and bounded architecture
 dependencies:
 - WP09
+- WP10
 requirement_refs:
 - C-002
 - C-005
@@ -188,7 +189,7 @@ Implementation command:
 ## Branch Strategy
 
 - Planning branch and merge target: `issue-360-activated-closure` (PR A).
-- Lane worktree from `lanes.json`. It depends on WP09, and is merged before WP17 and PR B's write WPs (WP13 depends
+- Lane worktree from `lanes.json`. It depends on WP09 and WP10 (WP10 owns the architecture doc it edits out of map), and is merged before WP17 and PR B's write WPs (WP13 depends
   on WP17).
 - Rebase onto the lane base before review.
 
@@ -217,6 +218,14 @@ Implementation command:
   show the new shared `web-transport` module (`ai.speckitty.charter.web`). Both inbound adapters, `packs.infra.api`
   and `activations.infra.api`, depend on it, and `deployable` no longer holds activation transport. Rationale: WP10
   documented the layout before the squad moved the transport; the doc must match the code PR A ships (T104 step 4).
+- `docs/architecture/hexagonal-service.md` (owner WP05): describe the web ring as a recorded decision in that doc (no
+  new ADR):
+  - `ai.speckitty.charter.web`, an adapter ring shared by the slices' `infra.api`;
+  - no domain or application ring may depend on it, and `WEB_NAMES_NO_SLICE` holds;
+  - no `..domain..` depends on `kernel.transport..`;
+  - `TRANSPORT_STAYS_IN_ADAPTER` has dropped its `DEPLOYABLE` exemption.
+
+  Rationale: WP05 documented the cross-slice rule before the squad moved the transport (T104 step 5).
 - `service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/RegistrationListsTest.java` and
   `ToolguideRegistrationBodyAdviceTest.java` (owner WP01): imports only.
 - `service/activations/src/main/java/ai/speckitty/charter/activations/infra/api/ActivationController.java` (owner WP05):
@@ -343,6 +352,14 @@ Implementation command:
    - move `ActivationBodyAdvice` and `ActivationProblems` from `deployable` to `activations.infra.api`.
 
    Run `python3 scripts/docs/check_docs.py all` and the spelling check.
+5. Update `docs/architecture/hexagonal-service.md` (out-of-map, owner WP05). Add a dated "Decision (2026-11-0x, PR A
+   squad)" subsection under "The rule":
+   - the web ring;
+   - `WEB_NAMES_NO_SLICE`;
+   - no domain on `kernel.transport`;
+   - the dropped `DEPLOYABLE` exemption.
+
+   No new ADR.
 
 ## Checkstyle limits (NFR-001)
 

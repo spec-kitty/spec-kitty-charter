@@ -111,7 +111,7 @@ Implementation command:
     (`selectActivationArtifact` has two pins, artifact and mission type, plus the binding pin); the binding pin ("answers 501 before it reads its request") is on
     `selectActivationArtifact`. When select is built, that pin must move to the last reserved operation that takes a
     body, `applyActivationPreset`, and WP14 retires it.
-  - `ActivationBodyAdvice` (WP09) already guards `SelectionRequest` and `ExclusionRequest`.
+  - `ActivationBodyAdvice` (`activations.infra.api`, WP16) already guards `SelectionRequest` and `ExclusionRequest`.
   - `ClosureView.reach`, `enhancesPull` and `enhancersOf` (WP11) run on the view taken for the request. The activations port must
     keep that one view for the whole request, so `AvailablePacks.snapshot(...)` is not enough: add
     `AvailablePacks.session(packIds)`, returning a `PacksSession` with `snapshot()`, `reach(ReachPlan)` and

@@ -145,6 +145,8 @@ Implementation command:
    built-in holds the convenience preset C. `RequiredFloor.of(closure)` maps `directive:D1` to [org], and D2 is
    absent.
 2. Two governing presets in two packs both requiring D1: both packs listed, in closure order.
+   *(Annotation, post-approval: this case is two **different** preset ids. For one preset id held by two closure packs,
+   the last holder in merge order wins (ADR-0053 d6) and the floor follows that copy only; WP17 T109.)*
 3. `requiredMissionTypes` gives `mission_type:<id>` entries the same way.
 4. An empty closure gives an empty floor.
 

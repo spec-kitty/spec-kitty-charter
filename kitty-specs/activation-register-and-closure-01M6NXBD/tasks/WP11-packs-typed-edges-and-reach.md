@@ -132,7 +132,9 @@ Implementation command:
 - `service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/DomainRepositoryServiceTest.java` (owner WP03):
   cases for each edge source.
 - `service/packs/src/main/java/ai/speckitty/charter/packs/application/ClosureView.java` and `ClosureQueries.java` (owner
-  WP04): hold the `EdgeIndex`, and expose `reach` and `enhancersOf` on the view.
+  WP04): hold the `EdgeIndex`, and expose `reach`, `enhancesPull` and `enhancersOf` on the view. **Ordering with WP17 (A4):** WP17 lands first on `ClosureQueries.java`, `ClosureView.java` and
+  `ClosureQueriesTest.java`. WP11's review waits until WP17 is approved; WP11 rebases its lane over WP17 before review;
+  and at replay WP11's commits on these files go only into PR B.
 
 ## Subtask Guidance
 

@@ -77,11 +77,11 @@ Implementation command:
 - Planning branch and merge target: `issue-360-activated-closure` (PR B).
 - Lane worktree from `lanes.json`. It depends on WP14, so the docs describe merged behaviour, and on WP10, whose files
   it edits out of map (A2).
-- Rebase onto the lane base before review.
+- Rebase onto the lane base before review. At closeout this WP's commits go only into PR B; PR A replays WP01–WP10, WP16 and WP17.
 
 ## Out-of-map edits (sequenced by dependency)
 
-P1 (the PR cut): this WP touches **no** file WP10 owns except the edits listed here. The PR A replay takes WP01–WP10's
+P1 (the PR cut): this WP touches **no** file WP10 owns except the edits listed here. The PR A replay takes WP01–WP10, WP16 and WP17's
 commits only, so an unlisted edit to a WP10 file would leak PR B content into PR A's history.
 
 
