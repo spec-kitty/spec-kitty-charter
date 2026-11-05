@@ -176,6 +176,8 @@ Core applies a preset from a pack in the closure. Each key the preset lists repl
 | FR-005 | Canonical stored form and revision | As core, I want lists sorted and deduplicated, an empty deny list omitted, ids stored as declared ids, and the revision computed as `sha256:` of the canonical serialisation, so that a fetched document round-trips with the same `ETag`. | High | Open | [build] | no |
 | FR-006 | Write validation | As core, I want an unknown id, kind, pack or preset, a duplicate pack, a `null` list or item, or a body over 1 MiB refused `422 activation_invalid` with violations, so that only valid documents are stored. | High | Open | [build] | no |
 | FR-007 | Locked artifacts cannot be denied | As core, I want a write that denies a locked artifact refused `409 artifact_locked` naming the owning pack, and a stored deny on a now-locked artifact kept but not applied. | High | Open | [build] | no |
+| FR-022 | Pack mutability policy file | As a pack author, I want a pack descriptor's optional `mutability_policy` to name a pack-root policy file (a default level per kind and a level per artifact URN) that the service reads, so that a locked artifact is enforced; a named but missing or invalid file makes the pack unreadable. | High | Open | [build] | no |
+| FR-023 | Required floor from governing presets | As core, I want the must-have items of every governing preset in the activation's closure to form its required floor, so that denying one is refused `409 artifact_required` naming the requiring pack. | High | Open | [build] | no |
 | FR-008 | Absent means none | As core, I want an absent `selected.<kind>`, `activatedKinds` or `missionTypes` to mean nothing in force, the same as `[]`, while both stay distinct on the wire; an absent `packs` means every configured pack. | High | Open | [build] | no |
 | FR-009 | Activation closure read | As core, I want `GET /activations/{id}/packs` to answer the `depends_on` closure rooted at the activation's packs, in dependency order, each entry with pack id, name, version, level and its `depends_on` facts, refusing with the composition codes when the closure cannot compose. | High | Open | [build] | no |
 | FR-010 | Writes see only the closure | As core, I want every write to resolve artifact and preset ids against the activation's closure only, so that an id in an available but unreached pack is refused `422`. | High | Open | [build] | no |
@@ -226,12 +228,15 @@ Core applies a preset from a pack in the closure. Each key the preset lists repl
   provenance and the skipped report.
 - **Skipped report**: `skippedByScope`, `skippedDeactivated` (with `viaRequires`, `requiredBy`),
   `unreachedBehindDeactivated`, `skippedShared`.
-- **Locked artifact**: an artifact whose owning pack's mutability level forbids changing it; it can never be denied.
+- **Locked artifact**: an artifact whose mutability level (from a pack policy file, the highest along the closure) is
+  `locked`; it can never be denied.
+- **Required artifact**: a must-have item of a governing preset in the closure; it can never be denied.
 
 ## Assumptions
 
-- The required floor today is the set of locked artifacts (pack mutability, ADR-0012). An org's `required_<kind>`
-  arrives with #11 and joins the same `409` path then.
+- The required floor is the must-have items of every governing preset in the activation's closure (ADR-0031,
+  ADR-0042); this closure scope is an assumed default, logged as an open review item (planning decision
+  2026-11-05). Locks come from the pack mutability policy file (FR-022, ADR-0012 D2), built in this mission.
 - The effective reads, `summary` and `governanceFingerprint`'s new home, and the `If-None-Match`/`304` declarations on
   the reads land with the resolution mission (ADR-0059 D5); this mission removes the two fields from `Activation`.
 - The layer merge is not built here; within one activation the closure resolves through the existing composition
