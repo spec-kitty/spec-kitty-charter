@@ -1,7 +1,7 @@
 {
-  "event_count": 114,
-  "last_event_id": "01M6Q26XCA44RZ309X0MEETED4",
-  "materialized_at": "2026-11-05T23:55:21.866815+00:00",
+  "event_count": 116,
+  "last_event_id": "01M6Q27XE0XMDR9Y98GT3NTBRN",
+  "materialized_at": "2026-11-05T23:55:54.676306+00:00",
   "mission_number": "",
   "mission_slug": "activation-register-and-closure-01M6NXBD",
   "mission_type": "",
@@ -13,9 +13,9 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 4
+    "planned": 3
   },
   "work_packages": {
     "WP01": {
@@ -412,9 +412,9 @@
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
       "implementer_of_record": "claude:claude-opus-5-5:java-jenny",
-      "lane": "planned",
-      "last_event_id": "01M6Q26XCA44RZ309X0MEETED4",
-      "last_transition_at": "2026-11-05T23:55:21.866815+00:00",
+      "lane": "in_progress",
+      "last_event_id": "01M6Q27XE0XMDR9Y98GT3NTBRN",
+      "last_transition_at": "2026-11-05T23:55:54.676306+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "CascadeRules pure over Reach values (no packs import, no traversal). planSelect/walkSelected/applySelect; planDeactivate/planShared/applyDeactivate; ActivationChange.of(before, after, skipped) derives applied and cleared. Choices: planSelect takes includeDeactivated (stopAt empty); no cascade => ReachPlan.none (walks()==false), app skips the call; planShared walks with lineage, stops at target+deny entries; candidates = selected in-scope nodes the target reached; reached mission types land in skippedByScope; non-selectable kinds dropped; deactivate of a non-deny kind throws IAE. Document rebuilt via public Builder (ActivationDocument untouched). Property helper in every clearing test + 50-case randomized property. Gates: :activations:check, javadoc, HexagonalArchitectureTest green."
@@ -427,7 +427,7 @@
         "reviewer": "claude:claude-opus-5-5:reviewer-renata",
         "verdict": "changes_requested"
       },
-      "role": "reviewer",
+      "role": "implementer",
       "shell_pid": null,
       "shell_pid_created_at": null,
       "subtasks": {
