@@ -1,0 +1,30 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-11-05T16:41:32.312877Z",
+      "decision_id": "01M6P9CHWRCVGDZN6CA7GG191W",
+      "final_answer": "Package ai.speckitty.charter.client (both rulings agree); Maven group ai.speckitty.charter, artifact charter-client (the later #217 ruling, 2026-10-27 11:09, also recorded in docs/plans/triage-2026-11-02.md); helper ProblemDetails.from(ApiException). Taken as the default in a non-interactive session; raised to the orchestrator and on #217 for confirmation.",
+      "input_key": "client_coordinates",
+      "mission_id": "01M6P952X7VYBH3A6ZVF5J2CAZ",
+      "mission_slug": "client-java-and-generate-your-own-01M6P952",
+      "opened_by": "cli",
+      "options": [
+        "group ai.speckitty.charter / artifact charter-client (later ruling)",
+        "group ai.speckitty.charter.client / artifact charter-client-java (earlier ruling)",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Which Maven coordinates and helper name does the generated Java client use, given two operator rulings of 2026-10-27 on #217?",
+      "rationale": null,
+      "resolved_at": "2026-11-05T16:41:38.278378Z",
+      "resolved_by": null,
+      "slot_key": "specify.client.coordinates",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M6P952X7VYBH3A6ZVF5J2CAZ",
+  "version": 1
+}
