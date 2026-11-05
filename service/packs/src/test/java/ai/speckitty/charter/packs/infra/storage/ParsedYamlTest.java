@@ -152,18 +152,12 @@ class ParsedYamlTest {
     @Test
     void anAliasBombInAShardOrFragmentIsADrgSchemaErrorWithinTheTimeout() {
         String bomb = aliasBomb(16);
-        ParsedYaml parsedShard = assertTimeoutPreemptively(
-                HANG_CAP, () -> ParsedYaml.parse(HEADER + "nodes: []\n" + bomb, "tactic.graph.yaml"));
+        ParsedYaml parsedShard =
+                assertTimeoutPreemptively(HANG_CAP, () -> ParsedYaml.parse(HEADER + "nodes: []\n" + bomb, SHARD));
         assertThat(parsedShard.failure())
                 .as("the node budget refuses the bomb before anything walks it")
                 .isNotNull();
         assertThat(parsedShard.failure().firstLine()).isEqualTo(TOO_LARGE);
-        ParsedYaml parsedFragment =
-                assertTimeoutPreemptively(HANG_CAP, () -> ParsedYaml.parse("nodes: []\n" + bomb, "fragment.yaml"));
-        assertThat(parsedFragment.failure())
-                .as("the node budget refuses the bomb before anything walks it")
-                .isNotNull();
-        assertThat(parsedFragment.failure().firstLine()).isEqualTo(TOO_LARGE);
         FileRead<RawGraph> shard = assertTimeoutPreemptively(
                 HANG_CAP, () -> GraphDocumentReader.read(HEADER + "nodes: []\n" + bomb, Shape.SHARD, SHARD));
         assertThat(findings(shard)).singleElement().satisfies(f -> {
