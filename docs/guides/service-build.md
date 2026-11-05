@@ -434,7 +434,8 @@ so a new or changed artifact needs its checksum recorded:
 ./gradlew --write-verification-metadata sha256 verifyAll
 ```
 
-Review the diff of `gradle/verification-metadata.xml`; never edit it by hand. The vacuum and
+Review the diff of `gradle/verification-metadata.xml`; never edit it by hand, except to empty
+`<components>` when pruning ([below](#pruning-stale-entries)). The vacuum and
 oasdiff binaries are not Gradle dependencies: their versions and SHA-256 checksums are pinned
 in `contracts/build.gradle.kts`.
 
@@ -465,3 +466,7 @@ Run the whole set twice: once with your usual `GRADLE_USER_HOME`, and once with 
 (`GRADLE_USER_HOME=$(mktemp -d)`). A warm cache skips the BOM `.module` files a cold CI runner
 downloads, so a warm-only run drops entries that runner needs. Then review the diff: a removed
 entry should be a version nothing resolves any more, and no kept artifact's checksum should change.
+
+Run every command from the repository root. With `-p build-logic`, Gradle treats `build-logic` as a
+build of its own and writes a separate `build-logic/gradle/verification-metadata.xml`; delete that
+file. `verifyAll` already covers `build-logic` as an included build, against the root file.
