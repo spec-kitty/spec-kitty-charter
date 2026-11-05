@@ -123,6 +123,9 @@
       "last_event_id": "01M6PMZ0VJ7W7G3GET2X8DGCPQ",
       "last_transition_at": "2026-11-05T20:03:51.794576+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review. Commits c21f0e2, e6e69f6. New :activations module (settings, charter-reports serviceModules, deployable dep, sonar.yml x4). ActivationController+ActivationJson moved to activations.infra.api; 13 method-level @ReservedOperation, no class mark; ActivationRuntimeHints (+test). AvailablePacks port (no method) + PacksAvailability stub; ActivationStorageRoot (+test) in deployable. HexagonalArchitectureTest: SLICES+activations, DOMAIN_RINGS+activations.domain, per-slice factories (domainIsPure, applicationIsEdge, entrypointOverApplication, onlyDeployableComposesAdapters, port placement x2, storageReturnsDomain) run over SLICES beside the old constants; ACTIVATIONS_NAME_PACKS_ONLY_FROM_ADAPTER / ACTIVATIONS_ADAPTER_NAMES_PACKS_APPLICATION; RESERVED_METHOD_READS_NOTHING; TRANSPORT allows any infra.api + deployable. No assertBites removed; old type-level reserved test runs with allowEmptyShould(true) (no type-marked controller remains). ReservedActivationOperationTest proves the routed HandlerMethod is the marked override of ActivationApi. Out-of-map: settings.gradle.kts and deployable/build.gradle.kts (PRs #391/#393 collide, one line each). Note for WP07: PORT_SIGNATURES_NAME_ONLY_DOMAIN_TYPES allows only packs.domain types and now selects activations.domain interfaces; WP07's first activations port interface needs it generalised."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 32474,
