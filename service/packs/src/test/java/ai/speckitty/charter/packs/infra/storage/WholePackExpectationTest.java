@@ -821,46 +821,8 @@ class WholePackExpectationTest {
         }
 
         @Test
-        void theBundledListPinsExactlyTheSixBuiltInSidecarsAndTheRoundTripOnlyManifest() {
-            WholePackExpectation bundled = WholePackExpectation.fromClasspath();
-
-            assertThat(bundled.knownFailures())
-                    .filteredOn(failure -> failure.path().startsWith("assets/"))
-                    .extracting(WholePackExpectation.KnownFailure::path, WholePackExpectation.KnownFailure::at)
-                    .containsExactlyInAnyOrder(
-                            sidecar("assets/docs_structural_lint.py"),
-                            sidecar("assets/audiences/agentic-framework-core-team.md"),
-                            sidecar("assets/audiences/automation_agent.md"),
-                            sidecar("assets/audiences/line_manager.md"),
-                            sidecar("assets/audiences/nontech_educator.md"),
-                            sidecar("assets/audiences/software_engineer.md"))
-                    .hasSize(6);
-            assertThat(bundled.knownFailures())
-                    .filteredOn(failure -> failure.path().startsWith("assets/"))
-                    .allSatisfy(failure -> {
-                        assertThat(failure.issue()).isEqualTo("spec-kitty/spec-kitty-open-packs#75");
-                        assertThat(failure.roundTripOnly()).isFalse();
-                    });
-            // OP-1 and OP-2 landed (open-packs 213a059, cfc9971): the presets and the manifest are sanitized and load
-            // clean, so no entry pins them as load refusals. The manifest is refused only by the round trip: it lists
-            // the six #75 sidecars, which the round trip does not write.
-            assertThat(bundled.knownFailures())
-                    .filteredOn(failure -> !failure.path().startsWith("assets/"))
-                    .singleElement()
-                    .satisfies(failure -> {
-                        assertThat(failure.path()).isEqualTo("pack-manifest.yaml");
-                        assertThat(failure.at())
-                                .isEqualTo(
-                                        "refused: pack-manifest.yaml lists assets/docs_structural_lint.py.asset.yaml,"
-                                                + " which the round trip did not write");
-                        assertThat(failure.issue()).isEqualTo("spec-kitty/spec-kitty-open-packs#75");
-                        assertThat(failure.roundTripOnly()).isTrue();
-                    });
-        }
-
-        private static org.assertj.core.groups.Tuple sidecar(String payload) {
-            return org.assertj.core.groups.Tuple.tuple(
-                    payload + ".asset.yaml", "refused: payload assets/" + payload + " does not exist");
+        void theBundledListPinsNothingOnceOpenPacks75HasLanded() {
+            assertThat(WholePackExpectation.fromClasspath().knownFailures()).isEmpty();
         }
     }
 

@@ -2,8 +2,8 @@
 title: "ADR-0020: The offering and activations are separate resources, and the service stores activations"
 description: Proposes /offering for what can be used and /activations for active charters the service stores, activation writes reserved before 1.0.0, and a hosted-first contract.
 doc_status: active
-updated: 2026-11-02T00:00:00Z
-decision_status: Accepted; superseded in part by ADR-0033 (2026-10-26); amended 2026-10-31 (#125); the `packs` row and amendment ruling 7 superseded in part by ADR-0048, and `missionTypes` and the amendment's mission-type rules by ADR-0050 (2026-11-02)
+updated: 2026-11-04T00:00:00Z
+decision_status: Accepted; superseded in part by ADR-0033 (2026-10-26); amended 2026-10-31 (#125); the `packs` row and amendment ruling 7 superseded in part by ADR-0048, and `missionTypes` and the amendment's mission-type rules by ADR-0050 (2026-11-02); open questions 4 to 7 ruled, and the cascade relations settled, by ADR-0059 (2026-11-04)
 decision_date: '2026-10-24'
 type: ADR
 kind: ADR
@@ -179,10 +179,14 @@ Two schemas, both closed, both minted in this repository (ADR-0015):
   contract references it. *(Amended 2026-10-31: the contract mirrors it, and three checks keep the two equal;
   `contextActivations` and `appliedPresets` are left out, `packs` holds `{packId, version?}`, and `Activation`
   carries `governanceFingerprint`. See the amendment.)*
+  *2026-11-05: `governanceFingerprint` leaves `Activation` under [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/)
+  decision 5; the effective reads carry it.*
 - **`Activation`** is the resource: `activationId`, `revision`, `config` (an `ActivationConfig`),
   a derived `summary` (counts of active, inactive, excluded, required, locked and skipped
   artifacts) and `_links`. A config file carries no links and no server fields, so it is wrapped,
   not extended.
+  *2026-11-05: superseded in part by [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/)
+  decision 5: `summary` moves out of `Activation` to an effective read.*
 
 `ActivationConfig`, in outline (the schema issue fixes every field before 1.0.0; *fixed 2026-10-31 by #125: `packs`
 holds `{packId, version?}` objects, and the last two rows are left out of the document; see the amendment*):
@@ -279,6 +283,8 @@ without it the write is last-writer-wins, because core's content is what it mean
    - A cascading deactivate removes the reached artifacts from `selected` but records a deny
      entry only for the named id (ADR-0013 D3), and keeps an artifact another active one still
      references.
+   *2026-11-05: the relations a cascade follows are settled by
+   [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) decision 2.*
 
    **Presets:** a preset expands into `selected` when it is applied, so writing the document back
    never applies it twice.
@@ -299,6 +305,9 @@ in camelCase:
 
 **Round trip.** For every stored document, a `PUT` of its `config` answers `200` with the same
 `ETag`. A contract scenario and a property test pin this.
+*Narrowed 2026-11-04 ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) decision 4): the round trip holds for a document a pack upgrade has not made stale; a
+stale one's `PUT` is refused until the client removes the ids the offering no longer has and the deny entries on
+artifacts now required or locked (the `409` of decision 4).*
 
 `DELETE /activations/{activationId}` removes a document: `204`, honoring `If-Match`. A
 second `DELETE` is a `404` `activation_not_found` **(default**; rejected: `204` again, which hides
@@ -523,14 +532,18 @@ list above (questions 4 to 7 are referenced by number in the follow-ups):
 4. **The validator of an `Activation` answer.** Its `ETag` is the revision, but `summary` follows the offering
    (`governanceFingerprint`), so the bytes can change under one strong `ETag` (RFC 9110). Either `summary` moves to
    an effective read, or the answer's `ETag` covers both and `If-Match` keeps comparing the revision.
+   *Ruled 2026-11-04: [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) decision 5.*
 5. **A stored document the offering made stale.** After a pack upgrade a stored document can name an id the offering
    no longer has, or deny one that is now required. Is it served as stored and flagged in the skipped report, and
    does a `PUT` of it still answer `200` (the round trip of D6), or `422`/`409`?
+   *Ruled 2026-11-04: [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) decision 4.*
 6. **What a preset sets.** Core's presets replace the keys they list, `activated_kinds` and
    `mission_type_activations` included. Does `applyActivationPreset` replace or unite each member, and does it set
    `activatedKinds` and `missionTypes` (which `ActivationChange.applied` would then report)?
+   *Ruled 2026-11-04: [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) decision 6.*
 7. **Conditional reads.** `getActivation` and the effective reads send a strong `ETag` but declare no
    `If-None-Match` or `304`. A success status added after 1.0.0 is breaking (D8).
+   *Ruled 2026-11-04: [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) decision 5.*
 <!-- markdownlint-enable MD029 -->
 
 ## Requests to core
@@ -603,6 +616,8 @@ change.
   which `If-Match` carries (or `*`). An effective read's `ETag` is opaque: a digest that changes with the revision or
   the fingerprint. JCS sorts keys itself, so the revision does not depend on member order; the service writes
   members in schema order.
+  *2026-11-05: superseded in part by [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/)
+  decision 5: `governanceFingerprint` and `summary` leave `Activation`, so its bytes depend only on the revision.*
 - **Conditional headers are optional parameters**: a sub-resource write without `If-Match` is the declared `428`,
   not a framework `400`.
 - **`mission_type` is a `{kind}` under `selections/` only**: mission types have no deny list, so an exclusion of one

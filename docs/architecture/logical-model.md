@@ -373,6 +373,8 @@ service it is the node of the `mission_type` artifact kind (DIV-501):
 | `rejects` | Directional, from a good artifact to an `anti_pattern` node. |
 | `implemented_by` | Directional, from a guard to the executable asset that implements it ([ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/) decision 3). Derived from the guard's `implemented_by` field (`Guard.relationships()`), never authored, and read by nothing until the contract set lands (work breakdown item 13): a graph shard or a relationship registration that names it is refused. A built-in guard derives no edge. |
 
+The activation cascade follows `requires`, `suggests`, `refines`, `scope` and `instantiates` forward, `enhances` both ways (a target in force brings its enhancers, and an enhancer in force brings its target; the pull runs at read, within `activatedKinds`, and is never written to `selected`), and qualified `<pack>::` targets; it passes through `specializes_from` without putting the parent in force, and follows no other relation ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) decision 2).
+
 An edge endpoint is a URN `<kind>:<id>`, in shards and in fragments alike; a local reference
 is written as a URN too. A value that is not a URN is refused as `drg_schema_error` by the
 schema's URN pattern, and `unresolved_edge_endpoint` is no longer raised (DIV-007). The
