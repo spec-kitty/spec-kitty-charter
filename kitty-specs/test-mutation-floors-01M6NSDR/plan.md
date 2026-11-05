@@ -13,6 +13,10 @@ Implement #239 as designed, with the operator's rulings. Concretely:
 - a nightly that reports every module, uploads every report, and opens one issue on red;
 - an ADR, the doc updates, and triage of the surviving kernel mutants.
 
+**Amendment (2026-11-05)**: the pre-PR squad ruling added `packs.infra.fetch` (without `infra.fetch.config`) as a third
+packs group with floor 70, shared the packs `test` and `pitest` configuration, and ran the summary tests on pull
+requests (see the spec's amendment).
+
 ## Technical Context
 
 **Language/Version**: Java 25 (Temurin 25.0.5); Kotlin DSL in `build-logic`; Gradle 9.8.1; GitHub Actions YAML; a small Python 3 summary script, if the workflow needs one

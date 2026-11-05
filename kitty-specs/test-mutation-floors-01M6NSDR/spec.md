@@ -28,6 +28,12 @@ rulings of 2026-11-04 and 2026-11-05. Intent confirmed in decision `01M6NSEB00FQ
   - `packs.infra.storage` is in scope with its own floor, in the same `:packs:pitest` run as
     domain+application.
   - Ship the ruled floors now; raise kernel and profiles after #384 merges.
+- **Amendment (2026-11-05)**: operator ruling at the pre-PR squad. `packs.infra.fetch.*` is in scope too, as a third
+  packs group `infra.fetch` in the same `:packs:pitest` run, without `infra.fetch.config` (the Spring wiring) and with
+  its unit tests in `targetTests`. Its first run scored 77.3 % (208 of 269), so its floor is `floor5(score − 3)` = 70.
+  The packs `test` and `pitest` tasks now share one definition of the excluded tags, system properties and repository
+  inputs. Pull requests that touch `scripts/ci/` or `mutation-nightly.yml` run the summary script's unit tests
+  (`docs-cleanliness.yml`, through `ci.yml`), never PIT. FR-002 and FR-003 stand as first written.
 
 ## User Scenarios & Testing *(mandatory)*
 

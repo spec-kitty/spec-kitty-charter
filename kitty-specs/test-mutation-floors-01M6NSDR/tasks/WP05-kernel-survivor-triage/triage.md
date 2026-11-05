@@ -17,8 +17,8 @@ The new cases are rows in existing parameterised tables (`Pep440RangeTest`) or a
 The three `kernel.validation` survivors are outside this triage: the test gaps of
 [#384](https://github.com/spec-kitty/spec-kitty-charter/pull/384) cover them.
 
-**Equivalent mutants still count as SURVIVED in PIT's score.** PIT has no way to be told that a mutant is equivalent,
-so the 11 equivalents below stay in the denominator of the kernel score, and in the survivor count of every run. This
+**Equivalent mutants still count as SURVIVED in PIT's score.** Stock PIT, as configured here, cannot mark a mutant
+equivalent: the `EQUIVALENT` status comes only from PIT extensions. So the 11 equivalents below stay in the denominator of the kernel score, and in the survivor count of every run. This
 file is where their verdicts are recorded.
 
 ## Verdicts
