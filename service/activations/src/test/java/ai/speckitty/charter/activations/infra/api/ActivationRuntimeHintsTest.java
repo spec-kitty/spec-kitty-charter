@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ai.speckitty.charter.api.model.ActivationConfig;
 import ai.speckitty.charter.api.model.DeactivatedArtifacts;
 import ai.speckitty.charter.api.model.ExclusionRequest;
-import ai.speckitty.charter.api.model.Link;
 import ai.speckitty.charter.api.model.PackPin;
 import ai.speckitty.charter.api.model.PresetApplication;
 import ai.speckitty.charter.api.model.SelectedArtifacts;
@@ -32,8 +31,7 @@ class ActivationRuntimeHintsTest {
             DeactivatedArtifacts.class,
             SelectionRequest.class,
             ExclusionRequest.class,
-            PresetApplication.class,
-            Link.class);
+            PresetApplication.class);
 
     private final RuntimeHints hints = registered();
 

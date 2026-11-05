@@ -1,12 +1,11 @@
-package ai.speckitty.charter.deployable;
+package ai.speckitty.charter.activations.infra.api;
 
 import ai.speckitty.charter.activations.application.MalformedPreconditionException;
-import ai.speckitty.charter.activations.infra.api.ActivationController;
 import ai.speckitty.charter.api.model.CharterRefusal;
 import ai.speckitty.charter.api.model.Problem;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
-import ai.speckitty.charter.packs.infra.api.RefusalHandler;
+import ai.speckitty.charter.web.RefusalHandler;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Path;

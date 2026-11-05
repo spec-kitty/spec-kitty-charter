@@ -67,6 +67,11 @@ class HexagonalArchitectureTest {
     private static final String SLICE_APIS = ROOT + "..infra.api..";
 
     private static final String GENERATED_API = ROOT + ".api..";
+    /** The shared web transport (problems, refusals, body guard): an adapter ring of every slice's inbound adapter. */
+    private static final String WEB = ROOT + ".web..";
+    /** The kernel's transport vocabulary (preconditions, entity tags, body limit, the reserved-operation marker). */
+    private static final String KERNEL_TRANSPORT = ROOT + ".kernel.transport..";
+
     private static final String DEPLOYABLE = ROOT + ".deployable..";
     private static final String JAVA = "java..";
     private static final String FRAMEWORK = "org.springframework..";
@@ -566,8 +571,12 @@ class HexagonalArchitectureTest {
                 .check(fixture);
     }
 
-    /** The top-level owners that are not concern slices: the shared kernel, the generated contract and the root. */
-    private static final java.util.Set<String> NON_SLICE_OWNERS = java.util.Set.of("kernel", "api", "deployable");
+    /**
+     * The top-level owners that are not concern slices: the shared kernel, the generated contract, the shared web
+     * transport and the root.
+     */
+    private static final java.util.Set<String> NON_SLICE_OWNERS =
+            java.util.Set.of("kernel", "api", "web", "deployable");
 
     /** The slice owning {@code c} when {@code c} resides in a slice's {@code domain} ring, otherwise {@code null}. */
     private static String domainSliceOwner(JavaClass c) {
@@ -632,12 +641,12 @@ class HexagonalArchitectureTest {
 
     /**
      * TRANSPORT_STAYS_IN_ADAPTER: the generated contract types are referenced only by an inbound adapter, of any slice
-     * ({@code <slice>.infra.api}), and by the composition root, whose request-body advice and problem mapping of the
-     * activation set name them (#140).
+     * ({@code <slice>.infra.api}), and by the shared web transport those adapters use ({@code web}). The composition
+     * root names none: the activation set's request-body advice and problem mapping live in its own adapter (#140).
      */
     private static final ArchRule TRANSPORT_STAYS_IN_ADAPTER = noClasses()
             .that()
-            .resideOutsideOfPackages(GENERATED_API, SLICE_APIS, DEPLOYABLE)
+            .resideOutsideOfPackages(GENERATED_API, SLICE_APIS, WEB)
             .should()
             .dependOnClassesThat()
             .resideInAPackage(GENERATED_API);
@@ -655,6 +664,66 @@ class HexagonalArchitectureTest {
                 TRANSPORT_STAYS_IN_ADAPTER,
                 ROOT + ".activations.application.badfixture",
                 "ApplicationNamesGeneratedApi");
+        assertBites(TRANSPORT_STAYS_IN_ADAPTER, ROOT + ".deployable.transportfixture", "RootNamesGeneratedDto");
+    }
+
+    /**
+     * WEB_IS_AN_ADAPTER_RING: the shared web transport is an adapter ring, used by the slices' inbound adapters; no
+     * domain or application ring depends on it.
+     */
+    private static final ArchRule WEB_IS_AN_ADAPTER_RING = noClasses()
+            .that()
+            .resideInAnyPackage("..domain..", "..application..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage(WEB);
+
+    /** WEB_NAMES_NO_SLICE: the shared web transport names no slice; each slice's adapter names it. */
+    private static final ArchRule WEB_NAMES_NO_SLICE = noClasses()
+            .that()
+            .resideInAPackage(WEB)
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage(ROOT + ".packs..", ROOT + ".activations..", ROOT + ".profiles..", ROOT + ".missions..");
+
+    @Test
+    @DisplayName("WEB_IS_AN_ADAPTER_RING")
+    void theWebTransportIsAnAdapterRing() {
+        WEB_IS_AN_ADAPTER_RING.check(classes);
+        WEB_NAMES_NO_SLICE.check(classes);
+    }
+
+    @Test
+    void theWebRingRulesFailOnTheKnownBads() {
+        assertBites(
+                WEB_IS_AN_ADAPTER_RING, ROOT + ".activations.application.badfixture", "ApplicationNamesWebTransport");
+        assertBites(WEB_NAMES_NO_SLICE, ROOT + ".web.badfixture", "WebNamesASlice");
+    }
+
+    /**
+     * DOMAIN_NAMES_NO_TRANSPORT: no domain ring, the kernel's {@code kernel.domain} included, depends on the kernel's
+     * transport vocabulary ({@code kernel.transport}); a transport question is the application ring's or an adapter's.
+     */
+    private static final ArchRule DOMAIN_NAMES_NO_TRANSPORT = noClasses()
+            .that()
+            .resideInAPackage("..domain..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage(KERNEL_TRANSPORT);
+
+    @Test
+    @DisplayName("DOMAIN_NAMES_NO_TRANSPORT")
+    void noDomainNamesTheKernelTransport() {
+        DOMAIN_NAMES_NO_TRANSPORT.check(classes);
+    }
+
+    @Test
+    void theDomainTransportRuleFailsOnADomainClassThatNamesIt() {
+        assertBites(
+                DOMAIN_NAMES_NO_TRANSPORT,
+                ROOT + ".activations.domain.badfixture",
+                "DomainNamesKernelTransport",
+                "EntityTags");
     }
 
     /** GENERATED_API_NOT_IN_DOMAIN: no domain ring imports anything from the generated {@code charter-api} package. */
@@ -988,12 +1057,13 @@ class HexagonalArchitectureTest {
     /**
      * {@code internal_error} is the refusal of a failure no other code names, and only the inbound adapter, which
      * answers the failure, may name it: a use case or an outbound adapter that refused with it would say, in the
-     * domain's own words, that it does not know what went wrong. The enum itself is exempt.
+     * domain's own words, that it does not know what went wrong. The enum itself is exempt. The refusal renderer the
+     * inbound adapters share lives in the web ring ({@code web.RefusalHandler}), which is part of that edge.
      */
     private static ArchRule onlyTheInboundAdapterNamesInternalError() {
         return noClasses()
                 .that()
-                .resideOutsideOfPackage(PACKS_API)
+                .resideOutsideOfPackages(PACKS_API, WEB)
                 .and()
                 .doNotHaveFullyQualifiedName(RefusalCode.class.getName())
                 .should()
@@ -1034,8 +1104,9 @@ class HexagonalArchitectureTest {
     }
 
     /**
-     * Rule B: only the pack policy, the enums and the inbound adapter name {@code RefusalCode.PACK_LEVEL_MISMATCH};
-     * {@code RefusalHandler$1} reads it with {@code getstatic}.
+     * Rule B: only the pack policy, the enums and the inbound edge (the packs adapter and the shared web transport's
+     * refusal renderer) name {@code RefusalCode.PACK_LEVEL_MISMATCH}; {@code RefusalHandler$1} reads it with
+     * {@code getstatic}.
      */
     private static ArchRule onlyThePolicyNamesTheMismatchRefusalRule() {
         return noClasses()
@@ -1043,7 +1114,8 @@ class HexagonalArchitectureTest {
                         "ai.speckitty.charter.packs.domain.PackPolicy",
                         "ai.speckitty.charter.packs.domain.PackFindingCode",
                         "ai.speckitty.charter.kernel.domain.RefusalCode",
-                        "ai.speckitty.charter.packs.infra.api.")))
+                        "ai.speckitty.charter.packs.infra.api.",
+                        "ai.speckitty.charter.web.")))
                 .should()
                 .accessField(RefusalCode.class, "PACK_LEVEL_MISMATCH");
     }

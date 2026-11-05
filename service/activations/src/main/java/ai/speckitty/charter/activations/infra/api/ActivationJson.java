@@ -3,7 +3,6 @@ package ai.speckitty.charter.activations.infra.api;
 import ai.speckitty.charter.api.model.ActivationConfig;
 import ai.speckitty.charter.api.model.DeactivatedArtifacts;
 import ai.speckitty.charter.api.model.ExclusionRequest;
-import ai.speckitty.charter.api.model.Link;
 import ai.speckitty.charter.api.model.PackPin;
 import ai.speckitty.charter.api.model.PresetApplication;
 import ai.speckitty.charter.api.model.SelectedArtifacts;
@@ -20,10 +19,11 @@ import tools.jackson.databind.module.SimpleModule;
  * {@code null}, and an empty list stays {@code []}. The three states of the document (absent means the default,
  * {@code []} means empty, a list means that set) rest on the difference: the generator leaves an optional list
  * {@code null} until it is set ({@code containerDefaultToNull}), and this mix-in leaves a {@code null} member out.
- * As with the packs adapter's {@code ProblemJson}, the rule reaches the generated DTOs only through the mix-in, and
- * only the models with an optional member and no required nullable one, which {@code NullOmissionTest} checks against
- * the schemas. The native executable reads the mix-in by reflection, so {@link ActivationRuntimeHints} registers it
- * and the DTOs it reaches.
+ * As with the shared web transport's {@code ProblemJson}, the rule reaches the generated DTOs only through the mix-in,
+ * and only the models with an optional member and no required nullable one, which {@code NullOmissionTest} checks
+ * against the schemas. The hypermedia {@code Link} is mixed in once, by {@code ProblemJson}, for every slice. The
+ * native executable reads the mix-in by reflection, so {@link ActivationRuntimeHints} registers it and the DTOs it
+ * reaches.
  */
 @Configuration(proxyBeanMethods = false)
 @ImportRuntimeHints(ActivationRuntimeHints.class)
@@ -46,8 +46,7 @@ public class ActivationJson {
                 .setMixInAnnotation(DeactivatedArtifacts.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(SelectionRequest.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(ExclusionRequest.class, OmitAbsentMembers.class)
-                .setMixInAnnotation(PresetApplication.class, OmitAbsentMembers.class)
-                .setMixInAnnotation(Link.class, OmitAbsentMembers.class);
+                .setMixInAnnotation(PresetApplication.class, OmitAbsentMembers.class);
     }
 
     /**

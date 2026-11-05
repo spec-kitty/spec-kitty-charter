@@ -1,4 +1,4 @@
-package ai.speckitty.charter.deployable;
+package ai.speckitty.charter.activations.infra.api;
 
 import ai.speckitty.charter.api.model.ActivationConfig;
 import ai.speckitty.charter.api.model.ExclusionRequest;
@@ -8,7 +8,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.transport.BodyLimit;
-import ai.speckitty.charter.packs.infra.api.JsonBodyGuard;
+import ai.speckitty.charter.web.JsonBodyGuard;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.charset.Charset;

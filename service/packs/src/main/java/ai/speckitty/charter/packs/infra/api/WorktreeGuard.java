@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.infra.api;
 
 import ai.speckitty.charter.api.model.Problem;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
+import ai.speckitty.charter.web.Problems;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

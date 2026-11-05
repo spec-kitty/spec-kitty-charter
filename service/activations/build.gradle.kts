@@ -13,9 +13,13 @@ dependencies {
 
     // infra.api: the inbound REST adapter implements the generated activation contract interface.
     api(project(":charter-api"))
+    // The service-wide transport: problem rendering, refusal mapping and the JSON body guard.
+    implementation(project(":web-transport"))
     implementation(catalog.lib("spring-boot-starter-webmvc"))
     implementation(catalog.lib("jackson-databind"))
 
     testImplementation(catalog.lib("spring-boot-starter-test"))
+    // The standalone MockMvc tests of infra.api validate the generated interface's constraints, as the service does.
+    testImplementation(catalog.lib("spring-boot-starter-validation"))
     testImplementation(catalog.lib("archunit"))
 }

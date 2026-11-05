@@ -226,14 +226,20 @@ sequenceDiagram
 | `/activations`, `/activations/{id}` and `…/packs` (built) | activation services | the activation document and its write rules; `ActivationRepository` and `AvailablePacks` ports |
 | `/activations/{id}/…` writes (not built) | activation use cases | cascade, deny list |
 | `/activations/{id}/…` effective reads (not built) | effective-set queries | the effective-set algebra over the closure and the document |
+| Every resource's problem and refusal bodies, and the JSON body guard | module `web-transport`, package `ai.speckitty.charter.web` (`RefusalHandler`, `ProblemHandler`, `Problems`, `JsonBodyGuard`, `ProblemJson`) | none: a transport ring shared by `packs.infra.api` and `activations.infra.api`, naming no slice |
 
 `activations` is a top-level slice that depends on `packs`. It owns the activation document, its storage, its write
 rules and its HTTP adapter; every question about pack content goes through one port, `AvailablePacks`, whose
-adapter calls the public application services of `packs`. Links are built in the REST adapter, as for packs.
+adapter calls the public application services of `packs`. Links are built in the REST adapter, as for packs. The
+adapter also holds the activation set's request-body advice (`ActivationBodyAdvice`) and its problem mapping
+(`ActivationProblems`); both render through the shared `web-transport` module, which both slices' inbound adapters
+depend on, so the composition root (`deployable`) holds no activation transport.
 
 ```mermaid
 flowchart LR
-  API[activations.infra.api<br/>ActivationController] --> APP[activations.application<br/>services]
+  API[activations.infra.api<br/>ActivationController,<br/>body advice, problem mapping] --> APP[activations.application<br/>services]
+  API --> WEB[web-transport<br/>ai.speckitty.charter.web<br/>problems, refusals, body guard]
+  PAPI[packs.infra.api<br/>controllers] --> WEB
   APP --> DOM[activations.domain<br/>document, rules]
   APP --> REPO[(ActivationRepository port)]
   APP --> AV[AvailablePacks port]
