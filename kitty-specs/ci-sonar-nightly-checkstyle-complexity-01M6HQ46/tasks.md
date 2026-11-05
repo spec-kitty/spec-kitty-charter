@@ -1,5 +1,7 @@
 # Tasks: Nightly SonarCloud and per-PR complexity gate
 
+**Historical; superseded in part.** See the note at the top of [spec.md](spec.md): the complexity limits, register and stale check did not land.
+
 **Mission**: `ci-sonar-nightly-checkstyle-complexity-01M6HQ46`
 **Branch**: planned on `ci-sonar-nightly-checkstyle-complexity`; completed work merges into
 `ci-sonar-nightly-checkstyle-complexity`, which reaches `main` by pull request.

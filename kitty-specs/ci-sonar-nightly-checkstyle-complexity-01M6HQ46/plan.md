@@ -1,5 +1,7 @@
 # Implementation Plan: Nightly SonarCloud and per-PR complexity gate
 
+**Historical; superseded in part.** See the note at the top of [spec.md](spec.md): the complexity limits, register and stale check did not land.
+
 **Branch**: `ci-sonar-nightly-checkstyle-complexity` | **Date**: 2026-11-04 | **Spec**: [spec.md](spec.md)
 **Input**: Mission specification from `kitty-specs/ci-sonar-nightly-checkstyle-complexity-01M6HQ46/spec.md`
 
