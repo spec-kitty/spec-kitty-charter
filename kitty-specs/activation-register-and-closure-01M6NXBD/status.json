@@ -247,6 +247,9 @@
       "last_event_id": "01M6PQDX6VZ8RB9RMN0ABNA3KQ",
       "last_transition_at": "2026-11-05T20:46:56.731448+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "WP07 done (3ecd7fb): ActivationRepository port + StoredActivation; InMemory (CAS in compute, clear()) and File adapters (temp+fsync+ATOMIC_MOVE|REPLACE_EXISTING, best-effort dir fsync, per-id ReentrantLock incl. find, Rename seam, 3x AccessDenied retry); ActivationFileCodec (JCS bytes, strict canonical read). Contract test on both adapters incl. 8-writer race x100 (NFR-004); failure-injection x100 IOException+RuntimeException (NFR-005); ActivationRestartTest 20 docs byte-identical (SC-003); ActivationStorageWiring + ActivationStorageWiringTest. Deviation: store faults throw ActivationStorageException (unchecked) instead of CharterRefusal(INTERNAL_ERROR) because HexagonalArchitectureTest forbids INTERNAL_ERROR outside packs.infra.api; RefusalHandler maps unexpected exceptions to internal_error. HexagonalArchitectureTest: port-signature rule per slice + activations bad fixture; packs-pinned PORT_IMPLEMENTATIONS rule narrowed to packs ports (per-slice rule covers all). Gates: :activations:check exit 0; deployable Activation*/Hexagonal/ProductionWiring/WiringRoundTrip exit 0; :deployable:check -x test exit 0."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 32057,
