@@ -1,0 +1,14 @@
+description: >-
+  The If-None-Match was * or matched the current ETag: the client already holds this answer. There is no body. The
+  answer carries the ETag again, with the Charter headers.
+headers:
+  Charter-Contract-Version:
+    $ref: ../headers/CharterContractVersion.yaml
+  Charter-Worktree:
+    $ref: ../headers/CharterWorktree.yaml
+  ETag:
+    description: The entity tag of the answer the client holds, in double quotes, as the 200 would carry it.
+    required: true
+    schema:
+      type: string
+      pattern: ^"sha256:[0-9a-f]{64}"$

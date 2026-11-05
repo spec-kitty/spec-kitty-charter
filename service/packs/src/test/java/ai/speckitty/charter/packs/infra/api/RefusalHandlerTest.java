@@ -4,7 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import ai.speckitty.charter.api.model.CharterRefusal;
+import ai.speckitty.charter.api.model.RefusalViolation;
+import ai.speckitty.charter.api.model.RequiringPack;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -140,5 +143,56 @@ class RefusalHandlerTest {
 
         assertThat(validation.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
         assertThat(conflict.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+    }
+
+    /**
+     * The kernel records are written fully qualified and the generated DTOs imported (J8), so a body member mapped
+     * from the wrong type fails to compile or fails here.
+     */
+    @Test
+    @DisplayName("a refusal's violations render on the problem body, each with its pointer, code and detail")
+    void violationsRenderOnTheBody() {
+        CharterRefusal body = handler.refused(ai.speckitty.charter.kernel.domain.CharterRefusal.withViolations(
+                        RefusalCode.ACTIVATION_INVALID,
+                        "The activation names an unknown tactic.",
+                        List.of(new ai.speckitty.charter.kernel.domain.RefusalViolation(
+                                "/deactivated/tactic/0", "unknown_artifact", "No tactic t-1 is in the packs."))))
+                .getBody();
+
+        assertThat(body).isNotNull();
+        assertThat(body.getStatus()).isEqualTo(422);
+        assertThat(body.getViolations())
+                .containsExactly(new RefusalViolation(
+                        "/deactivated/tactic/0", "unknown_artifact", "No tactic t-1 is in the packs."));
+        assertThat(body.getRequiredBy()).as("left out, not []").isNull();
+    }
+
+    @Test
+    @DisplayName("a refusal's requiring packs render on the problem body, each with its extends chain")
+    void requiredByRendersOnTheBody() {
+        CharterRefusal body = handler.refused(ai.speckitty.charter.kernel.domain.CharterRefusal.withRequiredBy(
+                        RefusalCode.ARTIFACT_REQUIRED,
+                        "The tactic t-1 is required.",
+                        List.of(new ai.speckitty.charter.kernel.domain.RequiringPack(
+                                "team-pack", List.of("org-pack")))))
+                .getBody();
+
+        assertThat(body).isNotNull();
+        assertThat(body.getStatus()).isEqualTo(409);
+        assertThat(body.getRequiredBy()).containsExactly(new RequiringPack("team-pack", List.of("org-pack")));
+        assertThat(body.getViolations()).as("left out, not []").isNull();
+    }
+
+    @Test
+    @DisplayName("a refusal without violations or requiring packs leaves both members out")
+    void emptyMembersAreLeftOut() {
+        CharterRefusal body = handler.refused(
+                        new ai.speckitty.charter.kernel.domain.CharterRefusal(RefusalCode.PACK_NOT_FOUND, "d"))
+                .getBody();
+
+        assertThat(body).isNotNull();
+        assertThat(body.getViolations()).isNull();
+        assertThat(body.getRequiredBy()).isNull();
+        assertThat(body.getPacks()).isNull();
     }
 }
