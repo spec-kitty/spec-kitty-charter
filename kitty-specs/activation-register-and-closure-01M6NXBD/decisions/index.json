@@ -189,6 +189,53 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-05T17:42:49.926581Z",
+      "decision_id": "01M6PCWSA65497T9A7J80K6V56",
+      "final_answer": "Build the mutability policy-file reader in packs now (ADR-0012 D2, ADR-0030) so artifact_locked is proven end to end; required floor = must-have items of every governing preset in the activation's closure (assumed default, flagged to operator)",
+      "input_key": "required_floor_source",
+      "mission_id": "01M6NXBD9RVJS9WD7KYM31W5GG",
+      "mission_slug": "activation-register-and-closure-01M6NXBD",
+      "opened_by": "cli",
+      "options": [
+        "Governing presets in the closure; locks later",
+        "Also build the policy-file reader now",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Required floor for the 409 refusals: which governing presets bind an activation, and do locks (no policy-file reader yet) come in this mission?",
+      "rationale": null,
+      "resolved_at": "2026-11-05T17:44:26.712929Z",
+      "resolved_by": null,
+      "slot_key": "plan.domain.required-floor",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-05T17:44:43.240840Z",
+      "decision_id": "01M6PD07Z86A3SPFTXJEEZGE4R",
+      "final_answer": "Optional descriptor key mutability_policy (pack-relative path, e.g. policy.yaml); closed schema policy.schema.json with kind_defaults {kind: level} and artifacts {urn: level}; role locks/pins reserved; named-but-missing/unreadable file makes the pack unreadable; recorded in a new ADR",
+      "input_key": "policy_file_format",
+      "mission_id": "01M6NXBD9RVJS9WD7KYM31W5GG",
+      "mission_slug": "activation-register-and-closure-01M6NXBD",
+      "opened_by": "cli",
+      "options": [
+        "mutability_policy key -> policy.yaml with kind_defaults + artifacts",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Mutability policy file: descriptor key, file name and shape",
+      "rationale": null,
+      "resolved_at": "2026-11-05T17:46:00.233287Z",
+      "resolved_by": null,
+      "slot_key": "plan.domain.policy-file-format",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M6NXBD9RVJS9WD7KYM31W5GG",
