@@ -11,6 +11,7 @@
 // charter.client-java (the generated Java client).
 import net.ltgt.gradle.errorprone.CheckSeverity
 import net.ltgt.gradle.errorprone.errorprone
+import java.time.LocalDate
 
 plugins {
     java
@@ -47,6 +48,27 @@ checkstyle {
     isIgnoreFailures = false
     maxWarnings = 0
     maxErrors = 0
+}
+
+// The register's own bookkeeping (ADR-0058): each entry's comment fields, its sunset, and the header's Size. The
+// register is the one input; the check runs no Checkstyle. Part of `check`.
+val checkCheckstyleRegister = tasks.register("checkCheckstyleRegister") {
+    group = "verification"
+    description = "Fails on an entry lacking a field, past its sunset, or a wrong Size in config/checkstyle/suppressions.xml."
+    val register = rootProject.layout.projectDirectory.file("config/checkstyle/suppressions.xml")
+    inputs.file(register).withPropertyName("register").withPathSensitivity(PathSensitivity.NONE)
+    doLast {
+        val problems = CheckstyleRegister.check(register.asFile.readText(), LocalDate.now())
+        if (problems.isNotEmpty()) {
+            throw GradleException(
+                "config/checkstyle/suppressions.xml is out of order (ADR-0058):\n" + problems.joinToString("\n") { "  $it" },
+            )
+        }
+    }
+}
+
+tasks.named("check") {
+    dependsOn(checkCheckstyleRegister)
 }
 
 // Error Prone on main and test. NullAway runs on main only (operator ruling 2026-10-18) and only on code under
