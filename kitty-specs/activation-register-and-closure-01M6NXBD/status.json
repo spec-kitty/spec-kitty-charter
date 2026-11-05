@@ -20,7 +20,7 @@
   "work_packages": {
     "WP01": {
       "actor": "claude",
-      "agent": "claude:claude-opus-5-5:java-jenny",
+      "agent": "claude:claude-opus-5-5:reviewer-renata",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -31,7 +31,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "Commit 7f942c4. Moves: kernel.transport {ReservedOperation(TYPE+METHOD), PreconditionException, EntityTags(matches/noneMatch/isWildcard/quote), BodyLimit}; kernel.domain {RefusalViolation, RequiringPack, CharterRefusal.withViolations/withRequiredBy}; deployable.ReservedOperationInterceptor (method mark, then bean type); packs JsonBodyGuard (public; BodyFault sealed TooLarge/NullFound; NullValue.pointer/detail). Old packs ReservedOperation/Interceptor/PreconditionException deleted; git grep finds no old names. Gates: :kernel:check exit 0 (2674 tests; EntityTagsTest 14, CharterRefusalTest 5); :packs:check -x openPacksRoundTrip exit 0 (2747 tests, 0 fail, 4 pre-existing skips; openPacksRoundTrip not run: no ../spec-kitty-open-packs checkout beside the worktree); :deployable:test Hexagonal+ReservedOperationInterceptorTest exit 0; :deployable:test CharterContractSuite+ReservedOperationCoverage+ReservedRefusalCodes+ProblemResponses(25)+NullOmission(54) exit 0, activations.feature 15/15 reserved pins pass, directives/relationships 412/428 scenarios pass; deployable checkstyle/spotless/javadoc exit 0. Packs files touched (P3): import only: PackWriteStore, Directive/Paradigm/Relationship/Styleguide/ToolguideRegistrationService, PackCommitStore, *RegistrationServiceTest x5, PackCommitStoreTest, LinkedPackCommitTest, BinaryPayloadRevisionTest; call site: ActivationController, RegistrationBodyAdvice, ToolguideRegistrationBodyAdvice, RegistrationListsTest (+1 pointer test), ToolguideRegistrationBodyAdviceTest, PackRevisionTest (+1 weak assertion); body: PackRevision.matches (delegation), RefusalHandler (render violations/requiredBy, +3 tests), RegistrationLists (reduced to of() + refusal()), new JsonBodyGuard. noneMatch/quote/withViolations/withRequiredBy have test-only callers until WP05/WP09.",
-        "Resubmitted unchanged (7f942c4); identity correction only"
+        "Resubmitted unchanged (7f942c4); identity correction only",
+        "Review passed (reviewer-renata). Commit 7f942c4 touches only owned files (42; no overlap with lane-b). Reviewer-run gates: :kernel:check green (2674 tests); :packs:check unit tests green (2747, 4 pre-existing skips); :packs:openPacksRoundTrip 54/54 green against a scratch clone at pin dad323f (shared ../spec-kitty-open-packs is at f85cf23, off-pin: environment, not WP01); :deployable:test HexagonalArchitectureTest 45, ReservedOperationInterceptorTest 4, ReservedOperationCoverageTest 2, ReservedRefusalCodesTest 34, ProblemResponsesTest 25, NullOmissionTest 54, CharterContractSuite all features green incl. activations.feature 15/15 reserved pins (incl. 501-before-binding) and directives 412/428. Behaviour preserved: EntityTags is a faithful split of PackRevision.matches; JsonBodyGuard moved verbatim (helper split only); detail texts unchanged; packs copies deleted, git grep clean; kernel i"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
