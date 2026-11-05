@@ -134,8 +134,8 @@ val openPacksRoundTrip = tasks.register<Test>("openPacksRoundTrip") {
 
 // The whole-pack round-trip gate (#187): every file of the pinned built-in pack is read into the domain, written back,
 // read again and compared with its source by meaning, against the checked-in expected-red baseline
-// (src/test/resources/whole-pack). It lands red-first and is NOT part of check until it is green; CI runs it in its own
-// non-required workflow (.github/workflows/whole-pack.yml).
+// (src/test/resources/whole-pack). It is not part of check; CI requires it through `CI gate / gate`, which calls
+// .github/workflows/whole-pack.yml for the `wholepack` group (epic #186, operator ruling of 2026-11-05).
 val wholePackReport = layout.buildDirectory.file("reports/whole-pack/report.md")
 tasks.register<Test>("wholePackRoundTrip") {
     group = "verification"

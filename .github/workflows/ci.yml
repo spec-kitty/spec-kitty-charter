@@ -5,7 +5,7 @@ name: CI gate
 # GitHub cannot usefully require a path-filtered workflow: a PR that does not touch the workflow's
 # paths never posts its context, so a required check keyed on it waits forever and blocks the PR.
 # This workflow always runs on every PR, detects which concern groups the PR actually changed,
-# calls the real gate workflows (service, service-native, docs-cleanliness) only for the groups that changed, and
+# calls the real gate workflows (service, service-native, docs-cleanliness, whole-pack) only for the groups that changed, and
 # the `gate` job reports a single verdict. Branch protection requires only `CI gate / gate`.
 #
 # The called workflows keep their own `push` (main) and `workflow_dispatch` triggers for main CI;
@@ -60,6 +60,7 @@ jobs:
       service: ${{ steps.detect.outputs.service }}
       native: ${{ steps.detect.outputs.native }}
       docs: ${{ steps.detect.outputs.docs }}
+      wholepack: ${{ steps.detect.outputs.wholepack }}
     steps:
       - name: Check out
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
@@ -83,16 +84,19 @@ jobs:
           # On a queue entry the merge base is BASE itself, so this is BASE..HEAD.
           changed="$(git diff --name-only "$BASE...$HEAD")"
           printf 'changed files:\n%s\n' "$changed"
-          # Mirror the path filters of service.yml, service-native.yml and docs-cleanliness.yml exactly; a
-          # change to this gate workflow itself re-runs every group (fail-safe). The native group builds the four
-          # native executables (ADR-0046), so it runs only for what can change them: the contract the service
-          # bundles, the service, the build and the release scripts.
+          # Mirror the path filters of service.yml, service-native.yml, docs-cleanliness.yml and whole-pack.yml
+          # exactly; a change to this gate workflow itself re-runs every group (fail-safe). The native group builds
+          # the four native executables (ADR-0046), so it runs only for what can change them: the contract the service
+          # bundles, the service, the build and the release scripts. The wholepack group runs the whole-pack round
+          # trip (epic #186) for what :packs reads: every contract, the service and the build.
           service_re='^(contracts/|service/|build-logic/|config/|gradle/|deploy/|\.gitignore$|(.*/)?\.env|[^/]+\.gradle\.kts$|gradle\.properties$|gradlew$|scripts/release/|scripts/packs/|packs/open-packs\.lock\.yaml$|\.github/workflows/(service|ci|contract-release|service-release)\.yml$)'
           native_re='^(contracts/|service/|build-logic/|gradle/|[^/]+\.gradle\.kts$|gradle\.properties$|gradlew$|scripts/release/|\.github/workflows/(service-native|ci)\.yml$)'
+          wholepack_re='^(contracts/|service/|build-logic/|gradle/|[^/]+\.gradle\.kts$|gradle\.properties$|gradlew$|\.github/workflows/(whole-pack|ci)\.yml$)'
           docs_re='^(docs/|site/|scripts/docs/|\.markdownlint-cli2\.jsonc$|cspell\.json$|lychee\.toml$|\.github/workflows/(docs-cleanliness|ci)\.yml$)'
           if printf '%s\n' "$changed" | grep -Eq "$service_re"; then echo "service=true"; else echo "service=false"; fi >> "$GITHUB_OUTPUT"
           if printf '%s\n' "$changed" | grep -Eq "$native_re"; then echo "native=true"; else echo "native=false"; fi >> "$GITHUB_OUTPUT"
           if printf '%s\n' "$changed" | grep -Eq "$docs_re"; then echo "docs=true"; else echo "docs=false"; fi >> "$GITHUB_OUTPUT"
+          if printf '%s\n' "$changed" | grep -Eq "$wholepack_re"; then echo "wholepack=true"; else echo "wholepack=false"; fi >> "$GITHUB_OUTPUT"
 
   service:
     name: Service
@@ -112,9 +116,15 @@ jobs:
     if: needs.changes.outputs.docs == 'true'
     uses: ./.github/workflows/docs-cleanliness.yml
 
+  wholepack:
+    name: Whole-pack round trip
+    needs: changes
+    if: needs.changes.outputs.wholepack == 'true'
+    uses: ./.github/workflows/whole-pack.yml
+
   gate:
     name: gate
-    needs: [changes, service, native, docs]
+    needs: [changes, service, native, docs, wholepack]
     if: always()
     runs-on: ubuntu-24.04
     # Bounds the wait for a real run's gate (another label's event); see that step.
@@ -163,16 +173,17 @@ jobs:
           SERVICE: ${{ needs.service.result }}
           NATIVE: ${{ needs.native.result }}
           DOCS: ${{ needs.docs.result }}
+          WHOLEPACK: ${{ needs.wholepack.result }}
         run: |
           set -uo pipefail
-          echo "changes=$CHANGES service=$SERVICE native=$NATIVE docs=$DOCS"
+          echo "changes=$CHANGES service=$SERVICE native=$NATIVE docs=$DOCS wholepack=$WHOLEPACK"
           # Fail closed if change detection itself did not complete.
           if [ "$CHANGES" != "success" ]; then
             echo "::error::change detection did not succeed (result: $CHANGES); refusing to pass the gate"
             exit 1
           fi
           fail=0
-          for pair in "service:$SERVICE" "native:$NATIVE" "docs:$DOCS"; do
+          for pair in "service:$SERVICE" "native:$NATIVE" "docs:$DOCS" "wholepack:$WHOLEPACK"; do
             name="${pair%%:*}"
             result="${pair#*:}"
             case "$result" in
