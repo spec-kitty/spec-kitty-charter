@@ -1,9 +1,9 @@
 # Tooling friction: ci-sonar-nightly-checkstyle-complexity-01M6HQ46
 
 Friction from running this mission and the test-suite assessment that fed it (PR #366), on spec-kitty
-4.0.0rc8 in a Claude Code cloud session, 2026-11-03 to 2026-11-04. Each entry gives a disposition:
+4.0.0rc8 in a Claude Code cloud session, 2026-11-03 to 2026-11-05. Each entry gives a disposition:
 fixed, worked around, or unresolved. Entries 1 to 9 are spec-kitty CLI candidates for upstream issues.
-Entries 10 to 13 are about this mission's own process, and 14 to 18 about the session environment.
+Entries 10 to 13 are about this mission's own process, 14 to 18 about the session environment, and 19 about the landing.
 
 ## spec-kitty CLI
 
@@ -80,7 +80,8 @@ Entries 10 to 13 are about this mission's own process, and 14 to 18 about the se
       quoted exactly.
 12. **[2026-11-04] Checkstyle's `NestedIfDepth` reports on the inner `if`, not on the method.** A
     method-scoped `suppress-xpath` must therefore end in `//LITERAL_IF`. No such entry remains after
-    T017, but WP04 documents it for future entries. **Disposition: documented.**
+    T017. WP04 documented it for future entries; that text left the guide at landing (entry 19), so #371
+    inherits this if it ever needs a method-scoped entry. **Disposition: open.**
 13. **[2026-11-04] A subagent stalled about 30 minutes waiting on background work** that had already
     finished (the WP01 rework's `verifyAll`). **Disposition: worked around** by nudging it. Implementer
     prompts now say to run Gradle in the foreground.

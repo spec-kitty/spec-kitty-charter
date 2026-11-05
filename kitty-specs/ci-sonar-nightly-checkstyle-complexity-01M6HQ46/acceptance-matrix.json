@@ -12,7 +12,7 @@
       "pass_fail": "pass",
       "verified_by": "claude",
       "verified_at": "2026-11-04T13:50:20.613640+00:00",
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Superseded at landing 2026-11-05: did not ship (no grandfathering, ADR-0058). See spec.md."
     },
     {
       "criterion_id": "FR-002",
@@ -22,7 +22,7 @@
       "pass_fail": "pass",
       "verified_by": "claude",
       "verified_at": "2026-11-04T13:50:26.926900+00:00",
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Superseded at landing 2026-11-05: did not ship (no grandfathering, ADR-0058). See spec.md."
     },
     {
       "criterion_id": "FR-003",
@@ -62,7 +62,7 @@
       "pass_fail": "pass",
       "verified_by": "claude",
       "verified_at": "2026-11-04T13:50:47.273222+00:00",
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Limits part superseded at landing 2026-11-05: did not ship (no grandfathering, ADR-0058). See spec.md."
     }
   ],
   "negative_invariants": []

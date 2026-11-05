@@ -1,5 +1,7 @@
 # Quickstart: Nightly SonarCloud and per-PR complexity gate
 
+**Historical; superseded in part.** See the note at the top of [spec.md](spec.md): the complexity limits, register and stale check did not land.
+
 ```bash
 export JAVA_HOME=/usr/lib/jvm/temurin-25
 ./gradlew syncPacks && ./gradlew verifyAll        # complexity limits + register check run in check

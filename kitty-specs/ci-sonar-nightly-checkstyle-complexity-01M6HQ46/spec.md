@@ -9,9 +9,12 @@ recorded as Proposed ADR-0056: "Nightly Sonar, per PR CheckStyle"; new-code cove
 SonarCloud instead of a coverage threshold.
 
 > **Superseded in part at landing (2026-11-05).** The operator ruled that there is no grandfathering
-> (ADR-0058). The 14-entry register, its stale check and the four limits described below did not land.
-> The limits turn on through #371, once #367 has refactored the methods over them. The nightly SonarCloud
-> analysis and the six refactors landed as specified.
+> (ADR-0058), so the complexity half of this mission did not land: User Story 1, FR-001, FR-002, SC-001,
+> SC-002, NFR-001 and the limits part of FR-006. No limit, register entry or stale check ships. The limits
+> turn on through #371, once #367 has refactored the methods over them. The nightly SonarCloud analysis
+> (User Story 2, FR-003 to FR-005) landed, with the landing's fixes to its guard and classpath. Six methods
+> were also refactored, which this spec does not ask for. "Proposed ADR-0056" in this mission's files is
+> today's Accepted ADR-0058; today's ADR-0056 is a different decision.
 
 ## Intent Summary (confirmed 2026-11-03)
 
