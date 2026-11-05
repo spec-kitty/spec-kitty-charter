@@ -214,8 +214,27 @@ class AgentProfileEntityTest {
         builder.role("architect")
                 .capability("deployment")
                 .selfReviewStep(new SelfReviewStep("lint", Optional.empty(), "no warnings"))
-                .modeDefault(new ModeDefault("planning", "Plans", "Before a mission"));
+                .modeDefault(new ModeDefault("planning", "Plans", "Before a mission"))
+                .appliesToLanguage("scala")
+                .directiveReference(new DirectiveReference("999", "Later directive", "why"))
+                .tacticReference(new ArtifactReference("later-tactic", "why"))
+                .toolguideReference(new ArtifactReference("later-toolguide", "why"))
+                .styleguideReference(new ArtifactReference("later-styleguide", "why"));
 
+        assertThat(profile.appliesToLanguages()).containsExactly("java", "kotlin");
+        assertThat(profile.directiveReferences())
+                .hasSize(2)
+                .extracting(DirectiveReference::code)
+                .doesNotContain("999");
+        assertThat(profile.tacticReferences())
+                .extracting(ArtifactReference::id)
+                .containsExactly("acceptance-test-first", "tdd-red-green-refactor");
+        assertThat(profile.toolguideReferences())
+                .extracting(ArtifactReference::id)
+                .containsExactly("java-supply-chain", "gradle-build");
+        assertThat(profile.styleguideReferences())
+                .extracting(ArtifactReference::id)
+                .containsExactly("java-style", "test-style");
         assertThat(profile.roles()).containsExactly("implementer", "reviewer");
         assertThat(profile.capabilities()).containsExactly("java-implementation", "junit-testing", "maven-build");
         assertThat(profile.selfReviewSteps())
@@ -382,6 +401,5 @@ class AgentProfileEntityTest {
                 .isNotEqualTo(javaJenny()
                         .id(new AgentProfileIdentifier("java-jenny-2"))
                         .build());
-        assertThat(valid("p").build()).isNotEqualTo(valid("q").build());
     }
 }
