@@ -3,22 +3,18 @@ name: service-native
 # The charter service's native executables (ADR-0046 decision 5): a GraalVM native image for each of the four targets
 # core pins (linux-x64, linux-arm64, macos-arm64, windows-x64), each started and checked by
 # scripts/release/smoke-service.sh before it is uploaded as the workflow artifact `native-<target>`. A missing native
-# reachability hint shows up only in a native build, so this runs on every change that can affect one, not only on a
-# release. Pull requests enter through the CI gate orchestrator (ci.yml, the `native` concern group); a release calls
-# it from service-release.yml with the Gradle cache off. It builds and publishes nothing else.
+# reachability hint shows up only in a native build, so it is built nightly on main and on every service release, not
+# on a pull request (ADR-0061, superseding the per-PR build of ADR-0046 decision 5): it was too slow for each PR. The
+# release calls it from service-release.yml with the Gradle cache off; `workflow_dispatch` runs it on demand on any
+# branch, for a change that risks the native build. It is not part of `CI gate / gate` and ci.yml does not call it.
+# A red night is reported as a red run of this workflow, as mutation-nightly.yml's is; no other notification is
+# wired. It builds and publishes nothing else.
+#
+# Schedule: 03:11 UTC every day. Not on minute 0 or 30 (the busiest scheduler minutes), and between
+# mutation-nightly.yml at 02:43 UTC and sonar.yml at 04:23 UTC.
 on:
-  push:
-    branches: [main]
-    paths:
-      - "contracts/**"
-      - "service/**"
-      - "build-logic/**"
-      - "gradle/**"
-      - "*.gradle.kts"
-      - "gradle.properties"
-      - "gradlew"
-      - "scripts/release/**"
-      - ".github/workflows/service-native.yml"
+  schedule:
+    - cron: "11 3 * * *"
   workflow_call:
     inputs:
       cache-disabled:
@@ -30,7 +26,8 @@ on:
 permissions:
   contents: read
 
-# As in service.yml: a called run belongs to its caller and is never cancelled by this workflow's own runs.
+# As in service.yml: a called run belongs to its caller and is never cancelled by this workflow's own runs. A scheduled
+# run is a run of this workflow on the default branch: a later night cancels an earlier one that is still running.
 concurrency:
   group: service-native-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.workflow == 'service-native' }}
