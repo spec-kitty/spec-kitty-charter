@@ -1,8 +1,8 @@
 ---
-work_package_id: WP12
+work_package_id: WP13
 title: select, unselect, deactivate and reactivate (scenarios first)
 dependencies:
-- WP11
+- WP12
 requirement_refs:
 - FR-010
 - FR-011
@@ -16,6 +16,7 @@ requirement_refs:
 - NFR-007
 - SC-001
 - SC-002
+- NFR-001
 planning_base_branch: issue-360-activated-closure
 merge_target_branch: issue-360-activated-closure
 branch_strategy: Planning artifacts for this mission were generated on issue-360-activated-closure. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-360-activated-closure unless the human explicitly redirects the landing branch.
@@ -49,6 +50,7 @@ model: ''
 owned_files:
 - contracts/charter/scenarios/activation-selections.feature
 - contracts/charter/changes/2026-11-05-activation-selections-and-exclusions.md
+- contracts/charter/schemas/ActivationChange.yaml
 - service/activations/src/main/java/ai/speckitty/charter/activations/application/PacksSession.java
 - service/activations/src/main/java/ai/speckitty/charter/activations/application/ActivationSelectionService.java
 - service/activations/src/main/java/ai/speckitty/charter/activations/application/ActivationExclusionService.java
@@ -62,7 +64,7 @@ tags: []
 tracker_refs: []
 ---
 
-# WP12: select, unselect, deactivate and reactivate (scenarios first)
+# WP13: select, unselect, deactivate and reactivate (scenarios first)
 
 ## ⚡ Do This First: Load Agent Profile
 
@@ -78,7 +80,7 @@ If no profile is specified, run `spec-kitty agent profile list` and select the b
 
 ## Objective
 
-Build the four per-artifact writes, red first, on the WP10 reach and the WP11 rules:
+Build the four per-artifact writes, red first, on the WP11 reach and the WP12 rules:
 
 - `PUT …/selections/{kind}/{artifactId}` (select, with an optional cascade and `includeDeactivated`; kind
   `mission_type` maps to `missionTypes`);
@@ -92,7 +94,7 @@ Each answers an `ActivationChange` with a new `ETag`, or `200` with the same rev
 paths, and the reserved count goes 9 → 5.
 
 Implementation command:
-`spec-kitty agent action implement WP12 --agent claude --mission activation-register-and-closure-01M6NXBD`
+`spec-kitty agent action implement WP13 --agent claude --mission activation-register-and-closure-01M6NXBD`
 
 ## Context
 
@@ -104,21 +106,21 @@ Implementation command:
 - **Collisions:** rebase PR B onto PR A, and onto `main` once PR A merges. #393 (`ProblemHandler`) may move under
   `ActivationProblems`.
 - **Grounding:**
-  - After WP08, `activations.feature` holds 9 pins; the binding pin ("answers 501 before it reads its request") is on
+  - After WP08 and WP09, `activations.feature` holds 9 pins; the binding pin ("answers 501 before it reads its request") is on
     `selectActivationArtifact`. When select is built, that pin must move to the last reserved operation that takes a
-    body, `applyActivationPreset`, and WP13 retires it.
-  - `ActivationBodyAdvice` (WP08) already guards `SelectionRequest` and `ExclusionRequest`.
-  - `ClosureView.reach` and `enhancersOf` (WP10) run on the view taken for the request. The activations port must
+    body, `applyActivationPreset`, and WP14 retires it.
+  - `ActivationBodyAdvice` (WP09) already guards `SelectionRequest` and `ExclusionRequest`.
+  - `ClosureView.reach`, `enhancesPull` and `enhancersOf` (WP11) run on the view taken for the request. The activations port must
     keep that one view for the whole request, so `AvailablePacks.snapshot(...)` is not enough: add
     `AvailablePacks.session(packIds)`, returning a `PacksSession` with `snapshot()`, `reach(ReachPlan)` and
     `enhancersOf(Set<ArtifactRef>)`, all backed by one `ClosureView` (NFR-007).
-  - The generated `kind` path parameter type decides parsing (see WP08 T053's finding). Map `mission_type` to the
+  - The generated `kind` path parameter type decides parsing (see WP09 T053's finding). Map `mission_type` to the
     `missionTypes` key; every other kind through `ArtifactKind.fromToken` and `activatable()`.
 
 ## Branch Strategy
 
 - Planning branch and merge target: `issue-360-activated-closure` (PR B).
-- Lane worktree from `lanes.json`. It depends on WP11.
+- Lane worktree from `lanes.json`. It depends on WP12.
 - Rebase onto the lane base before review.
 
 ## Out-of-map edits (sequenced by dependency)
@@ -126,14 +128,14 @@ Implementation command:
 - `contracts/charter/paths/activations_activationId_selections_kind_artifactId.yaml` and
   `contracts/charter/paths/activations_activationId_exclusions_kind_artifactId.yaml` (owner WP08): remove `x-reserved`
   and the 501 text and response.
-- `contracts/charter/schemas/CharterRefusalCode.yaml` (owner WP08): `artifact_not_found` and `mission_type_not_found`
+- `contracts/charter/schemas/CharterRefusalCode.yaml` (owner WP09): `artifact_not_found` and `mission_type_not_found`
   become `raised: true`; update the reserved-codes paragraph.
 - `contracts/charter/scenarios/activations.feature` (owner WP08): remove the six select, unselect, deactivate and
   reactivate pins (select artifact, select mission type, unselect, deactivate, re-activate, and the binding pin); add
   the binding pin back on `applyActivationPreset`.
 - `service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/ReservedOperationCoverageTest.java` (owner
   WP08): 9 → 5.
-- `service/deployable/src/test/java/ai/speckitty/charter/deployable/ReservedRefusalCodesTest.java` (owner WP08): the two
+- `service/deployable/src/test/java/ai/speckitty/charter/deployable/ReservedRefusalCodesTest.java` (owner WP09): the two
   newly raised codes.
 - `service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/ActivationSteps.java` (owner WP08): steps for a
   graph fixture and for reading the report buckets.
@@ -141,7 +143,7 @@ Implementation command:
   `.../infra/packs/PacksAvailability.java` and `.../infra/api/ActivationController.java` (owner WP05): add `session`,
   and implement the four controller methods.
 - `service/activations/src/test/java/ai/speckitty/charter/activations/application/FakeAvailablePacks.java` and
-  `.../infra/packs/PacksAvailabilityTest.java` (owner WP08): fake and test the session.
+  `.../infra/packs/PacksAvailabilityTest.java` (owner WP09): fake and test the session.
 
 ## Subtask Guidance
 
@@ -156,6 +158,10 @@ Implementation command:
 3. Fragment `contracts/charter/changes/2026-11-05-activation-selections-and-exclusions.md` (date it the day you write
    it): `### Changed`, saying the four writes are served and the two codes are raised; note that `enhances` is not
    written into `selected` (ADR-0059 D2.2), so `applied` never lists an enhancer.
+   **R5, deferred and recorded:** `ActivationChange.skipped` reports the **write-time** walk only. What the read-time
+   `enhances` pull leaves out is reported by the effective reads (`getActivationSkippedReport`, the next mission).
+   Say so in this fragment, and add one sentence to the `skipped` member description in
+   `contracts/charter/schemas/ActivationChange.yaml`.
 4. `./gradlew :contracts:check :charter-api:compileJava`.
 
 ### Subtask T076: Red scenarios (US3, US4)
@@ -165,13 +171,23 @@ Implementation command:
    pack with a graph document holding `D requires T`, `D requires X`, `E enhances T`, a profile `P specializes_from Q`,
    `Q requires R`, `Q suggests S`, and `D2 requires T2`, `D requires T2`, `E2 enhances T3`, `D requires T3`. Write it
    with the existing `the org pack "…" with the file "…":` step (graph shards and the artifact files; copy the
-   shapes from `composition.feature`'s fixtures).
+   shapes from `composition.feature`'s fixtures). **Naming (R6):** E enhances T is the US3 enhancer, and E2 enhances
+   T3 is the US4 enhancer. Never reuse E for both.
+   A second org pack `shared` holds tactic `XT`, and the first pack depends on it and writes `D requires shared::XT`
+   (for the cross-pack scenario below).
 2. One scenario per acceptance scenario: US3 AS1–AS8 and US4 AS1–AS4. Each starts from an activation created with the
    `the activation "a-1" holds:` step, writes with the remembered `ETag` (`I PUT … with the remembered ETag and the
    body:` exists in `RegistrationSteps`), and checks the JSON pointers of `selected`, `applied`, `cleared` and each
    report bucket, plus a new `ETag`.
+   - **US3 AS3 (R2):** the starting document **denies E** (`deactivated.tactic: [E]`) as well as X. Selecting D with
+     a cascade and `includeDeactivated: true` selects D, T and X. Assert that `cleared` holds X **and E** (E enhances
+     T, which the walk selects: ADR-0059 D2.2), and that E is **absent** from `selected` and from `applied`.
+   - **US4 AS2 (R6):** the starting document has `selected.tactic` holding **E2** (and T3 through D's cascade).
+     Deactivating D with a cascade keeps T3, and `skippedShared` names E2 in `referencedBy`.
 3. Add the edge cases: a missing `If-Match` answers 428; a no-op answers 200 with the same `ETag`; a cascade cycle
    (A requires B requires A) answers 200 and selects both once; an unknown kind in the path answers 422.
+   **Cross-pack follow (FR-012, R7):** selecting D with a cascade `["all"]` selects `XT` from the `shared` pack through
+   `D requires shared::XT`. Assert `selected.tactic` holds XT and `applied` lists it.
 4. The new `ActivationSteps`: `the field at {string} holds exactly the ids:` (a docstring list) and `the response
    header "ETag" is the remembered one` (reuse it if it exists).
 5. Run the suite and **record the failing names** (each answers 501 now).
@@ -186,9 +202,10 @@ pins. Move the binding pin to `PUT "/activations/a-1/presets/event-driven"` with
 
 **Steps (red first, `PacksAvailabilityTest` and `FakeAvailablePacks`):**
 1. `PacksSession` (application interface): `ClosureSnapshot snapshot()`, `Reach reach(ReachPlan plan)`,
-   `Map<ArtifactRef, Set<ArtifactRef>> enhancersOf(Set<ArtifactRef> targets)`.
+   `Set<ArtifactRef> enhancesPull(Set<ArtifactRef> starts)` (both directions, transitive over `enhances`, WP11 R1),
+   and `Map<ArtifactRef, Set<ArtifactRef>> enhancersOf(Set<ArtifactRef> targets)` (one hop, reverse).
 2. `AvailablePacks.session(Optional<List<String>> packIds)`. Keep `snapshot(...)` as `session(...).snapshot()` for
-   WP08's callers, or migrate them.
+   WP09's callers, or migrate them.
 3. `PacksAvailability`: one `ClosureQueries.snapshot` per session; `reach` maps `ReachPlan` to `ReachRequest`
    (`specializes_from` with `{requires, scope}` when `lineage` is true) and `ReachResult` back to `Reach`.
 4. Test: two `reach` calls in one session cause one `ClosureQueries.snapshot` call.
@@ -202,7 +219,7 @@ pins. Move the binding pin to `PUT "/activations/a-1/presets/event-driven"` with
    (`200`, same revision, **no write**); otherwise a CAS write with the loaded revision (412 when a concurrent write
    won).
 2. Select: `CascadeScope.parse` (422 on the mix, before any read of packs); `planSelect`; `session.reach`; with
-   `includeDeactivated`, `session.enhancersOf(walkSelected)`; `applySelect`; then **`DocumentRules.check`** on the
+   `includeDeactivated`, `session.enhancesPull(walkSelected)`; `applySelect`; then **`DocumentRules.check`** on the
    result (a cleared deny entry cannot violate it, but the rules run on every write).
 3. Select `mission_type`: add to `missionTypes` (absent becomes `[id]`); no cascade applies (mission types have no
    cascade edges here; document that), and `applied` lists `{kind: mission_type, artifactId}`.
@@ -234,7 +251,7 @@ pins. Move the binding pin to `PUT "/activations/a-1/presets/event-driven"` with
 
 **Steps:**
 1. `ReservedRefusalCodesTest`: move `ARTIFACT_NOT_FOUND` and `MISSION_TYPE_NOT_FOUND` to the raised side.
-   `PRESET_NOT_FOUND` stays unraised until WP13. Check that no main class names it yet.
+   `PRESET_NOT_FOUND` stays unraised until WP14. Check that no main class names it yet.
 2. `OperationCoverageTest`: each built operation's 2xx is exercised by a scenario.
 
 ### Subtask T083: All green, and evidence
@@ -242,6 +259,9 @@ pins. Move the binding pin to `PUT "/activations/a-1/presets/event-driven"` with
 **Steps:** run the gates; record the red-run names from T076, the green summary, and the reserved count 5.
 
 ## Checkstyle limits (NFR-001)
+
+The limits are still off on `main`, held until the methods over them are refactored, so they are held by
+construction: the reviewer measures new and changed methods by hand.
 
 CC ≤ 15, NPath ≤ 1000, ≤ 60 lines, nested-if depth ≤ 1, by construction. The shared precondition flow lives in
 `ActivationWrites` so each service method stays short. No new suppression, no disabled test, and no `@WIP`.
@@ -278,6 +298,9 @@ CC ≤ 15, NPath ≤ 1000, ≤ 60 lines, nested-if depth ≤ 1, by construction.
 - **Red first:** demand the T076 red-run names (each answered 501) and the commit order (feature before services).
 - **One read:** check the session test asserts one `ClosureQueries.snapshot` per request.
 - **The enhancer rule end to end:** US3 AS1 must assert E is **absent** from `selected` and from `applied`.
-- **Shared by an enhancer:** US4 AS2 must name E in `skippedShared.referencedBy`.
+- **Shared by an enhancer:** US4 AS2 must start with E2 selected and name E2 in `skippedShared.referencedBy` (R6).
+- **Clearing (R2):** US3 AS3 must start with E denied, and assert E in `cleared` and absent from `selected` and
+  `applied`.
+- **Cross-pack (R7):** the `shared::XT` scenario exists and passes.
 - **Non-fakeable evidence:** the suite summary with the new scenario count, `ReservedOperationCoverageTest` asserting 5,
   and the 428 and 412 scenario names.

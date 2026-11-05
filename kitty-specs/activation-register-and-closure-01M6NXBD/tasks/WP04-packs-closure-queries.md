@@ -151,7 +151,7 @@ Implementation command:
 
 ### Subtask T022: `ClosureView`, the answer
 
-**Purpose:** a read-only value the activations adapter (WP08) maps into its own `ClosureSnapshot`. Activations never
+**Purpose:** a read-only value the activations adapter (WP09) maps into its own `ClosureSnapshot`. Activations never
 holds packs types beyond its adapter.
 
 **Shape** (`packs.application.ClosureView`, a record):
@@ -202,12 +202,14 @@ Plus convenience methods `holds(ArtifactKind, String id)`, `isLocked(Urn)` (leve
 
 **Steps:**
 1. `ClosureQueries` is picked up by `ApplicationConfiguration`'s scan (`packs.application`). Confirm with
-   `:deployable:test --tests '*ProductionWiringTest*' --tests '*WiringRoundTripTest*'`.
+   `:deployable:test --tests '*ProductionWiringTest*' --tests '*WiringRoundTripTest*'`. **Run them, do not edit them
+   (P5):** both have one owner, WP07. If either needs a change because of `ClosureQueries`, record it in the review
+   notes. WP07 depends on WP04 and makes the edit.
 2. Run the gate commands. The offering scenarios must be unchanged (FR-020).
 
 ## Checkstyle limits (NFR-001)
 
-CC ≤ 15, NPath ≤ 1000, ≤ 60 lines, nested-if depth ≤ 1 (by construction; not yet enforced on this base). No new
+CC ≤ 15, NPath ≤ 1000, ≤ 60 lines, nested-if depth ≤ 1 (by construction; not yet enforced on `main`; the reviewer measures by hand). No new
 suppression, and no disabled test.
 
 ## Gate commands

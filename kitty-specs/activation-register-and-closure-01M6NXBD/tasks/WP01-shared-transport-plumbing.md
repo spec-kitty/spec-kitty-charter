@@ -124,14 +124,18 @@ Implementation command:
 
 ## Context
 
-- **PR:** A (WP01–WP09). **Concern:** IC-01 in `plan.md`. **Research:** R9, squad findings A4, A7, B4.
+- **PR:** A (WP01–WP10). **Concern:** IC-01 in `plan.md`. **Research:** R9, squad findings A4, A7, B4.
 - **Requirements:** C-002 (slices reach shared plumbing, not each other), FR-006 (the body part: 1 MiB, `null`
   list or item), FR-007 (the `requiredBy` member the 409 refusals need), C-005, NFR-001.
 - **Rulings:** ADR-0020 D8 (reserved operations answer `501` before binding), ADR-0020 D10 (`violations`,
   `requiredBy` on the refusal body), ADR-0026 D5 (412/428 are plain `Problem`s, never refusal codes).
-- **Collisions to rebase over:** the base is PR #368's branch. PR #376 (ADR-0059) merges before PR A. PR #393 edits
+- **Collisions to rebase over:** the base is `main`, which now carries PR #368 and PR #376 (ADR-0059). PR #393 edits
   `ProblemHandler` (this WP does not touch it, but `RefusalHandler` sits beside it; rebase if #393 lands first).
-  PR #377 edits `PackCommitStore` (this WP only changes an import there; rebase and keep #377's logic).
+  PR #377 (test-tidy-mockito-refusal-codes, ready) edits `PackCommitStore`, the registration service tests and the
+  refusal-code tests. **Gate (P3):** start this WP only after #377 merges, or after rebasing over #377's head. Edits
+  to `packs` files in this WP are limited to imports and call-site changes (the `PackRevision.matches` delegation
+  and the `RefusalHandler` rendering are the only body changes). Other open PRs to rebase over: #379, #384, #390,
+  #391, #392 (ADR-0060), #393 (draft) and #394 (draft, mutation floors per module).
 - **Grounding (read before coding):**
   - `service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/ReservedOperation.java` is `@Target(TYPE)`.
   - `ReservedOperationInterceptor.preHandle` checks `method.getBeanType().isAnnotationPresent(...)` only.
@@ -143,15 +147,17 @@ Implementation command:
   - The kernel is pure Java (`charter.domain-conventions`, `KERNEL_IS_PURE`): no Jackson, no Spring. The token-stream
     null scan in `RegistrationLists` needs Jackson, so it **cannot** move to the kernel; only the limit constant can.
   - `activations.infra.api` will not be allowed to name `packs.infra.api` (`ONION_ONLY_DEPLOYABLE_COMPOSES_ADAPTERS`)
-    nor `deployable`. The activation body advice therefore lives in `deployable` (WP08) and calls the public
+    nor `deployable`. The activation body advice therefore lives in `deployable` (WP09) and calls the public
     `JsonBodyGuard` this WP extracts.
 
 ## Branch Strategy
 
-- Planning branch and final merge target: `issue-360-activated-closure` (PR A's branch, cut from PR #368's branch).
+- Planning branch and final merge target: `issue-360-activated-closure` (PR A's branch, rebased onto `main`).
 - Worktrees are per computed lane from `lanes.json` (written by finalize-tasks). This WP has no dependency and
   starts from the lane base.
-- Rebase onto the current lane base before review.
+- Rebase onto the current lane base before review, and over #377's head if it has not merged (P3).
+- **Evidence:** list every `packs` file this WP touched in the review notes, each marked "import only", "call site"
+  or "body", so the reviewer can check the P3 limit.
 
 ## Subtask Guidance
 
@@ -192,7 +198,7 @@ operation is overridden; keep it that way.
    - `null` matches nothing.
    Add cases for `EntityTags.quote(token)` (`"sha256:…"` with quotes) and `EntityTags.noneMatch(ifNoneMatch, token)`
    (the weak comparison RFC 9110 §13.1.2 uses for `If-None-Match`: `W/"x"` matches `x`, `*` matches any existing
-   resource). WP08 uses `noneMatch` for `304`.
+   resource). WP09 uses `noneMatch` for `304`.
 2. Create `kernel/transport/EntityTags.java`: a final utility class with `matches(@Nullable String ifMatch, String
    currentToken)`, `noneMatch(@Nullable String ifNoneMatch, String currentToken)`, `isWildcard(@Nullable String)`
    and `quote(String)`. Move the loop out of `PackRevision.matches`, and split it into small private helpers
@@ -256,6 +262,11 @@ one delegation test stays to prove the wiring.
 4. `RefusalHandlerTest` first: a refusal with violations renders `violations` on the problem body; one without
    omits the member (not `[]`). Then `RefusalHandler.respond` maps both onto the generated DTO, as it maps `packs`
    today (lines ~154–170).
+   **Name clash (J8):** the generated model package has `RequiringPack` and `RefusalViolation` DTOs too, and
+   `RefusalHandler` already writes `ai.speckitty.charter.kernel.domain.CharterRefusal` fully qualified against the
+   generated `CharterRefusal`. Follow the same rule: import the generated DTOs, and write the kernel records fully
+   qualified (or the reverse, consistently). Never import both simple names; add a test that renders each member,
+   so a wrong type fails to compile or fails the test.
 5. `RefusalHandler.precondition` now takes the kernel `PreconditionException`.
 
 **Validation:** `./gradlew :kernel:check :packs:test --tests '*RefusalHandler*'`, then
@@ -272,14 +283,22 @@ or `NullOmissionTest`/`ProblemResponsesTest` will catch a `[]`.
 1. Create `kernel/transport/BodyLimit.java`: `public static final long MAX_BYTES = 1024L * 1024;` with the
    rationale moved from `RegistrationLists.BODY_LIMIT`. `RegistrationLists.BODY_LIMIT` becomes
    `BodyLimit.MAX_BYTES` (or is removed and its callers use the kernel constant).
-2. Extract the slice-independent half of `RegistrationLists` into a **public** `packs/infra/api/JsonBodyGuard.java`:
-   `readBounded(HttpInputMessage, long limit, String what)`, `firstNull(byte[] body, MediaType, List<String> path,
-   List<String> lists)` returning `Optional<NullValue>` with its `detail()`, and `replay(HttpHeaders, byte[])`. Keep
-   the charset rule (`DETECTED`) and its comment with the code that reads tokens. `RegistrationLists` keeps only the
-   DTO-specific part (`of(Class<?>)`) and delegates.
+2. Extract the slice-independent half of `RegistrationLists` into a **public** `packs/infra/api/JsonBodyGuard.java`
+   with a typed API (J1):
+   - `readBounded(HttpInputMessage, long limit, Function<BodyFault, ? extends RuntimeException> refusal)` reads at
+     most one byte past the limit. On overflow it throws what the factory builds from a `BodyFault.TooLarge(limit)`;
+   - `firstNull(byte[] body, MediaType, List<String> lists)` returns `Optional<NullValue>`. **`NullValue` is public**,
+     with public `pointer()` (an RFC 6901 pointer) and `detail()`;
+   - `replay(HttpHeaders, byte[])`.
+
+   `BodyFault` is a small sealed type (`TooLarge`, `NullFound(NullValue)`) that a caller maps to its own refusal: the
+   registration advices to `VALIDATION_FAILED` with today's detail texts (unchanged); WP09's activation advice to
+   `ACTIVATION_INVALID` with a `RefusalViolation` (`body_too_large`, `null_value`). Keep the charset rule
+   (`DETECTED`) and its comment with the code that reads tokens. `RegistrationLists` keeps only the DTO-specific part
+   (`of(Class<?>)`) and delegates.
 3. Move the matching cases of `RegistrationListsTest` to target `JsonBodyGuard` where they test the generic part.
    `RegistrationBodyAdviceTest` and `ToolguideRegistrationBodyAdviceTest` must pass unchanged in behaviour.
-4. Do **not** add the activation advice here. WP08 adds `ActivationBodyAdvice` in `deployable`, which may name
+4. Do **not** add the activation advice here. WP09 adds `ActivationBodyAdvice` in `deployable`, which may name
    `packs.infra.api` (the composition root) and calls `JsonBodyGuard`. Note this in `JsonBodyGuard`'s Javadoc.
 
 **Validation:** `./gradlew :packs:test --tests '*RegistrationLists*' --tests '*RegistrationBodyAdvice*'
@@ -287,7 +306,7 @@ or `NullOmissionTest`/`ProblemResponsesTest` will catch a `[]`.
 registration scenarios with oversized and null bodies are the end-to-end proof).
 
 **Edge cases:** the refusal code stays the caller's choice. `JsonBodyGuard` returns the detail and the advice
-throws `VALIDATION_FAILED` for registrations; WP08's advice throws `ACTIVATION_INVALID`.
+throws `VALIDATION_FAILED` for registrations; WP09's advice throws `ACTIVATION_INVALID`.
 
 ### Subtask T006: Architecture test follows the moves
 
@@ -316,8 +335,8 @@ generalisation.
 ## Checkstyle limits (NFR-001)
 
 Each new or changed method stays within: cyclomatic complexity ≤ 15, NPath ≤ 1000, ≤ 60 lines, nested-if depth ≤ 1.
-The limits are not yet switched on in `config/checkstyle/checkstyle.xml` on this base (PR #368 held them back), so
-hold to them by construction. Moving `PackRevision.matches` is the place this bites: split it into helpers. No new
+The limits are still off in `config/checkstyle/checkstyle.xml` on `main` (held until the methods over them are
+refactored), so hold to them by construction; the reviewer measures new and changed methods by hand. Moving `PackRevision.matches` is the place this bites: split it into helpers. No new
 entry in `config/checkstyle/suppressions.xml`, no `@SuppressWarnings` added to dodge Error Prone or NullAway, and no
 `@Disabled` test (C-005).
 

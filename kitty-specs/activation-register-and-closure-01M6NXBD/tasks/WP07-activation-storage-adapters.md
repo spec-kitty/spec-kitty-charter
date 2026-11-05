@@ -2,6 +2,7 @@
 work_package_id: WP07
 title: activation storage (repository port, in-memory and file adapters)
 dependencies:
+- WP04
 - WP06
 requirement_refs:
 - FR-019
@@ -57,6 +58,8 @@ owned_files:
 - service/activations/src/test/java/ai/speckitty/charter/activations/infra/storage/ActivationFileCodecTest.java
 - service/deployable/src/main/java/ai/speckitty/charter/deployable/ActivationStorageWiring.java
 - service/deployable/src/test/java/ai/speckitty/charter/deployable/ActivationRestartTest.java
+- service/deployable/src/test/java/ai/speckitty/charter/deployable/ProductionWiringTest.java
+- service/deployable/src/test/java/ai/speckitty/charter/deployable/WiringRoundTripTest.java
 role: implementer
 tags: []
 tracker_refs: []
@@ -113,7 +116,8 @@ Implementation command:
 ## Branch Strategy
 
 - Planning branch and merge target: `issue-360-activated-closure`.
-- Lane worktree from `lanes.json`. It depends on WP06 (the document and revision).
+- Lane worktree from `lanes.json`. It depends on WP06 (the document and revision) and on WP04. WP07 is the single
+  owner of `ProductionWiringTest` and `WiringRoundTripTest` (P5), and it makes any edit WP04 recorded as needed.
 - Rebase onto the lane base before review.
 
 ## Subtask Guidance
@@ -163,9 +167,14 @@ Implementation command:
    where the OS allows (open the directory `FileChannel` read-only and `force(true)`, catching the `IOException`
    some file systems throw, with a comment saying why). On any failure, delete the temp file, and throw
    `CharterRefusal(INTERNAL_ERROR, …)` with the cause.
+   **Windows (J6):** `Files.move(…, ATOMIC_MOVE, REPLACE_EXISTING)` throws `AccessDeniedException` there when the
+   target is open in another thread. Prevent it rather than retry blindly: **`find` also takes the id's lock** while it
+   reads the file (reads are short). Then no reader holds the target open during a move. As a second guard, retry the
+   move a bounded number of times (3, with no sleep longer than 10 ms) on `AccessDeniedException` only. Directory
+   fsync stays best-effort: catch and comment. Document the platform notes in the class Javadoc.
 3. Locks: `ConcurrentHashMap<ActivationId, ReentrantLock>`, `computeIfAbsent`; every `create`, `replace` and `delete`
-   holds the id's lock across read-compare-write. `find` reads without the lock (the atomic move guarantees whole
-   files).
+   holds the id's lock across read-compare-write. `find` takes the lock too (J6); on POSIX the atomic move alone
+   guarantees whole files, but on Windows an open reader blocks the move.
 4. Delete: remove `activation.json`, then the directory if it is empty. A stray `*.tmp-*` in the directory is ignored
    by `find` and deleted on the next write.
 5. Constructors: `FileActivationRepository(Path root)` with the atomic `Rename`, and a package-private
@@ -194,7 +203,7 @@ Implementation command:
    `CharterServiceApplication` on a temp config root (follow `ConfigRootTestConfiguration` and `ConfigRootWiringTest`
    for how to point the context at a root), write N=20 documents through the `ActivationRepository` bean, close the
    context, boot a new one on the same root, and read each back. Assert byte-identical files and equal revisions (SC-003).
-   Until WP08 builds the HTTP operations, the test drives the repository bean directly.
+   Until WP09 builds the HTTP operations, the test drives the repository bean directly.
 
 ### Subtask T046: Wiring in the composition root
 
@@ -205,12 +214,13 @@ Implementation command:
 3. `deployable/ActivationStorageWiring.java`: `@Configuration(proxyBeanMethods = false)` with one `@Bean
    ActivationRepository activationRepository(ActivationStorageRoot root)`. Nothing creates the directory at startup;
    the first write does (as `ConfigRoot` requires).
-4. Run `:deployable:test --tests '*ProductionWiringTest*' --tests '*WiringRoundTripTest*'` and fix any test that
-   enumerates beans.
+4. Run `:deployable:test --tests '*ProductionWiringTest*' --tests '*WiringRoundTripTest*'`. This WP owns both tests
+   (P5): fix any assertion that enumerates beans, and apply any edit WP04 recorded for `ClosureQueries`.
 
 ## Checkstyle limits (NFR-001)
 
-CC ≤ 15, NPath ≤ 1000, ≤ 60 lines, nested-if depth ≤ 1 (by construction). `FileActivationRepository.replace` is the
+CC ≤ 15, NPath ≤ 1000, ≤ 60 lines, nested-if depth ≤ 1 (by construction; the limits are still off on `main`, so the
+reviewer measures by hand). `FileActivationRepository.replace` is the
 hotspot; split it into `underLock(id, action)`, `currentRevision` and `writeAtomically`. No new suppression, and no
 disabled or skipped test. Do not mark the concurrency test flaky; fix the cause.
 

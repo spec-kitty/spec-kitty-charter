@@ -70,7 +70,7 @@ Implementation command:
 - **Requirements:** FR-009 (the closure read rests on this), FR-020 (offering unchanged, a ratchet), SC-004.
 - **Rulings:** ADR-0048 D1 and ADR-0053 D4 (`depends_on`), the composition mission's FR-011 (the activated packs
   are the closure's roots, operator ruling of 2026-11-03).
-- **Collisions:** PR #377 touches `DomainRepositoryService` (not this WP). Base is #368, then #376. Nothing in this WP
+- **Collisions:** PR #377 touches `DomainRepositoryService` (not this WP). Base is `main` (with #368 and #376). Nothing in this WP
   collides directly; rebase before review.
 - **Grounding (verified in the code):**
   - `PackCompositionResolver.closureOf(String, Map)` at line ~441 is `private` and follows `depends_on` **only**,
@@ -178,6 +178,11 @@ Run them and see them fail (`./gradlew :packs:test --tests '*PackCompositionReso
      `Map<ConfiguredPack, Optional<PackDescriptor>>` (a private `tryDescriptor` that catches the `pack_unreadable`
      of `descriptorOf` and records it), builds descriptor-only `PackUnderResolution`s for the readable ones, and
      computes the closure with `PackCompositionResolver.compositionClosure`;
+   - **duplicates in the tolerant read (J7):** keep **every** readable descriptor, duplicates of a `pack_id` or a
+     `name` included. Never collapse them to the first in the tolerant index that feeds the closure walk. When a
+     duplicated id is in the closure, pass all of its holders to `resolveRooted`, so `indexById` (and `indexByName`)
+     still refuse `pack_duplicate_id` / `pack_name_conflict` naming both. Add the test: two packs declaring beta's
+     `pack_id`, alpha depending on it, `composed({alpha})` refuses `pack_duplicate_id` naming both;
    - the closure check: a root unreadable → refuse; a missing target → the rule above;
    - read facts only for closure members, build the full `PackUnderResolution`s, call `resolveRooted`, then run the
      existing `checkReferences` loop over the result.
@@ -203,7 +208,10 @@ Run them and see them fail (`./gradlew :packs:test --tests '*PackCompositionReso
 
 ## Checkstyle limits (NFR-001)
 
-CC ≤ 15, NPath ≤ 1000, ≤ 60 lines per method, nested-if depth ≤ 1. The limits are not enforced on this base yet, so
+The limits are still off on `main`, held until the methods over them are refactored, so they are held by
+construction: the reviewer measures new and changed methods by hand.
+
+CC ≤ 15, NPath ≤ 1000, ≤ 60 lines per method, nested-if depth ≤ 1. The limits are not enforced on `main` yet, so
 hold to them by construction. `composed` and `resolveRooted` are the risk; extract helpers. No new suppression, and
 no disabled test.
 

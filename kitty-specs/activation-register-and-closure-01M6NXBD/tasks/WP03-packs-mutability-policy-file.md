@@ -19,6 +19,8 @@ subtasks:
 - T017
 - T018
 - T019
+- T094
+- T095
 agent: claude
 history: []
 agent_profile: java-jenny
@@ -32,6 +34,7 @@ create_intent:
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PolicyYamlTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PolicySchemaTest.java
 - docs/adr/0061-pack-mutability-policy-file.md
+- contracts/charter/changes/2026-11-05-pack-mutability-policy-file.md
 execution_mode: code_change
 model: ''
 owned_files:
@@ -55,6 +58,9 @@ owned_files:
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackDescriptorReaderTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/DomainRepositoryServiceTest.java
 - docs/adr/0061-pack-mutability-policy-file.md
+- contracts/charter/changes/2026-11-05-pack-mutability-policy-file.md
+- service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/PackFileSet.java
+- service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackFileSetTest.java
 role: implementer
 tags: []
 tracker_refs: []
@@ -101,10 +107,12 @@ Implementation command:
 - **ADRs cited by ADR-0061:** ADR-0012 D2 (the policy lives with the pack), D4 (levels per kind and per artifact), D5
   (the built-in pack's own file and the `replaceable-builtins.yaml` migration are follow-ups); ADR-0030 (role locks and
   pins, reserved); ADR-0042 (pack-level files).
-- **ADR numbering:** 0059 is PR #376, 0060 is taken by PR #392. This ADR is **0061**. If either PR renumbers on
+- **ADR numbering:** 0059 is on `main` (PR #376 merged), and 0060 is taken by PR #392 (open). This ADR is **0061**. If either PR renumbers on
   merge, keep 0061 and note it in the PR description.
 - **Collisions:** PR #377 touches `DomainRepositoryService`, `PackCommitStore` and `PackMutabilityPolicyTest`; PR #390
   touches `FilesystemPackStore`. Rebase in that order; keep their logic and re-apply this WP's additions on top.
+  **Gate (P3):** start only after #377 merges, or after rebasing over #377's head; record every touched `packs` file
+  in the review evidence. Also rebase over #379, #384, #391, #392 and #394 as they land.
 - **Grounding:**
   - `MutabilityPolicySource` (packs domain) already models `kind_defaults` and URN entries, with `levelOf(Pack,
     Urn)`. Its `pack` parameter is unused today: the source is global.
@@ -245,14 +253,45 @@ ships a file, so no answer changes).
    T013; the built-in pack's own file and `replaceable-builtins.yaml` per ADR-0012 D5; open-packs ships none yet),
    and Related. Cite ADR-0012 D2, D4, D5, ADR-0030, ADR-0042 and ADR-0020 D9.
 3. The open-packs note (that the key exists and no pack is required to ship a file) goes in the ADR's Consequences.
-   WP09's docs changelog fragment links it.
+   WP10's docs changelog fragment links it.
 4. Run `python3 scripts/docs/check_docs.py all` and `npx cspell@9.2.0 --no-progress`. If a new word fails
    spelling, add it to `cspell.json` in sorted position. `cspell.json` is not in this WP's map: record it as an
    out-of-map edit in the review notes, or reword.
 
+### Subtask T094: Contract changelog fragment for the pack-schema change (R3)
+
+**Purpose:** the repository records pack-schema changes in the charter contract changelog (see
+`contracts/charter/CHANGELOG.md` around lines 788 and 805: pack-file schema behaviour is logged there, and
+`contracts/packs/` has no changelog of its own). Since ADR-0047, a change adds a fragment instead of editing the
+CHANGELOG.
+
+**Steps:**
+1. Create `contracts/charter/changes/2026-11-05-pack-mutability-policy-file.md` (date it the day you write it), with
+   one `### Added` block:
+   - `pack.yaml` gains the optional `mutability_policy`;
+   - the new closed `contracts/packs/schemas/policy.schema.json` (`schema_version`, `kind_defaults`, `artifacts`;
+     role locks and pins reserved);
+   - a named file that is missing or invalid makes the pack `pack_unreadable` (no new refusal code);
+   - the file is digested into the source fingerprint (T095);
+   - cite ADR-0061.
+2. Follow `contracts/charter/changes/README.md` (exactly one `###` block). Run `./gradlew :contracts:check`.
+
+### Subtask T095: Digest `policy.yaml` in the fingerprint (J3)
+
+**Purpose:** a policy edit must move the source fingerprint, or a lock change would be served from a stale
+`ConsistentRead`.
+
+**Steps (red first, `PackFileSetTest`):**
+1. A pack with `policy.yaml`: editing a level changes the digest list's bytes, so the fingerprint moves.
+2. A pack without `policy.yaml`: its digest list is unchanged from before this WP. This is the NFR-002 rule the
+   `packLevelTail` Javadoc states.
+3. In `PackFileSet.packLevelTail`, append the descriptor-named policy file after the manifest, when it is a regular
+   file. If T013 chose `const: policy.yaml`, append `policy.yaml`. Update the Javadoc's ordered list.
+4. Run `:packs:test --tests '*PackFileSet*'`, and `:packs:timingBudgets` alone, report-only.
+
 ## Checkstyle limits (NFR-001)
 
-CC ≤ 15, NPath ≤ 1000, ≤ 60 lines, nested-if depth ≤ 1, by construction (not yet enforced on this base).
+CC ≤ 15, NPath ≤ 1000, ≤ 60 lines, nested-if depth ≤ 1, by construction (not yet enforced on `main`; the reviewer measures by hand).
 `DomainRepositoryService.compositionFacts` must not grow past 60 lines; split it. No new suppression, no disabled
 test.
 
@@ -275,6 +314,8 @@ python3 scripts/docs/check_docs.py all
 - [ ] `PackMutabilityPolicy` uses `PerPackPolicy` over the pack's closure; the existing registration scenarios are
       unchanged.
 - [ ] ADR-0061 is written and the docs checks pass.
+- [ ] The contract fragment for the pack-schema change exists; `:contracts:check` is green.
+- [ ] `policy.yaml` is digested: a policy edit moves the fingerprint, and a pack without one keeps its digest.
 - [ ] No new suppression, and no disabled test.
 
 ## Risks

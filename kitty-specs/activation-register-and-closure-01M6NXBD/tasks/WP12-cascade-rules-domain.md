@@ -1,8 +1,8 @@
 ---
-work_package_id: WP11
+work_package_id: WP12
 title: cascade rules (activations domain)
 dependencies:
-- WP10
+- WP11
 requirement_refs:
 - FR-012
 - FR-013
@@ -60,7 +60,7 @@ tags: []
 tracker_refs: []
 ---
 
-# WP11: cascade rules (activations domain)
+# WP12: cascade rules (activations domain)
 
 ## ⚡ Do This First: Load Agent Profile
 
@@ -76,7 +76,7 @@ If no profile is specified, run `spec-kitty agent profile list` and select the b
 
 ## Objective
 
-Build the cascade **policy** as pure domain functions. `packs` does the traversal (WP10); this WP only decides what a
+Build the cascade **policy** as pure domain functions. `packs` does the traversal (WP11); this WP only decides what a
 reach result means for the document:
 
 - the kind scope, and the refusal of `["all"]` mixed with kinds (422 at `/cascade`);
@@ -85,21 +85,22 @@ reach result means for the document:
 - `unreachedBehindDeactivated`;
 - the lineage pass-through: `specializes_from` ancestors, `requires` and `scope` only, transitive, stopped by a
   denied ancestor, never in force;
-- the `includeDeactivated` clearing set: denied artifacts the walk reaches, plus the deny entries of artifacts that
-  `enhances` an artifact the walk selects;
+- the `includeDeactivated` clearing set: the denied artifacts the walk reaches, plus the deny entries the read-time
+  `enhances` pull **would reach** from what the walk selects. That pull runs both ways (enhancers of a selected
+  artifact, and targets of a selected enhancer) and is transitive over `enhances` (ADR-0059 D2.2 read literally, R1);
 - the cascading-deactivate `skippedShared` check, where the active set is `selected` ∪ the floor, and a reference by an
   active enhancer counts.
 
 It **never** adds an enhancer to `selected` (ADR-0059 D2.2).
 
 Implementation command:
-`spec-kitty agent action implement WP11 --agent claude --mission activation-register-and-closure-01M6NXBD`
+`spec-kitty agent action implement WP12 --agent claude --mission activation-register-and-closure-01M6NXBD`
 
 ## Context
 
 - **PR:** B. **Concern:** IC-08. **Squad:** B1 (the 2026-11-05 rulings supersede the 13:15 decisions), R13 (the active
   set is selected plus the floor), A1 (the domain receives values, never a port), A5 (no traversal here).
-- **Rulings** (ADR-0059, as revised on PR #376 on 2026-11-05, which supersedes decisions
+- **Rulings** (ADR-0059 on `main`, as revised on PR #376 on 2026-11-05, which supersedes decisions
   `DM-01M6NXERTNKMWK4MTDTX48358B` and `DM-01M6NXKAHRQNR4RK14FFJN2TVM`):
   - **D2.1:** `requires`, `suggests`, `refines`, `scope` and `instantiates`, forward, unbounded, with a visited
     guard; stop at deny and report.
@@ -112,14 +113,14 @@ Implementation command:
 - **Contract shapes** (read them): `SkippedReport`, `SkippedDeactivated` (`viaRequires`, `requiredBy`: artifacts),
   `SharedSkip` (`referencedBy`: one `ArtifactReference`), `ActivationChange` (`applied`, `cleared`), `CascadeScope`
   and `CascadeKind`.
-- **Grounding:** WP10's `ReachResult` gives reached nodes with every `Via(predecessor, relation)`, stopped nodes with
+- **Grounding:** WP11's `ReachResult` gives reached nodes with every `Via(predecessor, relation)`, stopped nodes with
   every `Via`, `behindStopped` and `ancestorsPassed`. The activations domain may not name it (slices do not cross),
-  so this WP defines a mirror value `Reach`, and WP12's adapter copies into it.
+  so this WP defines a mirror value `Reach`, and WP13's adapter copies into it.
 
 ## Branch Strategy
 
 - Planning branch and merge target: `issue-360-activated-closure` (PR B, stacked on PR A).
-- Lane worktree from `lanes.json`. It depends on WP10.
+- Lane worktree from `lanes.json`. It depends on WP11.
 - Rebase onto the lane base before review.
 
 ## Subtask Guidance
@@ -156,7 +157,8 @@ Implementation command:
 
 **API:** `CascadeRules.planSelect(document, target, scope)` returns a `ReachPlan` (starts {target}; the five relations;
 stopAt = the document's deny entries, unless `includeDeactivated`; lineage true). `CascadeRules.applySelect(document,
-target, scope, includeDeactivated, reach, enhancers)` returns an `ActivationChange`.
+target, scope, includeDeactivated, reach, pulled)` returns an `ActivationChange`, where `pulled` is the
+`enhancesPull` answer (empty without `includeDeactivated`).
 
 **Steps (red first, `CascadeRulesSelectTest`, with the fixture of US3: D requires T, D requires X, X denied, E enhances
 T):**
@@ -194,13 +196,22 @@ T):**
 ### Subtask T073: `includeDeactivated` clearing (FR-013, US3 AS3)
 
 **API:** with `includeDeactivated`, the plan has an empty `stopAt`. The application then asks
-`enhancersOf(walkSelected)` and passes the answer in as `Map<ArtifactRef, Set<ArtifactRef>> enhancers`.
+`enhancesPull(walkSelected)` (WP11: both directions, transitive over `enhances` only) and passes the answer in as
+`Set<ArtifactRef> pulled`. The clearing set is (walk-reached ∪ `pulled`) ∩ the deny entries. Only the walk-reached ones
+are selected; the pulled ones are cleared and **never selected**. The write's own cascade still walks only the five
+relations (R1).
 
 **Steps (red first, `CascadeRulesClearingTest`):**
 1. Selecting D with a cascade and `includeDeactivated`: X is selected, and X's deny entry is in `cleared`.
 2. An enhancer F of T that is denied: F's deny entry is cleared (it appears in `cleared`), and F is **not** added to
    `selected`.
 3. An enhancer that is not denied: nothing happens to it (it stays out of `selected`, and is not in `cleared`).
+3a. **A selected enhancer of a denied target (R1, the other direction):** the walk selects E, E enhances T, and T is
+    denied. T's deny entry is cleared, and T is not selected (unless the five-relation walk also reaches it).
+3b. **A chain (R1, transitive):** E1 enhances E2, E2 enhances T, the walk selects T, and E1 and E2 are both denied.
+    Both deny entries are cleared; neither is selected.
+3c. The pull does not cross five-relation edges: E enhances T, E requires Z, Z is denied, and the walk selects T. Z's
+    deny entry stays.
 4. A deny list that empties is dropped from the document (the canonical form).
 5. **Property:** for every case, `after.selected` never contains an enhancer that the walk did not reach over the five
    relations. Assert it in a helper that every test in the class calls.
@@ -222,17 +233,21 @@ enhancers, floor)` returns an `ActivationChange`.
 1. D is selected with T (only D reaches it) and T2 (another selected directive D2 also requires it). Deactivate D with a
    cascade: D is in `deactivated`; D and T leave `selected`; T2 stays and is in `skippedShared` with `referencedBy`
    D2. Only D gets a deny entry.
-2. T3 is reached only through D, and an **active** selected artifact E enhances T3: T3 stays, and is in `skippedShared`
-   with `referencedBy` E (ADR-0059 D2.2).
+2. T3 is reached only through D, and an **active** selected artifact E2 enhances T3 (E2 is in `selected` in the
+   starting document): T3 stays, and is in `skippedShared` with `referencedBy` E2 (ADR-0059 D2.2). The naming
+   matches WP13's fixture (R6): E enhances T in US3, and E2 enhances T3 in US4.
 3. An enhancer that is **not** active (not selected, not on the floor) does not keep T3.
 4. A floor artifact (required by a governing preset) referencing a candidate keeps it shared (the active set includes
    the floor, squad R13).
 5. Without a cascade: only D leaves `selected` and gets a deny entry.
 6. Scope: candidates outside the cascade scope are left alone and reported in `skippedByScope`.
 7. The 409 for a required or locked target is **not** here: it is `DocumentRules` (WP06), applied by the service
-   before planning. Add a test that `applyDeactivate` is never reached in that case at the service level (WP12).
+   before planning. Add a test that `applyDeactivate` is never reached in that case at the service level (WP13).
 
 ## Checkstyle limits (NFR-001)
+
+The limits are still off on `main`, held until the methods over them are refactored, so they are held by
+construction: the reviewer measures new and changed methods by hand.
 
 CC ≤ 15, NPath ≤ 1000, ≤ 60 lines, nested-if depth ≤ 1, by construction. `applySelect` and `applyDeactivate` must be
 compositions of small named steps (`scopeSplit`, `deniedReport`, `behindReport`, `clearing`, `shared`). No new

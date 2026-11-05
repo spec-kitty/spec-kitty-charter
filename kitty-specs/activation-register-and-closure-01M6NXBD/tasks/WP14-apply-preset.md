@@ -1,8 +1,8 @@
 ---
-work_package_id: WP13
+work_package_id: WP14
 title: apply a preset (scenarios first) and retire the binding pin
 dependencies:
-- WP12
+- WP13
 requirement_refs:
 - FR-016
 - FR-010
@@ -11,6 +11,7 @@ requirement_refs:
 - NFR-007
 - SC-001
 - SC-002
+- NFR-001
 planning_base_branch: issue-360-activated-closure
 merge_target_branch: issue-360-activated-closure
 branch_strategy: Planning artifacts for this mission were generated on issue-360-activated-closure. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-360-activated-closure unless the human explicitly redirects the landing branch.
@@ -47,7 +48,7 @@ tags: []
 tracker_refs: []
 ---
 
-# WP13: apply a preset (scenarios first) and retire the binding pin
+# WP14: apply a preset (scenarios first) and retire the binding pin
 
 ## ⚡ Do This First: Load Agent Profile
 
@@ -76,7 +77,7 @@ The contract drops the last write's `x-reserved`. The reserved count goes 5 → 
 The "501 before binding" pin is retired, because no reserved operation takes a body any more. A test asserts it.
 
 Implementation command:
-`spec-kitty agent action implement WP13 --agent claude --mission activation-register-and-closure-01M6NXBD`
+`spec-kitty agent action implement WP14 --agent claude --mission activation-register-and-closure-01M6NXBD`
 
 ## Context
 
@@ -93,28 +94,28 @@ Implementation command:
     non-empty", record it as an open review item in the PR description, and pin it with a test. Do not widen the
     packs `Preset` record in this WP without the operator's agreement.
   - WP04's `ClosureView.presets` resolves a preset id to its holding pack (the last in merge order wins).
-  - WP12 moved the binding pin to this operation; it is the last reserved operation with a request body.
-  - `ActivationBodyAdvice` (WP08) already guards `PresetApplication`.
+  - WP13 moved the binding pin to this operation; it is the last reserved operation with a request body.
+  - `ActivationBodyAdvice` (WP09) already guards `PresetApplication`.
 
 ## Branch Strategy
 
 - Planning branch and merge target: `issue-360-activated-closure` (PR B).
-- Lane worktree from `lanes.json`. It depends on WP12 (shared write flow, session port).
+- Lane worktree from `lanes.json`. It depends on WP13 (shared write flow, session port).
 - Rebase onto the lane base before review.
 
 ## Out-of-map edits (sequenced by dependency)
 
-- `contracts/charter/schemas/CharterRefusalCode.yaml` (owner WP08): `preset_not_found` becomes `raised: true`; the
+- `contracts/charter/schemas/CharterRefusalCode.yaml` (owner WP09): `preset_not_found` becomes `raised: true`; the
   reserved-codes paragraph names only the codes of the effective reads.
 - `contracts/charter/scenarios/activations.feature` (owner WP08): remove the preset pin and the binding pin; reword the
   feature text (only the four effective reads remain, built by the resolution mission, #103).
 - `service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/ReservedOperationCoverageTest.java` (owner
   WP08): 5 → 4, and the new no-body assertion.
-- `service/deployable/src/test/java/ai/speckitty/charter/deployable/ReservedRefusalCodesTest.java` (owner WP08):
+- `service/deployable/src/test/java/ai/speckitty/charter/deployable/ReservedRefusalCodesTest.java` (owner WP09):
   `PRESET_NOT_FOUND` raised.
 - `service/activations/src/main/java/ai/speckitty/charter/activations/infra/api/ActivationController.java` (owner
   WP05): implement `applyActivationPreset`.
-- `service/activations/src/main/java/ai/speckitty/charter/activations/application/ActivationWrites.java` (owner WP12):
+- `service/activations/src/main/java/ai/speckitty/charter/activations/application/ActivationWrites.java` (owner WP13):
   reuse it; add a hook only if the preset flow needs one.
 - `service/activations/src/main/java/ai/speckitty/charter/activations/domain/ClosureSnapshot.java` (owner WP06), and
   the adapter (owner WP05): the "listed" flags, only if the DSO keeps absence.
@@ -146,6 +147,10 @@ Implementation command:
    - US5 AS2: without `force`, M is not selected, the deny entry stays, and M is absent from `applied`; with `force`,
      M is in `cleared` and selected;
    - US5 AS3: an unknown preset answers 404 `preset_not_found`;
+   - **`missionTypes` replacement (FR-016, R7):** the starting document has `missionTypes: [old-type]`, and the preset
+     lists `activated_mission_types: [software-dev]`, which the closure holds. Applying it gives
+     `missionTypes: [software-dev]`, and `applied` lists `{kind: mission_type, artifactId: software-dev}`. A preset
+     that lists no mission types leaves `missionTypes` untouched;
    - a preset held by a pack **outside** the activation's closure also answers 404 (FR-010);
    - a missing `If-Match` answers 428; applying the same preset twice answers the same revision the second time
      (no-op).
@@ -178,16 +183,16 @@ Implementation command:
 6. The preset's must-have items are the floor (WP04). Applying the preset never denies them, so no 409 can arise from
    a preset; assert that in a test.
 
-`PresetRules.apply(document, PresetView preset, boolean force)` returns an `ActivationChange` (WP11's value), with an
+`PresetRules.apply(document, PresetView preset, boolean force)` returns an `ActivationChange` (WP12's value), with an
 empty skipped report.
 
 ### Subtask T088: `ActivationPresetService` and the controller
 
 **Steps (red first, `ActivationPresetServiceTest`):**
-1. Use `ActivationWrites` (WP12): `If-Match` (428 and 412), load (404 activation), one session, then resolve
+1. Use `ActivationWrites` (WP13): `If-Match` (428 and 412), load (404 activation), one session, then resolve
    `presetId` in `snapshot.presets()` (404 `preset_not_found`), `PresetRules.apply`, `DocumentRules.check`, a no-op
    check, and the CAS write.
-2. `ActivationController.applyActivationPreset`: map the change with WP12's `ActivationChangeMapper`; set `ETag`;
+2. `ActivationController.applyActivationPreset`: map the change with WP13's `ActivationChangeMapper`; set `ETag`;
    remove its `@ReservedOperation`. Only the four effective reads stay marked.
 
 ### Subtask T089: All green, and evidence
@@ -196,6 +201,9 @@ empty skipped report.
 no-body test.
 
 ## Checkstyle limits (NFR-001)
+
+The limits are still off on `main`, held until the methods over them are refactored, so they are held by
+construction: the reviewer measures new and changed methods by hand.
 
 CC ≤ 15, NPath ≤ 1000, ≤ 60 lines, nested-if depth ≤ 1, by construction. No new suppression, no disabled test, and no
 `@WIP`.

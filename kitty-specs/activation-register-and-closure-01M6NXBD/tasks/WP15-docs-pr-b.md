@@ -1,8 +1,8 @@
 ---
-work_package_id: WP14
+work_package_id: WP15
 title: Documentation and divergences for PR B
 dependencies:
-- WP13
+- WP14
 requirement_refs:
 - C-006
 - FR-013
@@ -31,7 +31,7 @@ tags: []
 tracker_refs: []
 ---
 
-# WP14: Documentation and divergences for PR B
+# WP15: Documentation and divergences for PR B
 
 ## ⚡ Do This First: Load Agent Profile
 
@@ -59,7 +59,7 @@ Make the docs say what PR B ships, and record its divergences from core (C-006):
 Docs only: this WP changes no code, contract or test.
 
 Implementation command:
-`spec-kitty agent action implement WP14 --agent claude --mission activation-register-and-closure-01M6NXBD`
+`spec-kitty agent action implement WP15 --agent claude --mission activation-register-and-closure-01M6NXBD`
 
 ## Context
 
@@ -68,22 +68,26 @@ Implementation command:
   two write-time exceptions; D2.4 lineage), ADR-0059 D6 (presets), ADR-0013 D4, ADR-0020 D6.
 - **Superseded:** the 13:15 discovery decisions `DM-01M6NXERTNKMWK4MTDTX48358B` (write-time `enhances`) and
   `DM-01M6NXKAHRQNR4RK14FFJN2TVM` (lineage over every relation). The docs describe the 2026-11-05 rulings, not those.
-- **Grounding:** WP09 added DIV-203 to DIV-205 and renamed the block. The next free ids are DIV-206 onwards. The two
+- **Grounding:** WP10 added DIV-203 to DIV-205 and renamed the block. The next free ids are DIV-206 onwards. The two
   register forms are kept equal by `DivergenceRegisterTest`.
 
 ## Branch Strategy
 
 - Planning branch and merge target: `issue-360-activated-closure` (PR B).
-- Lane worktree from `lanes.json`. It depends on WP13, so the docs describe merged behaviour.
+- Lane worktree from `lanes.json`. It depends on WP14, so the docs describe merged behaviour.
 - Rebase onto the lane base before review.
 
 ## Out-of-map edits (sequenced by dependency)
 
-- `docs/conformance/divergence-register.md` and `docs/conformance/divergences.yaml` (owner WP09): add DIV-206 and
+P1 (the PR cut): this WP touches **no** file WP10 owns except the edits listed here. The PR A replay takes WP01–WP10's
+commits only, so an unlisted edit to a WP10 file would leak PR B content into PR A's history.
+
+
+- `docs/conformance/divergence-register.md` and `docs/conformance/divergences.yaml` (owner WP10): add DIV-206 and
   DIV-207.
-- `docs/architecture/offering-and-activation.md` and `docs/architecture/resolution-model.md` (owner WP09): the cascade
+- `docs/architecture/offering-and-activation.md` and `docs/architecture/resolution-model.md` (owner WP10): the cascade
   section and the per-artifact writes.
-- `docs/adr/0013-persistent-deactivation.md` (owner WP09): only if the cascade text there contradicts the built
+- `docs/adr/0013-persistent-deactivation.md` (owner WP10): only if the cascade text there contradicts the built
   behaviour; prefer a link to ADR-0059 D2 over new prose.
 
 ## What the built behaviour is (the docs must say exactly this)
@@ -98,7 +102,7 @@ before writing it down:
 | Deny | the walk stops at a denied artifact: `skippedDeactivated` with `viaRequires` and `requiredBy` (artifacts) | US3 AS1 |
 | Behind a deny | `unreachedBehindDeactivated` | US3 AS4 |
 | Lineage | through every `specializes_from` ancestor, `requires` and `scope` only; no ancestor in force; a denied ancestor stops it | US3 AS4 |
-| `includeDeactivated` | takes denied artifacts back in and clears their deny entries, plus those of enhancers of what the walk selects; no enhancer selected | US3 AS3 |
+| `includeDeactivated` | takes denied artifacts back in and clears their deny entries, plus every deny entry the `enhances` pull would reach from what the walk selects (both ways, transitive over `enhances`); nothing pulled is selected | US3 AS3 |
 | Deactivate | only the named id is denied; with a cascade, what only it reached leaves `selected`; shared items stay in `skippedShared` (active = selected ∪ floor; active enhancers count) | US4 AS1, AS2 |
 | Floor | deactivating a required or locked artifact answers 409 and changes nothing | US4 AS3 |
 | Presets | each listed key is replaced, `activatedKinds` and `missionTypes` included; `force` clears matching deny entries | US5 |
@@ -114,7 +118,8 @@ before writing it down:
    ancestor stops it and is reported. Core's cascade does not follow `specializes_from`. Ruling: ADR-0059 D2.4.
    Corpus case: `cascade-lineage-pass-through`.
 2. **DIV-207, `enhances` at write:** a write never adds an enhancer to `selected`; with `includeDeactivated`, it clears
-   the deny entries of artifacts that `enhances` an artifact the walk selects; a cascading deactivate keeps an
+   every deny entry the read-time `enhances` pull would reach from what the walk selects, in both directions and
+   transitively over `enhances`; a cascading deactivate keeps an
    artifact an active enhancer references (`skippedShared`). Core does not follow `enhances` in its cascade. Ruling:
    ADR-0059 D2.2. Corpus case: `cascade-enhances-clearing`.
 3. Add both to both forms with the same ids and status as DIV-203 to DIV-205; run
@@ -140,7 +145,7 @@ before writing it down:
 
 **Steps:**
 1. Create `docs/changelog/2026-11-05-activation-writes-and-cascade.md` (date it the day you write it, and update the
-   path in this WP's `owned_files` only if the date changes) with the `okf_version` frontmatter, as WP09's fragment
+   path in this WP's `owned_files` only if the date changes) with the `okf_version` frontmatter, as WP10's fragment
    has.
 2. Body: the five writes are served; the cascade rules; `enhances` is not written at write time; presets replace each
    listed key; four operations stay reserved; DIV-206 and DIV-207.
@@ -155,7 +160,7 @@ before writing it down:
    - **#360:** confirm the acceptance re-point made in PR A (the closure read), and that the writes see only the
      closure (FR-010).
    - **Open review items:** the closure-scoped floor (DIV-205), pins refused rather than served side by side,
-     ADR-0059 open questions 1 and 4, and WP13's "listed key" decision.
+     ADR-0059 open questions 1 and 4, and WP14's "listed key" decision.
 2. Docs gates:
    ```bash
    python3 scripts/docs/check_docs.py all

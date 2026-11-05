@@ -1,8 +1,8 @@
 ---
-work_package_id: WP10
+work_package_id: WP11
 title: packs typed edges and the reach operation
 dependencies:
-- WP08
+- WP09
 requirement_refs:
 - FR-012
 - FR-013
@@ -49,7 +49,7 @@ tags: []
 tracker_refs: []
 ---
 
-# WP10: packs typed edges and the reach operation
+# WP11: packs typed edges and the reach operation
 
 ## ⚡ Do This First: Load Agent Profile
 
@@ -77,17 +77,19 @@ Give `packs` the one traversal the cascade needs (squad A5: no second walker any
     only the first);
   - the nodes it stopped at;
   - the nodes behind a stop;
-- `enhancersOf(view, urns)` answers the reverse `enhances` lookup;
+- `enhancesPull(view, urns)` answers what the `enhances` pull reaches from a set of artifacts: both directions, and
+  transitive over `enhances` (ADR-0059 D2.2, R1). `enhancersOf(view, urns)` stays the one-hop reverse lookup that
+  deactivate's shared check uses;
 - all of it runs on the `ClosureView` WP04 built, so a write still takes one verified read (NFR-007).
 
-This is PR B's first WP. It starts after PR A's last code WP (WP08); the PR A docs WP09 runs in the planning lane.
+This is PR B's first WP. It starts after PR A's last code WP (WP09); the PR A docs WP10 runs in the planning lane.
 
 Implementation command:
-`spec-kitty agent action implement WP10 --agent claude --mission activation-register-and-closure-01M6NXBD`
+`spec-kitty agent action implement WP11 --agent claude --mission activation-register-and-closure-01M6NXBD`
 
 ## Context
 
-- **PR:** B (WP10–WP14), stacked on PR A. **Concern:** IC-07. **Research:** R7; squad A5.
+- **PR:** B (WP11–WP15), stacked on PR A. **Concern:** IC-07. **Research:** R7; squad A5.
 - **Rulings:** ADR-0059 D2 as revised on 2026-11-05:
   - D2.1: five relations, forward, no depth limit, the visited guard;
   - D2.2: `enhances` both ways **at read**. At write time it is used only for `includeDeactivated` deny-clearing and
@@ -95,8 +97,10 @@ Implementation command:
   - D2.3: `<pack>::` followed;
   - D2.4: lineage over `specializes_from` passes `requires` and `scope` only, up the whole chain;
   - D2.5: no other edge.
-  This WP supplies the mechanism; WP11 supplies the policy.
-- **Collisions:** PR #377 touches `DomainRepositoryService`. Rebase after it.
+  This WP supplies the mechanism; WP12 supplies the policy.
+- **Collisions:** PR #377 touches `DomainRepositoryService`. **Gate (P3):** start only after #377 merges, or after
+  rebasing over its head; record the touched `packs` files in the evidence. Also rebase over #379, #384, #390, #391,
+  #392 and #394 as they land. PR A must be on `main` or under this branch.
 - **Grounding:**
   - `DomainRepositoryService.compositionFacts` (lines ~314–344) reads graph edges and flattens them to targets
     (`changed`, `references`). The typed edge is lost there today.
@@ -113,7 +117,7 @@ Implementation command:
 ## Branch Strategy
 
 - Planning branch and merge target: `issue-360-activated-closure`. PR B is a stacked PR on PR A.
-- Lane worktree from `lanes.json`. It depends on WP08, so PR A's code is complete before PR B starts (docs WPs live in the planning lane, which no code lane may depend on).
+- Lane worktree from `lanes.json`. It depends on WP09, so PR A's code is complete before PR B starts (docs WPs live in the planning lane, which no code lane may depend on).
 - Rebase onto the lane base (and onto `main` once PR A merges) before review.
 
 ## Out-of-map edits (sequenced by dependency)
@@ -192,29 +196,64 @@ lines (it is already split from WP03; keep it so). Graph-document edges come fro
 6. Transitive lineage: P → Q → Q2 (`specializes_from`), and Q2 scopes R2: R2 is reached.
 7. Two predecessors of one stopped node: both `Via`s are recorded.
 8. A `<pack>::` target in another closure pack is reached in that pack.
+9. **Ancestor and direct target at once (J4):** P `specializes_from` Q, **and** D requires Q directly. Starting at
+   {P, D}: Q is in `reached` (via D, requires). Q is also passed through as P's ancestor, so R (Q requires R) is
+   reached, and Q's `suggests` target S is reached **only** because Q is itself in force through D's `requires`.
+   Repeat with D absent: S is not reached, and Q is not in `reached`.
+10. **Per-pack identity (J4):** two packs each hold `directive:D` (a layer override) and are both in the closure.
+    Visiting one does not mark the other visited. The visitor's state is keyed by (pack, URN), as `GraphWalk`'s own
+    visited set is.
 
 **Implementation:** a `GraphWalker` visitor that, in `onRelationship`, answers `SKIP` for relations outside the
-request (and outside `passThrough` when the current node is a lineage ancestor), and records the pending `Via`. In
-`onNode` it records reached or stopped, and answers `SKIP` for stopped nodes. A lineage ancestor is entered over
-`specializes_from` only from a profile in the walk, and is never recorded as reached. Keep the visitor's state in a
+request, and records the pending `Via`. In `onNode` it records reached or stopped, and answers `SKIP` for stopped
+nodes.
+
+**Lineage is a separate walk (J4).** `GraphWalk`'s visited set is keyed by (pack, URN) only. One walk cannot visit Q
+once as an ancestor (pass-through relations) and once as an in-force node (all relations). Run the lineage
+pass-through as its own `GraphWalk`:
+- for each profile the main walk reached, walk its `specializes_from` chain with relations {`specializes_from`} ∪
+  `passThrough`;
+- record the ancestors in `ancestorsPassed`, never in `reached`;
+- feed the `passThrough` targets back as new starts of the main walk;
+- iterate until no new start appears.
+
+Alternatively, key the visitor's own state by (pack, URN, mode). Either way, test 9 decides. Keep all visitor state
+keyed by (pack, URN), never by URN alone.
+
+Keep the visitor's state in a small private class with one method per decision, to stay within the limits. Keep the visitor's state in a
 small private class with one method per decision, to stay within the limits. `GraphWalk.visit` dedups visits, so a
 second predecessor of an already-visited node is seen only in `onRelationship`. Record it there by peeking at the
 target URN.
 
-### Subtask T065: `enhancersOf`
+### Subtask T065: `enhancesPull` and `enhancersOf` (R1)
+
+**Purpose:** ADR-0059 D2.2, literally. At read, the pull runs both ways and transitively: "every artifact that
+enhances it joins **and is walked in turn**", and an enhancer's target joins and is walked in turn. The write uses
+only what that pull would reach, to clear deny entries (`includeDeactivated`). The write's own cascade keeps walking
+only the five relations; the pull walks only `enhances`.
 
 **Steps (red first):**
-1. `enhancersOf(view, {T})` answers every E with `E enhances T` in the closure, with E's pack.
-2. It is reverse only, and one hop: the clearing and shared rules (WP11) decide what to do with the answer.
-3. A pack-qualified `enhances` target resolves through `holderOf`.
+1. `enhancesPull(view, starts)` returns `Map<Urn, List<Via>>`: every node connected to a start over `enhances` in
+   **either** direction, transitively, each with every `Via` (the predecessor, and the direction:
+   `ENHANCER_OF` or `TARGET_OF`). It is built on `GraphWalk` over a resolver that exposes `enhances` edges both ways
+   (the reverse index of T063); it is not a second walker.
+2. Cases:
+   - E enhances T: from {T}, the pull reaches E; from {E}, it reaches T;
+   - a chain E1 enhances E2 enhances T: from {T}, it reaches E2 and E1;
+   - a cycle over `enhances` terminates;
+   - the pull never crosses a five-relation edge: from {T}, where E enhances T and E requires Z, Z is not reached.
+3. `enhancersOf(view, targets)` stays the **one-hop reverse** lookup (E with `E enhances T`, with E's pack). The
+   cascading deactivate's shared check uses it (an active enhancer referencing a candidate).
+4. A pack-qualified `enhances` target resolves through `holderOf`.
 
 ### Subtask T066: Expose on the closure view
 
 **Steps (out-of-map, `ClosureView` and `ClosureQueries`):**
 1. `ClosureQueries.snapshot` builds the `EdgeIndex` from the facts it already read (no extra read; extend the call-count
    test of WP04's T024).
-2. `ClosureView.reach(ReachRequest)` and `ClosureView.enhancersOf(Set<Urn>)` delegate to `Reachability`.
-3. The activations adapter (WP12) calls these on the view it took for the request.
+2. `ClosureView.reach(ReachRequest)`, `ClosureView.enhancesPull(Set<Urn>)` and `ClosureView.enhancersOf(Set<Urn>)`
+   delegate to `Reachability`.
+3. The activations adapter (WP13) calls these on the view it took for the request.
 
 ### Subtask T067: The 500-artifact report (NFR-006, report-only)
 
@@ -225,6 +264,9 @@ target URN.
 2. Assert a generous ceiling only if the existing timing tests do; otherwise print only. Never add it to `test`.
 
 ## Checkstyle limits (NFR-001)
+
+The limits are still off on `main`, held until the methods over them are refactored, so they are held by
+construction: the reviewer measures new and changed methods by hand.
 
 CC ≤ 15, NPath ≤ 1000, ≤ 60 lines, nested-if depth ≤ 1, by construction. The walk visitor is the hotspot: one small
 method per decision. No new suppression, and no disabled test.
@@ -245,7 +287,9 @@ method per decision. No new suppression, and no disabled test.
 - [ ] `EdgeIndex` resolves every graph-authored kind and `<pack>::` targets via the compose's rule.
 - [ ] `Reachability.reach` uses `GraphWalk` (no second walker), and returns reached (with every `Via`), stopped (with
       every `Via`), behind-stopped and the ancestors passed.
-- [ ] `enhancersOf` answers the reverse `enhances` lookup.
+- [ ] `enhancesPull` walks `enhances` both ways, transitively (the E1 → E2 → T chain); `enhancersOf` answers the
+      one-hop reverse lookup.
+- [ ] Lineage runs as a separate walk (or under mode-keyed visits); the ancestor-and-direct-target test passes.
 - [ ] The view exposes both with no extra read; WP04's call-count test still passes.
 - [ ] The 500-artifact timing is printed, report-only.
 - [ ] No new suppression, and no disabled test.

@@ -20,6 +20,7 @@ subtasks:
 - T031
 - T032
 - T033
+- T096
 agent: claude
 history: []
 agent_profile: java-jenny
@@ -54,6 +55,9 @@ create_intent:
 - service/deployable/src/test/java/ai/speckitty/charter/activations/infra/api/badfixture/ReservedMethodReachesApplication.java
 - service/deployable/src/test/java/ai/speckitty/charter/activations/infra/packs/badfixture/package-info.java
 - service/deployable/src/test/java/ai/speckitty/charter/activations/infra/packs/badfixture/AdapterNamesPacksStorage.java
+- service/activations/src/main/java/ai/speckitty/charter/activations/infra/api/ActivationRuntimeHints.java
+- service/activations/src/test/java/ai/speckitty/charter/activations/infra/api/ActivationRuntimeHintsTest.java
+- service/deployable/src/test/java/ai/speckitty/charter/activations/application/badfixture/ApplicationNamesGeneratedApi.java
 execution_mode: code_change
 model: ''
 owned_files:
@@ -92,6 +96,9 @@ owned_files:
 - service/deployable/src/test/java/ai/speckitty/charter/activations/infra/api/badfixture/ReservedMethodReachesApplication.java
 - service/deployable/src/test/java/ai/speckitty/charter/activations/infra/packs/badfixture/package-info.java
 - service/deployable/src/test/java/ai/speckitty/charter/activations/infra/packs/badfixture/AdapterNamesPacksStorage.java
+- service/activations/src/main/java/ai/speckitty/charter/activations/infra/api/ActivationRuntimeHints.java
+- service/activations/src/test/java/ai/speckitty/charter/activations/infra/api/ActivationRuntimeHintsTest.java
+- service/deployable/src/test/java/ai/speckitty/charter/activations/application/badfixture/ApplicationNamesGeneratedApi.java
 - .github/workflows/sonar.yml
 - docs/architecture/hexagonal-service.md
 role: implementer
@@ -119,6 +126,11 @@ Create the `activations` slice as its own Gradle module over `packs` (planning d
 move the reserved activation controller into it, and generalise the ArchUnit gate (#140) so the new slice is held
 to the same onion as `packs` and may name `packs` **only** from `activations.infra.packs`, and only
 `packs.application`. All 13 activation operations stay reserved (501). No behaviour changes.
+
+Storage wiring (P6): this WP only resolves **where** activations are stored (`ActivationStorageRoot`, a `deployable`
+value from `ConfigRoot.activations()`, empty when no root is bound). **Which** adapter serves them is chosen by WP07's
+`deployable/ActivationStorageWiring`. No activations storage `config` package is scanned; the composition root
+builds the repository bean.
 
 Implementation command:
 `spec-kitty agent action implement WP05 --agent claude --mission activation-register-and-closure-01M6NXBD`
@@ -188,7 +200,7 @@ Implementation command:
 
 **Steps:**
 1. Create `activations/infra/api/ActivationController.java` from the packs one. The methods and signatures are
-   unchanged. Put `@ReservedOperation` (kernel) on **each method** rather than on the class, so WP08 can unmark
+   unchanged. Put `@ReservedOperation` (kernel) on **each method** rather than on the class, so WP08 and WP09 can unmark
    operations one at a time. Each body throws a private `notBuilt()` `ResponseStatusException(NOT_IMPLEMENTED)`.
    Update the class Javadoc ("a slice of its own" is now true).
 2. Move `ActivationJson` to `activations/infra/api/ActivationJson.java` and `ActivationJsonTest` to the activations
@@ -198,18 +210,19 @@ Implementation command:
 4. `ActivationApiConfiguration` (`@Configuration @ComponentScan("ai.speckitty.charter.activations.infra.api")`)
    mirrors `packs.infra.api.config.ApiConfiguration`.
 5. `DeployableConfiguration`: add `activations.application.config`, `activations.infra.api.config` and
-   `activations.infra.packs.config` to the scan list. Add `activations.infra.storage.config` in WP07.
+   `activations.infra.packs.config` to the scan list. There is no storage `config` package to scan: WP07 builds the
+   repository bean in `deployable/ActivationStorageWiring` (P6).
 
 **Validation:** `./gradlew :deployable:test --tests '*CharterContractSuite*' --tests '*ReservedOperationCoverageTest*'
 --tests '*NullOmissionTest*'`. All 14 pins still answer 501 (now through method-level marks).
 
 ### Subtask T029: The `AvailablePacks` port and the adapter stub
 
-**Purpose:** one application-ring port for every pack question (R1). WP08 fills it in.
+**Purpose:** one application-ring port for every pack question (R1). WP09 fills it in.
 
 **Steps:**
 1. `activations/application/AvailablePacks.java`: the port interface, **with no method yet**. Its return type,
-   `ClosureSnapshot`, is an activations-domain value that WP06 creates, and WP08 adds
+   `ClosureSnapshot`, is an activations-domain value that WP06 creates, and WP09 adds
    `ClosureSnapshot snapshot(Optional<List<String>> packIds)` when it builds the adapter. Do not declare a placeholder
    signature (an `Object` return would leak into every caller). The Javadoc says: the one port for every pack
    question; only `activations.infra.packs` implements it; called once per request (NFR-007).
@@ -229,10 +242,18 @@ bound.
 2. Without one, it is empty (`ActivationStorageRoot.inMemory()`).
 3. Create `deployable/ActivationStorageRoot.java`: a record `(Optional<Path> directory)` with a `@Bean` factory in a
    small `@Configuration` (or in `CharterWiring`; prefer a new nested configuration in this file so that
-   `CharterWiring` stays out of the map) reading `ObjectProvider<ConfigRoot>`. WP07 consumes it to pick the adapter.
+   `CharterWiring` stays out of the map) reading `ObjectProvider<ConfigRoot>`. WP07's `ActivationStorageWiring`
+   (also in `deployable`) consumes it to pick the adapter; this WP builds no repository.
    Nothing here creates a directory, as `ConfigRoot`'s Javadoc requires.
 
 ### Subtask T031: Generalise `HexagonalArchitectureTest` (#140)
+
+**Preservation rule (P4, deferred split):** generalise by **adding** per-slice factories beside the old rules. Keep
+every existing rule constant and its `@Test` **verbatim**, and keep every existing `assertBites` on the existing bad
+fixtures (`packs/*/badfixture`, `profiles`, `missions`, `kernel.validation`, `foreign`). Where an old pack-pinned rule
+is subsumed by a per-slice factory, the factory's packs instance and the old constant must both run. Remove the old
+constant only if the diff shows the factory produces the identical rule text for `packs`. The diff must show no
+deleted `assertBites` line.
 
 **Steps (out-of-map edit, red first: add the bad fixtures of T032 and see the new rules fail on them):**
 1. `SLICES = List.of("packs", "profiles", "missions", "activations")`. `EVERY_SLICE_IS_REGISTERED` then covers it.
@@ -240,8 +261,11 @@ bound.
    `domainIsPure(slice)`, `applicationIsEdge(slice)` and `entrypointOverApplication(slice)`. Apply them to every slice
    that has the ring; check `classes.that().resideInAPackage(...)` is non-empty, or use `allowEmptyShould(true)` for
    the rings a slice lacks (profiles and missions have only `domain`).
-3. **Generated types:** `GENERATED_API` may be named from any slice's `infra.api` (`..infra.api..`), not only
-   `PACKS_API`. Update the rule at line ~570.
+3. **Generated types (`TRANSPORT_STAYS_IN_ADAPTER`, J2):** `GENERATED_API` may be named from any slice's `infra.api`
+   (`..infra.api..`) **and from `DEPLOYABLE`**, because WP09's `ActivationBodyAdvice` and `ActivationProblems` live in
+   `deployable` and name `ActivationConfig`, `SelectionRequest` and the rest. Update the rule at line ~570. The existing
+   `UsesTransportDto` fixture (`packs.application`) must still bite. Add `ApplicationNamesGeneratedApi` (T032) for
+   the activations application ring.
 4. **The cross-slice adapter rule:** only `activations.infra.packs..` may depend on `packs..`, and only on
    `packs.application..` (and the `packs.domain` value types those signatures expose, if any: check which types
    `ClosureView` exposes, and allow exactly those by package, `packs.domain..`). `packs.infra..` is never allowed.
@@ -270,7 +294,8 @@ new rule bites on its fixture.
 - `infra/api/badfixture/ApiNamesPacksApplication`: the controller side names `packs.application`;
 - `infra/api/badfixture/ReservedMethodReachesApplication`: a method marked `@ReservedOperation` calls an
   application service;
-- `infra/packs/badfixture/AdapterNamesPacksStorage`: the adapter names `packs.infra.storage`.
+- `infra/packs/badfixture/AdapterNamesPacksStorage`: the adapter names `packs.infra.storage`;
+- `application/badfixture/ApplicationNamesGeneratedApi`: the application names a generated `charter-api` type (J2).
 
 Add an `assertBites` test per fixture, as the existing `the…RuleFailsOn…` tests do. The fixtures are test classes, so
 they never ship.
@@ -285,9 +310,25 @@ they never ship.
    of its own. Cite ADR-0006 and planning decision 2026-11-05.
 3. Update `updated:` in the frontmatter. Run `python3 scripts/docs/check_docs.py all` and the spelling check.
 
+### Subtask T096: `ActivationRuntimeHints` for the moved mix-ins (J5)
+
+**Purpose:** the native executable reads the `OmitAbsentMembers` mix-in only through reflection. `ProblemJson` already
+registers its own with `ProblemRuntimeHints` and `@ImportRuntimeHints`. The moved `ActivationJson` needs the same, or
+the native image writes `null` members, or empty bodies, for activation answers.
+
+**Steps (red first, `ActivationRuntimeHintsTest`):**
+1. Use `RuntimeHintsPredicates.reflection()`: the mix-in type and the activation DTOs `ActivationJson` lists
+   (`ActivationConfig`, `PackPin`, `SelectedArtifacts`, `DeactivatedArtifacts`, `SelectionRequest`, `ExclusionRequest`,
+   `PresetApplication`, `Link`) are registered.
+2. Create `activations/infra/api/ActivationRuntimeHints.java`, modelled on
+   `packs/infra/api/ProblemRuntimeHints.java`, and add `@ImportRuntimeHints(ActivationRuntimeHints.class)` to
+   `ActivationJson`.
+3. Run `:deployable:test --tests '*CharterRuntimeHintsTest*'`; the native build itself runs in CI.
+
 ## Checkstyle limits (NFR-001)
 
-CC ≤ 15, NPath ≤ 1000, ≤ 60 lines, nested-if depth ≤ 1 (by construction). The ArchUnit test is long; keep each rule
+CC ≤ 15, NPath ≤ 1000, ≤ 60 lines, nested-if depth ≤ 1 (by construction; the limits are still off on `main`, so the
+reviewer measures by hand). The ArchUnit test is long; keep each rule
 factory short. No new suppression, and no disabled test (C-005).
 
 ## Gate commands
@@ -318,9 +359,14 @@ python3 scripts/docs/check_docs.py all
   native build's reflection needs with `./gradlew :deployable:test --tests '*CharterRuntimeHintsTest*'`. The native
   executable itself is built in CI.
 - **#391 conventions churn** may change plugin ids; rebase and adopt them.
+- **#394 (draft): mutation floors per module.** If it lands first, the new `:activations` module may need a floor
+  entry. Set it to what the module's tests reach, never 0 without a reason, and say so in the review notes.
+- **Rebase over** #377, #379, #384, #390, #391, #392 and #394 as they land; the base is `main`.
 
 ## Reviewer guidance (reviewer-renata)
 
+- **Old rules preserved (P4):** `git diff` on `HexagonalArchitectureTest` shows no removed `assertBites` and no
+  changed old rule body.
 - **Every new rule must bite.** For each rule, find its fixture and its `assertBites` test. A rule without a failing
   fixture is unproven.
 - **The adapter rule is two-sided:** only `infra.packs` may name `packs`, **and** only `packs.application`. Check both

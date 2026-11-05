@@ -134,7 +134,7 @@ Implementation command:
 1. `ArtifactKindTest`: every kind's `inForceWhenAbsent()` is `NONE`; the enum has exactly one constant. (Or remove
    the accessor and the enum, if nothing else needs them. Grep first; the plan says "→ NONE with all users updated",
    so keep the enum with one value and say why in its Javadoc: ADR-0053 d10, the service rules it now; core's per-kind
-   default diverges, divergence entry in WP09.)
+   default diverges, divergence entry in WP10.)
 2. Change every constant's last argument to `InForceWhenAbsent.NONE`; delete `ALL` and `REQUIRED`.
 3. `git grep -n "InForceWhenAbsent"` must show only the enum and its test.
 
@@ -145,7 +145,7 @@ Implementation command:
 **Steps (red first):**
 1. `ActivationIdTest`: the grammar accepts a ULID and a UUID, rejects an empty id, 65 characters, a leading `-`
    and `a/b`. `ActivationId.mint(Supplier<String> ulid)` returns an id matching the grammar. The domain does not
-   generate ULIDs itself (no library); the application supplies the generator in WP08.
+   generate ULIDs itself (no library); the application supplies the generator in WP09.
 2. `RevisionTest`: `Revision.of(byte[] canonicalUtf8)` gives `sha256:` + 64 lowercase hex characters; `token()`;
    value equality. `Revision.parse("sha256:…")` round-trips. A known vector: the SHA-256 of `{"schemaVersion":1}`
    (compute it once with `printf '{"schemaVersion":1}' | sha256sum` and pin it).
@@ -157,17 +157,19 @@ Implementation command:
 **Purpose:** a deterministic byte form across JVM and native image (FR-005).
 
 **Steps (red first, `JcsTest`):**
-1. Vectors:
-   - keys sorted by UTF-16 code units (`{"b":1,"a":2,"é":3,"z":4,"é":…}`, and a pair whose order differs by
-     code point versus UTF-16: a supplementary-plane character key versus `￿`);
-   - strings escaped minimally: `"`, `\`, control characters below `0x20` as `\b \t \n \f \r` or `\u00XX` lowercase
-     hex, and `/` **not** escaped;
-   - non-ASCII emitted as UTF-8, not escaped;
-   - integers in ECMAScript form (`1`, `0`, `-5`); no other number type is accepted (throw
-     `IllegalArgumentException`);
-   - `true`/`false`; `null` is **rejected** (the document never holds `null`);
-   - nested arrays keep their order;
-   - the RFC 8785 Appendix B string sample that uses only those features, as a pinned vector.
+1. Vectors (J9):
+   - **key order** by UTF-16 code units, which is `String.compareTo` order and is correct for RFC 8785 §3.2.3. Pin a
+     pair whose order differs between code points and UTF-16 code units: a key holding U+1F600 (a surrogate pair,
+     `"😀"`) sorts **before** a key holding U+FFFD (`"�"`), because 0xD83D < 0xFFFD;
+   - **strings**, using the **RFC 8785 §3.2.2.2 examples** (not Appendix B, which is about numbers): `"`, `\`, and the
+     control characters U+0000–U+001F as `\b \t \n \f \r` or `\u00xx` in lowercase hex; `/` **not** escaped;
+     non-ASCII emitted as raw UTF-8, not escaped. Pin the RFC's example string and its expected bytes;
+   - **lone surrogates are refused** (`IllegalArgumentException`): a high surrogate with no low one, or a low one
+     alone. Valid JSON text from a client cannot carry them as UTF-8, but a `\uD800` escape can;
+   - **integers** in ECMAScript form (`1`, `0`, `-5`). A magnitude above 2^53 − 1 (`9007199254740991`) is refused,
+     since it has no exact I-JSON form; no other number type is accepted;
+   - `true` and `false`; `null` is **refused** (the document never holds `null`);
+   - nested arrays keep their order.
 2. Implement `public final class Jcs` with `static byte[] canonical(Object value)`, recursing over
    `Map<String, ?>`, `List<?>`, `String`, `Integer`/`Long`, `Boolean`. Use a `StringBuilder` and one helper per value
    kind so each method stays short.
@@ -191,7 +193,7 @@ empty sets). Use an `EnumMap`, and kinds only from `ArtifactKind.activatable()` 
    contract's canonical-form text).
 4. A deny list constructed empty is rejected by the builder with a violation (`/deactivated/<kind>`,
    `empty_deny_list`), not by an exception. The document builder collects violations; see T039.
-5. `withoutDeny(kind, id)` drops the key when the list empties (reactivate, WP12); `withDeny` and `withSelected`
+5. `withoutDeny(kind, id)` drops the key when the list empties (reactivate, WP13); `withDeny` and `withSelected`
    return new documents (immutable).
 6. `toCanonicalTree()` returns the `Map`/`List` tree `Jcs` serialises, and `revision()` is
    `Revision.of(Jcs.canonical(toCanonicalTree()))`. The same content built in a different order gives an equal
@@ -200,7 +202,7 @@ empty sets). Use an `EnumMap`, and kinds only from `ArtifactKind.activatable()` 
    application passes `Optional.empty()` to `AvailablePacks`.
 
 Keep the builder small: one `ActivationDocument.Builder` with one method per member, and a `build()` that returns
-`Built(document, violations)`, so the HTTP mapper (WP08) and the rules share one place where shape violations are
+`Built(document, violations)`, so the HTTP mapper (WP09) and the rules share one place where shape violations are
 made.
 
 ### Subtask T038: `ClosureSnapshot`, the value from the port
@@ -214,8 +216,8 @@ requiredBy` (URN text to requiring descriptor `pack_id`s); `Map<String, String> 
 pack); `Map<String, PresetView> presets` (id to members per kind, `activatedKinds`, mission types, must-have flags, and
 the holding pack); `String fingerprint`.
 
-No `packs` type crosses into this record. The adapter (WP08) copies from `ClosureView`. Add `ClosureSnapshots`, a test
-fixture builder, to the test tree for WP06 to WP13's domain tests.
+No `packs` type crosses into this record. The adapter (WP09) copies from `ClosureView`. Add `ClosureSnapshots`, a test
+fixture builder, to the test tree for WP06 to WP14's domain tests.
 
 ### Subtask T039: `DocumentRules`
 
@@ -254,6 +256,9 @@ loop. Use the kernel `RefusalViolation` and `RequiringPack`.
 
 ## Checkstyle limits (NFR-001)
 
+The limits are still off on `main`, held until the methods over them are refactored, so they are held by
+construction: the reviewer measures new and changed methods by hand.
+
 CC ≤ 15, NPath ≤ 1000, ≤ 60 lines, nested-if depth ≤ 1, by construction. `Jcs.escape` and `DocumentRules.check` are
 the hotspots; use one helper per case. No new suppression, and no disabled test.
 
@@ -268,7 +273,8 @@ the hotspots; use one helper per case. No new suppression, and no disabled test.
 ## Definition of Done
 
 - [ ] `InForceWhenAbsent` has the single value `NONE`, and nothing else names a removed constant.
-- [ ] `Jcs` passes the pinned vectors, including the RFC 8785 sample and the UTF-16 ordering case.
+- [ ] `Jcs` passes the pinned vectors: the RFC 8785 §3.2.2.2 strings, the UTF-16 ordering case, and the refusals of
+      lone surrogates and integers above 2^53 − 1.
 - [ ] `ActivationDocument` enforces the canonical form and keeps absent and `[]` distinct; equal content gives equal
       revisions.
 - [ ] `DocumentRules` collects every 422 violation with its pointer and code, and raises 409 required or locked with
@@ -287,8 +293,9 @@ the hotspots; use one helper per case. No new suppression, and no disabled test.
 
 ## Reviewer guidance (reviewer-renata)
 
-- **Run `JcsTest` and read the vectors.** The UTF-16 versus code-point case must be present. A sort by `String.compareTo`
-  is correct (UTF-16), and a sort by code points is not.
+- **Run `JcsTest` and read the vectors.** The UTF-16 versus code-point case (U+1F600 before U+FFFD) must be present. A
+  sort by `String.compareTo` is correct (UTF-16), and a sort by code points is not. Check the §3.2.2.2 string vector,
+  the lone-surrogate refusals and the 2^53 bound.
 - **Absent versus `[]`:** check `ActivationDocumentTest` asserts both `inForce == false` **and** different canonical
   trees.
 - **Floor precedence:** locked wins over required; check the test that has both.

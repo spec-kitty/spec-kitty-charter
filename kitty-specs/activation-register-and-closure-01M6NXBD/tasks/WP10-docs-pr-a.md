@@ -1,14 +1,15 @@
 ---
-work_package_id: WP09
+work_package_id: WP10
 title: Documentation and divergences for PR A
 dependencies:
-- WP08
+- WP09
 requirement_refs:
 - C-006
 - FR-008
 - FR-007
 - FR-023
 - C-001
+- C-003
 planning_base_branch: issue-360-activated-closure
 merge_target_branch: issue-360-activated-closure
 branch_strategy: Planning artifacts for this mission were generated on issue-360-activated-closure. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-360-activated-closure unless the human explicitly redirects the landing branch.
@@ -41,7 +42,7 @@ tags: []
 tracker_refs: []
 ---
 
-# WP09: Documentation and divergences for PR A
+# WP10: Documentation and divergences for PR A
 
 ## ⚡ Do This First: Load Agent Profile
 
@@ -71,16 +72,18 @@ Make the docs say what PR A ships, and record every deliberate difference from c
 Docs only: this WP changes no code, contract or test.
 
 Implementation command:
-`spec-kitty agent action implement WP09 --agent claude --mission activation-register-and-closure-01M6NXBD`
+`spec-kitty agent action implement WP10 --agent claude --mission activation-register-and-closure-01M6NXBD`
 
 ## Context
 
 - **PR:** A (its last WP). **Concern:** IC-10 (A half). **Research:** "Open review items"; squad B3, B8, B9.
 - **Rulings:** ADR-0020 (D4, D6, D7, D9), ADR-0013 D2, ADR-0012 D2 and D7, ADR-0053 d10, ADR-0059 D1 (the register
   informs and does not gate), D4 and D5, and ADR-0061 (written in WP03).
-- **Collisions:** PR #390 touches `docs/architecture/hexagonal-service.md` (not this WP). PR #376 adds ADR-0059;
-  links to `/adr/0059-switch-gate-cascade-edges-and-activation-rulings/` resolve only after it merges. If it has not,
-  cite it by number without a link, and add the link in the rebase.
+- **Collisions:** PR #390 touches `docs/architecture/hexagonal-service.md` (not this WP). ADR-0059 is on `main` (PR #376 merged),
+  so link it as `/adr/0059-switch-gate-cascade-edges-and-activation-rulings/`. Rebase over #379, #384, #392 (ADR-0060)
+  and #394 as they land.
+- **C-003 (no core changes):** the docs say what core's seam must change to switch, and name no change to core's code
+  as part of this mission.
 - **Grounding:**
   - The register has **two forms that a test keeps equal**: `docs/conformance/divergence-register.md` (tables) and
     `docs/conformance/divergences.yaml` (one item per id: `id`, `surface`, `core`, `service`, `rationale`, `ruling`,
@@ -97,7 +100,7 @@ Implementation command:
 ## Branch Strategy
 
 - Planning branch and merge target: `issue-360-activated-closure`.
-- Lane worktree from `lanes.json`. It depends on WP08, so the docs describe merged behaviour.
+- Lane worktree from `lanes.json`. It depends on WP09, so the docs describe merged behaviour.
 - Rebase onto the lane base before review.
 
 ## Subtask Guidance
@@ -192,7 +195,7 @@ A new word that fails spelling: reword, or record a `cspell.json` addition as an
 
 - **Overclaiming.** The effective reads, the enhances pull and the layer merge are not built. Every sentence about
   them says "next mission".
-- **ADR-0059 links** before #376 merges break the link check. Cite by number until then.
+- **Links:** ADR-0059 is on `main`; ADR-0061 is added by WP03 in the same PR. Run the link check after rebasing.
 
 ## Reviewer guidance (reviewer-renata)
 
