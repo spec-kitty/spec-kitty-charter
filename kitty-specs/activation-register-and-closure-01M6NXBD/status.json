@@ -194,7 +194,7 @@
     },
     "WP06": {
       "actor": "claude",
-      "agent": null,
+      "agent": "claude:claude-opus-5-5:java-jenny",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -204,7 +204,8 @@
       "last_transition_at": "2026-11-05T20:32:15.339461+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "WP06 done (c65bfa2). Gates: :kernel:check 0 (2675 tests), :activations:check 0 (81), HexagonalArchitectureTest 0 (54); domain purity grep clean. Kernel: InForceWhenAbsent collapsed to NONE; SKILL loses its REQUIRED default (divergence-register entry for WP10). No domain port added, so the PORT_SIGNATURES per-slice generalisation is left for WP07. Notes: violation pointers index the canonical (sorted) lists, except builder shape violations (written order); builder throws IAE for schema-guaranteed shapes (schemaVersion!=1, empty packs); RequiringPack.via is empty (snapshot carries no chain); lists sort by code point per contract, JCS keys by UTF-16."
+        "WP06 done (c65bfa2). Gates: :kernel:check 0 (2675 tests), :activations:check 0 (81), HexagonalArchitectureTest 0 (54); domain purity grep clean. Kernel: InForceWhenAbsent collapsed to NONE; SKILL loses its REQUIRED default (divergence-register entry for WP10). No domain port added, so the PORT_SIGNATURES per-slice generalisation is left for WP07. Notes: violation pointers index the canonical (sorted) lists, except builder shape violations (written order); builder throws IAE for schema-guaranteed shapes (schemaVersion!=1, empty packs); RequiringPack.via is empty (snapshot carries no chain); lists sort by code point per contract, JCS keys by UTF-16.",
+        "Cycle 2: violation pointers now index the request body as written (Built.written); regression tests for [Z,D1], [p,p,zeta], dup+mismatched pin, mixed kinds; RequiringPack.via gap documented. Gates: :activations:check 0 (87), :kernel:check 0, HexagonalArchitectureTest 0 (54)."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
