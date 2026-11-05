@@ -11,8 +11,10 @@ import ai.speckitty.charter.kernel.domain.Pep440Range;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.Urn;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -271,6 +273,80 @@ public final class PackCompositionResolver {
     }
 
     /**
+     * Resolves the compose rooted at a set of configured packs (#360): every check {@link #resolve} runs, over the
+     * {@linkplain #compositionClosure composition closure} of the roots only, so a pack outside it is never judged. A
+     * duplicate {@code pack_id} or {@code name} outside the closure does not refuse; one inside it does, naming both
+     * holders, because every pack declaring an id of the closure is selected. A {@code depends_on} or
+     * {@code parent_pack} target no available pack declares stays missing, and {@link #resolve} refuses it as it
+     * always has. With every available pack a root, the answer and every refusal are those of {@link #resolve}.
+     *
+     * @param available the packs the compose may draw on, each with its descriptor
+     * @param roots the configured identifiers of the packs the compose is rooted at
+     * @return the closure of the roots, dependencies first, each pack once
+     * @throws Refusal when the closure's graph cannot be served
+     * @throws IllegalArgumentException when a root names no available pack: the caller chose the roots, so it is the
+     *     caller's error, not a refusal of the graph
+     */
+    public static List<PackUnderResolution> resolveRooted(
+            List<PackUnderResolution> available, Collection<PackIdentifier> roots) {
+        Objects.requireNonNull(available, "available");
+        Objects.requireNonNull(roots, "roots");
+        Map<String, PackUnderResolution> firstByPackId = new LinkedHashMap<>();
+        Map<PackIdentifier, String> packIdByConfigured = new HashMap<>();
+        for (PackUnderResolution pack : available) {
+            firstByPackId.putIfAbsent(pack.descriptor().packId(), pack);
+            packIdByConfigured.putIfAbsent(
+                    pack.configured().id(), pack.descriptor().packId());
+        }
+        List<String> rootPackIds = new ArrayList<>();
+        for (PackIdentifier root : roots) {
+            String packId = packIdByConfigured.get(root);
+            if (packId == null) {
+                throw new IllegalArgumentException("no available pack is configured as " + root.value());
+            }
+            rootPackIds.add(packId);
+        }
+        Set<String> closure = compositionClosure(rootPackIds, firstByPackId);
+        return resolve(available.stream()
+                .filter(pack -> closure.contains(pack.descriptor().packId()))
+                .toList());
+    }
+
+    /**
+     * The composition closure of a set of packs: the roots and every pack they reach over {@code depends_on} and
+     * {@code parent_pack}, by descriptor {@code pack_id}, in first-seen order. It is the one closure rule of a rooted
+     * compose. A target no pack of {@code byPackId} declares is recorded but not descended from: the walk tolerates it,
+     * and {@link #resolve} refuses it. A cycle terminates, since each id is walked once.
+     *
+     * @param rootPackIds the descriptor {@code pack_id}s of the roots
+     * @param byPackId the packs the walk may descend into, by descriptor {@code pack_id}
+     * @return the {@code pack_id}s of the closure, missing targets included
+     */
+    public static Set<String> compositionClosure(
+            Collection<String> rootPackIds, Map<String, PackUnderResolution> byPackId) {
+        Objects.requireNonNull(rootPackIds, "rootPackIds");
+        Objects.requireNonNull(byPackId, "byPackId");
+        Set<String> reached = new LinkedHashSet<>();
+        ArrayDeque<String> pending = new ArrayDeque<>(rootPackIds);
+        while (!pending.isEmpty()) {
+            String next = pending.removeFirst();
+            PackUnderResolution pack = byPackId.get(next);
+            if (reached.add(next) && pack != null) {
+                pending.addAll(successorsOf(pack));
+            }
+        }
+        return reached;
+    }
+
+    /** The packs one pack builds on: its {@code depends_on} targets, then its {@code parent_pack}, by {@code pack_id}. */
+    private static List<String> successorsOf(PackUnderResolution pack) {
+        List<String> successors = new ArrayList<>();
+        pack.descriptor().dependencies().forEach(dependency -> successors.add(dependency.packId()));
+        pack.descriptor().parentPack().ifPresent(successors::add);
+        return successors;
+    }
+
+    /**
      * One reference as the compose resolves it: the reference an artifact writes, and the pack that holds what it
      * names. The offering read builds these from the references of every pack's graphs and checks them with
      * {@link #checkReferences} when the compose resolves; the artifact reads build them for one reference at a time.
@@ -371,7 +447,7 @@ public final class PackCompositionResolver {
         for (PackUnderResolution pack : packs) {
             byName.putIfAbsent(pack.descriptor().name(), pack);
         }
-        Set<String> closure = closureOf(referringPackId, byId);
+        Set<String> closure = dependsOnClosure(referringPackId, byId);
         PackUnderResolution referring = byId.get(referringPackId);
         List<RefusalPack> referringPack = List.of(
                 referring == null
@@ -437,8 +513,12 @@ public final class PackCompositionResolver {
         }
     }
 
-    /** The pack and every pack it reaches through {@code depends_on}, by {@code pack_id}. */
-    private static Set<String> closureOf(String packId, Map<String, PackUnderResolution> byId) {
+    /**
+     * The pack and every pack it reaches through {@code depends_on} only, by {@code pack_id}: the packs a qualified
+     * reference may name (FR-015). It is not the {@linkplain #compositionClosure composition closure}, which also
+     * follows {@code parent_pack}.
+     */
+    private static Set<String> dependsOnClosure(String packId, Map<String, PackUnderResolution> byId) {
         Set<String> reached = new LinkedHashSet<>();
         List<String> pending = new ArrayList<>(List.of(packId));
         while (!pending.isEmpty()) {

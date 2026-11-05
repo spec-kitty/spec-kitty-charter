@@ -13,6 +13,7 @@ get:
     contractSet: activation
     issue: '#125'
   parameters:
+  - $ref: ../parameters/IfNoneMatch.yaml
   - $ref: ../parameters/EffectiveKindQuery.yaml
   - $ref: ../parameters/EffectiveStateQuery.yaml
   - $ref: ../../_shared/parameters/PageSize.yaml
@@ -36,6 +37,8 @@ get:
           examples:
             first-page:
               $ref: ../examples/EffectiveArtifactList.first-page.yaml
+    '304':
+      $ref: ../responses/NotModified.yaml
     '401':
       $ref: ../responses/Unauthorized.yaml
     '403':

@@ -8,7 +8,9 @@ files:
   - ActivationNotFound.yaml
   - ArtifactPolicyRefused.yaml
   - NotImplemented.yaml
+  - NotModified.yaml
   - PackNotFound.yaml
   - PreconditionFailed.yaml
   - PreconditionRequired.yaml
+  - UnknownActivation.yaml
   - UnsupportedMediaType.yaml

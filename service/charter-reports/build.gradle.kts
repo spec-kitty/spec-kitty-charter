@@ -29,6 +29,7 @@ val serviceModules = linkedMapOf(
     "packs" to "ai.speckitty.charter.packs",
     "profiles" to "ai.speckitty.charter.profiles",
     "missions" to "ai.speckitty.charter.missions",
+    "activations" to "ai.speckitty.charter.activations",
     "deployable" to "ai.speckitty.charter.deployable",
 )
 

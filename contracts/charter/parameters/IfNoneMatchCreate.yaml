@@ -1,7 +1,9 @@
 name: If-None-Match
 in: header
 required: false
-description: '* to create only: when the activation exists the answer is 412 (ADR-0020 D3).'
+description: >-
+  * to create only: when the activation exists the answer is 412 (ADR-0020 D3). Any other value is a malformed
+  precondition, answered 400.
 schema:
   type: string
   pattern: ^\*$
