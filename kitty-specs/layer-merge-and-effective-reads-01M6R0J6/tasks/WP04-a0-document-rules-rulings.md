@@ -10,6 +10,9 @@ requirement_refs:
 planning_base_branch: issue-10-layer-merge-effective-reads
 merge_target_branch: issue-10-layer-merge-effective-reads
 branch_strategy: Planning artifacts for this mission were generated on issue-10-layer-merge-effective-reads. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-10-layer-merge-effective-reads unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-layer-merge-and-effective-reads-01M6R0J6
+base_commit: 74426123e5931290466cde7cf3341881d7db08fe
+created_at: '2026-11-06T16:32:26.252128+00:00'
 subtasks:
 - T015
 - T016
