@@ -1,0 +1,239 @@
+{
+  "mission_slug": "activation-register-and-closure-01M6NXBD",
+  "mission_number": "",
+  "mission_type": "",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "activation-register.feature: 'A created document is stored sorted and deduplicated, under its quoted revision' (201), 'POST stores the document under an id the service mints', 'If-None-Match * creates only' (201 then 412); ActivationServiceTest, ActivationIdMintTest, ActivationControllerTest. lane-m HEAD 7f6264b: ./gradlew verifyAll --rerun-tasks --max-workers=1 -PcontractBaseline=none BUILD SUCCESSFUL (127/127 tasks executed; 7200 tests, 0 failures, 0 errors, 4 pre-existing env skips in packs; 341 BDD scenarios incl. activation-register 35/35, activation-selections 41/41, activation-presets 14/14, activation-register-guards 5/5, activations 4/4)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:qa-test-executor-elena",
+      "verified_at": "2026-11-06T02:55:04.494000+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "activation-register.feature: 'A created document is stored...' (ETag = quoted revision), 'A read whose If-None-Match matches the ETag answers 304 without a body', 'Reading an unknown activation answers 404' (activation_not_found); ActivationConditionalRequestTest, ActivationMapperTest. lane-m HEAD 7f6264b: ./gradlew verifyAll --rerun-tasks --max-workers=1 -PcontractBaseline=none BUILD SUCCESSFUL (127/127 tasks executed; 7200 tests, 0 failures, 0 errors, 4 pre-existing env skips in packs; 341 BDD scenarios incl. activation-register 35/35, activation-selections 41/41, activation-presets 14/14, activation-register-guards 5/5, activations 4/4)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:qa-test-executor-elena",
+      "verified_at": "2026-11-06T02:55:09.373174+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "activation-register.feature: 'A fetched config registered unchanged answers 200 with the same ETag', 'A stale If-Match is refused and the current revision is kept' (412 + GET old revision), 'Without If-Match the last writer wins' (200, ADR-0020 D6); activation-register-guards.feature 'A stale If-Match is refused before the body is judged'. lane-m HEAD 7f6264b: ./gradlew verifyAll --rerun-tasks --max-workers=1 -PcontractBaseline=none BUILD SUCCESSFUL (127/127 tasks executed; 7200 tests, 0 failures, 0 errors, 4 pre-existing env skips in packs; 341 BDD scenarios incl. activation-register 35/35, activation-selections 41/41, activation-presets 14/14, activation-register-guards 5/5, activations 4/4)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:qa-test-executor-elena",
+      "verified_at": "2026-11-06T02:55:14.143278+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "activation-register.feature 'A second DELETE finds nothing' (204 then 404 activation_not_found); If-Match on DELETE proven by ActivationConditionalRequestTest.deleteHonoursIfMatch (HTTP 412 on other validator, success on matching) and ActivationServiceTest.deleteHonoursIfMatch / aStaleIfMatchOnADeleteIsJudgedFromTheHeadersAloneAndTakesNoSnapshot - no @contract scenario for a conditional DELETE, unit/HTTP-level only. lane-m HEAD 7f6264b: ./gradlew verifyAll --rerun-tasks --max-workers=1 -PcontractBaseline=none BUILD SUCCESSFUL (127/127 tasks executed; 7200 tests, 0 failures, 0 errors, 4 pre-existing env skips in packs; 341 BDD scenarios incl. activation-register 35/35, activation-selections 41/41, activation-presets 14/14, activation-register-guards 5/5, activations 4/4)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:qa-test-executor-elena",
+      "verified_at": "2026-11-06T02:55:18.836302+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "activation-register.feature 'A created document is stored sorted and deduplicated, under its quoted revision'; JcsTest, RevisionTest (sha256: of JCS), ActivationDocumentTest (packs order kept), ActivationFileCodecTest; NFR-003 ActivationRoundTripPropertyTest 1000/1000 same ETag. lane-m HEAD 7f6264b: ./gradlew verifyAll --rerun-tasks --max-workers=1 -PcontractBaseline=none BUILD SUCCESSFUL (127/127 tasks executed; 7200 tests, 0 failures, 0 errors, 4 pre-existing env skips in packs; 341 BDD scenarios incl. activation-register 35/35, activation-selections 41/41, activation-presets 14/14, activation-register-guards 5/5, activations 4/4)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:qa-test-executor-elena",
+      "verified_at": "2026-11-06T02:55:23.414399+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "activation-register.feature: 'An id no pack of the closure holds is refused, naming the id, and nothing is stored', 'An empty deny list is refused, never stored', 'A body over 1 MiB is refused as too large', 'A member the document does not declare is refused', 'A null list is refused', 'A null item in a list is refused at its index', 'A pack pinned to a version the service does not hold is refused at the pin', 'A document naming an unconfigured pack is refused at the pack's id'; DocumentRulesTest, ActivationBodyAdviceTest (strict, no coercion/duplicates, R1). Version-pin refusal is open review item 2 (refused rather than side by side), spec text met. lane-m HEAD 7f6264b: ./gradlew verifyAll --rerun-tasks --max-workers=1 -PcontractBaseline=none BUILD SUCCESSFUL (127/127 tasks executed; 7200 tests, 0 failures, 0 errors, 4 pre-existing env skips in packs; 341 BDD scenarios incl. activation-register 35/35, activation-selections 41/41, activation-presets 14/14, activation-register-guards 5/5, activations 4/4)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:qa-test-executor-elena",
+      "verified_at": "2026-11-06T02:55:28.069455+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "activation-register.feature 'A deny entry on a must-have item of a governing preset is refused, naming the pack' (409 artifact_required, requiredBy), 'A directive an org pack's policy file locks cannot be deactivated' (409 artifact_locked); activation-selections.feature 'Deactivating a locked artifact is 409 artifact_locked and stores nothing', 'Deactivating a required artifact is 409 artifact_required and stores nothing', 'A stored deny entry on the floor is tolerated by a write of another id' (F1); errors.feature 'artifact_required/artifact_locked is raised by the activation register'; DocumentRulesTest. lane-m HEAD 7f6264b: ./gradlew verifyAll --rerun-tasks --max-workers=1 -PcontractBaseline=none BUILD SUCCESSFUL (127/127 tasks executed; 7200 tests, 0 failures, 0 errors, 4 pre-existing env skips in packs; 341 BDD scenarios incl. activation-register 35/35, activation-selections 41/41, activation-presets 14/14, activation-register-guards 5/5, activations 4/4)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:qa-test-executor-elena",
+      "verified_at": "2026-11-06T02:55:32.860268+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "activation-selections.feature 'Selecting into an absent list makes the list of that one artifact'; activation-presets.feature 'A preset that lists no kind leaves activatedKinds untouched'; activation-register.feature 'A document without packs builds on every configured pack, in the offering's order'; ActivationDocumentTest (absent vs [] distinct on wire), ActivationRoundTripPropertyTest (lists absent/[]/set); contract absent-means-none texts; DIV-203. lane-m HEAD 7f6264b: ./gradlew verifyAll --rerun-tasks --max-workers=1 -PcontractBaseline=none BUILD SUCCESSFUL (127/127 tasks executed; 7200 tests, 0 failures, 0 errors, 4 pre-existing env skips in packs; 341 BDD scenarios incl. activation-register 35/35, activation-selections 41/41, activation-presets 14/14, activation-register-guards 5/5, activations 4/4)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:qa-test-executor-elena",
+      "verified_at": "2026-11-06T02:55:37.563428+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Verify FR-009 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "activation-register.feature: 'The closure read lists the activated pack after its dependency, and not an unrelated pack' (beta then alpha, dependsOn descriptorPackId/range/held version, gamma absent), 'A broken pack outside the closure is never judged', 'A document without packs builds on every configured pack...', 'A closure that does not compose is refused as the offering refuses it' (500 pack_dependency_out_of_range), 'A qualified reference to a pack outside the closure refuses the closure read', 'A pack of the closure whose directory is gone/pack.yaml is not YAML refuses the closure read as unreadable', 'The closure read of an unknown activation answers 404'; contract paths/activations_activationId_packs.yaml (items OfferingPack); ClosureQueriesTest. lane-m HEAD 7f6264b: ./gradlew verifyAll --rerun-tasks --max-workers=1 -PcontractBaseline=none BUILD SUCCESSFUL (127/127 tasks executed; 7200 tests, 0 failures, 0 errors, 4 pre-existing env skips in packs; 341 BDD scenarios incl. activation-register 35/35, activation-selections 41/41, activation-presets 14/14, activation-register-guards 5/5, activations 4/4)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:qa-test-executor-elena",
+      "verified_at": "2026-11-06T02:55:42.326785+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "Verify FR-010 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "activation-selections.feature: 'Selecting an artifact the closure does not hold is 404 artifact_not_found', 'Selecting a mission type the closure does not hold is 404 mission_type_not_found', 'A select/unselect/deactivate without If-Match is 428', 'A select with a stale If-Match is 412, before the path id is judged', 'A malformed body without If-Match is 428, before the body is judged', 'A malformed If-Match on a select is 400', 'A path kind outside the selectable kinds is 422 with a violation at the path', 'Deactivating an artifact the closure does not hold is 404'; activation-presets.feature 'A preset held only by a pack outside the activation's closure is 404 preset_not_found', 'Applying a preset without If-Match is 428', '...stale If-Match is 412, before the preset is judged'; ActivationWriteOrderTest, ActivationSelectionServiceTest (no pack read on refused precondition: packs.calls()==0/1). lane-m HEAD 7f6264b: ./gradlew verifyAll --rerun-tasks --max-workers=1 -PcontractBaseline=none BUILD SUCCESSFUL (127/127 tasks executed; 7200 tests, 0 failures, 0 errors, 4 pre-existing env skips in packs; 341 BDD scenarios incl. activation-register 35/35, activation-selections 41/41, activation-presets 14/14, activation-register-guards 5/5, activations 4/4)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:qa-test-executor-elena",
+      "verified_at": "2026-11-06T02:55:49.222984+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-011",
+      "description": "Verify FR-011 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "activation-selections.feature: 'A cascading select selects what the target requires...' (applied, new ETag), 'Unselecting a selected artifact removes it, lists it in applied and clears nothing', 'Unselecting an artifact that is not selected changes nothing' (200 same revision), 'Selecting what is already selected changes nothing', 'Selecting a mission type adds it to missionTypes'; ActivationSelectionServiceTest, ActivationChangeMapperTest. lane-m HEAD 7f6264b: ./gradlew verifyAll --rerun-tasks --max-workers=1 -PcontractBaseline=none BUILD SUCCESSFUL (127/127 tasks executed; 7200 tests, 0 failures, 0 errors, 4 pre-existing env skips in packs; 341 BDD scenarios incl. activation-register 35/35, activation-selections 41/41, activation-presets 14/14, activation-register-guards 5/5, activations 4/4)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:qa-test-executor-elena",
+      "verified_at": "2026-11-06T02:55:54.386784+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-012",
+      "description": "Verify FR-012 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "activation-selections.feature: 'A cascading select selects what the target requires, skips a denied one and never selects an enhancer' (skippedDeactivated viaRequires/requiredBy), 'A cascade scoped to directives selects the target alone and reports the tactics it reached' (skippedByScope), 'A denied ancestor stops the lineage and is reported, with what lies behind it' (unreachedBehindDeactivated), 'A cascade follows a reference qualified by another pack', 'A cascade over a cycle answers once and selects each artifact once', 'A cascade that mixes all with kinds is refused' (422), 'A stop reached through a template is required by what instantiates it'; CascadeRulesSelectTest, CascadeRulesReportingTest, CascadeScopeTest. lane-m HEAD 7f6264b: ./gradlew verifyAll --rerun-tasks --max-workers=1 -PcontractBaseline=none BUILD SUCCESSFUL (127/127 tasks executed; 7200 tests, 0 failures, 0 errors, 4 pre-existing env skips in packs; 341 BDD scenarios incl. activation-register 35/35, activation-selections 41/41, activation-presets 14/14, activation-register-guards 5/5, activations 4/4)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:qa-test-executor-elena",
+      "verified_at": "2026-11-06T02:55:59.120931+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-013",
+      "description": "Verify FR-013 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "activation-selections.feature: 'includeDeactivated clears the walk's deny entries and the enhancer's, and selects no enhancer' (US3 AS3: E in cleared and applied, not selected), 'includeDeactivated clears a deny entry the walk went through outside the scope, without selecting it', 'includeDeactivated clears what the enhances pull reaches only in the kinds the document activates'; CascadeRulesClearingTest. Open review item 6: F4 (out-of-scope deny entries cleared) and F5 (pull bounded by activatedKinds) are fixers' reading of the contract text, not stated in FR-013/ADR-0059 - awaiting operator confirmation; FR-013 text met. lane-m HEAD 7f6264b: ./gradlew verifyAll --rerun-tasks --max-workers=1 -PcontractBaseline=none BUILD SUCCESSFUL (127/127 tasks executed; 7200 tests, 0 failures, 0 errors, 4 pre-existing env skips in packs; 341 BDD scenarios incl. activation-register 35/35, activation-selections 41/41, activation-presets 14/14, activation-register-guards 5/5, activations 4/4)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:qa-test-executor-elena",
+      "verified_at": "2026-11-06T02:56:03.895207+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-014",
+      "description": "Verify FR-014 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "activation-selections.feature: 'A cascade passes through a profile's ancestor without putting it in force' (P,R selected; Q,S not), 'A denied ancestor stops the lineage and is reported, with what lies behind it' (Q skippedDeactivated, R unreachedBehindDeactivated); CascadeRulesLineageTest; DIV-206. lane-m HEAD 7f6264b: ./gradlew verifyAll --rerun-tasks --max-workers=1 -PcontractBaseline=none BUILD SUCCESSFUL (127/127 tasks executed; 7200 tests, 0 failures, 0 errors, 4 pre-existing env skips in packs; 341 BDD scenarios incl. activation-register 35/35, activation-selections 41/41, activation-presets 14/14, activation-register-guards 5/5, activations 4/4)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:qa-test-executor-elena",
+      "verified_at": "2026-11-06T02:56:08.424190+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-015",
+      "description": "Verify FR-015 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "activation-selections.feature: 'A cascading deactivate unselects what only the target kept and keeps what another selected one reaches' (skippedShared, only D denied, applied D and T not T2), 'A cascading deactivate keeps what a selected enhancer references', 'A candidate kept by an enhancer keeps the candidate it enhances, on a second shared step', 'Deactivating without a cascade denies and unselects the target alone', 'Re-activating a denied artifact clears its deny entry and omits the emptied list', 'Re-activating an artifact that is not denied changes nothing', 'Deactivating what is already denied and not selected changes nothing'; CascadeRulesDeactivateTest, ActivationExclusionServiceTest. Open review item 5 / F9: deactivate's own walk does not follow lineage (FR-015 read literally as five relations) - operator question, spec text met. lane-m HEAD 7f6264b: ./gradlew verifyAll --rerun-tasks --max-workers=1 -PcontractBaseline=none BUILD SUCCESSFUL (127/127 tasks executed; 7200 tests, 0 failures, 0 errors, 4 pre-existing env skips in packs; 341 BDD scenarios incl. activation-register 35/35, activation-selections 41/41, activation-presets 14/14, activation-register-guards 5/5, activations 4/4)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:qa-test-executor-elena",
+      "verified_at": "2026-11-06T02:56:13.170640+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-016",
+      "description": "Verify FR-016 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "activation-presets.feature: 'A preset replaces each key it lists and leaves the others untouched' (US5 AS1, activatedKinds not in applied), 'A preset that lists no kind leaves activatedKinds untouched', 'Without force a denied member is not selected and its deny entry stays', 'With force the deny entries of the preset's members are cleared and the members selected', 'A preset that lists mission types replaces missionTypes', 'A preset that lists no mission types leaves missionTypes untouched', 'Applying a preset that changes nothing answers the same revision', 'A preset no pack holds is 404 preset_not_found', 'A preset whose member the closure does not hold is 422', 'A force of the wrong type is 422 at its pointer'; PresetRulesTest, ActivationPresetServiceTest. Open review item 4 (empty list = not listed) is the stated default. lane-m HEAD 7f6264b: ./gradlew verifyAll --rerun-tasks --max-workers=1 -PcontractBaseline=none BUILD SUCCESSFUL (127/127 tasks executed; 7200 tests, 0 failures, 0 errors, 4 pre-existing env skips in packs; 341 BDD scenarios incl. activation-register 35/35, activation-selections 41/41, activation-presets 14/14, activation-register-guards 5/5, activations 4/4)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:qa-test-executor-elena",
+      "verified_at": "2026-11-06T02:56:17.849580+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-017",
+      "description": "Verify FR-017 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "activation-register.feature: 'A document naming an id the pack no longer holds is served as stored and refused on write', 'A deny entry on an id a pack now locks is kept on read, and denying it anew is refused', 'A deny entry on an id a pack now requires is kept on read, and denying it anew is refused'. lane-m HEAD 7f6264b: ./gradlew verifyAll --rerun-tasks --max-workers=1 -PcontractBaseline=none BUILD SUCCESSFUL (127/127 tasks executed; 7200 tests, 0 failures, 0 errors, 4 pre-existing env skips in packs; 341 BDD scenarios incl. activation-register 35/35, activation-selections 41/41, activation-presets 14/14, activation-register-guards 5/5, activations 4/4)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:qa-test-executor-elena",
+      "verified_at": "2026-11-06T02:56:22.308660+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-018",
+      "description": "Verify FR-018 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "contract schemas/Activation.yaml carries no summary/governanceFingerprint (description points to EffectiveArtifactList.summary); EffectiveArtifactList.yaml requires governanceFingerprint+summary (moved, ADR-0059 D5); ActivationMapperTest; ActivationConfigConformanceTest; fragment changes/2026-11-05-activation-register-and-closure-read.md. lane-m HEAD 7f6264b: ./gradlew verifyAll --rerun-tasks --max-workers=1 -PcontractBaseline=none BUILD SUCCESSFUL (127/127 tasks executed; 7200 tests, 0 failures, 0 errors, 4 pre-existing env skips in packs; 341 BDD scenarios incl. activation-register 35/35, activation-selections 41/41, activation-presets 14/14, activation-register-guards 5/5, activations 4/4)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:qa-test-executor-elena",
+      "verified_at": "2026-11-06T02:56:26.896332+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-019",
+      "description": "Verify FR-019 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "FileActivationRepository (<root>/<encoded id>/activation.json), InMemoryActivationRepository; ActivationDirectoryNameTest (reversible, case-safe: caseVariantsGetNamesThatDifferEvenWhenLowerCased, everyGeneratedIdRoundTrips...), FileActivationRepositoryCaseFoldTest, FileActivationRepositoryTest, InMemoryActivationRepositoryTest, ActivationStorageRootTest (config-root/activations), ActivationStorageWiringTest, ActivationRestartTest (restart loses nothing). lane-m HEAD 7f6264b: ./gradlew verifyAll --rerun-tasks --max-workers=1 -PcontractBaseline=none BUILD SUCCESSFUL (127/127 tasks executed; 7200 tests, 0 failures, 0 errors, 4 pre-existing env skips in packs; 341 BDD scenarios incl. activation-register 35/35, activation-selections 41/41, activation-presets 14/14, activation-register-guards 5/5, activations 4/4)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:qa-test-executor-elena",
+      "verified_at": "2026-11-06T02:56:31.421259+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-020",
+      "description": "Verify FR-020 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "offering.feature unchanged by the mission (11/11 pass); composition.feature 32/32 pass - its only change re-points the former @WIP #360 scenario 'The compose is the closure of the activated packs, not every available pack' to GET /activations/project/packs (B3, beta then alpha, not gamma), paired with US2 AS1/AS2 scenarios on the closure read; OfferingReadServiceTest. lane-m HEAD 7f6264b: ./gradlew verifyAll --rerun-tasks --max-workers=1 -PcontractBaseline=none BUILD SUCCESSFUL (127/127 tasks executed; 7200 tests, 0 failures, 0 errors, 4 pre-existing env skips in packs; 341 BDD scenarios incl. activation-register 35/35, activation-selections 41/41, activation-presets 14/14, activation-register-guards 5/5, activations 4/4)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:qa-test-executor-elena",
+      "verified_at": "2026-11-06T02:56:36.013758+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-021",
+      "description": "Verify FR-021 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "activations.feature @reserved: 'Reading the effective artifacts / skipped report / effective graph of an activation is reserved', 'Reading the effective context of an action is reserved' (4/4 pass, 501); ReservedActivationOperationTest, ReservedOperationCoverageTest, ReservedRefusalCodesTest; contract paths for artifacts/skipped/graph/context declare If-None-Match/304 and EffectiveArtifactList carries summary; paired with FR-001 create 201. lane-m HEAD 7f6264b: ./gradlew verifyAll --rerun-tasks --max-workers=1 -PcontractBaseline=none BUILD SUCCESSFUL (127/127 tasks executed; 7200 tests, 0 failures, 0 errors, 4 pre-existing env skips in packs; 341 BDD scenarios incl. activation-register 35/35, activation-selections 41/41, activation-presets 14/14, activation-register-guards 5/5, activations 4/4)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:qa-test-executor-elena",
+      "verified_at": "2026-11-06T02:56:40.663271+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-022",
+      "description": "Verify FR-022 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "activation-register.feature: 'A directive an org pack's policy file locks cannot be deactivated' (409 artifact_locked), 'A lock along the closure wins over a pack nearer built-in that leaves the directive open', 'A pack naming a policy file that is missing / fails its schema is unreadable on the offering and on the closure read'; PackMutabilityPolicyTest, PerPackPolicyTest, PackPolicyOrderTest, PackPolicyRulesTest, PolicySchemaTest, PolicyYamlTest, PolicyRoundTripTest. Note: spec FR-022 cites ADR-0061 but the decision is recorded as ADR-0062-pack-mutability-policy-file (renumbered; spec text drift only; root docs link to /adr/0062/ which exists only in lane-m). lane-m HEAD 7f6264b: ./gradlew verifyAll --rerun-tasks --max-workers=1 -PcontractBaseline=none BUILD SUCCESSFUL (127/127 tasks executed; 7200 tests, 0 failures, 0 errors, 4 pre-existing env skips in packs; 341 BDD scenarios incl. activation-register 35/35, activation-selections 41/41, activation-presets 14/14, activation-register-guards 5/5, activations 4/4)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:qa-test-executor-elena",
+      "verified_at": "2026-11-06T02:56:45.256727+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-023",
+      "description": "Verify FR-023 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "activation-register.feature 'A deny entry on a must-have item of a governing preset is refused, naming the pack' (US1 AS6), 'A deny entry on an id a pack now requires...'; activation-selections.feature 'Deactivating a required artifact is 409 artifact_required'; RequiredFloorTest, ClosureQueriesTest (floor). Open review item 1: the closure-scoped floor is an assumed default awaiting operator (DIV-205); spec text met. lane-m HEAD 7f6264b: ./gradlew verifyAll --rerun-tasks --max-workers=1 -PcontractBaseline=none BUILD SUCCESSFUL (127/127 tasks executed; 7200 tests, 0 failures, 0 errors, 4 pre-existing env skips in packs; 341 BDD scenarios incl. activation-register 35/35, activation-selections 41/41, activation-presets 14/14, activation-register-guards 5/5, activations 4/4)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:qa-test-executor-elena",
+      "verified_at": "2026-11-06T02:56:49.759606+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}
