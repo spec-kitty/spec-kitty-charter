@@ -110,6 +110,18 @@ class ActivationServiceTest {
     }
 
     @Test
+    void everySpellingOfAnIdStoresTheSameDocumentUnderTheSameRevision() {
+        StoredActivation declared = service.put(ID, selecting("D2"), null, null).stored();
+        for (String spelling : List.of("directive:D2", "d2", "directive:d2")) {
+            StoredActivation other =
+                    service.put(ID, selecting(spelling), null, null).stored();
+
+            assertThat(other.document()).as(spelling).isEqualTo(declared.document());
+            assertThat(other.revision()).as(spelling).isEqualTo(declared.revision());
+        }
+    }
+
+    @Test
     void putOfTheSameDocumentKeepsTheRevision() {
         ActivationService.Written first = service.put(ID, selecting("D1", "D2"), null, null);
         ActivationService.Written again = service.put(ID, selecting("D2", "D1", "D2"), quoted(first.stored()), null);
