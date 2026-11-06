@@ -33,8 +33,9 @@ description: >-
 
   governance_policy_violation (409) is raised by the registration writes: a write the mutability level of
   the pack that owns its target does not permit is refused with it (ADR-0012, the mutability-policy epic
-  #55). An artifact no policy names is open, and open permits every write; this version reads no policy
-  file yet, so until it does every target is open and no write is refused with it. A lower-tier pack that breaks
+  #55). An artifact no policy names is open, and open permits every write. Each pack's policy.yaml is read, per
+  pack along the composition closure of the pack written (ADR-0062); no open pack ships one yet, so every target
+  of the open packs is open and none of their writes is refused with it. A lower-tier pack that breaks
   the mutability policy of an artifact it changes in the merged offering will be refused with it too,
   once the offering is merged (#10, #11).
 
