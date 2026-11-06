@@ -492,6 +492,9 @@
       "last_event_id": "01M6Q6D347H7VF12AYX7XR2KCF",
       "last_transition_at": "2026-11-06T01:08:38.664021+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "applyActivationPreset served (ADR-0059 D6): listed keys replaced incl. activatedKinds/missionTypes, A7 empty=not listed, force clears, applied per A1, 404 preset_not_found (raised). Reserved 5->4, binding pin retired behind noReservedOperationTakesABody. activation-presets.feature 12 scenarios red (501) then green. Gates: contracts:check, activations:check, packs:check -x openPacksRoundTrip, web-transport:check, deployable:check all green. A7 empty list pinned in PresetRulesTest (schema forbids activated_kinds: [], so the scenario uses an absent key)."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 5085,
