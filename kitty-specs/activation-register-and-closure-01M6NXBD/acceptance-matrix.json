@@ -198,10 +198,10 @@
       "criterion_id": "FR-020",
       "description": "Verify FR-020 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "offering.feature unchanged by the mission (11/11 pass); composition.feature 32/32 pass - its only change re-points the former @WIP #360 scenario 'The compose is the closure of the activated packs, not every available pack' to GET /activations/project/packs (B3, beta then alpha, not gamma), paired with US2 AS1/AS2 scenarios on the closure read; OfferingReadServiceTest. lane-m HEAD 7f6264b: ./gradlew verifyAll --rerun-tasks --max-workers=1 -PcontractBaseline=none BUILD SUCCESSFUL (127/127 tasks executed; 7200 tests, 0 failures, 0 errors, 4 pre-existing env skips in packs; 341 BDD scenarios incl. activation-register 35/35, activation-selections 41/41, activation-presets 14/14, activation-register-guards 5/5, activations 4/4)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:qa-test-executor-elena",
+      "verified_at": "2026-11-06T02:56:36.013758+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
