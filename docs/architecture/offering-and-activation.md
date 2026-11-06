@@ -334,10 +334,13 @@ a template, an asset, a lineage ancestor (to the descendant it was passed from) 
 `referencedBy` names the nearest artifact active after the write. Among the nearest, the first in code-point order
 is named, so the choice does not depend on the order the walk recorded its ways in.
 
-**`includeDeactivated`** (ADR-0013 D4). The walk stops at no deny entry. The select clears the deny entries of
-everything the walk went through, whatever the `cascade` scope: the target, what it reached and the ancestors it
-passed. A cleared artifact outside the scope is not selected and stays in `skippedByScope`; a cleared ancestor is
-never selected either. Nothing the walk does not go through is cleared.
+**`includeDeactivated`** (ADR-0013 D4, [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/#amendment-2026-11-06)
+R3). The walk stops only at the deny entries of a kind outside the `cascade` scope. The select clears the deny
+entries the walk passes through within the scope: the target, what it reached of a kind in scope, and each ancestor
+it passed whose kind is in scope (cleared, never selected). A denied artifact outside the scope keeps its deny entry:
+the walk stops there and reports it in `skippedDeactivated`, with what lies only behind it in
+`unreachedBehindDeactivated`, as it does without `includeDeactivated`. A denied ancestor of a kind outside the scope
+stops the lineage the same way. Nothing the walk does not pass through is cleared.
 
 **Deactivate.** The named artifact gets the only deny entry, and leaves `selected`. A required or locked artifact is
 refused first, `409 artifact_required` or `artifact_locked` naming the packs, before any walk, and nothing changes.

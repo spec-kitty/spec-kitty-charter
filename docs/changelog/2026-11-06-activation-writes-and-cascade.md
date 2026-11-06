@@ -33,7 +33,7 @@ writes of [ADR-0020](/adr/0020-offering-and-activations/) D6 under
   only. A deactivate walks the same way, so the two round-trip; it denies the named artifact alone and unselects
   what only it kept; the floor is never removed.
 - **`enhances` is a relation like the others:** walked from the enhancer to its target, with no pull at write
-  or read. `includeDeactivated` clears the deny entries the walk goes through.
+  or read. `includeDeactivated` clears only the deny entries the walk passes through within the `cascade` scope.
 - **Presets:** each key the preset lists replaces that key; `force` clears its members' deny entries. A member
   the closure no longer holds is `422`.
 - **Still `501`:** the four effective reads.

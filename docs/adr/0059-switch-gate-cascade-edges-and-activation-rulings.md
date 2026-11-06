@@ -131,8 +131,9 @@ loses its gating role. Those changes are follow-ups, not part of this record.
    ancestor is put in force. A denied ancestor stops the pass-through at that ancestor and is reported (ADR-0013 D4);
    what lies behind a denied ancestor goes in `unreachedBehindDeactivated`. The `cascade` scope does not filter an
    ancestor, which is not a candidate.
-   *Amended 2026-11-06 (R2):* a cascading deactivate's own walk passes through the lineage exactly as a select's
-   walk does; see the [amendment](#amendment-2026-11-06).
+   *Amended 2026-11-06 (R2, R3):* a cascading deactivate's own walk passes through the lineage exactly as a select's
+   walk does, and with `includeDeactivated` a denied ancestor is passed through only when its kind is in the
+   `cascade` scope; see the [amendment](#amendment-2026-11-06).
 5. **No other edge is followed.** `overrides` and `replaces` are replacement edges: following them would bring the
    replaced original back into force. `rejects` points at an anti-pattern (ADR-0052). `delegates_to` is a runtime
    handoff. `vocabulary`, `applies`, `reconciles_tension`, the tension edges and the derived `implemented_by` are
@@ -212,6 +213,13 @@ this record stands.
     so resolving T returns E when E is active. There is no automatic read-time pull: an enhancer does not come into
     force because its target does, nor a target because its enhancer does. The `EffectiveArtifactReason` value for
     the pull that the D2.2 follow-up asked for is not needed.
+- **R3. `includeDeactivated` clears only within the cascade's scope.** A select with `includeDeactivated` clears
+  only the deny entries its walk passes through within the `cascade` scope: what it reaches of a kind in scope, each
+  lineage ancestor it passes through whose kind is in scope, and the target. A denied artifact outside the scope is
+  treated as without `includeDeactivated`: the walk stops there and reports it in `skippedDeactivated`, with what lies
+  only behind it in `unreachedBehindDeactivated`, and its deny entry stays. A denied ancestor of a kind outside the
+  scope stops the lineage the same way. This reverses the reading of 2026-11-06 (squad finding F4) that cleared the
+  out-of-scope deny entries the walk went through.
 - **R2. A cascading deactivate follows the lineage.** The target's own walk passes through every
   `specializes_from` ancestor exactly as a select's walk does (D2.4), so selecting a profile with a cascade and then
   deactivating it with a cascade round-trips: what the select reached through an ancestor leaves `selected` again.

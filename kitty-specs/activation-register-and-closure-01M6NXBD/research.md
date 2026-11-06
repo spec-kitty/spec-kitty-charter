@@ -195,7 +195,7 @@ re-review of the fixes. Folded on lane-m (369063b..ac1faa9 and the re-review fol
 | F1 | A stale deny entry on a now-required artifact made every later write `409` | changed: per-artifact and preset writes judge the floor only on the deny entries they add; create and replace judge the whole document | `DocumentRules.checkWrite`; DIV-204 |
 | F2 | A floor artifact became a cascading-deactivate candidate | changed: the floor is never a candidate | `CascadeRules` |
 | F3 | A template or asset predecessor answered `500`; `referencedBy` could name an ancestor or an inactive intermediate | changed: back-walk to the nearest nameable or active artifact, code-point tie-break | `Predecessors` |
-| F4 | `includeDeactivated` left out-of-scope deny entries it walked through | changed: it clears what the walk went through, whatever the scope; an out-of-scope artifact is cleared, not selected. **Fixers' reading of the contract text, not stated in FR-013 or ADR-0059: operator to confirm** | contract `SelectionRequest`; DIV-207 |
+| F4 | `includeDeactivated` left out-of-scope deny entries it walked through | changed, then reversed by operator ruling R3 (2026-11-06): it clears only the deny entries the walk passes through within the `cascade` scope; a denied artifact outside the scope stops the walk and keeps its entry | contract `SelectionRequest`; `CascadeRules.planSelect`; ADR-0059 amendment |
 | F5 | The write-time `enhances` pull ignored `activatedKinds` | changed: bounded by `activatedKinds` (absent means none). Superseded by operator ruling R4 (2026-11-06): there is no write-time pull; `enhances` is a cascade relation | `CascadeRules.CASCADE_RELATIONS`; DIV-207 |
 | F6 | A bad body answered `422` before `428`/`404`/`412` | changed: body faults deferred to the `422` step on the five writes; `415` still comes first | `DeferredBody` |
 | F7 | `400`, `409` and the stale-preset `422` undeclared | changed: `400` on five operations, `409` on deactivate only, the `422` documented | contract paths |
@@ -218,8 +218,9 @@ re-review of the fixes. Folded on lane-m (369063b..ac1faa9 and the re-review fol
    and WP14.
 5. Ruled 2026-11-06 (R2): a deactivate's own cascade follows the lineage as a select's does (F9), so a cascading
    select and a cascading deactivate of the same profile round-trip. FR-015 and ADR-0059 carry the amendment.
-6. `includeDeactivated` clears out-of-scope deny entries it walks through (F4), and the write-time pull is bounded by
-   `activatedKinds` (F5). Both follow the contract text; neither is spelled out in ADR-0059. Awaiting confirmation.
+6. Ruled 2026-11-06: `includeDeactivated` clears only the deny entries the walk passes through within the `cascade`
+   scope (R3, reversing F4), and there is no write-time `enhances` pull to bound (R4, superseding F5). FR-013 and
+   ADR-0059 carry the amendment.
 7. A document a pack upgrade made stale is a dead end for the per-artifact writes. While it stores an id the closure
    no longer holds, every per-artifact and preset write is `422` (every id of the computed document is judged), and
    an unselect or re-activate of that id is `404 artifact_not_found` (`requireHeld` checks the path id against the

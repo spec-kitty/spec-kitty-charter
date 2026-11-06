@@ -665,8 +665,9 @@
     passed through is neither put in force nor reported, and the cascade scope does not filter one.
     A denied ancestor stops
     the pass-through there and is reported in skippedDeactivated; what lies only behind it is in
-    unreachedBehindDeactivated. With includeDeactivated a denied ancestor is passed through and its
-    deny entry cleared, never selected. requiredBy never names an ancestor passed through; it leads
+    unreachedBehindDeactivated. With includeDeactivated a denied ancestor whose kind is in the
+    cascade scope is passed through and its deny entry cleared, never selected; one outside the scope
+    stops the pass-through as without includeDeactivated. requiredBy never names an ancestor passed through; it leads
     back to the descendant the ancestor was passed from. A cascading deactivate's own walk passes
     through the lineage as a select's does, so a cascading select and a cascading deactivate of
     the same profile round-trip (operator ruling of 2026-11-06).
