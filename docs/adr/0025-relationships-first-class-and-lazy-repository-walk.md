@@ -2,8 +2,8 @@
 title: "ADR-0025: Relationships are first-class domain value objects, walked lazily through per-kind repositories"
 description: Why relationships are first-class domain value objects over a behavior-carrying RelationType, identified by the component pair, and walked on demand through per-kind repositories.
 doc_status: active
-updated: 2026-10-27T00:00:00Z
-decision_status: Accepted; superseded in part by ADR-0028 (2026-10-26) and ADR-0036 (2026-10-27)
+updated: 2026-11-05T00:00:00Z
+decision_status: 'Accepted, with Amendment 2026-11-05 (ADR-0063); superseded in part by ADR-0028 (2026-10-26) and ADR-0036 (2026-10-27)'
 decision_date: '2026-10-25'
 type: ADR
 kind: ADR
@@ -34,6 +34,18 @@ Decision 1 (identity) is revised by [ADR-0027](/adr/0027-drg-relationship-identi
 Superseded in part by [ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/) (2026-10-26): `impacts` is an artifact's per-value list, not a field of a `Relationship`; tension is the `tension` relationship.
 
 Superseded in part by [ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/) (accepted 2026-10-27): decision 5's "record equality is the round-trip fidelity assertion" no longer holds. Round-trip fidelity is equality of meaning between the source file and the written file, which `DrgEdge` record equality alone cannot show.
+
+### Amendment 2026-11-05
+
+The operator ruled on [#240](https://github.com/spec-kitty/spec-kitty-charter/issues/240) on 2026-11-05
+that an edge is authored only in a pack's graph documents ([ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/)). The original text stands, and
+each changed point is annotated:
+
+- decision 1: `when` is carried by the graph-document edge, not by `ArtifactEdges` ([ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/) decisions 8 and 9);
+- decision 3: a component no longer owns its relationships; it exposes derived relations only, and
+  `relationships()` becomes `derivedRelationships()` ([ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/) decision 7);
+- decision 4: the graph documents are the only source of a component's relationships ([ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/) decision 1);
+- Neutral: the interim relation mapping is retired ([ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/) decision 8).
 
 ## Context
 
@@ -67,6 +79,8 @@ per-kind repository boundaries of [ADR-0006](/adr/0006-onion-vertical-slices-arc
    [ADR-0027](/adr/0027-drg-relationship-identity-bounded-unidirectional-collapse/) (bounded upstream
    normalization; a revisit trigger when a symmetric relation is minted).
 
+   *Amended 2026-11-05 ([ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/) decisions 8 and 9): `ArtifactEdges` is retired. An authored `when` is carried by the edge in the graph documents, and an org fragment's edge gains `when` as a root shard's edge has.*
+
 2. **`RelationType` is a behavior-carrying enum** (`kernel.domain`): the closed catalogue of the
    CRG relations, each constant holding its `Directionality` (so **directionality is derived from
    the type**, never stored on the relationship) and a `Propagation` functional interface the
@@ -83,6 +97,8 @@ per-kind repository boundaries of [ADR-0006](/adr/0006-onion-vertical-slices-arc
    directed relationship with this component as `to` is **not** returned — a walk does not climb
    back up a `requires`.
 
+   *Amended 2026-11-05 ([ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/) decision 7): a component does not own authored relationships. `relationships()` becomes `derivedRelationships()`, which exposes only the relations derived from runtime data (a guard's `IMPLEMENTED_BY` today). Authored relationships live in the pack's graph documents.*
+
 4. **Traversal is lazy and repository-backed; the whole graph is never materialized.** A per-kind
    repository `load` returns the domain object **with its `relationships()` already populated** (the
    storage adapter assembles them from the graph shard). Following a relationship resolves its `to`
@@ -92,6 +108,8 @@ per-kind repository boundaries of [ADR-0006](/adr/0006-onion-vertical-slices-arc
    from the **application layer**, where the ports exist, with a visited-URN cycle guard. The kernel
    stays pure (ADR-0006): it defines `Relationship`, `RelationType` and the `GraphWalker` type; it
    does not fetch.
+
+   *Amended 2026-11-05 ([ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/) decision 1): the pack's graph documents are the only source of a relationship; no artifact field adds one. The walk itself is not changed by that record, and retiring `GraphWalk` is left to its own change.*
 
 5. **`DrgEdge` is demoted to a storage DSO** (`packs.infra.storage`): a flat, relation-token-based
    record whose record equality is the round-trip fidelity assertion (the DSO pattern of
@@ -132,6 +150,7 @@ per-kind repository boundaries of [ADR-0006](/adr/0006-onion-vertical-slices-arc
   provisional pending confirmation against core's extractor
   ([#167](https://github.com/spec-kitty/spec-kitty-charter/issues/167)); it now lives in the
   `ArtifactEdges` minting and the `Relationship` ↔ `DrgEdge` mapper.
+  *Amended 2026-11-05: decided by [ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/) ([#240](https://github.com/spec-kitty/spec-kitty-charter/issues/240)), decision 8. The mapping and `ArtifactEdges` are retired; the relation is the one the graph document holds.*
 
 ## Alternatives considered
 

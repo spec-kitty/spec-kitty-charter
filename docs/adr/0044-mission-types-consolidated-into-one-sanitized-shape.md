@@ -2,8 +2,8 @@
 title: "ADR-0044: Mission types consolidated into one sanitized shape"
 description: One mission-type file per type holds its steps as sub-items, with Markdown prompt and guideline companions; eight file families retired; a missions module.
 doc_status: active
-updated: 2026-11-02T00:00:00Z
-decision_status: Accepted (2026-10-31); decisions 3 to 6 superseded in part by ADR-0050 (2026-11-02)
+updated: 2026-11-05T00:00:00Z
+decision_status: Accepted (2026-10-31), with Amendment 2026-11-05 (ADR-0063); decisions 3 to 6 superseded in part by ADR-0050 (2026-11-02)
 decision_date: '2026-10-30'
 type: ADR
 kind: ADR
@@ -94,6 +94,17 @@ the named-file check that the amendment above keeps. Decision 7 and the resoluti
   resolution. A path that differs only in case is refused once, by the check, before the pack is assembled. The
   load, the per-file write and validate mode give the one reason.
 
+### Amendment 2026-11-05
+
+The operator ruled on [#240](https://github.com/spec-kitty/spec-kitty-charter/issues/240) on 2026-11-05 that an edge is authored only in a pack's graph documents, which decides
+the edge authority this record left to #189 ([ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/)). The original text stands, and each changed point is
+annotated:
+
+- decision 2: edge authority is ruled; the graph documents keep `action:<type>/<step>` as a step's node;
+- decision 3: a mission type's and a step's `references` are dropped. The type-level references are the graph's
+  `scope` edges, which already equal them, and a step's references are graph edges from its `action` node
+  ([ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/) decision 2, Q2 ruling).
+
 ## Context
 
 Issue #194 asks the whole-pack round trip to cover the mission tier. At `openPacksRef` `5df92a5d` three packs hold it
@@ -160,7 +171,8 @@ The store holds one file per mission type. Its steps are sub-items of two plural
 ([ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/)); its node kind already exists. `mission_step`
 is a domain type, not an artifact kind and not a node kind: it has no file, binding or fragment plural of its own.
 The graph keeps `action:<type>/<step>` as a step's node until edge authority is ruled
-([#189](https://github.com/spec-kitty/spec-kitty-charter/issues/189)). `mission_step_contract` stays a separate
+([#189](https://github.com/spec-kitty/spec-kitty-charter/issues/189)). *Amended 2026-11-05: edge authority is decided by
+[ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/) ([#240](https://github.com/spec-kitty/spec-kitty-charter/issues/240)); edges live only in the graph documents, where `action:<type>/<step>` stays a step's node.* `mission_step_contract` stays a separate
 kind: it holds the structural sub-steps of one mission step and what each delegates to. A step's role and expected
 artifacts live on the mission step only. A mission type is a pack-manifest constituent kind.
 
@@ -244,6 +256,9 @@ not profiles; ADR-0032). `id` is the artifact's id (a directive stem such as `04
 procedures (ADR-0043 decision 2). The type-level references are the glossary's recipe ingredients; until #189 their
 activation meaning is carried by the graph shards' `scope` edges, which equal them. Step-level references are the
 step's action-scoped guidance.
+
+*Amended 2026-11-05 ([ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/) decision 2): a mission type's and a step's `references` are dropped. The type-level
+references are the graph's `scope` edges; a step's guidance is a graph edge from its `action:<type>/<step>` node.*
 
 **Derived fields (S8).** `prompt_path` is `steps/<id>.prompt.md` and `guidelines_path` is `steps/<id>.guidelines.md`:
 whether a step has the field is authored, its value is derived from the step id. The writer writes the derived value,
@@ -399,6 +414,7 @@ not carried; spec-kitty/spec-kitty-open-packs#95 names the qa rationale they hel
   packs no longer serve core's mission tier (epic #186: the rewrite is designed without regard to core).
 - A non-linear step order cannot be expressed.
 - The `action` node and the `mission_step` domain type name the same thing until #189 rules.
+  *Edge authority is decided by [ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/) ([#240](https://github.com/spec-kitty/spec-kitty-charter/issues/240)), which keeps the `action` node, so both names stay.*
 - Pack fingerprints and ETags change once for packs with mission content.
 - `PUT /packs/{packId}/relationships` with a `mission_type:` source now resolves where it was refused 409: an additive
   behavior change with no schema or operation change, recorded in the contract CHANGELOG.

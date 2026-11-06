@@ -2,8 +2,8 @@
 title: "ADR-0050: Mission types and lifecycles as declared state machines"
 description: "A mission type declares a state machine (explicit transitions, guards, emit actions); a lifecycle kind holds the per-work-package lanes; packs enhance or override steps."
 doc_status: active
-updated: 2026-11-03T00:00:00Z
-decision_status: 'Accepted, with Amendment 2026-11-02 (ADR-0053; decision 14 superseded by ADR-0054)'
+updated: 2026-11-05T00:00:00Z
+decision_status: 'Accepted, with Amendment 2026-11-02 (ADR-0053; decision 14 superseded by ADR-0054) and Amendment 2026-11-05 (ADR-0063)'
 decision_date: '2026-11-02'
 type: ADR
 kind: ADR
@@ -53,7 +53,9 @@ Two narrower points of ADR-0044 change too. Decision 3's references gain two nei
 values: a `terms` list of `term:` URNs (ADR-0049) and a `rejects` list of `{type: anti_pattern, id, reason}`
 ([ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/)); like references, both are
 kept verbatim and mint no relationship until [#189](https://github.com/spec-kitty/spec-kitty-charter/issues/189)
-rules on edge authority. Gates and lifecycles are bound through `guard` and `work_package_lifecycle`, not through
+rules on edge authority. *Amended 2026-11-05: edge authority is decided by [ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/) ([#240](https://github.com/spec-kitty/spec-kitty-charter/issues/240)),
+decisions 1 and 12. The `rejects` list is not added: a mission type or step rejects an anti-pattern with a `rejects`
+edge in the graph documents. A `terms` list, if the schema work builds it, mints no edge.* Gates and lifecycles are bound through `guard` and `work_package_lifecycle`, not through
 references. Decision 5's path rule and the `contracts/packs/file-kinds.yaml` rules anchored to `missions/` (the
 prompt and guidelines `files` rules, the README and hidden-file exclusions, the template payload rule) move to
 `mission_types/`, and decision 6 gains retired rules for the old `missions/` layout so a stale copy is refused rather
@@ -84,6 +86,16 @@ this record; the original text stands and each changed point is annotated where 
 - decisions 22 and 23: a step enhancement is an additions artifact plus a CRG `enhances` edge, the mechanism profile
   augmentation uses, not a mechanism of its own ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 22);
 - decisions 26 to 28: the defaults are ruled ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 24).
+
+### Amendment 2026-11-05
+
+The operator ruled on [#240](https://github.com/spec-kitty/spec-kitty-charter/issues/240) on 2026-11-05 that an edge is authored only in a pack's graph documents
+([ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/)). The original text stands, and each changed point is annotated:
+
+- the ADR-0044 decision 3 neighbors named under Status: the `rejects` list is not added; a rejection is a `rejects`
+  edge in the graph documents ([ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/) decision 12);
+- decision 22: a step enhancement's additions are guards and `emit` entries; guidance it adds is a graph edge, not a
+  `references` entry ([ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/) decision 12).
 
 ## Context
 
@@ -284,6 +296,7 @@ up the formal meaning of a term used here.
     mechanism of its own: the CRG's `enhances` relation keeps its field-merge meaning for the other kinds
     (profiles, for example), and a step enhancement is authored as a file (decision 23), not as that relation. A specialist or org pack attaches more to an existing step:
     references (guidance), guards on the step's outgoing transitions, and `emit` entries on its action points.
+    *Amended 2026-11-05 ([ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/) decision 12): an enhancement holds no `references`; guidance it adds to a step is an edge in the enhancing pack's graph documents.*
     An enhancement only adds. It cannot remove or reorder steps, change their transitions, or remove a guard.
     *Amended 2026-11-02 ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 22): the enhancement is an artifact in the enhancing pack that holds only the additions, joined to the target step by a CRG `enhances` edge, the same mechanism profile augmentation uses. It is no longer a mechanism of its own, so the sentence above that separates it from the relation no longer holds; the add-only rule stands.*
 23. **How an enhancement is authored** (proposed): a step-enhancement file in the enhancing pack,
@@ -339,7 +352,9 @@ up the formal meaning of a term used here.
 Nothing below is applied in this record; each lands in a later contract-family PR.
 
 - **Pack schemas** (#114): `mission-type.schema.json` gains `transitions`, `on_enter`, `on_exit`,
-  `work_package_lifecycle`, `terms`, `rejects` and the requirement kinds; new `lifecycle.schema.json`,
+  `work_package_lifecycle`, `terms`, `rejects` (*not added:
+  [ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/) decision 12*) and the requirement
+  kinds; new `lifecycle.schema.json`,
   `gate.schema.json` and `step-enhancement.schema.json`. `mission-step-contract.schema.json` loses `gates` and
   `$defs.GateBinding` (whose `on_transition` is a lane string, a second meaning of the name this record gives an
   action point); an existing binding migrates to a `guard` on the matching lifecycle transition. The vocabulary
