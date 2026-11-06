@@ -3,7 +3,7 @@ title: "ADR-0053: Operator rulings on the pack-ecosystem open questions"
 description: "The operator's rulings of 2026-11-02 on every open question of ADR-0048 to ADR-0052, and the decisions of those records that the rulings amend."
 doc_status: active
 updated: 2026-11-03T00:00:00Z
-decision_status: Accepted
+decision_status: Accepted; layer-override grain of d6 settled by ADR-0059 (2026-11-04)
 decision_date: '2026-11-02'
 type: ADR
 kind: ADR
@@ -38,6 +38,9 @@ audience:
 Each of the five records carries an **Amendment 2026-11-02** under its Status that points here, and its changed
 points are annotated where they stand. The guard model that replaces ADR-0050's proposed `gate` kind is its own
 record, [ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/).
+
+*2026-11-05: [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) settles the grain of d6's
+layer override (decision 3) and the edges the cascade follows (decision 2).*
 
 ## Context
 
@@ -76,6 +79,8 @@ The operator also replaced ADR-0050's `gate` kind with asset-backed guards (ADR-
 6. **A compose is one `depends_on` closure at one level** (question 6). An id is unique within it, except where an
    explicit `overrides` replaces it. Across levels the layer merge applies (project over org over built-in).
    *Amended 2026-11-03 (operator, #145 pre-PR review): the closure is rooted at one level's configured packs and includes dependencies at levels nearer built-in. Today every configured pack is a root; roots from the activation set come with [#360](https://github.com/spec-kitty/spec-kitty-charter/issues/360). Pack ids and pack names are unique across a compose without exception. An artifact id is unique within a level except where an `overrides` edge settles it; across levels the same id is a legitimate layer override.*
+   *2026-11-05: the layer override takes the place of the whole artifact; fields it does not declare are not
+   inherited ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) decision 3).*
 7. **A reference that crosses a pack boundary is qualified with the target pack's name** (question 6, operator
    addition), written `<pack-name>::<urn>`, for example `foundation::directive:DIRECTIVE_001`.
    - The prefix is required on every reference to an artifact of another pack. A reference inside one pack stays
