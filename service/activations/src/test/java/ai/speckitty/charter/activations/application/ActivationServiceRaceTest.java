@@ -1,17 +1,24 @@
 package ai.speckitty.charter.activations.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.activations.domain.ActivationDocument;
 import ai.speckitty.charter.activations.domain.ActivationId;
+import ai.speckitty.charter.activations.domain.ActivationRepository;
 import ai.speckitty.charter.activations.domain.ClosureSnapshots;
+import ai.speckitty.charter.activations.domain.Revision;
+import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.activations.infra.storage.FileActivationRepository;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -133,6 +140,95 @@ class ActivationServiceRaceTest {
 
             assertThat(outcomes).as("run %d", run).containsExactlyInAnyOrder(1, 0);
             assertThat(created).as("run %d", run).containsExactly(true);
+        }
+    }
+
+    /** A register in which another deleter removes the document between this deleter's read and its delete. */
+    private static final class LosingDeleteRegister implements ActivationRepository {
+
+        private final ActivationRepository real;
+
+        LosingDeleteRegister(ActivationRepository real) {
+            this.real = real;
+        }
+
+        @Override
+        public Optional<StoredActivation> find(ActivationId id) {
+            return real.find(id);
+        }
+
+        @Override
+        public Optional<StoredActivation> create(ActivationId id, ActivationDocument document) {
+            return real.create(id, document);
+        }
+
+        @Override
+        public CasResult replace(ActivationId id, Optional<Revision> expected, ActivationDocument document) {
+            return real.replace(id, expected, document);
+        }
+
+        @Override
+        public DeleteResult delete(ActivationId id, Optional<Revision> expected) {
+            real.delete(id, Optional.empty());
+            return real.delete(id, expected);
+        }
+    }
+
+    private ActivationService serviceWhereAnotherDeleterWinsFirst() {
+        FakeAvailablePacks packs = new FakeAvailablePacks(
+                ClosureSnapshots.snapshot().held(ArtifactKind.DIRECTIVE, "D0").build());
+        return new ActivationService(
+                new LosingDeleteRegister(new FileActivationRepository(root)), packs, new ActivationIdMint());
+    }
+
+    @Test
+    void aDeleteWithIfMatchWhoseDocumentAnotherDeleterRemovedFirstIs412NotNotFound() {
+        ActivationService service = serviceWhereAnotherDeleterWinsFirst();
+        ActivationId id = new ActivationId("vanishes");
+        String revision = "\""
+                + service.put(id, selecting(0), null, null).stored().revision().token() + "\"";
+
+        assertThatThrownBy(() -> service.delete(id, revision))
+                .isInstanceOfSatisfying(
+                        PreconditionException.class,
+                        stale -> assertThat(stale.kind()).isEqualTo(PreconditionException.Kind.STALE));
+    }
+
+    @Test
+    void aDeleteWithoutIfMatchWhoseDocumentAnotherDeleterRemovedFirstIsNotFound() {
+        ActivationService service = serviceWhereAnotherDeleterWinsFirst();
+        ActivationId id = new ActivationId("vanishes-too");
+        service.put(id, selecting(0), null, null);
+
+        assertThatThrownBy(() -> service.delete(id, null))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_NOT_FOUND));
+    }
+
+    @Test
+    void ofEightDeletersHoldingOneRevisionExactlyOneDeletesAndSevenAre412() throws Exception {
+        ActivationService service = service();
+        for (int run = 0; run < RUNS; run++) {
+            ActivationId id = new ActivationId("delete-race-" + run);
+            String revision = "\""
+                    + service.put(id, selecting(0), null, null)
+                            .stored()
+                            .revision()
+                            .token() + "\"";
+            List<Callable<ActivationService.Written>> deleters = new ArrayList<>();
+            for (int w = 1; w <= WRITERS; w++) {
+                deleters.add(() -> {
+                    service.delete(id, revision);
+                    return null;
+                });
+            }
+
+            List<Integer> outcomes = race(deleters);
+
+            assertThat(outcomes.stream().mapToInt(Integer::intValue).sum())
+                    .as("run %d: one delete, seven 412", run)
+                    .isEqualTo(1);
         }
     }
 }

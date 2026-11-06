@@ -247,6 +247,31 @@ public final class ActivationDocument {
     }
 
     /**
+     * The document with its allow and deny lists replaced, each id as given; used to store every spelling of an id as
+     * the declared one ({@link DocumentRules#normalize}).
+     *
+     * @param newSelected the allow lists
+     * @param newDeactivated the deny lists
+     * @return the new document
+     */
+    public ActivationDocument withLists(
+            Map<ArtifactKind, ? extends Collection<String>> newSelected,
+            Map<ArtifactKind, ? extends Collection<String>> newDeactivated) {
+        Builder builder = toBuilder();
+        builder.selected.clear();
+        builder.deactivated.clear();
+        newSelected.forEach((kind, ids) -> builder.selected.put(kind, frozenToTree(ids)));
+        newDeactivated.forEach((kind, ids) -> builder.deactivated.put(kind, frozenToTree(ids)));
+        return new ActivationDocument(builder);
+    }
+
+    private static SortedSet<String> frozenToTree(Collection<String> ids) {
+        TreeSet<String> sorted = new TreeSet<>(CODE_POINT_ORDER);
+        sorted.addAll(ids);
+        return sorted;
+    }
+
+    /**
      * The canonical form as a value tree for {@link Jcs}: members in the schema's order, absent members left out,
      * {@code []} kept, and an empty {@code selected} or {@code deactivated} object left out.
      *

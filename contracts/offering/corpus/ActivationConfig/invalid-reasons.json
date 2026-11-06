@@ -47,5 +47,8 @@
   ],
   "16-context-activations-left-out.json": [
     { "keyword": "additionalProperties", "at": "", "member": "contextActivations" }
+  ],
+  "17-pack-version-blank.json": [
+    { "keyword": "pattern", "at": "/packs/0/version" }
   ]
 }

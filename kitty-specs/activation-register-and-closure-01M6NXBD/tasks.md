@@ -548,7 +548,7 @@ These steps are the orchestrator's; no WP owns them:
 4. **History replay.** Build PR A by replaying WP01–WP10, WP16 and WP17's commits onto `main`. Build PR B by stacking WP11–WP15's
    commits on PR A (see "the cut").
 5. **Operator approval.** Each PR opens only with the operator's approval. Flag the open review items in each PR
-   description: the closure-scoped floor; refusing a differing pin; ADR-0059 open questions 1 and 4; and the
+   description: the closure-scoped floor; refusing a differing pin; and the
    preset "listed key" rule.
 
 ## Parallelization

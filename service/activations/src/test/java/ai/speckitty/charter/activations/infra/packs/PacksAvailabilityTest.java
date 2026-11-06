@@ -171,6 +171,20 @@ class PacksAvailabilityTest {
     }
 
     @Test
+    void aDenyEntryOnAMustHaveItemOfTheChildsPresetIsRefusedNamingTheChild() {
+        closures.answers(Optional.empty(), view());
+        ClosureSnapshot snapshot = adapter.snapshot(Optional.empty());
+        ActivationDocument.Built built = ActivationDocument.builder()
+                .deactivated(ArtifactKind.DIRECTIVE, List.of("D2"))
+                .build();
+
+        assertThat(DocumentRules.check(built, snapshot)).hasValueSatisfying(refusal -> {
+            assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_REQUIRED);
+            assertThat(refusal.requiredBy()).extracting(by -> by.packId()).containsExactly("alpha");
+        });
+    }
+
+    @Test
     void thePresetsAreCopiedWithTheirMustHaveItemsAmongTheMembers() {
         closures.answers(Optional.empty(), view());
 
