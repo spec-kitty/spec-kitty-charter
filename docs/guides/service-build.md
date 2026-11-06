@@ -442,6 +442,8 @@ needs a GraalVM 25 with `native-image` on `JAVA_HOME`. `verifyAll` never needs o
 with openapi-generator's `java` generator and `okhttp-gson` library at the version pinned in `gradle/libs.versions.toml`.
 Its build is the `charter.client-java` convention plugin.
 
+The nightly SonarCloud report does not cover `client-java`: `sonar.yml` names the service modules only.
+
 - **Input:** the single-file bundle `:contracts:bundleContract` writes, through the `contractBundle` variant, never the
   split files under `contracts/charter/`. The client matches what is published, byte for byte.
 - **Tolerance:** a client generated today must read what a later 0.x minor adds. `TolerantClientNormalizer` reads every
