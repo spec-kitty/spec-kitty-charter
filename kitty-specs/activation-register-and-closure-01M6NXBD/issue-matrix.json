@@ -109,7 +109,7 @@
       "wp": "WP03"
     },
     "#360": {
-      "evidence_ref": "Closure rooted at the activation's packs (WP02/WP09)",
+      "evidence_ref": "GET /activations/{id}/packs closure read; former @WIP #360 composition scenario re-pointed and passing",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -117,8 +117,8 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "in-mission",
-      "wp": "WP09"
+      "verdict": "fixed",
+      "wp": "WP08"
     },
     "#368": {
       "evidence_ref": "<auto-classified: no action required>",
