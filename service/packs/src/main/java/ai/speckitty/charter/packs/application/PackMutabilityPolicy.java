@@ -150,7 +150,8 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
      * @param operation the write about to be performed
      * @param target the artifact or relationship endpoint the write concerns
      * @throws CharterRefusal {@link RefusalCode#GOVERNANCE_POLICY_VIOLATION} (409) when the target's level does not
-     *     permit the operation; {@code PACK_UNREADABLE} or a composition refusal when the closure cannot be judged
+     *     permit the operation; {@code PACK_NOT_FOUND} when no pack is configured as the pack written;
+     *     {@code PACK_UNREADABLE} or a composition refusal when the closure cannot be judged
      */
     @Override
     public void authorize(Pack pack, Operation operation, Urn target) {
@@ -169,7 +170,8 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
 
     /**
      * The configured pack a write addresses: the one configured as the pack's identifier, else the one whose descriptor
-     * declares the pack's {@code pack_id} (a pack may be addressed by either).
+     * declares the pack's {@code pack_id} (a pack may be addressed by either). A pack that is neither is refused
+     * {@code pack_not_found}, as on every other read.
      */
     private static PackIdentifier rootOf(
             PackCatalogRepository catalog, PackDescriptorRepository descriptors, Pack pack) {
@@ -183,7 +185,7 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
                 .filter(candidate -> declares(descriptors, candidate, packId))
                 .findFirst()
                 .orElseThrow(() -> new CharterRefusal(
-                        RefusalCode.PACK_UNREADABLE, "pack " + pack.id().value() + " is not a configured pack"));
+                        RefusalCode.PACK_NOT_FOUND, "Pack " + pack.id().value() + " was not found."));
     }
 
     /** Whether the configured pack's descriptor declares {@code packId}; an unreadable one declares nothing. */

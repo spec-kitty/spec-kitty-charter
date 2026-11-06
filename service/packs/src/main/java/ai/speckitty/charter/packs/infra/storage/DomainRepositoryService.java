@@ -350,8 +350,9 @@ public final class DomainRepositoryService
 
     /**
      * The policy the pack's descriptor names (ADR-0062), read through the same resolution as the compose's facts, so
-     * the offering and every closure judge the file. A pack is refused {@code pack_unreadable} when its descriptor
-     * cannot be read, or names a policy file that is missing or invalid.
+     * the offering and every closure judge the file. A pack no pack is configured as is refused {@code pack_not_found};
+     * a pack is refused {@code pack_unreadable} when its descriptor cannot be read, or names a policy file that is
+     * missing or invalid.
      */
     @Override
     public MutabilityPolicySource policyOf(PackIdentifier pack) {

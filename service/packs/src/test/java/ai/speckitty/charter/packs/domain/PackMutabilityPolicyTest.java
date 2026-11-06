@@ -283,6 +283,26 @@ class PackMutabilityPolicyTest {
     }
 
     @Test
+    void aWriteIntoAPackNoPackIsConfiguredAsIsRefusedPackNotFoundLikeTheOtherReads() {
+        WritePolicyGate gate = wiredGate(() -> "sha256:same", new ArrayList<>());
+        PackIdentifier ghost = new PackIdentifier("ghost");
+        Pack unconfigured = Pack.builder()
+                .id(ghost)
+                .descriptor(new PackDescriptor(
+                        "GHOST", "1.0.0", Optional.empty(), "ghost", Optional.empty(), Optional.empty()))
+                .build();
+
+        assertThatThrownBy(() -> gate.authorize(unconfigured, Operation.REGISTER, new Urn(NodeKind.DIRECTIVE, "Y")))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
+                    assertThat(refusal.getMessage()).isEqualTo("Pack ghost was not found.");
+                });
+        assertThatCode(() -> gate.authorize(packWithDescriptor(), Operation.REGISTER, new Urn(NodeKind.DIRECTIVE, "Y")))
+                .as("positive control: the configured pack on the same fixture")
+                .doesNotThrowAnyException();
+    }
+
+    @Test
     void aPackChangeWhileTheGateReadsTheClosureAnswersStaleInputNeverAMixedAnswer() {
         AtomicInteger digests = new AtomicInteger();
         WritePolicyGate gate =
