@@ -176,7 +176,9 @@ public class ActivationService {
      * @return the closure, or {@code NotModified} when the header matches its entity tag
      * @throws CharterRefusal with {@code activation_not_found} when nothing is stored under the id, with
      *     {@code pack_unreadable} when a pack the document names is no longer configured, or with the refusal of the
-     *     compose
+     *     compose. The unconfigured pack is a 500 {@code pack_unreadable}, not the 404 {@code pack_not_found} a
+     *     request naming an unknown pack gets: the request names only the activation, and the pack is named by the
+     *     stored document, which is server-side state the configuration change made stale.
      */
     public Read<ClosureSnapshot> packs(ActivationId id, @Nullable String ifNoneMatch) {
         StoredActivation stored = found(id);
