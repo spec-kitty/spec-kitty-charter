@@ -240,9 +240,8 @@ public class ActivationWrites {
      *     {@code /artifactId}, when the spelling matches two declared ids that differ only by case
      */
     static ArtifactRef declared(ClosureSnapshot snapshot, ArtifactRef target, Set<String> stored) {
-        Set<String> held = target.kind() == ArtifactKind.MISSION_TYPE
-                ? snapshot.missionTypes()
-                : snapshot.held(target.kind());
+        Set<String> held =
+                target.kind() == ArtifactKind.MISSION_TYPE ? snapshot.missionTypes() : snapshot.held(target.kind());
         ArtifactSpellings.Resolution resolution = ArtifactSpellings.resolve(target.kind(), target.id(), held);
         if (resolution instanceof ArtifactSpellings.Resolution.Unknown) {
             resolution = ArtifactSpellings.resolve(target.kind(), target.id(), stored);
