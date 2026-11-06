@@ -108,6 +108,18 @@
       "verdict": "not-applicable",
       "wp": null
     },
+    "#390": {
+      "evidence_ref": "Context: PR reference for a merge-collision note",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
     "#398": {
       "evidence_ref": "Cited for context: #374 is a closed input analysis; #398/#399 are the base PRs this mission stacks on",
       "fr": null,
