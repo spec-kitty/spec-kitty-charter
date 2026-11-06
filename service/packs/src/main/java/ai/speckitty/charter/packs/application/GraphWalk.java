@@ -26,8 +26,9 @@ import java.util.Set;
  *
  * <p><strong>It does not walk authored edges.</strong> Since ADR-0064 a relationship is authored only in a pack's graph
  * documents, read through {@link ai.speckitty.charter.packs.domain.PackEdgeRepository}; the derived relationships it
- * follows are a guard's {@code implemented_by} alone. No read is wired through it, and a caller wired to it walks
- * almost nothing: retire it or feed it from the edge port first (#397).
+ * follows are a guard's {@code implemented_by} alone. Over a stored artifact it walks almost nothing. The activation
+ * cascade ({@link Reachability}) walks it over an {@link EdgeIndex}, whose nodes answer the closure's graph-document
+ * edges as their relationships; any other caller must do the same, or wait for #397 to retire or rebase the walk.
  */
 public final class GraphWalk {
 
@@ -65,7 +66,7 @@ public final class GraphWalk {
      * none, and is refused as the compose refuses it when it names a pack outside the writer's {@code depends_on}
      * closure.
      *
-     * <p>Reserved for the effective-graph reads: no read of the service constructs a walk across packs yet.
+     * <p>The activation cascade ({@link Reachability}) walks across a closure's packs through an {@link EdgeIndex}.
      *
      * @param resolvers the compose, resolved once for the read the walk serves
      */

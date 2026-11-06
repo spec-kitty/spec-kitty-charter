@@ -1,0 +1,267 @@
+schema_version: 1
+mission_id: 01M6NXBD9RVJS9WD7KYM31W5GG
+mission_slug: activation-register-and-closure-01M6NXBD
+mission_number: 18
+friendly_name: Activation register and activated-pack closure
+mission_type: software-dev
+target_branch: issue-360-activated-closure
+created_at: '2026-11-06T03:15:13.520061+00:00'
+created_by:
+  kind: runtime
+  id: spec-kitty-generator
+  display: Spec Kitty Generator
+provenance:
+  kind: runtime_post_completion
+  invoked_at: '2026-11-06T03:15:13.520061+00:00'
+  policy_resolved_from:
+    enabled: <default>
+    timing: <default>
+    failure_policy: <default>
+    write_record: <default>
+    generate_proposals: <default>
+    apply_proposals: <default>
+    permissions.write_record: <default>
+    permissions.inspect_mission_artifacts: <default>
+    permissions.propose_glossary_changes: <default>
+    permissions.propose_drg_changes: <default>
+    permissions.propose_doctrine_changes: <default>
+    permissions.apply_low_risk_changes: <default>
+    permissions.apply_structural_changes: <default>
+    precedence: <default>
+    generator: <default>
+policy_source:
+  enabled: <default>
+  timing: <default>
+  failure_policy: <default>
+  write_record: <default>
+  generate_proposals: <default>
+  apply_proposals: <default>
+  permissions.write_record: <default>
+  permissions.inspect_mission_artifacts: <default>
+  permissions.propose_glossary_changes: <default>
+  permissions.propose_drg_changes: <default>
+  permissions.propose_doctrine_changes: <default>
+  permissions.apply_low_risk_changes: <default>
+  permissions.apply_structural_changes: <default>
+  precedence: <default>
+  generator: <default>
+findings_status: has_findings
+helped:
+- id: h-001
+  category: implementation
+  summary: WP04 completed without rejection cycles
+  evidence_refs:
+  - e-022
+- id: h-002
+  category: implementation
+  summary: WP05 completed without rejection cycles
+  evidence_refs:
+  - e-022
+- id: h-003
+  category: implementation
+  summary: WP07 completed without rejection cycles
+  evidence_refs:
+  - e-022
+- id: h-004
+  category: implementation
+  summary: WP08 completed without rejection cycles
+  evidence_refs:
+  - e-022
+- id: h-005
+  category: implementation
+  summary: WP09 completed without rejection cycles
+  evidence_refs:
+  - e-022
+- id: h-006
+  category: implementation
+  summary: WP10 completed without rejection cycles
+  evidence_refs:
+  - e-022
+- id: h-007
+  category: implementation
+  summary: WP15 completed without rejection cycles
+  evidence_refs:
+  - e-022
+- id: h-008
+  category: implementation
+  summary: WP16 completed without rejection cycles
+  evidence_refs:
+  - e-022
+- id: h-009
+  category: implementation
+  summary: WP17 completed without rejection cycles
+  evidence_refs:
+  - e-022
+not_helpful:
+- id: n-010
+  category: doc
+  summary: analysis-report.md records 2 finding(s)
+  evidence_refs:
+  - e-032
+  details: The analysis-report.md artifact for this mission records 2 finding(s) in its structured frontmatter. Review
+    them to understand documented issues and decisions.
+- id: n-008
+  category: process
+  summary: WP14 had 1 lane bounce(s) before approval
+  evidence_refs:
+  - e-030
+  details: WP WP14 moved backward across workflow lanes 1 time(s) outside the documented reviewer-feedback flow.
+- id: n-009
+  category: process
+  summary: WP14 required 1 --force override(s) during workflow
+  evidence_refs:
+  - e-031
+  details: WP WP14 required 1 operator-driven --force lane transition(s). Force overrides typically indicate the runtime
+    guard failed or the operator routed around it; investigate the underlying cause.
+- id: n-001
+  category: review_loop
+  summary: WP01 required 1 rejection cycle(s) before approval
+  evidence_refs:
+  - e-023
+  details: WP WP01 was sent back to an earlier lane with documented review feedback 1 time(s).
+- id: n-002
+  category: review_loop
+  summary: WP02 required 2 rejection cycle(s) before approval
+  evidence_refs:
+  - e-024
+  details: WP WP02 was sent back to an earlier lane with documented review feedback 2 time(s).
+- id: n-003
+  category: review_loop
+  summary: WP03 required 1 rejection cycle(s) before approval
+  evidence_refs:
+  - e-025
+  details: WP WP03 was sent back to an earlier lane with documented review feedback 1 time(s).
+- id: n-004
+  category: review_loop
+  summary: WP06 required 1 rejection cycle(s) before approval
+  evidence_refs:
+  - e-026
+  details: WP WP06 was sent back to an earlier lane with documented review feedback 1 time(s).
+- id: n-005
+  category: review_loop
+  summary: WP11 required 1 rejection cycle(s) before approval
+  evidence_refs:
+  - e-027
+  details: WP WP11 was sent back to an earlier lane with documented review feedback 1 time(s).
+- id: n-006
+  category: review_loop
+  summary: WP12 required 1 rejection cycle(s) before approval
+  evidence_refs:
+  - e-028
+  details: WP WP12 was sent back to an earlier lane with documented review feedback 1 time(s).
+- id: n-007
+  category: review_loop
+  summary: WP13 required 1 rejection cycle(s) before approval
+  evidence_refs:
+  - e-029
+  details: WP WP13 was sent back to an earlier lane with documented review feedback 1 time(s).
+gaps: []
+proposals: []
+evidence_refs:
+- id: e-001
+  kind: file
+  path: kitty-specs/activation-register-and-closure-01M6NXBD/meta.json
+- id: e-002
+  kind: file
+  path: kitty-specs/activation-register-and-closure-01M6NXBD/spec.md
+- id: e-003
+  kind: file
+  path: kitty-specs/activation-register-and-closure-01M6NXBD/plan.md
+- id: e-004
+  kind: file
+  path: kitty-specs/activation-register-and-closure-01M6NXBD/tasks.md
+- id: e-005
+  kind: file
+  path: kitty-specs/activation-register-and-closure-01M6NXBD/tasks/WP01-shared-transport-plumbing.md
+- id: e-006
+  kind: file
+  path: kitty-specs/activation-register-and-closure-01M6NXBD/tasks/WP02-packs-rooted-compose.md
+- id: e-007
+  kind: file
+  path: kitty-specs/activation-register-and-closure-01M6NXBD/tasks/WP03-packs-mutability-policy-file.md
+- id: e-008
+  kind: file
+  path: kitty-specs/activation-register-and-closure-01M6NXBD/tasks/WP04-packs-closure-queries.md
+- id: e-009
+  kind: file
+  path: kitty-specs/activation-register-and-closure-01M6NXBD/tasks/WP05-activations-module-and-architecture.md
+- id: e-010
+  kind: file
+  path: kitty-specs/activation-register-and-closure-01M6NXBD/tasks/WP06-activation-document-domain.md
+- id: e-011
+  kind: file
+  path: kitty-specs/activation-register-and-closure-01M6NXBD/tasks/WP07-activation-storage-adapters.md
+- id: e-012
+  kind: file
+  path: kitty-specs/activation-register-and-closure-01M6NXBD/tasks/WP08-contract-a-and-red-scenarios.md
+- id: e-013
+  kind: file
+  path: kitty-specs/activation-register-and-closure-01M6NXBD/tasks/WP09-activation-crud-service-and-closure-read.md
+- id: e-014
+  kind: file
+  path: kitty-specs/activation-register-and-closure-01M6NXBD/tasks/WP10-docs-pr-a.md
+- id: e-015
+  kind: file
+  path: kitty-specs/activation-register-and-closure-01M6NXBD/tasks/WP11-packs-typed-edges-and-reach.md
+- id: e-016
+  kind: file
+  path: kitty-specs/activation-register-and-closure-01M6NXBD/tasks/WP12-cascade-rules-domain.md
+- id: e-017
+  kind: file
+  path: kitty-specs/activation-register-and-closure-01M6NXBD/tasks/WP13-select-and-deactivate-writes.md
+- id: e-018
+  kind: file
+  path: kitty-specs/activation-register-and-closure-01M6NXBD/tasks/WP14-apply-preset.md
+- id: e-019
+  kind: file
+  path: kitty-specs/activation-register-and-closure-01M6NXBD/tasks/WP15-docs-pr-b.md
+- id: e-020
+  kind: file
+  path: kitty-specs/activation-register-and-closure-01M6NXBD/tasks/WP16-shared-web-transport.md
+- id: e-021
+  kind: file
+  path: kitty-specs/activation-register-and-closure-01M6NXBD/tasks/WP17-activation-register-correctness-fixes.md
+- id: e-022
+  kind: file
+  path: kitty-specs/activation-register-and-closure-01M6NXBD/status.events.jsonl
+- id: e-023
+  kind: event_range
+  path: kitty-specs/activation-register-and-closure-01M6NXBD/status.events.jsonl
+  range: 01M6PKSK66R70FR7E5FJ4RDT3D
+- id: e-024
+  kind: event_range
+  path: kitty-specs/activation-register-and-closure-01M6NXBD/status.events.jsonl
+  range: 01M6PKMJTZA0ARVRJNRMGJYST1..01M6PKQ7YRP2RZMMSFHCQF3WYD
+- id: e-025
+  kind: event_range
+  path: kitty-specs/activation-register-and-closure-01M6NXBD/status.events.jsonl
+  range: 01M6PNA2EKQB5185QMTCB52YJP
+- id: e-026
+  kind: event_range
+  path: kitty-specs/activation-register-and-closure-01M6NXBD/status.events.jsonl
+  range: 01M6PPCMESPWE2590TRFNCEGCA
+- id: e-027
+  kind: event_range
+  path: kitty-specs/activation-register-and-closure-01M6NXBD/status.events.jsonl
+  range: 01M6Q0T5CXNT4ZAW0K4R4W760Q
+- id: e-028
+  kind: event_range
+  path: kitty-specs/activation-register-and-closure-01M6NXBD/status.events.jsonl
+  range: 01M6Q26XCA44RZ309X0MEETED4
+- id: e-029
+  kind: event_range
+  path: kitty-specs/activation-register-and-closure-01M6NXBD/status.events.jsonl
+  range: 01M6Q4QJ59PRYNWP269429SF9D
+- id: e-030
+  kind: event_range
+  path: kitty-specs/activation-register-and-closure-01M6NXBD/status.events.jsonl
+  range: 01M6QCV85WC6YJB693HYVFFN7B
+- id: e-031
+  kind: event_range
+  path: kitty-specs/activation-register-and-closure-01M6NXBD/status.events.jsonl
+  range: 01M6QCV85WC6YJB693HYVFFN7B
+- id: e-032
+  kind: file
+  path: kitty-specs/activation-register-and-closure-01M6NXBD/analysis-report.md
+generator_version: '1.0'
+provenance_history: []

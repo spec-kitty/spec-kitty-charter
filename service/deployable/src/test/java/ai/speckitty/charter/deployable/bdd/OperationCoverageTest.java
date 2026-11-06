@@ -29,16 +29,24 @@ class OperationCoverageTest {
     void aReservedOperationsSuccessesAreNotDeclaredForCoverage() {
         // ADR-0020 D8: a reserved operation answers 501 whatever the request holds, so no scenario can exercise its
         // 2xx until it is built; its 501 pin covers it until then.
-        assertThat(CONTRACT.operation("get", "/activations/a-1"))
+        // Once built, its marker goes and its successes are declared like any other operation's.
+        assertThat(CONTRACT.operation("get", "/activations/a-1/skipped"))
                 .hasValueSatisfying(
                         operation -> assertThat(operation.reserved()).isTrue());
         assertThat(CONTRACT.successResponses())
                 .doesNotContain(
+                        new Success("get", "/activations/{activationId}/skipped", 200),
+                        new Success("get", "/activations/{activationId}/artifacts", 200),
+                        new Success("get", "/activations/{activationId}/graph", 200))
+                .contains(
+                        new Success("put", "/activations/{activationId}/presets/{presetId}", 200),
                         new Success("post", "/activations", 201),
                         new Success("get", "/activations/{activationId}", 200),
                         new Success("put", "/activations/{activationId}", 201),
-                        new Success("get", "/activations/{activationId}/skipped", 200))
-                .noneMatch(success -> success.template().startsWith("/activations"));
+                        new Success("put", "/activations/{activationId}/selections/{kind}/{artifactId}", 200),
+                        new Success("delete", "/activations/{activationId}/selections/{kind}/{artifactId}", 200),
+                        new Success("put", "/activations/{activationId}/exclusions/{kind}/{artifactId}", 200),
+                        new Success("delete", "/activations/{activationId}/exclusions/{kind}/{artifactId}", 200));
     }
 
     @Test

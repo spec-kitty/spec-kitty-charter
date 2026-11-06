@@ -230,11 +230,13 @@ such pair. Several later records kept their reference fields "until #189 rules o
 
 - The procedure extraction is a content-writing pass in open-packs. A step that loses its meaning when
   split out is caught in that pull request's review, not by the charter's gates, which check shape only.
-- `GraphWalk` sees only derived relations, a guard's `implemented_by`: it can never follow a
-  graph-document edge. It is constructed only by tests. Retiring it, or feeding it from the edge port,
-  amends ADR-0025's walk decision and is left to its own change
-  ([#397](https://github.com/spec-kitty/spec-kitty-charter/issues/397)); a caller wired to it before then walks
-  nothing. ADR-0059's cascade must not be built on it.
+- `GraphWalk` follows a component's derived relations only. Over a stored artifact that is a guard's
+  `implemented_by` alone, so it can never follow a graph-document edge there. ADR-0059's cascade
+  ([PR #399](https://github.com/spec-kitty/spec-kitty-charter/pull/399)) walks it over its own edge index,
+  whose nodes answer the closure's graph-document edges as their relations; any other caller must do the
+  same. Retiring the walk, or feeding it from the edge port, amends ADR-0025's walk decision and is left to
+  its own change ([#397](https://github.com/spec-kitty/spec-kitty-charter/issues/397)), which must keep the
+  cascade's edges.
 - The pinned packs hold 17 pairs with two edges in the same direction under different relations, which
   ADR-0027's one-edge-per-pair rule does not allow. The references read lists each relation rather than
   hiding one; reconciling the pairs is open-packs curation.

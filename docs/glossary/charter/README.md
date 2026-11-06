@@ -775,7 +775,7 @@ A structured set of charter templates that shape output artifacts and interactio
 
 ## Sibling conflict
 
-Two packs at the same level that both change, or both define, the same artifact id, of any kind; a definer and an enhancer do not conflict. It is refused as `pack_sibling_conflict` unless an overrides edge naming a contesting member settles it (ADR-0048 decision 9, ADR-0053 decision 5). Across levels the same id is a legitimate layer override, not a conflict.
+Two packs at the same level that both change, or both define, the same artifact id, of any kind; a definer and an enhancer do not conflict. It is refused as `pack_sibling_conflict` unless an overrides edge naming a contesting member settles it (ADR-0048 decision 9, ADR-0053 decision 5). Across levels the same id is a legitimate layer override, not a conflict. Two packs at one level that hold a preset with the same id conflict too, unless one is on the other's `parent_pack` line; an overrides edge does not settle a preset (operator ruling of 2026-11-06).
 
 **Meta:**
 

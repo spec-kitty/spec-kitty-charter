@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.infra.api;
 
 import ai.speckitty.charter.api.model.Problem;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
+import ai.speckitty.charter.web.Problems;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -9,8 +10,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
-import java.util.Set;
 import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpHeaders;
@@ -24,10 +23,14 @@ import tools.jackson.databind.ObjectMapper;
  * worktree token, and never a browser. In this order:
  *
  * <ol>
- *   <li>a host name that is not {@code localhost}, {@code 127.0.0.1} or {@code [::1]} is a 403. This is what stops
- *       DNS rebinding, because a same-origin {@code GET} carries no {@code Origin}. Only the name is judged, never
- *       the port;
+ *   <li>a host name its {@link GuardPolicy} does not accept is a 403: the server name and every {@code Host} value
+ *       must be accepted, and under a configured list a request without {@code Host} is refused too. Under the
+ *       loopback policy (ADR-0018 D9) the names are {@code localhost}, {@code 127.0.0.1} and {@code [::1]}; a
+ *       containerized service is given its configured list (ADR-0041 D6). This is what stops DNS rebinding, because
+ *       a same-origin {@code GET} carries no {@code Origin}. Only the name is judged, never the port;
  *   <li>an {@code Origin}, {@code Sec-Fetch-Site} or {@code Sec-Fetch-Mode} header is a 403;
+ *   <li>a {@code GET} of a path the policy exempts passes without the token: the health check of ADR-0041 D7,
+ *       when the deployable configures one;
  *   <li>when no token is configured (possible only with the development flag, see {@code GuardWiring}) the request
  *       passes;
  *   <li>a missing, malformed or wrong {@code Authorization: Bearer} credential is a 401 that names the scheme in
@@ -48,12 +51,12 @@ import tools.jackson.databind.ObjectMapper;
  */
 public class WorktreeGuard extends OncePerRequestFilter {
 
-    private static final Set<String> LOOPBACK_NAMES = Set.of("localhost", "127.0.0.1", "[::1]", "::1");
     private static final List<String> BROWSER_HEADERS = List.of("Origin", "Sec-Fetch-Site", "Sec-Fetch-Mode");
     private static final String BEARER = "Bearer";
     private static final String BEARER_PREFIX = BEARER + " ";
 
     private final @Nullable WorktreeToken token;
+    private final GuardPolicy policy;
     private final ServiceInfoQuery info;
     private final Supplier<ObjectMapper> mapper;
 
@@ -67,7 +70,23 @@ public class WorktreeGuard extends OncePerRequestFilter {
      *     serialize as every other problem body does
      */
     public WorktreeGuard(@Nullable WorktreeToken token, ServiceInfoQuery info, Supplier<ObjectMapper> mapper) {
+        this(token, GuardPolicy.loopback(), info, mapper);
+    }
+
+    /**
+     * A guard for the worktree {@code info} names, judging host names and token-exempt paths by {@code policy}.
+     *
+     * @param token the worktree token, or {@code null} to enforce none (the development flag); the browser checks
+     *     stay on
+     * @param policy the host names accepted and the paths a {@code GET} may reach without the token
+     * @param info the use case that knows the worktree id; its pack files are never read here
+     * @param mapper the application's JSON mapper, resolved when a refusal is first written, so the problem bodies
+     *     serialize as every other problem body does
+     */
+    public WorktreeGuard(
+            @Nullable WorktreeToken token, GuardPolicy policy, ServiceInfoQuery info, Supplier<ObjectMapper> mapper) {
         this.token = token;
+        this.policy = policy;
         this.info = info;
         this.mapper = mapper;
     }
@@ -75,9 +94,9 @@ public class WorktreeGuard extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
-        if (!fromLoopbackName(request) || sentByBrowser(request)) {
+        if (!fromAcceptedName(request) || sentByBrowser(request)) {
             refuse(response, HttpStatus.FORBIDDEN);
-        } else if (token != null && !bearsToken(request, token)) {
+        } else if (token != null && !policy.exemptsFromToken(request) && !bearsToken(request, token)) {
             response.setHeader(HttpHeaders.WWW_AUTHENTICATE, BEARER);
             refuse(response, HttpStatus.UNAUTHORIZED);
         } else {
@@ -94,17 +113,24 @@ public class WorktreeGuard extends OncePerRequestFilter {
         return false;
     }
 
-    /** Every name the request gives for the host, the server name and each {@code Host} header, must be loopback. */
-    private static boolean fromLoopbackName(HttpServletRequest request) {
+    /**
+     * Every name the request gives for the host, the server name and each {@code Host} header, must be accepted; under
+     * a configured list there must be a {@code Host} header at all.
+     */
+    private boolean fromAcceptedName(HttpServletRequest request) {
         String serverName = request.getServerName();
-        if (serverName == null || !isLoopbackName(serverName)) {
+        if (serverName == null || !isAccepted(serverName)) {
             return false;
         }
-        return Collections.list(request.getHeaders(HttpHeaders.HOST)).stream().allMatch(WorktreeGuard::isLoopbackName);
+        List<String> hosts = Collections.list(request.getHeaders(HttpHeaders.HOST));
+        if (hosts.isEmpty() && policy.hostHeaderRequired()) {
+            return false;
+        }
+        return hosts.stream().allMatch(this::isAccepted);
     }
 
-    private static boolean isLoopbackName(String hostValue) {
-        return LOOPBACK_NAMES.contains(hostName(hostValue.strip()).toLowerCase(Locale.ROOT));
+    private boolean isAccepted(String hostValue) {
+        return policy.acceptsHost(hostName(hostValue.strip()));
     }
 
     /**

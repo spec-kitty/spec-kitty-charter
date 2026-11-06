@@ -5,6 +5,7 @@ import ai.speckitty.charter.api.model.Offering;
 import ai.speckitty.charter.api.model.OfferingPack;
 import ai.speckitty.charter.api.model.ResolvedDependency;
 import ai.speckitty.charter.packs.application.OfferingReadService;
+import ai.speckitty.charter.web.RefusalHandler;
 import java.util.List;
 import java.util.Map;
 import org.springframework.http.ResponseEntity;

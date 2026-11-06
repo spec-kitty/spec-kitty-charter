@@ -16,7 +16,12 @@ properties:
   includeDeactivated:
     type: boolean
     description: >-
-      When true, the cascade walks through deactivated artifacts and clears their exclusions. Absent means false.
+      When true, the cascade walks through the deactivated artifacts of its kinds and clears their exclusions: of what
+      the walk reaches within the cascade's kinds and of each lineage ancestor it passes through whose kind is among
+      them (a cleared ancestor is never selected). A deactivated artifact outside the cascade's kinds keeps its
+      exclusion: the walk stops there and reports it in skippedDeactivated, as it does without includeDeactivated.
+      enhances is walked like any other relation, from the enhancer to what it enhances; nothing else is cleared.
+      Absent means false.
     x-source:
       path: docs/adr/0020-offering-and-activations.md
       symbol: D6

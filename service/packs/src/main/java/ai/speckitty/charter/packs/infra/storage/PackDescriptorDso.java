@@ -11,7 +11,8 @@ import java.util.Optional;
 
 /**
  * The persistence shape of {@code pack.yaml}: a flat mirror of its fields, not the domain descriptor. Its record
- * equality carries the round-trip fidelity assertion, {@code active_charter} and {@code pack_drg} included.
+ * equality carries the round-trip fidelity assertion, {@code active_charter}, {@code pack_drg} and
+ * {@code mutability_policy} included.
  *
  * <p>The schema is closed (ADR-0036 decision 3): a {@code pack.yaml} with a key it does not declare is unreadable, so
  * every key the file holds is one of these fields and a write loses nothing.
@@ -24,6 +25,7 @@ import java.util.Optional;
  * @param requiresCore the {@code requires_core} text as written, when stated
  * @param activeCharter the {@code active_charter} path, when stated
  * @param packDrg the {@code pack_drg} path, when stated
+ * @param mutabilityPolicy the {@code mutability_policy} path, when stated (ADR-0063)
  * @param dependencies the {@code depends_on} entries, in file order
  * @param overrides the {@code overrides} entries, in file order
  */
@@ -36,6 +38,7 @@ record PackDescriptorDso(
         Optional<String> requiresCore,
         Optional<String> activeCharter,
         Optional<String> packDrg,
+        Optional<String> mutabilityPolicy,
         List<PackDependency> dependencies,
         List<PackOverride> overrides) {
 
@@ -50,6 +53,7 @@ record PackDescriptorDso(
      * @param requiresCore the core requirement
      * @param activeCharter the active charter path
      * @param packDrg the pack DRG path
+     * @param mutabilityPolicy the mutability policy path
      * @param dependencies the declared dependencies
      * @param overrides the declared sibling conflicts this pack settles
      */
@@ -62,6 +66,7 @@ record PackDescriptorDso(
         Objects.requireNonNull(requiresCore, "requiresCore");
         Objects.requireNonNull(activeCharter, "activeCharter");
         Objects.requireNonNull(packDrg, "packDrg");
+        Objects.requireNonNull(mutabilityPolicy, "mutabilityPolicy");
         Objects.requireNonNull(dependencies, "dependencies");
         Objects.requireNonNull(overrides, "overrides");
         dependencies = List.copyOf(dependencies);
@@ -84,6 +89,7 @@ record PackDescriptorDso(
                 descriptor.requiresCore(),
                 descriptor.paths().activeCharter(),
                 descriptor.paths().packDrg(),
+                descriptor.paths().mutabilityPolicy(),
                 descriptor.dependencies(),
                 descriptor.overrides());
     }
@@ -101,7 +107,7 @@ record PackDescriptorDso(
                 name,
                 packLevel.flatMap(PackLevel::fromToken),
                 requiresCore,
-                new PackPaths(activeCharter, packDrg),
+                new PackPaths(activeCharter, packDrg, mutabilityPolicy),
                 dependencies,
                 overrides);
     }

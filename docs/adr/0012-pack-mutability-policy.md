@@ -2,7 +2,7 @@
 title: "ADR-0012: The owning pack declares a mutability level per artifact: open, extendable or locked"
 description: A Charter Pack author sets what later packs may do with each artifact it introduces; the levels replace the consumer-side replaceable-builtins allowlist.
 doc_status: active
-updated: 2026-10-26T00:00:00Z
+updated: 2026-11-05T00:00:00Z
 decision_status: Accepted; superseded in part by ADR-0030 and ADR-0031 (2026-10-26)
 decision_date: '2026-10-19'
 type: ADR
@@ -96,6 +96,10 @@ introduces. Today:
    reader finds every concern file of a pack from the main pack file. An artifact the file does
    not name, in a pack with no policy file, is `open`.
    *Superseded in part by ADR-0030: the policy file also holds role locks, role pins and other integrity settings of roles.*
+   *Amendment (2026-11-05, #291/#360): [ADR-0063](/adr/0063-pack-mutability-policy-file/) specifies the file:
+   `pack.yaml`'s optional `mutability_policy` key names `policy.yaml` at the pack root, a closed schema validates it,
+   and a target's level is the highest any pack along the closure declares. Role locks and pins stay reserved. D5's
+   built-in policy file and the `replaceable-builtins.yaml` migration remain follow-ups.*
 3. **Tighten, never loosen.** A later pack may raise the level of an artifact it did not
    introduce (an org pack may lock a built-in `open` directive for its projects). It may never
    lower it.

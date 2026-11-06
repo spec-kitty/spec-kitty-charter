@@ -172,13 +172,15 @@ level from directory presence.
 [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/)). A pack declares what it builds on
 as `depends_on`, a list of dependency edges, each naming a pack and a PEP 440 range on its version. The
 [compose](/glossary/charter/#compose) is the [closure](/glossary/charter/#closure) of `depends_on` rooted at one
-level's configured packs, including dependencies at levels nearer built-in. Today every configured pack is a root;
-roots from the activation set come with #360. The resolver orders the compose with dependencies first and each
+level's configured packs, including dependencies at levels nearer built-in. The offering composes every configured
+pack. An activation's closure read composes from the activation's `packs` as roots (#360; every configured pack when
+`packs` is absent), and the activation writes are checked against that closure alone. The resolver orders the compose with dependencies first and each
 level contiguous, in merge order: built-in, then org, then project. The offering serves it whole, or refuses it by
 naming the pack, rather than serving part of it.
 
 - **Level direction.** A pack may take a `parent_pack`, and may `depends_on` a pack, only at its own level or one
-  nearer built-in. `parent_pack` stays lineage only; it orders nothing.
+  nearer built-in. `parent_pack` is an ordering and a cycle edge, as `depends_on` is (operator ruling of 2026-11-06): the
+  pack a child extends merges before it, and a `parent_pack` cycle is refused as `pack_dependency_cycle`.
 - **Identity.** A pack id and a pack name are unique across a compose without exception. An artifact id is unique
   within a level, except where an `overrides` edge settles it. Across levels the same id is a layer override.
 - **Sibling conflict.** Two packs at one level that both change or both define the same artifact id, of any kind, are a
@@ -203,9 +205,10 @@ naming the pack, rather than serving part of it.
 The offering response carries what a compose resolved: each pack lists its configured `packId`, its
 `descriptorPackId` (the descriptor ULID that dependency edges name) and its declared dependencies with the range and
 the version that satisfied each. Not built yet: `built-in` becomes a distribution pack with no artifacts of its own,
-over a slimmed foundation pack, and stack packs are opt-in. That is the open-packs split, not this model's code. No
-read answers an activation yet (the activation set is reserved, issue #125), so the pack pin carries no resolved
-facts (#359).
+over a slimmed foundation pack, and stack packs are opt-in. That is the open-packs split, not this model's code. The
+pack pin itself carries no resolved facts; an activation's closure read
+(`GET /activations/{activationId}/packs`) answers each pack of the closure in the offering's pack shape, with the
+same dependency facts (#359, #360).
 
 ### Pack-level files
 
@@ -298,9 +301,10 @@ facts; it does not restate them.
 - **Org-requirable**: an org pack may declare `required_<plural>` for the kind.
 - **Selection-overlayable**: an org `required_<plural>` list also unions into the charter's
   `selected_<plural>` field.
-- **In force when key absent**: with no activation key, `all` means every available artifact
-  of the kind is in force; `required` (only `skill`) means only the org packs' required
-  skills are.
+- **In force when key absent**: core's column. With no activation key, `all` means every
+  available artifact of the kind is in force; `required` (only `skill`) means only the org packs'
+  required skills are. The service's activation document reads an absent key as none for every
+  kind, `skill` included (ADR-0053 d10, [DIV-203](/conformance/divergence-register/)).
 - **Operator token**: `ArtifactKind.operator_token`, accepted by `ArtifactKind.from_operator_token`. Every
   artifact kind has one, `anti-pattern`, `asset` and `template` included.
 - **In `CHARTER_KIND_TOKENS`**: the hand-written set of tokens the charter activation
@@ -450,8 +454,22 @@ removal ([ADR-0030](/adr/0030-removal-is-distinct-from-deactivation/)).
   Target ([ADR-0042](/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest/),
   proposed): a preset item is marked `must_have: true`; a preset with any must-have item is a
   governing preset; a preset carries no `required_*` key, and migrating `org-charter.yaml`'s lists
-  is [#206](https://github.com/spec-kitty/spec-kitty-charter/issues/206). Enforcing the required
-  set on activation is not built yet.
+  is [#206](https://github.com/spec-kitty/spec-kitty-charter/issues/206). The service's activation
+  writes enforce the required set (below); core's activation does not yet.
+- **The service's activation document** (built: the register and the per-artifact and preset
+  writes, #291, and the closure read, #360; [Offering and activation](/architecture/offering-and-activation/)). One stored
+  `ActivationConfig` per opaque `activationId`, under a `revision`, the `sha256:` of its RFC 8785
+  canonical bytes, which is also its `ETag`. Each list (`selected.<kind>`, `deactivated.<kind>`,
+  `activatedKinds`, `missionTypes`) has three states, absent, `[]` and a list of ids; absent and
+  `[]` both mean none and stay distinct on the wire
+  ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) d10). An absent
+  `packs` means every configured pack. The `depends_on` and `parent_pack` closure of `packs` holds the only packs
+  the document can name: an id outside it is refused. The required floor is the must-have items
+  of every governing preset in that closure. A create or replace whose deny list names a required
+  or locked artifact is refused `409`; a per-artifact or preset write tolerates such an entry
+  already stored and refuses `409` only a deny entry it adds
+  ([DIV-204](/conformance/divergence-register/), [DIV-205](/conformance/divergence-register/)).
+  The effective reads are not built yet.
 - **Plan, then commit.** `plan_activation()` validates without writing; `commit_plan()`
   writes only after a successful plan. A failed plan never mutates configuration.
 - **Cascade.** Activating with `--cascade` follows `requires` and `suggests` edges, skips
@@ -462,18 +480,18 @@ removal ([ADR-0030](/adr/0030-removal-is-distinct-from-deactivation/)).
   other than built-in). Applying a preset over customized lists is refused without
   `--force`. The preset name is not persisted: applying a preset is a one-time selection.
 
-### Register and resolve (candidate, undecided)
+### Register and resolve (register built, resolve a candidate)
 
-The conceptual model needs two service operations beyond today's reads. Both are candidates; their
-paths follow the naming of [ADR-0020](/adr/0020-offering-and-activations/) and
-[ADR-0026](/adr/0026-write-surface-is-functional-registration/) when a later record decides them, and
-no contract path is introduced here.
+The conceptual model needs two service operations beyond the pack reads. Register is built under
+[ADR-0020](/adr/0020-offering-and-activations/)'s paths. Resolve is a candidate; its path follows the
+naming of ADR-0020 and [ADR-0026](/adr/0026-write-surface-is-functional-registration/) when a later
+record decides it, and no contract path is introduced here.
 
 - **Register.** A project registers its active charter with the service (create), and updates it
   (replace), naming the offering pack ids and versions it builds on. The local file is written
-  through to it ([ADR-0033](/adr/0033-local-active-charter-is-source-of-truth/)). The nearest
-  existing design is `PUT /activations/{activationId}` in
-  [Offering and activation](/architecture/offering-and-activation/).
+  through to it ([ADR-0033](/adr/0033-local-active-charter-is-source-of-truth/)). Built since
+  2026-11-05 as `PUT /activations/{activationId}` and `POST /activations`
+  ([Offering and activation](/architecture/offering-and-activation/)).
 - **Resolve.** The client passes its activation context (project, mission type, step, work
   context) and receives what applies to that step: directives, profile, prompts. Open: one large
   payload, or references with hypermedia links to the contents. Relates to the action-context read

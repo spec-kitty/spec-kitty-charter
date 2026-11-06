@@ -4,6 +4,38 @@ spring:
   threads:
     virtual:
       enabled: true
+  # No JMX: the management endpoints answer over HTTP only, behind the request guard (ADR-0041 decision 7).
+  jmx:
+    enabled: false
+# Health is the one management endpoint, and it answers up or down and nothing else (ADR-0041 decision 7). Every other
+# endpoint is off and unexposed, and no detail, component or sanitized value is ever shown. ExposureStartupCheck fails
+# the start if the environment widens any of this. Under the container profile the guard lets exactly
+# GET /actuator/health through without the token; locally it needs the token like every path.
+management:
+  endpoints:
+    access:
+      default: none
+    web:
+      exposure:
+        include: health
+      discovery:
+        enabled: false
+    jmx:
+      exposure:
+        exclude: "*"
+  endpoint:
+    health:
+      access: read-only
+      show-details: never
+      show-components: never
+      # No liveness or readiness groups: one replica has nothing to drain (ADR-0061), and the groups would be listed in
+      # the body.
+      probes:
+        enabled: false
+    env:
+      show-values: never
+    configprops:
+      show-values: never
 server:
   # Loopback only (docs/architecture/service-lifecycle.md); port 0 until the launcher assigns one.
   address: 127.0.0.1

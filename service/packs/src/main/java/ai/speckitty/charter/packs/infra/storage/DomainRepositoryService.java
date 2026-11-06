@@ -8,6 +8,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.missions.domain.UnresolvedTemplate;
@@ -16,6 +17,8 @@ import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.DirectiveRepository;
+import ai.speckitty.charter.packs.domain.MutabilityPolicyRepository;
+import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
@@ -59,7 +62,8 @@ import org.springframework.stereotype.Service;
 
 /**
  * The edge concretization of the pack persistence ports: one service that realizes {@link TacticRepository},
- * {@link PackDescriptorRepository}, {@link PackCatalogRepository} and {@link PackRepository} over the filesystem.
+ * {@link PackDescriptorRepository}, {@link PackCatalogRepository}, {@link PackRepository} and
+ * {@link MutabilityPolicyRepository} over the filesystem.
  * The Spring stereotype lives only here; the ports in the domain stay plain interfaces, and a database-backed
  * sibling would carry its own stereotype.
  *
@@ -86,7 +90,8 @@ public final class DomainRepositoryService
                 PackCatalogRepository,
                 PackArtifactRepository,
                 PackEdgeRepository,
-                PackRepository {
+                PackRepository,
+                MutabilityPolicyRepository {
 
     /** The seam that supplies the configured pack locations, read on every call so a reconfiguration is seen. */
     @FunctionalInterface
@@ -337,11 +342,16 @@ public final class DomainRepositoryService
      *   <li>the references it writes, as written, {@code [<pack-name>::]<kind>:<id>}: both endpoints of every edge of its
      *       graph documents, then what each of its artifacts writes ({@link CharterArtifact#writtenReferences()}, which
      *       is the targets of the relationships the walk follows, so the check and the walk cannot disagree, and the
-     *       references a kind keeps without minting an edge).
+     *       references a kind keeps without minting an edge);
+     *   <li>the mutability policy its descriptor names by {@code mutability_policy} (ADR-0063), or the empty policy;
+     *   <li>the activation presets it holds, from the same assembly; a preset the domain refuses is a violation, which
+     *       makes the pack unreadable here as any other file does;
+     *   <li>the typed edges it writes, as written, from the same graph read and assembly ({@link #typedEdges}).
      * </ul>
      *
      * <p>The answer fails closed: a graph document or a file of the pack that cannot be read refuses it
-     * {@code pack_unreadable}, naming the first such file, since what an unreadable file holds or writes cannot be
+     * {@code pack_unreadable}, naming the first such file, and so does a named policy file that is missing or invalid
+     * ({@link #policyOf(PackIdentifier)}), since what an unreadable file holds or writes cannot be
      * judged and a compose that skipped it would pass what it never saw. The whole-pack load and the pack-scoped reads
      * still answer for such a pack, so its author can inspect it.
      */
@@ -354,18 +364,12 @@ public final class DomainRepositoryService
                     RefusalCode.PACK_UNREADABLE, "a graph document of " + pack.value() + " cannot be read");
         }
         Pack assembled = readable(pack);
+        MutabilityPolicySource policy = policyOf(resolved, pack, assembled.descriptor());
         Set<String> changed = new LinkedHashSet<>();
         Set<String> references = new LinkedHashSet<>();
         Set<String> declared = new LinkedHashSet<>();
         for (GraphDocument document : graphs.documents()) {
-            for (GraphDocument.Edge edge : document.edges()) {
-                if (refines(edge.relation())) {
-                    changed.add(edge.target());
-                }
-                refuseSelfLoop(pack, assembled.descriptor().name(), document.file(), edge);
-                references.add(edge.source());
-                references.add(edge.target());
-            }
+            edgeFacts(pack, assembled.descriptor().name(), document, changed, references);
             declaredWithoutFile(document).forEach(declared::add);
         }
         Set<String> defined = new LinkedHashSet<>();
@@ -376,7 +380,120 @@ public final class DomainRepositoryService
             }
         }
         defined.addAll(declared);
-        return new PackCompositionFacts(List.copyOf(changed), List.copyOf(defined), List.copyOf(references));
+        return new PackCompositionFacts(
+                List.copyOf(changed),
+                List.copyOf(defined),
+                List.copyOf(references),
+                policy,
+                assembled.presets(),
+                typedEdges(graphs.documents(), assembled));
+    }
+
+    /**
+     * Every typed edge the pack writes, as written: the edges of its graph documents in file order, then each of
+     * its components' derived relationships in assembly order (a guard's {@code implemented_by}, ADR-0064), then the
+     * edges of its registered relationship shard ({@link RelationshipShard#SHARD_PATH}, a root shard the one graph read
+     * already holds). Each (from, relation, to, qualifiers) is kept once, where it was first seen: the kernel
+     * {@link Relationship#equals} ignores the relation and the qualifiers, so the key is explicit.
+     */
+    private static List<Relationship> typedEdges(List<GraphDocument> documents, Pack assembled) {
+        Map<EdgeKey, Relationship> edges = new LinkedHashMap<>();
+        documents.stream().filter(document -> !registered(document)).forEach(document -> graphEdges(document, edges));
+        assembled
+                .artifacts()
+                .forEach(artifact -> artifact.derivedRelationships().forEach(edge -> keep(edge, edges)));
+        documents.stream().filter(DomainRepositoryService::registered).forEach(document -> graphEdges(document, edges));
+        return List.copyOf(edges.values());
+    }
+
+    /** What makes two typed edges the same edge. */
+    private record EdgeKey(Urn from, Optional<String> fromPack, RelationType type, Urn to, Optional<String> toPack) {}
+
+    private static void keep(Relationship edge, Map<EdgeKey, Relationship> edges) {
+        edges.putIfAbsent(new EdgeKey(edge.from(), edge.fromPack(), edge.type(), edge.to(), edge.toPack()), edge);
+    }
+
+    private static boolean registered(GraphDocument document) {
+        return RelationshipShard.SHARD_PATH.equals(document.file());
+    }
+
+    private static void graphEdges(GraphDocument document, Map<EdgeKey, Relationship> edges) {
+        for (GraphDocument.Edge edge : document.edges()) {
+            typedEdge(edge).ifPresent(typed -> keep(typed, edges));
+        }
+    }
+
+    /**
+     * One graph-document edge as the kernel's typed edge, with each endpoint's qualifier as written; empty for an
+     * endpoint or a relation that is no reference, which the reads that judge the document report.
+     */
+    private static Optional<Relationship> typedEdge(GraphDocument.Edge edge) {
+        try {
+            PackQualifiedReference source = PackQualifiedReference.parse(edge.source());
+            PackQualifiedReference target = PackQualifiedReference.parse(edge.target());
+            Optional<RelationType> relation = RelationType.fromToken(edge.relation());
+            if (source.asUrn().isEmpty() || target.asUrn().isEmpty() || relation.isEmpty()) {
+                return Optional.empty();
+            }
+            return Optional.of(new Relationship(
+                    source.asUrn().get(),
+                    source.packName(),
+                    target.asUrn().get(),
+                    target.packName(),
+                    relation.get(),
+                    edge.when(),
+                    edge.reason()));
+        } catch (IllegalArgumentException malformed) {
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * The policy the pack's descriptor names (ADR-0063), read through the same resolution as the compose's facts, so
+     * the offering and every closure judge the file. A pack no pack is configured as is refused {@code pack_not_found};
+     * a pack is refused {@code pack_unreadable} when its descriptor cannot be read, or names a policy file that is
+     * missing or invalid.
+     */
+    @Override
+    public MutabilityPolicySource policyOf(PackIdentifier pack) {
+        Resolved resolved = resolve(pack);
+        return policyOf(
+                resolved, pack, resolved.store.readDescriptor(resolved.key).toDescriptor());
+    }
+
+    /**
+     * The policy file {@code descriptor} names, read from the resolved pack's directory; the empty policy when it names
+     * none. A named file that is no regular file, is not UTF-8 text, is not YAML or breaks the {@code policy} schema
+     * makes the pack unreadable: a lock that cannot be read is never taken as open.
+     */
+    private static MutabilityPolicySource policyOf(Resolved resolved, PackIdentifier pack, PackDescriptor descriptor) {
+        Optional<String> named = descriptor.paths().mutabilityPolicy();
+        if (named.isEmpty()) {
+            return MutabilityPolicySource.empty();
+        }
+        try {
+            return PolicyYaml.readNamed(resolved.directory, named.get()).source();
+        } catch (PolicyYaml.Unreadable invalid) {
+            throw new CharterRefusal(
+                    RefusalCode.PACK_UNREADABLE,
+                    pack.value() + " names mutability_policy " + named.get() + ", which " + invalid.getMessage());
+        }
+    }
+
+    /**
+     * What one graph document's edges tell the compose: the targets of its {@code enhances} and {@code overrides}
+     * relations into {@code changed}, both endpoints of every edge into {@code references}; a self-loop is refused.
+     */
+    private static void edgeFacts(
+            PackIdentifier pack, String packName, GraphDocument document, Set<String> changed, Set<String> references) {
+        for (GraphDocument.Edge edge : document.edges()) {
+            if (refines(edge.relation())) {
+                changed.add(edge.target());
+            }
+            refuseSelfLoop(pack, packName, document.file(), edge);
+            references.add(edge.source());
+            references.add(edge.target());
+        }
     }
 
     /**

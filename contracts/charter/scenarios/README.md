@@ -118,6 +118,28 @@ Keep it small; add a step only when a scenario cannot be written without it.
   with `x-reserved` and a `501` of its own (read from the declaration, with no `default` fallback), and the answer is
   `501` with an `application/problem+json` body whose `status` is 501 and which has no `code` member, with the
   `Charter-Contract-Version` and `Charter-Worktree` headers and no `Charter-Source-Fingerprint` (ADR-0020 D8).
+- `Given the project activates the pack "<id>"` (or `the packs "<id>, <id>"`) — stores the activation `project`
+  with a plain `PUT /activations/project` whose `packs` are those configured ids, in that order, and expects `201`.
+  `Given the activation "<id>" holds:` followed by a JSON doc string — the same `PUT` of that document under that id,
+  expecting `201`; the binding keeps the `ETag` it was stored with, and `When I GET "<path>" with If-None-Match the
+  stored ETag` sends it back. Every scenario starts with no activation stored.
+- `When I PUT "<path>" with the header "<name>": "<value>" and the body:` and `When I PUT "<path>" with the headers
+  "<name>": "<value>" and "<name>": "<value>" and the body:` — a JSON `PUT` with those extra headers, for the
+  conditional writes (`If-None-Match`, both validators at once).
+- `When I PUT "<path>" with the stored ETag and the body:` and `When I DELETE "<path>" with the stored ETag` — a JSON
+  `PUT`, or a `DELETE`, whose `If-Match` is the `ETag` the last `Given the activation "<id>" holds:` stored; for the
+  per-artifact and preset writes, which require `If-Match`.
+- `Then the response header "<name>" is the stored ETag` and `... differs from the stored ETag` — the header equals,
+  or is present and differs from, that stored `ETag`: a write that changed nothing, or one that stored a new revision.
+- `Then the field at "<json-pointer>" holds exactly the ids:` followed by a doc string, one id per line — the member
+  is an array whose ids are those lines, in order: a string item as it is, and an item with a `kind` and an
+  `artifactId` (an `ArtifactReference`, a skipped entry) as `<kind>:<artifactId>`.
+- `Then the response body has no field at "<json-pointer>"` — the pointer names no member of the body: a key a write
+  dropped, such as an emptied deny list.
+- `Then the field at "<json-pointer>" holds exactly <n> item(s)` — the member is an array of exactly that size; `Then
+  the answer holds exactly <n> packs` is the same for `/packs`.
+- `Then the response header "<name>" is the quoted field "<json-pointer>"` — the header is the string member that the
+  pointer names, in double quotes: an `ETag` that quotes a `revision`.
 - `Then the field at "<json-pointer>" is the lines:` followed by a doc string — the text the pointer names is the doc
   string's lines, each ending in a newline; for a Markdown guide.
 - `Given the guide host serves "<uri>" with:` followed by a doc string — a `guideUri` registration that names this URI
@@ -178,7 +200,21 @@ that calls it. A run that selects only some scenarios reports the others' operat
   defines, a `Problem` without a code, with no alias (FR-006); a `GET` on a write path and a `PUT` on the item of a
   kind without a write (a tactic) are a 405 `Problem` without a code. A write to a kind that cannot be written is
   not `kind_not_found`: the path names a served kind, and the method is what the path does not define.
-- `activations.feature`: the activation set (ADR-0020), declared in full and reserved: one 501 pin per operation.
+- `activation-register.feature`: the activation register (ADR-0020 D3-D6, ADR-0059 D4-D5, #125, #360): create,
+  register, read and remove an activation document in canonical form under its revision, its `ETag`, `If-Match` and
+  `If-None-Match`, its refusals (`activation_invalid` with `violations`, `artifact_required` and `artifact_locked`
+  with `requiredBy`, `activation_not_found`), and the closure read `GET /activations/{activationId}/packs`.
+- `activation-register-guards.feature`: the guards of the register: the worktree token (401), a browser request
+  (403), and the preconditions judged before the document (412 on a stale `If-Match`, on `If-None-Match: *` over a
+  stored id and on an `If-Match` over an id nothing is stored under).
+- `activation-selections.feature`: the per-artifact writes (ADR-0020 D6, ADR-0059 D2, #291): select and unselect
+  one artifact or mission type under `…/selections/{kind}/{artifactId}`, deactivate and re-activate one under
+  `…/exclusions/{kind}/{artifactId}`, the cascade (`enhances` among its relations), the `ActivationChange` each answers, their
+  preconditions (`428`, `412`, `400`) and their refusals.
+- `activation-presets.feature`: applying a preset, `PUT …/presets/{presetId}` (ADR-0059 D6, #291): the keys it
+  replaces, `force`, `preset_not_found` and a stale preset member.
+- `activations.feature`: the activation operations still reserved (ADR-0020 D8), the four effective reads: one 501
+  pin per operation, each removed when its operation is built.
 - `relationships.feature`: a registered relationship from a mission type the pack holds, and the refusal of one it
   does not hold (#194, ADR-0044).
 - `composition.feature`: the compose of the configured packs' `depends_on` closure on `GET /offering`, in the

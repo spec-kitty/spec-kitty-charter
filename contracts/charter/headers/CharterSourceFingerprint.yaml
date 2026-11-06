@@ -11,10 +11,12 @@ description: >-
   verified read, and on no other answer, so only those 200s declare it (#175). Never on a refusal or a
   failure; a read whose inputs changed while it was answered is refused with stale_input instead. A
   registration (POST, PUT) never sends it: the concurrency token of a write is its ETag, not this
-  digest. getOpenApiDocument never sends it: it reads no pack file. The reserved read operations of the
-  activation set (getActivation, listEffectiveArtifacts, getActivationSkippedReport, getEffectiveGraph and
-  getEffectiveActionContext) declare it on their 200 as the verified reads they are once built; while
-  reserved (ADR-0020 D8) they answer 501, which reads nothing, so they never send it. Set once. The
+  digest. getOpenApiDocument never sends it: it reads no pack file. Two reads of the activation set never
+  send it either: getActivation depends only on the stored document (ADR-0059 D5), and listActivationPacks
+  reports a change through its ETag, which covers the activation's revision and the closure's digest. The
+  reserved read operations of the activation set (listEffectiveArtifacts, getActivationSkippedReport,
+  getEffectiveGraph and getEffectiveActionContext) declare it on their 200 as the verified reads they are once
+  built; while reserved (ADR-0020 D8) they answer 501, which reads nothing, so they never send it. Set once. The
   freshness work (#73) compares it; this version only reports it (ADR-0011).
 required: true
 schema:

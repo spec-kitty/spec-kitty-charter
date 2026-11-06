@@ -1,0 +1,52 @@
+parameters:
+- $ref: ../parameters/ActivationId.yaml
+get:
+  operationId: listActivationPacks
+  summary: List the packs an activation builds on.
+  description: >-
+    The composition closure of the activation: the depends_on and parent_pack closure rooted at the packs its document names, or at
+    every configured pack when the document has no packs member, in dependency order, dependencies and parent_pack parents before the packs that need them (#360). Each pack is listed in
+    the offering's pack shape, with the dependencies the compose resolved for it, so a pinned pack's dependency facts
+    are read here (#359). Only the packs of the closure are read and judged: a configured pack outside it, readable
+    or not, changes nothing in the answer. An unknown activation is 404 activation_not_found, and an id outside the declared pattern is 400. A closure that cannot
+    be read or does not compose is refused whole with a 500, as the offering refuses it: pack_unreadable (a pack of
+    the closure whose directory, pack.yaml or named policy file is missing or invalid, or a pack the stored document
+    names that is no longer configured, since the request names only the activation), one of the composition codes
+    (pack_dependency_out_of_range, pack_reference_pack_missing among them) or stale_input. The ETag covers the
+    activation's revision and the closure's packs; a request whose If-None-Match matches it is answered 304 without
+    a body. Like every operation it needs the worktree token.
+  tags:
+  - Activation
+  parameters:
+  - $ref: ../parameters/IfNoneMatch.yaml
+  responses:
+    '200':
+      description: The packs of the activation's closure, in dependency order.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        ETag:
+          $ref: ../headers/ActivationPackListETag.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/ActivationPackList.yaml
+          examples:
+            two-packs:
+              $ref: ../examples/ActivationPackList.two-packs.yaml
+    '304':
+      $ref: ../responses/NotModified.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/UnknownActivation.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

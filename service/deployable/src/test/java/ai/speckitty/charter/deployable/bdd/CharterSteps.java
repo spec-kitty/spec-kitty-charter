@@ -42,6 +42,14 @@ public class CharterSteps {
     private static final LinkChecks LINK_CHECKS = new LinkChecks(CONTRACT, RelationTable.keys());
     private static final int MAX_PAGES = 100;
     private static final String FINGERPRINT = "Charter-Source-Fingerprint";
+
+    /**
+     * The activation document read and its closure read carry no fingerprint, and the hook checks that they carry
+     * none: the document read depends only on the stored document (ADR-0059 D5), and the closure read reports a change
+     * through its {@code ETag}, over the revision and the closure's digest.
+     */
+    private static final Pattern UNFINGERPRINTED = Pattern.compile("/activations/[^/]+(/packs)?");
+
     private static final String BODY = "#body";
     private static final String HEADER = "#header:";
     private static final String SHA256 = "sha256:[0-9a-f]{64}";
@@ -133,8 +141,8 @@ public class CharterSteps {
      * {@code GET} answered 200 with a JSON body on any path but the root {@code /}, carries exactly one
      * {@code Charter-Source-Fingerprint}, the digest that read verified: for {@code /info} the {@code sourceFingerprint}
      * of its own body, for another read the one {@code /info} gave right after it (the inputs had not changed). Every
-     * other {@code GET} answer carries none: a refusal, the root, which reads no pack file, and {@code /openapi.yaml},
-     * whose body is YAML. A write (a POST or PUT) is exempt: it reports the pack's post-write revision as an
+     * other {@code GET} answer carries none: a refusal, the root, which reads no pack file, {@code /openapi.yaml},
+     * whose body is YAML, and the activation document and closure reads ({@link #UNFINGERPRINTED}). A write (a POST or PUT) is exempt: it reports the pack's post-write revision as an
      * {@code ETag}, not a read's source fingerprint (ADR-0026), so the fingerprint header is simply not part of a
      * write's answer and is neither required nor forbidden on it.
      */
@@ -170,11 +178,15 @@ public class CharterSteps {
         }
     }
 
-    /** A {@code GET} answer of a verified read: 200, a JSON body, and any path but the root. */
+    /**
+     * A {@code GET} answer of a verified read: 200, a JSON body, and any path but the root and the two activation reads
+     * that send no fingerprint ({@link #UNFINGERPRINTED}).
+     */
     private static boolean isVerifiedRead(String path, MockHttpServletResponse response) {
         String type = response.getContentType();
         return response.getStatus() == HttpStatus.OK.value()
                 && !path.equals("/")
+                && !UNFINGERPRINTED.matcher(path).matches()
                 && type != null
                 && MediaType.APPLICATION_JSON.isCompatibleWith(MediaType.parseMediaType(type));
     }

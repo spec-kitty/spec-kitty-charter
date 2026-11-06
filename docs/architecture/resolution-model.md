@@ -2,7 +2,7 @@
 title: Resolution model
 description: What the charter domain computes (layer merge, activation, cascade, action-scoped context, profile resolution) and the fail-loud rules it inherits.
 doc_status: draft
-updated: 2026-11-03T00:00:00Z
+updated: 2026-11-06T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -37,7 +37,7 @@ The service reads only configured inputs, never directory presence:
 | Built-in pack | the pack root the CLI resolves for `built-in` | sharded `*.graph.yaml` plus a generated `pack-manifest.yaml`; `pack_level: built-in` |
 | Org packs | each directory under `charter_packs.org.packs` in `.kittify/config.yaml` | `pack.yaml` (`pack_level: org`), `org-charter.yaml`, one `drg/fragment.yaml` |
 | Project pack | `.kittify/charter-packs/` | `pack_level: project` |
-| Active charter | `.kittify/config.yaml`, or `charter.yaml` for a migrated project | `activated_<kind>` keys, `activated_kinds` and `mission_type_activations` |
+| Active charter | `.kittify/config.yaml`, or `charter.yaml` for a migrated project | `activated_<kind>` keys, `activated_kinds` and `mission_type_activations`. In the service: the stored activation document, whose `packs` are the compose roots ([Offering and activation](/architecture/offering-and-activation/)) |
 | Mission type | the request (`--mission-type` in the CLI) or the mission's `meta.json` | keys the action grain: action nodes are `action:<mission-type>/<action>` |
 | `depth` | the request | the number of `suggests` hops of the action-context walk, 0 to 2, default 2; the seam maps a first load to 2, a recorded load to 1 and the public bundle read to 0 |
 
@@ -86,8 +86,18 @@ flowchart LR
    > a legitimate override. Every composition refusal is in the table of
    > [Compose packs](/guides/compose-packs/#read-a-refusal); the split's remaining moves are the open-packs work, not
    > this page's pipeline.
-3. **Activate.** A per-kind activation key that is absent means what the kind's
-   `effective_when_absent` says (`all` for most kinds; `required` for `skill`). A present key
+   **Compose roots** (built, #360). The offering composes every configured pack. An activation
+   composes the `depends_on` and `parent_pack` closure of its `packs` (every configured pack when `packs` is absent),
+   and that closure is what its writes are checked against and what its closure read answers.
+   The per-artifact writes (select, unselect, deactivate, re-activate, apply a preset) are served
+   over that closure, and a select or a deactivate with a `cascade` walks it; the rules are in
+   [The cascade](/architecture/offering-and-activation/#the-cascade). Merging the closure's layers
+   for an activation, and returning an active enhancement at read (ADR-0059 A4), are the next mission's.
+3. **Activate.** In core, a per-kind activation key that is absent means what the kind's
+   `effective_when_absent` says (`all` for most kinds; `required` for `skill`). In the service's
+   activation document an absent key means none, `skill` included
+   ([DIV-203](/conformance/divergence-register/)), and the required floor is the must-have items of
+   the governing presets in the activation's closure ([DIV-205](/conformance/divergence-register/)). A present key
    is an allowlist. A `deactivated_<kind>` deny-list is subtracted from either
    ([ADR-0013](/adr/0013-persistent-deactivation/)). Org `required_<kind>` lists apply where
    the kind is org-requirable, and union into the charter's `selected_<kind>` list where it is
@@ -122,8 +132,13 @@ in the [divergence register](/conformance/divergence-register/).
 ## Writes
 
 Activation is a **plan, then commit**: planning validates and never mutates; committing
-writes only after the plan succeeds. Applying a preset over customized lists is refused
-without `--force`, and the applied preset name is not persisted. Three YAML write paths
+writes only after the plan succeeds. The service's per-artifact writes keep that shape: each
+computes the whole new document from one view of the closure, judges it, and stores it by one
+compare-and-set ([The per-artifact writes](/architecture/offering-and-activation/#the-per-artifact-writes)).
+In core, applying a preset over customized lists is refused without `--force`, and the
+applied preset name is not persisted. The service applies a preset over any list: its
+`force` clears the deny entries of the preset's members
+([Presets](/architecture/offering-and-activation/#presets)). Three YAML write paths
 exist in core today, and each is a separate operation to migrate
 ([Strangler transition](/architecture/strangler-transition/)):
 

@@ -2,7 +2,7 @@
 title: "ADR-0020: The offering and activations are separate resources, and the service stores activations"
 description: Proposes /offering for what can be used and /activations for active charters the service stores, activation writes reserved before 1.0.0, and a hosted-first contract.
 doc_status: active
-updated: 2026-11-04T00:00:00Z
+updated: 2026-11-05T00:00:00Z
 decision_status: Accepted; superseded in part by ADR-0033 (2026-10-26); amended 2026-10-31 (#125); the `packs` row and amendment ruling 7 superseded in part by ADR-0048, and `missionTypes` and the amendment's mission-type rules by ADR-0050 (2026-11-02); open questions 4 to 7 ruled, and the cascade relations settled, by ADR-0059 (2026-11-04)
 decision_date: '2026-10-24'
 type: ADR
@@ -231,6 +231,13 @@ for one revision.
 Not stored, because it is derived from the packs: the org `required_*` floor, `locked` and other
 mutability levels (ADR-0012), the set of available artifacts, and the skipped report.
 
+**Note 2026-11-06 (operator ruling): the known spellings of an id.** A write may spell an artifact id as the full URN
+(`directive:DIRECTIVE_001`) or by a case-insensitive match against the declared ids of the closure; the match covers the URN's kind prefix too
+(`DIRECTIVE:directive_001`). The stored id is
+always the declared id. `selected` and `deactivated` both normalize. A match that is ambiguous between two declared ids
+differing only by case is `422 activation_invalid`, as is an unknown id, and a URN whose kind differs from the list's
+kind is an unknown id. Two spellings of one artifact give one stored document and one revision.
+
 ### D5. The service is the authority once activation routes to it (ruled)
 
 Once an activation operation is routed to the service (ADR-0021 D5, after 1.0.0), the service's
@@ -252,6 +259,12 @@ without it the write is last-writer-wins, because core's content is what it mean
 1. **Create an empty document.** `PUT` with `If-None-Match: *` and `{"schemaVersion": 1}`, or
    `POST /activations`. An empty document means every kind takes its default, so every
    offering artifact except skills is active; core then narrows it.
+   *Amendment (2026-11-05, #291/#360): absent means none
+   ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) d10). An empty document puts
+   nothing in force: an absent `selected.<kind>`, `activatedKinds` or `missionTypes` means the same as `[]`, `skill`
+   included, and an absent `packs` means every configured pack. Core then selects what it wants rather than
+   narrowing a default ([DIV-203](/conformance/divergence-register/)). The round trip below holds for a document the
+   offering has not made stale ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) D4).*
 2. **Configure it** with sub-resource writes. Each one needs `If-Match: <revision>` and answers
    `200` with an `ActivationChange` (the new `revision`, the ids applied, the skipped report and
    `_links`):
