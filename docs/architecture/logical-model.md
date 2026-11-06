@@ -456,7 +456,7 @@ removal ([ADR-0030](/adr/0030-removal-is-distinct-from-deactivation/)).
   `activatedKinds`, `missionTypes`) has three states, absent, `[]` and a list of ids; absent and
   `[]` both mean none and stay distinct on the wire
   ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) d10). An absent
-  `packs` means every configured pack. The `depends_on` closure of `packs` holds the only packs
+  `packs` means every configured pack. The `depends_on` and `parent_pack` closure of `packs` holds the only packs
   the document can name: an id outside it is refused. The required floor is the must-have items
   of every governing preset in that closure. A create or replace whose deny list names a required
   or locked artifact is refused `409`; a per-artifact or preset write tolerates such an entry

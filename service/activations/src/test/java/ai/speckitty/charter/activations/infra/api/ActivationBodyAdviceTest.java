@@ -250,4 +250,16 @@ class ActivationBodyAdviceTest {
                 .extracting(RefusalViolation::pointer)
                 .containsExactly("/café");
     }
+
+    @Test
+    void aBareUtf16BodyWithNoBomIsReadAsTheConverterReadsIt() {
+        // The converter detects the byte order of a bare UTF-16; decoding it as Java does (big-endian) would read noise
+        // and let an unknown member through.
+        byte[] utf16le = "{\"schemaVersion\": 1, \"extra\": 1}".getBytes(StandardCharsets.UTF_16LE);
+
+        assertThat(ActivationBodyAdvice.violations(
+                        utf16le, MediaType.parseMediaType("application/json;charset=UTF-16"), ActivationConfig.class))
+                .extracting(RefusalViolation::pointer)
+                .containsExactly("/extra");
+    }
 }
