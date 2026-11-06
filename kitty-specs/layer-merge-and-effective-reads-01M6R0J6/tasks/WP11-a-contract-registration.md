@@ -137,8 +137,8 @@ Implementation command:
 
 - `PUT /packs/{packId}`: body `application/gzip` (plus `application/x-gzip`, `application/x-tar+gzip`) or
   `application/zip`, raw bytes; `202` + `Location: /api/v1/pack-registrations/{id}` + `PackRegistrationStatus`;
-  `PackIfMatch` (`required: false`) and `If-None-Match: *`; `401`, `413`, `415`, `428`?, `412`, `503`
-  (`Retry-After`). Check the delta for each status.
+  `PackIfMatch` (`required: false`) and `If-None-Match: *`; `401`, `413`, `415`, `412`, `503` (`Retry-After`). No
+  `428` on `PUT`/`POST`: `If-Match` is optional there (the git branch-ref rule of WP18 is the one exception, `428`).
 - `POST /packs`: body `PackSource`; same answers.
 - `GET /packs/{packId}` (`getPack`): the stored pack summary with `_links.self`.
 - `GET /pack-registrations/{registrationId}`: `pending|running|succeeded|refused`, `404` once forgotten.
@@ -148,7 +148,8 @@ Implementation command:
 ### T048: Schemas
 
 - `PackRegistration` (pack id, version, level, revision, outcome `created|replaced|unchanged`, `source` with the
-  resolved `commit`, `notices` for FR-027: floor and lock items added/removed, affected activations), `_links`.
+  resolved `commit`, `notices` for FR-027: floor and lock items added/removed), `_links`. `notices.activationsAffected`
+  is added in PR B by WP22 (contract delta).
 - `PackRegistrationStatus` (state, timestamps, `result` or `problem`).
 - `PackSource`: one closed object, `kind` in snake case (`https_archive`, `git`, `filesystem`), `packId`, `url` or
   `path`, `ref`, optional `sha256` or `commit`.
@@ -158,7 +159,9 @@ Implementation command:
 - `CharterRefusalCode.yaml` and `kernel RefusalCode`: `pack_version_conflict` (409), `artifact_referenced` (409,
   with `packs`/referrers), `relationship_not_found` (404), `pack_source_refused` (422), `pack_source_unavailable`
   (503), `override_not_permitted`, `enhances_cycle`, `conflicting_relations`, `self_override`, `override_cycle` (all
-  422, IC-15), `kind_not_found` if not yet declared. Use the `x-refusal` table format (ADR-0056).
+  422, IC-15), `registration_not_found` (404), `registration_timed_out` (the job's end state at the source deadline
+  + 30 s, NFR-008), `pack_storage_full` (503, less than 2× the archive bound free, NFR-009), and `kind_not_found` (declare it; if `RefusalCode` already has it, keep that entry and add only the
+  contract row). Use the `x-refusal` table format (ADR-0056).
 - `ReservedRefusalCodesTest` updated: these codes are declared and raised by PR A (not reserved).
 
 ### T050: Changelog fragment
@@ -173,10 +176,17 @@ Implementation command:
   stale `If-Match` `412`, invalid archive `422`, changed level `422`), the status resource, `401` without a
   principal, `503` when `charter.registration.enabled=false`, `POST` per source kind (with the test seams named in
   WP17/WP18), and the impact-check refusals of IC-15.
+- The asynchronous race (US1 AS6, second clause): a job held on the `RegistrationJobs` latch seam (WP16), a competing
+  write commits, the job is released → the status says `refused` `412`. The status lifecycle: `pending` and `running`
+  observed through the same seam, `succeeded`/`refused`, then `404 registration_not_found` once forgotten.
+- Every absence assertion (a removed artifact no longer readable) is paired with a positive control in the same pack
+  (the kept artifact present with its new content and version).
+- Commit both files tagged `@WIP`; the serving WPs (WP16, WP17, WP18, WP19) bind the glue, record the red and remove the
+  tag (decision `DM-01M6RN6GC7PJS8BGHMAYM4JSSW`).
 
 ### T052: Red scenarios: removal
 
-`pack-removal.feature`: US2 AS1–AS4 (delete, `404` per code, `409 artifact_referenced` naming the referrer, a preset item of another pack as referrer, `428`/`412`), relationship delete, negative controls. Confirm red.
+`pack-removal.feature`: US2 AS1–AS4 (delete, `404` per code, `409 artifact_referenced` naming the referrer, a preset item of another pack as referrer, `428`/`412`), relationship delete, negative controls; tagged `@WIP` until WP19.
 
 ## Test strategy
 
@@ -190,7 +200,8 @@ Contract lint and `OpenApiDocumentTest`; the two new feature files red; `Reserve
 ## Definition of Done
 
 - Every subtask above is done, and recorded with `spec-kitty agent tasks mark-status <Txxx> --status done`.
-- The tests and scenarios named above were seen failing first and now pass; the module checks pass with the Gradle flags above.
+- The tests and scenarios named above were seen failing first (an assertion failure with every step bound, decision `DM-01M6RN6GC7PJS8BGHMAYM4JSSW`) and now pass.
+- **Exit check:** the contract module check and `OpenApiDocumentTest` pass with `-PcontractBaseline=none`; `ReservedRefusalCodesTest` passes; both feature files exist, `@WIP`, and parse.
 - No disabled test, no new suppression, `HexagonalArchitectureTest` green, Checkstyle limits met.
 - Changes stay inside `owned_files`, plus the shared-file edits listed above with their rationale.
 

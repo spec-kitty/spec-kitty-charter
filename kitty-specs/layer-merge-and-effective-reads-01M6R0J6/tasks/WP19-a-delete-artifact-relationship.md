@@ -92,6 +92,7 @@ These files are owned by another WP (the no-overlap rule) but this WP must make 
 
 - `service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/PresetFiles.java` — remove the preset items naming the deleted artifact (owned by WP06)
 - `service/packs/src/main/java/ai/speckitty/charter/packs/application/InboundReferences.java` — reuse the scan with a single-artifact removal set (owned by WP14)
+- `contracts/charter/scenarios/activation-ruling-changes.feature` — remove `@WIP` from the A10 `DELETE` scenario (owned by WP08)
 
 
 ## Project constraints (apply to every subtask)
@@ -135,11 +136,14 @@ Remove one edge of the unordered `{from, to}` pair from the registered shard or 
 
 ### T097: Concurrency
 
-`RemovalConcurrencyTest`: `DELETE A::X` against a relationship `PUT B → A::X`, 100 runs — never both succeed with a dangling reference.
+`RemovalConcurrencyTest`: `DELETE A::X` against a relationship `PUT B → A::X`, 100 runs — never both succeed with a dangling reference. Tag it `stress` (excluded from PIT).
 
 ### T098: Scenarios
 
-`PackRemovalSteps`; `pack-removal.feature` green.
+`PackRemovalSteps`; bind `pack-removal.feature`, record the red, remove `@WIP`, make it green. Also remove the `@WIP`
+of the A10 `DELETE` scenario in `activation-ruling-changes.feature` (WP08's file, a shared edit) and make it green.
+Every absence assertion keeps its positive control. One audit record per `DELETE` outcome (`204`, `404`, `409`,
+`412`, `428`), asserted in a unit test.
 
 ## Test strategy
 
@@ -152,7 +156,8 @@ Service and controller unit tests, `RemovalConcurrencyTest`, `pack-removal.featu
 ## Definition of Done
 
 - Every subtask above is done, and recorded with `spec-kitty agent tasks mark-status <Txxx> --status done`.
-- The tests and scenarios named above were seen failing first and now pass; the module checks pass with the Gradle flags above.
+- The tests and scenarios named above were seen failing first (an assertion failure with every step bound, decision `DM-01M6RN6GC7PJS8BGHMAYM4JSSW`) and now pass.
+- **Exit check:** `:packs:test` and the contract suite pass; `pack-removal.feature` and the A10 `DELETE` scenario have no `@WIP`; each `DELETE` outcome writes one audit record.
 - No disabled test, no new suppression, `HexagonalArchitectureTest` green, Checkstyle limits met.
 - Changes stay inside `owned_files`, plus the shared-file edits listed above with their rationale.
 

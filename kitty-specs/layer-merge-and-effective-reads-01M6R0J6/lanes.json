@@ -12,6 +12,7 @@
       ],
       "write_scope": [
         "contracts/charter/changes/2026-11-07-a0-one-kind-model.md",
+        "contracts/charter/examples/ActivationChange.selected.yaml",
         "contracts/charter/paths/activations.yaml",
         "contracts/charter/paths/activations_activationId.yaml",
         "contracts/charter/paths/activations_activationId_exclusions_kind_artifactId.yaml",
@@ -33,27 +34,6 @@
         "api",
         "artifact-rendering",
         "legacy-cleanup"
-      ],
-      "depends_on_lanes": [],
-      "parallel_group": 0
-    },
-    {
-      "lane_id": "lane-g",
-      "wp_ids": [
-        "WP07"
-      ],
-      "write_scope": [
-        "service/packs/src/main/java/ai/speckitty/charter/packs/application/PackMutabilityPolicy.java",
-        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackCompositionResolver.java",
-        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/RequiredFloor.java",
-        "service/packs/src/test/java/ai/speckitty/charter/packs/application/PackMutabilityPolicyClosureTest.java",
-        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackCompositionResolverTest.java",
-        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackMutabilityPolicyTest.java",
-        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/RequiredFloorTest.java"
-      ],
-      "predicted_surfaces": [
-        "api",
-        "artifact-rendering"
       ],
       "depends_on_lanes": [],
       "parallel_group": 0
@@ -92,12 +72,15 @@
         "service/activations/src/main/java/ai/speckitty/charter/activations/infra/storage/ActivationFileCodec.java",
         "service/activations/src/main/java/ai/speckitty/charter/activations/infra/storage/FileActivationRepository.java",
         "service/activations/src/main/java/ai/speckitty/charter/activations/infra/storage/InMemoryActivationRepository.java",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/application/ActivationSelectionBudgetTest.java",
         "service/activations/src/test/java/ai/speckitty/charter/activations/domain/ActivationDocumentTest.java",
         "service/activations/src/test/java/ai/speckitty/charter/activations/domain/ClosureSnapshots.java",
         "service/activations/src/test/java/ai/speckitty/charter/activations/infra/storage/ActivationDocumentUpgradeTest.java",
         "service/activations/src/test/java/ai/speckitty/charter/activations/infra/storage/ActivationFileCodecTest.java",
         "service/activations/src/test/java/ai/speckitty/charter/activations/infra/storage/ActivationRepositoryContract.java",
-        "service/activations/src/test/java/ai/speckitty/charter/activations/infra/storage/FileActivationRepositoryTest.java"
+        "service/activations/src/test/java/ai/speckitty/charter/activations/infra/storage/FileActivationRepositoryFailureTest.java",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/infra/storage/FileActivationRepositoryTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/ActivationRestartTest.java"
       ],
       "predicted_surfaces": [
         "api",
@@ -181,11 +164,14 @@
         "service/activations/src/main/java/ai/speckitty/charter/activations/domain/PresetRules.java",
         "service/activations/src/test/java/ai/speckitty/charter/activations/application/ActivationPresetServiceTest.java",
         "service/activations/src/test/java/ai/speckitty/charter/activations/domain/PresetRulesTest.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/OfferingReadService.java",
         "service/packs/src/main/java/ai/speckitty/charter/packs/domain/Preset.java",
         "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PresetItem.java",
         "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/PresetDso.java",
         "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/PresetFiles.java",
         "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/PresetYaml.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/PresetTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PresetRoundTripTest.java",
         "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PresetYamlTest.java"
       ],
       "predicted_surfaces": [
@@ -200,13 +186,40 @@
       "parallel_group": 3
     },
     {
+      "lane_id": "lane-g",
+      "wp_ids": [
+        "WP07"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/application/PackMutabilityPolicy.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackCompositionResolver.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/RequiredFloor.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/PackMutabilityPolicyClosureTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackCompositionResolverTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackMutabilityPolicyTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/RequiredFloorTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-c"
+      ],
+      "parallel_group": 3
+    },
+    {
       "lane_id": "lane-h",
       "wp_ids": [
         "WP08"
       ],
       "write_scope": [
+        "build-logic/src/main/kotlin/charter.client-java.gradle.kts",
         "client-java/src/test/java/ai/speckitty/charter/client/ActivationRoundTripTest.java",
         "contracts/charter/changes/2026-11-07-a0-ruling-changes.md",
+        "contracts/charter/scenarios/activation-presets.feature",
+        "contracts/charter/scenarios/activation-ruling-changes.feature",
+        "contracts/charter/scenarios/activation-selections.feature",
         "service/activations/src/main/java/ai/speckitty/charter/activations/infra/api/ActivationBodyAdvice.java",
         "service/activations/src/main/java/ai/speckitty/charter/activations/infra/api/ActivationChangeMapper.java",
         "service/activations/src/main/java/ai/speckitty/charter/activations/infra/api/ActivationJson.java",
@@ -217,8 +230,11 @@
         "service/activations/src/test/java/ai/speckitty/charter/activations/infra/api/ActivationJsonTest.java",
         "service/activations/src/test/java/ai/speckitty/charter/activations/infra/api/ActivationMapperTest.java",
         "service/deployable/src/test/java/ai/speckitty/charter/deployable/ActivationRoundTripPropertyTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/UndefinedStepGuardTest.java",
         "service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/ActivationConfigConformanceTest.java",
-        "service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/ActivationSteps.java"
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/ActivationSteps.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/CharterContractSuite.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/UndefinedStepGuard.java"
       ],
       "predicted_surfaces": [
         "api",
@@ -250,7 +266,8 @@
         "docs/adr/0065-pack-registration-replaces-the-whole-pack.md",
         "docs/adr/README.md",
         "docs/changelog/2026-11-07-a0-kind-model.md",
-        "docs/conformance/divergence-register.md"
+        "docs/conformance/divergence-register.md",
+        "docs/conformance/ruleset-scenario-trace.md"
       ],
       "predicted_surfaces": [
         "planning"
@@ -288,7 +305,8 @@
       "predicted_surfaces": [
         "api",
         "artifact-rendering",
-        "legacy-cleanup"
+        "legacy-cleanup",
+        "tracker-integration"
       ],
       "depends_on_lanes": [
         "lane-planning"
@@ -390,6 +408,7 @@
         "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/StorageRootLocations.java",
         "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/WholePackStore.java",
         "service/packs/src/test/java/ai/speckitty/charter/packs/application/InboundReferencesTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/application/PackIdRulesTest.java",
         "service/packs/src/test/java/ai/speckitty/charter/packs/application/PackRegistrationServiceTest.java",
         "service/packs/src/test/java/ai/speckitty/charter/packs/application/RegistrationConcurrencyTest.java",
         "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackCommitStoreTest.java",
@@ -414,6 +433,8 @@
       ],
       "write_scope": [
         "contracts/charter/changes/2026-11-07-b-effective-reads.md",
+        "contracts/charter/examples/ActivationSkippedReport.nothing-skipped.yaml",
+        "contracts/charter/examples/EffectiveActionContext.implement.yaml",
         "contracts/charter/paths/activations_activationId_artifacts.yaml",
         "contracts/charter/paths/activations_activationId_skipped.yaml",
         "contracts/charter/scenarios/activations.feature",
@@ -549,12 +570,17 @@
         "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/PackRegistrationController.java",
         "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/PackRegistrationMapper.java",
         "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/RegistrationProperties.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/FreeSpaceCheck.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/StagingSweeper.java",
         "service/packs/src/test/java/ai/speckitty/charter/packs/application/RegistrationJobsTest.java",
         "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/ArchiveBodyAdviceTest.java",
-        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/PackRegistrationControllerTest.java"
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/PackRegistrationControllerTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/FreeSpaceCheckTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/StagingSweeperTest.java"
       ],
       "predicted_surfaces": [
         "api",
+        "legacy-cleanup",
         "tracker-integration"
       ],
       "depends_on_lanes": [
@@ -701,10 +727,12 @@
         "WP18"
       ],
       "write_scope": [
+        ".github/workflows/service.yml",
         "service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/GitFixtureServer.java",
         "service/packs/src/main/java/ai/speckitty/charter/packs/infra/fetch/git/**",
         "service/packs/src/test/java/ai/speckitty/charter/packs/NetworkCodeBoundaryTest.java",
-        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/fetch/git/**"
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/fetch/git/**",
+        "service/packs/src/test/resources/git-shim/git"
       ],
       "predicted_surfaces": [
         "api",
@@ -735,6 +763,7 @@
         "legacy-cleanup"
       ],
       "depends_on_lanes": [
+        "lane-x",
         "lane-z"
       ],
       "parallel_group": 12
@@ -764,11 +793,11 @@
       "parallel_group": 13
     }
   ],
-  "computed_at": "2026-11-06T13:21:13.109033+00:00",
+  "computed_at": "2026-11-06T14:53:29.276554+00:00",
   "computed_from": "dependency_graph+ownership",
   "planning_artifact_wps": [
     "WP09",
     "WP10"
   ],
-  "planning_commit_sha": "4fe59bbe05cc07ff83b9be86c7875216beee866c"
+  "planning_commit_sha": "c82b883b684881c9a7d1a654cc934adaac53e159"
 }

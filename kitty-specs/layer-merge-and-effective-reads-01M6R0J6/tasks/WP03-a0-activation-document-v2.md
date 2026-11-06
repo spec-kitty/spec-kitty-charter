@@ -40,6 +40,9 @@ owned_files:
 - service/activations/src/test/java/ai/speckitty/charter/activations/infra/storage/FileActivationRepositoryTest.java
 - service/activations/src/test/java/ai/speckitty/charter/activations/infra/storage/ActivationRepositoryContract.java
 - service/activations/src/test/java/ai/speckitty/charter/activations/infra/storage/ActivationDocumentUpgradeTest.java
+- service/activations/src/test/java/ai/speckitty/charter/activations/application/ActivationSelectionBudgetTest.java
+- service/activations/src/test/java/ai/speckitty/charter/activations/infra/storage/FileActivationRepositoryFailureTest.java
+- service/deployable/src/test/java/ai/speckitty/charter/deployable/ActivationRestartTest.java
 role: implementer
 tags: []
 tracker_refs: []
@@ -86,6 +89,9 @@ These files are owned by another WP (the no-overlap rule) but this WP must make 
 
 - `service/packs/src/main/java/ai/speckitty/charter/packs/application/ClosureView.java` — drop the separate mission-type set from the closure snapshot it hands to activations (owned by WP21)
 - `service/activations/src/main/java/ai/speckitty/charter/activations/infra/packs/PacksAvailability.java` — map mission types into the per-kind held map instead of `ClosureSnapshot.missionTypes` (owned by WP24)
+- `service/packs/src/test/java/ai/speckitty/charter/packs/application/ClosureQueriesTest.java` — `view.missionTypes()` is gone: assert mission types in the per-kind held map (owned by WP12)
+- `service/activations/src/test/java/ai/speckitty/charter/activations/infra/packs/PacksAvailabilityTest.java` — the fields the snapshot no longer has (owned by WP24)
+- `service/activations/src/main/java/ai/speckitty/charter/activations/infra/api/ActivationMapper.java` — follow the removed domain accessors (owned by WP08)
 
 
 ## Project constraints (apply to every subtask)
@@ -132,6 +138,12 @@ These files are owned by another WP (the no-overlap rule) but this WP must make 
   `missionTypes` → `selected.mission_type`; every selection is kept and `activatedKinds` is discarded (decision `DM-01M6RMJHDKNTXAM055Q8WR6SDN`; the gate was never
   enforced). Locks and the floor were never gated, so nothing observable changes.
 - A v1 document with any other unknown member is still refused, as today.
+- **One canonical form for "none" (FR-042 server half, decision `DM-01M6RN62PPCMSH6M54D2HXYZEQ`):** an empty list and
+  an absent per-kind member of `selected`/`deactivated` are stored the same way (absent), so the revision does not
+  move when a client sends `[]` for an absent list. Test: two documents differing only in `[]` vs absent encode to
+  identical bytes and the same revision. `languages` is **not** canonicalized: absent means no filter and `[]` means
+  keeps only untagged artifacts (`lang(u) ⇔ langs = ⊥ ∨ tags(u) = ∅ ∨ …` in the read rules), so the client must
+  keep an absent `languages` absent (WP08 fixes the client).
 - `ActivationDocumentUpgradeTest`: table-driven v1 → v2 cases, including an absent, an empty and a narrowing `activatedKinds` (every
   selection is kept in all three, decision `DM-01M6RMJHDKNTXAM055Q8WR6SDN`) and the corpus files from WP01.
 
@@ -160,7 +172,8 @@ These files are owned by another WP (the no-overlap rule) but this WP must make 
 ## Definition of Done
 
 - Every subtask above is done, and recorded with `spec-kitty agent tasks mark-status <Txxx> --status done`.
-- The tests and scenarios named above were seen failing first and now pass; the module checks pass with the Gradle flags above.
+- The tests and scenarios named above were seen failing first (an assertion failure with every step bound, decision `DM-01M6RN6GC7PJS8BGHMAYM4JSSW`) and now pass.
+- **Exit check:** `:activations:test` passes (the owned tests above, plus the three repaired activatedKinds tests); `:deployable:test --tests '*ActivationRestartTest*'` passes; `ClosureQueriesTest` and `PacksAvailabilityTest` compile and pass. The `@contract` activation scenarios are made green by WP08 (the A0 boundary).
 - No disabled test, no new suppression, `HexagonalArchitectureTest` green, Checkstyle limits met.
 - Changes stay inside `owned_files`, plus the shared-file edits listed above with their rationale.
 

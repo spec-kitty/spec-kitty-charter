@@ -48,6 +48,7 @@ owned_files:
 - contracts/packs/schemas/preset.schema.json
 - contracts/charter/changes/2026-11-07-a0-one-kind-model.md
 - contracts/charter/scenarios/activation-kind-model.feature
+- contracts/charter/examples/ActivationChange.selected.yaml
 role: implementer
 tags: []
 tracker_refs: []
@@ -88,10 +89,20 @@ Implementation command:
   v2 upgrade on the next write `DM-01M6RFGMDH859CJP3RHHF9YC3H`.
 - **Research:** R18 and `research/a7-kind-model-2026-11-06.md` with the three lens reports `research/a7-*.md`
   (file:line evidence for every schema below).
-- **Not here:** the read-side reasons (`kind_not_activated`, `kind_default`) and `SkippedReport.skippedByScope` are
-  changed by WP22 (PR B), because the reads still answer `501` until then.
+- **Not here:** the read-side reasons (`kind_not_activated`, `kind_default`) are changed by WP22 (PR B), because the
+  reads still answer `501` until then. `SkippedReport.skippedByScope` **stays**: it is the write report of the
+  `cascade` scope (`CascadeRules`, `ActivationChangeMapper:60`, `activation-selections.feature`), live in #399; only
+  its read-side kind-gate meaning is gone (decision `DM-01M6RN5MTWC98PXEVJNFQSRRJX`).
 
 - **Read first:** `plan.md` (the IC sections named above, in full), `spec.md` (the FRs above), `data-model.md`, `contracts/contract-delta.md`, `research.md` (R-numbers above), and `docs/architecture/composition-and-activation-rules.md` for the rule ids cited. All paths in this prompt are repo-root relative.
+
+
+
+### Files shared with other work packages
+
+These files are owned by another WP (the no-overlap rule) but this WP must make the small edit named. Make only that edit, and record a one-line rationale in the commit message (`out-of-map: <file> — <why>`):
+
+- `service/activations/src/main/java/ai/speckitty/charter/activations/infra/api/ActivationMapper.java` — the minimal edit that compiles against the regenerated DTOs (stop reading and writing the removed members; map `mission_type` in `selected`/`deactivated`), so every A0 lane after this one compiles (owned by WP08, which does the full mapping and the `422`)
 
 
 ## Project constraints (apply to every subtask)
@@ -140,6 +151,10 @@ Implementation command:
 - The per-artifact selection and exclusion paths accept `kind=mission_type`; the exclusion of a required or
   locked mission type answers `409 artifact_required` / `artifact_locked` like any kind.
 - `presets_presetId.yaml` (apply-preset) states that every kind of the preset is applied.
+- **Pins (B1), declared here so the contract lands before the code (C-001):** `ActivationChange` gains
+  `droppedPins: [{packId, version}]` (required, empty when nothing is dropped). Replace, the per-artifact writes and
+  apply-preset drop a pin no pack satisfies into it; `createActivation` keeps `422 version_not_held` for a pin in its
+  own body (decision `DM-01M6RN5Y406SB4KA13QYMQ2P8J`). Update `ActivationChange.selected.yaml`.
 
 ### T003: Offering schema, storage version and corpus
 
@@ -174,8 +189,14 @@ New `contracts/charter/scenarios/activation-kind-model.feature`, `@contract`, ea
 - a deny entry on a mission type is accepted; on a required or locked mission type it is `409`;
 - `activatedKinds` in a create body is `422` naming `selected.<kind>`; `missionTypes` likewise;
 - a stored v1 document reads back as its v2 upgrade (the step to seed a v1 file goes in WP08's glue);
-- a preset naming a skill applies it.
-Run the contract suite and confirm they fail for the right reason (unknown step or wrong status), not on syntax.
+- a preset naming a skill applies it;
+- FR-042 server half: GET an activation whose lists are absent, PUT the same body with those lists as `[]` → `200`,
+  the `ETag` and the stored bytes unchanged (decision `DM-01M6RN62PPCMSH6M54D2HXYZEQ`);
+- a seeded v1 document: GET, the four effective reads (while they answer `501`, GET only) and a cascade dry read
+  leave the file bytes and mtime unchanged; a conditional PUT with the read's `ETag` → `200` and the file holds v2.
+Every absence assertion is paired with a positive control in the same answer (the step that should be there is).
+Tag the file `@WIP` (excluded by `CharterContractSuite`): the glue is bound in WP08, which records the red
+(an assertion failure with every step bound) and removes the tag. An undefined step is not red (decision `DM-01M6RN6GC7PJS8BGHMAYM4JSSW`).
 
 ## Test strategy
 
@@ -190,7 +211,8 @@ Contract module tests (`ActivationConfigMirrorTest`, schema lint), and the new f
 ## Definition of Done
 
 - Every subtask above is done, and recorded with `spec-kitty agent tasks mark-status <Txxx> --status done`.
-- The tests and scenarios named above were seen failing first and now pass; the module checks pass with the Gradle flags above.
+- The tests and scenarios named above were seen failing first (an assertion failure with every step bound, decision `DM-01M6RN6GC7PJS8BGHMAYM4JSSW`) and now pass.
+- **Exit check:** `:contracts:check` (or the contract module's check) passes with `-PcontractBaseline=none`; `:activations:compileJava :activations:compileTestJava` pass against the regenerated DTOs; `activation-kind-model.feature` is committed `@WIP`.
 - No disabled test, no new suppression, `HexagonalArchitectureTest` green, Checkstyle limits met.
 - Changes stay inside `owned_files`, plus the shared-file edits listed above with their rationale.
 

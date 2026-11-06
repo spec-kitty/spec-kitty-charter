@@ -3,6 +3,7 @@ work_package_id: WP29
 title: C · Deny on a required artifact satisfied by an override, and PR C docs
 dependencies:
 - WP28
+- WP26
 requirement_refs:
 - FR-013
 - FR-014
@@ -93,6 +94,7 @@ These files are owned by another WP (the no-overlap rule) but this WP must make 
 - `docs/adr/0059-switch-gate-cascade-edges-and-activation-rulings.md` — amendment R6 (owned by WP09)
 - `docs/conformance/divergence-register.md` — DIV-204 (owned by WP09)
 - `docs/architecture/offering-and-activation.md` — the graph and the context (owned by WP26)
+- `docs/conformance/ruleset-scenario-trace.md` — fill the PR C rows and mark the trace complete (owned by WP09)
 
 
 ## Project constraints (apply to every subtask)
@@ -129,6 +131,9 @@ Descriptions of the three writes, `ArtifactPolicyRefused.yaml`, the `artifact_re
 ### T144: Red scenarios
 
 `activation-deny-satisfied.feature`: deactivate required T with active `E overrides T` → `200`; only an enhancer → `409 artifact_required`; locked T → `409 artifact_locked`; a replace adding override and deny → `200`; a replace with the deny and no override → `409`; unselect E afterwards → `200` and the skipped report lists the deny in `denyNotApplied`.
+The three `409` cases (enhancer only, locked T, replace without override) already pass under #399: label them in the
+feature as green-before regression controls. Red evidence is required only for the three `200` cases (bound glue,
+assertion failure against the PR B head).
 
 ### T145: The rule
 
@@ -149,7 +154,8 @@ Descriptions of the three writes, `ArtifactPolicyRefused.yaml`, the `artifact_re
 ## Definition of Done
 
 - Every subtask above is done, and recorded with `spec-kitty agent tasks mark-status <Txxx> --status done`.
-- The tests and scenarios named above were seen failing first and now pass; the module checks pass with the Gradle flags above.
+- The tests and scenarios named above were seen failing first (an assertion failure with every step bound, decision `DM-01M6RN6GC7PJS8BGHMAYM4JSSW`) and now pass.
+- **Exit check:** `:activations:test` and the contract suite pass; `activation-deny-satisfied.feature` green with red recorded for the three `200` cases; every row of the ruleset trace names an existing scenario.
 - No disabled test, no new suppression, `HexagonalArchitectureTest` green, Checkstyle limits met.
 - Changes stay inside `owned_files`, plus the shared-file edits listed above with their rationale.
 

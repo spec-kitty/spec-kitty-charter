@@ -171,6 +171,12 @@ model the reads are built on.
 | T144 | Red scenarios | WP29 | |
 | T145 | The rule | WP29 | |
 | T146 | Docs | WP29 | |
+| T147 | SC-005 scenarios for the A0 rulings | WP08 | |
+| T148 | Suite guard: an undefined or pending step fails the run | WP08 | |
+| T149 | Ruleset scenario trace (SC-002, SC-005) | WP09 | |
+| T150 | Mutation scope: the new packages and the excluded tags | WP13 | |
+| T151 | Staging sweep and the free-space refusal (NFR-009) | WP16 | |
+| T152 | Fake git shim and the dedicated CI job | WP18 | |
 
 ## Work packages
 
@@ -254,7 +260,7 @@ T028 Must-have items of every kind (WP06)
 
 - **Prompt:** [tasks/WP07-a0-packs-lock-floor-sibling.md](tasks/WP07-a0-packs-lock-floor-sibling.md)
 - **PR:** A0
-- **Dependencies:** none
+- **Dependencies:** WP03
 - **Subtasks:**
 
 T029 Lock scope (A15) (WP07)
@@ -276,6 +282,8 @@ T036 Scenario glue (WP08)
 T037 Client round trip (FR-042) (WP08)
 T038 Changed-behaviour fragment (WP08)
 T039 Property and conformance tests (WP08)
+T147 SC-005 scenarios for the A0 rulings (WP08)
+T148 Suite guard: an undefined or pending step fails the run (WP08)
 
 ### WP09 — A0 · Docs: ADR amendments, divergences and the core hand-over for A0
 
@@ -288,6 +296,7 @@ T040 ADR-0020 and ADR-0042 amendments (WP09)
 T041 ADR-0050 and ADR-0059 amendments (WP09)
 T042 Divergence register (WP09)
 T043 Docs changelog and core hand-over text (WP09)
+T149 Ruleset scenario trace (SC-002, SC-005) (WP09)
 
 ### WP10 — A · ADR-0065: registration replaces the whole pack
 
@@ -340,6 +349,7 @@ T060 tar.gz reader (WP13)
 T061 zip reader (WP13)
 T062 Path rules and writing (WP13)
 T063 Hostile corpus (NFR-005) (WP13)
+T150 Mutation scope: the new packages and the excluded tags (WP13)
 
 ### WP14 — A · Whole-pack registration: validate, version rule, gate, atomic replace
 
@@ -383,6 +393,7 @@ T079 Access, flags and properties (WP16)
 T080 Audit (WP16)
 T081 Scenario glue and NFR-008 (WP16)
 T082 Native upload test (WP16)
+T151 Staging sweep and the free-space refusal (NFR-009) (WP16)
 
 ### WP17 — A · Sources: guarded HTTPS archive and local path
 
@@ -410,6 +421,7 @@ T090 URL and ref validation (WP18)
 T091 Fetch, resolve, read objects (WP18)
 T092 ArchUnit boundary (WP18)
 T093 Fixture server and scenarios (WP18)
+T152 Fake git shim and the dedicated CI job (WP18)
 
 ### WP19 — A · DELETE of an artifact and of a relationship
 
@@ -544,7 +556,7 @@ T142 Reservation coverage (WP28)
 
 - **Prompt:** [tasks/WP29-c-deny-satisfied-by-override.md](tasks/WP29-c-deny-satisfied-by-override.md)
 - **PR:** C
-- **Dependencies:** WP28
+- **Dependencies:** WP28, WP26
 - **Subtasks:**
 
 T143 Contract red first (WP29)

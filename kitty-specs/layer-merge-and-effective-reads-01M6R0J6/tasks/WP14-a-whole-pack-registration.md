@@ -37,6 +37,7 @@ create_intent:
 - service/packs/src/test/java/ai/speckitty/charter/packs/application/PackRegistrationServiceTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/application/InboundReferencesTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/application/RegistrationConcurrencyTest.java
+- service/packs/src/test/java/ai/speckitty/charter/packs/application/PackIdRulesTest.java
 execution_mode: code_change
 model: ''
 owned_files:
@@ -51,6 +52,7 @@ owned_files:
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackCommitStoreTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackStoreTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/application/RegistrationConcurrencyTest.java
+- service/packs/src/test/java/ai/speckitty/charter/packs/application/PackIdRulesTest.java
 role: implementer
 tags: []
 tracker_refs: []
@@ -128,6 +130,8 @@ Implementation command:
 ### T065: Load and identity (steps 2–3)
 
 `WholePackStore.load(staging)` violations → `422`; `pack_level` org/project only (`409 registration_conflict` for built-in); same level and same `pack_id` on replace (`422`); a new pack's id and name unique (`409`).
+- **packId** matches `^[a-z0-9][a-z0-9-]{0,62}$` (`422`), is unique after case folding against every stored pack (`409`), and the resolved directory's real path (`toRealPath(NOFOLLOW_LINKS)`) is `<writable root>/<packId>` exactly (`422` otherwise).
+- `PackIdRulesTest`, table-driven over hostile ids: upper case, a leading `-`, 64 characters, `..`, `a/b`, a NUL, a homoglyph, a case-fold twin of a stored id, and a symlinked pack directory.
 
 ### T066: Revision and the version rule (steps 4–6)
 
@@ -143,7 +147,7 @@ Diff added/changed/removed artifacts and gate them along the new closure (`409 g
 
 ### T069: Concurrency (NFR-006)
 
-`RegistrationConcurrencyTest`: 8 concurrent uploads of one pack with readers in parallel, 100 runs — every read sees one complete version; 8 creates of one `pack_id` — one wins, the rest `409`; a replace racing `PUT`s with `If-Match` gives one linear ETag chain.
+`RegistrationConcurrencyTest`: 8 concurrent uploads of one pack with readers in parallel, 100 runs — every read sees one complete version; 8 creates of one `pack_id` — one wins, the rest `409`; a replace racing `PUT`s with `If-Match` gives one linear ETag chain. Tag it `stress` (excluded from PIT).
 
 ## Test strategy
 
@@ -156,7 +160,8 @@ Diff added/changed/removed artifacts and gate them along the new closure (`409 g
 ## Definition of Done
 
 - Every subtask above is done, and recorded with `spec-kitty agent tasks mark-status <Txxx> --status done`.
-- The tests and scenarios named above were seen failing first and now pass; the module checks pass with the Gradle flags above.
+- The tests and scenarios named above were seen failing first (an assertion failure with every step bound, decision `DM-01M6RN6GC7PJS8BGHMAYM4JSSW`) and now pass.
+- **Exit check:** `:packs:test` passes, including `PackRegistrationServiceTest` (one test per step's refusal), `PackIdRulesTest`, `InboundReferencesTest` (a referrer removed by the same request does not block) and `RegistrationConcurrencyTest`.
 - No disabled test, no new suppression, `HexagonalArchitectureTest` green, Checkstyle limits met.
 - Changes stay inside `owned_files`, plus the shared-file edits listed above with their rationale.
 

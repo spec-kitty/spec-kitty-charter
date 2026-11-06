@@ -1,7 +1,8 @@
 ---
 work_package_id: WP07
 title: 'A0 · packs rulings: lock scope, own policy, held floor, sibling settlement'
-dependencies: []
+dependencies:
+- WP03
 requirement_refs:
 - FR-028
 - FR-033
@@ -84,6 +85,7 @@ These files are owned by another WP (the no-overlap rule) but this WP must make 
 
 - `service/packs/src/main/java/ai/speckitty/charter/packs/application/ClosureView.java` — the locked set and the floor are computed with the scoped policy and the held-ids filter (owned by WP21)
 - `service/packs/src/main/java/ai/speckitty/charter/packs/application/ClosureQueries.java` — pass the held ids to `RequiredFloor` and surface the unheld report (owned by WP12)
+- `service/packs/src/test/java/ai/speckitty/charter/packs/application/ClosureQueriesTest.java` — pin the unheld must-have report (A10) and the scoped lock set (A15) (owned by WP12)
 
 
 ## Project constraints (apply to every subtask)
@@ -152,7 +154,8 @@ These files are owned by another WP (the no-overlap rule) but this WP must make 
 ## Definition of Done
 
 - Every subtask above is done, and recorded with `spec-kitty agent tasks mark-status <Txxx> --status done`.
-- The tests and scenarios named above were seen failing first and now pass; the module checks pass with the Gradle flags above.
+- The tests and scenarios named above were seen failing first (an assertion failure with every step bound, decision `DM-01M6RN6GC7PJS8BGHMAYM4JSSW`) and now pass.
+- **Exit check:** `:packs:test` passes with one named test per ruling (A15 lock scope, B8 own policy, A10 held floor and report, A14 enhancer siblings and exactly one winner).
 - No disabled test, no new suppression, `HexagonalArchitectureTest` green, Checkstyle limits met.
 - Changes stay inside `owned_files`, plus the shared-file edits listed above with their rationale.
 

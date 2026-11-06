@@ -121,11 +121,11 @@ Implementation command:
 
 ### T017: Pins no pack satisfies are dropped (B1)
 
-- A `packs` pin `(id, version)` whose version the pack no longer holds is dropped by any write and reported in
-  `dropped` (a pin entry, not an artifact id; extend `ActivationChange` with a typed entry if needed — check the
-  contract delta for the member name and add it to WP01's schema via a hand-off note if missing).
-- `version_not_held` remains declared but is no longer raised by writes; keep its contract entry (reads report the
-  pin in PR B, `pinNotHeld`).
+- A `packs` pin `(id, version)` whose version the pack no longer holds is dropped by replace, the per-artifact
+  writes and apply-preset, and reported in `ActivationChange.droppedPins` (`{packId, version}`, declared by WP01).
+- `createActivation` keeps `422 version_not_held` for a pin in its own body (decision `DM-01M6RN5Y406SB4KA13QYMQ2P8J`):
+  test both sides (create refuses, replace with the same body drops).
+- `version_not_held` is raised only by create; reads report an unheld pin in PR B (`pinNotHeld`).
 
 ### T018: Remove the kind gate from the write rules
 
@@ -151,7 +151,8 @@ Implementation command:
 ## Definition of Done
 
 - Every subtask above is done, and recorded with `spec-kitty agent tasks mark-status <Txxx> --status done`.
-- The tests and scenarios named above were seen failing first and now pass; the module checks pass with the Gradle flags above.
+- The tests and scenarios named above were seen failing first (an assertion failure with every step bound, decision `DM-01M6RN6GC7PJS8BGHMAYM4JSSW`) and now pass.
+- **Exit check:** `:activations:test` passes, with the A4 round trip (`GET` then `PUT` after deny-unselect and after a pack upgrade) and the B1 create/replace pair as named tests.
 - No disabled test, no new suppression, `HexagonalArchitectureTest` green, Checkstyle limits met.
 - Changes stay inside `owned_files`, plus the shared-file edits listed above with their rationale.
 

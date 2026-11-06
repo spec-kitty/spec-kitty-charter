@@ -35,6 +35,9 @@ owned_files:
 - service/activations/src/test/java/ai/speckitty/charter/activations/domain/PresetRulesTest.java
 - service/activations/src/test/java/ai/speckitty/charter/activations/application/ActivationPresetServiceTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PresetYamlTest.java
+- service/packs/src/main/java/ai/speckitty/charter/packs/application/OfferingReadService.java
+- service/packs/src/test/java/ai/speckitty/charter/packs/domain/PresetTest.java
+- service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PresetRoundTripTest.java
 role: implementer
 tags: []
 tracker_refs: []
@@ -82,6 +85,7 @@ Implementation command:
 These files are owned by another WP (the no-overlap rule) but this WP must make the small edit named. Make only that edit, and record a one-line rationale in the commit message (`out-of-map: <file> — <why>`):
 
 - `service/activations/src/main/java/ai/speckitty/charter/activations/infra/packs/PacksAvailability.java` — the preset view stops carrying `activatedKinds`/`missionTypes` separately (`PacksAvailability.java:176-179`; owned by WP24)
+- `service/activations/src/test/java/ai/speckitty/charter/activations/infra/packs/PacksAvailabilityTest.java` — the preset view fields folded into the ordinary lists (owned by WP24)
 
 
 ## Project constraints (apply to every subtask)
@@ -145,7 +149,8 @@ These files are owned by another WP (the no-overlap rule) but this WP must make 
 ## Definition of Done
 
 - Every subtask above is done, and recorded with `spec-kitty agent tasks mark-status <Txxx> --status done`.
-- The tests and scenarios named above were seen failing first and now pass; the module checks pass with the Gradle flags above.
+- The tests and scenarios named above were seen failing first (an assertion failure with every step bound, decision `DM-01M6RN6GC7PJS8BGHMAYM4JSSW`) and now pass.
+- **Exit check:** `:packs:test` and `:activations:test` pass, including `PresetTest`, `PresetRoundTripTest` and the offering read over a preset with mission types; the built-in packs load at startup.
 - No disabled test, no new suppression, `HexagonalArchitectureTest` green, Checkstyle limits met.
 - Changes stay inside `owned_files`, plus the shared-file edits listed above with their rationale.
 

@@ -56,6 +56,8 @@ owned_files:
 - contracts/charter/scenarios/effective-reads.feature
 - contracts/charter/scenarios/activations.feature
 - service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/ReservedOperationCoverageTest.java
+- contracts/charter/examples/ActivationSkippedReport.nothing-skipped.yaml
+- contracts/charter/examples/EffectiveActionContext.implement.yaml
 role: implementer
 tags: []
 tracker_refs: []
@@ -85,8 +87,8 @@ Implementation command:
 ## Context
 
 - **Delivery:** PR B (stacked on PR A).
-- **Concerns:** IC-08 in full, IC-17 (contract), IC-20 (read side: `kind_not_activated` and `skippedByScope` go
-  here, not in WP01). **Requirements:** FR-013–FR-017, FR-020–FR-022, FR-026 (read half: `pinNotHeld`), FR-027
+- **Concerns:** IC-08 in full, IC-17 (contract), IC-20 (read side: `kind_not_activated` goes here, not in WP01;
+  `skippedByScope` stays as the write report, empty at read). **Requirements:** FR-013–FR-017, FR-020–FR-022, FR-026 (read half: `pinNotHeld`), FR-027
   (activation half), FR-028 (unheld report), FR-032, NFR-002, C-001.
 - **Ruling Q1:** the list keeps ADR-0020 D7's shape: every closure artifact with a `state`; "in force" is
   `state=active`.
@@ -102,6 +104,8 @@ These files are owned by another WP (the no-overlap rule) but this WP must make 
 
 - `contracts/charter/schemas/ActivationChange.yaml` — add `warnings: [{code, artifact}]` (codes `enhanced_target_not_in_force`, `overridden`) (owned by WP01)
 - `contracts/charter/schemas/Activation.yaml` — add `denyNotApplied: [urn]` (owned by WP01)
+- `contracts/charter/schemas/PackRegistration.yaml` — `notices.activationsAffected` (owned by WP11)
+- `contracts/charter/examples/ActivationChange.selected.yaml` — the new empty buckets (owned by WP01)
 
 
 ## Project constraints (apply to every subtask)
@@ -133,15 +137,15 @@ These files are owned by another WP (the no-overlap rule) but this WP must make 
 
 ### T109: EffectiveArtifact and reasons
 
-`EffectiveArtifact` gains required `packId`, `level`, optional `satisfiedBy` (an override only); `kind` takes the merged kind enum (mission types listed). `EffectiveArtifactReason` drops `kind_default` and `kind_not_activated`, gains `overridden`, `mission_type_not_in_force`, `enhanced_target_not_in_force`, `required_not_in_force` (bound/ungrounded floor items — check the data model for the exact token). `required` and `summary.required` descriptions per research R11.
+`EffectiveArtifact` gains required `packId`, `level`, optional `satisfiedBy` (an override only); `kind` takes the merged kind enum (mission types listed). `EffectiveArtifactReason` drops `kind_default` and `kind_not_activated`, gains `overridden`, `mission_type_not_in_force` and `enhanced_target_not_in_force`. No separate reason for a required artifact that stays out of force: a required enhancer with no target in force (`DM-01M6R4W3ZMSESETMQ0ZQTCZCFJ`) or a required artifact bound to a mission type not in force (`DM-01M6RFGFW3S0YJ222QMHD2W11B`) keeps that reason, carries `required: true`, and is listed in `requiredNotInForce` (data-model, EffectiveSkippedReport). `required` and `summary.required` descriptions per research R11.
 
 ### T110: SkippedReport buckets
 
-Required `staleIds`, `denyNotApplied`, `languageFiltered`, `overridden`, `missionTypeNotInForce`, `overrideNotApplied`, `enhancedTargetNotInForce`, `pinNotHeld`, `unheldRequired`; `skippedByScope` removed. A write's `ActivationChange.skipped` answers them empty.
+Required `staleIds`, `denyNotApplied`, `languageFiltered`, `overridden`, `missionTypeNotInForce`, `overrideNotApplied`, `enhancedTargetNotInForce`, `pinNotHeld`, `requiredNotHeld` (A10: must-have items no pack holds), `requiredNotInForce` (`{kind, artifactId, reason}`). `skippedByScope` **stays**: it is the write report of the `cascade` scope, always empty at read (decision `DM-01M6RN5MTWC98PXEVJNFQSRRJX`). A write's `ActivationChange.skipped` answers the new buckets empty. Update the three examples that carry a `SkippedReport`. Also add `PackRegistration.notices.activationsAffected` (B4, PR B per the contract delta; a shared edit of WP11's schema).
 
 ### T111: Unreserve the two reads
 
-Remove `x-reserved` from both operations; document `pack_unreadable` for a refused override and an override cycle; the keyset cursor; `ETag`/`304`. `activations.feature` `501` pins retired; `ReservedOperationCoverageTest` 4 → 2.
+Remove `x-reserved` from both operations (the reads' `501` scenarios are replaced, not deleted, by WP25's); document `pack_unreadable` for a refused override and an override cycle; the keyset cursor; `ETag`/`304`. `activations.feature` `501` pins retired; `ReservedOperationCoverageTest` 4 → 2.
 
 ### T112: Changelog fragment
 
@@ -149,11 +153,25 @@ One fragment with one `### Breaking` block (members removed/required, reasons ch
 
 ### T113: Red scenarios
 
-`layer-merge.feature`: US3 AS1, US6, the A1 union, the #357 settlement, a refused override (`500 pack_unreadable`). `effective-reads.feature`: US3 AS2–AS7, US4; a required T hidden by an active override is satisfied; an enhancer alone does not satisfy T, which is put in force; an enhancer whose target is out of force is `inactive`; an override of a locked T is not applied; `F → E → T` chain leaves F (A3); an enhancer ring is not in force (A8); a step of a denied mission type is not in force (binding); a required step whose mission type is not in force is dropped and reported (`DM-01M6RFGFW3S0YJ222QMHD2W11B`); a pin no pack holds is in `pinNotHeld`. Fixtures authored inline per the plan's Fixtures list.
+Decision `DM-01M6RN6GC7PJS8BGHMAYM4JSSW`: commit both files `@WIP`; WP25 binds the glue, records the red and removes the tag. Every
+`When` asserts `200` and a non-empty answer, and every absence check (X absent, E absent) is paired with a positive
+control in the same answer.
+`layer-merge.feature`: US3 AS1, US6, the A1 union, the #357 settlement, a refused override (`500 pack_unreadable`). `effective-reads.feature`: US3 AS2–AS7, US4; a required T hidden by an active override is satisfied; an enhancer alone does not satisfy T, which is put in force; an enhancer whose target is out of force is `inactive`; an override of a locked T is not applied; `F → E → T` chain leaves F (A3); an enhancer ring is not in force (A8); a step of a denied mission type is not in force (binding); a required step whose mission type is not in force is dropped and reported (`DM-01M6RFGFW3S0YJ222QMHD2W11B`); a pin no pack holds is in `pinNotHeld`; a must-have item no pack holds is in `requiredNotHeld` (A10).
+**ETag (US3 AS7):** the `304` with the current tag; after a re-registration that changes a pack of the closure, the
+old tag gives `200` with a new `ETag`; a change to a pack outside the closure keeps the tag; `?state=`, `?kind=` and
+a cursor page never answer `304` to another representation's tag; after the v1→v2 write the tag changes once.
+**Writes (B6/B7, B4):** a select of an enhancer whose target is denied answers `200` with
+`warnings: [enhanced_target_not_in_force]`; a select of an overridden artifact warns `overridden`; `GET
+/activations/{id}` lists a deny entry the floor overrides in `denyNotApplied` (a positive control: an applied deny is
+not listed).
+**SC-005 (PR B items):** A1 (union of every governing copy), A2 (pinned final state, see WP23), A3, A8, A9 (bound and
+ungrounded floor), A13, B1 reads, B4, B6/B7 each have a named scenario. Fixtures authored inline per the plan's
+Fixtures list.
 
 ## Test strategy
 
-Contract lint, `ReservedOperationCoverageTest`, the two feature files red for the right reason.
+Contract lint, `OpenApiDocumentTest`, `ReservedOperationCoverageTest`; the two feature files committed `@WIP`
+(red is recorded by WP25 with the glue bound).
 
 ## Risks
 
@@ -162,7 +180,8 @@ Contract lint, `ReservedOperationCoverageTest`, the two feature files red for th
 ## Definition of Done
 
 - Every subtask above is done, and recorded with `spec-kitty agent tasks mark-status <Txxx> --status done`.
-- The tests and scenarios named above were seen failing first and now pass; the module checks pass with the Gradle flags above.
+- The tests and scenarios named above were seen failing first (an assertion failure with every step bound, decision `DM-01M6RN6GC7PJS8BGHMAYM4JSSW`) and now pass.
+- **Exit check:** the contract module check passes with `-PcontractBaseline=none`; `ReservedOperationCoverageTest` counts 2; both feature files parse, are `@WIP`, and contain every scenario listed in T113.
 - No disabled test, no new suppression, `HexagonalArchitectureTest` green, Checkstyle limits met.
 - Changes stay inside `owned_files`, plus the shared-file edits listed above with their rationale.
 

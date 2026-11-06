@@ -95,6 +95,8 @@ These files are owned by another WP (the no-overlap rule) but this WP must make 
 - `service/activations/src/main/java/ai/speckitty/charter/activations/infra/packs/ClosureViewSession.java` — map them (owned by WP24)
 - `contracts/charter/schemas/CharterRefusalCode.yaml` — `action_not_found` raised (owned by WP11)
 - `service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/ReservedOperationCoverageTest.java` — 2 → 0 with one bad-fixture control (owned by WP22)
+- `service/deployable/src/test/java/ai/speckitty/charter/deployable/ReservedRefusalCodesTest.java` — `ACTION_NOT_FOUND` moves from the unraised to the raised set (owned by WP11)
+- `contracts/charter/examples/EffectiveActionContext.implement.yaml` — the `skipped` member of the context (owned by WP22)
 
 
 ## Project constraints (apply to every subtask)
@@ -130,7 +132,9 @@ These files are owned by another WP (the no-overlap rule) but this WP must make 
 
 ### T139: Red scenarios
 
-`effective-graph-and-context.feature` US5 AS1–AS5 with negative controls; confirm red.
+`effective-graph-and-context.feature` US5 AS1–AS5 with negative controls; each absence (an edge absent, a step
+absent) paired with a positive control in the same answer. Bind the glue, run against the `501`, record the assertion
+failures as red (decision `DM-01M6RN6GC7PJS8BGHMAYM4JSSW`), then serve (T140, T141).
 
 ### T140: Serve the graph
 
@@ -155,7 +159,8 @@ Contract lint, the new feature file, `ReservedOperationCoverageTest`, controller
 ## Definition of Done
 
 - Every subtask above is done, and recorded with `spec-kitty agent tasks mark-status <Txxx> --status done`.
-- The tests and scenarios named above were seen failing first and now pass; the module checks pass with the Gradle flags above.
+- The tests and scenarios named above were seen failing first (an assertion failure with every step bound, decision `DM-01M6RN6GC7PJS8BGHMAYM4JSSW`) and now pass.
+- **Exit check:** the contract suite passes; `ReservedOperationCoverageTest` counts 0 with its bad-fixture control; `ReservedRefusalCodesTest` passes with `action_not_found` raised.
 - No disabled test, no new suppression, `HexagonalArchitectureTest` green, Checkstyle limits met.
 - Changes stay inside `owned_files`, plus the shared-file edits listed above with their rationale.
 

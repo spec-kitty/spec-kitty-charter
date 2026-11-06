@@ -74,6 +74,14 @@ Implementation command:
 - **Read first:** `plan.md` (the IC sections named above, in full), `spec.md` (the FRs above), `data-model.md`, `contracts/contract-delta.md`, `research.md` (R-numbers above), and `docs/architecture/composition-and-activation-rules.md` for the rule ids cited. All paths in this prompt are repo-root relative.
 
 
+
+### Files shared with other work packages
+
+These files are owned by another WP (the no-overlap rule) but this WP must make the small edit named. Make only that edit, and record a one-line rationale in the commit message (`out-of-map: <file> — <why>`):
+
+- `docs/conformance/ruleset-scenario-trace.md` — fill the PR A rows (A6, A8, A10 `DELETE`, A11, A12; US1, US2) (owned by WP09)
+
+
 ## Project constraints (apply to every subtask)
 
 - **TDD, contract first (C-001).** Write the failing test or `@contract` scenario first, watch it fail for the right
@@ -103,7 +111,7 @@ Implementation command:
 
 ### T099: Host requirement
 
-README.md (requirements section) and `run-in-a-container.md`: git ≥ 2.50.1 on `PATH` or `charter.pack-sources.git.executable`; without it the git source answers `503 pack_source_unavailable`; the container image must carry it; registration is off by default (`charter.registration.enabled`).
+README.md (requirements section) and `run-in-a-container.md`: git ≥ 2.50.1 on `PATH` or `charter.pack-sources.git.executable` (contributors: the `git-host` tests run only with it, in the `git-source` CI job; `check` uses a shim); without it the git source answers `503 pack_source_unavailable`; the container image must carry it; registration is off by default (`charter.registration.enabled`).
 
 ### T100: Guides
 
@@ -128,7 +136,7 @@ README.md (requirements section) and `run-in-a-container.md`: git ≥ 2.50.1 on 
 ## Definition of Done
 
 - Every subtask above is done, and recorded with `spec-kitty agent tasks mark-status <Txxx> --status done`.
-- The tests and scenarios named above were seen failing first and now pass; the module checks pass with the Gradle flags above.
+- **Exit check:** `python3 scripts/docs/check_docs.py`, markdownlint, cspell and lychee pass on the changed files; the README states the git ≥ 2.50.1 requirement; every PR A row of the trace names an existing scenario.
 - No disabled test, no new suppression, `HexagonalArchitectureTest` green, Checkstyle limits met.
 - Changes stay inside `owned_files`, plus the shared-file edits listed above with their rationale.
 

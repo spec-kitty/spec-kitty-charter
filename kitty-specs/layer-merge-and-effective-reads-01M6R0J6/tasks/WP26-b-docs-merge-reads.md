@@ -73,6 +73,7 @@ These files are owned by another WP (the no-overlap rule) but this WP must make 
 - `docs/conformance/divergence-register.md` — DIV-205 ratified, DIV-209 to DIV-212 added (owned by WP09)
 - `docs/adr/0059-switch-gate-cascade-edges-and-activation-rulings.md` — tick the follow-ups PR B closes (owned by WP09)
 - `docs/architecture/composition-and-activation-rules.md` — flip the PR B rules' status rows to built
+- `docs/conformance/ruleset-scenario-trace.md` — fill the PR B rows (owned by WP09)
 
 
 ## Project constraints (apply to every subtask)
@@ -125,7 +126,7 @@ ADR-0053 d5 note; ADR-0059 ticks; `docs/changelog/2026-11-07-b-effective-reads.m
 ## Definition of Done
 
 - Every subtask above is done, and recorded with `spec-kitty agent tasks mark-status <Txxx> --status done`.
-- The tests and scenarios named above were seen failing first and now pass; the module checks pass with the Gradle flags above.
+- **Exit check:** `python3 scripts/docs/check_docs.py`, markdownlint and cspell pass; every PR B row of the trace names an existing scenario.
 - No disabled test, no new suppression, `HexagonalArchitectureTest` green, Checkstyle limits met.
 - Changes stay inside `owned_files`, plus the shared-file edits listed above with their rationale.
 

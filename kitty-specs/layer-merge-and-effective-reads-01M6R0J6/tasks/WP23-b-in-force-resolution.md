@@ -140,7 +140,14 @@ Candidates and transitive overrides; tests per rule (E4, E9, E10, A3 chain, lock
 
 ### T116: Stratum 3: the floor to a fixed point
 
-A2's counter-example (`overrides(E,T)`, `overrides(U,E)`, T and U required) ends with T satisfied or in force, never neither; two required artifacts overriding each other are reported, not looped.
+Iterate the requirement check to a fixed point and judge satisfaction on the final set (`DM-01M6RA7M56M1409EV9JX1EW83K`).
+Pin the ruled answers exactly (no disjunctive oracle):
+- **A2:** `overrides(E,T)`, `overrides(U,E)`, T and U required, E and T selected → U `active`/`required`; E `inactive`
+  `overridden` by U; T `inactive` `overridden` with `satisfiedBy` U (transitive overrides, A3).
+- **Mutual override:** two required artifacts overriding each other form an override cycle among base ∪ unsatisfied:
+  `500 pack_unreadable` at read (C28; decision `DM-01M6RN6BWE6SVZZE8ERQ8Z9MV6`), never a loop.
+- **Cross-stratum:** F overrides required T, F bound to a mission type not in force → stratum 4 prunes F, so the
+  fixed point re-judges T: T `active`/`required` (not left neither in force nor satisfied).
 
 ### T117: Stratum 4: enhancer and binding pruning
 
@@ -148,7 +155,10 @@ Least fixed point; enhancer rings and `enhances(E,E)` out; a step of a mission t
 
 ### T118: Property tests
 
-`InForceResolutionPropertyTest` (jqwik or the repo's property library): I10 (conditional), I11, determinism under input order, termination.
+`InForceResolutionPropertyTest` with seeded generators in the style of `ActivationRoundTripPropertyTest` (no jqwik:
+it is excluded in `gradle/libs.versions.toml`): I10 (conditional), I11, determinism under input order, termination,
+and the **FR-029 invariant**: every held required id is `active`, or `satisfiedBy` an `active` artifact, or listed in
+`requiredNotInForce`/`requiredNotHeld`. Log the seed on failure.
 
 ### T119: Merged cascade (FR-038)
 
@@ -165,7 +175,8 @@ Least fixed point; enhancer rings and `enhances(E,E)` out; a step of a mission t
 ## Definition of Done
 
 - Every subtask above is done, and recorded with `spec-kitty agent tasks mark-status <Txxx> --status done`.
-- The tests and scenarios named above were seen failing first and now pass; the module checks pass with the Gradle flags above.
+- The tests and scenarios named above were seen failing first (an assertion failure with every step bound, decision `DM-01M6RN6GC7PJS8BGHMAYM4JSSW`) and now pass.
+- **Exit check:** `:packs:test` passes with `InForceResolutionTest` (one test per rule id; the A2, mutual-override and cross-stratum answers pinned) and the property test over at least 1,000 seeded cases.
 - No disabled test, no new suppression, `HexagonalArchitectureTest` green, Checkstyle limits met.
 - Changes stay inside `owned_files`, plus the shared-file edits listed above with their rationale.
 
