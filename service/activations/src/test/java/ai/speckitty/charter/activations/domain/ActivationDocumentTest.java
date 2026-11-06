@@ -10,6 +10,8 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
+import java.lang.reflect.Method;
+import java.lang.reflect.RecordComponent;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
@@ -39,7 +41,7 @@ class ActivationDocumentTest {
         assertThat(document.selected(DIRECTIVE))
                 .hasValueSatisfying(ids -> assertThat(ids).containsExactly("D1", "D2"));
         assertThat(canonical(document))
-                .isEqualTo("{\"packs\":[{\"packId\":\"zeta\"},{\"packId\":\"alpha\"}],\"schemaVersion\":1,"
+                .isEqualTo("{\"packs\":[{\"packId\":\"zeta\"},{\"packId\":\"alpha\"}],\"schemaVersion\":2,"
                         + "\"selected\":{\"directive\":[\"D1\",\"D2\"]}}");
     }
 
@@ -51,35 +53,75 @@ class ActivationDocumentTest {
     }
 
     @Test
-    void absentAndEmptyAreBothNotInForceButStayDistinct() {
-        ActivationDocument absent = build(b -> b);
-        ActivationDocument empty = build(b -> b.activatedKinds(List.of())
-                .missionTypes(List.of())
-                .languages(List.of())
-                .selected(DIRECTIVE, List.of()));
+    void anEmptyAllowListIsStoredAsAbsentSoBothGiveOneRevision() {
+        ActivationDocument absent = build(b -> b.selected(DIRECTIVE, List.of("D1")));
+        ActivationDocument empty = build(b -> b.selected(DIRECTIVE, List.of("D1"))
+                .selected(TACTIC, List.of())
+                .selected(MISSION_TYPE, List.of()));
 
-        assertThat(absent.inForce(DIRECTIVE)).isFalse();
-        assertThat(empty.inForce(DIRECTIVE)).isFalse();
-        assertThat(absent.activatedKinds()).isEmpty();
-        assertThat(empty.activatedKinds()).hasValueSatisfying(k -> assertThat(k).isEmpty());
-        assertThat(absent.selected(DIRECTIVE)).isEmpty();
-        assertThat(empty.selected(DIRECTIVE))
-                .hasValueSatisfying(s -> assertThat(s).isEmpty());
-        assertThat(absent.toCanonicalTree()).isNotEqualTo(empty.toCanonicalTree());
-        assertThat(absent.revision()).isNotEqualTo(empty.revision());
-        assertThat(canonical(empty))
-                .isEqualTo("{\"activatedKinds\":[],\"languages\":[],\"missionTypes\":[],\"schemaVersion\":1,"
-                        + "\"selected\":{\"directive\":[]}}");
+        assertThat(empty.selected(TACTIC)).isEmpty();
+        assertThat(empty.selected(MISSION_TYPE)).isEmpty();
+        assertThat(empty).isEqualTo(absent);
+        assertThat(empty.revision()).isEqualTo(absent.revision());
+        assertThat(canonical(empty)).isEqualTo("{\"schemaVersion\":2,\"selected\":{\"directive\":[\"D1\"]}}");
     }
 
     @Test
-    void aKindIsInForceOnlyWhenActivatedKindsNamesIt() {
-        ActivationDocument document = build(b -> b.activatedKinds(List.of(TACTIC, DIRECTIVE)));
+    void languagesKeepAbsentAndEmptyDistinct() {
+        ActivationDocument absent = build(b -> b);
+        ActivationDocument empty = build(b -> b.languages(List.of()));
 
-        assertThat(document.inForce(DIRECTIVE)).isTrue();
-        assertThat(document.inForce(SKILL)).isFalse();
+        assertThat(absent.languages()).isEmpty();
+        assertThat(empty.languages()).hasValueSatisfying(l -> assertThat(l).isEmpty());
+        assertThat(empty.revision()).isNotEqualTo(absent.revision());
+        assertThat(canonical(empty)).isEqualTo("{\"languages\":[],\"schemaVersion\":2}");
+    }
+
+    @Test
+    void absentMeansNoneForEveryKind() {
+        ActivationDocument minimal = build(b -> b);
+
+        for (ArtifactKind kind : ArtifactKind.values()) {
+            assertThat(minimal.selected(kind)).as("selected %s", kind).isEmpty();
+            assertThat(minimal.deactivated(kind)).as("deactivated %s", kind).isEmpty();
+        }
+    }
+
+    @Test
+    void aMissionTypeIsSelectedAndDeniedLikeAnyKind() {
+        ActivationDocument document = build(b -> b.selected(MISSION_TYPE, List.of("software-dev", "research"))
+                .deactivated(MISSION_TYPE, List.of("documentation")));
+
+        assertThat(document.selected(MISSION_TYPE))
+                .hasValueSatisfying(ids -> assertThat(ids).containsExactly("research", "software-dev"));
+        assertThat(document.deactivated(MISSION_TYPE)).containsExactly("documentation");
+        assertThat(document.withoutSelected(MISSION_TYPE, "research").selected(MISSION_TYPE))
+                .hasValueSatisfying(ids -> assertThat(ids).containsExactly("software-dev"));
+        assertThat(document.withoutDeny(MISSION_TYPE, "documentation").deactivated()).isEmpty();
         assertThat(canonical(document))
-                .isEqualTo("{\"activatedKinds\":[\"directive\",\"tactic\"],\"schemaVersion\":1}");
+                .isEqualTo("{\"deactivated\":{\"mission_type\":[\"documentation\"]},\"schemaVersion\":2,"
+                        + "\"selected\":{\"mission_type\":[\"research\",\"software-dev\"]}}");
+    }
+
+    @Test
+    void anUnselectThatEmptiesAListLeavesItAbsent() {
+        ActivationDocument document = build(b -> b.selected(SKILL, List.of("land-pr")));
+
+        ActivationDocument unselected = document.withoutSelected(SKILL, "land-pr");
+
+        assertThat(unselected.selected(SKILL)).isEmpty();
+        assertThat(unselected).isEqualTo(build(b -> b));
+    }
+
+    @Test
+    void theDocumentHasNoKindGateAndNoMissionTypeSet() {
+        assertThat(Arrays.stream(ActivationDocument.class.getMethods()).map(Method::getName))
+                .doesNotContain("kinds", "activatedKinds", "missionTypes", "inForce");
+        assertThat(Arrays.stream(ActivationDocument.Builder.class.getMethods()).map(Method::getName))
+                .doesNotContain("activatedKinds", "missionTypes");
+        assertThat(Arrays.stream(ActivationDocument.Written.class.getRecordComponents())
+                        .map(RecordComponent::getName))
+                .containsExactly("packs", "selected", "deactivated");
     }
 
     @Test
@@ -103,30 +145,33 @@ class ActivationDocumentTest {
     }
 
     @Test
-    void aKindOutsideTheDocumentVocabularyIsAViolation() {
+    void aKindOutsideTheActivatableKindsIsAViolation() {
         ActivationDocument.Built built = ActivationDocument.builder()
-                .activatedKinds(List.of(DIRECTIVE, ArtifactKind.ASSET))
-                .selected(MISSION_TYPE, List.of("x"))
+                .selected(ArtifactKind.ASSET, List.of("x"))
                 .deactivated(ArtifactKind.TEMPLATE, List.of("y"))
+                .selected(DIRECTIVE, List.of("D1"))
                 .build();
 
         assertThat(built.violations())
                 .extracting(RefusalViolation::pointer, RefusalViolation::code)
-                .containsExactly(
-                        tuple("/activatedKinds/1", "unknown_kind"),
-                        tuple("/selected/mission_type", "unknown_kind"),
-                        tuple("/deactivated/template", "unknown_kind"));
-        assertThat(built.document().activatedKinds())
-                .hasValueSatisfying(k -> assertThat(k).containsExactly(DIRECTIVE));
+                .containsExactly(tuple("/selected/asset", "unknown_kind"), tuple("/deactivated/template", "unknown_kind"));
+        assertThat(built.document().selected()).containsOnlyKeys(DIRECTIVE);
+        assertThat(built.document().deactivated()).isEmpty();
     }
 
     @Test
-    void theDocumentKindsAreTheActivatableKindsLessTheMissionType() {
-        assertThat(ActivationDocument.kinds())
-                .containsExactlyInAnyOrderElementsOf(Arrays.stream(ArtifactKind.values())
-                        .filter(ArtifactKind::activatable)
-                        .filter(k -> k != MISSION_TYPE)
-                        .toList());
+    void everyActivatableKindIsAcceptedInBothLists() {
+        ActivationDocument.Builder builder = ActivationDocument.builder();
+        List<ArtifactKind> activatable = Arrays.stream(ArtifactKind.values())
+                .filter(ArtifactKind::activatable)
+                .toList();
+        activatable.forEach(kind -> builder.selected(kind, List.of("s")).deactivated(kind, List.of("d")));
+
+        ActivationDocument.Built built = builder.build();
+
+        assertThat(built.violations()).isEmpty();
+        assertThat(built.document().selected().keySet()).containsExactlyInAnyOrderElementsOf(activatable);
+        assertThat(built.document().deactivated().keySet()).containsExactlyInAnyOrderElementsOf(activatable);
     }
 
     @Test
@@ -143,10 +188,18 @@ class ActivationDocumentTest {
 
     @Test
     void schemaGuaranteedShapesAreRefusedLoudly() {
-        assertThatThrownBy(() -> ActivationDocument.builder().schemaVersion(2))
+        assertThatThrownBy(() -> ActivationDocument.builder().schemaVersion(1))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> ActivationDocument.builder().schemaVersion(3))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> ActivationDocument.builder().packs(List.of()))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void theDocumentIsAtSchemaVersionTwo() {
+        assertThat(build(b -> b).schemaVersion()).isEqualTo(2);
+        assertThat(build(b -> b.schemaVersion(2)).toCanonicalTree()).containsEntry("schemaVersion", 2);
     }
 
     @Test
@@ -184,21 +237,21 @@ class ActivationDocumentTest {
 
     @Test
     void equalContentBuiltInAnotherOrderHasAnEqualRevision() {
-        ActivationDocument first = build(b -> b.missionTypes(List.of("software-dev", "research"))
+        ActivationDocument first = build(b -> b.selected(MISSION_TYPE, List.of("software-dev", "research"))
                 .deactivated(TACTIC, List.of("T2", "T1"))
                 .selected(DIRECTIVE, List.of("D1"))
                 .packs(List.of(PackRef.pinned("org", "1.0"))));
         ActivationDocument second = build(b -> b.packs(List.of(PackRef.pinned("org", "1.0")))
                 .selected(DIRECTIVE, List.of("D1", "D1"))
                 .deactivated(TACTIC, List.of("T1", "T2"))
-                .missionTypes(List.of("research", "software-dev")));
+                .selected(MISSION_TYPE, List.of("research", "software-dev")));
 
         assertThat(second).isEqualTo(first).hasSameHashCodeAs(first);
         assertThat(second.revision()).isEqualTo(first.revision());
         assertThat(canonical(first))
-                .isEqualTo("{\"deactivated\":{\"tactic\":[\"T1\",\"T2\"]},\"missionTypes\":[\"research\","
-                        + "\"software-dev\"],\"packs\":[{\"packId\":\"org\",\"version\":\"1.0\"}],"
-                        + "\"schemaVersion\":1,\"selected\":{\"directive\":[\"D1\"]}}");
+                .isEqualTo("{\"deactivated\":{\"tactic\":[\"T1\",\"T2\"]},"
+                        + "\"packs\":[{\"packId\":\"org\",\"version\":\"1.0\"}],\"schemaVersion\":2,"
+                        + "\"selected\":{\"directive\":[\"D1\"],\"mission_type\":[\"research\",\"software-dev\"]}}");
         assertThat(first.toString()).isEqualTo(canonical(first));
     }
 
@@ -207,8 +260,6 @@ class ActivationDocumentTest {
         ActivationDocument document = build(b -> b.languages(List.of("java"))
                 .deactivated(TACTIC, List.of("T1"))
                 .selected(DIRECTIVE, List.of("D1"))
-                .missionTypes(List.of("m"))
-                .activatedKinds(List.of(DIRECTIVE))
                 .packs(List.of(PackRef.of("p"))));
 
         Map<String, Object> tree = document.toCanonicalTree();
@@ -217,8 +268,6 @@ class ActivationDocumentTest {
                 .containsExactly(
                         "schemaVersion",
                         "packs",
-                        "activatedKinds",
-                        "missionTypes",
                         "selected",
                         "deactivated",
                         "languages");

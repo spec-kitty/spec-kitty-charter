@@ -7,10 +7,12 @@ import ai.speckitty.charter.activations.domain.ActivationId;
 import ai.speckitty.charter.activations.domain.ActivationRepository;
 import ai.speckitty.charter.activations.domain.ActivationRepository.CasResult;
 import ai.speckitty.charter.activations.domain.ActivationRepository.DeleteResult;
+import ai.speckitty.charter.activations.domain.Jcs;
 import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.Revision;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -37,6 +39,12 @@ abstract class ActivationRepositoryContract {
     private static final ActivationId ID = new ActivationId("01HZX3K9Q4M7N2P5R8S1T6V0W3");
     private static final ActivationId OTHER = new ActivationId("other-activation");
 
+    /** A version 1 document, as the store kept it before version 2. */
+    private static final byte[] VERSION_ONE = ("{\"activatedKinds\":[\"tactic\"],\"languages\":[\"lang-1\"],"
+                    + "\"missionTypes\":[\"mission-1\"],\"packs\":[{\"packId\":\"pack-1\",\"version\":\"1.1\"}],"
+                    + "\"schemaVersion\":1,\"selected\":{\"tactic\":[\"tactic-1\"]}}")
+            .getBytes(StandardCharsets.UTF_8);
+
     private ActivationRepository repository;
 
     /**
@@ -51,14 +59,76 @@ abstract class ActivationRepositoryContract {
         repository = repository();
     }
 
+    /**
+     * Stores bytes as the repository keeps them, bypassing its writes, so a version 1 document can be seeded.
+     *
+     * @param repository the repository {@link #repository()} answered
+     * @param id the activation's id
+     * @param bytes the stored form
+     */
+    abstract void storeBytes(ActivationRepository repository, ActivationId id, byte[] bytes);
+
+    /**
+     * The bytes the repository keeps for an id.
+     *
+     * @param repository the repository {@link #repository()} answered
+     * @param id the activation's id
+     * @return the stored form
+     */
+    abstract byte[] storedBytes(ActivationRepository repository, ActivationId id);
+
     /** A document distinct for each {@code n}. */
     static ActivationDocument document(int n) {
         return ActivationDocument.builder()
                 .packs(List.of(PackRef.pinned("pack-" + n, "1." + n)))
-                .activatedKinds(List.of(ArtifactKind.TACTIC))
+                .selected(ArtifactKind.TACTIC, List.of("tactic-" + n))
+                .selected(ArtifactKind.MISSION_TYPE, List.of("mission-" + n))
                 .languages(List.of("lang-" + n))
                 .build()
                 .document();
+    }
+
+    @Test
+    void aVersionOneDocumentReadsAsItsUpgradeAndTheReadsNeverWrite() {
+        storeBytes(repository, ID, VERSION_ONE);
+
+        StoredActivation first = repository.find(ID).orElseThrow();
+        StoredActivation second = repository.find(ID).orElseThrow();
+
+        assertThat(first).isEqualTo(StoredActivation.of(ID, document(1))).isEqualTo(second);
+        assertThat(first.document().schemaVersion()).isEqualTo(2);
+        assertThat(storedBytes(repository, ID)).isEqualTo(VERSION_ONE);
+    }
+
+    @Test
+    void theNextWriteStoresTheUpgradeAtVersionTwo() {
+        storeBytes(repository, ID, VERSION_ONE);
+        Revision read = repository.find(ID).orElseThrow().revision();
+
+        CasResult result = repository.replace(ID, Optional.of(read), document(1));
+
+        assertThat(result).isEqualTo(new CasResult.Written(StoredActivation.of(ID, document(1)), false));
+        assertThat(storedBytes(repository, ID)).isEqualTo(Jcs.canonical(document(1).toCanonicalTree()));
+        assertThat(new String(storedBytes(repository, ID), StandardCharsets.UTF_8)).contains("\"schemaVersion\":2");
+        assertThat(repository.find(ID)).contains(StoredActivation.of(ID, document(1)));
+    }
+
+    @Test
+    void aRevisionOfTheVersionOneBytesIsStaleOnceAndWritesNothing() {
+        storeBytes(repository, ID, VERSION_ONE);
+
+        CasResult result = repository.replace(ID, Optional.of(Revision.of(VERSION_ONE)), document(2));
+
+        assertThat(result).isEqualTo(new CasResult.Stale(document(1).revision()));
+        assertThat(storedBytes(repository, ID)).isEqualTo(VERSION_ONE);
+    }
+
+    @Test
+    void aVersionOneDocumentIsDeletedWithTheRevisionOfItsUpgrade() {
+        storeBytes(repository, ID, VERSION_ONE);
+
+        assertThat(repository.delete(ID, Optional.of(document(1).revision()))).isEqualTo(new DeleteResult.Deleted());
+        assertThat(repository.find(ID)).isEmpty();
     }
 
     @Test
