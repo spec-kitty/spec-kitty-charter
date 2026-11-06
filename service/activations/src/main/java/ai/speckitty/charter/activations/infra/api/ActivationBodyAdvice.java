@@ -208,7 +208,11 @@ public class ActivationBodyAdvice extends RequestBodyAdviceAdapter {
 
     private static JsonNode read(byte[] body, @Nullable MediaType contentType) {
         Charset charset = contentType == null ? null : contentType.getCharset();
-        return charset == null ? TREE.readTree(body) : TREE.readTree(new String(body, charset));
+        // Read as the converter reads it: a charset it detects from the bytes (a bare UTF-16 with no BOM, say) is not
+        // decoded here, or a little-endian body would decode as noise and step past every check.
+        return charset == null || JsonBodyGuard.detectsItself(charset)
+                ? TREE.readTree(body)
+                : TREE.readTree(new String(body, charset));
     }
 
     private static boolean isRepeatedMember(StreamReadException unreadable) {
