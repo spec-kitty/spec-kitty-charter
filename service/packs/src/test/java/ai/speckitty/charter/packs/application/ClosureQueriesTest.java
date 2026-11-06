@@ -289,6 +289,77 @@ class ClosureQueriesTest {
     }
 
     @Test
+    void aChildPackWhoseIdSortsBeforeItsParentMergesAfterItSoItsPresetWinsAndItsMustHaveStaysOnTheFloor() {
+        Preset inherited = new Preset(
+                "team",
+                "the parent's copy",
+                List.of(),
+                Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("FROM-PARENT"))),
+                List.of());
+        Preset overriding = new Preset(
+                "team",
+                "the child's copy",
+                List.of(),
+                Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("FROM-CHILD"))),
+                List.of());
+        // "a-child" sorts before "z-parent": without the parent_pack edge the parent would merge last and win.
+        pack(
+                "a-child",
+                PackLevel.ORG,
+                extending("a-child", "z-parent"),
+                holding(List.of(), MutabilityPolicySource.empty(), overriding));
+        pack(
+                "z-parent",
+                PackLevel.ORG,
+                descriptor("z-parent", "1.0.0"),
+                holding(List.of(), MutabilityPolicySource.empty(), inherited));
+
+        ClosureView view = queries().snapshot(roots("a-child"));
+
+        assertThat(view.closurePackIds()).containsExactly("z-parent", "a-child");
+        assertThat(view.presets().get("team"))
+                .as("the child merges after the pack it extends, so its copy wins")
+                .isEqualTo(new ClosureView.HeldPreset(overriding, "a-child"));
+        assertThat(view.floor().requiringPacks(new Urn(NodeKind.DIRECTIVE, "FROM-CHILD")))
+                .containsExactly("a-child");
+        assertThat(view.isRequired(new Urn(NodeKind.DIRECTIVE, "FROM-PARENT")))
+                .as("the losing parent copy requires nothing")
+                .isFalse();
+    }
+
+    @Test
+    void twoUnrelatedPacksOfOneLevelHoldingOnePresetIdRefuseTheClosure() {
+        Preset left = new Preset("team", "left", List.of(), Map.of(), List.of());
+        Preset right = new Preset("team", "right", List.of(), Map.of(), List.of());
+        pack(
+                "left",
+                PackLevel.ORG,
+                descriptor("left", "1.0.0"),
+                holding(List.of(), MutabilityPolicySource.empty(), left));
+        pack(
+                "right",
+                PackLevel.ORG,
+                descriptor("right", "1.0.0"),
+                holding(List.of(), MutabilityPolicySource.empty(), right));
+
+        assertThatThrownBy(() -> queries().allConfigured()).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+            assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT);
+            assertThat(refusal.getMessage()).contains("the preset `team`");
+        });
+    }
+
+    @Test
+    void aParentCycleRefusesTheClosureAsADependencyCycle() {
+        pack("a", PackLevel.ORG, extending("a", "b"), holding());
+        pack("b", PackLevel.ORG, extending("b", "a"), holding());
+
+        assertThatThrownBy(() -> queries().snapshot(roots("a")))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_DEPENDENCY_CYCLE));
+    }
+
+    @Test
     void theParentOfEachClosurePackIsItsDescriptorsParentPack() {
         pack("base-local", PackLevel.BUILT_IN, descriptor("base", "1.0.0"), holding());
         pack("team", PackLevel.PROJECT, extending("team", "base"), holding());

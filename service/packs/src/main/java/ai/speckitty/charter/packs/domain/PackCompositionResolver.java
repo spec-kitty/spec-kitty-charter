@@ -655,6 +655,69 @@ public final class PackCompositionResolver {
     }
 
     /**
+     * Refuses two packs of one configured level that hold one preset id and are not related by {@code parent_pack}
+     * (the operator ruling of 2026-11-06, as {@link #refuseSiblingContests} refuses two siblings that contest an
+     * artifact): neither would win by anything but load order. A child and a pack on its {@code parent_pack} line are
+     * related, the child merging after the parent it extends, so its copy takes the place of the parent's. A preset id
+     * held at different levels is no contest: the layer merge applies (ADR-0053 decision 6, ADR-0059 D3), the pack
+     * nearer the project winning. Presets are not artifacts, so no {@code overrides} edge settles a contest.
+     *
+     * @param ordered the packs of one compose, in merge order
+     * @param presetIdsOf the ids of the presets a pack holds
+     * @throws Refusal {@link Failure#SIBLING_CONFLICT} naming the second contestant first, as the artifact contest does
+     */
+    public static void refusePresetContests(
+            List<PackUnderResolution> ordered, Function<PackUnderResolution, Collection<String>> presetIdsOf) {
+        Objects.requireNonNull(ordered, "ordered");
+        Objects.requireNonNull(presetIdsOf, "presetIdsOf");
+        Map<String, PackUnderResolution> byId = new HashMap<>();
+        ordered.forEach(pack -> byId.putIfAbsent(pack.descriptor().packId(), pack));
+        Map<String, List<PackUnderResolution>> holders = new LinkedHashMap<>();
+        for (PackUnderResolution pack : ordered) {
+            for (String presetId : new LinkedHashSet<>(presetIdsOf.apply(pack))) {
+                holders.computeIfAbsent(presetId, key -> new ArrayList<>()).add(pack);
+            }
+        }
+        for (Map.Entry<String, List<PackUnderResolution>> held : holders.entrySet()) {
+            List<PackUnderResolution> packs = held.getValue();
+            for (int later = 1; later < packs.size(); later++) {
+                for (int earlier = 0; earlier < later; earlier++) {
+                    PackUnderResolution first = packs.get(earlier);
+                    PackUnderResolution second = packs.get(later);
+                    if (first.configured().level() == second.configured().level() && !related(first, second, byId)) {
+                        throw new Refusal(
+                                Failure.SIBLING_CONFLICT,
+                                named(second, first),
+                                labels(List.of(first, second)) + " at "
+                                        + first.configured().level().token() + " both hold the preset `"
+                                        + held.getKey() + "`, and neither extends the other by parent_pack");
+                    }
+                }
+            }
+        }
+    }
+
+    /** Whether one pack is on the other's {@code parent_pack} line. A cycle was refused before, so the walk ends. */
+    private static boolean related(
+            PackUnderResolution first, PackUnderResolution second, Map<String, PackUnderResolution> byId) {
+        return extendsOnLine(first, second, byId) || extendsOnLine(second, first, byId);
+    }
+
+    private static boolean extendsOnLine(
+            PackUnderResolution child, PackUnderResolution ancestor, Map<String, PackUnderResolution> byId) {
+        Set<String> walked = new LinkedHashSet<>();
+        Optional<String> at = child.descriptor().parentPack();
+        while (at.isPresent() && walked.add(at.get())) {
+            if (at.get().equals(ancestor.descriptor().packId())) {
+                return true;
+            }
+            PackUnderResolution next = byId.get(at.get());
+            at = next == null ? Optional.empty() : next.descriptor().parentPack();
+        }
+        return false;
+    }
+
+    /**
      * The identity an artifact reference names: its bare URN. The {@code <pack>::} qualifier is split off by
      * {@link PackQualifiedReference}, the one parser, and is not part of the identity, since a pack is provenance
      * (ADR-0048 decision 10). A reference that is no URN of a known kind is its own key, so it never contests anything
@@ -698,6 +761,11 @@ public final class PackCompositionResolver {
         }
     }
 
+    /**
+     * The packs one pack must be placed after: its {@code depends_on} targets and its {@code parent_pack}, each checked
+     * as the compose checks it. Both are edges of the order and of the cycle check, so a parent cycle, a pack that
+     * names itself as parent included, is {@link Failure#CYCLE}.
+     */
     private static List<String> dependenciesOf(PackUnderResolution pack, Map<String, PackUnderResolution> byId) {
         List<String> dependencies = new ArrayList<>();
         for (PackDependency dependency : pack.descriptor().dependencies()) {
@@ -724,6 +792,9 @@ public final class PackCompositionResolver {
             dependencies.add(targetId);
         }
         pack.descriptor().parentPack().ifPresent(parent -> {
+            if (parent.equals(pack.descriptor().packId())) {
+                throw new Refusal(Failure.CYCLE, named(pack), label(pack) + " names itself as its parent_pack");
+            }
             PackUnderResolution parentPack = byId.get(parent);
             if (parentPack == null) {
                 throw new Refusal(
@@ -732,6 +803,10 @@ public final class PackCompositionResolver {
                         label(pack) + " names parent_pack `" + parent + "`, which no configured pack declares");
             }
             requireLevel(pack, parentPack, true);
+            // The parent is an ordering and cycle edge as a dependency is: the child merges after the pack it extends.
+            if (!dependencies.contains(parent)) {
+                dependencies.add(parent);
+            }
         });
         return dependencies;
     }
