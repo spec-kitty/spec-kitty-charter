@@ -27,6 +27,7 @@ import ai.speckitty.charter.packs.domain.Toolguide;
 import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
 import ai.speckitty.charter.packs.domain.ToolguideRepository;
 import ai.speckitty.charter.packs.infra.storage.MarkdownGuideFormat;
+import ai.speckitty.charter.web.RefusalHandler;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;

@@ -9,6 +9,7 @@ import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Relationship;
+import ai.speckitty.charter.kernel.transport.PreconditionException;
 import ai.speckitty.charter.packs.application.GuideFetchRefusal.Reason;
 import ai.speckitty.charter.packs.application.ToolguideRegistrationService.GuideSource;
 import ai.speckitty.charter.packs.domain.Guide;

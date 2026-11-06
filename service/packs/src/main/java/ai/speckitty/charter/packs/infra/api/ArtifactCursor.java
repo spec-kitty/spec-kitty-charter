@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.infra.api;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.packs.application.ArtifactPosition;
 import ai.speckitty.charter.packs.application.ArtifactReadService;
+import ai.speckitty.charter.web.ProblemHandler;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CodingErrorAction;

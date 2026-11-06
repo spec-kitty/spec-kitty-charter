@@ -1,9 +1,8 @@
-package ai.speckitty.charter.deployable;
+package ai.speckitty.charter.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.api.model.Problem;
-import ai.speckitty.charter.packs.infra.api.ProblemHandler;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validation;
@@ -21,7 +20,7 @@ import org.springframework.http.ResponseEntity;
  * The shared answer to a method-validation violation (issue #268): a parameter out of its declared bound is the plain
  * 400 problem, whichever controller it reaches; a violation elsewhere is the service's own failure, a 500. Real
  * violations come from a real validator, so the property path is the one the method validation proxy builds. It lives
- * in the deployable, which ships the validator the service runs with.
+ * in the web transport, where the handler is, with the validator the service runs with.
  */
 class ValidationProblemTest {
 

@@ -51,6 +51,8 @@ import ai.speckitty.charter.packs.domain.Toolguide;
 import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
 import ai.speckitty.charter.packs.domain.ToolguideRepository;
 import ai.speckitty.charter.packs.infra.storage.MarkdownGuideFormat;
+import ai.speckitty.charter.web.ProblemHandler;
+import ai.speckitty.charter.web.RefusalHandler;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
