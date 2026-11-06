@@ -47,7 +47,13 @@ import org.springframework.stereotype.Component;
 @Component
 public class PacksAvailability implements AvailablePacks {
 
-    private final ClosureQueries closures;
+    /** The verified closure read, as this adapter calls it: {@link ClosureQueries#snapshot}. */
+    @FunctionalInterface
+    interface Closures {
+        ClosureView snapshot(Optional<List<PackIdentifier>> roots);
+    }
+
+    private final Closures closures;
 
     /**
      * The adapter over the packs slice.
@@ -56,6 +62,15 @@ public class PacksAvailability implements AvailablePacks {
      */
     @Autowired
     public PacksAvailability(ClosureQueries closures) {
+        this(Objects.requireNonNull(closures, "closures")::snapshot);
+    }
+
+    /**
+     * The adapter over any closure read, so a test can answer with a fixed view or a refusal.
+     *
+     * @param closures the closure read
+     */
+    PacksAvailability(Closures closures) {
         this.closures = Objects.requireNonNull(closures, "closures");
     }
 
