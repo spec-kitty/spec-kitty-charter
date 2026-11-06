@@ -152,11 +152,20 @@ Implements the `packs` port: given the before/after closures, list activation id
 
 ### T130: Scenario glue and timing
 
-`EffectiveReadSteps`; both feature files green; `EffectiveReadBudgetTest` with the NFR-003 fixture.
+`EffectiveReadSteps`: bind both feature files of WP22, record the red (assertion failures against the `501`), remove
+their `@WIP`, make them green, and replace the old `501` pins of the two reads.
+**NFR-003 gate** (decision `DM-01M6RN5SG19KXAHH4VGT9QBYA1`): `EffectiveReadOperationBudgetTest` in `check` fails the
+build when a read over the NFR-003 fixture (10 packs, 2,000 artifacts) does more than one compose, more than one
+in-force resolution, or more walk node visits than 3 × the closure's node count — counted through test hooks on
+`CompositionFactsCache` and `InForceResolution`, with the cache cold and then warm (both stated in the test).
+Wall time: `EffectiveReadBudgetTest` (`timing`, in `timingBudgets`) measures p95 over 50 runs after 10 warm-up runs,
+varies the cache key per run so the cache cannot flatter it, and reports against 300 ms at 1× and 3× (report-only,
+ADR-0057).
 
 ## Test strategy
 
-Service, controller and mapper tests; the two features; the timing test reported in the hand-off note.
+Service, controller and mapper tests; the two features green after recorded red; `EffectiveReadOperationBudgetTest`
+(gate, in `check`); `EffectiveReadBudgetTest` (reported).
 
 ## Risks
 
@@ -165,7 +174,8 @@ Service, controller and mapper tests; the two features; the timing test reported
 ## Definition of Done
 
 - Every subtask above is done, and recorded with `spec-kitty agent tasks mark-status <Txxx> --status done`.
-- The tests and scenarios named above were seen failing first and now pass; the module checks pass with the Gradle flags above.
+- The tests and scenarios named above were seen failing first (an assertion failure with every step bound, decision `DM-01M6RN6GC7PJS8BGHMAYM4JSSW`) and now pass.
+- **Exit check:** `:activations:check` and `:deployable:test --tests '*CharterContractSuite*'` pass; no `@WIP` remains in `layer-merge.feature`/`effective-reads.feature`; `ReservedOperationCoverageTest` counts 2; `EffectiveReadOperationBudgetTest` passes in `check`.
 - No disabled test, no new suppression, `HexagonalArchitectureTest` green, Checkstyle limits met.
 - Changes stay inside `owned_files`, plus the shared-file edits listed above with their rationale.
 

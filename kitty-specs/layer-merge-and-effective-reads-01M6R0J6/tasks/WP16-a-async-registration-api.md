@@ -24,6 +24,7 @@ subtasks:
 - T080
 - T081
 - T082
+- T151
 phase: PR A
 history:
 - timestamp: '2026-11-06T00:00:00Z'
@@ -43,6 +44,10 @@ create_intent:
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/ArchiveBodyAdviceTest.java
 - service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/PackRegistrationSteps.java
 - service/deployable/src/main/java/ai/speckitty/charter/deployable/RegistrationWiring.java
+- service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/StagingSweeper.java
+- service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/FreeSpaceCheck.java
+- service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/StagingSweeperTest.java
+- service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/FreeSpaceCheckTest.java
 execution_mode: code_change
 model: ''
 owned_files:
@@ -57,6 +62,10 @@ owned_files:
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/ArchiveBodyAdviceTest.java
 - service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/PackRegistrationSteps.java
 - service/deployable/src/main/java/ai/speckitty/charter/deployable/RegistrationWiring.java
+- service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/StagingSweeper.java
+- service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/FreeSpaceCheck.java
+- service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/StagingSweeperTest.java
+- service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/FreeSpaceCheckTest.java
 role: implementer
 tags: []
 tracker_refs: []
@@ -130,11 +139,21 @@ Implementation command:
 
 ### T076: ArchiveBodyAdvice
 
-Reads `Content-Length` and wraps the stream before binding: `413` over 32 MiB without reading; magic bytes vs `Content-Type` (`415`); a chunked body is counted while streaming.
+Reads `Content-Length` and wraps the stream before binding: `413` over 32 MiB without reading; magic bytes vs `Content-Type` (`415`); a chunked body is counted while streaming. Test the `413` with a request stream that fails the test if any byte is read.
 
 ### T077: RegistrationJobs
 
 Bounded executor, job states, retention (1 h, 1,000), `503 Retry-After` when full; tests with a fake clock.
+- **Deadline (NFR-008):** a job not finished at the source deadline (60 s) + 30 s ends `refused`
+  `registration_timed_out`; fake-clock test, no real wait.
+- **Preconditions under the lock (IC-14):** `If-Match` is re-checked after the registry lock is taken; a revision that
+  moved since the `202` ends the job `refused` `412` (unit test with a competing commit).
+- **Lock contention:** with the registry lock held and an injected 50 ms `tryLock` timeout, the job ends `refused`
+  `503` (deterministic; WP12's injectable timeout).
+- **Nothing slow under the lock:** a fake fetcher/extractor asserts `RegistryWriteLock.isHeldByAnyThread()` is false
+  whenever it runs.
+- **Latch seam:** a test-only `JobGate` hook lets the BDD glue hold a job in `pending` or `running`; production wiring
+  passes through.
 
 ### T078: Controller and mapper
 
@@ -142,23 +161,36 @@ The four operations on the generated interface; `Location` and `_links`; `PackRe
 
 ### T079: Access, flags and properties
 
-`RegistrationProperties` (`charter.registration.*`, `charter.pack-sources.*`); `401`/`503` paths; `RegistrationWiring` in deployable.
+`RegistrationProperties` (`charter.registration.*`, `charter.pack-sources.*`); `401`/`503` paths; `RegistrationWiring` in deployable. The `packId` path variable is checked against `^[a-z0-9][a-z0-9-]{0,62}$` before the body is read (synchronous `422`), table-tested with WP14's hostile ids.
 
 ### T080: Audit
 
-`AuditLog` port + structured-log adapter; a test asserts one record for each accepted, refused and failed attempt.
+`AuditLog` port + structured-log adapter. Tests assert exactly one record per attempt — accepted, refused (async),
+failed, and each **synchronous** refusal (`401`, `413`, `415`, `422` packId, queue-full `503`), which happen before
+the controller — and that each record carries the NFR-010 fields: principal, `packId`, source kind, locator with the
+query cut, outcome, revision before and after. (WP19 adds one record per `DELETE` outcome.)
 
 ### T081: Scenario glue and NFR-008
 
-`PackRegistrationSteps`: build `tar.gz`/`zip` from the inline fixture packs, poll the status URI; make `whole-pack-registration.feature` green for the `PUT` paths. NFR-008: `202` within 1 s of the last byte at p95 over 50 runs of a 32 MiB archive (a `timing`-tagged test, report-only).
+`PackRegistrationSteps`: build `tar.gz`/`zip` from the inline fixture packs, poll the status URI, hold jobs through the `JobGate` seam. Bind the `PUT`-path scenarios of `whole-pack-registration.feature` (the AS6 race and the status lifecycle included), record the red, remove their `@WIP`, make them green. NFR-008 latency: `202` within 1 s of the last byte at p95 over 50 runs of a 32 MiB archive, a `timing`-tagged test in `timingBudgets`, reported at 1× and 3×, report-only per ADR-0057 (decision `DM-01M6RN5SG19KXAHH4VGT9QBYA1`); the deadline is the deterministic gate (T077).
 
 ### T082: Native upload test
 
 Add one `tar.gz` and one `zip` upload to the nightly native test set (ADR-0060), with any hint beside `ActivationRuntimeHints`' pattern.
 
+### T151: Staging sweep and the free-space refusal (NFR-009)
+
+- `StagingSweeper`: at startup and every 5 minutes, deletes staging directories older than 15 minutes that no running
+  job owns. Fake-clock test: a 16-minute-old orphan is removed, a 16-minute-old directory of a running job and a
+  14-minute-old orphan are kept.
+- `FreeSpaceCheck`: before writing, a registration ends `refused` `503 pack_storage_full` (declared by WP11) when
+  the pack volume has less than 2× the archive bound (64 MiB) free. Test with a fake `FileStore` at 63 MiB (refused, nothing written) and 65 MiB (accepted).
+
 ## Test strategy
 
-Unit tests per class; `whole-pack-registration.feature` (PUT paths) green; the timing test reported.
+Unit tests per class (fake clock for retention, deadline and sweep; fake `FileStore`; injected lock timeout);
+the audit field assertions; `whole-pack-registration.feature` `PUT` paths green (race and lifecycle included); the
+NFR-008 latency in `timingBudgets`, report-only.
 
 ## Risks
 
@@ -167,7 +199,8 @@ Unit tests per class; `whole-pack-registration.feature` (PUT paths) green; the t
 ## Definition of Done
 
 - Every subtask above is done, and recorded with `spec-kitty agent tasks mark-status <Txxx> --status done`.
-- The tests and scenarios named above were seen failing first and now pass; the module checks pass with the Gradle flags above.
+- The tests and scenarios named above were seen failing first (an assertion failure with every step bound, decision `DM-01M6RN6GC7PJS8BGHMAYM4JSSW`) and now pass.
+- **Exit check:** `:packs:test` and `:deployable:test --tests '*CharterContractSuite*'` pass; the `PUT`-path scenarios of `whole-pack-registration.feature` have no `@WIP`; `registration_timed_out`, `refused 412` after `202`, the `503` on contention, the sweep and the free-space refusal each have a deterministic test.
 - No disabled test, no new suppression, `HexagonalArchitectureTest` green, Checkstyle limits met.
 - Changes stay inside `owned_files`, plus the shared-file edits listed above with their rationale.
 

@@ -19,6 +19,7 @@ subtasks:
 - T091
 - T092
 - T093
+- T152
 phase: PR A
 history:
 - timestamp: '2026-11-06T00:00:00Z'
@@ -34,6 +35,7 @@ create_intent:
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/fetch/git/GitSourceFetcherTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/fetch/git/GitCommandTest.java
 - service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/GitFixtureServer.java
+- service/packs/src/test/resources/git-shim/git
 execution_mode: code_change
 model: ''
 owned_files:
@@ -41,6 +43,8 @@ owned_files:
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/fetch/git/**
 - service/packs/src/test/java/ai/speckitty/charter/packs/NetworkCodeBoundaryTest.java
 - service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/GitFixtureServer.java
+- .github/workflows/service.yml
+- service/packs/src/test/resources/git-shim/git
 role: implementer
 tags: []
 tracker_refs: []
@@ -81,6 +85,14 @@ Implementation command:
   the target pack.
 
 - **Read first:** `plan.md` (the IC sections named above, in full), `spec.md` (the FRs above), `data-model.md`, `contracts/contract-delta.md`, `research.md` (R-numbers above), and `docs/architecture/composition-and-activation-rules.md` for the rule ids cited. All paths in this prompt are repo-root relative.
+
+
+
+### Files shared with other work packages
+
+These files are owned by another WP (the no-overlap rule) but this WP must make the small edit named. Make only that edit, and record a one-line rationale in the commit message (`out-of-map: <file> — <why>`):
+
+- `service/packs/build.gradle.kts` — exclude the `git-host` tag from `test` and register `gitHostTest` (owned by WP13)
 
 
 ## Project constraints (apply to every subtask)
@@ -124,6 +136,8 @@ URL `https://`, allowlisted host, port 443 or none, no userinfo/query/fragment, 
 
 ### T091: Fetch, resolve, read objects
 
+A `ref` that is a branch (`refs/heads/…`) with no `commit` requires `If-Match` on the target pack: absent → `428`
+(decision squad 7; test both with and without `If-Match`, and that a tag ref or a pinned `commit` needs none).
 Resolve and check the host with `AddressPolicy`; pin with `http.curloptResolve=<canonical-host>:443:<address>`; fetch; `rev-parse`; compare to a requested `commit`; `ls-tree -r -z` accepting modes `100644`, `100755`, `040000` only; `cat-file --batch` blobs into staging with the IC-03 rules; a size watch (32 MiB of blobs + a fixed allowance) kills the fetch; at most two git fetches at once; temp dir owner-only, removed in every outcome.
 
 ### T092: ArchUnit boundary
@@ -132,11 +146,30 @@ Resolve and check the host with `AddressPolicy`; pin with `http.curloptResolve=<
 
 ### T093: Fixture server and scenarios
 
-`GitFixtureServer`: a local bare repository served over HTTPS by a test server (`git http-backend` or a smart-HTTP stub) with a test CA; scenarios for a good ref, a hostile ref, a symlink/submodule in the tree, a redirect, a commit mismatch; skip-free: if the CI image lacks git ≥ 2.50.1 the test fails loudly (and the README documents the requirement, WP20).
+Decision `DM-01M6RN677S4XN4WR8ZVMAW777G`.
+- `GitFixtureServer`: a local bare repository served over HTTPS by a test server (`git http-backend` or a smart-HTTP
+  stub) with a test CA; scenarios for a good ref, a hostile ref, a symlink/submodule in the tree, a redirect, a commit
+  mismatch, and a branch ref without `If-Match` (`428`). These real-git tests carry the JUnit/Cucumber tag `git-host`.
+- `git-host` tests are excluded from `check` and from PIT (WP13's `excludedGroups`); they run in the CI job of T152,
+  never skipped silently there. Locally, report them as "not run (git < 2.50.1)", never as passed.
+- Everything else (argv, environment, version check, NFR-011) runs in `check` against a fake git shim (T152).
+
+### T152: Fake git shim and the dedicated CI job
+
+- **Shim:** `src/test/resources/git-shim/git`, a POSIX shell script placed first on a test `PATH` (or set through
+  `charter.pack-sources.git.executable`): it prints a configurable `git version X.Y.Z`, records its argv and
+  environment to a file, and replays canned `ls-tree`/`cat-file` output. `GitVersionCheckTest` covers 2.43.0
+  (disabled), 2.50.0 (disabled), 2.50.1 and 2.51.0 (enabled), a missing binary, and garbage output; an NFR-011 test
+  shows git-source requests answer `503 pack_source_unavailable` while `https_archive` and `filesystem` still work.
+  `GitCommandTest` asserts the exact argv and the environment built from empty through the shim's record.
+- **CI job:** in `.github/workflows/service.yml`, a job `git-source` that installs or selects git ≥ 2.50.1, fails
+  first if `git --version` is lower, then runs `./gradlew :packs:gitHostTest` (a `Test` task in
+  `service/packs/build.gradle.kts` that includes only `git-host`). It is required, not `continue-on-error`.
 
 ## Test strategy
 
-`GitCommandTest`, `GitSourceFetcherTest`, `NetworkCodeBoundaryTest`, the git scenarios.
+`GitVersionCheckTest`, `GitCommandTest` and `GitSourceFetcherTest` against the shim in `check`;
+`NetworkCodeBoundaryTest`; the `git-host` scenarios in the `git-source` CI job only.
 
 ## Risks
 
@@ -146,7 +179,8 @@ Resolve and check the host with `AddressPolicy`; pin with `http.curloptResolve=<
 ## Definition of Done
 
 - Every subtask above is done, and recorded with `spec-kitty agent tasks mark-status <Txxx> --status done`.
-- The tests and scenarios named above were seen failing first and now pass; the module checks pass with the Gradle flags above.
+- The tests and scenarios named above were seen failing first (an assertion failure with every step bound, decision `DM-01M6RN6GC7PJS8BGHMAYM4JSSW`) and now pass.
+- **Exit check:** `:packs:check` passes on a host with git 2.43 (no `git-host` test runs there, and none is reported as passed); `:packs:gitHostTest` passes on a host with git ≥ 2.50.1 (run it once in a container or record the CI job's run); the branch-ref `428` has a test.
 - No disabled test, no new suppression, `HexagonalArchitectureTest` green, Checkstyle limits met.
 - Changes stay inside `owned_files`, plus the shared-file edits listed above with their rationale.
 

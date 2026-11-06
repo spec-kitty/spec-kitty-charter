@@ -19,6 +19,7 @@ subtasks:
 - T061
 - T062
 - T063
+- T150
 phase: PR A
 history:
 - timestamp: '2026-11-06T00:00:00Z'
@@ -132,7 +133,22 @@ Per segment `[A-Za-z0-9._-]+`; refuse absolute, drive letters, backslash, NUL, `
 
 ### T063: Hostile corpus (NFR-005)
 
-`HostileArchiveCorpusTest`: at least 20 archives built by code (never committed binaries): zip-slip, absolute path, symlink and hardlink chains, device, FIFO, PAX path override, GNU long name with `..`, case-fold duplicate, zip bomb, tar bomb, 10,001 entries (EOCD), local/central mismatch, encrypted entry, overlapping entries, non-ASCII name without EFS, sparse file, empty segment, backslash, drive letter. 100% refused, nothing written outside staging (assert the staging parent is unchanged).
+`HostileArchiveCorpusTest`, table-driven: at least 22 archives built by code (never committed binaries): zip-slip, absolute path, symlink and hardlink chains (a hardlink whose target is outside the pack included), device, FIFO, PAX path override, GNU long name with `..`, case-fold duplicate, zip bomb, tar bomb, 10,001 entries (EOCD), local/central mismatch, encrypted entry, overlapping entries, non-ASCII name without EFS, an Info-ZIP Unicode Path extra field (`0x7075`) carrying `../` under a benign name, sparse file, empty segment, backslash, drive letter.
+- Each row names its **expected violation code and offending path**; the test asserts both (NFR-005), so an extractor that refuses everything, or for the wrong reason, fails.
+- **Benign controls:** for each shape a same-shaped benign archive (a regular file, a nested dir, a `./` prefix, one shared leading directory, an EFS-flagged ASCII name) extracts to the expected tree.
+- **Bombs:** read through a counting `InputStream`; assert at most 32 MiB + 64 KiB was decompressed before the refusal (NFR-004).
+- Nothing is written outside staging (the staging parent's listing is unchanged).
+
+### T150: Mutation scope: the new packages and the excluded tags
+
+In `service/packs/build.gradle.kts`:
+- add `ai.speckitty.charter.packs.infra.archive.*` and `ai.speckitty.charter.packs.infra.api.*` to `mutatedPackages`
+  (PIT never mutated them; `MutationFloors.kt:49` counts timed-out mutants as detected);
+- add the tags `stress` (the 100-run concurrency tests of WP12, WP14 and WP19) and `git-host` (WP18's real-git tests)
+  to the PIT `excludedGroups`, beside `unitTestExcludedTags`; `stress` still runs in `check`, `git-host` does not
+  (WP18 runs it in its own CI job);
+- run `pit-targets` for `infra.archive` once (the init script narrows the run) and record the score in the hand-off;
+  the packs floor must hold.
 
 ## Test strategy
 
@@ -147,7 +163,8 @@ Per segment `[A-Za-z0-9._-]+`; refuse absolute, drive letters, backslash, NUL, `
 ## Definition of Done
 
 - Every subtask above is done, and recorded with `spec-kitty agent tasks mark-status <Txxx> --status done`.
-- The tests and scenarios named above were seen failing first and now pass; the module checks pass with the Gradle flags above.
+- The tests and scenarios named above were seen failing first (an assertion failure with every step bound, decision `DM-01M6RN6GC7PJS8BGHMAYM4JSSW`) and now pass.
+- **Exit check:** `:packs:test` passes with `HostileArchiveCorpusTest` (per-row violation and path, benign controls, byte bound); a `pit-targets` run over `infra.archive` meets the packs floor; `HexagonalArchitectureTest` green.
 - No disabled test, no new suppression, `HexagonalArchitectureTest` green, Checkstyle limits met.
 - Changes stay inside `owned_files`, plus the shared-file edits listed above with their rationale.
 

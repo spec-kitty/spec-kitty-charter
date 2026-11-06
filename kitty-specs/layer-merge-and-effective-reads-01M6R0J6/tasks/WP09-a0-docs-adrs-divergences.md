@@ -8,6 +8,8 @@ requirement_refs:
 - FR-041
 - C-007
 - C-003
+- SC-002
+- SC-005
 planning_base_branch: issue-10-layer-merge-effective-reads
 merge_target_branch: issue-10-layer-merge-effective-reads
 branch_strategy: Planning artifacts for this mission were generated on issue-10-layer-merge-effective-reads. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-10-layer-merge-effective-reads unless the human explicitly redirects the landing branch.
@@ -16,6 +18,7 @@ subtasks:
 - T041
 - T042
 - T043
+- T149
 phase: PR A0
 history:
 - timestamp: '2026-11-06T00:00:00Z'
@@ -25,6 +28,7 @@ agent_profile: scribe-sally
 authoritative_surface: docs/
 create_intent:
 - docs/changelog/2026-11-07-a0-kind-model.md
+- docs/conformance/ruleset-scenario-trace.md
 execution_mode: planning_artifact
 model: ''
 owned_files:
@@ -34,6 +38,7 @@ owned_files:
 - docs/adr/0059-switch-gate-cascade-edges-and-activation-rulings.md
 - docs/conformance/divergence-register.md
 - docs/changelog/2026-11-07-a0-kind-model.md
+- docs/conformance/ruleset-scenario-trace.md
 role: documentarian
 tags: []
 tracker_refs: []
@@ -131,6 +136,14 @@ DIV-203, DIV-501 updated; the new DIV for `activated_kinds` narrowing; check eve
   `activatedKinds`/`missionTypes` are refused; mission types are selected under `selected.mission_type`;
   `activated_kinds` narrowing is gone. Nothing is edited or filed in core.
 
+### T149: Ruleset scenario trace (SC-002, SC-005)
+
+New `docs/conformance/ruleset-scenario-trace.md`: one row per counter-example A1–A15 and B1–B8 of the ruleset review
+(`kitty-specs/layer-merge-and-effective-reads-01M6R0J6/research/ruleset-review-2026-11-06.md`) and per acceptance
+scenario of User Stories 1–6: the ruled answer, the decision id, the feature file and scenario name that pins it, and
+the PR. Fill the A0 rows (from WP08's hand-off); leave the PR A, B and C rows with the planned feature file and
+`planned`. WP20, WP26 and WP29 fill their rows. Run the docs checks.
+
 ## Test strategy
 
 The docs checks: `python3 scripts/docs/check_docs.py` and markdownlint on the changed files.
@@ -142,7 +155,7 @@ The docs checks: `python3 scripts/docs/check_docs.py` and markdownlint on the ch
 ## Definition of Done
 
 - Every subtask above is done, and recorded with `spec-kitty agent tasks mark-status <Txxx> --status done`.
-- The tests and scenarios named above were seen failing first and now pass; the module checks pass with the Gradle flags above.
+- **Exit check:** `python3 scripts/docs/check_docs.py` and markdownlint pass on the changed files; every A0 row of the trace names a scenario that exists.
 - No disabled test, no new suppression, `HexagonalArchitectureTest` green, Checkstyle limits met.
 - Changes stay inside `owned_files`, plus the shared-file edits listed above with their rationale.
 

@@ -113,7 +113,7 @@ Implementation command:
 
 ### T053: RegistryWriteLock
 
-A fair `ReentrantReadWriteLock`-based or `ReentrantLock(true)` registry lock with `tryLock(5 s)` (NFR-009: on timeout the caller ends `refused` `503`). Order: registry, then the pack's lock — a test asserts the order by instrumenting `PackWriteLocks`.
+A fair `ReentrantReadWriteLock`-based or `ReentrantLock(true)` registry lock with `tryLock(5 s)` (NFR-009: on timeout the caller ends `refused` `503`). The timeout is injectable: `RegistryWriteLockTest` holds the lock on one thread and drives a second caller with a 50 ms timeout (no real 5 s wait), asserting the `503` outcome deterministically. Order: registry, then the pack's lock — a test asserts the order by instrumenting `PackWriteLocks`.
 
 ### T054: PackWriteGeneration
 
@@ -131,7 +131,11 @@ The per-artifact registration services and `RelationshipRegistrationService.putP
 
 `MixedReadConcurrencyTest`, each case 100 runs from a `CyclicBarrier`, 30 s timeout: 8 writers cycling A, B, C
 (ABA included) against 8 readers with marker files and a slow rename (a test hook in the commit store) — every read
-sees one complete version or `stale_input`; starvation: 16 `PUT`s and one replace all complete. The `DELETE` vs
+sees one complete version or `stale_input`; starvation: 16 `PUT`s and one replace all complete. The oracle must not
+pass for a reader that always answers `stale_input`: count the reads taken while the generation was odd (must be > 0
+over the 100 runs, proving overlap), bound `stale_input` to at most 10% of reads, and assert that
+`ClosureQueries.snapshot`'s three retries end in a version in every run. Tag the test `stress` (excluded from PIT,
+WP13). The `DELETE` vs
 relationship `PUT`, the 8 creates and the `If-Match` chain cases go in WP14/WP19, which own those writers.
 
 ## Test strategy
@@ -145,7 +149,8 @@ relationship `PUT`, the 8 creates and the `If-Match` chain cases go in WP14/WP19
 ## Definition of Done
 
 - Every subtask above is done, and recorded with `spec-kitty agent tasks mark-status <Txxx> --status done`.
-- The tests and scenarios named above were seen failing first and now pass; the module checks pass with the Gradle flags above.
+- The tests and scenarios named above were seen failing first (an assertion failure with every step bound, decision `DM-01M6RN6GC7PJS8BGHMAYM4JSSW`) and now pass.
+- **Exit check:** `:packs:test` passes, including `RegistryWriteLockTest` (deterministic contention → `503`), `MixedReadConcurrencyTest` (overlap count > 0, stale rate ≤ 10%), and `ClosureQueriesTest` with the retry.
 - No disabled test, no new suppression, `HexagonalArchitectureTest` green, Checkstyle limits met.
 - Changes stay inside `owned_files`, plus the shared-file edits listed above with their rationale.
 

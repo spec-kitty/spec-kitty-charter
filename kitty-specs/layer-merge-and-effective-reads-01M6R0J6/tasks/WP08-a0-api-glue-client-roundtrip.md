@@ -28,6 +28,8 @@ subtasks:
 - T037
 - T038
 - T039
+- T147
+- T148
 phase: PR A0
 history:
 - timestamp: '2026-11-06T00:00:00Z'
@@ -38,6 +40,9 @@ authoritative_surface: service/activations/src/main/java/ai/speckitty/charter/ac
 create_intent:
 - client-java/src/test/java/ai/speckitty/charter/client/ActivationRoundTripTest.java
 - contracts/charter/changes/2026-11-07-a0-ruling-changes.md
+- contracts/charter/scenarios/activation-ruling-changes.feature
+- service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/UndefinedStepGuard.java
+- service/deployable/src/test/java/ai/speckitty/charter/deployable/UndefinedStepGuardTest.java
 execution_mode: code_change
 model: ''
 owned_files:
@@ -55,6 +60,13 @@ owned_files:
 - service/deployable/src/test/java/ai/speckitty/charter/deployable/ActivationRoundTripPropertyTest.java
 - client-java/src/test/java/ai/speckitty/charter/client/ActivationRoundTripTest.java
 - contracts/charter/changes/2026-11-07-a0-ruling-changes.md
+- contracts/charter/scenarios/activation-selections.feature
+- contracts/charter/scenarios/activation-presets.feature
+- contracts/charter/scenarios/activation-ruling-changes.feature
+- service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/CharterContractSuite.java
+- service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/UndefinedStepGuard.java
+- service/deployable/src/test/java/ai/speckitty/charter/deployable/UndefinedStepGuardTest.java
+- build-logic/src/main/kotlin/charter.client-java.gradle.kts
 role: implementer
 tags: []
 tracker_refs: []
@@ -135,15 +147,28 @@ Implementation command:
 
 ### T036: Scenario glue
 
-- `ActivationSteps`: a step to seed a stored v1 document; steps for mission-type select/deny. Run
+- `ActivationSteps`: a step to seed a stored v1 document; steps for mission-type select/deny. Bind every step of
+  `activation-kind-model.feature` first, remove its `@WIP`, run it against the code before T034/T035 and record the
+  assertion failures (wrong status or body) as the red evidence; then make it green (decision `DM-01M6RN6GC7PJS8BGHMAYM4JSSW`).
+  Run
   `activation-kind-model.feature`, `activation-register.feature`, `activation-selections.feature`,
   `activation-presets.feature` green; rewrite (never delete without replacement) scenarios that pinned the old
   kind gate, listing them in the hand-off note.
 
 ### T037: Client round trip (FR-042)
 
-- New `client-java/.../ActivationRoundTripTest`: create a document with some lists absent, GET through the client,
-  PUT the same object back → `200` with an unchanged revision (or a no-op). Watch it fail first, then fix as above.
+Decision `DM-01M6RN62PPCMSH6M54D2HXYZEQ`; the side finding is the generated `ActivationConfig.java:63-73`
+initializing absent lists to `[]`.
+- **Client half** — new `client-java/.../ActivationRoundTripTest`: a JDK `com.sun.net.httpserver.HttpServer` (no new
+  dependency) answers a GET with a document whose `languages` and some per-kind lists are absent and records the PUT
+  body the generated client sends back. Assert the PUT body's JSON equals the GET body's (absent stays absent; in
+  particular `languages` is never sent as `[]`, which would mean "keep only untagged artifacts"). Watch it fail on
+  today's client.
+- **Fix:** in `charter.client-java.gradle.kts`, set the generator option that keeps absent containers null
+  (`containerDefaultToNull=true`, or the generator's equivalent) and regenerate; `ClientOutputTest`/`AdditiveMinorTest`
+  stay green.
+- **Server half:** bind the FR-042 scenario of `activation-kind-model.feature` (PUT with `[]` keeps the `ETag` and the
+  stored bytes; WP03's canonical form).
 
 ### T038: Changed-behaviour fragment
 
@@ -155,9 +180,40 @@ Implementation command:
 - `ActivationRoundTripPropertyTest` and `ActivationConfigConformanceTest` (deployable) updated for v2 and the merged
   kind enum; run `:deployable:test --tests '*Activation*'` and the contract suite for the activation features.
 
+### T147: SC-005 scenarios for the A0 rulings
+
+New `contracts/charter/scenarios/activation-ruling-changes.feature` (`@contract`), one scenario per counter-example
+of the ruleset review that A0 changes, each pinning the ruled answer with a positive control in the same answer:
+- **A4:** select E and T (E overrides required T), deny T, unselect E, GET then PUT the same body → `200`; and GET,
+  pack upgrade removing X, PUT the old body → `200`, `dropped` lists X.
+- **B1 (writes):** a pin to a version no pack holds is dropped by a per-artifact write into `droppedPins`; the same
+  pin in a create body → `422 version_not_held`.
+- **B5:** a select with `includeDeactivated` clears the deny entries of reached artifacts only; a lineage ancestor it
+  passes keeps its deny entry.
+- **A10:** a must-have item no pack holds is not in force and the closure answer reports it; `DELETE` of an artifact
+  another pack's preset names is `409 artifact_referenced` (PR A surface: keep this half `@WIP` with a note naming WP19).
+- **A14:** two org packs enhancing one built-in artifact compose (no sibling conflict).
+- **A15:** a project pack's `kind_defaults: {directive: locked}` locks its own and its ancestors' directives only; a
+  directive of an unrelated pack in the same closure stays deniable.
+- **B8:** a pack's own lock does not refuse its own per-artifact `PUT`.
+Record the red per scenario (bound glue, assertion failure) before the code of WP04–WP07 is merged into this lane, or,
+when that code is already present, record the failing run of the scenario against the #399 head
+(`issue-291-activation-writes`) instead.
+
+### T148: Suite guard: an undefined or pending step fails the run
+
+Decision `DM-01M6RN6GC7PJS8BGHMAYM4JSSW`: Cucumber 8 reports an undefined step as an aborted (skipped) test, so the build stays green.
+- New `UndefinedStepGuard` (a Cucumber `ConcurrentEventListener`): records every `TestStepFinished` whose status is
+  `UNDEFINED` or `PENDING` and fails the run on `TestRunFinished` with the list of scenario and step names.
+- Register it in `CharterContractSuite`'s `PLUGIN_PROPERTY_NAME` beside `pretty, summary`.
+- `UndefinedStepGuardTest`: feed the listener synthetic events — one undefined step → failure naming it; all
+  passed → no failure. `@WIP` scenarios are not selected, so they never trip it.
+
 ## Test strategy
 
-Mapper/advice unit tests, the activation `@contract` features, `ActivationRoundTripTest` (client), the deployable activation tests.
+Mapper/advice unit tests; `activation-kind-model.feature` and `activation-ruling-changes.feature` (red recorded,
+then green); the existing activation features rewritten where they pinned the old gate; `ActivationRoundTripTest`
+(client, wire body); `UndefinedStepGuardTest`; the deployable activation tests.
 
 ## Risks
 
@@ -166,7 +222,8 @@ Mapper/advice unit tests, the activation `@contract` features, `ActivationRoundT
 ## Definition of Done
 
 - Every subtask above is done, and recorded with `spec-kitty agent tasks mark-status <Txxx> --status done`.
-- The tests and scenarios named above were seen failing first and now pass; the module checks pass with the Gradle flags above.
+- The tests and scenarios named above were seen failing first (an assertion failure with every step bound, decision `DM-01M6RN6GC7PJS8BGHMAYM4JSSW`) and now pass.
+- **Exit check:** the A0 boundary is green: `./gradlew --max-workers=1 -Dorg.gradle.internal.repository.max.retries=10 -PcontractBaseline=none :kernel:check :packs:check :activations:check :deployable:check :client-java:check`; no `@WIP` remains on an A0 scenario except the A10 `DELETE` half (named for WP19); the guard fails a run with an undefined step.
 - No disabled test, no new suppression, `HexagonalArchitectureTest` green, Checkstyle limits met.
 - Changes stay inside `owned_files`, plus the shared-file edits listed above with their rationale.
 - PR A0's scope is green end to end: `./gradlew ... :activations:check :packs:check :kernel:check` and the activation contract features.
