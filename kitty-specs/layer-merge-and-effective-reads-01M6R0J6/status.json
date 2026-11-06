@@ -157,7 +157,7 @@
     },
     "WP06": {
       "actor": "claude",
-      "agent": "claude::java-jenny",
+      "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -170,6 +170,7 @@
         "Presets name any kind (FR-041): Preset is one kind->items map over ArtifactKind activatable kinds; missionTypes/requiredMissionTypes/activatedKinds removed; PresetYaml/PresetFiles/PresetDso derive activated_<plural> from the registry; activated_kinds refused at load (schema, one violation on the file). Red first: 10d18efc (6 assertion failures in PresetYamlTest/PresetRoundTripTest), green: f7479198. Gates: ./gradlew --max-workers=1 -Dorg.gradle.internal.repository.max.retries=10 -PcontractBaseline=none :packs:check -> exit 0; :activations:check -> exit 1, only the WP08-owned ActivationBodyAdviceTest (4) and ActivationJsonTest (1); checkstyle/javadoc/spotless green; :deployable:test --tests HexagonalArchitectureTest,ProductionWiringTest,CharterWiringTest,ConfigRootWiringTest,ScenarioPacksTest -> exit 1, only the 109 WP08-owned CharterContractSuite failures, all named tests green. Out-of-map: PacksAvailability(+Test) listed; RequiredFloor(+Test) WP07, ClosureQueriesTest WP12, PackPresetsTest, ReadOnlyPackSaveTest - constructor/one-line folds; governing.yaml fixture. Divergence note for docs WP: preset activated_kinds removed; skills/glossary packs allowed in presets."
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/layer-merge-and-effective-reads-01M6R0J6-coord/kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP06-a0-presets-any-kind/review-cycle-1.md",
         "reference": "review-cycle://layer-merge-and-effective-reads-01M6R0J6/WP06-a0-presets-any-kind/review-cycle-1.md",
@@ -177,13 +178,13 @@
         "verdict": "changes_requested"
       },
       "role": "implementer",
-      "shell_pid": 11093,
-      "shell_pid_created_at": "1793982740.61",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T025": "done",
-        "T026": "done",
-        "T027": "done",
-        "T028": "done"
+        "T025": "planned",
+        "T026": "planned",
+        "T027": "planned",
+        "T028": "planned"
       }
     },
     "WP07": {
