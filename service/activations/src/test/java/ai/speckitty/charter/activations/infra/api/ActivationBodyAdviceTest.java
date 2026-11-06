@@ -141,6 +141,10 @@ class ActivationBodyAdviceTest {
                 "/selected/agent_profile/0",
                 "invalid_value");
         refused(putBody("{}"), "/schemaVersion", "invalid_value");
+        refused(
+                putBody("{\"schemaVersion\": 1, \"packs\": [{\"packId\": \"fixture\", \"version\": \"  \"}]}"),
+                "/packs/0/version",
+                "invalid_value");
     }
 
     @Test
