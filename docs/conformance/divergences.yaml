@@ -643,11 +643,12 @@
   core: The org packs' required_* lists.
   service: >-
     The must-have items of every governing preset in the activation's closure (the depends_on
-    closure of its packs).
+    and parent_pack closure of its packs).
   rationale: >-
     Requirement is authored as a preset (ADR-0031), and only the packs an activation builds on
-    govern it. An assumed default, flagged to the operator as open review item 1.
-  ruling: decision DM-01M6PCWSA65497T9A7J80K6V56 (mission activation-register-and-closure-01M6NXBD, 2026-11-05)
+    govern it. The closure scope was an assumed default of the mission, and the operator ruled on
+    2026-11-06 that it stands.
+  ruling: operator ruling of 2026-11-06 (decision DM-01M6PCWSA65497T9A7J80K6V56 of mission activation-register-and-closure-01M6NXBD had assumed it on 2026-11-05)
   status: open
   since: 2026-11-05
   evidence:
