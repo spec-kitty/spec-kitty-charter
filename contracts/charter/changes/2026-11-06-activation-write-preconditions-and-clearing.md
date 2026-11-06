@@ -24,7 +24,9 @@
   ancestor passed through is cleared and never selected), and of what the read-time `enhances` pull reaches from what
   the walk selects, within the kinds `activatedKinds` names (absent means none, ADR-0059 D2.2).
 - A cascading deactivate never removes an artifact on the required or locked floor; a selected one the cascade reached
-  is kept and reported in `skippedShared`. `SkippedDeactivated.requiredBy` and `SharedSkip.referencedBy` name only an
+  is kept, and reported in `skippedShared` when another active artifact still references it, named by that artifact.
+  One no other active artifact reaches is not reported: it was never a candidate, and `referencedBy` never names the
+  kept artifact itself. `SkippedDeactivated.requiredBy` and `SharedSkip.referencedBy` name only an
   artifact an `ArtifactReference` can name: a template, an asset, an unselected intermediate or a lineage ancestor on
   the way leads back to the artifact that put it in the walk (for an ancestor, its descendant), as
   `ArtifactReference`'s description and ADR-0059 D2.4 say; among the nearest, the first in code-point order.

@@ -10,7 +10,8 @@ put:
     the reached artifacts from selected, records a deny entry only for the named artifact, and keeps an artifact
     another active one still reaches, or an active enhancer references (skippedShared). A cascade never removes an
     artifact a pack requires or locks: it is kept, with what it reaches, and a selected one the cascade reached is
-    reported in skippedShared. A named artifact a pack requires or locks is 409, naming every requiring pack, and
+    reported in skippedShared when another active artifact still references it, named by that artifact; one only the
+    floor keeps is not reported. A named artifact a pack requires or locks is 409, naming every requiring pack, and
     nothing is stored; only the deny entry the write adds is judged against that floor, so a stored one a pack
     upgrade put on it is tolerated (ADR-0059 D4). Requires If-Match (ADR-0020 D6): 428 without it, 404
     activation_not_found, 412 when stale and 400 when it is not one quoted revision come before any 422, a fault of

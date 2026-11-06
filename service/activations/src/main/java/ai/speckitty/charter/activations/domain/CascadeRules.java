@@ -34,7 +34,7 @@ import java.util.function.Predicate;
  *   <li><b>Deactivate</b> ({@link #planDeactivate}, {@link #planShared}, {@link #applyDeactivate}): the target and, with
  *       a cascade, the selected artifacts in scope only it reaches leave {@code selected}. A floor artifact is never a
  *       candidate: it stays a start of the shared walk, and one that is selected and reached is reported in
- *       {@code skippedShared}. A candidate another active artifact ({@code selected} plus the floor) reaches, or an
+ *       {@code skippedShared} when another active artifact reaches it, named by that artifact. A candidate another active artifact ({@code selected} plus the floor) reaches, or an
  *       active enhancer references, is kept and reported in {@code skippedShared}. Only the target gets a deny entry.
  *       A mission type is never a candidate: no cascade scope admits it, so a selected one the target reached is
  *       reported in {@code skippedByScope} and stays.
@@ -181,7 +181,8 @@ public final class CascadeRules {
      * @param enhancers for each candidate, its enhancers, one hop over the enhances relation
      * @param floor the artifacts the governing packs require
      * @param previous the answer of the previous step's walk; {@link Reach#empty()} for the first step
-     * @return the plan; one that walks nothing when there is no candidate
+     * @return the plan; one that walks nothing when the target reached no selected artifact in scope (no candidate and
+     *     no selected floor artifact, whose {@code referencedBy} the walk also finds)
      */
     public static ReachPlan planShared(
             ActivationDocument document,
@@ -191,10 +192,10 @@ public final class CascadeRules {
             Map<ArtifactRef, Set<ArtifactRef>> enhancers,
             Set<ArtifactRef> floor,
             Reach previous) {
-        Set<ArtifactRef> candidates = candidates(document, target, scope, ownReach, floor);
-        if (candidates.isEmpty()) {
+        if (selectedReached(document, target, scope, ownReach).isEmpty()) {
             return ReachPlan.none(target);
         }
+        Set<ArtifactRef> candidates = candidates(document, target, scope, ownReach, floor);
         Set<ArtifactRef> starts = new TreeSet<>(others(document, target, candidates, floor));
         starts.addAll(enhancerKept(
                 candidates, enhancers, union(starts, previous.reached().keySet())));
@@ -207,8 +208,9 @@ public final class CascadeRules {
      * A deactivate: the target is denied and unselected, and with a cascade so is every candidate no other active
      * artifact keeps. A candidate is kept when the shared walk reached it or an active enhancer references it; its
      * {@code referencedBy} is the nearest predecessor active after the write, or else an active enhancer. A selected
-     * floor artifact the target reached is never a candidate and is reported too, named by the nearest active artifact
-     * that reaches it, or else by itself (the floor keeps it). {@code skippedByScope} lists only the out-of-scope
+     * floor artifact the target reached is never a candidate; it is reported too, named by the nearest other active
+     * artifact that reaches it, and left out when none does: the floor keeps it, and it never names itself.
+     * {@code skippedByScope} lists only the out-of-scope
      * artifacts the target reached that are selected: one not selected is left alone and not reported.
      *
      * @param document the document before the write
@@ -453,7 +455,8 @@ public final class CascadeRules {
 
     /**
      * The {@code skippedShared} report of a deactivate: who keeps each kept candidate and each selected floor artifact
-     * the target reached.
+     * the target reached. An artifact is never named as what keeps itself: a floor artifact no other active artifact
+     * reaches is left out, and a kept candidate always has another (the shared walk or an enhancer kept it).
      *
      * @param predecessors the ways of the shared walk's fixed point
      * @param active what is active after the write: the other active artifacts and the kept candidates
@@ -465,8 +468,7 @@ public final class CascadeRules {
         List<SkippedReport.SharedSkip> report(Set<ArtifactRef> kept, Set<ArtifactRef> floorReached) {
             Set<ArtifactRef> reported = union(kept, floorReached);
             return reported.stream()
-                    .map(ref ->
-                            new SkippedReport.SharedSkip(ref, referencedBy(ref).orElse(ref)))
+                    .flatMap(ref -> referencedBy(ref).map(by -> new SkippedReport.SharedSkip(ref, by)).stream())
                     .toList();
         }
 

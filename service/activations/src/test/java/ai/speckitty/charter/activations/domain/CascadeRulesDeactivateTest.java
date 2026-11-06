@@ -312,8 +312,28 @@ class CascadeRulesDeactivateTest {
         assertThat(change.after().selected(DIRECTIVE).orElseThrow()).containsExactly("F");
         assertThat(change.after().selected(TACTIC).orElseThrow()).containsExactly("T2");
         assertThat(change.skipped().skippedShared())
-                .as("the floor keeps F itself; F keeps T2")
-                .containsExactly(new SkippedReport.SharedSkip(f, f), new SkippedReport.SharedSkip(T2, f));
+                .as("no other active artifact reaches F, so F is not reported; F keeps T2")
+                .containsExactly(new SkippedReport.SharedSkip(T2, f));
+    }
+
+    @Test
+    void aFloorMemberAnotherActiveArtifactReachesIsReportedNamedByThatArtifact() {
+        // D and E both require F, which is on the floor and selected; E stays selected, so E keeps F.
+        Reaches.Graph graph = new Reaches.Graph()
+                .edge("directive:D", REQUIRES, "directive:F")
+                .edge("directive:E", REQUIRES, "directive:F");
+        ArtifactRef f = ref("directive:F");
+        ArtifactRef e = ref("directive:E");
+        ActivationDocument document = selecting("directive:D", "directive:E", "directive:F");
+        Reach own = graph.apply(CascadeRules.planDeactivate(document, D, CascadeScope.all()));
+
+        ActivationChange change = CascadeRules.applyDeactivate(
+                document, D, CascadeScope.all(), own, fixedPoint(document, own, Set.of(f), graph), Map.of(), Set.of(f));
+
+        assertThat(change.after().selected(DIRECTIVE).orElseThrow()).containsExactly("E", "F");
+        assertThat(change.skipped().skippedShared())
+                .as("never F itself: the active artifact that still references it")
+                .containsExactly(new SkippedReport.SharedSkip(f, e));
     }
 
     @Test
