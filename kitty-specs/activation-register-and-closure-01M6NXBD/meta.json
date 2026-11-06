@@ -1,6 +1,8 @@
 {
+  "accept_commit": "a93e41d38ad6a8e0b2d6475299f0b7a96f78cf44",
   "acceptance_history": [
     {
+      "accept_commit": "a93e41d38ad6a8e0b2d6475299f0b7a96f78cf44",
       "acceptance_mode": "pr",
       "accepted_at": "2026-11-06T03:00:40.670762+00:00",
       "accepted_by": "claude:claude-opus-5-5:orchestrator",
