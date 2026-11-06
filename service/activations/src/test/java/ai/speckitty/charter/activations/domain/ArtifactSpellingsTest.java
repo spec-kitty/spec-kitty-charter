@@ -34,6 +34,16 @@ class ArtifactSpellingsTest {
     }
 
     @Test
+    void theKindPrefixOfAUrnIsMatchedWithoutCase() {
+        assertThat(ArtifactSpellings.resolve(DIRECTIVE, "DIRECTIVE:DIRECTIVE_001", HELD))
+                .isEqualTo(new Resolution.Declared("DIRECTIVE_001"));
+        assertThat(ArtifactSpellings.resolve(DIRECTIVE, "Directive:directive_001", HELD))
+                .isEqualTo(new Resolution.Declared("DIRECTIVE_001"));
+        assertThat(ArtifactSpellings.resolve(DIRECTIVE, "TACTIC:DIRECTIVE_001", HELD))
+                .isEqualTo(new Resolution.Unknown());
+    }
+
+    @Test
     void aMatchBetweenTwoIdsThatDifferOnlyByCaseIsAmbiguousButTheExactIdIsNot() {
         assertThat(ArtifactSpellings.resolve(DIRECTIVE, "twin", HELD))
                 .isEqualTo(new Resolution.Ambiguous(java.util.List.of("TWIN", "Twin")));

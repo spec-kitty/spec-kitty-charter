@@ -242,6 +242,65 @@ class PackCompositionResolverTest {
         }
     }
 
+    /** A preset item or a policy lock that names a held id only by case would silently govern nothing. */
+    @Nested
+    class CaseOnlyMatches {
+
+        private PackUnderResolution holding(String id, String name, PackLevel level, String... urns) {
+            return new PackUnderResolution(
+                    new ConfiguredPack(new PackIdentifier(id), level),
+                    new PackDescriptor(id, "1.0.0", Optional.empty(), name, Optional.of(level), Optional.empty()),
+                    List.of(),
+                    List.of(urns));
+        }
+
+        private void check(List<PackUnderResolution> packs, Map<String, List<String>> mentions) {
+            PackCompositionResolver.refuseCaseOnlyMatches(
+                    packs, pack -> mentions.getOrDefault(pack.descriptor().packId(), List.of()));
+        }
+
+        @Test
+        void aMentionOfAHeldIdOnlyByCaseIsRefusedNamingTheMentioningAndTheHoldingPack() {
+            PackUnderResolution holder = holding("01HOLD", "holder", PackLevel.ORG, "directive:DIRECTIVE_001");
+            PackUnderResolution mentioner = holding("01MENT", "mentioner", PackLevel.ORG);
+
+            PackCompositionResolver.Refusal refusal = refusing(
+                    () -> check(List.of(holder, mentioner), Map.of("01MENT", List.of("directive:directive_001"))));
+
+            assertThat(refusal.failure()).isEqualTo(Failure.REFERENCE_ARTIFACT_MISSING);
+            assertThat(refusal.packs()).extracting(RefusalPack::packId).containsExactly("01MENT", "01HOLD");
+            assertThat(refusal.detail())
+                    .contains("directive:directive_001", "directive:DIRECTIVE_001", "differ only by case");
+        }
+
+        @Test
+        void anExactMentionAndAMentionOfAnIdNoPackHoldsAreNotRefused() {
+            PackUnderResolution holder = holding("01HOLD", "holder", PackLevel.ORG, "directive:DIRECTIVE_001");
+
+            assertThatCode(() -> check(
+                            List.of(holder),
+                            Map.of("01HOLD", List.of("directive:DIRECTIVE_001", "directive:NOT_HELD", "tactic:x"))))
+                    .doesNotThrowAnyException();
+        }
+
+        @Test
+        void aMentionOfAnotherKindWithTheSameIdIsNotACaseMatch() {
+            PackUnderResolution holder = holding("01HOLD", "holder", PackLevel.ORG, "directive:DIRECTIVE_001");
+
+            assertThatCode(() -> check(List.of(holder), Map.of("01HOLD", List.of("tactic:directive_001"))))
+                    .doesNotThrowAnyException();
+        }
+
+        private PackCompositionResolver.Refusal refusing(Runnable check) {
+            try {
+                check.run();
+            } catch (PackCompositionResolver.Refusal refusal) {
+                return refusal;
+            }
+            throw new AssertionError("the check was expected to refuse");
+        }
+    }
+
     private static PackCompositionResolver.Refusal refusing(List<PackUnderResolution> packs) {
         try {
             PackCompositionResolver.resolve(packs);

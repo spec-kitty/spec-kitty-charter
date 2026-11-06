@@ -1,11 +1,13 @@
 package ai.speckitty.charter.packs.application;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
@@ -285,10 +287,28 @@ public final class OfferingReadService {
                                     .stream()
                                     .map(Preset::id)
                                     .toList());
+            PackCompositionResolver.refuseCaseOnlyMatches(
+                    composed,
+                    pack -> mentionsOf(Objects.requireNonNull(
+                            facts.get(pack.configured().id().value()), "read above")));
             return new ComposedClosure(composed, facts);
         } catch (PackCompositionResolver.Refusal refusal) {
             throw refusal.toCharterRefusal();
         }
+    }
+
+    /** The URNs a pack's presets and policy file name, as written: what must match a held id exactly. */
+    private static List<String> mentionsOf(PackCompositionFacts facts) {
+        List<String> mentions = new ArrayList<>();
+        for (Preset preset : facts.presets()) {
+            preset.artifacts()
+                    .forEach((kind, items) ->
+                            items.forEach(item -> mentions.add(new Urn(NodeKind.of(kind), item.id()).toString())));
+            preset.missionTypes()
+                    .forEach(item -> mentions.add(Urn.missionType(item.id()).toString()));
+        }
+        facts.policy().urnEntries().keySet().forEach(urn -> mentions.add(urn.toString()));
+        return mentions;
     }
 
     /**

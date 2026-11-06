@@ -12,7 +12,7 @@ import java.util.Set;
  * writes (select, unselect, deactivate, reactivate and preset) that take an id from a path or a body.
  *
  * <p>An id is spelled as the declared id, as the full URN of the list's kind ({@code directive:DIRECTIVE_001}), or as
- * a case variant of either. The declared id is always what is stored. A spelling matching two declared ids that differ
+ * a case variant of either, the kind prefix of the URN included. The declared id is always what is stored. A spelling matching two declared ids that differ
  * only by case is ambiguous, unless it is exactly one of them. A URN of another kind than the list's is unknown.
  */
 public final class ArtifactSpellings {
@@ -57,7 +57,8 @@ public final class ArtifactSpellings {
     public static Resolution resolve(ArtifactKind kind, String spelled, Set<String> held) {
         String id = spelled;
         if (spelled.indexOf(':') > 0) {
-            var urn = Urn.parse(spelled)
+            int colon = spelled.indexOf(':');
+            var urn = Urn.parse(spelled.substring(0, colon).toLowerCase(Locale.ROOT) + spelled.substring(colon))
                     .filter(parsed ->
                             parsed.kind().artifactKind().filter(kind::equals).isPresent());
             if (urn.isEmpty()) {

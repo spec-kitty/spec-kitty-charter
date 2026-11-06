@@ -60,7 +60,7 @@ put:
     that still names an id the closure no longer holds is 422, and one that denies an id now required or locked is
     409, whatever the stored document held. A per-artifact or preset write instead drops the stored ids the closure
     no longer holds and reports them in its dropped (ADR-0059 amendment of 2026-11-06); this write never drops an
-    id the client sent.
+    id the client sent. A storage 500 may follow a committed change; read before retrying.
   tags:
   - Activation
   parameters:
@@ -127,7 +127,8 @@ delete:
     Removes the document: 204, honouring If-Match. A second DELETE is 404 activation_not_found (ADR-0020 D6). With
     If-Match, an id nothing is stored under is 412, not 404: no stored revision matches it (RFC 9110 section
     13.1.1). An If-Match that is neither a quoted revision nor *, and an id outside the declared pattern, are 400. The
-    delete takes no snapshot of the packs, so its only 500 is internal_error, a failure of the storage.
+    delete takes no snapshot of the packs, so its only 500 is internal_error, a failure of the storage; a storage 500
+    may follow a committed change (the document is gone), so read before retrying.
   tags:
   - Activation
   parameters:

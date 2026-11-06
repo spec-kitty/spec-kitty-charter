@@ -232,7 +232,8 @@ Not stored, because it is derived from the packs: the org `required_*` floor, `l
 mutability levels (ADR-0012), the set of available artifacts, and the skipped report.
 
 **Note 2026-11-06 (operator ruling): the known spellings of an id.** A write may spell an artifact id as the full URN
-(`directive:DIRECTIVE_001`) or by a case-insensitive match against the declared ids of the closure. The stored id is
+(`directive:DIRECTIVE_001`) or by a case-insensitive match against the declared ids of the closure; the match covers the URN's kind prefix too
+(`DIRECTIVE:directive_001`). The stored id is
 always the declared id. `selected` and `deactivated` both normalize. A match that is ambiguous between two declared ids
 differing only by case is `422 activation_invalid`, as is an unknown id, and a URN whose kind differs from the list's
 kind is an unknown id. Two spellings of one artifact give one stored document and one revision.

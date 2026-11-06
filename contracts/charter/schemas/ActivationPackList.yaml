@@ -1,6 +1,6 @@
 title: ActivationPackList
 description: >-
-  The packs an activation builds on: its composition closure, in dependency order; items reuse the offering's pack
+  The packs an activation builds on: its composition closure, in dependency order (dependencies and parent_pack parents first); items reuse the offering's pack
   shape (OfferingPack, with ResolvedDependency for dependsOn). _links holds self, the closure read.
 type: object
 additionalProperties: false
@@ -11,7 +11,7 @@ properties:
   packs:
     type: array
     description: >-
-      Every pack of the closure, in dependency order: dependencies before the packs that need them, each level
+      Every pack of the closure, in dependency order: dependencies and `parent_pack` parents before the packs that need them, each level
       contiguous, as the offering orders them. A document that names packs has at least one, so the list is empty
       only for a document without packs on a service that has no configured pack: without packs the closure is every
       configured pack.
