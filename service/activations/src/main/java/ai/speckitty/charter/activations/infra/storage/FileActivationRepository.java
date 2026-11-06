@@ -40,7 +40,9 @@ import org.jspecify.annotations.Nullable;
  * <p><b>A write</b> creates the id's directory, writes {@code activation.json.tmp-<uuid>} beside the target through a
  * {@link FileChannel} forced to the device, moves it over the target with {@code ATOMIC_MOVE} and
  * {@code REPLACE_EXISTING} through the {@link Durability} seam, then forces the id's directory, as it forces the parent
- * of every directory the write created. A failure at any step deletes the temporary file and leaves the previous document as it was; it is thrown as an {@link ActivationStorageException}.
+ * of every directory the write created. A failure up to and including the move deletes the temporary file and leaves the previous document as it was.
+ * A failure after the move, the force of the id's directory, is thrown as well, but the new document is already
+ * committed: the caller reads before it retries. Every failure is an {@link ActivationStorageException}.
  * A temporary file a crash left behind is never read and is deleted by the id's next write.
  *
  * <p><b>Locking:</b> every operation, {@link #find} included, holds its id's lock across its read-compare-write, which
@@ -53,8 +55,8 @@ import org.jspecify.annotations.Nullable;
  * move over a target another thread holds open fails with {@link AccessDeniedException}, which is why {@link #find}
  * takes the lock too: no reader of this process holds the target open during a move. As a second guard (a virus
  * scanner or an indexer may hold it), a denied move is retried up to {@value #MOVE_ATTEMPTS} times, pausing at most
- * {@value #RETRY_PAUSE_MILLIS} ms. Forcing a directory tolerates only what a platform cannot do: Windows cannot
- * open a directory as a channel and some file systems refuse to force one. A force that fails is a storage failure.
+ * {@value #RETRY_PAUSE_MILLIS} ms. Forcing a directory tolerates only a directory Windows cannot open as a channel
+ * or that is gone. A force that fails is a storage failure.
  */
 public final class FileActivationRepository implements ActivationRepository {
 
@@ -91,8 +93,9 @@ public final class FileActivationRepository implements ActivationRepository {
 
         /**
          * Forces a directory to the device, so a file created, moved or removed in it, or a directory created in it,
-         * survives a power cut. A directory that cannot be opened as a channel (Windows) or that the file system
-         * refuses to force ({@link UnsupportedOperationException}) is tolerated; a force that fails is not.
+         * survives a power cut. A directory the platform denies opening as a channel (Windows: {@link
+         * AccessDeniedException}) or that is gone ({@link NoSuchFileException}) is tolerated; any other failure to open
+         * it, and a force the device refuses, is not.
          *
          * @param directory the directory
          * @throws IOException when the device fails the force
@@ -101,13 +104,11 @@ public final class FileActivationRepository implements ActivationRepository {
             FileChannel channel;
             try {
                 channel = FileChannel.open(directory, StandardOpenOption.READ);
-            } catch (IOException | UnsupportedOperationException cannotOpen) {
-                return; // Not every platform can open a directory (see above); there is nothing to force.
+            } catch (AccessDeniedException | NoSuchFileException cannotOpen) {
+                return; // Windows cannot open a directory as a channel, and a gone one has nothing to force.
             }
             try (channel) {
                 channel.force(true);
-            } catch (UnsupportedOperationException unsupported) {
-                // Some file systems refuse to force a directory; the document's bytes are forced already.
             }
         }
     }
