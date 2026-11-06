@@ -13,5 +13,7 @@
   "purpose_tldr": "The charter service merges built-in, org and project packs, replaces a registered pack whole, and answers what is in force for an activation.",
   "slug": "layer-merge-and-effective-reads-01M6R0J6",
   "target_branch": "issue-10-layer-merge-effective-reads",
-  "topology": "coord"
+  "topology": "coord",
+  "vcs": "git",
+  "vcs_locked_at": "2026-11-06T14:58:51.465179+00:00"
 }
