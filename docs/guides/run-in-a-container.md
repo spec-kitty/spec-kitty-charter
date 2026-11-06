@@ -109,7 +109,8 @@ Among other checks, the service refuses to start, naming the property, file or d
 `GET /actuator/health` answers `{"status":"UP"}` without the token, so a probe needs no secret. Only that exact
 path is exempt:
 
-- every other method and path needs the token, `/actuator/health/` and `HEAD` included;
+- every other method and path needs the token, `/actuator/health/` and `HEAD` included; a query string is not part
+  of the path, so `/actuator/health?x=1` answers like `/actuator/health`;
 - no other management endpoint answers, with or without the token;
 - the answer never carries details, components or probe groups.
 

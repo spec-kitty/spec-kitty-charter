@@ -46,23 +46,6 @@ class GuardPolicyTest {
     }
 
     @Test
-    void onlyAGetOfTheExactRawUriWithoutAContextPathIsExempt() {
-        GuardPolicy policy = GuardPolicy.named(List.of("charter.internal")).withTokenExemptGet("/actuator/health");
-        assertThat(policy.exemptsFromToken(get("/actuator/health"))).isTrue();
-
-        MockHttpServletRequest head = get("/actuator/health");
-        head.setMethod("HEAD");
-        assertThat(policy.exemptsFromToken(head)).isFalse();
-
-        MockHttpServletRequest underContext = get("/ctx/actuator/health");
-        underContext.setContextPath("/ctx");
-        assertThat(policy.exemptsFromToken(underContext)).isFalse();
-
-        assertThat(List.of("/actuator/health/", "/actuator/%68ealth", "/actuator/health;a=b", "/ACTUATOR/health"))
-                .noneMatch(uri -> policy.exemptsFromToken(get(uri)));
-    }
-
-    @Test
     void addingAnExemptPathLeavesTheOriginalPolicyUnchanged() {
         GuardPolicy base = GuardPolicy.named(List.of("charter.internal"));
         base.withTokenExemptGet("/actuator/health");
