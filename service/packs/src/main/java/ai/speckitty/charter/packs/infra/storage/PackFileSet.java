@@ -36,7 +36,7 @@ import org.jspecify.annotations.Nullable;
  * pack.yaml}, every file of every bound kind, each followed by the companions it names (ADR-0039), the declared graph
  * inputs (the root {@code *.graph.yaml} shards and {@code drg/fragment.yaml}), then the asset files, then the
  * templates, then the presets, the pack document ({@code pack.md}), the manifest and the mutability policy (the
- * pack-level tail, ADR-0042, ADR-0062), then the retired files (ADR-0044 decision 6). Both take their list from here, so a file the service loads cannot
+ * pack-level tail, ADR-0042, ADR-0063), then the retired files (ADR-0044 decision 6). Both take their list from here, so a file the service loads cannot
  * escape the fingerprint. Binding a kind is all it takes for the digest to cover it. The asset files, templates,
  * presets, pack document and retired files come last, so a pack that
  * holds none keeps its exact digest list.
@@ -307,7 +307,7 @@ final class PackFileSet {
     /**
      * The pack-level files the digest ends with, after every other input, in one ordered step: the presets, in path
      * order, then the pack document ({@code pack.md}, #260), then {@code pack-manifest.yaml} when it is a regular file
-     * (ADR-0042 decision 9), then {@code policy.yaml} when it is a regular file (ADR-0062), so a lock edit moves the
+     * (ADR-0042 decision 9), then {@code policy.yaml} when it is a regular file (ADR-0063), so a lock edit moves the
      * fingerprint and a read cannot serve a stale level. A pack without them keeps its digest list (NFR-002). The document is digested by its
      * bytes, whatever the load makes of them, so a change to a {@code pack.md} the load refuses still moves the
      * fingerprint; one that cannot be read refuses the digest, as any digested file does.

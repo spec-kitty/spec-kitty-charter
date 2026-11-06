@@ -655,7 +655,7 @@ class DomainRepositoryServiceTest {
                 .containsExactlyInAnyOrder("directive:D1", "procedure:release", "anti_pattern:big-ball-of-mud");
     }
 
-    // ---- the pack's mutability policy file (ADR-0062, FR-022) ----------------------------------------------------
+    // ---- the pack's mutability policy file (ADR-0063, FR-022) ----------------------------------------------------
 
     private static final String NAMES_POLICY = "mutability_policy: policy.yaml\n";
 
@@ -769,7 +769,7 @@ class DomainRepositoryServiceTest {
     }
 
     /**
-     * The real stack (ADR-0062 D3, D4): pack {@code p} depends on {@code q}, and {@code q}'s policy file locks
+     * The real stack (ADR-0063 D3, D4): pack {@code p} depends on {@code q}, and {@code q}'s policy file locks
      * {@code directive:X}. The production gate composes {@code p}'s closure through the offering and refuses the write,
      * naming {@code q}, whether {@code p} is addressed by its configured name or its {@code pack_id}. With {@code q}'s
      * named file gone, the offering and the gate both refuse {@code pack_unreadable} naming {@code q}.

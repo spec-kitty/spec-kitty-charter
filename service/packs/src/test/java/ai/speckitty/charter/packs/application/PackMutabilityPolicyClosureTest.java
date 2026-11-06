@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * The mutability gate judges a target at the highest level along the composition closure of the pack written
- * (ADR-0062 decision 3), over a given closure and policy port: the package-private seam that plants a dependency's
+ * (ADR-0063 decision 3), over a given closure and policy port: the package-private seam that plants a dependency's
  * lock without a compose.
  */
 class PackMutabilityPolicyClosureTest {

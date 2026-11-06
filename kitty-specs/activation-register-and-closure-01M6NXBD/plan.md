@@ -26,7 +26,7 @@ The mission lands as two stacked PRs:
 - **PR A** builds:
   - shared transport and reserved-operation plumbing;
   - the rooted compose and the closure read (#359, #360);
-  - the per-pack mutability policy file (ADR-0062);
+  - the per-pack mutability policy file (ADR-0063);
   - the required floor;
   - the slice, its storage, and create, read, replace and delete;
   - contract A.
@@ -103,7 +103,7 @@ contracts/charter/  openapi.yaml, paths/activations*.yaml, schemas (ActivationPa
                     ActivationConfig, SelectedArtifacts, effective reads +304), CharterRefusalCode raised flags,
                     scenarios/activation-register.feature (new), activations.feature, composition.feature, changes/
 contracts/packs/schemas/policy.schema.json (new), pack-descriptor.schema.json (+ mutability_policy)
-docs/adr/0062-*.md, docs/conformance/divergence-register.md (DIV-203+), docs/architecture/*, docs/changelog/
+docs/adr/0063-*.md, docs/conformance/divergence-register.md (DIV-203+), docs/architecture/*, docs/changelog/
 ```
 
 **Structure Decision:** `activations` is a top-level slice over `packs`, following the 2026-11-05 decision.
@@ -158,7 +158,7 @@ The concerns are listed in dependency order. A concern belongs to PR **A** or PR
     highest level along the closure and the pack that set it.
   - `PackMutabilityPolicy` (the registration write gate) and the activation lock query share that one function.
     No pack ships a file yet, so registrations do not change.
-- **ADR-0062** records the format and cites ADR-0012 D2, D4 and D5 and ADR-0030.
+- **ADR-0063** records the format and cites ADR-0012 D2, D4 and D5 and ADR-0030.
 - **The required floor.** `requiredIn(closure)` answers the must-have items of every governing preset in the closure,
   with the requiring pack.
 - **The snapshot.** `ClosureQueries` answers, in one `ConsistentRead`:
@@ -271,7 +271,7 @@ It never adds an enhancer to `selected`.
 - **ADR amendment notes.**
   - ADR-0020 D6: "an empty document means every kind's default".
   - ADR-0013 D2: "absent means all", and the `force` interplay.
-  - ADR-0012 D2: the policy-file pointer to ADR-0062.
+  - ADR-0012 D2: the policy-file pointer to ADR-0063.
 - **Architecture docs.** `offering-and-activation.md` ("answers 501"), `logical-model.md` and `resolution-model.md`.
 - **Divergence register.** DIV-203 onwards (C-006).
 - **Changelogs.** A docs changelog fragment per PR.

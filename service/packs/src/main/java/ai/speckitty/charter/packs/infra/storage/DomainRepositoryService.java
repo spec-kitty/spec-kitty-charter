@@ -308,7 +308,7 @@ public final class DomainRepositoryService
      *       graph documents, then what each of its artifacts writes ({@link CharterArtifact#writtenReferences()}, which
      *       is the targets of the relationships the walk follows, so the check and the walk cannot disagree, and the
      *       references a kind keeps without minting an edge);
-     *   <li>the mutability policy its descriptor names by {@code mutability_policy} (ADR-0062), or the empty policy;
+     *   <li>the mutability policy its descriptor names by {@code mutability_policy} (ADR-0063), or the empty policy;
      *   <li>the activation presets it holds, from the same assembly; a preset the domain refuses is a violation, which
      *       makes the pack unreadable here as any other file does.
      * </ul>
@@ -349,7 +349,7 @@ public final class DomainRepositoryService
     }
 
     /**
-     * The policy the pack's descriptor names (ADR-0062), read through the same resolution as the compose's facts, so
+     * The policy the pack's descriptor names (ADR-0063), read through the same resolution as the compose's facts, so
      * the offering and every closure judge the file. A pack no pack is configured as is refused {@code pack_not_found};
      * a pack is refused {@code pack_unreadable} when its descriptor cannot be read, or names a policy file that is
      * missing or invalid.

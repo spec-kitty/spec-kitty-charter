@@ -96,7 +96,7 @@ introduces. Today:
    reader finds every concern file of a pack from the main pack file. An artifact the file does
    not name, in a pack with no policy file, is `open`.
    *Superseded in part by ADR-0030: the policy file also holds role locks, role pins and other integrity settings of roles.*
-   *Amendment (2026-11-05, #291/#360): [ADR-0062](/adr/0062-pack-mutability-policy-file/) specifies the file:
+   *Amendment (2026-11-05, #291/#360): [ADR-0063](/adr/0063-pack-mutability-policy-file/) specifies the file:
    `pack.yaml`'s optional `mutability_policy` key names `policy.yaml` at the pack root, a closed schema validates it,
    and a target's level is the highest any pack along the closure declares. Role locks and pins stay reserved. D5's
    built-in policy file and the `replaceable-builtins.yaml` migration remain follow-ups.*

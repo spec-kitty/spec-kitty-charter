@@ -22,13 +22,13 @@ Reproduced with a scratch test, since deleted:
 - `target/policy.yaml` does not exist.
 - `DomainRepositoryService.policyOf(qa)` and `compositionFacts(qa)` on the target both refuse `PACK_UNREADABLE: qa names mutability_policy policy.yaml, which is missing`.
 
-The write accepts a pack with a lock and stores it without the lock, which leaves an unreadable pack. It fails closed, but the write still reports success while producing a broken pack. ADR-0062 Consequences/Negative lists this as a follow-up. It is a defect in this WP's scope, because this WP made the descriptor write carry the key without the file.
+The write accepts a pack with a lock and stores it without the lock, which leaves an unreadable pack. It fails closed, but the write still reports success while producing a broken pack. ADR-0063 Consequences/Negative lists this as a follow-up. It is a defect in this WP's scope, because this WP made the descriptor write carry the key without the file.
 
 Fix (pick one, then add a test):
 - (a, preferred) Model `policy.yaml` in `WholePackStore`. In `load`, when `descriptor.paths().mutabilityPolicy()` is present, read the file, validate it through `PolicyYaml`, and add it to `modelled`, so it is no longer listed as unmodelled. Carry it on `LoadedPack`, either as the parsed `MutabilityPolicySource` plus a writer, or as the verbatim bytes after validation. In `write`, put it right after `pack.yaml`. A named file that is missing or invalid at load should be a violation on the aggregate, so `write` refuses `VALIDATION_FAILED` and drops nothing.
 - (b, minimum) In `write`, refuse with `VALIDATION_FAILED` when the descriptor names a policy file the loaded pack does not carry. The message should name the file. Do not store a pack whose own descriptor makes it unreadable.
 
-Test: add a case to `WholePackStoreTest`, or a `PolicyRoundTripTest` beside `PresetRoundTripTest` and `PackDocumentRoundTripTest`. Load a pack whose descriptor names a `policy.yaml` that locks `directive:X`, then write it. With (a), assert that the target's `policyOf` equals the source's and that `unmodelled` no longer lists `policy.yaml`. With (b), assert the write is refused and no target exists. Add the paired control: a pack without the key round-trips unchanged. Update the ADR-0062 Negative bullet to match.
+Test: add a case to `WholePackStoreTest`, or a `PolicyRoundTripTest` beside `PresetRoundTripTest` and `PackDocumentRoundTripTest`. Load a pack whose descriptor names a `policy.yaml` that locks `directive:X`, then write it. With (a), assert that the target's `policyOf` equals the source's and that `unmodelled` no longer lists `policy.yaml`. With (b), assert the write is refused and no target exists. Add the paired control: a pack without the key round-trips unchanged. Update the ADR-0063 Negative bullet to match.
 
 ## Verified, no change needed
 

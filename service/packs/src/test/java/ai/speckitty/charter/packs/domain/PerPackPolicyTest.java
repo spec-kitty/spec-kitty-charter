@@ -10,7 +10,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 /**
- * The level along a closure (ADR-0012 decision 3, ADR-0062 decision 3): the highest level any pack of the closure sets
+ * The level along a closure (ADR-0012 decision 3, ADR-0063 decision 3): the highest level any pack of the closure sets
  * wins, and the pack that first reached it is reported. Each case is run in both closure orders, so "highest wins"
  * cannot pass as "last wins".
  */

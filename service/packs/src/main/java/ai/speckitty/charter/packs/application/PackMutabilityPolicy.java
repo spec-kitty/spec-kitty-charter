@@ -28,7 +28,7 @@ import org.springframework.stereotype.Component;
  * supersedes the {@link PermissiveWritePolicyGate} default, so every registration service enforces the level through
  * the WP04 port without any service, controller or commit-store edit.
  *
- * <p>A write into pack P is judged at the highest level along P's composition closure (ADR-0062 decision 3): each pack
+ * <p>A write into pack P is judged at the highest level along P's composition closure (ADR-0063 decision 3): each pack
  * of the closure contributes the policy its descriptor names, and
  * {@link PerPackPolicy#levelIn} answers the highest level and the pack that set it, the one function the activation
  * lock query shares. A level the write exceeds is refused with {@link RefusalCode#GOVERNANCE_POLICY_VIOLATION} (409),
@@ -41,7 +41,7 @@ import org.springframework.stereotype.Component;
  * during the read refuses the write as {@code stale_input}, never a mixed answer. Registrations are rare, so the read
  * is acceptable; a closure that cannot be composed, or a member whose policy file is missing or invalid, refuses the
  * write as the compose refuses it, since a lock that cannot be read is never taken as open. Each pack's
- * {@code policy.yaml} is read (ADR-0062); no open pack ships one yet, so every target of the open packs is open and
+ * {@code policy.yaml} is read (ADR-0063); no open pack ships one yet, so every target of the open packs is open and
  * their writes keep working (tighten never loosen).
  *
  * <p>It is a Spring-managed edge (it carries the framework annotations), so it lives in the application ring, not in
@@ -164,7 +164,7 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
                             + level.setBy().orElse(pack.id().value()) + " of the composition of "
                             + pack.id().value()
                             + " declares it " + level.level().token()
-                            + ", which does not permit this write (ADR-0012, ADR-0062).");
+                            + ", which does not permit this write (ADR-0012, ADR-0063).");
         }
     }
 

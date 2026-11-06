@@ -1,5 +1,5 @@
 ---
-title: "ADR-0062: A pack declares its mutability levels in policy.yaml"
+title: "ADR-0063: A pack declares its mutability levels in policy.yaml"
 description: "The pack mutability policy file: the mutability_policy key, the closed policy schema, the highest level along the closure, and fail-closed reads."
 doc_status: active
 updated: 2026-11-05T00:00:00Z
@@ -22,7 +22,7 @@ audience:
     guidance_text: Read this for the shape of policy.yaml and what happens when pack.yaml names one that is missing or invalid.
 ---
 
-# ADR-0062: A pack declares its mutability levels in policy.yaml
+# ADR-0063: A pack declares its mutability levels in policy.yaml
 
 ## Status
 

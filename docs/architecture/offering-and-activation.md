@@ -163,7 +163,7 @@ A write is checked against the closure alone: an id no pack of the closure holds
 and a deny entry on a must-have item of a governing preset in the closure, or on an artifact a pack of the closure
 locks, is refused `409` ([DIV-204](/conformance/divergence-register/),
 [DIV-205](/conformance/divergence-register/)). Locks come from each pack's policy file, at the highest level along the
-closure ([ADR-0062](/adr/0062-pack-mutability-policy-file/)). Each write and each closure read takes exactly one
+closure ([ADR-0063](/adr/0063-pack-mutability-policy-file/)). Each write and each closure read takes exactly one
 verified snapshot of the closure, so one request never mixes two states of the packs.
 
 ## Mode 1: register an existing document

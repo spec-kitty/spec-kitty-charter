@@ -9,7 +9,7 @@ kind: Changelog
 related:
   - adr/0020-offering-and-activations
   - adr/0059-switch-gate-cascade-edges-and-activation-rulings
-  - adr/0062-pack-mutability-policy-file
+  - adr/0063-pack-mutability-policy-file
   - architecture/offering-and-activation
   - conformance/divergence-register
 audience:
@@ -31,7 +31,7 @@ The first half of [#291](https://github.com/spec-kitty/spec-kitty-charter/issues
   artifact). The `Activation` answer drops `summary` and `governanceFingerprint`.
 - **Still `501`:** the five per-artifact writes (the second pull request of this mission) and the four effective reads
   (the resolution mission).
-- **Locks:** a pack may name a `policy.yaml` with `mutability_policy` ([ADR-0062](/adr/0062-pack-mutability-policy-file/)).
+- **Locks:** a pack may name a `policy.yaml` with `mutability_policy` ([ADR-0063](/adr/0063-pack-mutability-policy-file/)).
   No pack is required to ship one, and the open packs ship none yet.
 - **Differences from core** ([divergence register](/conformance/divergence-register/)): absent means none, `skill`
   included (DIV-203); a deny entry on a required or locked artifact is refused at write (DIV-204); the required floor

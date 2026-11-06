@@ -38,7 +38,7 @@ class ContractDescriptionsTest {
                 .contains("The read may be retried")
                 .contains("governance_policy_violation (409) is raised by the registration writes")
                 .contains("Each pack's policy.yaml is read, per pack along the composition closure of the pack written"
-                        + " (ADR-0062); no open pack ships one yet")
+                        + " (ADR-0063); no open pack ships one yet")
                 .doesNotContain("reads no policy file")
                 .doesNotContain("No operation of this version raises it");
     }
