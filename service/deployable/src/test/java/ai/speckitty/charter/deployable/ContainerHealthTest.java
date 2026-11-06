@@ -18,8 +18,6 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.test.system.CapturedOutput;
@@ -46,6 +44,7 @@ class ContainerHealthTest {
     /** One raw HTTP/1.1 request, so the {@code Host} header and the request target are exactly what the test says. */
     private static Answer send(int port, String method, String target, Map<String, String> headers) throws IOException {
         try (Socket socket = new Socket(InetAddress.getLoopbackAddress(), port)) {
+            socket.setSoTimeout(10_000);
             StringBuilder request = new StringBuilder(method + " " + target + " HTTP/1.1\r\n");
             headers.forEach((name, value) ->
                     request.append(name).append(": ").append(value).append("\r\n"));
@@ -179,6 +178,11 @@ class ContainerHealthTest {
             assertThat(health.body()).isEqualTo(UP);
             assertThat(health.head().toLowerCase(java.util.Locale.ROOT))
                     .containsPattern("content-type: application/(vnd\\.spring-boot\\.actuator\\.v3\\+)?json");
+            Answer withQuery = get(port(context), "/actuator/health?x=1", "Host", "charter.internal:8080");
+            assertThat(withQuery.status())
+                    .as("a query string is not part of the path")
+                    .isEqualTo(200);
+            assertThat(withQuery.body()).isEqualTo(UP);
         }
     }
 
@@ -192,6 +196,14 @@ class ContainerHealthTest {
             assertThat(get(port, "/actuator/health", "Host", "localhost", "Origin", "https://evil.example")
                             .status())
                     .isEqualTo(403);
+            assertThat(get(port, "http://attacker.example/actuator/health", "Host", "localhost")
+                            .status())
+                    .as("an absolute-form target that disagrees with Host never reaches the endpoint")
+                    .isEqualTo(400);
+            assertThat(get(port, "http://localhost/actuator/health", "Host", "localhost")
+                            .status())
+                    .as("an absolute-form target that agrees is the same request")
+                    .isEqualTo(200);
         }
     }
 
@@ -210,7 +222,11 @@ class ContainerHealthTest {
                 "/actuator/health;x=y",
                 "/actuator/%68ealth",
                 "/actuator",
-                "/actuator/env"
+                "/actuator/env",
+                "//actuator/health",
+                "/actuator//health",
+                "/ACTUATOR/HEALTH",
+                "http://localhost/actuator/env"
             }) {
                 assertThat(get(port, target, "Host", "localhost").status())
                         .as(target)
@@ -219,14 +235,16 @@ class ContainerHealthTest {
         }
     }
 
-    @ParameterizedTest
-    @ValueSource(
-            strings = {"env", "configprops", "beans", "loggers", "heapdump", "threaddump", "mappings", "info", "sbom"})
-    void underTheContainerProfileNoOtherEndpointAnswersEvenWithTheToken(String endpoint, @TempDir Path dir)
-            throws IOException {
+    @Test
+    void underTheContainerProfileNoOtherEndpointAnswersEvenWithTheToken(@TempDir Path dir) throws IOException {
         try (var context = container(dir)) {
-            Answer answer = get(port(context), "/actuator/" + endpoint, "Host", "localhost", "Authorization", BEARER);
-            assertThat(answer.status()).as(endpoint).isEqualTo(404);
+            int port = port(context);
+            for (String endpoint : new String[] {
+                "env", "configprops", "beans", "loggers", "heapdump", "threaddump", "mappings", "info", "sbom"
+            }) {
+                Answer answer = get(port, "/actuator/" + endpoint, "Host", "localhost", "Authorization", BEARER);
+                assertThat(answer.status()).as(endpoint).isEqualTo(404);
+            }
         }
     }
 
