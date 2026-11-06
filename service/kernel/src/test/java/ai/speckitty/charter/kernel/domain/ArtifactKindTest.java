@@ -115,9 +115,11 @@ class ArtifactKindTest {
     @ParameterizedTest
     @EnumSource(ArtifactKind.class)
     void aTokenThatDiffersOnlyInCaseIsRefused(ArtifactKind kind) {
-        assertThat(ArtifactKind.fromToken(kind.token().toUpperCase(Locale.ROOT))).isEmpty();
+        assertThat(ArtifactKind.fromToken(kind.token().toUpperCase(Locale.ROOT)))
+                .isEmpty();
         assertThat(ArtifactKind.fromToken(kind.name())).isEmpty();
-        assertThat(ArtifactKind.fromPlural(kind.plural().toUpperCase(Locale.ROOT))).isEmpty();
+        assertThat(ArtifactKind.fromPlural(kind.plural().toUpperCase(Locale.ROOT)))
+                .isEmpty();
     }
 
     @Test
