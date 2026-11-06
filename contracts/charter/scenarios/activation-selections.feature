@@ -636,6 +636,26 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     Then the response status is 404
     And the problem code is "mission_type_not_found"
 
+  Scenario: A mission type path id is matched exactly, as missionTypes is
+    missionTypes is not normalized on a PUT, so the path id of a mission type is not either: another case or the
+    full URN names no mission type.
+    Given the activation "a-1" holds:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      """
+    When I PUT "/activations/a-1/selections/mission_type/RESEARCH" with the stored ETag and the body:
+      """
+      {}
+      """
+    Then the response status is 404
+    And the problem code is "mission_type_not_found"
+    When I PUT "/activations/a-1/selections/mission_type/mission_type:research" with the stored ETag and the body:
+      """
+      {}
+      """
+    Then the response status is 404
+    And the problem code is "mission_type_not_found"
+
   Scenario: Selecting an artifact the closure does not hold is 404 artifact_not_found
     US3 AS8, FR-010.
     Given the activation "a-1" holds:

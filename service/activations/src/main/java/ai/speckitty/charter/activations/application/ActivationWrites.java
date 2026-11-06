@@ -44,7 +44,8 @@ import org.springframework.stereotype.Component;
  *       any more;
  *   <li>the path id against that closure, read in any known spelling ({@link #declared}: the declared id, its full
  *       URN, or another case, as {@link ArtifactSpellings} reads an id of the activation document; {@code 422} when it
- *       matches two declared ids that differ only by case), then held or not ({@code 404 artifact_not_found}, or
+ *       matches two declared ids that differ only by case; a mission type exactly, as {@code missionTypes} is), then
+ *       held or not ({@code 404 artifact_not_found}, or
  *       {@code mission_type_not_found}); an unselect or a re-activate also takes an id the closure no longer holds
  *       when the stored list it removes the id from still names it, since the drop below removes it (ADR-0059
  *       amendment R5);
@@ -231,6 +232,8 @@ public class ActivationWrites {
      * declared id, as {@link DocumentRules#normalize} reads an id of the document. A spelling the closure holds no id
      * for is read against the stored list the write removes the id from, so a stale id (ADR-0059 amendment R5) is
      * matched the same way. A spelling neither names is kept as written, for {@link #requireHeldOrStale} to refuse.
+     * A mission type is matched exactly, as {@code missionTypes} is in the document, which is not normalized: its path
+     * id is kept as written.
      *
      * @param snapshot the closure
      * @param target the path's artifact, as written
@@ -240,9 +243,11 @@ public class ActivationWrites {
      *     {@code /artifactId}, when the spelling matches two declared ids that differ only by case
      */
     static ArtifactRef declared(ClosureSnapshot snapshot, ArtifactRef target, Set<String> stored) {
-        Set<String> held =
-                target.kind() == ArtifactKind.MISSION_TYPE ? snapshot.missionTypes() : snapshot.held(target.kind());
-        ArtifactSpellings.Resolution resolution = ArtifactSpellings.resolve(target.kind(), target.id(), held);
+        if (target.kind() == ArtifactKind.MISSION_TYPE) {
+            return target;
+        }
+        ArtifactSpellings.Resolution resolution =
+                ArtifactSpellings.resolve(target.kind(), target.id(), snapshot.held(target.kind()));
         if (resolution instanceof ArtifactSpellings.Resolution.Unknown) {
             resolution = ArtifactSpellings.resolve(target.kind(), target.id(), stored);
         }

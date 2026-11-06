@@ -284,28 +284,42 @@ class ActivationSelectionServiceTest {
                 service.select(ID, "directive", "directive:d", Optional.empty(), false, List.of(), quoted(before));
         ActivationWrites.Outcome again =
                 service.select(ID, "directive", "d", Optional.empty(), false, List.of(), quoted(selected.stored()));
-        ActivationWrites.Outcome mission = service.select(
-                ID,
-                "mission_type",
-                "mission_type:RESEARCH",
-                Optional.empty(),
-                false,
-                List.of(),
-                quoted(again.stored()));
 
         assertThat(selected.change().applied()).containsExactly(D);
         assertThat(again.stored().revision())
                 .as("another spelling is a no-op")
                 .isEqualTo(selected.stored().revision());
-        assertThat(mission.change().applied()).containsExactly(new ArtifactRef(ArtifactKind.MISSION_TYPE, "research"));
         assertThat(now().selected(ArtifactKind.DIRECTIVE).orElseThrow()).containsExactly("D");
-        assertThat(now().missionTypes().orElseThrow()).containsExactly("research");
 
-        ActivationWrites.Outcome unselected =
-                service.unselect(ID, "directive", "directive:d", quoted(mission.stored()));
+        ActivationWrites.Outcome unselected = service.unselect(ID, "directive", "directive:d", quoted(again.stored()));
 
         assertThat(unselected.change().applied()).containsExactly(D);
         assertThat(now().selected(ArtifactKind.DIRECTIVE).orElseThrow()).isEmpty();
+    }
+
+    @Test
+    void aMissionTypePathIdIsMatchedExactlyAsMissionTypesIs() {
+        // missionTypes is not normalized on a PUT, so its path id is not either: only the exact id names it.
+        StoredActivation before = stored(ActivationDocument.builder().missionTypes(List.of("gone-type")));
+
+        for (String spelled : List.of("RESEARCH", "mission_type:research")) {
+            assertThatThrownBy(() -> service.select(
+                            ID, "mission_type", spelled, Optional.empty(), false, List.of(), quoted(before)))
+                    .as(spelled)
+                    .isInstanceOfSatisfying(
+                            CharterRefusal.class,
+                            refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.MISSION_TYPE_NOT_FOUND));
+        }
+        assertThatThrownBy(() -> service.unselect(ID, "mission_type", "GONE-TYPE", quoted(before)))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.MISSION_TYPE_NOT_FOUND));
+        assertThat(repository.replaces()).isZero();
+
+        ActivationWrites.Outcome exact =
+                service.select(ID, "mission_type", "research", Optional.empty(), false, List.of(), quoted(before));
+
+        assertThat(exact.change().applied()).containsExactly(new ArtifactRef(ArtifactKind.MISSION_TYPE, "research"));
     }
 
     @Test

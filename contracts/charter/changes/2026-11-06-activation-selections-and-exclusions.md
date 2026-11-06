@@ -33,3 +33,5 @@
   either names the declared id, which is what the write stores and reports. An unselect or re-activate reads a stale
   id the same way against the stored list. A spelling that matches two declared ids differing only by case is
   `422 activation_invalid` (`ambiguous_artifact`, at `/artifactId`); a URN of another kind is an unknown id, `404`.
+  A `mission_type` path id is not normalized: it is matched exactly, as a document's `missionTypes` is, so another
+  case or its URN is `404 mission_type_not_found`.
