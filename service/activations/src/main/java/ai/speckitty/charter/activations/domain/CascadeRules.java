@@ -123,7 +123,7 @@ public final class CascadeRules {
      * deactivate undoes a cascading select: what the target reached through an ancestor is a candidate too.
      *
      * @param document the document before the write
-     * @param target the artifact deactivated, of a kind of {@link ActivationDocument#kinds()}
+     * @param target the artifact deactivated, of an activatable kind other than {@code mission_type}
      * @param scope the cascade scope
      * @return the plan; one that walks nothing without a cascade
      * @throws IllegalArgumentException when the target's kind has no deny list
@@ -290,7 +290,7 @@ public final class CascadeRules {
     }
 
     private static void requireDeniable(ArtifactRef target) {
-        if (!ActivationDocument.kinds().contains(target.kind())) {
+        if (!target.kind().activatable() || target.kind() == ArtifactKind.MISSION_TYPE) {
             throw new IllegalArgumentException(
                     "An activation denies no '" + target.kind().token() + "' artifacts.");
         }
@@ -301,17 +301,9 @@ public final class CascadeRules {
     private static ActivationDocument withSelections(ActivationDocument document, Set<ArtifactRef> selecting) {
         ActivationDocument after = document;
         for (ArtifactRef ref : selecting) {
-            after = ref.kind() == ArtifactKind.MISSION_TYPE
-                    ? withMissionType(after, ref.id())
-                    : after.withSelected(ref.kind(), ref.id());
+            after = after.withSelected(ref.kind(), ref.id());
         }
         return after;
-    }
-
-    private static ActivationDocument withMissionType(ActivationDocument document, String id) {
-        SortedSet<String> ids = new TreeSet<>(document.missionTypes().orElseGet(TreeSet::new));
-        ids.add(id);
-        return rebuilt(document, document.selected(), Optional.of(ids));
     }
 
     private static ActivationDocument withoutDenies(ActivationDocument document, Set<ArtifactRef> clearing) {
@@ -322,27 +314,19 @@ public final class CascadeRules {
         return after;
     }
 
-    /** The document less the given ids in {@code selected} and {@code missionTypes}; a list it empties stays, empty. */
+    /** The document less the given ids in {@code selected}; a list it empties is dropped (none of the kind). */
     private static ActivationDocument unselected(ActivationDocument document, Set<ArtifactRef> leaving) {
         Map<ArtifactKind, SortedSet<String>> selected = new EnumMap<>(ArtifactKind.class);
         document.selected().forEach((kind, ids) -> selected.put(kind, new TreeSet<>(ids)));
         leaving.forEach(ref -> Optional.ofNullable(selected.get(ref.kind())).ifPresent(ids -> ids.remove(ref.id())));
-        Optional<SortedSet<String>> missionTypes = document.missionTypes().map(TreeSet::new);
-        missionTypes.ifPresent(ids -> leaving.stream()
-                .filter(ref -> ref.kind() == ArtifactKind.MISSION_TYPE)
-                .forEach(ref -> ids.remove(ref.id())));
-        return rebuilt(document, selected, missionTypes);
+        return rebuilt(document, selected);
     }
 
-    /** The document with other allow lists and mission types; every other member as it was. */
+    /** The document with other allow lists; every other member as it was. */
     private static ActivationDocument rebuilt(
-            ActivationDocument document,
-            Map<ArtifactKind, SortedSet<String>> selected,
-            Optional<SortedSet<String>> missionTypes) {
+            ActivationDocument document, Map<ArtifactKind, SortedSet<String>> selected) {
         ActivationDocument.Builder builder = ActivationDocument.builder();
         document.packs().ifPresent(builder::packs);
-        document.activatedKinds().ifPresent(kinds -> builder.activatedKinds(List.copyOf(kinds)));
-        missionTypes.ifPresent(builder::missionTypes);
         document.languages().ifPresent(builder::languages);
         selected.forEach(builder::selected);
         document.deactivated().forEach(builder::deactivated);
@@ -352,15 +336,12 @@ public final class CascadeRules {
     // Sets.
 
     private static boolean selectable(ArtifactKind kind) {
-        return kind == ArtifactKind.MISSION_TYPE || ActivationDocument.kinds().contains(kind);
+        return kind.activatable();
     }
 
-    /** What is in force by the document: every allow-list id and every mission type. */
+    /** What is in force by the document: every allow-list id, mission types included. */
     private static Set<ArtifactRef> active(ActivationDocument document) {
-        Set<ArtifactRef> active = new TreeSet<>(ActivationChange.refs(document.selected()));
-        document.missionTypes()
-                .ifPresent(ids -> ids.forEach(id -> active.add(new ArtifactRef(ArtifactKind.MISSION_TYPE, id))));
-        return active;
+        return new TreeSet<>(ActivationChange.refs(document.selected()));
     }
 
     private static Set<ArtifactRef> denied(ActivationDocument document) {

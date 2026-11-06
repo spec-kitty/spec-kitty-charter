@@ -69,11 +69,6 @@ public class ActivationMapper {
                 config.getPacks(),
                 packs -> builder.packs(
                         packs.stream().map(ActivationMapper::packRef).toList()));
-        ifPresent(
-                config.getActivatedKinds(),
-                kinds -> builder.activatedKinds(
-                        kinds.stream().map(kind -> kindOf(kind.getValue())).toList()));
-        ifPresent(config.getMissionTypes(), builder::missionTypes);
         ifPresent(config.getLanguages(), builder::languages);
         kindLists(config.getSelected()).forEach(builder::selected);
         kindLists(config.getDeactivated()).forEach(builder::deactivated);

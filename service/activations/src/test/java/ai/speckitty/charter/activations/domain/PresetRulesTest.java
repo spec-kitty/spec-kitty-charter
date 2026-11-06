@@ -10,9 +10,9 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 /**
- * Applying a preset to a document (ADR-0059 D6, ADR-0020 D6, FR-016): each key the preset lists is replaced, the others
- * are untouched; a key counts as listed only when the preset holds at least one member for it (A7); {@code force}
- * clears the deny entries of the members; {@code applied} is {@link ActivationChange#of}'s (A1).
+ * Applying a preset to a document (ADR-0059 D6, ADR-0020 D6, FR-016): each kind the preset lists is replaced, mission
+ * types included, the others are untouched; a kind counts as listed only when the preset holds at least one member for it
+ * (A7); {@code force} clears the deny entries of the members; {@code applied} is {@link ActivationChange#of}'s (A1).
  */
 class PresetRulesTest {
 
@@ -21,13 +21,12 @@ class PresetRulesTest {
     private static final ArtifactRef C = new ArtifactRef(ArtifactKind.DIRECTIVE, "C");
     private static final ArtifactRef M = new ArtifactRef(ArtifactKind.DIRECTIVE, "M");
 
-    private static PresetView preset(
-            Set<ArtifactKind> kinds, Map<ArtifactKind, Set<String>> members, Set<String> missionTypes) {
-        return new PresetView("p", kinds, members, missionTypes);
+    private static PresetView preset(Map<ArtifactKind, Set<String>> members) {
+        return new PresetView("p", members);
     }
 
     private static PresetView directives(String... ids) {
-        return preset(Set.of(), Map.of(ArtifactKind.DIRECTIVE, Set.of(ids)), Set.of());
+        return preset(Map.of(ArtifactKind.DIRECTIVE, Set.of(ids)));
     }
 
     private static ActivationDocument.Builder document() {
@@ -41,50 +40,33 @@ class PresetRulesTest {
                 .selected(ArtifactKind.TACTIC, List.of("t"))
                 .build()
                 .document();
-        PresetView team =
-                preset(Set.of(ArtifactKind.DIRECTIVE), Map.of(ArtifactKind.DIRECTIVE, Set.of("C", "B")), Set.of());
+        PresetView team = preset(Map.of(ArtifactKind.DIRECTIVE, Set.of("C", "B")));
 
         ActivationChange change = PresetRules.apply(before, team, false);
 
         ActivationDocument after = change.after();
         assertThat(after.selected(ArtifactKind.DIRECTIVE).orElseThrow()).containsExactly("B", "C");
         assertThat(after.selected(ArtifactKind.TACTIC).orElseThrow()).containsExactly("t");
-        assertThat(after.activatedKinds().orElseThrow()).containsExactly(ArtifactKind.DIRECTIVE);
         assertThat(after.packs()).isEqualTo(before.packs());
-        assertThat(change.applied())
-                .as("A was removed, B and C added (A1); the kind gate's change is no entry")
-                .containsExactly(A, B, C);
+        assertThat(change.applied()).as("A was removed, B and C added (A1)").containsExactly(A, B, C);
         assertThat(change.cleared()).isEmpty();
         assertThat(change.skipped()).isEqualTo(SkippedReport.empty());
     }
 
     @Test
-    void anEmptyKindGateIsNotListedSoTheDocumentsGateStays() {
-        // A7: the packs read activated_kinds: [] and an absent key alike, as an empty set.
-        ActivationDocument before =
-                document().activatedKinds(List.of(ArtifactKind.TACTIC)).build().document();
-
-        ActivationChange change = PresetRules.apply(before, directives("A"), false);
-
-        assertThat(change.after().activatedKinds().orElseThrow()).containsExactly(ArtifactKind.TACTIC);
-    }
-
-    @Test
-    void anAbsentKindGateStaysAbsentWhenThePresetListsNone() {
+    void anAbsentMissionTypeListStaysAbsentWhenThePresetListsNone() {
         ActivationDocument before = document().build().document();
 
         ActivationChange change = PresetRules.apply(before, directives("A"), false);
 
-        assertThat(change.after().activatedKinds()).isEmpty();
-        assertThat(change.after().missionTypes()).isEmpty();
+        assertThat(change.after().selected(ArtifactKind.MISSION_TYPE)).isEmpty();
     }
 
     @Test
     void anEmptyMemberListIsNotListedSoTheDocumentsListStays() {
         ActivationDocument before =
                 document().selected(ArtifactKind.TACTIC, List.of("t")).build().document();
-        PresetView emptyTactics =
-                preset(Set.of(), Map.of(ArtifactKind.TACTIC, Set.of(), ArtifactKind.DIRECTIVE, Set.of("A")), Set.of());
+        PresetView emptyTactics = preset(Map.of(ArtifactKind.TACTIC, Set.of(), ArtifactKind.DIRECTIVE, Set.of("A")));
 
         ActivationChange change = PresetRules.apply(before, emptyTactics, false);
 
@@ -94,13 +76,16 @@ class PresetRulesTest {
 
     @Test
     void listedMissionTypesReplaceTheDocumentsAndTheDroppedOneIsApplied() {
-        ActivationDocument before =
-                document().missionTypes(List.of("old-type")).build().document();
-        PresetView missionTypes = preset(Set.of(), Map.of(), Set.of("software-dev"));
+        ActivationDocument before = document()
+                .selected(ArtifactKind.MISSION_TYPE, List.of("old-type"))
+                .build()
+                .document();
+        PresetView missionTypes = preset(Map.of(ArtifactKind.MISSION_TYPE, Set.of("software-dev")));
 
         ActivationChange change = PresetRules.apply(before, missionTypes, false);
 
-        assertThat(change.after().missionTypes().orElseThrow()).containsExactly("software-dev");
+        assertThat(change.after().selected(ArtifactKind.MISSION_TYPE).orElseThrow())
+                .containsExactly("software-dev");
         assertThat(change.applied())
                 .containsExactly(
                         new ArtifactRef(ArtifactKind.MISSION_TYPE, "old-type"),
@@ -109,12 +94,15 @@ class PresetRulesTest {
 
     @Test
     void unlistedMissionTypesAreUntouched() {
-        ActivationDocument before =
-                document().missionTypes(List.of("old-type")).build().document();
+        ActivationDocument before = document()
+                .selected(ArtifactKind.MISSION_TYPE, List.of("old-type"))
+                .build()
+                .document();
 
         ActivationChange change = PresetRules.apply(before, directives("A"), false);
 
-        assertThat(change.after().missionTypes().orElseThrow()).containsExactly("old-type");
+        assertThat(change.after().selected(ArtifactKind.MISSION_TYPE).orElseThrow())
+                .containsExactly("old-type");
     }
 
     @Test
@@ -134,7 +122,7 @@ class PresetRulesTest {
     }
 
     @Test
-    void withoutForceAKindWhoseMembersAreAllDeniedBecomesEmptyNotAbsent() {
+    void withoutForceAKindWhoseMembersAreAllDeniedSelectsNoneOfTheKind() {
         ActivationDocument before = document()
                 .selected(ArtifactKind.DIRECTIVE, List.of("A"))
                 .deactivated(ArtifactKind.DIRECTIVE, List.of("M"))
@@ -144,7 +132,8 @@ class PresetRulesTest {
         ActivationChange change = PresetRules.apply(before, directives("M"), false);
 
         assertThat(change.after().selected(ArtifactKind.DIRECTIVE))
-                .hasValueSatisfying(ids -> assertThat(ids).isEmpty());
+                .as("an emptied allow list is none of the kind, stored absent (FR-042)")
+                .isEmpty();
         assertThat(change.applied()).containsExactly(A);
     }
 
@@ -185,7 +174,7 @@ class PresetRulesTest {
                 .deactivated(ArtifactKind.DIRECTIVE, List.of("M"))
                 .build()
                 .document();
-        PresetView governing = new PresetView("g", Set.of(), Map.of(ArtifactKind.DIRECTIVE, Set.of("RQ")), Set.of());
+        PresetView governing = new PresetView("g", Map.of(ArtifactKind.DIRECTIVE, Set.of("RQ")));
 
         for (boolean force : List.of(false, true)) {
             ActivationDocument after =
@@ -196,25 +185,14 @@ class PresetRulesTest {
     }
 
     @Test
-    void aKindGateTheDocumentCannotHoldIsLeftOutOfIt() {
-        // A preset's gate may name templates or assets, which an activation document gates nothing of.
-        ActivationDocument before = document().build().document();
-        PresetView gate = preset(Set.of(ArtifactKind.TEMPLATE, ArtifactKind.TACTIC), Map.of(), Set.of());
-
-        ActivationChange change = PresetRules.apply(before, gate, false);
-
-        assertThat(change.after().activatedKinds().orElseThrow()).containsExactly(ArtifactKind.TACTIC);
-    }
-
-    @Test
     void applyingThePresetAgainChangesNothing() {
         ActivationDocument before = document()
                 .selected(ArtifactKind.DIRECTIVE, List.of("A"))
                 .languages(List.of("en"))
                 .build()
                 .document();
-        PresetView team = preset(
-                Set.of(ArtifactKind.DIRECTIVE), Map.of(ArtifactKind.DIRECTIVE, Set.of("B", "C")), Set.of("research"));
+        PresetView team =
+                preset(Map.of(ArtifactKind.DIRECTIVE, Set.of("B", "C"), ArtifactKind.MISSION_TYPE, Set.of("research")));
 
         ActivationDocument once = PresetRules.apply(before, team, false).after();
         ActivationChange twice = PresetRules.apply(once, team, false);
