@@ -1,7 +1,7 @@
 {
   "rows": {
     "#10": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Delivered by this mission (PRs A0/A/B/C); see plan.md traceability",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -9,7 +9,7 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "in-mission",
       "wp": null
     },
     "#103": {
