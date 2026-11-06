@@ -98,6 +98,7 @@ characters in mutator descriptions, so it is not well-formed XML.
    | kernel | `kernel` | `ai.speckitty.charter.kernel` | 75 | 27 |
    | missions | `missions` | `ai.speckitty.charter.missions` | 70 | 7 |
    | profiles | `profiles` | `ai.speckitty.charter.profiles` | 90 | 4 |
+   | activations | `activations` | `ai.speckitty.charter.activations` | 85 | see the amendment of 2026-11-06 (activations) |
    | packs | `domain+application` | `packs.domain`, `packs.application`, without `application.config` | 85 | 126 |
    | packs | `infra.storage` | `packs.infra.storage` | 85 | 120 |
    | packs | `infra.fetch` | `packs.infra.fetch`, without `infra.fetch.config` | 70 | 19 |
@@ -239,3 +240,13 @@ rule the packs floors use:
 | profiles | 50 | 90 | 4 |
 
 The other floors are unchanged. Profiles is now close to its trigger, with a margin of 4 mutants.
+
+## Amendment, 2026-11-06 (activations): the activations module joins the nightly
+
+The operator ruled on 2026-11-06 that `service/activations` applies `charter.mutation-conventions`, with one
+whole-module group, `activations`, at a floor of 85. This follows the rule of decision 3 (`floor5(score − 3)`): a trial
+run scored 91.4 %, and `:activations:pitest` on this pull request's head scored 92.5 % (494 of 534 mutants detected,
+19 survived, 21 uncovered, test strength 96.2 %), a margin of 40 mutants over the 85 % floor (454 of 534 needed).
+`scripts/ci/mutation_summary.py` lists `activations` after `packs`, and the job summary shows "no report" for it when
+no `floors.json` is written. The nightly's `./gradlew pitest` already reaches every module that applies the plugin, so
+the workflow needs no change. The other floors are unchanged.

@@ -131,11 +131,13 @@ versions, the HTML and XML reports and PIT's default mutators:
 | kernel | `kernel` | the whole module | 75 % |
 | missions | `missions` | the whole module | 70 % |
 | profiles | `profiles` | the whole module | 90 % |
+| activations | `activations` | the whole module | 85 % |
 | packs | `domain+application` | `packs.domain`, `packs.application`, without `application.config` | 85 % |
 | packs | `infra.storage` | `packs.infra.storage`, `infra.storage.config` included | 85 % |
 | packs | `infra.fetch` | `packs.infra.fetch`, without `infra.fetch.config` | 70 % |
 
-Kernel, missions and profiles apply the plugin through `charter.domain-conventions`; packs applies it directly. Packs
+Kernel, missions and profiles apply the plugin through `charter.domain-conventions`; packs and activations apply it
+directly. Packs
 never mutates the Spring wiring (`application.config`, `infra.fetch.config`) or `infra.api` (the REST adapter), and
 PIT runs only the unit tests of the mutated packages: no `*WiredTest`, and no test tagged `open-packs`, `whole-pack` or
 `timing`. The three packs groups come from the one `:packs:pitest` run, which took 45m54s on an idle 4-core machine

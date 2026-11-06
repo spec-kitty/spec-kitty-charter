@@ -4,6 +4,8 @@
 plugins {
     id("charter.spring-conventions")
     id("charter.hand-written")
+    // The nightly mutation floor (#239, ADR-0062 as amended 2026-11-06).
+    id("charter.mutation-conventions")
 }
 
 dependencies {
@@ -22,4 +24,13 @@ dependencies {
     // The standalone MockMvc tests of infra.api validate the generated interface's constraints, as the service does.
     testImplementation(catalog.lib("spring-boot-starter-validation"))
     testImplementation(catalog.lib("archunit"))
+}
+
+// The nightly mutation floor (#239): one group for the whole module, ruled at 85 by the operator on 2026-11-06
+// (a trial run scored 91.4 %); raised by PR once the score clears it by 5.
+mutationFloors {
+    group("activations") {
+        packages.add("ai.speckitty.charter.activations")
+        floor = 85
+    }
 }
