@@ -37,7 +37,7 @@ public final class PresetRules {
     /**
      * Applies a preset.
      *
-     * @param before the document as stored
+     * @param before the stored document less the ids its closure no longer declares (ADR-0059 amendment R5)
      * @param preset the preset, from the activation's closure
      * @param force whether the deny entries of the preset's members are cleared
      * @return the change

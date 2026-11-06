@@ -46,7 +46,8 @@ import org.springframework.stereotype.Component;
  *   <li>the stored document without the ids the closure no longer declares ({@link #current}, {@link StaleIds}): the use
  *       case computes its change from it, and the ids dropped are reported in {@code dropped} (ADR-0059 amendment R5);
  *   <li>after the use case computed its {@link ActivationChange}: a document equal to the stored one is a no-op, which
- *       answers the stored revision and writes nothing, so a write that dropped a stale id is never one; any other is
+ *       answers the stored revision and writes nothing, unless the write dropped a stale id: one that did is never a
+ *       no-op, even when the change put the id back (a stale preset member the stored list names); any other is
  *       judged by {@link DocumentRules#checkWrite} and written by a compare-and-set at the loaded revision
  *       ({@code 412} when another writer came in between). Every id is judged (FR-017), but the floor only on the deny
  *       entries the write adds: a stored deny entry a pack upgrade put on the floor is tolerated, so it never makes a
@@ -299,9 +300,9 @@ public class ActivationWrites {
     }
 
     /**
-     * Stores what a write computed from {@link #current}: nothing for a no-op, otherwise the computed document after the
-     * rules, by a compare-and-set at the loaded revision. The change reports the stale ids dropped from the stored
-     * document.
+     * Stores what a write computed from {@link #current}: nothing for a no-op (a computed document equal to the stored
+     * one, with no stale id dropped), otherwise the computed document after the rules, by a compare-and-set at the
+     * loaded revision. The change reports the stale ids dropped from the stored document.
      *
      * @param loaded the activation as loaded
      * @param computed what the write computed from {@link #current}
@@ -314,7 +315,7 @@ public class ActivationWrites {
         ActivationChange change =
                 computed.withDropped(StaleIds.drop(loaded.document(), snapshot).dropped());
         ActivationDocument after = change.after();
-        if (after.equals(loaded.document())) {
+        if (after.equals(loaded.document()) && change.dropped().isEmpty()) {
             return new Outcome(loaded, change);
         }
         DocumentRules.checkWrite(loaded.document(), after, snapshot)

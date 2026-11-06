@@ -116,6 +116,19 @@ class ActivationPresetServiceTest {
     }
 
     @Test
+    void aStalePresetMemberTheDocumentAlreadyNamesIs422NotANoOp() {
+        StoredActivation before =
+                stored(ActivationDocument.builder().selected(ArtifactKind.DIRECTIVE, List.of("GONE")));
+
+        assertThatThrownBy(() -> service.apply(ID, "stale", false, List.of(), quoted(before)))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_INVALID));
+        assertThat(repository.replaces()).isZero();
+        assertThat(repository.find(ID).orElseThrow()).isEqualTo(before);
+    }
+
+    @Test
     void applyingTheSamePresetTwiceAnswersTheSameRevisionAndWritesOnce() {
         StoredActivation before = stored(ActivationDocument.builder());
         ActivationWrites.Outcome first = service.apply(ID, "team", false, List.of(), quoted(before));
