@@ -414,6 +414,54 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-06T09:45:08.538652Z",
+      "decision_id": "01M6R3YTNT1P2MBERBN7WV71ND",
+      "final_answer": "No. Enhancers always require their T to be active in order to work; they do not stand on their own. A required T is satisfied only by T itself or an active override of it; an enhancer never satisfies it, and an enhancer whose T is not active has no effect.",
+      "input_key": "enhancer_satisfies_required",
+      "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",
+      "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
+      "opened_by": "cli",
+      "options": [
+        "Yes, always",
+        "Only when a deny entry keeps T out",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": true,
+      "question": "Does an active enhancer alone satisfy a required T whatever keeps T out of force?",
+      "rationale": null,
+      "resolved_at": "2026-11-06T09:51:41.679372Z",
+      "resolved_by": null,
+      "slot_key": "plan.floor.enhancer-satisfies",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-06T09:45:10.979797Z",
+      "decision_id": "01M6R3YX23H46PXGNEFC31E6CT",
+      "final_answer": "Relax it in this mission, override only: a deny on a required T is accepted when an active override of T is in force and T is not locked. Overrides are not permitted on locked artifacts.",
+      "input_key": "required_write_rule",
+      "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",
+      "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
+      "opened_by": "cli",
+      "options": [
+        "Leave writes unchanged here; follow-up issue",
+        "Change the write rule in this mission",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": true,
+      "question": "Should the write rule allow a deny on a required T when an active override/enhancement of it is in force?",
+      "rationale": null,
+      "resolved_at": "2026-11-06T09:51:44.161853Z",
+      "resolved_by": null,
+      "slot_key": "plan.floor.write-rule",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",
