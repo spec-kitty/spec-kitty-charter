@@ -98,10 +98,10 @@
       "criterion_id": "FR-010",
       "description": "Verify FR-010 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "activation-selections.feature: 'Selecting an artifact the closure does not hold is 404 artifact_not_found', 'Selecting a mission type the closure does not hold is 404 mission_type_not_found', 'A select/unselect/deactivate without If-Match is 428', 'A select with a stale If-Match is 412, before the path id is judged', 'A malformed body without If-Match is 428, before the body is judged', 'A malformed If-Match on a select is 400', 'A path kind outside the selectable kinds is 422 with a violation at the path', 'Deactivating an artifact the closure does not hold is 404'; activation-presets.feature 'A preset held only by a pack outside the activation's closure is 404 preset_not_found', 'Applying a preset without If-Match is 428', '...stale If-Match is 412, before the preset is judged'; ActivationWriteOrderTest, ActivationSelectionServiceTest (no pack read on refused precondition: packs.calls()==0/1). lane-m HEAD 7f6264b: ./gradlew verifyAll --rerun-tasks --max-workers=1 -PcontractBaseline=none BUILD SUCCESSFUL (127/127 tasks executed; 7200 tests, 0 failures, 0 errors, 4 pre-existing env skips in packs; 341 BDD scenarios incl. activation-register 35/35, activation-selections 41/41, activation-presets 14/14, activation-register-guards 5/5, activations 4/4)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:qa-test-executor-elena",
+      "verified_at": "2026-11-06T02:55:49.222984+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
