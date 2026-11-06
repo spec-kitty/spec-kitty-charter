@@ -1,7 +1,7 @@
 {
-  "event_count": 55,
-  "last_event_id": "01M6RSB5P2G3XY4EQ9CPEBZ3H9",
-  "materialized_at": "2026-11-06T15:58:53.115709+00:00",
+  "event_count": 59,
+  "last_event_id": "01M6RTSQMKEEZCXH30E73AM51V",
+  "materialized_at": "2026-11-06T16:24:18.820751+00:00",
   "mission_number": "",
   "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
   "mission_type": "software-dev",
@@ -90,19 +90,36 @@
     },
     "WP03": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": null,
       "agent_profile": "java-jenny",
       "agent_profile_version": "1.0",
-      "force_count": 0,
+      "force_count": 1,
       "implementer_of_record": "claude",
       "lane": "in_progress",
-      "last_event_id": "01M6RSB5P2G3XY4EQ9CPEBZ3H9",
-      "last_transition_at": "2026-11-06T15:58:53.115709+00:00",
+      "last_event_id": "01M6RTSQMKEEZCXH30E73AM51V",
+      "last_transition_at": "2026-11-06T16:24:18.820751+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review: activation document v2 (mission_type an ordinary kind; activatedKinds/missionTypes/inForce/kinds() gone; empty allow list stored absent, FR-042), ClosureSnapshot/ClosureView without the mission-type set, codec writes v2 and upgrades v1 in memory (selections kept, activatedKinds discarded, DM-01M6RMJHDKNTXAM055Q8WR6SDN), reads never write and the next write stores v2 (DM-01M6RFGMDH859CJP3RHHF9YC3H). Red first: commit 23db3df3 (42 assertion failures against v1 code). Gates: ':activations:check' exit 1 = only 5 WP08-owned failures (ActivationBodyAdviceTest x4, ActivationJsonTest x1), checkstyle/javadoc/spotless pass, 483/488 tests pass; ':packs:test --tests *ClosureQueriesTest* :packs:checkstyleMain :packs:checkstyleTest :packs:spotlessCheck :activations:test --tests *PacksAvailabilityTest*' exit 0; ':deployable:test --tests *ActivationRestartTest* *HexagonalArchitectureTest* *ActivationRoundTripPropertyTest* *ActivationStorageWiringTest*' all four classes pass (the task exits 1 only because CharterContractSuite is pulled in: 109 scenario failures from v1 bodies in WP08-owned glue/features). Revision on read is the upgrade's revision, per the WP01 contract scenario (deviates from the prompt's 'revision over stored bytes')."
+      ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/layer-merge-and-effective-reads-01M6R0J6-coord/kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP03-a0-activation-document-v2/review-cycle-1.md",
+        "reference": "review-cycle://layer-merge-and-effective-reads-01M6R0J6/WP03-a0-activation-document-v2/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "changes_requested"
+      },
       "role": "implementer",
-      "shell_pid": 446,
-      "shell_pid_created_at": "1793980725.85"
+      "shell_pid": null,
+      "shell_pid_created_at": null,
+      "subtasks": {
+        "T010": "planned",
+        "T011": "planned",
+        "T012": "planned",
+        "T013": "planned",
+        "T014": "planned"
+      }
     },
     "WP04": {
       "actor": "finalize-tasks",
