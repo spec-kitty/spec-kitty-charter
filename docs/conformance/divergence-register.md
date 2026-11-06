@@ -454,6 +454,8 @@ Core's seam, to switch: read an absent list as none and write the default it mea
 deny entry on a required or locked artifact out of a document before writing it (DIV-204); and take the required set
 from the closure's governing presets, not from `required_*` (DIV-205).
 
+A pack pinned in an activation to a version other than the one the service holds is refused `422 activation_invalid` (`version_not_held`, naming both versions), by operator ruling of 2026-11-06, so a pin is never recorded for a version the closure does not hold.
+
 DIV-208 was added on 2026-11-06: ADR-0020 D4 rules that a write may spell an id another known way and is normalized
 to the declared id, and the register matches ids exactly as declared instead. Core's seam already sends declared ids,
 so it needs no change; the divergence closes when the normalization is built or the ruling is withdrawn.
