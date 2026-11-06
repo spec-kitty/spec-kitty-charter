@@ -48,6 +48,18 @@
       "verdict": "not-applicable",
       "wp": null
     },
+    "#240": {
+      "evidence_ref": "Context: cited only for ADR-0064 numbering",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
     "#357": {
       "evidence_ref": "Delivered by this mission (PRs A0/A/B/C); see plan.md traceability",
       "fr": null,
