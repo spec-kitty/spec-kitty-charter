@@ -228,7 +228,7 @@
     },
     "WP07": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": "claude::reviewer-renata",
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 1,
@@ -239,7 +239,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "A15 scoped locks (PackMutabilityPolicy.scopedPolicies, used by write gate and ClosureQueries), B8 own policy excluded from the write gate, A10 RequiredFloor.of(presets, held) + unheld() report, A14 enhances no longer a change (DomainRepositoryService.refines), exactly-one-winner pinned. Red first: 9 assertion failures with stubs (commit 2c166382 msg). Merged lane-f (WP06) and aligned PresetTest. Gates: ./gradlew --max-workers=1 -Dorg.gradle.internal.repository.max.retries=10 -PcontractBaseline=none :packs:check exit 0; :activations:test exit 1 (5 known WP08 failures: ActivationBodyAdviceTest x4, ActivationJsonTest x1); :deployable:test --tests '*HexagonalArchitectureTest' 59/59 pass; CharterContractSuite 109 failures (known WP08 count; composition.feature sibling scenarios moved to overrides edges, A14). Hand-off to WP08 fragment: A15 narrows locks (unrelated pack's lock no longer applies), B8 own-policy writes no longer 409, A10 unheld must-haves leave the floor, A14 sibling enhancers compose.",
-        "Unchanged resubmit (identity-only cycle, #368 precedent)"
+        "Unchanged resubmit (identity-only cycle, #368 precedent)",
+        "Review passed (WP07, HEAD 7fee04e4). A15: PackMutabilityPolicy.scopedPolicies scopes each policy to held(p) plus depends_on/parent_pack ancestors; read by write gate (judgingOf) and ClosureQueries.policyOf; pinned by ClosureQueriesTest a15 x2 and PackMutabilityPolicyClosureTest a15 three-level. B8: root own policy removed in judgingOf/policiesOver; pinned through wired gate (PackMutabilityPolicyTest b8) and closure seam incl. whole-pack replace. Single-source ctor PackMutabilityPolicy(MutabilityPolicySource) has zero production callers (Spring uses the @Autowired ctor); test-seam semantics unchanged (still enforces source over every target). A10: RequiredFloor.of(presets, held) + unheld(); held = ClosureQueries holderOf keys (mission_type is an ArtifactKind, so held); DELETE inbound-reference half is WP14 T067 / WP19 / WP08 @WIP, not WP07. A14: DomainRepositoryService.refines counts overrides only; changedArtifacts used only by the sibling-contest check; settlement exactly-one-winner pinned; positive \"two enhancers compose\" contract scenario is WP08 T038 scope. Contract edit to composition.feature (enhances->overrides) is a required consequence of A14; both sibling-contest scenarios pass. Fixture edits only make packs hold their must-have/locked ids, which A10/A15 require; no assertion weakened. Red log: 9 assertion failures. Gates rerun: :packs:check exit 0 (2891 tests, 0 fail); :activations:test 5 failures (ActivationBodyAdviceTest x4, ActivationJsonTest x1, WP08-owned); CharterContractSuite 382/109 failed, failure set identical to lane-f baseline a2eaaa9e; HexagonalArchitectureTest 59/0. Anti-patterns: dead code PASS, synthetic fixture PASS, silent empty PASS, FR coverage PASS, frozen surface PASS, locked decision PASS, shared-file ownership PASS (out-of-map recorded: ClosureView/ClosureQueries/ClosureQueriesTest WP12/WP21, DomainRepositoryService(+Test) WP21, PresetTest WP06, composition.feature), production fragility PASS. Hand-offs: WP08 fragment must record A15 lock narrowing and A14 contract scenario change; WP22 surfaces floor.unheld()."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
