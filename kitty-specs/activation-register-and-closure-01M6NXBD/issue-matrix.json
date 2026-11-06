@@ -49,7 +49,7 @@
       "wp": null
     },
     "#291": {
-      "evidence_ref": "Nine #125 operations built across WP09/WP13/WP14",
+      "evidence_ref": "Nine #125 operations built (WP09 register, WP13 select/deactivate, WP14 preset); 4 effective reads remain reserved under #103; verifyAll green at 7f6264b",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -57,8 +57,8 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "in-mission",
-      "wp": "WP09"
+      "verdict": "fixed",
+      "wp": "WP14"
     },
     "#316": {
       "evidence_ref": "Cited for timing-budget conventions",
