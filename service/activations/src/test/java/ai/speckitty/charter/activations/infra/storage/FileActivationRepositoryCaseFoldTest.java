@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * Ids that differ only in case never alias on disk (T106): their directories have names that differ when lower-cased,
+ * Ids that differ only in case never alias on disk: their directories have names that differ when lower-cased,
  * so a case-insensitive file system (the macOS and Windows defaults) keeps them apart, and each reads back its own
  * document. The layout is {@code <root>/<encoded id>/activation.json}.
  */

@@ -105,7 +105,7 @@ slice. The `activations` slice is the first: `activations.infra.packs.PacksAvail
 2026-11-05 (mission `activation-register-and-closure-01M6NXBD`). The per-slice rules (`SLICE_RINGS`) hold every slice
 listed in `SLICES` to the same rings as `packs`.
 
-### Decision (2026-11-05, PR A squad): the shared web ring
+### Decision (2026-11-05, activation register review): the shared web ring
 
 The HTTP transport every inbound adapter shares (problem bodies, the refusal mapping, the JSON body guard) lives in its
 own module, `web-transport`, package `ai.speckitty.charter.web`, not in the `packs` adapter. Before, the activation

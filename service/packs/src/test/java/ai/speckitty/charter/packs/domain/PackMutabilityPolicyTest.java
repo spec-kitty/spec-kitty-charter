@@ -203,7 +203,7 @@ class PackMutabilityPolicyTest {
 
     // ---- fixtures and fakes --------------------------------------------------------------------------------------
 
-    // ---- WP17 T110: the wired gate reads the closure and its policies in one verified read -------------------------
+    // ---- the wired gate reads the closure and its policies in one verified read -------------------------
 
     /** q (descriptor Q) locks directive:X; pack-a depends on Q. Facts are read only through the compose. */
     private static WritePolicyGate wiredGate(Supplier<String> fingerprint, List<String> factsRead) {
