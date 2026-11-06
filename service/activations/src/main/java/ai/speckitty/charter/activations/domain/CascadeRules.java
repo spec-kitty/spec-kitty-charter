@@ -28,9 +28,9 @@ import java.util.function.Predicate;
  *       scope). A lineage ancestor that is passed through is never in force and never reported; a denied one stops the
  *       pass-through and is reported as any stop is (D2.4).
  *   <li><b>Clearing</b>: a select clears the target's own deny entry; with {@code includeDeactivated} it also clears the
- *       deny entries of everything the walk went through, whatever the scope (what it reached, the ancestors it
- *       passed). A cleared artifact outside the scope and a cleared ancestor are cleared, never selected: the first
- *       stays in {@code skippedByScope}.
+ *       deny entries the walk passes through within the scope: what it reached in scope and the ancestors it passed
+ *       whose kind is in scope (R3). A denied artifact outside the scope stops the walk and keeps its deny entry, as
+ *       without {@code includeDeactivated}. A cleared ancestor is cleared, never selected.
  *   <li><b>Deactivate</b> ({@link #planDeactivate}, {@link #planShared}, {@link #applyDeactivate}): the target and, with
  *       a cascade, the selected artifacts in scope only it reaches leave {@code selected}. The target's walk follows
  *       the lineage as the select's does, so the two round-trip. A floor artifact is never a candidate: it stays a
@@ -67,7 +67,9 @@ public final class CascadeRules {
 
     /**
      * The walk of a select: from the target over the cascade relations with the lineage, stopping at the document's deny
-     * entries (other than the target's own), or nowhere with {@code includeDeactivated}.
+     * entries other than the target's own. With {@code includeDeactivated} it stops only at those whose kind the scope
+     * does not admit, so an artifact outside the scope stops the walk as it would without it (ADR-0059 as amended on
+     * 2026-11-06, R3); a denied ancestor is passed through only when its kind is in scope.
      *
      * @param document the document before the write
      * @param target the artifact selected
@@ -80,7 +82,10 @@ public final class CascadeRules {
         if (!scope.cascades()) {
             return ReachPlan.none(target);
         }
-        Set<ArtifactRef> stops = includeDeactivated ? Set.of() : denied(document);
+        Set<ArtifactRef> stops = new TreeSet<>(denied(document));
+        if (includeDeactivated) {
+            stops.removeIf(ref -> scope.admits(ref.kind()));
+        }
         return new ReachPlan(Set.of(target), CASCADE_RELATIONS, without(stops, Set.of(target)), true);
     }
 
@@ -104,7 +109,8 @@ public final class CascadeRules {
         Split split = scopeSplit(target, scope, walked);
         SortedSet<ArtifactRef> selecting = new TreeSet<>(split.inScope());
         selecting.add(target);
-        Set<ArtifactRef> clearing = clearing(document, target, includeDeactivated ? walkedThrough(walked) : Set.of());
+        Set<ArtifactRef> clearing =
+                clearing(document, target, includeDeactivated ? walkedThrough(walked, scope) : Set.of());
         ActivationDocument after = withoutDenies(withSelections(document, selecting), clearing);
         SkippedReport skipped = new SkippedReport(
                 List.copyOf(split.outOfScope()), deniedReport(walked), behindReport(walked), List.of());
@@ -219,9 +225,11 @@ public final class CascadeRules {
         return retained(clearing, denied(document));
     }
 
-    /** What the walk went through: what it reached, the target included, and the ancestors it passed. */
-    private static Set<ArtifactRef> walkedThrough(Reach reach) {
-        return union(reach.reached().keySet(), reach.ancestorsPassed());
+    /** What the walk went through in scope: what it reached and the ancestors it passed, of a kind the scope admits. */
+    private static Set<ArtifactRef> walkedThrough(Reach reach, CascadeScope scope) {
+        Set<ArtifactRef> through = union(reach.reached().keySet(), reach.ancestorsPassed());
+        through.removeIf(ref -> !scope.admits(ref.kind()));
+        return through;
     }
 
     private static List<SkippedReport.SkippedDeactivated> deniedReport(Reach reach) {

@@ -9,9 +9,10 @@ put:
     Adds the artifact to selected and clears its own exclusion, as charter activate does (ADR-0013 D3); with kind
     mission_type, adds the mission type to missionTypes, and no cascade applies. With cascade, walks the graph into
     the named kinds from it: the walk stops at a deactivated artifact and reports it, unless includeDeactivated is
-    true, which walks through deactivated artifacts and clears the exclusions of everything the walk goes through,
-    whatever the cascade's kinds (a cleared artifact outside them is reported in skippedByScope and not selected; a
-    lineage ancestor passed through is cleared and never selected). The walk crosses enhances like any other
+    true, which walks through the deactivated artifacts of the cascade's kinds and clears their exclusions: of what
+    the walk reaches within those kinds and of each lineage ancestor it passes through whose kind is among them (a
+    cleared ancestor is never selected). A deactivated artifact outside the cascade's kinds keeps its exclusion: the
+    walk stops there and reports it, as it does without includeDeactivated (ADR-0059 amendment of 2026-11-06). The walk crosses enhances like any other
     relation, from the enhancer to what it enhances (ADR-0059 D2, as amended on 2026-11-06), so selecting an
     enhancer with a cascade selects its target and selecting a target selects no enhancer. One write, one new revision; answers the ActivationChange and the new ETag. Requires If-Match (ADR-0020
     D6). Absent means none: when selected holds no list for the kind, the select adds one that holds exactly the

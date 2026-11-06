@@ -20,9 +20,13 @@
   (ADR-0059 D4, "a stored one is tolerated but not applied"): a select, unselect, re-activate or preset of another id
   answers as if it were not there, and keeps it. `createActivation` and `replaceActivation` still judge the whole
   document they are sent.
-- `SelectionRequest.includeDeactivated` says what it clears: the deny entries of everything the walk goes through,
-  whatever the cascade's kinds (one outside them is cleared, stays in `skippedByScope` and is not selected; a lineage
-  ancestor passed through is cleared and never selected).
+- `SelectionRequest.includeDeactivated` says what it clears (operator ruling of 2026-11-06, ADR-0059 amendment R3):
+  only the deny entries the walk passes through within the cascade's kinds, that is what it reaches within them, each
+  lineage ancestor it passes whose kind is among them (cleared, never selected) and the target. A denied artifact
+  outside the cascade's kinds keeps its deny entry: the walk stops there and reports it in `skippedDeactivated`, with
+  what lies only behind it in `unreachedBehindDeactivated`, as without `includeDeactivated`. This reverses the
+  earlier reading that cleared out-of-scope deny entries the walk went through; three scenarios of
+  `activation-selections.feature` pin it.
 - A cascading deactivate never removes an artifact on the required or locked floor; a selected one the cascade reached
   is kept, and reported in `skippedShared` when another active artifact still references it, named by that artifact.
   One no other active artifact reaches is not reported: it was never a candidate, and `referencedBy` never names the

@@ -376,10 +376,10 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       e
       """
 
-  Scenario: includeDeactivated clears a deny entry the walk went through outside the scope, without selecting it
-    FR-013, SelectionRequest.includeDeactivated: the walk takes x back whatever the scope, so x's deny entry is
-    cleared; x is a tactic, outside a cascade into directives, so it stays out of selected and is reported in
-    skippedByScope.
+  Scenario: includeDeactivated keeps the deny entry of an artifact outside the scope, where the walk stops
+    FR-013, ADR-0059 (operator ruling of 2026-11-06): includeDeactivated takes back only the deny entries the walk
+    passes through within the cascade's scope. x is a tactic, outside a cascade into directives, so the walk stops
+    at x as it would without includeDeactivated: x keeps its deny entry and is reported in skippedDeactivated.
     Given the activation "a-1" holds:
       """
       {"schemaVersion": 1, "packs": [{"packId": "main"}], "deactivated": {"tactic": ["x"]}}
@@ -389,26 +389,82 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       {"cascade": ["directive"], "includeDeactivated": true}
       """
     Then the response status is 200
-    And the field at "/cleared" holds exactly the ids:
-      """
-      tactic:x
-      """
+    And the field at "/cleared" holds exactly 0 items
     And the field at "/applied" holds exactly the ids:
       """
       directive:D
-      tactic:x
       """
     And the field at "/skipped/skippedByScope" holds exactly the ids:
       """
       tactic:t
       tactic:t2
       tactic:t3
-      tactic:x
       tactic:xt
+      """
+    And the field at "/skipped/skippedDeactivated" holds exactly the ids:
+      """
+      tactic:x
       """
     When I GET "/activations/a-1"
     Then the response body has no field at "/config/selected/tactic"
-    And the response body has no field at "/config/deactivated"
+    And the field at "/config/deactivated/tactic" holds exactly the ids:
+      """
+      x
+      """
+
+  Scenario: includeDeactivated keeps a denied ancestor outside the scope, which stops the lineage
+    FR-013, FR-014, ADR-0059 (operator ruling of 2026-11-06): q is a profile, outside a cascade into directives, so
+    the lineage stops at q as it would without includeDeactivated; q keeps its deny entry and R lies behind it.
+    Given the activation "a-1" holds:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "main"}], "deactivated": {"agent_profile": ["q"]}}
+      """
+    When I PUT "/activations/a-1/selections/agent_profile/p" with the stored ETag and the body:
+      """
+      {"cascade": ["directive"], "includeDeactivated": true}
+      """
+    Then the response status is 200
+    And the field at "/cleared" holds exactly 0 items
+    And the field at "/applied" holds exactly the ids:
+      """
+      agent_profile:p
+      """
+    And the field at "/skipped/skippedDeactivated" holds exactly the ids:
+      """
+      agent_profile:q
+      """
+    And the field at "/skipped/unreachedBehindDeactivated" holds exactly the ids:
+      """
+      directive:R
+      """
+
+  Scenario: includeDeactivated clears a denied ancestor inside the scope and passes through it
+    FR-013, FR-014, ADR-0059 (operator ruling of 2026-11-06): with every kind in scope, the lineage passes through
+    the denied q and clears its deny entry without selecting q; R is selected through it.
+    Given the activation "a-1" holds:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "main"}], "deactivated": {"agent_profile": ["q"]}}
+      """
+    When I PUT "/activations/a-1/selections/agent_profile/p" with the stored ETag and the body:
+      """
+      {"cascade": ["all"], "includeDeactivated": true}
+      """
+    Then the response status is 200
+    And the field at "/cleared" holds exactly the ids:
+      """
+      agent_profile:q
+      """
+    And the field at "/applied" holds exactly the ids:
+      """
+      agent_profile:p
+      agent_profile:q
+      directive:R
+      """
+    When I GET "/activations/a-1"
+    Then the field at "/config/selected/agent_profile" holds exactly the ids:
+      """
+      p
+      """
 
   Scenario: A stop reached through a template is required by what instantiates it
     ArtifactReference.yaml: requiredBy names artifacts an ArtifactReference can name, so a template on the way to

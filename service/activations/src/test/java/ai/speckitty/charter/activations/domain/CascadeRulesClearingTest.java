@@ -16,9 +16,12 @@ import java.util.TreeSet;
 import org.junit.jupiter.api.Test;
 
 /**
- * FR-013, US3 AS3: {@code includeDeactivated} clears the deny entries the walk goes through. There is no {@code enhances}
- * pull at write time (ADR-0059 D2 as amended on 2026-11-06): the write adds to {@code selected} only the target and what
- * the walk reached, which every test checks with {@link #assertOnlyTheWalkSelected}.
+ * FR-013, US3 AS3: {@code includeDeactivated} takes back only the deny entries the walk passes through within the
+ * cascade's scope: what it reached in scope, the ancestors it passed whose kind is in scope, and the target (ADR-0059 as
+ * amended on 2026-11-06, R3). A denied artifact outside the scope stops the walk and keeps its deny entry, as it would
+ * without {@code includeDeactivated}. There is no {@code enhances} pull at write time (R4): the write adds to
+ * {@code selected} only the target and what the walk reached, which every test checks with
+ * {@link #assertOnlyTheWalkSelected}.
  */
 class CascadeRulesClearingTest {
 
@@ -55,12 +58,19 @@ class CascadeRulesClearingTest {
         assertThat(walked).containsAll(added);
     }
 
-    @Test
-    void theIncludePlanStopsNowhere() {
-        ReachPlan plan = CascadeRules.planSelect(denying("tactic:X"), D, CascadeScope.all(), true);
+    private static final CascadeScope DIRECTIVES =
+            CascadeScope.parse(Optional.of(List.of("directive"))).scope();
 
-        assertThat(plan.stopAt()).isEmpty();
-        assertThat(plan.walks()).isTrue();
+    @Test
+    void theIncludePlanStopsOnlyAtTheDenyEntriesOutsideTheScope() {
+        ActivationDocument before = denying("tactic:X", "directive:Z");
+
+        ReachPlan all = CascadeRules.planSelect(before, D, CascadeScope.all(), true);
+        ReachPlan directives = CascadeRules.planSelect(before, D, DIRECTIVES, true);
+
+        assertThat(all.stopAt()).isEmpty();
+        assertThat(all.walks()).isTrue();
+        assertThat(directives.stopAt()).containsExactly(ref("tactic:X"));
     }
 
     @Test
@@ -81,20 +91,34 @@ class CascadeRulesClearingTest {
     }
 
     @Test
-    void aDeniedArtifactOutsideTheScopeIsClearedButNotSelected() {
-        // The walk went through X (includeDeactivated stops nowhere), so its deny entry is cleared whatever the scope;
-        // X is out of the scope, so it is reported there and not selected.
-        CascadeScope directives =
-                CascadeScope.parse(Optional.of(List.of("directive"))).scope();
+    void aDeniedArtifactOutsideTheScopeStopsTheWalkAndKeepsItsDenyEntry() {
+        // R3: X is a tactic, outside a cascade into directives, so the walk stops at it as it would without
+        // includeDeactivated: it is reported in skippedDeactivated and its deny entry stays.
+        ActivationDocument before = denying("tactic:X");
+        Reach reach = reach().start("directive:D")
+                .reached("tactic:T", "directive:D", REQUIRES)
+                .stopped("tactic:X", "directive:D", REQUIRES)
+                .build();
+
+        ActivationChange change = CascadeRules.applySelect(before, D, DIRECTIVES, true, reach);
+        assertOnlyTheWalkSelected(before, change, D, reach);
+
+        assertThat(change.cleared()).isEmpty();
+        assertThat(change.after().deactivated(TACTIC)).containsExactly("X");
+        assertThat(change.skipped().skippedByScope()).containsExactly(T);
+        assertThat(change.skipped().skippedDeactivated())
+                .containsExactly(new SkippedReport.SkippedDeactivated(ref("tactic:X"), true, List.of(D)));
+    }
+
+    @Test
+    void aDenyEntryOutsideTheScopeIsNeverClearedEvenWhenTheWalkReachedIt() {
+        // The rule is the domain's, not only the plan's: whatever the walk reached, only in-scope deny entries clear.
         ActivationDocument before = denying("tactic:X");
 
-        ActivationChange change = CascadeRules.applySelect(before, D, directives, true, US3);
-        assertOnlyTheWalkSelected(before, change, D, US3);
+        ActivationChange change = CascadeRules.applySelect(before, D, DIRECTIVES, true, US3);
 
-        assertThat(change.cleared()).containsExactly(ref("tactic:X"));
-        assertThat(change.after().deactivated()).isEmpty();
-        assertThat(change.after().selected(TACTIC)).isEmpty();
-        assertThat(change.skipped().skippedByScope()).containsExactly(T, ref("tactic:X"));
+        assertThat(change.cleared()).isEmpty();
+        assertThat(change.after().deactivated(TACTIC)).containsExactly("X");
     }
 
     @Test
@@ -112,5 +136,23 @@ class CascadeRulesClearingTest {
         assertThat(change.cleared()).containsExactly(q);
         assertThat(change.after().selected(AGENT_PROFILE).orElseThrow()).containsExactly("P");
         assertThat(change.applied()).containsExactly(p, q, ref("directive:R"));
+    }
+
+    @Test
+    void aDeniedAncestorOutsideTheScopeStopsTheLineageAndKeepsItsDenyEntry() {
+        // R3: the ancestor's kind is outside a cascade into directives, so it is a stop, as without includeDeactivated.
+        ArtifactRef p = ref("agent_profile:P");
+        ActivationDocument before = denying("agent_profile:Q");
+        Reach passed = reach().start("agent_profile:P")
+                .ancestor("agent_profile:Q", "agent_profile:P")
+                .reached("directive:R", "agent_profile:Q", REQUIRES)
+                .build();
+
+        ReachPlan plan = CascadeRules.planSelect(before, p, DIRECTIVES, true);
+        ActivationChange change = CascadeRules.applySelect(before, p, DIRECTIVES, true, passed);
+
+        assertThat(plan.stopAt()).containsExactly(ref("agent_profile:Q"));
+        assertThat(change.cleared()).isEmpty();
+        assertThat(change.after().deactivated(AGENT_PROFILE)).containsExactly("Q");
     }
 }
