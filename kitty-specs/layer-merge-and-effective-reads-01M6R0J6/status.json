@@ -90,9 +90,9 @@
     },
     "WP03": {
       "actor": "claude",
-      "agent": null,
-      "agent_profile": "java-jenny",
-      "agent_profile_version": "1.0",
+      "agent": "claude::java-jenny",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
       "implementer_of_record": "claude",
       "lane": "for_review",
@@ -100,7 +100,8 @@
       "last_transition_at": "2026-11-06T16:24:32.035504+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Ready for review: activation document v2 (mission_type an ordinary kind; activatedKinds/missionTypes/inForce/kinds() gone; empty allow list stored absent, FR-042), ClosureSnapshot/ClosureView without the mission-type set, codec writes v2 and upgrades v1 in memory (selections kept, activatedKinds discarded, DM-01M6RMJHDKNTXAM055Q8WR6SDN), reads never write and the next write stores v2 (DM-01M6RFGMDH859CJP3RHHF9YC3H). Red first: commit 23db3df3 (42 assertion failures against v1 code). Gates: ':activations:check' exit 1 = only 5 WP08-owned failures (ActivationBodyAdviceTest x4, ActivationJsonTest x1), checkstyle/javadoc/spotless pass, 483/488 tests pass; ':packs:test --tests *ClosureQueriesTest* :packs:checkstyleMain :packs:checkstyleTest :packs:spotlessCheck :activations:test --tests *PacksAvailabilityTest*' exit 0; ':deployable:test --tests *ActivationRestartTest* *HexagonalArchitectureTest* *ActivationRoundTripPropertyTest* *ActivationStorageWiringTest*' all four classes pass (the task exits 1 only because CharterContractSuite is pulled in: 109 scenario failures from v1 bodies in WP08-owned glue/features). Revision on read is the upgrade's revision, per the WP01 contract scenario (deviates from the prompt's 'revision over stored bytes')."
+        "Ready for review: activation document v2 (mission_type an ordinary kind; activatedKinds/missionTypes/inForce/kinds() gone; empty allow list stored absent, FR-042), ClosureSnapshot/ClosureView without the mission-type set, codec writes v2 and upgrades v1 in memory (selections kept, activatedKinds discarded, DM-01M6RMJHDKNTXAM055Q8WR6SDN), reads never write and the next write stores v2 (DM-01M6RFGMDH859CJP3RHHF9YC3H). Red first: commit 23db3df3 (42 assertion failures against v1 code). Gates: ':activations:check' exit 1 = only 5 WP08-owned failures (ActivationBodyAdviceTest x4, ActivationJsonTest x1), checkstyle/javadoc/spotless pass, 483/488 tests pass; ':packs:test --tests *ClosureQueriesTest* :packs:checkstyleMain :packs:checkstyleTest :packs:spotlessCheck :activations:test --tests *PacksAvailabilityTest*' exit 0; ':deployable:test --tests *ActivationRestartTest* *HexagonalArchitectureTest* *ActivationRoundTripPropertyTest* *ActivationStorageWiringTest*' all four classes pass (the task exits 1 only because CharterContractSuite is pulled in: 109 scenario failures from v1 bodies in WP08-owned glue/features). Revision on read is the upgrade's revision, per the WP01 contract scenario (deviates from the prompt's 'revision over stored bytes').",
+        "Unchanged resubmit (identity-only cycle, #368 precedent)"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
