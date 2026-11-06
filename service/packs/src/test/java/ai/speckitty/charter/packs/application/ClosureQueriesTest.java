@@ -233,16 +233,11 @@ class ClosureQueriesTest {
         Preset governing = new Preset(
                 "shared",
                 "governs",
-                List.of(),
-                Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("D1"), PresetItem.of("D2"))),
-                List.of());
-        Preset convenience = new Preset(
-                "shared",
-                "conveniences",
-                List.of(),
-                Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.of("D3"))),
-                List.of());
-        Preset only = new Preset("builtin-only", "conveniences", List.of(), Map.of(), List.of(PresetItem.of("x")));
+                Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("D1"), PresetItem.of("D2"))));
+        Preset convenience =
+                new Preset("shared", "conveniences", Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.of("D3"))));
+        Preset only = new Preset(
+                "builtin-only", "conveniences", Map.of(ArtifactKind.MISSION_TYPE, List.of(PresetItem.of("x"))));
         pack(
                 "builtin",
                 PackLevel.BUILT_IN,
@@ -268,18 +263,9 @@ class ClosureQueriesTest {
 
     @Test
     void aPresetTwoPacksHoldPutsOnlyTheWinningCopysMustHaveItemsOnTheFloor() {
-        Preset earlier = new Preset(
-                "team",
-                "earlier",
-                List.of(),
-                Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("A"))),
-                List.of());
-        Preset later = new Preset(
-                "team",
-                "later",
-                List.of(),
-                Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("B"))),
-                List.of());
+        Preset earlier =
+                new Preset("team", "earlier", Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("A"))));
+        Preset later = new Preset("team", "later", Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("B"))));
         pack(
                 "builtin",
                 PackLevel.BUILT_IN,
@@ -307,11 +293,7 @@ class ClosureQueriesTest {
     @Test
     void aPresetItemThatNamesAHeldIdOnlyByCaseRefusesTheClosure() {
         Preset preset = new Preset(
-                "governing",
-                "governs",
-                List.of(),
-                Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("directive_001"))),
-                List.of());
+                "governing", "governs", Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("directive_001"))));
         pack(
                 "org",
                 PackLevel.ORG,
@@ -362,15 +344,9 @@ class ClosureQueriesTest {
         Preset inherited = new Preset(
                 "team",
                 "the parent's copy",
-                List.of(),
-                Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("FROM-PARENT"))),
-                List.of());
+                Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("FROM-PARENT"))));
         Preset overriding = new Preset(
-                "team",
-                "the child's copy",
-                List.of(),
-                Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("FROM-CHILD"))),
-                List.of());
+                "team", "the child's copy", Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("FROM-CHILD"))));
         // "a-child" sorts before "z-parent": without the parent_pack edge the parent would merge last and win.
         pack(
                 "a-child",
@@ -398,8 +374,8 @@ class ClosureQueriesTest {
 
     @Test
     void twoUnrelatedPacksOfOneLevelHoldingOnePresetIdRefuseTheClosure() {
-        Preset left = new Preset("team", "left", List.of(), Map.of(), List.of());
-        Preset right = new Preset("team", "right", List.of(), Map.of(), List.of());
+        Preset left = new Preset("team", "left", Map.of());
+        Preset right = new Preset("team", "right", Map.of());
         pack(
                 "left",
                 PackLevel.ORG,
