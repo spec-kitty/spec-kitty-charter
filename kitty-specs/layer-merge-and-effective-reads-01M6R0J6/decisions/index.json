@@ -462,6 +462,54 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-06T10:01:05.833649Z",
+      "decision_id": "01M6R4W1H9P3451V89KHP97XKM",
+      "final_answer": null,
+      "input_key": "cascade_edges",
+      "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",
+      "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
+      "opened_by": "cli",
+      "options": [
+        "Merged edges",
+        "Keep unmerged, record a divergence",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Should the write cascade walk the merged edges (after layer overrides) instead of every holding pack's edges?",
+      "rationale": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "slot_key": "plan.cascade.merged-edges",
+      "status": "open",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-06T10:01:08.340614Z",
+      "decision_id": "01M6R4W3ZMSESETMQ0ZQTCZCFJ",
+      "final_answer": null,
+      "input_key": "required_enhancer",
+      "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",
+      "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
+      "opened_by": "cli",
+      "options": [
+        "Required/locked wins: in force",
+        "Enhancer rule wins: not in force, reported",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "A required or locked artifact that is an enhancer whose target is not in force: in force or not?",
+      "rationale": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "slot_key": "plan.floor.required-enhancer",
+      "status": "open",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",
