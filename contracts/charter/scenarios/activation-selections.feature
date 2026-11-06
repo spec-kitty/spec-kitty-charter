@@ -757,7 +757,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     And the field at "/violations/0/code" is "unknown_kind"
 
   Scenario: A malformed If-Match on a select is 400
-    J10: an If-Match that is not one quoted revision breaks its pattern.
+    J10: an If-Match that is neither * nor one quoted revision breaks its pattern.
     Given the activation "a-1" holds:
       """
       {"schemaVersion": 1, "packs": [{"packId": "main"}]}

@@ -45,7 +45,7 @@ import tools.jackson.core.JacksonException;
  *       the body's part of a {@link HandlerMethodValidationException}) is {@code 422 activation_invalid}, one violation
  *       per broken constraint, code {@code invalid_value};
  *   <li>a header or path parameter that breaks its pattern (an {@code If-None-Match} other than {@code *} on a write,
- *       an {@code If-Match} that is not one quoted revision) and a {@link MalformedPreconditionException} are a plain
+ *       an {@code If-Match} that is neither {@code *} nor one quoted revision) and a {@link MalformedPreconditionException} are a plain
  *       {@code 400 Problem}, without a code (J10).
  * </ul>
  *

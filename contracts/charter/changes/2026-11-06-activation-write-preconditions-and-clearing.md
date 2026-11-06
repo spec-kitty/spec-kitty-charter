@@ -1,8 +1,9 @@
 ### Changed
 
 - The per-artifact writes and `applyActivationPreset` declare `400` (the shared `Problem`): an `If-Match` that is
-  not one quoted revision breaks its pattern and is answered `400` before anything else is judged (J10). Their
-  precondition order is stated: `428`, `404 activation_not_found`, `412`, and only then a `422`, the body's included.
+  neither `*` nor one quoted revision breaks its pattern and is answered `400` before anything else is judged (J10).
+  Their precondition order is stated in all five descriptions, `unselectActivationArtifact` included: the `400`, then
+  `428`, `404 activation_not_found`, `412`, and only then a `422`, the body's and the path's kind included.
   A fault of a `SelectionRequest`, `ExclusionRequest` or `PresetApplication` body (a member the schema does not
   declare, a `null`, a value of the wrong type, a `cascade` token outside `CascadeKind`, an empty `cascade`, a body
   that is not JSON or is missing) is `422 activation_invalid` after the preconditions, never before them; a `cascade`

@@ -18,10 +18,10 @@ put:
     artifact (and what the cascade reaches), as it would to []. A write that changes nothing answers 200 with the
     same revision and an empty applied and cleared. A path id the activation's closure does not hold is 404
     artifact_not_found (mission_type_not_found for kind mission_type); a kind outside the path's enum is 422
-    activation_invalid with a violation at the path; an unknown id in the body is 422. The preconditions come first:
-    428 without If-Match, 404 activation_not_found, 412 when stale, and 400 when If-Match is not one quoted revision;
-    a fault of the body (a member the schema does not declare, a null, a cascade token outside its kinds) is 422 only
-    after them. A stored deny entry a pack upgrade put on the required or locked floor is tolerated (ADR-0059 D4): it
+    activation_invalid with a violation at the path; an unknown id in the body is 422. An If-Match that is neither * nor one quoted revision breaks its pattern and is 400 before anything
+    else is judged. Then the preconditions, in this order: 428 without If-Match, 404 activation_not_found, 412 when
+    stale; each comes before any 422, a fault of the body included (a member the
+    schema does not declare, a null, a cascade token outside its kinds). A stored deny entry a pack upgrade put on the required or locked floor is tolerated (ADR-0059 D4): it
     never refuses the write, so the write answers no 409. A document a pack upgrade made stale has one way out: while it stores an id the closure no longer holds, every
     per-artifact and preset write of the activation is 422 activation_invalid, and an unselect or re-activate of
     that id is 404 artifact_not_found; a replaceActivation without the stale ids recovers it.
@@ -81,7 +81,10 @@ delete:
     for the kind, nothing of the kind is selected, so there is nothing to remove. A write that changes nothing (the
     id is not in the list, or the kind holds no list) answers 200 with the same revision and an empty applied and
     cleared. A path id the activation's closure does not hold is 404 artifact_not_found (mission_type_not_found for
-    kind mission_type). A document a pack upgrade made stale has one way out: while it stores an id the closure no longer holds, every
+    kind mission_type); a kind outside the path's enum is 422 activation_invalid with a violation at the path.
+    An If-Match that is neither * nor one quoted revision breaks its pattern and is 400 before anything
+    else is judged. Then the preconditions, in this order: 428 without If-Match, 404 activation_not_found, 412 when
+    stale; each comes before any 422, the path's kind included. A document a pack upgrade made stale has one way out: while it stores an id the closure no longer holds, every
     per-artifact and preset write of the activation is 422 activation_invalid, and an unselect or re-activate of
     that id is 404 artifact_not_found; a replaceActivation without the stale ids recovers it.
   tags:

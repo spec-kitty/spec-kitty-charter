@@ -232,7 +232,7 @@ Five operations change one part of a stored document (ADR-0020 D6):
 | `reactivateActivationArtifact` | `DELETE …/exclusions/{kind}/{artifactId}` | Removes the artifact's deny entry (a deny list it empties is dropped); nothing else, no cascade |
 | `applyActivationPreset` | `PUT …/presets/{presetId}`, body `force` | Replaces each key the preset lists; see [Presets](#presets) |
 
-An `If-Match` that is not one quoted revision breaks its pattern and is `400`, before anything else is judged. All
+An `If-Match` that is neither `*` nor one quoted revision breaks its pattern and is `400`, before anything else is judged. All
 five operations declare that `400`. Every other answer comes from one flow (`ActivationWrites`), in this order:
 
 1. The preconditions, before the packs are read: no `If-Match` is `428`, an id nothing is stored under is
