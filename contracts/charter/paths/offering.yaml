@@ -4,8 +4,8 @@ get:
   description: >-
     The packs the service is configured with (ADR-0020 D1), each with its id, its descriptor pack_id, the
     level storage serves it at, the name and the version its pack.yaml gives, the dependencies it
-    resolved (dependsOn) and the link to its artifacts. The order is the merge order: dependencies
-    before the packs that need them, each level contiguous (built-in, then org, then project), and the
+    resolved (dependsOn) and the link to its artifacts. The order is the merge order: dependencies and
+    parent_pack parents before the packs that need them, each level contiguous (built-in, then org, then project), and the
     packs no dependency relates in configured-level, then pack-id code-point order, so Zeta comes
     before alpha. The level is the one storage serves the pack at:
     the pack_level its pack.yaml declares, org when it declares no valid one (ADR-0038); the offering

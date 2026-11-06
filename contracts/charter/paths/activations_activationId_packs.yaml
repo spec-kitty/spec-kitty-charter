@@ -5,7 +5,7 @@ get:
   summary: List the packs an activation builds on.
   description: >-
     The composition closure of the activation: the depends_on closure rooted at the packs its document names, or at
-    every configured pack when the document has no packs member, in dependency order (#360). Each pack is listed in
+    every configured pack when the document has no packs member, in dependency order, dependencies and parent_pack parents before the packs that need them (#360). Each pack is listed in
     the offering's pack shape, with the dependencies the compose resolved for it, so a pinned pack's dependency facts
     are read here (#359). Only the packs of the closure are read and judged: a configured pack outside it, readable
     or not, changes nothing in the answer. An unknown activation is 404 activation_not_found, and an id outside the declared pattern is 400. A closure that cannot
