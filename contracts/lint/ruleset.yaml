@@ -190,12 +190,15 @@ rules:
             required: [Charter-Contract-Version, Charter-Worktree]
 
   # #175, ruling 4: the 200 of a verified read carries the digest that read verified, so its contract requires
-  # it. Every GET 200 is a verified read except the root (/), which reads no pack, and the contract document
-  # (/openapi.yaml), which reads no pack file either. The rule is written by shape, not by operationId.
+  # it. Every GET 200 is a verified read except the root (/), which reads no pack, the contract document
+  # (/openapi.yaml), which reads no pack file either, and two reads of the activation set: the document read
+  # (/activations/{activationId}), whose answer depends only on the stored document (ADR-0059 D5), and the
+  # closure read (/activations/{activationId}/packs), which reports a change through its ETag. The rule is
+  # written by shape, not by operationId.
   fingerprint-on-verified-reads:
-    description: The 200 of every GET other than / and /openapi.yaml declares Charter-Source-Fingerprint with required true (#175).
+    description: The 200 of every GET other than /, /openapi.yaml and the activation document and closure reads declares Charter-Source-Fingerprint with required true (#175).
     severity: error
-    given: "$.paths[?(@property != '/' && @property != '/openapi.yaml')].get.responses['200'].headers"
+    given: "$.paths[?(@property != '/' && @property != '/openapi.yaml' && @property != '/activations/{activationId}' && @property != '/activations/{activationId}/packs')].get.responses['200'].headers"
     then:
       - field: Charter-Source-Fingerprint
         function: truthy
@@ -212,13 +215,15 @@ rules:
   # answer, not the root's or the contract document's, not a shared component response. Only a GET answers a
   # verified read, so a HEAD, OPTIONS or TRACE answer declares it no more than a write's does.
   fingerprint-only-on-verified-reads:
-    description: Only the 200 of a verified read declares Charter-Source-Fingerprint; no write, refusal, root (/) or /openapi.yaml answer or shared response does (#175).
+    description: Only the 200 of a verified read declares Charter-Source-Fingerprint; no write, refusal, root (/), /openapi.yaml or activation document or closure read answer or shared response does (#175).
     severity: error
     given:
       - "$.paths[*][put,post,delete,patch,head,options,trace].responses[*].headers"
       - "$.paths[*].get.responses[?(@property != '200')].headers"
       - "$.paths['/openapi.yaml'].get.responses[*].headers"
       - "$.paths['/'].get.responses[*].headers"
+      - "$.paths['/activations/{activationId}'].get.responses[*].headers"
+      - "$.paths['/activations/{activationId}/packs'].get.responses[*].headers"
       - "$.components.responses[*].headers"
     then:
       field: Charter-Source-Fingerprint

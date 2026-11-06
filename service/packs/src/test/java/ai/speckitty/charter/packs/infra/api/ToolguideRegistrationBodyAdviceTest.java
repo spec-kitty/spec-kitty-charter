@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ai.speckitty.charter.api.model.ToolguideRegistration;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.web.JsonBodyGuard;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -94,7 +95,7 @@ class ToolguideRegistrationBodyAdviceTest {
     void aNullItemIsFoundInAListButNotInAGuideField() {
         assertThat(ToolguideRegistrationBodyAdvice.explicitNull(
                         bytes("{\"guide\":\"g\",\"commands\":[\"a\",null]}"), null))
-                .contains(new RegistrationLists.NullValue("commands", 1));
+                .contains(new JsonBodyGuard.NullValue("commands", 1));
         assertThat(nullMember("{\"guide\":[null],\"guideUri\":\"https://a\"}"))
                 .as("a guide field is a string: an array there is the converter's type error")
                 .isEmpty();
@@ -112,7 +113,7 @@ class ToolguideRegistrationBodyAdviceTest {
     }
 
     private static java.util.Optional<String> nullMember(String json) {
-        return ToolguideRegistrationBodyAdvice.explicitNull(bytes(json), null).map(RegistrationLists.NullValue::member);
+        return ToolguideRegistrationBodyAdvice.explicitNull(bytes(json), null).map(JsonBodyGuard.NullValue::member);
     }
 
     private HttpInputMessage read(HttpInputMessage message) throws IOException {

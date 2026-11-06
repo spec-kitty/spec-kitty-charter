@@ -13,6 +13,7 @@ import ai.speckitty.charter.packs.application.ToolguideRegistrationService;
 import ai.speckitty.charter.packs.application.ToolguideRegistrationService.GuideSource;
 import ai.speckitty.charter.packs.domain.Guide;
 import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
+import ai.speckitty.charter.web.RefusalHandler;
 import java.net.URI;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;

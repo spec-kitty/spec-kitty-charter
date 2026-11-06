@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
+import ai.speckitty.charter.web.ProblemJson;
 import jakarta.servlet.ServletException;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
