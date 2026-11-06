@@ -530,8 +530,8 @@ A → B → C.
 - **`EffectiveArtifactReason`.** It drops `kind_default` (FR-022, ADR-0053 d10) and gains `overridden` and
   `mission_type_not_in_force`.
 - **`SkippedReport`.** It gains the required `staleIds`, `denyNotApplied`, `languageFiltered`, `overridden` and
-  `missionTypeNotInForce` buckets. A write's `ActivationChange.skipped` answers them empty. `skippedByScope` is
-  removed (IC-20).
+  `missionTypeNotInForce` buckets. A write's `ActivationChange.skipped` answers them empty. `skippedByScope` stays
+  as the write report of the `cascade` scope, always empty at read (decision `DM-01M6RN5MTWC98PXEVJNFQSRRJX`).
 - **The two operations.**
   - `x-reserved` is removed from `listEffectiveArtifacts` and `getActivationSkippedReport`.
   - Their `501` pins are retired, so `ReservedOperationCoverageTest` goes 4 → 2.
@@ -652,7 +652,7 @@ A → B → C.
   `CharterRefusalCode`), the scenarios, `docs/adr/0059-*.md`, `docs/conformance/divergence-register.md`.
 - **Sequencing/depends-on:** IC-09 (`EffectiveSet`, `merged()` on the port).
 - **Risks:**
-  - It changes #399's shipped write behaviour inside PR B. The `### Changed` entry says so.
+  - It changes #399's shipped write behaviour inside PR C. The `### Changed` entry says so.
   - A merge refusal now reaches the writes that add a deny entry on a required artifact.
 
 ### IC-10 (C) — packs: the graph projection and the action-context walk
@@ -816,8 +816,9 @@ IC-03 to IC-09 above and into the concerns below.
 - **Purpose:** FR-040 and FR-041 (A7 `DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY`; Q1 `DM-01M6RCXTS0SMDNTWZ8G7GJ2P5S`, Q2 `DM-01M6RCXZ9HSHT4K3443YYZ8ZFC`, Q3 `DM-01M6RCY40CQQTHC130RWF43W0D`, Q4 `DM-01M6RCY8MYNGNPJ247M2Y4880N`;
   research R18 and research/a7-kind-model-2026-11-06.md). Mission types, steps and agent profiles follow the same
   activation, override and enhancement rules as any artifact.
-- **Placement:** PR A, slice A0, after IC-19 and before PR B's reads, which are built on this model. **Pending
-  operator confirmation.** Core must regenerate its DTOs before this ships (Q4).
+- **Placement:** PR A0 (its own PR, stacked on #399, before PR A), after IC-19 and before PR B's reads, which are
+  built on this model (decision `DM-01M6RFGB9NVD9MDWZ6AP0PBYH7`). Core must regenerate its DTOs before this ships
+  (Q4).
 - **The document.** `⟨packs, sel, deny, langs⟩`: `mission_type` joins `selected` and `deactivated`.
   `ActivatableKind` and `SelectableKind` merge into one kind enum. A mission type can be denied like any kind,
   except when it is required or locked (Q2): `409 artifact_required` / `artifact_locked`, as for other kinds.
@@ -840,13 +841,13 @@ IC-03 to IC-09 above and into the concerns below.
 - **Kernel.** One kind registry for activations, presets, packs and the contract. The unused `orgRequirable`,
   `selectionOverlayable` and `InForceWhenAbsent` are deleted. `MISSION_TYPE` becomes requirable, matching
   `RequiredFloor`.
-- **Reads.** The reason `kind_not_activated` and the `skippedByScope` kind bucket are dropped (with `kind_default`,
-  FR-022). `EffectiveArtifact.kind` takes the merged enum, so the listing shows mission types. B7's question
+- **Reads.** The reason `kind_not_activated` is dropped (with `kind_default`, FR-022); `skippedByScope` keeps only
+  its write meaning (the `cascade` scope's report) (decision `DM-01M6RN5MTWC98PXEVJNFQSRRJX`). `EffectiveArtifact.kind` takes the merged enum, so the listing shows mission types. B7's question
   disappears: a select brings its artifact into force.
 - **Contract (breaking, allowed on 0.x).** `ActivationDocument`, `CreateActivationRequest`,
   `ReplaceActivationRequest` and `ActivationChange` lose `activatedKinds` and `missionTypes`; `selected` and
   `deactivated` gain `mission_type`; the kind enums merge; `EffectiveArtifactReason` drops `kind_not_activated`;
-  `SkippedReport.skippedByScope` is removed; preset schemas accept every kind. One `### Breaking` block. There is no
+  preset schemas accept every kind. One `### Breaking` block. There is no
   `contract-charter-v*` baseline yet (0.2.0-SNAPSHOT), so `-PcontractBaseline=none` stands. The corpus
   `valid/02`, `valid/03`, `valid/08` and `invalid/14` are rewritten, and new invalid cases pin the `422` for each
   removed member.
@@ -887,16 +888,16 @@ own PR stacked on #399 before PR A (decision `DM-01M6RFGB9NVD9MDWZ6AP0PBYH7`), u
 
 | Ruling | Change | Code area (#399) | Placement |
 |---|---|---|---|
-| B5 (`DM-01M6RA9XQSH3E07C7VCPCVD6R4`) | `includeDeactivated` clears deny entries only on artifacts the walk reaches and selects, not on lineage ancestors it passes | `activations/domain/CascadeRules.java` (clearing, lines 28–33), `ActivationSelectionService.java:63-77` | A0, pending |
-| A4 (`DM-01M6RA7XC5HC8915GZT2R3H83W`) | replace judges the floor only on added deny entries and drops stale ids, reported in `dropped` | `activations/domain/DocumentRules.java` (`check`, `checkWrite`, `addedDenies`), `ActivationService.java` (replace) | A0, pending |
-| B1 (`DM-01M6RA9BKJY7X9BFV93QW1KM1T`) | writes drop an unsatisfiable version pin (reported in `dropped`) instead of `422 version_not_held`; reads report `pinNotHeld` | `DocumentRules.java:36,151-165` (`version_not_held`), `StaleIds.java` | A0 (writes), B (reads), pending |
-| A15 (`DM-01M6RA97220XBR7RR447FE2JXD`) | a pack's policy locks only artifacts of itself and its `depends_on`/lineage ancestors | `packs/application/PackMutabilityPolicy.java`, `ClosureView.java` (locked set) | A0, pending |
-| B8 (`DM-01M6RAA6Y7NVVGKVKQV05GZYES`) | a pack's own policy never binds the pack itself (C25 aligned with C21) | `PackMutabilityPolicy.authorize` (line 157) | A0, pending |
-| A10 (`DM-01M6RA8MG55V8C2V9PXWDTRNQS`) | the floor holds only held ids; unheld must-have items are reported | `packs/domain/RequiredFloor.java`, `ClosureQueries.java` | A0, pending |
-| A14 (`DM-01M6RA92BS6GGCYTRCFQDYYY5S`) | `enhances` is not a sibling conflict; a settlement names exactly one winner | the sibling-conflict check in `packs` composition (`PackCompositionResolver`) | A0, pending |
-| A7 (IC-20; Q1–Q4) | the kind model revision: `mission_type` in `sel`/`deny`, one kind enum and registry, `activatedKinds`/`missionTypes` refused `422`, storage v2 with upgrade on read, mission-type cascade and binding, presets name any kind | kernel kind enums, `ActivationDocument`, `DocumentRules`, `CascadeRules`, the document store, preset reading | A0, pending |
-| FR-042 (A7 side finding) | test: a GET then PUT through the generated client keeps the revision | `client-java` `ActivationConfig.java:63-73` | A0 (test first), pending |
-| B6/B7 (`DM-01M6RAA2B2G9PNXN2F9SJ7B1CR`) | `ActivationChange.warnings` | `ActivationChangeMapper.java`, `ActivationChange` | B (needs the in-force resolution), pending |
+| B5 (`DM-01M6RA9XQSH3E07C7VCPCVD6R4`) | `includeDeactivated` clears deny entries only on artifacts the walk reaches and selects, not on lineage ancestors it passes | `activations/domain/CascadeRules.java` (clearing, lines 28–33), `ActivationSelectionService.java:63-77` | A0 |
+| A4 (`DM-01M6RA7XC5HC8915GZT2R3H83W`) | replace judges the floor only on added deny entries and drops stale ids, reported in `dropped` | `activations/domain/DocumentRules.java` (`check`, `checkWrite`, `addedDenies`), `ActivationService.java` (replace) | A0 |
+| B1 (`DM-01M6RA9BKJY7X9BFV93QW1KM1T`) | writes drop an unsatisfiable version pin (reported in `dropped`) instead of `422 version_not_held`; reads report `pinNotHeld` | `DocumentRules.java:36,151-165` (`version_not_held`), `StaleIds.java` | A0 (writes), B (reads) |
+| A15 (`DM-01M6RA97220XBR7RR447FE2JXD`) | a pack's policy locks only artifacts of itself and its `depends_on`/lineage ancestors | `packs/application/PackMutabilityPolicy.java`, `ClosureView.java` (locked set) | A0 |
+| B8 (`DM-01M6RAA6Y7NVVGKVKQV05GZYES`) | a pack's own policy never binds the pack itself (C25 aligned with C21) | `PackMutabilityPolicy.authorize` (line 157) | A0 |
+| A10 (`DM-01M6RA8MG55V8C2V9PXWDTRNQS`) | the floor holds only held ids; unheld must-have items are reported | `packs/domain/RequiredFloor.java`, `ClosureQueries.java` | A0 |
+| A14 (`DM-01M6RA92BS6GGCYTRCFQDYYY5S`) | `enhances` is not a sibling conflict; a settlement names exactly one winner | the sibling-conflict check in `packs` composition (`PackCompositionResolver`) | A0 |
+| A7 (IC-20; Q1–Q4) | the kind model revision: `mission_type` in `sel`/`deny`, one kind enum and registry, `activatedKinds`/`missionTypes` refused `422`, storage v2 with upgrade on read, mission-type cascade and binding, presets name any kind | kernel kind enums, `ActivationDocument`, `DocumentRules`, `CascadeRules`, the document store, preset reading | A0 |
+| FR-042 (A7 side finding) | test: a GET then PUT through the generated client keeps the revision | `client-java` `ActivationConfig.java:63-73` | A0 |
+| B6/B7 (`DM-01M6RAA2B2G9PNXN2F9SJ7B1CR`) | `ActivationChange.warnings` | `ActivationChangeMapper.java`, `ActivationChange` | B (needs the in-force resolution) |
 | A8, A11, A12, A6 | new registration refusals; stored packs are not re-judged | `packs` registration services | A (IC-15), new surface |
 
 ### PR slicing after the fold

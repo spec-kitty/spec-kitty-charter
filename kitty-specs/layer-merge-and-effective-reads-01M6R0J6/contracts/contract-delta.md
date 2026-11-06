@@ -165,8 +165,8 @@ changes.
   | `enhancedTargetNotInForce` | new `EnhancerWithoutTarget {kind, artifactId, targets: [ArtifactReference]}` |
 
   Two existing buckets change their wording:
-  - (Superseded by IC-20: `skippedByScope` is removed.) `skippedByScope`'s description and `x-derived` rule say: at read, outside `activatedKinds` (the ADR-0059
-    follow-up);
+  - `skippedByScope` stays the write report of the `cascade` scope; its description says it is always empty at read
+    (the kind-gate reading is gone with IC-20) (decision `DM-01M6RN5MTWC98PXEVJNFQSRRJX`);
   - `skippedDeactivated` says: at read, `viaRequires` is false and `requiredBy` is empty.
 - **`listEffectiveArtifacts` and `getActivationSkippedReport`:**
   - `x-reserved` is removed, and `501` leaves their responses.
@@ -234,12 +234,20 @@ changes.
 
 ## Fold of 2026-11-06 (ruleset rulings and post-plan contract squad)
 
-- **Slice A0 (#399 behaviour, pending operator confirmation).** `### Changed`: `replaceActivation` judges the floor
+- **PR A0 (#399 behaviour; its own PR, `DM-01M6RFGB9NVD9MDWZ6AP0PBYH7`).** `### Changed`: `replaceActivation` judges the floor
   only on added deny entries and drops stale ids into `dropped` (A4); `includeDeactivated` clears only what the walk
-  reaches (B5). `### Breaking`: an unsatisfiable version pin is dropped into `dropped` instead of
-  `422 version_not_held` (B1); `version_not_held` stays for `createActivation` (ambiguity logged).
-- **PR B.** `ActivationChange.warnings` (B6/B7), `Activation.denyNotApplied` (B4), `SkippedReport.pinNotHeld` and
-  `requiredNotHeld` (B1, A10), `PackRegistration.notices.activationsAffected`.
+  reaches (B5). `### Breaking`: an unsatisfiable version pin is dropped into `ActivationChange.droppedPins`
+  (`{packId, version}`, declared in A0 by WP01) instead of `422 version_not_held` on replace, the per-artifact writes
+  and apply-preset (B1); `createActivation` keeps `422 version_not_held` for a pin in its own body
+  (`DM-01M6RN5Y406SB4KA13QYMQ2P8J`).
+- **PR B.** `ActivationChange.warnings` (B6/B7), `Activation.denyNotApplied` (B4), `SkippedReport.pinNotHeld`,
+  `requiredNotHeld` and `requiredNotInForce` (B1, A10, the bound and ungrounded floor),
+  `PackRegistration.notices.activationsAffected`. `SkippedReport.skippedByScope` stays (the write report of the
+  `cascade` scope, always empty at read; `DM-01M6RN5MTWC98PXEVJNFQSRRJX`).
+- **PR A refusal codes (post-tasks squad).** `registration_timed_out` (the job's end state at the source deadline +
+  30 s, NFR-008), `pack_storage_full` (`503`, less than 2× the archive bound free, NFR-009), `registration_not_found`
+  (`404`). `PUT`/`POST /packs` answer no `428`, except a git source naming a branch ref without a `commit` and without
+  `If-Match` (`428`).
 - **Paging.** `listEffectiveArtifacts` uses a keyset cursor over (`kind`, `id`) bound to the `ETag`; a cursor from
   another tag is `400`. `summary` is computed over the whole set and is identical on every page.
 - **Breaking declarations.** Each PR's fragment carries one `### Breaking` block listing all its breaks.
@@ -249,7 +257,8 @@ changes.
     violation naming `selected.mission_type` (refused now, no deprecation window).
   - `selected` and `deactivated` gain `mission_type`; the kind enums merge into one schema; preset schemas accept
     every kind, and the preset key `activated_kinds` is refused at registration.
-  - `EffectiveArtifactReason` drops `kind_not_activated`; `SkippedReport.skippedByScope` is removed.
+  - `EffectiveArtifactReason` drops `kind_not_activated`; `SkippedReport.skippedByScope` stays as the `cascade`
+    scope's write report, empty at read (decision `DM-01M6RN5MTWC98PXEVJNFQSRRJX`).
   - The document `schemaVersion` becomes 2 (upgrade on read; every `ETag` changes once).
   - Corpus: `valid/02`, `valid/03`, `valid/08` and `invalid/14` rewritten; new invalid cases for each removed member.
     DIV-203 and DIV-501 updated; a new DIV for core's `activated_kinds` narrowing.

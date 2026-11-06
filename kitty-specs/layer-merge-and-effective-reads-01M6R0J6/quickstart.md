@@ -65,7 +65,7 @@ curl -sS -i -H "$T" -H 'If-Match: "<revision>"' -X DELETE \
 
 ```bash
 A=$(curl -sS -H "$T" -H 'Content-Type: application/json' -X POST $B/activations \
-  -d '{"schemaVersion":1,"activatedKinds":["directive","tactic"],"selected":{"directive":["D"],"tactic":["T"]}}' \
+  -d '{"schemaVersion":2,"selected":{"directive":["D"],"tactic":["T"],"mission_type":["software-dev"]}}' \
   | jq -r .id)
 curl -sS -H "$T" "$B/activations/$A/artifacts?state=active" | jq '.items[] | {artifactId, reason, packId, level}'
 curl -sS -H "$T" $B/activations/$A/skipped | jq .report        # staleIds, denyNotApplied, overridden, …
@@ -82,6 +82,7 @@ curl -sS -i -H "$T" -H "If-None-Match: $E" $B/activations/$A/skipped            
 ./gradlew :packs:test --tests '*Archive*' --tests '*GitSource*'  # the crafted-archive corpus and the git runner
 ./gradlew :deployable:test --tests '*CharterContractSuite*'     # the @contract scenarios
 ./gradlew :deployable:test --tests '*HexagonalArchitectureTest*' :packs:test --tests '*NetworkCodeBoundaryTest*'
-./gradlew :activations:timingBudgets                            # NFR-003, report-only
+./gradlew :activations:timingBudgets                            # NFR-003 wall time, report-only (the gate is EffectiveReadOperationBudgetTest in check)
+./gradlew :packs:gitHostTest                                     # the real-git tests; needs git >= 2.50.1 (CI job git-source)
 ./gradlew verifyAll                                             # once per PR, at closeout
 ```

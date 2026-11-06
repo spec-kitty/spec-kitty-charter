@@ -185,7 +185,16 @@ once:
 - **out of force, and an in-force artifact overrides it:** it keeps its state and reason (`overridden`, or
   `deactivated` when the deny entry was accepted under R12), with `satisfiedBy` naming the overriding artifact;
 - **otherwise:** it is put in force (`active`, `required`), and a deny entry on it is listed in `denyNotApplied`. An
-  enhancer of it never satisfies it (Q8).
+  enhancer of it never satisfies it (Q8);
+- **except** when it cannot stand in force: a required enhancer none of whose targets is in force
+  (`DM-01M6R4W3ZMSESETMQ0ZQTCZCFJ`) or a required artifact bound to a mission type not in force
+  (`DM-01M6RFGFW3S0YJ222QMHD2W11B`). It stays out of force with its reason (`enhanced_target_not_in_force` or
+  `mission_type_not_in_force`), keeps `required: true`, and is listed in `requiredNotInForce`.
+
+The requirement step and the pruning of rule 8 and of the binding repeat until nothing changes (a fixed point,
+`DM-01M6RA7M56M1409EV9JX1EW83K`): a required artifact whose overrider is pruned is judged again. An override cycle
+among the base set and the unsatisfied required artifacts refuses with `500 pack_unreadable`
+(`DM-01M6RN6BWE6SVZZE8ERQ8Z9MV6`).
 
 Rule 8 is applied after the requirement step, repeating down enhancer chains. An enhancer it removes that also
 overrides withdraws its overrides, and the steps run once more; a second change refuses with `pack_unreadable`
@@ -209,12 +218,14 @@ Every artifact the document names that is not in force appears once, in the buck
 | `denyNotApplied` (new) | `{kind, artifactId, reason: required \| locked}` | the deny entries not applied (ADR-0013 D2): on a locked artifact, or on a required one nothing else satisfies |
 | `enhancedTargetNotInForce` (new) | `{kind, artifactId, targets: [ArtifactReference]}` | the selected enhancers none of whose targets is in force (operator, Q8) |
 | `overrideNotApplied` (new) | `{kind, artifactId, overriddenBy: ArtifactReference}` | an active `E overrides T` not applied because `T` is locked; `T` and `E` are both in force (operator, Q6) |
-| `skippedByScope` | — | **removed by IC-20** (no kind gate). Formerly: the selected artifacts of a kind outside `activatedKinds` (ADR-0059 follow-up: the read's meaning) |
+| `requiredNotHeld` (new) | ArtifactReference | must-have items of a governing preset that no pack of the closure holds (A10) |
+| `requiredNotInForce` (new) | `{kind, artifactId, reason: enhanced_target_not_in_force \| mission_type_not_in_force}` | required artifacts that cannot stand in force (the exception above) |
+| `pinNotHeld` (new) | `{packId, version}` | version pins of the document that no pack satisfies (B1) |
 | `languageFiltered` (new) | ArtifactReference | the selected artifacts the language filter excludes |
 | `missionTypeNotInForce` (new) | ArtifactReference | the selected artifacts bound to a mission type not in force; in an action context, the mission type itself (`kind: mission_type`) |
 | `skippedDeactivated` | SkippedDeactivated | the selected and denied artifacts. At read, `viaRequires` is `false` and `requiredBy` is `[]` |
 | `overridden` (new) | `{kind, artifactId, overriddenBy: ArtifactReference}` | the artifacts hidden by an active `E overrides T` |
-| `unreachedBehindDeactivated`, `skippedShared` | as today | always empty at read; a write's report |
+| `unreachedBehindDeactivated`, `skippedShared`, `skippedByScope` | as today | always empty at read; a write's report (`skippedByScope` is the `cascade` scope's report, kept: `DM-01M6RN5MTWC98PXEVJNFQSRRJX`) |
 
 A write's `ActivationChange.skipped` answers the new buckets empty. Lists are sorted by `ArtifactRef`, so the answer
 is byte-stable.
@@ -276,9 +287,12 @@ changes nothing. The write generation is odd during the swap (research R-lock).
 ## Fold of 2026-11-06 (ruleset rulings)
 
 - **ActivationChange** gains `warnings: [{code, artifact}]` (B6/B7), codes `enhanced_target_not_in_force`,
-  `overridden` (`kind_not_activated` is dropped, IC-20); and drops an unsatisfiable pin into `dropped` (B1).
+  `overridden` (`kind_not_activated` is dropped, IC-20); and drops an unsatisfiable pin into `droppedPins:
+  [{packId, version}]` on replace, the per-artifact writes and apply-preset (B1). `createActivation` keeps `422
+  version_not_held` for a pin in its own body (`DM-01M6RN5Y406SB4KA13QYMQ2P8J`).
 - **Activation** gains `denyNotApplied: [urn]` (B4).
-- **SkippedReport** gains `pinNotHeld` and `requiredNotHeld` (B1, A10).
+- **SkippedReport** gains `pinNotHeld`, `requiredNotHeld` and `requiredNotInForce` (B1, A10, the bound and ungrounded
+  floor).
 - **The floor** is the union of the must-have items of every governing copy of a preset id, restricted to held ids
   (A1, A10). **Locks** of a pack's policy apply to the pack and its `depends_on`/lineage ancestors only, never to the
   pack itself (A15, B8).
@@ -293,4 +307,5 @@ changes nothing. The write generation is odd during the swap (research R-lock).
   requirable; presets name any kind.
 - **Binding:** an artifact bound to mission type M (its steps `action:M/s` included) is in force only while M is;
   selecting M cascades to its steps.
-- **Removed:** reason `kind_not_activated`, `SkippedReport.skippedByScope`, the `mts` derivation.
+- **Removed:** reason `kind_not_activated`, the read-side meaning of `SkippedReport.skippedByScope` (the member stays
+  as the write report of the `cascade` scope, `DM-01M6RN5MTWC98PXEVJNFQSRRJX`), the `mts` derivation.
