@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.infra.api;
 
+import ai.speckitty.charter.web.Problems;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.concurrent.atomic.AtomicBoolean;

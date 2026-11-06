@@ -1,14 +1,15 @@
 ---
 title: Offering and activation
-description: "The proposed /offering resource tree, the activation document the service stores, the two ways core builds one, the effective reads and how they map onto the service."
+description: "The /offering resource tree, the activation document the service stores, its closure read, the two ways core builds one, the effective reads and how they map onto the service."
 doc_status: draft
-updated: 2026-10-31T00:00:00Z
+updated: 2026-11-05T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
   - adr/0020-offering-and-activations
   - adr/0019-packs-resource-model-and-hypermedia
   - adr/0013-persistent-deactivation
+  - adr/0059-switch-gate-cascade-edges-and-activation-rulings
   - architecture/packs-resource-model
   - architecture/resolution-model
   - api/service-contract
@@ -36,11 +37,12 @@ resources, one for each concept in the glossary:
 An activation is a document the service stores. Its key, `activationId`, is opaque: the service
 knows nothing of projects.
 
-> **Status:** design only, decided (provisional) by ADR-0020. The action-context read is not
-> served on `main` — PR #139 removed it; today the contract serves `GET /info` and the tactic
-> reads. The read returns as `GET /offering/mission-types/{missionType}/actions/{action}/context`
-> under [#126](https://github.com/spec-kitty/spec-kitty-charter/issues/126)
-> ([ADR-0020](/adr/0020-offering-and-activations/) D1). [What the labels mean](/#status).
+> **Status:** partly built. The activation register (create, read, replace, delete) and the closure read are built
+> ([#291](https://github.com/spec-kitty/spec-kitty-charter/issues/291),
+> [#360](https://github.com/spec-kitty/spec-kitty-charter/issues/360)). The five per-artifact writes and the four
+> effective reads are declared and answer `501`: the writes come with the next pull request of the same mission, the
+> effective reads with the resolution mission. The rest of this page is the design decided by ADR-0020 and
+> [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/). [What the labels mean](/#status).
 
 ## The resource tree
 
@@ -57,7 +59,8 @@ knows nothing of projects.
 │   └── mission-types/{missionType}/actions/{action}                                     R5
 │       └── context{?depth}                    the walk (built; moved in a 0.x minor)    R1
 └── activations                                the activation side; POST: create, service-minted id
-    └── {activationId}                         PUT, GET, DELETE                          R9
+    └── {activationId}                         PUT, GET, DELETE (built)                  R9
+        ├── packs                              the closure the document builds on (built)
         ├── selections/{kind}/{artifactId}     PUT select (cascade), DELETE unselect
         ├── exclusions/{kind}/{artifactId}     PUT deactivate, DELETE re-activate
         ├── presets/{presetId}                 PUT apply a preset
@@ -67,9 +70,12 @@ knows nothing of projects.
         └── mission-types/{missionType}/actions/{action}/context{?depth}   effective      R9
 ```
 
-Every resource under `activations` is declared in the contract (#125) and answers `501` until it
-is built (ADR-0020 D8): each operation carries `x-reserved`, and one `@contract @reserved` scenario per operation
-pins its `501` (`contracts/charter/scenarios/activations.feature`). The R-numbers are the read inventory's
+Every resource under `activations` is declared in the contract (#125). The built ones are `POST /activations`,
+`PUT`, `GET` and `DELETE /activations/{activationId}` and `GET …/packs`; the behavioral `@contract` scenarios in
+`contracts/charter/scenarios/activation-register.feature` pin them. The others, the five per-artifact writes
+(`selections`, `exclusions`, `presets`) and the four effective reads (`artifacts`, `skipped`, `graph`, the effective
+context), still answer `501` (ADR-0020 D8): each carries `x-reserved`, and one `@contract @reserved` scenario per
+operation pins its `501` (`contracts/charter/scenarios/activations.feature`). The R-numbers are the read inventory's
 ([#94](https://github.com/spec-kitty/spec-kitty-charter/issues/94)).
 
 ## Two answers for one action
@@ -79,7 +85,7 @@ pins its `501` (`contracts/charter/scenarios/activations.feature`). The R-number
 | Path | `/offering/mission-types/{mt}/actions/{a}/context` | `/activations/{id}/mission-types/{mt}/actions/{a}/context` |
 | Schema | `ActionContext` | `EffectiveActionContext` |
 | Answers | What the offering says governs the action | What applies under one activation: filtered, with exclusions and the skipped report |
-| Freshness | `governanceFingerprint` | `governanceFingerprint` and the activation's `revision` |
+| Freshness | `governanceFingerprint` | `governanceFingerprint` and the activation's `revision` (not built yet) |
 
 The two never share a URL or a schema, so a client cannot mistake one for the other (ADR-0018 D1).
 
@@ -100,8 +106,6 @@ The two never share a URL or a schema, so a client cannot mistake one for the ot
     "deactivated": { "directive": ["EVD_004"] },
     "languages": ["java"]
   },
-  "governanceFingerprint": "sha256:51aa…",
-  "summary": { "active": 41, "inactive": 212, "excluded": 1, "required": 1, "locked": 0, "skipped": 2 },
   "_links": {
     "self": { "href": "/api/v1/activations/4b1f6c1e-6d2a-4bb5-9a1f-1c0f0c8d2e11" }
   }
@@ -110,15 +114,54 @@ The two never share a URL or a schema, so a client cannot mistake one for the ot
 
 The values are illustrative; the schemas are in the contract (`Activation`, and `ActivationConfig`, canonical as
 JSON Schema 2020-12 in `contracts/offering/schemas/`). Per-entry provenance, context activations and applied presets
-are not part of the document (ADR-0020, amendment of 2026-10-31). `summary` is computed for that fingerprint, so an answer is byte-stable for one revision and one fingerprint.
+are not part of the document (ADR-0020, amendment of 2026-10-31). The answer carries no `summary` and no
+`governanceFingerprint`, so its bytes depend only on the stored document and its strong `ETag` is the quoted
+`revision` ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) D5); `summary` moves to the
+effective artifact list. `GET` honors `If-None-Match` and answers `304` without a body when it matches.
 `config` is the `ActivationConfig`: the whole document a client authors. Core keeps its own file
-layout and maps it to and from `config` in one seam module. Everything else is the service's: `revision` (also the `ETag`), the derived `summary`
-and the links. Write links (`edit`, `select`, `exclude`, …) appear only once the writes are built; until then `_links` holds `self`.
+layout and maps it to and from `config` in one seam module. Everything else is the service's: `revision` (also the
+`ETag`) and the links. Write links (`edit`, `select`, `exclude`, …) appear only once the writes are built; until then `_links` holds `self`.
 
 **Canonical form.** The service stores ids as the offering's artifact ids, sorted and without
-duplicates, and omits empty deny lists. `revision` is the `sha256:` digest of the RFC 8785
+duplicates. An empty deny list is refused, never stored. `revision` is the `sha256:` digest of the RFC 8785
 serialization of the canonical `config`. A `PUT` of a fetched `config` answers `200` with the same
-`ETag`.
+`ETag`, for a document the offering has not made stale (ADR-0059 D4): a stale document is served as stored, and
+writing it back is refused until the client removes the ids the offering no longer has (`422`) and the deny entries
+on artifacts now required or locked (`409`). A write evaluates its preconditions first (RFC 9110 §13.2.2): a stale
+`If-Match`, or `If-None-Match: *` on a stored id, answers `412` whatever the document holds, and takes no closure
+snapshot. The document is judged against its closure only after that.
+
+**Absent means none** ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) d10). Each list
+has three states: absent, `[]` and a list of ids. An absent `selected.<kind>`, `activatedKinds` or `missionTypes`
+puts nothing in force, the same as `[]`, `skill` included; the two stay distinct on the wire. An absent `packs` means
+every configured pack. Core's per-kind default differs ([DIV-203](/conformance/divergence-register/)).
+
+**Storage.** The file adapter keeps each document at `<config-root>/activations/<encoded id>/activation.json`,
+holding exactly the canonical bytes. The encoded id is the id in lower case, a `-`, then a hexadecimal bitmap of
+its upper-case letters (`aBc` is `abc-2`), so ids that differ only in case never share a directory on a
+case-insensitive file system, and the name decodes back to the id. A write goes to a temporary file beside it, forced to the device, and an atomic
+move replaces the target; a lock in the process, striped over a fixed number of locks by the encoded id, serializes each id's
+read-compare-write. This is safe
+for one process; several processes over one root are out of scope
+([#349](https://github.com/spec-kitty/spec-kitty-charter/issues/349)).
+
+## The closure read
+
+`GET /activations/{activationId}/packs` (`listActivationPacks`) answers the packs a document builds on: the
+`depends_on` closure rooted at its `packs` (every configured pack when `packs` is absent), in dependency order. Each
+item has the offering's pack shape, `OfferingPack`, with the facts of each resolved dependency. A pack outside the
+closure is never judged, so an unrelated broken pack does not refuse it; a closure that does not compose is refused
+with the offering's `500` codes, naming the pack. Its `ETag` covers the revision and the closure's packs, and it
+answers `304` when `If-None-Match` matches. Neither this read nor `GET /activations/{activationId}` sends
+`Charter-Source-Fingerprint`.
+
+`/offering` stays the catalog of what is available: it composes every configured pack, whatever an activation names.
+A write is checked against the closure alone: an id no pack of the closure holds is refused `422 activation_invalid`,
+and a deny entry on a must-have item of a governing preset in the closure, or on an artifact a pack of the closure
+locks, is refused `409` ([DIV-204](/conformance/divergence-register/),
+[DIV-205](/conformance/divergence-register/)). Locks come from each pack's policy file, at the highest level along the
+closure ([ADR-0062](/adr/0062-pack-mutability-policy-file/)). Each write and each closure read takes exactly one
+verified snapshot of the closure, so one request never mixes two states of the packs.
 
 ## Mode 1: register an existing document
 
@@ -137,13 +180,18 @@ sequenceDiagram
   Core->>Core: map Activation.config onto its own files
 ```
 
-Refusals: `422 activation_invalid` (unknown pack, kind or artifact, with `violations`),
-`409 artifact_required` or `artifact_locked` (the document deactivates what a pack requires or
-locks; nothing is stored), `412` if the client sent a stale `If-Match`.
+Refusals, in the order they are judged: first the preconditions, `400` for malformed validators (an `If-None-Match`
+other than `*`, or both headers), and `412` for a stale `If-Match` or `If-None-Match: *` on a stored id; then the
+document, `422 activation_invalid` (unknown pack, kind or artifact, with `violations`), and `409 artifact_required`
+or `artifact_locked` (the document deactivates what a pack requires or locks; `requiredBy` names each pack with the
+`parent_pack` chain it is inherited through). A refused precondition takes no closure snapshot, and nothing is stored
+on any refusal. A body that does not parse as `ActivationConfig` at all is refused `422` as it arrives, before the
+service sees it. Mode 1 is built.
 
 ## Mode 2: build, then fetch
 
-Core runs its interview against the service.
+Core runs its interview against the service. Not built yet: the sub-resource writes below answer `501` until the
+next pull request of the activation mission.
 
 ```mermaid
 sequenceDiagram
@@ -183,17 +231,37 @@ sequenceDiagram
 |---|---|---|
 | `/offering`, `/offering/artifacts…`, `graph`, `presets`, `kinds`, `mission-types…` | offering queries | `CharterOffering`, `DoctrineGraph` |
 | `/offering/…/context` | `ActionContextQuery` (built) | the walk (ADR-0018) |
-| `/activations…` writes | activation use cases | `ActivationConfig`, cascade, deny list; `ActivationRepository` port |
-| `/activations/{id}/…` reads | effective-set queries | the effective-set algebra over the offering and the document |
+| `/activations`, `/activations/{id}` and `…/packs` (built) | activation services | the activation document and its write rules; `ActivationRepository` and `AvailablePacks` ports |
+| `/activations/{id}/…` writes (not built) | activation use cases | cascade, deny list |
+| `/activations/{id}/…` effective reads (not built) | effective-set queries | the effective-set algebra over the closure and the document |
+| Every resource's problem and refusal bodies, and the JSON body guard | module `web-transport`, package `ai.speckitty.charter.web` (`RefusalHandler`, `ProblemHandler`, `Problems`, `JsonBodyGuard`, `ProblemJson`) | none: a transport ring shared by `packs.infra.api` and `activations.infra.api`, naming no slice |
 
-The `ActivationRepository` port sits in the storage ring with the pack store
-([Pack registration and distribution](/architecture/pack-registration-distribution/)). Links are
-built in the REST adapter, as for packs.
+`activations` is a top-level slice that depends on `packs`. It owns the activation document, its storage, its write
+rules and its HTTP adapter; every question about pack content goes through one port, `AvailablePacks`, whose
+adapter calls the public application services of `packs`. Links are built in the REST adapter, as for packs. The
+adapter also holds the activation set's request-body advice (`ActivationBodyAdvice`) and its problem mapping
+(`ActivationProblems`); both render through the shared `web-transport` module, which both slices' inbound adapters
+depend on, so the composition root (`deployable`) holds no activation transport.
+
+```mermaid
+flowchart LR
+  API[activations.infra.api<br/>ActivationController,<br/>body advice, problem mapping] --> APP[activations.application<br/>services]
+  API --> WEB[web-transport<br/>ai.speckitty.charter.web<br/>problems, refusals, body guard]
+  PAPI[packs.infra.api<br/>controllers] --> WEB
+  APP --> DOM[activations.domain<br/>document, rules]
+  APP --> REPO[(ActivationRepository port)]
+  APP --> AV[AvailablePacks port]
+  REPO -.-> FS[activations.infra.storage<br/>file / in-memory]
+  AV -.-> PA[activations.infra.packs<br/>adapter]
+  PA --> PK[packs.application<br/>offering read, queries]
+```
 
 ## Proposed scenarios
 
-These are proposed, not bound: they stay proposed until the operations are built. What is bound today is one 501 pin
-per reserved operation (`contracts/charter/scenarios/activations.feature`). They describe what a client does, not which endpoint it calls, so
+These are proposed, not bound. What is bound for the built operations is
+`contracts/charter/scenarios/activation-register.feature`, and for each reserved operation one 501 pin
+(`contracts/charter/scenarios/activations.feature`). The scenarios below stay proposed until the per-artifact writes
+and the effective reads are built. They describe what a client does, not which endpoint it calls, so
 they hold whatever the paths become; the step definitions map each step onto the contract.
 
 ```gherkin
@@ -257,7 +325,8 @@ Feature: The activation document round-trips, and the pack policy holds
     And the activation "a-1" is unchanged
 
   Scenario: An activation operation that is not built yet says so
-    When I register an activation document as the activation "a-1"
+    Given the activation "a-1" is registered
+    When I retrieve the effective artifacts of the activation "a-1"
     Then the request is refused as not implemented yet
 ```
 

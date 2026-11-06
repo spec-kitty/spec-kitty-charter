@@ -29,15 +29,18 @@ import org.springframework.stereotype.Component;
  * the WP04 port without any service, controller or commit-store edit.
  *
  * <p>A write into pack P is judged at the highest level along P's composition closure (ADR-0062 decision 3): each pack
- * of the closure contributes the policy its descriptor names ({@link MutabilityPolicyRepository}), and
+ * of the closure contributes the policy its descriptor names, and
  * {@link PerPackPolicy#levelIn} answers the highest level and the pack that set it, the one function the activation
  * lock query shares. A level the write exceeds is refused with {@link RefusalCode#GOVERNANCE_POLICY_VIOLATION} (409),
  * naming the pack that set it. The level&rarr;operation mapping is documented on {@link MutabilityLevel}.
  *
- * <p>Cost: the gate composes P's closure once per registration ({@link OfferingReadService#composed(java.util.Collection)}),
- * then reads each member's policy. Registrations are rare, so the read is acceptable; a closure that cannot be composed,
- * or a member whose policy file is missing or invalid, refuses the write as the compose refuses it, since a lock that
- * cannot be read is never taken as open. No pack ships a policy file yet, so every target is open and today's writes
+ * <p>Cost: the gate composes P's closure once per registration, in one verified read: {@link
+ * OfferingReadService#composedWithFacts(java.util.Collection)} inside a {@link ConsistentRead}, and each member's
+ * policy is the {@link ai.speckitty.charter.packs.domain.PackCompositionFacts#policy()} that compose read, so the
+ * closure and its policies are one answer from one source, the source the closure snapshot reads too. A pack change
+ * during the read refuses the write as {@code stale_input}, never a mixed answer. Registrations are rare, so the read
+ * is acceptable; a closure that cannot be composed, or a member whose policy file is missing or invalid, refuses the
+ * write as the compose refuses it, since a lock that cannot be read is never taken as open. No pack ships a policy file yet, so every target is open and today's writes
  * keep working (tighten never loosen).
  *
  * <p>It is a Spring-managed edge (it carries the framework annotations), so it lives in the application ring, not in
@@ -79,36 +82,50 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
         List<Member> of(Pack pack);
     }
 
-    private final MutabilityPolicyRepository policies;
-    private final Closure closure;
+    /** The policies along the closure of a pack being written, by descriptor {@code pack_id}, in closure order. */
+    @FunctionalInterface
+    private interface ClosurePolicies {
+        Map<String, MutabilityPolicySource> of(Pack pack);
+    }
+
+    private static final String STALE = "The packs changed while the write's policy was read; send the write again.";
+
+    private final ClosurePolicies closurePolicies;
 
     /**
      * The gate Spring wires: the closure is the compose rooted at the pack being written, and each member's policy is
-     * read through the port.
+     * the one that compose read, all in one verified read.
      *
      * @param offerings the compose
      * @param catalog the configured packs, to root the compose at the configured pack being written
      * @param descriptors the descriptors, to find the configured pack a write addresses by its {@code pack_id}
-     * @param policies the port that reads each pack's policy
+     * @param read the verifier that digests the inputs before and after the read
      */
     @Autowired
     public PackMutabilityPolicy(
             OfferingReadService offerings,
             PackCatalogRepository catalog,
             PackDescriptorRepository descriptors,
-            MutabilityPolicyRepository policies) {
-        this(policies, pack -> members(offerings.composed(Set.of(rootOf(catalog, descriptors, pack)))));
+            ConsistentRead read) {
+        this(pack -> read.read(
+                        STALE,
+                        () -> policiesOf(offerings.composedWithFacts(Set.of(rootOf(catalog, descriptors, pack)))))
+                .value());
     }
 
     /**
-     * A gate over a given closure and policy port: the seam a test uses to plant a dependency's lock.
+     * A gate over a given closure and policy port: the seam a test uses to plant a dependency's lock. Production reads
+     * no policy through the port; it stays for this seam, and {@code DomainRepositoryService} still implements it.
      *
      * @param policies the port that reads each member's policy
      * @param closure the closure of the pack being written
      */
     public PackMutabilityPolicy(MutabilityPolicyRepository policies, Closure closure) {
-        this.policies = Objects.requireNonNull(policies, "policies");
-        this.closure = Objects.requireNonNull(closure, "closure");
+        this(policiesOver(Objects.requireNonNull(policies, "policies"), Objects.requireNonNull(closure, "closure")));
+    }
+
+    private PackMutabilityPolicy(ClosurePolicies closurePolicies) {
+        this.closurePolicies = closurePolicies;
     }
 
     /**
@@ -136,11 +153,7 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
      */
     @Override
     public void authorize(Pack pack, Operation operation, Urn target) {
-        List<Member> members = closure.of(pack);
-        Map<String, MutabilityPolicySource> byPack = new LinkedHashMap<>();
-        for (Member member : members) {
-            byPack.putIfAbsent(member.descriptorPackId(), policies.policyOf(member.configured()));
-        }
+        Map<String, MutabilityPolicySource> byPack = closurePolicies.of(pack);
         PerPackPolicy.Level level = new PerPackPolicy(byPack).levelIn(List.copyOf(byPack.keySet()), target);
         if (!level.level().permits(operation)) {
             throw new CharterRefusal(
@@ -184,10 +197,24 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
         }
     }
 
-    private static List<Member> members(List<PackUnderResolution> composed) {
-        return composed.stream()
-                .map(member ->
-                        new Member(member.configured().id(), member.descriptor().packId()))
-                .toList();
+    /** The policy of each closure pack, as the compose read it, by descriptor {@code pack_id} in closure order. */
+    private static Map<String, MutabilityPolicySource> policiesOf(OfferingReadService.ComposedClosure composed) {
+        Map<String, MutabilityPolicySource> byPack = new LinkedHashMap<>();
+        for (PackUnderResolution member : composed.packs()) {
+            byPack.putIfAbsent(
+                    member.descriptor().packId(), composed.factsOf(member).policy());
+        }
+        return byPack;
+    }
+
+    /** The test seam's policies: each member's policy read through the port, by descriptor {@code pack_id}. */
+    private static ClosurePolicies policiesOver(MutabilityPolicyRepository policies, Closure closure) {
+        return pack -> {
+            Map<String, MutabilityPolicySource> byPack = new LinkedHashMap<>();
+            for (Member member : closure.of(pack)) {
+                byPack.putIfAbsent(member.descriptorPackId(), policies.policyOf(member.configured()));
+            }
+            return byPack;
+        };
     }
 }

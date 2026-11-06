@@ -6,12 +6,17 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.DirectiveRegistrationService;
+import ai.speckitty.charter.packs.application.OfferingReadService;
 import ai.speckitty.charter.packs.application.PackMutabilityPolicy;
 import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.PackWriteStore;
@@ -22,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 
@@ -267,6 +273,98 @@ class PackMutabilityPolicyTest {
     }
 
     // ---- fixtures and fakes --------------------------------------------------------------------------------------
+
+    // ---- WP17 T110: the wired gate reads the closure and its policies in one verified read -------------------------
+
+    /** q (descriptor Q) locks directive:X; pack-a depends on Q. Facts are read only through the compose. */
+    private static WritePolicyGate wiredGate(Supplier<String> fingerprint, List<String> factsRead) {
+        Urn locked = new Urn(NodeKind.DIRECTIVE, "X");
+        PackIdentifier q = new PackIdentifier("q");
+        Map<String, PackDescriptor> descriptors = Map.of(
+                "q",
+                new PackDescriptor("Q", "1.0.0", Optional.empty(), "q", Optional.empty(), Optional.empty()),
+                PACK.value(),
+                new PackDescriptor(
+                        PACK.value(),
+                        "1.0.0",
+                        Optional.empty(),
+                        PACK.value(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        PackPaths.none(),
+                        List.of(new PackDependency("Q", ">=1.0"))));
+        Map<String, PackCompositionFacts> facts = Map.of(
+                "q",
+                new PackCompositionFacts(
+                        List.of(),
+                        List.of("directive:X"),
+                        List.of(),
+                        MutabilityPolicySource.builder()
+                                .entry(locked, MutabilityLevel.LOCKED)
+                                .build(),
+                        List.of()),
+                PACK.value(),
+                new PackCompositionFacts(List.of(), List.of(), List.of(), MutabilityPolicySource.empty(), List.of()));
+        PackCatalogRepository catalog =
+                () -> List.of(new ConfiguredPack(q, PackLevel.BUILT_IN), new ConfiguredPack(PACK, PackLevel.ORG));
+        PackDescriptorRepository byId = new PackDescriptorRepository() {
+            @Override
+            public PackDescriptor get(PackIdentifier pack) {
+                return find(pack).orElseThrow();
+            }
+
+            @Override
+            public Optional<PackDescriptor> find(PackIdentifier pack) {
+                return Optional.ofNullable(descriptors.get(pack.value()));
+            }
+
+            @Override
+            public void save(PackIdentifier pack, PackDescriptor descriptor) {
+                throw new UnsupportedOperationException("the gate never writes");
+            }
+        };
+        ConsistentRead read = new ConsistentRead(fingerprint::get);
+        OfferingReadService offerings = new OfferingReadService(
+                catalog,
+                byId,
+                pack -> {
+                    factsRead.add(pack.value());
+                    return facts.get(pack.value());
+                },
+                read);
+        return new PackMutabilityPolicy(offerings, catalog, byId, read);
+    }
+
+    @Test
+    void theWiredGateTakesEachMembersPolicyFromTheComposeItJudgesTheClosureOn() {
+        List<String> factsRead = new ArrayList<>();
+        WritePolicyGate gate = wiredGate(() -> "sha256:same", factsRead);
+        Urn locked = new Urn(NodeKind.DIRECTIVE, "X");
+
+        assertThatThrownBy(() -> gate.authorize(packWithDescriptor(), Operation.REGISTER, locked))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
+                    assertThat(refusal.getMessage()).contains("Q").contains("locked");
+                });
+        assertThat(factsRead).as("one compose, each member's facts read once").containsExactlyInAnyOrder("q", "pack-a");
+
+        assertThatCode(() -> gate.authorize(packWithDescriptor(), Operation.REGISTER, new Urn(NodeKind.DIRECTIVE, "Y")))
+                .as("positive control on the same fixture")
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void aPackChangeWhileTheGateReadsTheClosureAnswersStaleInputNeverAMixedAnswer() {
+        AtomicInteger digests = new AtomicInteger();
+        WritePolicyGate gate =
+                wiredGate(() -> digests.incrementAndGet() == 1 ? "sha256:before" : "sha256:after", new ArrayList<>());
+
+        assertThatThrownBy(() ->
+                        gate.authorize(packWithDescriptor(), Operation.REGISTER, new Urn(NodeKind.DIRECTIVE, "Y")))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.STALE_INPUT));
+    }
 
     private static Pack packWithDescriptor() {
         return Pack.builder().id(PACK).descriptor(descriptor()).build();

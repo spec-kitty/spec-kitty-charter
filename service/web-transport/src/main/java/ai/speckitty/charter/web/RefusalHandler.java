@@ -1,4 +1,4 @@
-package ai.speckitty.charter.packs.infra.api;
+package ai.speckitty.charter.web;
 
 import ai.speckitty.charter.api.model.CharterRefusal;
 import ai.speckitty.charter.api.model.Problem;

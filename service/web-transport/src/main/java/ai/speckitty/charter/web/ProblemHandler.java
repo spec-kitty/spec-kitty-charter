@@ -1,4 +1,4 @@
-package ai.speckitty.charter.packs.infra.api;
+package ai.speckitty.charter.web;
 
 import org.jspecify.annotations.Nullable;
 import org.springframework.core.Ordered;

@@ -2,7 +2,7 @@
 title: "ADR-0013: Deactivation persists in one activation ledger, and nothing silently reinstalls it"
 description: A deactivated charter element stays gone; one activation ledger holds allow and deny state, and cascade, upgrade and presets skip what a user excluded.
 doc_status: active
-updated: 2026-11-04T00:00:00Z
+updated: 2026-11-05T00:00:00Z
 decision_status: Accepted; superseded in part by ADR-0033 (2026-10-26); cascade relations and stale documents settled by ADR-0059 (2026-11-04)
 decision_date: '2026-10-19'
 type: ADR
@@ -80,6 +80,13 @@ A user can deactivate a charter element, but nothing records the choice durably.
    built-ins still arrive. A deny-list is omitted
    while it is empty. Migrations and presets never remove a deny-list entry, so the upgrade
    reset (#66) reduces to a gate test that proves it.
+   *Amendment (2026-11-05, #291/#360): in the service's activation document, "absent means all" becomes "absent
+   means none": an absent allow list puts nothing of the kind in force, the same as `[]`
+   ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) d10;
+   [DIV-203](/conformance/divergence-register/)). New artifacts arrive through a selection, not through an absent
+   key. A preset applied with `force` clears only the deny entries that match its members
+   ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) D6); a write whose deny list names a
+   required or locked artifact is refused `409` ([DIV-204](/conformance/divergence-register/)).*
 3. **Only the user's explicit choice changes a deny-list.** A user deactivation adds the named
    id. `charter activate <kind> <id>` removes it. Elements that a cascade deactivates along with
    the named id are not added.

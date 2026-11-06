@@ -22,6 +22,9 @@ lists it so the work packages and the reviewers share one view.
   wins" (ADR-0053 d5/d6).
 - **Remove `x-reserved`** from `createActivation`, `getActivation`, `replaceActivation` and `deleteActivation` (13 → 9 reserved).
 - **Pack schemas:** `pack-descriptor.schema.json` gains `mutability_policy`; the new `policy.schema.json` is added.
+- **`RequiringPack.via`** (`contracts/_shared/schemas/RequiringPack.yaml`): the description says `via` is the
+  `parent_pack` chain from the pack the activation names, and empty for a pack reached over `depends_on` only. If it
+  is not populated, it says so. Fragment `contracts/charter/changes/2026-11-06-requiring-pack-via.md` (WP17 T113).
 
 ## PR B
 

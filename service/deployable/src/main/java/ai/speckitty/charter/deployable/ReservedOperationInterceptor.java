@@ -17,7 +17,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * operations and reserve others. It runs in {@code preHandle}, after the request is routed and before its arguments are
  * resolved, so a reserved operation answers {@code 501} whatever its request holds: a body the built operation would
  * refuse with {@code 422} is answered {@code 501} too. A body that is not JSON is refused {@code 415} before routing,
- * as the contract declares. The {@link ResponseStatusException} is rendered by the inbound adapter's
+ * as the contract declares. The {@link ResponseStatusException} is rendered by the shared web transport's
  * {@code ProblemHandler} as the closed {@code Problem}, without a code, and the Charter headers are set by
  * {@code CharterHeaders} as on every answer.
  *

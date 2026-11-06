@@ -41,12 +41,13 @@ One Gradle module per **vertical concern slice** ([ADR-0006](/adr/0006-onion-ver
 | Module | Depends on | Holds |
 |---|---|---|
 | `kernel` | nothing outside the JDK | The shared domain kernel: the cross-slice vocabulary — packs, the CRG, `PackSource`, artifact kinds, refusal codes. Pure; no infra |
-| `packs` | `kernel` | The packs slice (pack registration, validation and storage), built; its layers are: `domain` (models, repository ports, services), `application` (read/write use cases, and the ports of what a use case needs from outside the domain: `GuideFormat`, `GuideFetcher`), `infra` (`api.rest`, reserved `api.graphql`, `storage`, and `fetch`, the outbound HTTPS adapter that fetches a toolguide's guide by URI, [ADR-0043](/adr/0043-sanitized-artifact-shapes-procedures-and-toolguide-guides/)) |
-| `activations` | `kernel`, `packs` | The activation register: the document, its storage, its write rules and its HTTP adapter; asks `packs` through one port (`AvailablePacks`, implemented in `infra.packs`). Its layers are `domain`, `application`, `infra.api` and `infra.packs`; the composition root chooses where its documents are stored |
+| `packs` | `kernel`, `web-transport` | The packs slice (pack registration, validation and storage), built; its layers are: `domain` (models, repository ports, services), `application` (read/write use cases, and the ports of what a use case needs from outside the domain: `GuideFormat`, `GuideFetcher`), `infra` (`api.rest`, reserved `api.graphql`, `storage`, and `fetch`, the outbound HTTPS adapter that fetches a toolguide's guide by URI, [ADR-0043](/adr/0043-sanitized-artifact-shapes-procedures-and-toolguide-guides/)) |
+| `activations` | `kernel`, `packs`, `web-transport` | The activation register: the document, its storage, its write rules and its HTTP adapter (with its request-body advice and problem mapping); asks `packs` through one port (`AvailablePacks`, implemented in `infra.packs`). Its layers are `domain`, `application`, `infra.api` and `infra.packs`; the composition root chooses where its documents are stored |
 | `missiontypes` | `kernel` | The mission-types slice, same four layers as packages |
 | `profiles` | `kernel` | The agent-profiles slice, built with its `domain` ring only (`AgentProfile`); `packs.infra.storage` stores the kind ([ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/), amendment of 2026-10-27) |
 | `artifacts` | `kernel` | The other-charter-artifacts slice (directives, tactics, styleguides, procedures, …), same four layers as packages |
-| `charter-api` | — (generated) | Server interfaces and transport DTOs generated from `contracts/charter/openapi.yaml` (authored here, ADR-0002); referenced only from each slice's `infra.api` |
+| `charter-api` | — (generated) | Server interfaces and transport DTOs generated from `contracts/charter/openapi.yaml` (authored here, ADR-0002); referenced only from each slice's `infra.api` and the shared `web-transport` |
+| `web-transport` | `kernel`, `charter-api` | The service-wide HTTP transport (package `ai.speckitty.charter.web`): problem rendering (`Problems`, `ProblemHandler`), refusal mapping (`RefusalHandler`), the JSON body guard (`JsonBodyGuard`) and the problem and link JSON (`ProblemJson`). An adapter ring shared by every slice's `infra.api`; it names no slice |
 | `deployable` | every slice | The composition root, renamed from `bootstrap`: the `@SpringBootApplication`, an aggregate `DeployableConfiguration` that imports each layer's `@Configuration`, loopback binding and credential checks. The only module that knows every slice; it owns the ArchUnit gate |
 | `charter-conformance` | the slices, fixtures | Runs the conformance corpus against the service |
 
@@ -103,6 +104,24 @@ slice. The `activations` slice is the first: `activations.infra.packs.PacksAvail
 [ADR-0006](/adr/0006-onion-vertical-slices-archunit/)'s slices; the slice and its port are the planning decision of
 2026-11-05 (mission `activation-register-and-closure-01M6NXBD`). The per-slice rules (`SLICE_RINGS`) hold every slice
 listed in `SLICES` to the same rings as `packs`.
+
+### Decision (2026-11-05, PR A squad): the shared web ring
+
+The HTTP transport every inbound adapter shares (problem bodies, the refusal mapping, the JSON body guard) lives in its
+own module, `web-transport`, package `ai.speckitty.charter.web`, not in the `packs` adapter. Before, the activation
+adapter could not name it there, so the activation body advice and problem mapping sat in `deployable`, and
+`TRANSPORT_STAYS_IN_ADAPTER` had to exempt the composition root. The decision, recorded here rather than in a new ADR:
+
+- `ai.speckitty.charter.web` is an **adapter ring shared by the slices' `infra.api`**. Every slice's inbound adapter
+  may depend on it; no `domain` or `application` ring may (`WEB_IS_AN_ADAPTER_RING`).
+- The web ring **names no slice**: it depends on the kernel and the generated contract only (`WEB_NAMES_NO_SLICE`).
+  A slice's own envelopes and refusals stay in its adapter (`packs.infra.api.ArtifactJson`,
+  `activations.infra.api.ActivationBodyAdvice` and `ActivationProblems`).
+- **No `domain` ring depends on `kernel.transport`**, the kernel's `kernel.domain` included
+  (`DOMAIN_NAMES_NO_TRANSPORT`): a precondition, an entity tag or the body limit is a question for the application
+  ring or an adapter.
+- `TRANSPORT_STAYS_IN_ADAPTER` has **dropped its `deployable` exemption**: the generated contract types are named by a
+  slice's `infra.api` and by the web ring only, and the composition root names none.
 
 An ArchUnit test pins these directions, so the rule is a gate, not a habit (the named rule set
 is in [pack registration and distribution](/architecture/pack-registration-distribution/) §6).

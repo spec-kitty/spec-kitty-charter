@@ -1,4 +1,4 @@
-package ai.speckitty.charter.deployable;
+package ai.speckitty.charter.activations.infra.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -12,13 +12,7 @@ import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.transport.BodyLimit;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
@@ -29,33 +23,19 @@ import tools.jackson.databind.json.JsonMapper;
 /**
  * The #125 build notes: an activation body over 1 MiB, with a {@code null} at any depth, with a member its schema does
  * not declare, that cannot be bound or that breaks a constraint is {@code 422 activation_invalid} with violations, and
- * nothing is stored. A body that is not {@code application/json} stays {@code 415}.
+ * nothing is stored. A body that is not {@code application/json} stays {@code 415}. The controller is served as the
+ * service serves it ({@link StandaloneActivationMvc}); the composition root's full context answers the same in the
+ * contract scenarios.
  */
-@SpringBootTest(
-        classes = CharterServiceApplication.class,
-        properties = "charter.worktree-token=" + ActivationTestWiring.TOKEN)
-@AutoConfigureMockMvc
-@Import({ConfigRootTestConfiguration.class, ActivationTestWiring.class})
 class ActivationBodyAdviceTest {
 
     private static final String DOCUMENT = "/api/v1/activations/b-1";
     private static final JsonMapper JSON = JsonMapper.builder().build();
 
-    @Autowired
-    MockMvc mvc;
-
-    @Autowired
-    InMemoryActivationRepository repository;
-
-    @BeforeEach
-    void empty() {
-        repository.clear();
-    }
+    private final MockMvc mvc = StandaloneActivationMvc.over(new InMemoryActivationRepository());
 
     private MockHttpServletResponse send(MockHttpServletRequestBuilder request) throws Exception {
-        return mvc.perform(request.header(HttpHeaders.AUTHORIZATION, "Bearer " + ActivationTestWiring.TOKEN))
-                .andReturn()
-                .getResponse();
+        return mvc.perform(request).andReturn().getResponse();
     }
 
     private MockHttpServletResponse putBody(String body) throws Exception {
@@ -115,6 +95,28 @@ class ActivationBodyAdviceTest {
                 putBody("{\"schemaVersion\": 1, \"packs\": [{\"packId\": \"fixture\", \"pin\": \"1\"}]}"),
                 "/packs/0/pin",
                 "unknown_member");
+    }
+
+    @Test
+    void everyUnknownMemberIsReportedSoTheClientFixesTheBodyInOneRoundTrip() throws Exception {
+        refused(
+                putBody(
+                        "{\"schemaVersion\": 1, \"favourite\": \"a-1\", \"packs\": [{\"packId\": \"fixture\", \"pin\": \"1\"}],"
+                                + " \"selected\": {\"directives\": [\"a-1\"]}, \"zz\": 0}"),
+                "/favourite",
+                "unknown_member",
+                "/packs/0/pin",
+                "unknown_member",
+                "/selected/directives",
+                "unknown_member",
+                "/zz",
+                "unknown_member");
+    }
+
+    @Test
+    void anUnbindableBodyWithoutAPathStillAnswersOneViolationNeverAnEmptyList() throws Exception {
+        refused(putBody("[1, 2]"), "", "unreadable_body");
+        refused(putBody("{\"schemaVersion\": 1, \"packs\": 5}"), "/packs", "unreadable_body");
     }
 
     @Test

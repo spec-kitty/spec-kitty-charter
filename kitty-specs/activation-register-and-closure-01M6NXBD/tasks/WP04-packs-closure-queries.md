@@ -14,6 +14,9 @@ requirement_refs:
 planning_base_branch: issue-360-activated-closure
 merge_target_branch: issue-360-activated-closure
 branch_strategy: Planning artifacts for this mission were generated on issue-360-activated-closure. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-360-activated-closure unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-activation-register-and-closure-01M6NXBD
+base_commit: 8c789ca072e746253b1a3b936213bdd5cb107730
+created_at: '2026-11-05T20:19:21.233961+00:00'
 subtasks:
 - T020
 - T021
@@ -142,6 +145,8 @@ Implementation command:
    built-in holds the convenience preset C. `RequiredFloor.of(closure)` maps `directive:D1` to [org], and D2 is
    absent.
 2. Two governing presets in two packs both requiring D1: both packs listed, in closure order.
+   *(Annotation, post-approval: this case is two **different** preset ids. For one preset id held by two closure packs,
+   the last holder in merge order wins (ADR-0053 d6) and the floor follows that copy only; WP17 T109.)*
 3. `requiredMissionTypes` gives `mission_type:<id>` entries the same way.
 4. An empty closure gives an empty floor.
 

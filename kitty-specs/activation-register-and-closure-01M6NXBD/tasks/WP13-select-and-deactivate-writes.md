@@ -3,6 +3,7 @@ work_package_id: WP13
 title: select, unselect, deactivate and reactivate (scenarios first)
 dependencies:
 - WP12
+- WP17
 requirement_refs:
 - FR-010
 - FR-011
@@ -110,7 +111,7 @@ Implementation command:
     (`selectActivationArtifact` has two pins, artifact and mission type, plus the binding pin); the binding pin ("answers 501 before it reads its request") is on
     `selectActivationArtifact`. When select is built, that pin must move to the last reserved operation that takes a
     body, `applyActivationPreset`, and WP14 retires it.
-  - `ActivationBodyAdvice` (WP09) already guards `SelectionRequest` and `ExclusionRequest`.
+  - `ActivationBodyAdvice` (`activations.infra.api`, WP16) already guards `SelectionRequest` and `ExclusionRequest`.
   - `ClosureView.reach`, `enhancesPull` and `enhancersOf` (WP11) run on the view taken for the request. The activations port must
     keep that one view for the whole request, so `AvailablePacks.snapshot(...)` is not enough: add
     `AvailablePacks.session(packIds)`, returning a `PacksSession` with `snapshot()`, `reach(ReachPlan)` and
@@ -121,7 +122,8 @@ Implementation command:
 ## Branch Strategy
 
 - Planning branch and merge target: `issue-360-activated-closure` (PR B).
-- Lane worktree from `lanes.json`. It depends on WP12.
+- Lane worktree from `lanes.json`. It depends on WP12 and on WP17 (the post-PR-A correctness fixes: the precondition
+  order, the typed unknown-root handling, and the striped locks its writes run under).
 - Rebase onto the lane base before review.
 
 ## Out-of-map edits (sequenced by dependency)

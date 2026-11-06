@@ -109,6 +109,11 @@ public class ActivationService {
      * Registers a document under the client's id (ADR-0020 D6): {@code If-None-Match: *} creates only,
      * {@code If-Match} makes the write conditional, and without either the last writer wins.
      *
+     * <p>The preconditions are evaluated first (RFC 9110 &sect;13.2.2): a malformed pair is a {@code 400}, and a stale
+     * {@code If-Match}, or {@code If-None-Match: *} on a stored id, is a {@code 412} whatever the body holds, before any
+     * snapshot of the packs is taken. Only a write whose precondition holds has its document judged. The register's
+     * compare-and-set judges the precondition again, so a writer that comes in between still answers {@code 412}.
+     *
      * @param id the activation's id
      * @param built the document as the request built it
      * @param ifMatch the {@code If-Match} header, verbatim; null when absent
@@ -121,13 +126,12 @@ public class ActivationService {
      */
     public Written put(
             ActivationId id, ActivationDocument.Built built, @Nullable String ifMatch, @Nullable String ifNoneMatch) {
-        Precondition precondition = preconditionOf(ifMatch, ifNoneMatch);
+        Expected expected = expectedOf(id, preconditionOf(ifMatch, ifNoneMatch));
         ActivationDocument document = checked(built);
-        return switch (precondition) {
-            case Precondition.CreateOnly() ->
+        return switch (expected) {
+            case Expected.Absent() ->
                 new Written(repository.create(id, document).orElseThrow(() -> stale(id)), true);
-            case Precondition.Matching(String value) -> written(repository.replace(id, matched(id, value), document));
-            case Precondition.None() -> written(repository.replace(id, Optional.empty(), document));
+            case Expected.At(Optional<Revision> revision) -> written(repository.replace(id, revision, document));
         };
     }
 
@@ -209,6 +213,30 @@ public class ActivationService {
         record Matching(String value) implements Precondition {}
 
         record None() implements Precondition {}
+    }
+
+    /** What the compare-and-set expects, judged against the register now: nothing stored, or a revision (or any). */
+    private sealed interface Expected {
+        record Absent() implements Expected {}
+
+        record At(Optional<Revision> revision) implements Expected {}
+    }
+
+    /**
+     * The precondition judged against what is stored now, before the body is: a create-only write on a stored id, or
+     * an {@code If-Match} that names no stored revision, is {@code 412} here.
+     */
+    private Expected expectedOf(ActivationId id, Precondition precondition) {
+        return switch (precondition) {
+            case Precondition.CreateOnly() -> {
+                if (repository.find(id).isPresent()) {
+                    throw stale(id);
+                }
+                yield new Expected.Absent();
+            }
+            case Precondition.Matching(String value) -> new Expected.At(matched(id, value));
+            case Precondition.None() -> new Expected.At(Optional.empty());
+        };
     }
 
     private static Precondition preconditionOf(@Nullable String ifMatch, @Nullable String ifNoneMatch) {

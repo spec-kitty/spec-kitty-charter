@@ -1,8 +1,9 @@
-package ai.speckitty.charter.packs.infra.api;
+package ai.speckitty.charter.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.api.model.CharterRefusal;
+import ai.speckitty.charter.api.model.Link;
 import ai.speckitty.charter.api.model.Problem;
 import org.junit.jupiter.api.Test;
 import org.springframework.aot.hint.RuntimeHints;
@@ -37,6 +38,11 @@ class ProblemRuntimeHintsTest {
                 .accepts(hints);
         assertThat(RuntimeHintsPredicates.reflection().onMethodInvocation(CharterRefusal.class, "getCode"))
                 .accepts(hints);
+    }
+
+    @Test
+    void theLinkTheMixInReachesBindsWithItsAccessors() {
+        assertThat(RuntimeHintsPredicates.reflection().onType(Link.class)).accepts(hints);
     }
 
     @Test

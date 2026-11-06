@@ -11,6 +11,9 @@ requirement_refs:
 planning_base_branch: issue-360-activated-closure
 merge_target_branch: issue-360-activated-closure
 branch_strategy: Planning artifacts for this mission were generated on issue-360-activated-closure. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-360-activated-closure unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-activation-register-and-closure-01M6NXBD
+base_commit: 47565e9fae3172d5f1c0bc3aaca3a11418fc2ec6
+created_at: '2026-11-05T19:44:15.241520+00:00'
 subtasks:
 - T013
 - T014
@@ -155,7 +158,8 @@ Implementation command:
    `policy.yaml`. Either restrict the descriptor value to `policy.yaml` for now (`const`), or keep the pattern and
    make the store read the named file regardless of its classification. Recommended: `const: policy.yaml` in this
    version, with the key kept so a later version can widen it. Flag the choice for the operator in the ADR's open
-   questions.
+   questions. **As implemented:** `const: policy.yaml`. The descriptor names the pack-relative path, the schema
+   constrains it to `policy.yaml` for now, and ADR-0061 records the choice.
 
 **Validation:** `./gradlew :packs:test --tests '*PolicySchemaTest*' --tests '*PackSchemasTest*'
 --tests '*VocabularyEqualityTest*' --tests '*PackLevelSchemasTest*'`.
@@ -290,7 +294,7 @@ CHANGELOG.
 2. A pack without `policy.yaml`: its digest list is unchanged from before this WP. This is the rule of the pack-level-files mission (#195, ADR-0042: NFR-002 there, not this mission's NFR-002) that the
    `packLevelTail` Javadoc states.
 3. In `PackFileSet.packLevelTail`, append the descriptor-named policy file after the manifest, when it is a regular
-   file. If T013 chose `const: policy.yaml`, append `policy.yaml`. Update the Javadoc's ordered list.
+   file. As implemented, T013 chose `const: policy.yaml`, so append `policy.yaml`. Update the Javadoc's ordered list.
 4. Run `:packs:test --tests '*PackFileSet*'`, and `:packs:timingBudgets` alone, report-only.
 
 ## Checkstyle limits (NFR-001)
