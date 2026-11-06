@@ -389,4 +389,4 @@ activated_procedures:
 - test-suite-quality-assessment
 activated_glossary_packs:
 - spec-kitty-core
-- spk-internal
+- spk-internal-glossary
