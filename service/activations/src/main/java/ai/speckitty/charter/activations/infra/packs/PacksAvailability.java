@@ -85,7 +85,7 @@ public class PacksAvailability implements AvailablePacks {
         }
 
         @Override
-        public Set<ArtifactRef> enhancesPull(Set<ArtifactRef> starts) {
+        public Set<ArtifactRef> enhancesPull(Set<ArtifactRef> starts, Set<ArtifactKind> kinds) {
             return Set.of();
         }
 

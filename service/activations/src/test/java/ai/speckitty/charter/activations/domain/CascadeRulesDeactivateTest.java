@@ -8,6 +8,7 @@ import static ai.speckitty.charter.kernel.domain.ArtifactKind.MISSION_TYPE;
 import static ai.speckitty.charter.kernel.domain.ArtifactKind.STYLEGUIDE;
 import static ai.speckitty.charter.kernel.domain.ArtifactKind.TACTIC;
 import static ai.speckitty.charter.kernel.domain.RelationType.REQUIRES;
+import static ai.speckitty.charter.kernel.domain.RelationType.SPECIALIZES_FROM;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
@@ -277,5 +278,100 @@ class CascadeRulesDeactivateTest {
                         .selected(TACTIC)
                         .orElseThrow())
                 .doesNotContain("C4");
+    }
+
+    /** Drives {@link CascadeRules#planShared} to its fixed point over a graph, as the exclusion service does. */
+    private static Reach fixedPoint(
+            ActivationDocument document, Reach own, Set<ArtifactRef> floor, Reaches.Graph graph) {
+        ReachPlan plan = CascadeRules.planShared(document, D, CascadeScope.all(), own, Map.of(), floor, Reach.empty());
+        for (int step = 0; step <= own.reached().size(); step++) {
+            Reach answer = plan.walks() ? graph.apply(plan) : Reach.empty();
+            ReachPlan next = CascadeRules.planShared(document, D, CascadeScope.all(), own, Map.of(), floor, answer);
+            if (next.equals(plan)) {
+                return answer;
+            }
+            plan = next;
+        }
+        throw new AssertionError("The shared walk found no fixed point.");
+    }
+
+    @Test
+    void aFloorMemberIsNeverACandidateSoItAndWhatItReachesAreKept() {
+        // D requires F, which is on the floor and selected; F requires T2, which is selected.
+        Reaches.Graph graph = new Reaches.Graph()
+                .edge("directive:D", REQUIRES, "directive:F")
+                .edge("directive:F", REQUIRES, "tactic:T2");
+        ArtifactRef f = ref("directive:F");
+        ActivationDocument document = selecting("directive:D", "directive:F", "tactic:T2");
+        Reach own = graph.apply(CascadeRules.planDeactivate(document, D, CascadeScope.all()));
+
+        ActivationChange change = CascadeRules.applyDeactivate(
+                document, D, CascadeScope.all(), own, fixedPoint(document, own, Set.of(f), graph), Map.of(), Set.of(f));
+
+        assertThat(change.applied()).containsExactly(D);
+        assertThat(change.after().selected(DIRECTIVE).orElseThrow()).containsExactly("F");
+        assertThat(change.after().selected(TACTIC).orElseThrow()).containsExactly("T2");
+        assertThat(change.skipped().skippedShared())
+                .as("the floor keeps F itself; F keeps T2")
+                .containsExactly(new SkippedReport.SharedSkip(f, f), new SkippedReport.SharedSkip(T2, f));
+    }
+
+    @Test
+    void aSharedCandidateReachedThroughALineageAncestorIsReferencedByTheDescendant() {
+        // D requires T2; the selected profile P specializes from A, which requires T2. The shared walk follows the
+        // lineage, so T2 is kept, and its referencedBy is P, never the ancestor A.
+        Reaches.Graph graph = new Reaches.Graph()
+                .edge("directive:D", REQUIRES, "tactic:T2")
+                .edge("agent_profile:P", SPECIALIZES_FROM, "agent_profile:A")
+                .edge("agent_profile:A", REQUIRES, "tactic:T2");
+        ActivationDocument document = selecting("directive:D", "agent_profile:P", "tactic:T2");
+        Reach own = graph.apply(CascadeRules.planDeactivate(document, D, CascadeScope.all()));
+
+        ActivationChange change = CascadeRules.applyDeactivate(
+                document, D, CascadeScope.all(), own, fixedPoint(document, own, Set.of(), graph), Map.of(), Set.of());
+
+        assertThat(change.after().selected(TACTIC).orElseThrow()).containsExactly("T2");
+        assertThat(change.skipped().skippedShared())
+                .containsExactly(new SkippedReport.SharedSkip(T2, ref("agent_profile:P")));
+    }
+
+    @Test
+    void aSelectedMissionTypeTheTargetReachesIsOutsideEveryScopeAndStaysSelected() {
+        ArtifactRef m = ref("mission_type:m");
+        Reach own = reach().start("directive:D")
+                .reached("mission_type:m", "directive:D", REQUIRES)
+                .build();
+        ActivationDocument document = ActivationDocument.builder()
+                .missionTypes(List.of("m"))
+                .selected(DIRECTIVE, List.of("D"))
+                .build()
+                .document();
+
+        ActivationChange change =
+                CascadeRules.applyDeactivate(document, D, CascadeScope.all(), own, Reach.empty(), Map.of(), Set.of());
+
+        assertThat(change.applied()).containsExactly(D);
+        assertThat(change.after().missionTypes().orElseThrow()).containsExactly("m");
+        assertThat(change.skipped().skippedByScope()).containsExactly(m);
+    }
+
+    @Test
+    void theOwnWalkFollowsNoLineageWhileTheSelectAndSharedWalksDo() {
+        // Deliberate (FR-015 names five relations, literally): the target's own walk does not pass through ancestors,
+        // so what only an ancestor of a reached profile requires is not a candidate. Awaiting an operator ruling.
+        ArtifactRef p = ref("agent_profile:P");
+        ActivationDocument document = selecting("agent_profile:P", "tactic:T2");
+
+        assertThat(CascadeRules.planSelect(document, p, CascadeScope.all(), false)
+                        .lineage())
+                .isTrue();
+        assertThat(CascadeRules.planDeactivate(document, p, CascadeScope.all()).lineage())
+                .isFalse();
+        Reach own = reach().start("agent_profile:P")
+                .reached("tactic:T2", "agent_profile:P", REQUIRES)
+                .build();
+        assertThat(CascadeRules.planShared(document, p, CascadeScope.all(), own, Map.of(), Set.of(), Reach.empty())
+                        .lineage())
+                .isTrue();
     }
 }

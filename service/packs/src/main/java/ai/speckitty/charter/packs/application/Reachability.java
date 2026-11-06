@@ -21,6 +21,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Predicate;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -43,7 +44,7 @@ public final class Reachability {
      * <p>The lineage is a walk of its own (J4): one walk cannot visit a node once as an ancestor and once in force.
      * For each reached node it walks the ancestry chain, passing only the pass-through relations of each ancestor; their
      * targets join as new starts of the forward walk, and this repeats until no new start appears. An ancestor is
-     * recorded as passed, never reached; a stopped ancestor stops the chain.
+     * recorded as passed, never reached, with the child it was passed from; a stopped ancestor stops the chain.
      *
      * @param index the closure's edges
      * @param request what to walk
@@ -55,7 +56,12 @@ public final class Reachability {
         Cascade walked = Cascade.run(index, request);
         Set<Urn> behind =
                 walked.stopped.isEmpty() ? Set.of() : behind(walked, Cascade.run(index, request.withoutStops()));
-        return new ReachResult(byUrn(walked.reached), byUrn(walked.stopped), behind, urnsOf(walked.ancestors));
+        return new ReachResult(
+                byUrn(walked.reached),
+                byUrn(walked.stopped),
+                behind,
+                urnsOf(walked.ancestors.keySet()),
+                byUrn(walked.ancestors));
     }
 
     /**
@@ -68,9 +74,23 @@ public final class Reachability {
      * @return each pulled artifact with every predecessor and the direction of the edge crossed
      */
     public static Map<Urn, List<Pulled>> enhancesPull(EdgeIndex index, Set<Urn> starts) {
+        return enhancesPull(index, starts, urn -> true);
+    }
+
+    /**
+     * The {@code enhances} pull bounded by the caller's policy (ADR-0059 D2.2): a node the bound does not admit is not
+     * pulled, and the pull does not continue through it. A start is walked whatever the bound.
+     *
+     * @param index the closure's edges
+     * @param starts the artifacts the pull starts from
+     * @param admits the nodes the pull may reach, for example those of the kinds an activation activates
+     * @return each pulled artifact with every predecessor and the direction of the edge crossed
+     */
+    public static Map<Urn, List<Pulled>> enhancesPull(EdgeIndex index, Set<Urn> starts, Predicate<Urn> admits) {
         Objects.requireNonNull(index, "index");
         Objects.requireNonNull(starts, "starts");
-        Pull pull = new Pull(index);
+        Objects.requireNonNull(admits, "admits");
+        Pull pull = new Pull(index, admits);
         new TreeSet<>(starts).forEach(start -> index.placesOf(start).forEach(pull::walkFrom));
         Map<Urn, List<Pulled>> pulled = byUrn(pull.pulled);
         starts.forEach(pulled::remove);
@@ -133,7 +153,7 @@ public final class Reachability {
         private final ReachRequest request;
         private final Map<Place, Set<Via>> reached = new LinkedHashMap<>();
         private final Map<Place, Set<Via>> stopped = new LinkedHashMap<>();
-        private final Set<Place> ancestors = new LinkedHashSet<>();
+        private final Map<Place, Set<Via>> ancestors = new LinkedHashMap<>();
         private final Set<Place> expanded = new HashSet<>();
         private final Set<Place> lineageWalked = new HashSet<>();
         private @Nullable Place pending;
@@ -257,7 +277,7 @@ public final class Reachability {
                     record(stopped, parent, Optional.of(via));
                     return Descent.SKIP;
                 }
-                ancestors.add(parent);
+                record(ancestors, parent, Optional.of(via));
                 return Descent.CONTINUE;
             }
 
@@ -275,13 +295,15 @@ public final class Reachability {
 
         private final EdgeIndex index;
         private final ComposeResolver bothWays;
+        private final Predicate<Urn> admits;
         private final Map<Place, Set<Pulled>> pulled = new LinkedHashMap<>();
         private final Set<Place> expanded = new HashSet<>();
         private @Nullable Place pending;
 
-        private Pull(EdgeIndex index) {
+        private Pull(EdgeIndex index, Predicate<Urn> admits) {
             this.index = index;
             this.bothWays = index.enhancesBothWays();
+            this.admits = admits;
         }
 
         private void walkFrom(Place place) {
@@ -302,7 +324,9 @@ public final class Reachability {
         @Override
         public Descent onRelationship(Relationship relationship) {
             Optional<Place> target = index.neighbour(relationship).filter(index::holds);
-            if (relationship.type() != RelationType.ENHANCES || target.isEmpty()) {
+            if (relationship.type() != RelationType.ENHANCES
+                    || target.isEmpty()
+                    || !admits.test(target.get().urn())) {
                 return Descent.SKIP;
             }
             Direction direction = index.isReversed(relationship) ? Direction.ENHANCER_OF : Direction.TARGET_OF;

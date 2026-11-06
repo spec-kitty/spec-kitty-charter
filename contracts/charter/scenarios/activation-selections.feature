@@ -337,11 +337,11 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
 
   Scenario: includeDeactivated clears the walk's deny entries and the enhancer's, and selects no enhancer
     US3 AS3 (R2): x and e are denied. The walk selects D, t, x, t2, t3 and xt; the enhances pull from them reaches
-    e (it enhances t), so e's deny entry is cleared too: e is in cleared and in applied (removed from
-    deactivated), and absent from selected.
+    e (it enhances t, and the document activates tactics), so e's deny entry is cleared too: e is in cleared and
+    in applied (removed from deactivated), and absent from selected.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "deactivated": {"tactic": ["e", "x"]}}
+      {"schemaVersion": 1, "packs": [{"packId": "main"}], "activatedKinds": ["directive", "tactic"], "deactivated": {"tactic": ["e", "x"]}}
       """
     When I PUT "/activations/a-1/selections/directive/D" with the stored ETag and the body:
       """
@@ -374,6 +374,100 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       xt
       """
     And the response body has no field at "/config/deactivated"
+
+  Scenario: includeDeactivated clears a deny entry the walk went through outside the scope, without selecting it
+    FR-013, SelectionRequest.includeDeactivated: the walk takes x back whatever the scope, so x's deny entry is
+    cleared; x is a tactic, outside a cascade into directives, so it stays out of selected and is reported in
+    skippedByScope.
+    Given the activation "a-1" holds:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "main"}], "deactivated": {"tactic": ["x"]}}
+      """
+    When I PUT "/activations/a-1/selections/directive/D" with the stored ETag and the body:
+      """
+      {"cascade": ["directive"], "includeDeactivated": true}
+      """
+    Then the response status is 200
+    And the field at "/cleared" holds exactly the ids:
+      """
+      tactic:x
+      """
+    And the field at "/applied" holds exactly the ids:
+      """
+      directive:D
+      tactic:x
+      """
+    And the field at "/skipped/skippedByScope" holds exactly the ids:
+      """
+      tactic:t
+      tactic:t2
+      tactic:t3
+      tactic:x
+      tactic:xt
+      """
+    When I GET "/activations/a-1"
+    Then the response body has no field at "/config/selected/tactic"
+    And the response body has no field at "/config/deactivated"
+
+  Scenario: includeDeactivated clears what the enhances pull reaches only in the kinds the document activates
+    FR-013, ADR-0059 D2.2: the write clears what the read-time pull would reach, and that pull is bounded by
+    activatedKinds. The document activates directives only, so e (a tactic that enhances t) stays denied.
+    Given the activation "a-1" holds:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "main"}], "activatedKinds": ["directive"], "deactivated": {"tactic": ["e", "x"]}}
+      """
+    When I PUT "/activations/a-1/selections/directive/D" with the stored ETag and the body:
+      """
+      {"cascade": ["all"], "includeDeactivated": true}
+      """
+    Then the response status is 200
+    And the field at "/cleared" holds exactly the ids:
+      """
+      tactic:x
+      """
+    When I GET "/activations/a-1"
+    Then the field at "/config/deactivated/tactic" holds exactly the ids:
+      """
+      e
+      """
+
+  Scenario: A stop reached through a template is required by what instantiates it
+    ArtifactReference.yaml: requiredBy names artifacts an ArtifactReference can name, so a template on the way to
+    a stop leads back to the directive that instantiates it, and the answer is 200.
+    Given the org pack "main" with the file "templates/tpl.md":
+      """
+      # A template
+      """
+    And the org pack "main" with the file "template.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: directive:D2
+        target: template:tpl.md
+        relation: instantiates
+      - source: template:tpl.md
+        target: tactic:x
+        relation: requires
+      """
+    And the activation "a-1" holds:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "main"}], "deactivated": {"tactic": ["x"]}}
+      """
+    When I PUT "/activations/a-1/selections/directive/D2" with the stored ETag and the body:
+      """
+      {"cascade": ["all"]}
+      """
+    Then the response status is 200
+    And the field at "/skipped/skippedDeactivated" holds exactly the ids:
+      """
+      tactic:x
+      """
+    And the field at "/skipped/skippedDeactivated/0/requiredBy" holds exactly the ids:
+      """
+      directive:D2
+      """
 
   Scenario: A cascade passes through a profile's ancestor without putting it in force
     US3 AS4: p specializes from q; q requires R and suggests S. The lineage passes requires through, so R is

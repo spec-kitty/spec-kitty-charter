@@ -69,8 +69,9 @@ public class ActivationSelectionService {
         ActivationDocument before = loaded.document();
         Reach reach =
                 ActivationWrites.walk(session, CascadeRules.planSelect(before, target, scope, includeDeactivated));
-        Set<ArtifactRef> pulled =
-                includeDeactivated ? session.enhancesPull(CascadeRules.walkSelected(target, scope, reach)) : Set.of();
+        Set<ArtifactRef> pulled = includeDeactivated
+                ? session.enhancesPull(CascadeRules.walkSelected(target, scope, reach), CascadeRules.pullKinds(before))
+                : Set.of();
         ActivationChange change = CascadeRules.applySelect(before, target, scope, includeDeactivated, reach, pulled);
         return writes.commit(loaded, change, session.snapshot());
     }

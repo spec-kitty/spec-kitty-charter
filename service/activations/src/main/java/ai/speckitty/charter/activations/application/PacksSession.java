@@ -4,6 +4,7 @@ import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import java.util.Map;
 import java.util.Set;
 
@@ -34,12 +35,15 @@ public interface PacksSession {
 
     /**
      * What the {@code enhances} pull reaches from some artifacts: both directions (an artifact's enhancers and an
-     * enhancer's targets), transitively over {@code enhances} only (ADR-0059 D2.2).
+     * enhancer's targets), transitively over {@code enhances} only (ADR-0059 D2.2), bounded by kind as the read-time
+     * pull is bounded by {@code activatedKinds}: an artifact of another kind is not pulled, and the pull does not
+     * continue through it.
      *
      * @param starts the artifacts the pull starts from
+     * @param kinds the kinds the pull may reach ({@code CascadeRules.pullKinds}); none pulls nothing
      * @return the artifacts pulled, the starts left out
      */
-    Set<ArtifactRef> enhancesPull(Set<ArtifactRef> starts);
+    Set<ArtifactRef> enhancesPull(Set<ArtifactRef> starts, Set<ArtifactKind> kinds);
 
     /**
      * The enhancers of each target, one hop, in reverse over {@code enhances}.

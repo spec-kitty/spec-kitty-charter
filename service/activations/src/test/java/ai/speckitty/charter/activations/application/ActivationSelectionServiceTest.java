@@ -108,8 +108,9 @@ class ActivationSelectionServiceTest {
 
     @Test
     void includeDeactivatedClearsTheDenyEntryOfAPulledEnhancerWithoutSelectingIt() {
-        StoredActivation before =
-                stored(ActivationDocument.builder().deactivated(ArtifactKind.TACTIC, List.of("e", "x")));
+        StoredActivation before = stored(ActivationDocument.builder()
+                .activatedKinds(List.of(ArtifactKind.TACTIC))
+                .deactivated(ArtifactKind.TACTIC, List.of("e", "x")));
 
         ActivationWrites.Outcome outcome = service.select(ID, "directive", "D", ALL, true, quoted(before));
 
@@ -118,6 +119,20 @@ class ActivationSelectionServiceTest {
         assertThat(now().selected(ArtifactKind.TACTIC).orElseThrow()).containsExactly("t", "x");
         assertThat(now().deactivated()).isEmpty();
         assertThat(packs.calls()).isEqualTo(1);
+    }
+
+    @Test
+    void thePullOfIncludeDeactivatedReachesOnlyTheKindsTheDocumentActivates() {
+        // ADR-0059 D2.2, FR-013: the write clears what the read-time pull would reach, and that pull is bounded by
+        // activatedKinds; absent means none.
+        StoredActivation before = stored(ActivationDocument.builder()
+                .activatedKinds(List.of(ArtifactKind.DIRECTIVE))
+                .deactivated(ArtifactKind.TACTIC, List.of("e", "x")));
+
+        ActivationWrites.Outcome outcome = service.select(ID, "directive", "D", ALL, true, quoted(before));
+
+        assertThat(outcome.change().cleared()).containsExactly(X);
+        assertThat(now().deactivated(ArtifactKind.TACTIC)).containsExactly("e");
     }
 
     @Test

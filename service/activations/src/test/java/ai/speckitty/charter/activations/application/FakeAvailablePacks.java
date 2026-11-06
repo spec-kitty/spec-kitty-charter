@@ -4,6 +4,7 @@ import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,8 +19,8 @@ import org.jspecify.annotations.Nullable;
 /**
  * An {@link AvailablePacks} that answers one snapshot a test sets, or one refusal, and counts the reads, so a test pins
  * that a use case reads the packs exactly as often as NFR-007 allows. It records the roots of each read. A session's
- * walks answer from a graph a test sets ({@link #walks}), the {@code enhances} pull and the enhancers from the pairs a
- * test sets ({@link #enhances}); every walk is recorded, so a test sees what the use case asked.
+ * walks answer from a graph a test sets ({@link #walks}), the {@code enhances} pull (bounded by the kinds it is asked
+ * for, as the packs adapter bounds it) and the enhancers from the pairs a test sets ({@link #enhances}); every walk is recorded, so a test sees what the use case asked.
  */
 public final class FakeAvailablePacks implements AvailablePacks {
 
@@ -134,13 +135,13 @@ public final class FakeAvailablePacks implements AvailablePacks {
         }
 
         @Override
-        public Set<ArtifactRef> enhancesPull(Set<ArtifactRef> starts) {
+        public Set<ArtifactRef> enhancesPull(Set<ArtifactRef> starts, Set<ArtifactKind> kinds) {
             Set<ArtifactRef> pulled = new TreeSet<>();
             List<ArtifactRef> frontier = new ArrayList<>(starts);
             while (!frontier.isEmpty()) {
                 ArtifactRef at = frontier.removeLast();
                 for (ArtifactRef next : neighbours(at)) {
-                    if (!starts.contains(next) && pulled.add(next)) {
+                    if (kinds.contains(next.kind()) && !starts.contains(next) && pulled.add(next)) {
                         frontier.add(next);
                     }
                 }
