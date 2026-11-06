@@ -178,10 +178,10 @@
       "criterion_id": "FR-018",
       "description": "Verify FR-018 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "contract schemas/Activation.yaml carries no summary/governanceFingerprint (description points to EffectiveArtifactList.summary); EffectiveArtifactList.yaml requires governanceFingerprint+summary (moved, ADR-0059 D5); ActivationMapperTest; ActivationConfigConformanceTest; fragment changes/2026-11-05-activation-register-and-closure-read.md. lane-m HEAD 7f6264b: ./gradlew verifyAll --rerun-tasks --max-workers=1 -PcontractBaseline=none BUILD SUCCESSFUL (127/127 tasks executed; 7200 tests, 0 failures, 0 errors, 4 pre-existing env skips in packs; 341 BDD scenarios incl. activation-register 35/35, activation-selections 41/41, activation-presets 14/14, activation-register-guards 5/5, activations 4/4)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:qa-test-executor-elena",
+      "verified_at": "2026-11-06T02:56:26.896332+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
