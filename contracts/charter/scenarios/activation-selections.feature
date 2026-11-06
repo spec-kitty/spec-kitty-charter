@@ -868,6 +868,41 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     When I GET "/activations/a-1"
     Then the response header "ETag" is the stored ETag
 
+  Scenario: A stored deny entry on the floor is tolerated by a write of another id
+    ADR-0059 D4, data model ("a stored one is tolerated but not applied"): D2 was denied before main's governing
+    preset came to require it. Only a deny entry the write adds is judged against the floor, so selecting t
+    answers 200 and the stored entry stays as it is.
+    Given the activation "a-1" holds:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "main"}], "deactivated": {"directive": ["D2"]}}
+      """
+    And the org pack "main" with the file "presets/governing.yaml":
+      """
+      schema_version: '1.0'
+      id: governing
+      description: RQ and D2 are required.
+      activated_directives:
+        - id: RQ
+          must_have: true
+        - id: D2
+          must_have: true
+      """
+    When I PUT "/activations/a-1/selections/tactic/t" with the stored ETag and the body:
+      """
+      {}
+      """
+    Then the response status is 200
+    And the field at "/applied" holds exactly the ids:
+      """
+      tactic:t
+      """
+    And the field at "/cleared" holds exactly 0 items
+    When I GET "/activations/a-1"
+    Then the field at "/config/deactivated/directive" holds exactly the ids:
+      """
+      D2
+      """
+
   Scenario: Re-activating a denied artifact clears its deny entry and omits the emptied list
     US4 AS4.
     Given the activation "a-1" holds:

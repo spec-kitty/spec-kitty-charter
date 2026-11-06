@@ -196,6 +196,20 @@ class ActivationExclusionServiceTest {
     }
 
     @Test
+    void aStoredDenyEntryOnTheFloorIsToleratedByADeactivateAndAReactivateOfAnotherId() {
+        // Stored before an upgrade made RQ required: the entry is tolerated, only a deny the write adds is judged.
+        StoredActivation before =
+                stored(ActivationDocument.builder().deactivated(ArtifactKind.DIRECTIVE, List.of("RQ")));
+
+        ActivationWrites.Outcome denied = service.deactivate(ID, "tactic", "t", Optional.empty(), quoted(before));
+        ActivationWrites.Outcome reactivated = service.reactivate(ID, "tactic", "t", quoted(denied.stored()));
+
+        assertThat(denied.change().applied()).containsExactly(T);
+        assertThat(reactivated.change().cleared()).containsExactly(T);
+        assertThat(now().deactivated(ArtifactKind.DIRECTIVE)).containsExactly("RQ");
+    }
+
+    @Test
     void reactivatingWhatIsNotDeniedIsANoOp() {
         StoredActivation before = stored(ActivationDocument.builder());
 

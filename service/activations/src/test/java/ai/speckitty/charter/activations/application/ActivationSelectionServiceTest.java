@@ -287,6 +287,22 @@ class ActivationSelectionServiceTest {
     }
 
     @Test
+    void aStoredDenyEntryAPackNowRequiresIsToleratedByAWriteThatDoesNotAddIt() {
+        StoredActivation before =
+                stored(ActivationDocument.builder().deactivated(ArtifactKind.DIRECTIVE, List.of("D2")));
+        packs.answer(closure().requiredBy("directive:D2", "main").build());
+
+        ActivationWrites.Outcome selected = service.select(ID, "tactic", "t", Optional.empty(), false, quoted(before));
+        ActivationWrites.Outcome unselected = service.unselect(ID, "tactic", "t", quoted(selected.stored()));
+
+        assertThat(selected.change().applied()).containsExactly(T);
+        assertThat(unselected.change().applied()).containsExactly(T);
+        assertThat(now().deactivated(ArtifactKind.DIRECTIVE))
+                .as("a stored deny entry on the floor is tolerated, not applied and not removed")
+                .containsExactly("D2");
+    }
+
+    @Test
     void aWriterThatCameInBetweenMakesTheWrite412() {
         StoredActivation before = stored(ActivationDocument.builder());
         repository.loseNextWrite();
