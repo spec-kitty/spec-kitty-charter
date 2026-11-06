@@ -87,7 +87,7 @@ flowchart LR
    > [Compose packs](/guides/compose-packs/#read-a-refusal); the split's remaining moves are the open-packs work, not
    > this page's pipeline.
    **Compose roots** (built, #360). The offering composes every configured pack. An activation
-   composes the `depends_on` closure of its `packs` (every configured pack when `packs` is absent),
+   composes the `depends_on` and `parent_pack` closure of its `packs` (every configured pack when `packs` is absent),
    and that closure is what its writes are checked against and what its closure read answers.
    Merging the closure's layers for an activation, and the read-time `enhances` pull, are the next
    mission's.
