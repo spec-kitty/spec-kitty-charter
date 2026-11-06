@@ -275,9 +275,12 @@ class ContainerHealthTest {
     }
 
     @Test
-    void underTheContainerProfileAWidenedExposureFailsTheStart(@TempDir Path dir) {
+    void underTheContainerProfileAWidenedSettingFailsTheStart(@TempDir Path dir) {
         assertThatThrownBy(() -> container(dir, "--management.endpoints.web.exposure.include=*"))
                 .hasStackTraceContaining("management.endpoints.web.exposure.include must be health");
+        assertThatThrownBy(() -> container(dir, "--logging.level.root=TRACE"))
+                .hasStackTraceContaining(
+                        "logging.level must not put org.apache.coyote.http11.Http11InputBuffer at TRACE");
     }
 
     @Test
@@ -296,10 +299,11 @@ class ContainerHealthTest {
     }
 
     @Test
-    void theTokenNeverReachesTheOutputEvenWithDebugLogging(@TempDir Path dir, CapturedOutput output)
-            throws IOException {
+    void theTokenNeverReachesTheOutputEvenWithDebugLoggingOnTheTomcatRequestLogger(
+            @TempDir Path dir, CapturedOutput output) throws IOException {
         StringBuilder answers = new StringBuilder();
-        try (var context = container(dir, "--debug", "--logging.level.root=DEBUG")) {
+        try (var context =
+                container(dir, "--debug", "--logging.level.root=DEBUG", "--logging.level.org.apache.coyote=DEBUG")) {
             int port = port(context);
             for (Answer answer : new Answer[] {
                 get(port, "/actuator/health", "Host", "localhost"),

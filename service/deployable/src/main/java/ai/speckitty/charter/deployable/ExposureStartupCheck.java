@@ -1,16 +1,19 @@
 package ai.speckitty.charter.deployable;
 
 import java.net.InetAddress;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.LazyInitializationExcludeFilter;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.ResolvableType;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.Environment;
 
@@ -31,7 +34,9 @@ import org.springframework.core.env.Environment;
  *   <li>no health group is configured and the liveness and readiness probe groups stay off, since the health answer
  *       would list them; JMX stays off and exposes nothing;
  *   <li>under the container profile, {@code spring.mvc.log-request-details} is refused unless it is plainly off: it
- *       logs request headers, the bearer token among them.
+ *       logs request headers, the bearer token among them; so does TRACE on the Tomcat logger that writes the raw
+ *       request, set there or on a parent such as {@code root}, and an access-log pattern with the
+ *       {@code Authorization} header (ADR-0041 decision 8);
  * </ul>
  *
  * A breach fails the start, and the message names the property, never a value. This check reads the environment
@@ -49,6 +54,9 @@ public class ExposureStartupCheck implements InitializingBean {
     static final String LOG_REQUEST_DETAILS_PROPERTY = "spring.mvc.log-request-details";
     static final String HEALTH_GROUPS_PROPERTY = "management.endpoint.health.group";
     static final String PROBES_PROPERTY = "management.endpoint.health.probes.enabled";
+    static final String LOGGING_LEVEL_PROPERTY = "logging.level";
+    static final String LOGGING_GROUP_PROPERTY = "logging.group";
+    static final String ACCESS_LOG_PATTERN_PROPERTY = "server.tomcat.accesslog.pattern";
     static final String JMX_PROPERTY = "spring.jmx.enabled";
     static final String JMX_EXPOSURE_PROPERTY = "management.endpoints.jmx.exposure.include";
 
@@ -62,6 +70,22 @@ public class ExposureStartupCheck implements InitializingBean {
     private static final String BASE_PATH = "/actuator";
     private static final String HEALTH = "health";
     private static final String NEVER = "never";
+
+    /**
+     * The logger that writes the raw request, the {@code Authorization} header included, at TRACE. Found by setting
+     * each Tomcat logger to TRACE on a real server: this one leaks, its siblings and the rest of {@code org.apache.tomcat}
+     * do not.
+     */
+    private static final String REQUEST_LOGGER = "org.apache.coyote.http11.Http11InputBuffer";
+
+    private static final Bindable<Map<String, List<String>>> GROUPS = Bindable.of(ResolvableType.forClassWithGenerics(
+            Map.class,
+            ResolvableType.forClass(String.class),
+            ResolvableType.forClassWithGenerics(List.class, String.class)));
+
+    private static final String ROOT_LOGGER = "root";
+    private static final Pattern AUTHORIZATION_IN_PATTERN =
+            Pattern.compile("%\\{\\s*authorization\\s*}i", Pattern.CASE_INSENSITIVE);
 
     /** The values Spring binds to {@code false}; any other value, {@code 1} and {@code on} included, is on. */
     private static final Set<String> OFF_VALUES = Set.of("false", "off", "no", "0");
@@ -115,6 +139,10 @@ public class ExposureStartupCheck implements InitializingBean {
             throw new IllegalStateException(LOG_REQUEST_DETAILS_PROPERTY
                     + " must be false under the container profile: it logs request headers, the token among them");
         }
+        if (container) {
+            refuseTraceOfTheRequestHeaders(environment);
+            refuseAuthorizationInTheAccessLog(environment);
+        }
     }
 
     /**
@@ -159,6 +187,68 @@ public class ExposureStartupCheck implements InitializingBean {
     private static boolean isOn(Environment environment, String property) {
         String value = environment.getProperty(property);
         return value != null && !OFF_VALUES.contains(value.strip().toLowerCase(Locale.ROOT));
+    }
+
+    /**
+     * Refuses TRACE on the Tomcat logger that writes the raw request. {@code logging.level} is bound as a map, so every
+     * spelling Spring accepts is read; a logger takes the level of its nearest configured parent, so {@code root},
+     * {@code org}, {@code org.apache} and {@code org.apache.coyote} count, and a nearer logger set above TRACE wins. Logging groups are expanded
+     * first.
+     */
+    private static void refuseTraceOfTheRequestHeaders(Environment environment) {
+        if ("trace".equals(levelOf(loggerLevels(environment), REQUEST_LOGGER))) {
+            throw new IllegalStateException(LOGGING_LEVEL_PROPERTY
+                    + " must not put " + REQUEST_LOGGER + " at TRACE under the container profile, directly or through"
+                    + " a parent logger such as org.apache.coyote: it logs request headers, the token among them"
+                    + " (ADR-0041 decision 8)");
+        }
+    }
+
+    /** The configured level per lower-case logger name; where a group and a logger disagree, TRACE is kept. */
+    private static Map<String, String> loggerLevels(Environment environment) {
+        Binder binder = Binder.get(environment);
+        Map<String, String> levels = new HashMap<>();
+        binder.bind(LOGGING_LEVEL_PROPERTY, Bindable.mapOf(String.class, String.class))
+                .orElse(Map.of())
+                .forEach((logger, level) -> levels.put(logger.strip().toLowerCase(Locale.ROOT), normalized(level)));
+        Map<String, List<String>> groups =
+                binder.bind(LOGGING_GROUP_PROPERTY, GROUPS).orElse(Map.of());
+        groups.forEach((group, members) -> {
+            String level = levels.get(group.strip().toLowerCase(Locale.ROOT));
+            if (level != null) {
+                members.forEach(member -> levels.merge(
+                        member.strip().toLowerCase(Locale.ROOT),
+                        level,
+                        (own, grouped) -> "trace".equals(grouped) ? grouped : own));
+            }
+        });
+        return levels;
+    }
+
+    private static String normalized(String level) {
+        return level == null ? "" : level.strip().toLowerCase(Locale.ROOT);
+    }
+
+    /** The level of the nearest configured logger at or above the name, root last; empty when none is set. */
+    private static String levelOf(Map<String, String> levels, String logger) {
+        for (String name = logger.toLowerCase(Locale.ROOT); ; name = name.substring(0, name.lastIndexOf('.'))) {
+            if (levels.containsKey(name)) {
+                return levels.get(name);
+            }
+            if (!name.contains(".")) {
+                return levels.getOrDefault(ROOT_LOGGER, "");
+            }
+        }
+    }
+
+    /** The pattern may log a request header; the {@code Authorization} header carries the token. */
+    private static void refuseAuthorizationInTheAccessLog(Environment environment) {
+        String pattern = environment.getProperty(ACCESS_LOG_PATTERN_PROPERTY);
+        if (pattern != null && AUTHORIZATION_IN_PATTERN.matcher(pattern).find()) {
+            throw new IllegalStateException(ACCESS_LOG_PATTERN_PROPERTY
+                    + " must not log the Authorization header under the container profile: the token is in it"
+                    + " (ADR-0041 decision 8)");
+        }
     }
 
     /** No health group at all: the health answer lists every group's name, so it would say more than up or down. */
