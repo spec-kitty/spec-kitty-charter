@@ -23,7 +23,7 @@ changed methods by hand.
 ## Two pull requests, and the cut (P1)
 
 - **PR A = WP01–WP10, plus WP16 and WP17.**
-  - Code: shared plumbing, the rooted compose and the closure read, the policy file (ADR-0061), the floor, the slice
+  - Code: shared plumbing, the rooted compose and the closure read, the policy file (ADR-0062), the floor, the slice
     and its storage, contract A and its red scenarios (WP08), and CRUD (WP09).
   - The post-PR-A squad fixes: the shared web-transport module (WP16) and the correctness fixes (WP17).
   - Docs: WP10.
@@ -43,7 +43,7 @@ changed methods by hand.
   - #377 (test-tidy-mockito-refusal-codes, ready);
   - #379, #384 and #390;
   - #391 (settings and conventions);
-  - #392 (ADR-0060);
+  - #392 (ADR-0061);
   - #393 (`ProblemHandler`, draft);
   - #394 (mutation floors per module, draft: the new `:activations` module may need a floor).
 - **The #377 gate (P3):** WP01, WP03 and WP11 start only after #377 merges, or after rebasing over its head. Each
@@ -71,7 +71,7 @@ changed methods by hand.
 | T016 | Read the policy per pack on the facts; a missing or invalid file is `pack_unreadable`; `MutabilityPolicyRepository` port | WP03 |  |
 | T017 | `PerPackPolicy.levelIn(closure, urn)`: the highest level and the setting pack | WP03 | [P] |
 | T018 | `PackMutabilityPolicy` write gate shares `levelIn` over the pack's closure | WP03 |  |
-| T019 | ADR-0061 and the open-packs note | WP03 | [P] |
+| T019 | ADR-0062 and the open-packs note | WP03 | [P] |
 | T020 | Presets on `PackCompositionFacts` from the already-assembled pack | WP04 |  |
 | T021 | `RequiredFloor` (pure domain): governing presets' must-have items with the requiring pack | WP04 | [P] |
 | T022 | `ClosureView`: packs, held ids, holders, mission types, floor, locks, presets, fingerprint | WP04 |  |
@@ -110,7 +110,7 @@ changed methods by hand.
 | T055 | Closure read and US6 end to end | WP09 |  |
 | T056 | Raised flags for the four activation codes, `ReservedRefusalCodesTest`, all green against WP08's red list | WP09 |  |
 | T057 | Divergences DIV-203 to DIV-205 in both register forms | WP10 | [P] |
-| T058 | Amendment notes: ADR-0020 D6, ADR-0013 D2, ADR-0012 D2 → ADR-0061 | WP10 | [P] |
+| T058 | Amendment notes: ADR-0020 D6, ADR-0013 D2, ADR-0012 D2 → ADR-0062 | WP10 | [P] |
 | T059 | `offering-and-activation.md`, `logical-model.md`, `resolution-model.md` | WP10 |  |
 | T060 | PR A docs changelog fragment with the #360 re-point | WP10 |  |
 | T061 | Docs gates | WP10 |  |
@@ -215,7 +215,7 @@ T012 The offering ratchet (WP02)
 
 ### WP03 — packs mutability policy file (IC-03a)
 
-- **Goal:** packs declare locks in `policy.yaml`; the highest level along the closure wins; ADR-0061; a contract
+- **Goal:** packs declare locks in `policy.yaml`; the highest level along the closure wins; ADR-0062; a contract
   fragment; the file is digested.
 - **Prompt:** [tasks/WP03-packs-mutability-policy-file.md](tasks/WP03-packs-mutability-policy-file.md)
 - **Requirements:** FR-022, FR-007, C-005, NFR-001
@@ -227,7 +227,7 @@ T015 `PolicyYaml` (WP03)
 T016 Per-pack read; fail closed (WP03)
 T017 `PerPackPolicy.levelIn` (WP03)
 T018 The write gate shares it (WP03)
-T019 ADR-0061 (WP03)
+T019 ADR-0062 (WP03)
 T094 Contract fragment for the pack-schema change (WP03)
 T095 Digest `policy.yaml` (WP03)
 

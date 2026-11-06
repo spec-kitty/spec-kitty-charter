@@ -32,7 +32,7 @@ import org.jspecify.annotations.Nullable;
  * holds the document alone, not its id, since its bytes are the bytes its revision hashes (FR-005); a read checks
  * instead that the directory's name decodes to the id asked for ({@link #checkedName}). No register was released
  * before this layout, so nothing is migrated. Decision {@code DM-01M6P92QKYFZW9KDGGQGX9H9VS}: an atomic move under an in-process
- * per-id lock, for one replica (ADR-0060); several processes over one root are out of scope (#349).
+ * per-id lock, for one replica (ADR-0061); several processes over one root are out of scope (#349).
  *
  * <p><b>A write</b> creates the id's directory, writes {@code activation.json.tmp-<uuid>} beside the target through a
  * {@link FileChannel} forced to the device, moves it over the target with {@code ATOMIC_MOVE} and

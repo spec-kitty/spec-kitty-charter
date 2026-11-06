@@ -73,7 +73,7 @@ flowchart LR
 
 - **Decision:** the floor is the must-have items (`Preset.required()`, `Preset.requiredMissionTypes()`) of every
   governing preset in the activation's closure. This is the operator's default assumption, logged as an open review
-  item. Locks come from each pack's mutability policy file, read by `packs` (new, ADR-0061) into the existing
+  item. Locks come from each pack's mutability policy file, read by `packs` (new, ADR-0062) into the existing
   `MutabilityPolicySource`. A later pack may raise an artifact's level but never lower it (ADR-0012 D3), so the
   effective level is the maximum along the closure. Refusals:
   - denying a required artifact answers `409 artifact_required` with `requiredBy` naming the pack;
@@ -83,10 +83,10 @@ flowchart LR
 - **Alternatives considered:** only applied presets bind (rejected: needs applied-preset memory, which ADR-0020 left
   out); locks deferred (rejected by the operator).
 
-## R6. The policy-file format (ADR-0061)
+## R6. The policy-file format (ADR-0062)
 
 - **Decision:** an optional descriptor key `mutability_policy: <pack-relative path>`, naming the policy file; the
-  descriptor schema constrains the path to `policy.yaml` for now, and ADR-0061 records the choice. The file is validated by a
+  descriptor schema constrains the path to `policy.yaml` for now, and ADR-0062 records the choice. The file is validated by a
   closed `policy.schema.json`:
 
   ```yaml
@@ -168,7 +168,7 @@ Every finding has exactly one disposition:
 | B2 | `dependsOn` must reuse the offering shape | accepted (items are `OfferingPack`) | spec FR-009; plan IC-03/06 |
 | B3 | #360's acceptance points at the offering | accepted (issue comment at PR A) | spec Assumptions; plan IC-10 |
 | B4 | the plan rebuilds If-Match and the body guard | accepted (moved and shared) | plan IC-01 |
-| B5 | `MutabilityPolicySource` is global; the write gate; ADR-0012 D4/D5 | accepted (`PerPackPolicy`, shared function, ADR-0061 cites D4/D5) / deferred (built-in policy file and migration: no pack ships one; follow-up issue) | plan IC-03 |
+| B5 | `MutabilityPolicySource` is global; the write gate; ADR-0012 D4/D5 | accepted (`PerPackPolicy`, shared function, ADR-0062 cites D4/D5) / deferred (built-in policy file and migration: no pack ships one; follow-up issue) | plan IC-03 |
 | B6 | open-PR collisions | accepted | plan "Rebase order" and the IC notes |
 | B7 | `ReservedRefusalCodesTest`, raised flags, #125 build notes | accepted | plan IC-06, IC-09 |
 | B8 | doc list incomplete; DIV numbering | accepted | plan IC-10; spec C-006 |
