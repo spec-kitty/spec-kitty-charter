@@ -296,7 +296,8 @@ declares bind every later pack and every activation over that pack.
 ## Assumptions
 
 - The required floor is the must-have items of every governing preset in the activation's closure (ADR-0031,
-  ADR-0042). This closure scope is an assumed default, logged as an open review item (planning decision 2026-11-05).
+  ADR-0042). This closure scope was an assumed default (planning decision 2026-11-05); the operator ruled on
+  2026-11-06 that it stands.
 - For a preset id held by several closure packs, the last holder in merge order wins (ADR-0053 d6), and the required
   floor follows that copy only (FR-023). Two packs of one level that hold the id and are not related by `parent_pack`
   are refused as `pack_sibling_conflict` (operator ruling of 2026-11-06); a child merges after the parent it extends.
