@@ -27,7 +27,7 @@
     }
   },
   "additionalProperties": false,
-  "description": "An activation preset of a Charter Pack (presets/<id>.yaml), in the sanitized shape of ADR-0042.\n\nA preset selects artifacts and mission types to activate. Each item may carry the must-have mark; the marked items are the preset's required set (ADR-0031, operator ruling on #195), and a preset with any must-have item is a governing preset. Every activation list holds at least one item: a kind is switched off by leaving it out of activated_kinds, never by an empty list. Legacy required_<plural> keys are not part of the shape.",
+  "description": "An activation preset of a Charter Pack (presets/<id>.yaml), in the sanitized shape of ADR-0042.\n\nA preset selects artifacts of any activatable kind, mission types, skills and glossary packs included (one kind model, IC-20; decision DM-01M6RCY40CQQTHC130RWF43W0D): applying it sets selected.<kind> of the activation document for each kind it lists. Each item may carry the must-have mark; the marked items are the preset's required set (ADR-0031, operator ruling on #195), and a preset with any must-have item is a governing preset. Every activation list holds at least one item: a kind the preset does not select is left out. There is no kind gate: the key activated_kinds is not part of the shape, so a preset carrying it is refused when its pack is registered. Legacy required_<plural> keys are not part of the shape.",
   "properties": {
     "schema_version": {
       "const": "1.0",
@@ -47,31 +47,6 @@
       "minLength": 1,
       "title": "Description",
       "type": "string"
-    },
-    "activated_kinds": {
-      "description": "The kind gate: the kinds this preset activates, each once. A kind left out is switched off; when the key is absent no kind is gated.",
-      "items": {
-        "enum": [
-          "directives",
-          "tactics",
-          "styleguides",
-          "toolguides",
-          "paradigms",
-          "procedures",
-          "agent_profiles",
-          "mission_step_contracts",
-          "anti_patterns",
-          "templates",
-          "assets",
-          "glossary_packs",
-          "skills"
-        ],
-        "type": "string"
-      },
-      "minItems": 1,
-      "title": "Activated Kinds",
-      "type": "array",
-      "uniqueItems": true
     },
     "activated_directives": {
       "description": "The directives this preset activates, in authored order. Absent when the preset selects none; never empty.",
@@ -154,8 +129,26 @@
       "title": "Activated Anti Patterns",
       "type": "array"
     },
+    "activated_glossary_packs": {
+      "description": "The glossary packs this preset activates, in authored order. Absent when the preset selects none; never empty.",
+      "items": {
+        "$ref": "#/$defs/item"
+      },
+      "minItems": 1,
+      "title": "Activated Glossary Packs",
+      "type": "array"
+    },
+    "activated_skills": {
+      "description": "The skills this preset activates, in authored order. Absent when the preset selects none; never empty.",
+      "items": {
+        "$ref": "#/$defs/item"
+      },
+      "minItems": 1,
+      "title": "Activated Skills",
+      "type": "array"
+    },
     "activated_mission_types": {
-      "description": "The mission types this preset activates, in authored order. Absent when the preset selects none; never empty.",
+      "description": "The mission types this preset activates, in authored order: a plain member list, applied as selected.mission_type. Absent when the preset selects none; never empty.",
       "items": {
         "$ref": "#/$defs/item"
       },
