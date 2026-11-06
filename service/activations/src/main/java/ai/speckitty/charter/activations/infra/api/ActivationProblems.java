@@ -82,8 +82,18 @@ public class ActivationProblems {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<CharterRefusal> unreadable(HttpMessageNotReadableException unreadable) {
         String pointer = unreadable.getCause() instanceof JacksonException jackson ? pointerOf(jackson.getPath()) : "";
-        return invalid(List.of(new RefusalViolation(
-                pointer, "unreadable_body", "The body is not JSON of the request's schema at '" + pointer + "'.")));
+        return invalid(List.of(unreadableAt(pointer)));
+    }
+
+    /**
+     * The violation of a body that cannot be bound at a pointer.
+     *
+     * @param pointer the RFC 6901 pointer of the bad value; {@code ""} for the whole body
+     * @return the violation, code {@code unreadable_body}
+     */
+    static RefusalViolation unreadableAt(String pointer) {
+        return new RefusalViolation(
+                pointer, "unreadable_body", "The body is not JSON of the request's schema at '" + pointer + "'.");
     }
 
     /**

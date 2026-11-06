@@ -30,10 +30,17 @@ import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.RequestBodyAdviceAdapter;
 import tools.jackson.core.JacksonException;
+import tools.jackson.core.StreamReadFeature;
+import tools.jackson.core.exc.StreamReadException;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.cfg.CoercionAction;
+import tools.jackson.databind.cfg.CoercionInputShape;
+import tools.jackson.databind.exc.MismatchedInputException;
 import tools.jackson.databind.exc.UnrecognizedPropertyException;
 import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.type.LogicalType;
 
 /**
  * Guards the body of every activation write before the message converter reads it (#125 build notes, #323): the
@@ -42,6 +49,8 @@ import tools.jackson.databind.json.JsonMapper;
  * need nothing here once built. Each fault is {@code 422 activation_invalid} with a violation:
  *
  * <ul>
+ *   <li>a member repeated in one object (the last would win, silently): the pointer of the member, code
+ *       {@code duplicate_member}, raised by the tree read ({@link StreamReadFeature#STRICT_DUPLICATE_DETECTION});
  *   <li>a body over {@link BodyLimit#MAX_BYTES}: pointer {@code ""}, code {@code body_too_large}, judged by
  *       {@link JsonBodyGuard#readBounded} before the body is read whole;
  *   <li>a {@code null} anywhere in the body, a member or a list item at any depth (the generated DTOs read a
@@ -52,7 +61,10 @@ import tools.jackson.databind.json.JsonMapper;
  *       client fixes the body in one round trip. The tree is walked against the target DTO's declared members
  *       ({@code @JsonProperty} on its getters), level by level, into nested DTOs and lists of them; the walk is linear
  *       in the body, bounded by the cap above. A strict re-read ({@code FAIL_ON_UNKNOWN_PROPERTIES}) backs the walk
- *       up, so a member the walk could not judge is still refused, as its first unknown member.
+ *       up, so a member the walk could not judge is still refused, as its first unknown member;
+ *   <li>a scalar of another type than the one declared, which the strict re-read does not coerce (a string or a
+ *       decimal for the integer {@code schemaVersion}, a number or a boolean for a string): its pointer, code
+ *       {@code unreadable_body}.
  * </ul>
  *
  * <p>A body that is not JSON, or that the strict read refuses for any other reason, is handed on unchanged: the
@@ -64,9 +76,25 @@ public class ActivationBodyAdvice extends RequestBodyAdviceAdapter {
     private static final Set<Type> GUARDED =
             Set.of(ActivationConfig.class, SelectionRequest.class, ExclusionRequest.class, PresetApplication.class);
 
-    private static final JsonMapper TREE = JsonMapper.builder().build();
+    /** Reads the body as a tree, and refuses a member repeated in one object instead of keeping the last. */
+    private static final JsonMapper TREE = JsonMapper.builder()
+            .enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION)
+            .build();
+
+    /**
+     * Binds the tree as the activation DTOs are bound, but strictly: an unknown member is refused, and a scalar is
+     * never coerced to the declared type ({@code "1"} or {@code 1.0} for an integer, {@code 1} or {@code true} for a
+     * string).
+     */
     private static final JsonMapper STRICT = JsonMapper.builder()
             .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .disable(MapperFeature.ALLOW_COERCION_OF_SCALARS)
+            .disable(DeserializationFeature.ACCEPT_FLOAT_AS_INT)
+            .withCoercionConfig(
+                    LogicalType.Textual,
+                    config -> config.setCoercion(CoercionInputShape.Integer, CoercionAction.Fail)
+                            .setCoercion(CoercionInputShape.Float, CoercionAction.Fail)
+                            .setCoercion(CoercionInputShape.Boolean, CoercionAction.Fail))
             .build();
 
     /** For Spring, which finds the advice by component scan; a test constructs it directly. */
@@ -108,16 +136,22 @@ public class ActivationBodyAdvice extends RequestBodyAdviceAdapter {
      * @return the violations; empty when there are none, or the body is not JSON
      */
     static List<RefusalViolation> violations(byte[] body, @Nullable MediaType contentType, Class<?> target) {
-        Optional<JsonNode> tree = tree(body, contentType);
-        if (tree.isEmpty()) {
+        JsonNode tree;
+        try {
+            tree = read(body, contentType);
+        } catch (StreamReadException unreadable) {
+            return unreadable.processor() != null && isRepeatedMember(unreadable)
+                    ? List.of(repeatedMember(unreadable))
+                    : List.of();
+        } catch (JacksonException notJson) {
             return List.of();
         }
         List<RefusalViolation> violations = new ArrayList<>();
-        nulls(tree.orElseThrow(), "", violations);
+        nulls(tree, "", violations);
         List<RefusalViolation> unknown = new ArrayList<>();
-        unknownMembers(tree.orElseThrow(), target, "", unknown);
+        unknownMembers(tree, target, "", unknown);
         if (unknown.isEmpty()) {
-            unknownMember(tree.orElseThrow(), target).ifPresent(unknown::add);
+            strictRead(tree, target).ifPresent(unknown::add);
         }
         violations.addAll(unknown);
         return violations;
@@ -172,13 +206,23 @@ public class ActivationBodyAdvice extends RequestBodyAdviceAdapter {
         return new RefusalViolation(pointer, "unknown_member", "The body declares no member '" + member + "'.");
     }
 
-    private static Optional<JsonNode> tree(byte[] body, @Nullable MediaType contentType) {
+    private static JsonNode read(byte[] body, @Nullable MediaType contentType) {
         Charset charset = contentType == null ? null : contentType.getCharset();
-        try {
-            return Optional.of(charset == null ? TREE.readTree(body) : TREE.readTree(new String(body, charset)));
-        } catch (JacksonException notJson) {
-            return Optional.empty();
-        }
+        return charset == null ? TREE.readTree(body) : TREE.readTree(new String(body, charset));
+    }
+
+    private static boolean isRepeatedMember(StreamReadException unreadable) {
+        return String.valueOf(unreadable.getOriginalMessage()).startsWith("Duplicate Object property");
+    }
+
+    /** The member repeated in an object, at the pointer the parser had reached when it met the second one. */
+    private static RefusalViolation repeatedMember(StreamReadException unreadable) {
+        String pointer =
+                unreadable.processor().streamReadContext().pathAsPointer().toString();
+        return new RefusalViolation(
+                pointer,
+                "duplicate_member",
+                "The body repeats the member at '" + pointer + "'; a member is stated once.");
     }
 
     private static void nulls(JsonNode node, String pointer, List<RefusalViolation> violations) {
@@ -199,14 +243,20 @@ public class ActivationBodyAdvice extends RequestBodyAdviceAdapter {
         }
     }
 
-    private static Optional<RefusalViolation> unknownMember(JsonNode tree, Class<?> target) {
+    /**
+     * The strict bind of the tree: its first unknown member, or its first scalar of another type than the one declared
+     * (no coercion), at the pointer Jackson names. Anything else is not this advice's to answer: the converter refuses
+     * the body, and {@link ActivationProblems} answers that refusal.
+     */
+    private static Optional<RefusalViolation> strictRead(JsonNode tree, Class<?> target) {
         try {
             STRICT.treeToValue(tree, target);
             return Optional.empty();
         } catch (UnrecognizedPropertyException unknown) {
             return Optional.of(unknownAt(ActivationProblems.pointerOf(unknown.getPath()), unknown.getPropertyName()));
+        } catch (MismatchedInputException mismatched) {
+            return Optional.of(ActivationProblems.unreadableAt(ActivationProblems.pointerOf(mismatched.getPath())));
         } catch (JacksonException otherwise) {
-            // Not this advice's to answer: the converter refuses the body, and ActivationProblems answers it.
             return Optional.empty();
         }
     }
