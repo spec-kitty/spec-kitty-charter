@@ -1,0 +1,37 @@
+{
+  "accept_commit": "a93e41d38ad6a8e0b2d6475299f0b7a96f78cf44",
+  "acceptance_history": [
+    {
+      "accept_commit": "a93e41d38ad6a8e0b2d6475299f0b7a96f78cf44",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-11-06T03:00:40.670762+00:00",
+      "accepted_by": "claude:claude-opus-5-5:orchestrator",
+      "accepted_from_commit": "9e59e223beea6940c2ab732d826909599b877e78"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-11-06T03:00:40.670762+00:00",
+  "accepted_by": "claude:claude-opus-5-5:orchestrator",
+  "accepted_from_commit": "9e59e223beea6940c2ab732d826909599b877e78",
+  "baseline_merge_commit": "9d1ccda15ecbf7067fea29ff3c169867f4659611",
+  "coordination_branch": "kitty/mission-activation-register-and-closure-01M6NXBD",
+  "created_at": "2026-11-05T13:11:12.737640+00:00",
+  "flattened": false,
+  "friendly_name": "Activation register and activated-pack closure",
+  "merged_at": "2026-11-06T03:14:40.425447+00:00",
+  "merged_commit": "7e18abfaf0f982ee0fc2935d04b86f686e80949c",
+  "mid8": "01M6NXBD",
+  "mission_id": "01M6NXBD9RVJS9WD7KYM31W5GG",
+  "mission_number": 18,
+  "mission_slug": "activation-register-and-closure-01M6NXBD",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "Core cannot ask the charter service what is in force until the service stores a project's activation and resolves packs from it. This mission builds the activation register (its document, storage and writes) and roots pack composition at the activated packs, the first steps of ADR-0055's service-first cutover.",
+  "purpose_tldr": "The charter service records what a project activated and composes only the packs that activation reaches.",
+  "slug": "activation-register-and-closure-01M6NXBD",
+  "status_phase": "1",
+  "target_branch": "issue-360-activated-closure",
+  "topology": "coord",
+  "vcs": "git",
+  "vcs_locked_at": "2026-11-05T19:20:13.955349+00:00"
+}
