@@ -18,6 +18,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -655,6 +656,112 @@ public final class PackCompositionResolver {
     }
 
     /**
+     * Refuses two packs of one configured level that hold one preset id and are not related by {@code parent_pack}
+     * (the operator ruling of 2026-11-06, as {@link #refuseSiblingContests} refuses two siblings that contest an
+     * artifact): neither would win by anything but load order. A child and a pack on its {@code parent_pack} line are
+     * related, the child merging after the parent it extends, so its copy takes the place of the parent's. A preset id
+     * held at different levels is no contest: the layer merge applies (ADR-0053 decision 6, ADR-0059 D3), the pack
+     * nearer the project winning. Presets are not artifacts, so no {@code overrides} edge settles a contest.
+     *
+     * @param ordered the packs of one compose, in merge order
+     * @param presetIdsOf the ids of the presets a pack holds
+     * @throws Refusal {@link Failure#SIBLING_CONFLICT} naming the second contestant first, as the artifact contest does
+     */
+    public static void refusePresetContests(
+            List<PackUnderResolution> ordered, Function<PackUnderResolution, Collection<String>> presetIdsOf) {
+        Objects.requireNonNull(ordered, "ordered");
+        Objects.requireNonNull(presetIdsOf, "presetIdsOf");
+        Map<String, PackUnderResolution> byId = new HashMap<>();
+        ordered.forEach(pack -> byId.putIfAbsent(pack.descriptor().packId(), pack));
+        Map<String, List<PackUnderResolution>> holders = new LinkedHashMap<>();
+        for (PackUnderResolution pack : ordered) {
+            for (String presetId : new LinkedHashSet<>(presetIdsOf.apply(pack))) {
+                holders.computeIfAbsent(presetId, key -> new ArrayList<>()).add(pack);
+            }
+        }
+        for (Map.Entry<String, List<PackUnderResolution>> held : holders.entrySet()) {
+            List<PackUnderResolution> packs = held.getValue();
+            for (int later = 1; later < packs.size(); later++) {
+                for (int earlier = 0; earlier < later; earlier++) {
+                    PackUnderResolution first = packs.get(earlier);
+                    PackUnderResolution second = packs.get(later);
+                    if (first.configured().level() == second.configured().level() && !related(first, second, byId)) {
+                        throw new Refusal(
+                                Failure.SIBLING_CONFLICT,
+                                named(second, first),
+                                labels(List.of(first, second)) + " at "
+                                        + first.configured().level().token() + " both hold the preset `"
+                                        + held.getKey() + "`, and neither extends the other by parent_pack");
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Refuses a preset item or a policy lock that names an artifact of the closure only by case (the operator ruling of
+     * 2026-11-06): {@code directive_001} where the closure holds {@code DIRECTIVE_001}. Ids are matched exactly, so
+     * such a mention would silently govern nothing, and a deny entry the author meant to be refused would pass. A
+     * mention of an id no pack of the closure holds is no mistake this check can tell from a pack not yet configured:
+     * it is left alone, and a lock on it changes no write. The refusal is {@link Failure#REFERENCE_ARTIFACT_MISSING}:
+     * the nearest existing code, a pack's reference to an artifact that the closure does not hold as written.
+     *
+     * @param ordered the packs of one compose
+     * @param mentionsOf the URNs, as written, that a pack's presets and policy file name
+     * @throws Refusal naming the mentioning pack first, then the pack that holds the id
+     */
+    public static void refuseCaseOnlyMatches(
+            List<PackUnderResolution> ordered, Function<PackUnderResolution, Collection<String>> mentionsOf) {
+        Objects.requireNonNull(ordered, "ordered");
+        Objects.requireNonNull(mentionsOf, "mentionsOf");
+        Set<String> held = new HashSet<>();
+        Map<String, PackUnderResolution> holderByFolded = new LinkedHashMap<>();
+        for (PackUnderResolution pack : ordered) {
+            for (String urn : pack.definedArtifacts()) {
+                held.add(urn);
+                holderByFolded.putIfAbsent(urn.toLowerCase(java.util.Locale.ROOT), pack);
+            }
+        }
+        for (PackUnderResolution pack : ordered) {
+            for (String mentioned : mentionsOf.apply(pack)) {
+                PackUnderResolution holder = holderByFolded.get(mentioned.toLowerCase(java.util.Locale.ROOT));
+                if (holder == null || held.contains(mentioned)) {
+                    continue;
+                }
+                String declared = holder.definedArtifacts().stream()
+                        .filter(urn -> urn.equalsIgnoreCase(mentioned))
+                        .findFirst()
+                        .orElse(mentioned);
+                throw new Refusal(
+                        Failure.REFERENCE_ARTIFACT_MISSING,
+                        named(pack, holder),
+                        label(pack) + " names `" + mentioned + "`, but " + label(holder) + " holds `" + declared
+                                + "`: ids differ only by case and are matched exactly");
+            }
+        }
+    }
+
+    /** Whether one pack is on the other's {@code parent_pack} line. A cycle was refused before, so the walk ends. */
+    private static boolean related(
+            PackUnderResolution first, PackUnderResolution second, Map<String, PackUnderResolution> byId) {
+        return extendsOnLine(first, second, byId) || extendsOnLine(second, first, byId);
+    }
+
+    private static boolean extendsOnLine(
+            PackUnderResolution child, PackUnderResolution ancestor, Map<String, PackUnderResolution> byId) {
+        Set<String> walked = new LinkedHashSet<>();
+        Optional<String> at = child.descriptor().parentPack();
+        while (at.isPresent() && walked.add(at.get())) {
+            if (at.get().equals(ancestor.descriptor().packId())) {
+                return true;
+            }
+            PackUnderResolution next = byId.get(at.get());
+            at = next == null ? Optional.empty() : next.descriptor().parentPack();
+        }
+        return false;
+    }
+
+    /**
      * The identity an artifact reference names: its bare URN. The {@code <pack>::} qualifier is split off by
      * {@link PackQualifiedReference}, the one parser, and is not part of the identity, since a pack is provenance
      * (ADR-0048 decision 10). A reference that is no URN of a known kind is its own key, so it never contests anything
@@ -698,6 +805,11 @@ public final class PackCompositionResolver {
         }
     }
 
+    /**
+     * The packs one pack must be placed after: its {@code depends_on} targets and its {@code parent_pack}, each checked
+     * as the compose checks it. Both are edges of the order and of the cycle check, so a parent cycle, a pack that
+     * names itself as parent included, is {@link Failure#CYCLE}.
+     */
     private static List<String> dependenciesOf(PackUnderResolution pack, Map<String, PackUnderResolution> byId) {
         List<String> dependencies = new ArrayList<>();
         for (PackDependency dependency : pack.descriptor().dependencies()) {
@@ -724,6 +836,9 @@ public final class PackCompositionResolver {
             dependencies.add(targetId);
         }
         pack.descriptor().parentPack().ifPresent(parent -> {
+            if (parent.equals(pack.descriptor().packId())) {
+                throw new Refusal(Failure.CYCLE, named(pack), label(pack) + " names itself as its parent_pack");
+            }
             PackUnderResolution parentPack = byId.get(parent);
             if (parentPack == null) {
                 throw new Refusal(
@@ -732,6 +847,10 @@ public final class PackCompositionResolver {
                         label(pack) + " names parent_pack `" + parent + "`, which no configured pack declares");
             }
             requireLevel(pack, parentPack, true);
+            // The parent is an ordering and cycle edge as a dependency is: the child merges after the pack it extends.
+            if (!dependencies.contains(parent)) {
+                dependencies.add(parent);
+            }
         });
         return dependencies;
     }

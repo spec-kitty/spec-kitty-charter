@@ -92,10 +92,10 @@ loses its gating role. Those changes are follow-ups, not part of this record.
 1. **Five relations, no depth limit.** The activation cascade walks `requires`, `suggests`, `refines`, `scope`
    and `instantiates` forward, as core does. It stops at a denied artifact and reports it (ADR-0013 D4). Each
    artifact is visited once (the ADR-0025 visited-URN guard), so a cycle through `enhances` ends.
-   *Superseded 2026-11-06 (R4):* the cascade walks six relations, these five and `enhances`, all forward at write
+   *Superseded 2026-11-06 (A4):* the cascade walks six relations, these five and `enhances`, all forward at write
    time; the visited guard ends a cycle through any of them, and there is no read-time pull for a cycle to run
    through. See the [amendment](#amendment-2026-11-06).
-2. **`enhances`, both ways, at read.** *Superseded 2026-11-06 (R4):* `enhances` is a cascade relation like the
+2. **`enhances`, both ways, at read.** *Superseded 2026-11-06 (A4):* `enhances` is a cascade relation like the
    others, walked at write time in its declared direction, and there is no read-time pull; see the
    [amendment](#amendment-2026-11-06). The rest of this point is kept as the record of the 2026-11-05 ruling. The edge runs from the enhancing artifact to its target, and the pull follows it in
    both directions. When a target comes into force, every artifact that enhances it joins and is walked in turn. When
@@ -134,7 +134,7 @@ loses its gating role. Those changes are follow-ups, not part of this record.
    ancestor is put in force. A denied ancestor stops the pass-through at that ancestor and is reported (ADR-0013 D4);
    what lies behind a denied ancestor goes in `unreachedBehindDeactivated`. The `cascade` scope does not filter an
    ancestor, which is not a candidate.
-   *Amended 2026-11-06 (R2, R3):* a cascading deactivate's own walk passes through the lineage as a select's walk
+   *Amended 2026-11-06 (A2, A3):* a cascading deactivate's own walk passes through the lineage as a select's walk
    does, but stops at no deny entry, so it crosses a denied ancestor a select would stop at; and with
    `includeDeactivated` a denied ancestor is passed through only when its kind is in the `cascade` scope; see the
    [amendment](#amendment-2026-11-06).
@@ -149,7 +149,7 @@ loses its gating role. Those changes are follow-ups, not part of this record.
 force with it: a hard dependency, a recommendation, the target it narrows, what it puts in force within its scope,
 or its template. `enhances` keeps an enhancing artifact and the artifact it adds to in force together, unless one is denied. The other edges
 either replace content or point at what must not be activated.
-*Superseded 2026-11-06 (R4):* `enhances` is walked forward like the five, so a cascade from an enhancer puts its
+*Superseded 2026-11-06 (A4):* `enhances` is walked forward like the five, so a cascade from an enhancer puts its
 target in force, and a target puts none of its enhancers in force; see the [amendment](#amendment-2026-11-06).
 
 ### D3. A layer override takes the place of the whole artifact (ruled)
@@ -168,7 +168,7 @@ This differs from core's field merge (core ADR `3.x/2026-05-16-1`). The divergen
 difference.
 
 **Why.** The overriding artifact says everything it takes from no lower level, with no partial-field surprises; an `enhances` edge into the id still adds to it, and that enhancer joins under D2.2.
-*Superseded 2026-11-06 (R4):* the enhancer does not join because the id is in force; a read returns it with the id
+*Superseded 2026-11-06 (A4):* the enhancer does not join because the id is in force; a read returns it with the id
 only when it is itself active. See the [amendment](#amendment-2026-11-06).
 
 ### D4. A stored document a pack upgrade made stale is served and flagged (ruled; ADR-0020 question 5)
@@ -178,7 +178,7 @@ only when it is itself active. See the [amendment](#amendment-2026-11-06).
   (ADR-0013 D2), and the skipped report lists that too.
 - **On write.** A `PUT` that still carries an unknown id is refused `422 activation_invalid`, and one that denies a
   required or locked artifact `409` (ADR-0020 D9). The client cleans the document up before it writes it back.
-  *Amended 2026-11-06 (R5):* a per-artifact or preset write drops the stale ids itself and reports them; see the
+  *Amended 2026-11-06 (A5):* a per-artifact or preset write drops the stale ids itself and reports them; see the
   [amendment](#amendment-2026-11-06).
 
 ADR-0020 D6's round trip ("a `PUT` of a fetched `config` answers `200` with the same `ETag`") holds for a document
@@ -211,7 +211,7 @@ entries that match the preset's members (ADR-0020 D6). This is core's behavior.
 ([#291](https://github.com/spec-kitty/spec-kitty-charter/issues/291)). They amend D2 and D4 as stated; the rest of
 this record stands.
 
-- **R4. `enhances` is a relation like the others; no special case.** It supersedes D2.2.
+- **A4. `enhances` is a relation like the others; no special case.** It supersedes D2.2.
   - *At write.* The cascade walks `enhances` in its declared direction, from the enhancer to its target (`E enhances
     T` runs from E to T), exactly as it walks `requires` and `scope`. The relation set is core's five and `enhances`.
     Selecting E with a cascade selects T; selecting T selects nothing more; deactivating E with a cascade unselects T
@@ -223,14 +223,14 @@ this record stands.
     so resolving T returns E when E is active. There is no automatic read-time pull: an enhancer does not come into
     force because its target does, nor a target because its enhancer does. The `EffectiveArtifactReason` value for
     the pull that the D2.2 follow-up asked for is not needed.
-- **R3. `includeDeactivated` clears only within the cascade's scope.** A select with `includeDeactivated` clears
+- **A3. `includeDeactivated` clears only within the cascade's scope.** A select with `includeDeactivated` clears
   only the deny entries its walk passes through within the `cascade` scope: what it reaches of a kind in scope, each
   lineage ancestor it passes through whose kind is in scope, and the target. A denied artifact outside the scope is
   treated as without `includeDeactivated`: the walk stops there and reports it in `skippedDeactivated`, with what lies
   only behind it in `unreachedBehindDeactivated`, and its deny entry stays. A denied ancestor of a kind outside the
   scope stops the lineage the same way. This reverses the reading of 2026-11-06 (squad finding F4) that cleared the
   out-of-scope deny entries the walk went through.
-- **R5. Stale ids are dropped on write.** Every per-artifact and preset write (select, unselect, deactivate,
+- **A5. Stale ids are dropped on write.** Every per-artifact and preset write (select, unselect, deactivate,
   re-activate, apply a preset) first removes from the stored document every id the activation's closure no longer
   declares, in `selected`, `deactivated` and `missionTypes`, instead of answering `422` until a full `PUT`. The write
   reports them in a new optional `ActivationChange.dropped`, so the drop is never silent, and a dropped id is a
@@ -243,7 +243,7 @@ this record stands.
   is dropped with the others, reported in `dropped`, and the write gets a new revision. A select or a deactivate of
   an id the closure no longer holds, and an unselect or a re-activate of an id in neither the closure nor that stored
   list, is still `404 artifact_not_found` or `mission_type_not_found` (FR-010) and drops nothing. This answers the open review item on stale documents (research item 7).
-- **R2. A cascading deactivate follows the lineage.** The target's own walk passes through every
+- **A2. A cascading deactivate follows the lineage.** The target's own walk passes through every
   `specializes_from` ancestor to what it `requires` or `scope`s, as a select's walk does (D2.4), so selecting a
   profile with a cascade and then deactivating it with a cascade round-trips: what the select reached through an
   ancestor leaves `selected` again. Unlike a select's walk, it stops at no deny entry: it crosses a denied ancestor
@@ -264,13 +264,13 @@ this record stands.
 
 - Core switches without proof that the service agrees with its Python answers. Every deliberate difference must
   be in the divergence register before core switches, or core finds it in use.
-- *Superseded 2026-11-06 (R4):* a selected enhancer brought its target, the target's other enhancers and whatever
-  those cascade to, within `activatedKinds`. With R4 a cascading select of an enhancer selects its target and what
+- *Superseded 2026-11-06 (A4):* a selected enhancer brought its target, the target's other enhancers and whatever
+  those cascade to, within `activatedKinds`. With A4 a cascading select of an enhancer selects its target and what
   that cascades to, into `selected`, where unselecting or a cascading deactivate removes it again.
 - D3, D2.2 and D2.4 depart from core. A project with a partial override, with an artifact that enhances another, in either direction,
   or with a profile whose parent `requires` or `scope`s more, sees different content after the switch. Core's
   cascade excludes lineage, so it does not pass through `specializes_from`.
-  *Superseded in part 2026-11-06 (R4):* the `enhances` departure is one direction only: core's cascade does not
+  *Superseded in part 2026-11-06 (A4):* the `enhances` departure is one direction only: core's cascade does not
   follow `enhances`, and this one walks it forward, from the enhancer to its target.
 - D3, D4 and D5 change the contract. D5: `summary` and `governanceFingerprint` leave `Activation`, and `304` is
   added to five operations. D4: the skipped report, closed with four buckets in
@@ -279,7 +279,7 @@ this record stands.
   `EffectiveArtifactReason` value names the `enhances` pull, and the description and `x-derived` rule of
   `SkippedDeactivated.requiredBy` assume a forward edge and a single reacher. `skippedByScope` also mixes the
   `cascade` scope with `kind_not_activated`.
-  *Superseded 2026-11-06 (R4):* the D2.2 point is moot: there is no `enhances` pull, so no `EffectiveArtifactReason`
+  *Superseded 2026-11-06 (A4):* the D2.2 point is moot: there is no `enhances` pull, so no `EffectiveArtifactReason`
   value names one, and every edge the cascade walks is forward. See the [amendment](#amendment-2026-11-06).
 
 ## Follow-ups
@@ -298,12 +298,12 @@ this record stands.
 - Add the skipped-report bucket or buckets for D4 and a `DiagnosticCode` value for D3's layer-override report, as
   0.x contract changes under [ADR-0022](/adr/0022-contract-versions-start-at-0-x/) in the #291 contract
   change.
-- Add the `EffectiveArtifactReason` value for D2.2 (no longer needed: R4 of the 2026-11-06 amendment removes the
+- Add the `EffectiveArtifactReason` value for D2.2 (no longer needed: A4 of the 2026-11-06 amendment removes the
   read-time pull) and widen both the description and the `x-derived` rule of
   `SkippedDeactivated.requiredBy`, as 0.x contract changes in the #291 contract change. The same change widens
   `skippedByScope`'s rule to mean outside `activatedKinds` at read and separates it from `kind_not_activated`.
 - State in the #291 contract change whether `ActivationChange.skipped` includes what the read-time pull skips (moot:
-  R4 of the 2026-11-06 amendment removes the read-time pull).
+  A4 of the 2026-11-06 amendment removes the read-time pull).
 - Have `getEffectiveGraph` carry the layer-override report in the #291 contract change. `Diagnostic` today describes
   one pack's load, so the contract change either widens its description or adds a schema that carries the report.
 - Update `docs/architecture/offering-and-activation.md` for D2.2, D4 and D5 (the `Activation` example and canonical
