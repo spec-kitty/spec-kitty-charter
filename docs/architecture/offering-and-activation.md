@@ -345,9 +345,10 @@ pulled artifact that was not denied is in neither, as nothing changes for it.
 refused first, `409 artifact_required` or `artifact_locked` naming the packs, before any walk, and nothing changes.
 With a cascade:
 
-1. The target's own walk follows the five relations and stops nowhere. It does not follow the lineage, while the
-   select walk and the shared walk do; see the open question below. The candidates are what it reached that is
-   selected and of a kind in scope, less the required or locked floor: a floor artifact is never a candidate.
+1. The target's own walk follows the five relations and the lineage, as the select walk does, and stops nowhere
+   (ADR-0059 amendment of 2026-11-06), so a cascading deactivate undoes a cascading select. The candidates are what
+   it reached that is selected and of a kind in scope, less the required or locked floor: a floor artifact is never
+   a candidate.
 2. A shared walk starts from the other active artifacts (`selected` and the required or locked floor, less the target
    and the candidates), crosses the five relations with the lineage, and stops at the target and the deny entries.
    A candidate it reaches is shared. So is a candidate an active enhancer references, one hop over `enhances`. A
@@ -364,12 +365,6 @@ With a cascade:
 
 A deactivate's `skippedByScope` lists only the out-of-scope artifacts the target reached that are selected; one that
 is not selected is left alone and not reported.
-
-**Open question: the deactivate walk and the lineage.** The target's own walk does not pass up the
-`specializes_from` chain, while the select walk and the shared walk do. FR-015 names exactly "the five relations",
-and the service reads it literally: what only an ancestor of a reached profile requires is not a candidate, so a
-cascading deactivate leaves it selected. The asymmetry is deliberate and pinned by a test. It awaits an operator
-ruling.
 
 **Not built here.** The `enhances` pull at read time, which puts an enhancer in force with its target and the reverse,
 is the effective reads', and they answer `501`. A write never writes an enhancer into `selected`; the two places it

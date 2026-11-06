@@ -200,7 +200,7 @@ re-review of the fixes. Folded on lane-m (369063b..ac1faa9 and the re-review fol
 | F6 | A bad body answered `422` before `428`/`404`/`412` | changed: body faults deferred to the `422` step on the five writes; `415` still comes first | `DeferredBody` |
 | F7 | `400`, `409` and the stale-preset `422` undeclared | changed: `400` on five operations, `409` on deactivate only, the `422` documented | contract paths |
 | F8 | A mission type is never in a cascade's scope | kept: javadoc and docs corrected, pinned by a test | `CascadeRules` |
-| F9 | A deactivate's own walk does not follow lineage, a select's does | kept per FR-015's literal "five relations": **open question for the operator** | `CascadeRules.planDeactivate` |
+| F9 | A deactivate's own walk does not follow lineage, a select's does | changed by operator ruling R2 (2026-11-06): the deactivate's own walk follows the lineage as a select's does | `CascadeRules.planDeactivate`; ADR-0059 amendment |
 | F10 | Test gaps: lineage-blind fake graph, NFR-006 timing, NFR-004 select race, native hints for response types | changed: all four added; CI runs `:activations:timingBudgets` report-only | tests; `service.yml` |
 | R1 | Scalar coercion and duplicate members let wrong bodies commit | changed (re-review follow-up) | `ActivationBodyAdvice` |
 | R2 | A floor member with no active referrer named itself in `referencedBy` | changed: left out of `skippedShared` | `CascadeRules` |
@@ -216,8 +216,8 @@ re-review of the fixes. Folded on lane-m (369063b..ac1faa9 and the re-review fol
 4. A preset "lists" a key when its file holds at least one member for it; a key with an empty list counts as not
    listed (the packs `Preset` record cannot tell an absent key from an empty one). Assumed default, applied in FR-016
    and WP14.
-5. A deactivate's own cascade does not follow lineage (F9), while a select's does: FR-015 read literally. Awaiting
-   the operator.
+5. Ruled 2026-11-06 (R2): a deactivate's own cascade follows the lineage as a select's does (F9), so a cascading
+   select and a cascading deactivate of the same profile round-trip. FR-015 and ADR-0059 carry the amendment.
 6. `includeDeactivated` clears out-of-scope deny entries it walks through (F4), and the write-time pull is bounded by
    `activatedKinds` (F5). Both follow the contract text; neither is spelled out in ADR-0059. Awaiting confirmation.
 7. A document a pack upgrade made stale is a dead end for the per-artifact writes. While it stores an id the closure

@@ -1,8 +1,8 @@
 ---
 title: "ADR-0059: The switch gate, the cascade edges, the layer-override grain and the activation write rulings"
-description: "Operator rulings of 2026-11-04 and 2026-11-05: BDD scenarios and contract tests gate each core switch; cascade edges; whole-artifact layer overrides; ADR-0020 questions 4 to 7."
+description: "Operator rulings of 2026-11-04 to 2026-11-06: BDD scenarios and contract tests gate each core switch; cascade edges; whole-artifact layer overrides; ADR-0020 questions 4 to 7."
 doc_status: active
-updated: 2026-11-05T00:00:00Z
+updated: 2026-11-06T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-11-04'
 type: ADR
@@ -33,7 +33,8 @@ audience:
 2026-11-04, before the activation writes ([#291](https://github.com/spec-kitty/spec-kitty-charter/issues/291)) and
 the resolution domain ([#10](https://github.com/spec-kitty/spec-kitty-charter/issues/10),
 [#11](https://github.com/spec-kitty/spec-kitty-charter/issues/11)) are built. On 2026-11-05 the operator confirmed
-or changed this record's defaults, ruled the questions it had left open and ruled how the `enhances` pull behaves at read; the decisions below carry those rulings.
+or changed this record's defaults, ruled the questions it had left open and ruled how the `enhances` pull behaves at read; the decisions below carry those rulings. On 2026-11-06 the operator amended D2 and D4 for the activation writes; the
+[amendment](#amendment-2026-11-06) below records it, and each amended decision points there.
 
 This record answers [ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/) open question 1 and
 [ADR-0020](/adr/0020-offering-and-activations/) open questions 4 to 7. It also settles two points that
@@ -128,6 +129,8 @@ loses its gating role. Those changes are follow-ups, not part of this record.
    ancestor is put in force. A denied ancestor stops the pass-through at that ancestor and is reported (ADR-0013 D4);
    what lies behind a denied ancestor goes in `unreachedBehindDeactivated`. The `cascade` scope does not filter an
    ancestor, which is not a candidate.
+   *Amended 2026-11-06 (R2):* a cascading deactivate's own walk passes through the lineage exactly as a select's
+   walk does; see the [amendment](#amendment-2026-11-06).
 5. **No other edge is followed.** `overrides` and `replaces` are replacement edges: following them would bring the
    replaced original back into force. `rejects` points at an anti-pattern (ADR-0052). `delegates_to` is a runtime
    handoff. `vocabulary`, `applies`, `reconciles_tension`, the tension edges and the derived `implemented_by` are
@@ -188,6 +191,19 @@ the offering has not made stale; ADR-0020 D6 carries a note.
 `applyActivationPreset` replaces each key the preset lists, `activatedKinds` and `missionTypes` (or its [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) successor) included, and
 `ActivationChange.applied` reports them. Keys the preset does not list are left as they are. `force` clears the deny
 entries that match the preset's members (ADR-0020 D6). This is core's behavior.
+
+## Amendment 2026-11-06
+
+**Operator rulings of 2026-11-06** on the activation writes
+([#291](https://github.com/spec-kitty/spec-kitty-charter/issues/291)). They amend D2 and D4 as stated; the rest of
+this record stands.
+
+- **R2. A cascading deactivate follows the lineage.** The target's own walk passes through every
+  `specializes_from` ancestor exactly as a select's walk does (D2.4), so selecting a profile with a cascade and then
+  deactivating it with a cascade round-trips: what the select reached through an ancestor leaves `selected` again.
+  The shared-reference rule still applies: an artifact another active artifact needs is kept and reported in
+  `skippedShared`. This replaces the earlier reading of FR-015 ("the five relations" only), which left the
+  deactivate's walk without the lineage.
 
 ## Consequences
 
