@@ -2,7 +2,7 @@
 title: "ADR-0063: A pack declares its mutability levels in policy.yaml"
 description: "The pack mutability policy file: the mutability_policy key, the closed policy schema, the highest level along the closure, and fail-closed reads."
 doc_status: active
-updated: 2026-11-05T00:00:00Z
+updated: 2026-11-06T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-11-05'
 type: ADR
@@ -127,6 +127,13 @@ The key exists from this version. No pack is required to ship a policy file, and
 registration or activation answer changes until a pack does. A pack that ships one should also declare
 `requires_core` (ADR-0012 decision 4), so that an older CLI refuses the pack instead of loading it without its locks;
 the service does not enforce that pairing.
+
+## Amendment 2026-11-06: repair writes
+
+The refusal in "Negative" above stands for now: a closure that cannot be composed refuses the write, even one that
+would repair it. The operator ruled on 2026-11-06 that repair writes are allowed, a write that makes a broken compose
+valid being let through. That is not built; it is tracked in
+[#404](https://github.com/spec-kitty/spec-kitty-charter/issues/404).
 
 ## Open questions
 
