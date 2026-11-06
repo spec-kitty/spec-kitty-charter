@@ -15,7 +15,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * The pack mutability policy file (ADR-0062, FR-022): {@code policy.schema.json} is closed, accepts the designed shape
+ * The pack mutability policy file (ADR-0063, FR-022): {@code policy.schema.json} is closed, accepts the designed shape
  * and refuses every other spelling, role locks and pins included (reserved, ADR-0030). Each refusal departs from the
  * clean document by one line, so a schema that accepted everything, or refused everything, fails here. The descriptor's
  * {@code mutability_policy} key admits only {@code policy.yaml} in this version.
@@ -107,7 +107,7 @@ class PolicySchemaTest {
 
         assertThat(descriptor(DESCRIPTOR + "mutability_policy: locks.yaml\n"))
                 .extracting(SchemaViolation::keyword)
-                .as("only policy.yaml in this version (ADR-0062 open question 1)")
+                .as("only policy.yaml in this version (ADR-0063 open question 1)")
                 .containsExactly("const");
         assertThat(descriptor(DESCRIPTOR + "mutability_policy: policies/policy.yaml\n"))
                 .extracting(SchemaViolation::keyword)

@@ -3,7 +3,7 @@ package ai.speckitty.charter.packs.domain;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 
 /**
- * The port through which one pack's mutability policy is read, whatever the storage (ADR-0062). The policy is the file
+ * The port through which one pack's mutability policy is read, whatever the storage (ADR-0063). The policy is the file
  * the pack's descriptor names by {@code mutability_policy}; a pack that names none has the
  * {@link MutabilityPolicySource#empty() empty} policy, so every artifact of it is open.
  */

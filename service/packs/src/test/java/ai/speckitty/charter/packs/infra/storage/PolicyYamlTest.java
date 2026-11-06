@@ -9,7 +9,7 @@ import ai.speckitty.charter.packs.domain.MutabilityLevel;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import org.junit.jupiter.api.Test;
 
-/** {@code policy.yaml} read into the domain's {@link MutabilityPolicySource} (ADR-0062, FR-022). */
+/** {@code policy.yaml} read into the domain's {@link MutabilityPolicySource} (ADR-0063, FR-022). */
 class PolicyYamlTest {
 
     @Test

@@ -55,7 +55,7 @@ class PackDescriptorReaderTest {
         assertThat(read(VALID).declaredLevel()).isEqualTo(Optional.empty());
     }
 
-    /** ADR-0062 decision 1: the descriptor names its policy file; without the key the pack has none. */
+    /** ADR-0063 decision 1: the descriptor names its policy file; without the key the pack has none. */
     @Test
     void aNamedMutabilityPolicyIsReportedAsThePathAndAnAbsentOneIsEmpty() {
         assertThat(read(VALID + "mutability_policy: policy.yaml\n").paths().mutabilityPolicy())

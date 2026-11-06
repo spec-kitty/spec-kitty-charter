@@ -1,6 +1,6 @@
 ---
 work_package_id: WP03
-title: packs per-pack mutability policy file (ADR-0062)
+title: packs per-pack mutability policy file (ADR-0063)
 dependencies:
 - WP02
 requirement_refs:
@@ -36,7 +36,7 @@ create_intent:
 - service/packs/src/test/java/ai/speckitty/charter/packs/domain/PerPackPolicyTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PolicyYamlTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PolicySchemaTest.java
-- docs/adr/0062-pack-mutability-policy-file.md
+- docs/adr/0063-pack-mutability-policy-file.md
 - contracts/charter/changes/2026-11-05-pack-mutability-policy-file.md
 execution_mode: code_change
 model: ''
@@ -60,7 +60,7 @@ owned_files:
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PolicySchemaTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackDescriptorReaderTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/DomainRepositoryServiceTest.java
-- docs/adr/0062-pack-mutability-policy-file.md
+- docs/adr/0063-pack-mutability-policy-file.md
 - contracts/charter/changes/2026-11-05-pack-mutability-policy-file.md
 - service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/PackFileSet.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackFileSetTest.java
@@ -69,7 +69,7 @@ tags: []
 tracker_refs: []
 ---
 
-# WP03: packs per-pack mutability policy file (ADR-0062)
+# WP03: packs per-pack mutability policy file (ADR-0063)
 
 ## ⚡ Do This First: Load Agent Profile
 
@@ -96,7 +96,7 @@ Let a pack declare locks (FR-022, US6), so `artifact_locked` can be raised end t
 - the registration write gate `PackMutabilityPolicy` and the activation lock query (WP04) share that one function;
 - a named but missing or invalid file makes the pack unreadable (`pack_unreadable`) on the offering and on any
   closure that holds it;
-- ADR-0062 records the format.
+- ADR-0063 records the format.
 
 No pack ships a policy file yet, so no registration answer changes.
 
@@ -107,11 +107,12 @@ Implementation command:
 
 - **PR:** A. **Concern:** IC-03a. **Research:** R5, R6; squad findings B5, A6.
 - **Decisions:** `DM-01M6PCWSA65497T9A7J80K6V56` (build the reader now), `DM-01M6PD07Z86A3SPFTXJEEZGE4R` (format).
-- **ADRs cited by ADR-0062:** ADR-0012 D2 (the policy lives with the pack), D4 (levels per kind and per artifact), D5
+- **ADRs cited by ADR-0063:** ADR-0012 D2 (the policy lives with the pack), D4 (levels per kind and per artifact), D5
   (the built-in pack's own file and the `replaceable-builtins.yaml` migration are follow-ups); ADR-0030 (role locks and
   pins, reserved); ADR-0042 (pack-level files).
 - **ADR numbering:** 0059 is on `main` (PR #376 merged); 0060 (native build nightly) and 0061 (one replica per
-  deployment, PR #392) are taken. This ADR is **0062**.
+  deployment, PR #392) are taken. This ADR was written as 0062 and renumbered **0063** on 2026-11-06, after
+  main took 0062 (nightly mutation floor).
 - **Collisions:** PR #377 touches `DomainRepositoryService`, `PackCommitStore` and `PackMutabilityPolicyTest`; PR #390
   touches `FilesystemPackStore`. Rebase in that order; keep their logic and re-apply this WP's additions on top.
   **Gate (P3):** start only after #377 merges, or after rebasing over #377's head; record every touched `packs` file
@@ -154,12 +155,12 @@ Implementation command:
    (`pattern: "^[A-Za-z0-9][A-Za-z0-9._-]*\\.ya?ml$"`, no `/`). Extend the long `description` text with one
    paragraph, in the same style.
 4. In `contracts/packs/file-kinds.yaml`, add a `files` rule `match: "*/policy.yaml"`, `schema: policy`, beside the
-   pack-level files block (#195). **Decide and record in ADR-0062:** the whole-pack gate classifies only
+   pack-level files block (#195). **Decide and record in ADR-0063:** the whole-pack gate classifies only
    `policy.yaml`. Either restrict the descriptor value to `policy.yaml` for now (`const`), or keep the pattern and
    make the store read the named file regardless of its classification. Recommended: `const: policy.yaml` in this
    version, with the key kept so a later version can widen it. Flag the choice for the operator in the ADR's open
    questions. **As implemented:** `const: policy.yaml`. The descriptor names the pack-relative path, the schema
-   constrains it to `policy.yaml` for now, and ADR-0062 records the choice.
+   constrains it to `policy.yaml` for now, and ADR-0063 records the choice.
 
 **Validation:** `./gradlew :packs:test --tests '*PolicySchemaTest*' --tests '*PackSchemasTest*'
 --tests '*VocabularyEqualityTest*' --tests '*PackLevelSchemasTest*'`.
@@ -245,14 +246,14 @@ Otherwise leave it and add an overload, and do not leave the unused `pack` param
 **Validation:** the registration scenarios of `directives.feature` and `relationships.feature` stay green (no pack
 ships a file, so no answer changes).
 
-### Subtask T019: ADR-0062 and the open-packs note
+### Subtask T019: ADR-0063 and the open-packs note
 
 **Steps:**
 1. **Number check (A11):** at write time, list `docs/adr/` on `main` and the ADR files of the open PRs
    (`gh pr list --state open` then `gh pr diff <n> --name-only | grep docs/adr/`). Take the next free number. 0062 is
    expected (0059 is on `main`, 0060 is the native build ADR and #392 holds 0061); if it is taken, renumber the file and every reference to it
    (WP10's amendment notes, the T094 fragment), and say so in the review notes.
-   Write `docs/adr/0062-pack-mutability-policy-file.md` with the same frontmatter shape as
+   Write `docs/adr/0063-pack-mutability-policy-file.md` with the same frontmatter shape as
    `docs/adr/0058-*.md` (`okf_version`, `title`, `description`, `doc_status`, `updated`, `decision_status:
    Accepted`, `decision_date: '2026-11-05'`, `type: ADR`, `kind: ADR`, `related`, `audience`).
 2. Sections: Status, Context, Decision (D1 the descriptor key; D2 the file and its closed schema; D3 the highest
@@ -281,7 +282,7 @@ CHANGELOG.
      role locks and pins reserved);
    - a named file that is missing or invalid makes the pack `pack_unreadable` (no new refusal code);
    - the file is digested into the source fingerprint (T095);
-   - cite ADR-0062.
+   - cite ADR-0063.
 2. Follow `contracts/charter/changes/README.md` (exactly one `###` block). Run `./gradlew :contracts:check`.
 
 ### Subtask T095: Digest `policy.yaml` in the fingerprint (J3)
@@ -321,7 +322,7 @@ python3 scripts/docs/check_docs.py all
 - [ ] `PerPackPolicy.levelIn` answers the highest level and the setting pack; the tests cover both orders.
 - [ ] `PackMutabilityPolicy` uses `PerPackPolicy` over the pack's closure; the existing registration scenarios are
       unchanged.
-- [ ] ADR-0062 is written and the docs checks pass.
+- [ ] ADR-0063 is written and the docs checks pass.
 - [ ] The contract fragment for the pack-schema change exists; `:contracts:check` is green.
 - [ ] `policy.yaml` is digested: a policy edit moves the fingerprint, and a pack without one keeps its digest.
 - [ ] No new suppression, and no disabled test.
@@ -344,4 +345,4 @@ python3 scripts/docs/check_docs.py all
 - **Non-fakeable evidence:** the schema test's rejection list (each reserved key named), the
   `PackMutabilityPolicyTest` refusal message naming the locking pack, and `git diff --stat` showing no change to any
   registration scenario.
-- **Check ADR-0062 cites ADR-0012 D2, D4, D5 and ADR-0030**, and records the `policy.yaml` decision as open.
+- **Check ADR-0063 cites ADR-0012 D2, D4, D5 and ADR-0030**, and records the `policy.yaml` decision as open.

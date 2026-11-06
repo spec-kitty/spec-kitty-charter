@@ -8,7 +8,7 @@ import java.util.Optional;
  *
  * @param activeCharter the pack-relative {@code active_charter} path; empty when absent or null
  * @param packDrg the pack-relative {@code pack_drg} path; empty when absent or null
- * @param mutabilityPolicy the pack-relative {@code mutability_policy} path (ADR-0062), only {@code policy.yaml} in this
+ * @param mutabilityPolicy the pack-relative {@code mutability_policy} path (ADR-0063), only {@code policy.yaml} in this
  *     version; empty when absent
  */
 public record PackPaths(Optional<String> activeCharter, Optional<String> packDrg, Optional<String> mutabilityPolicy) {

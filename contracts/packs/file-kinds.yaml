@@ -150,7 +150,7 @@ files:
     schema: preset
   - match: "*/pack-manifest.yaml"
     schema: pack-manifest
-  # A pack's mutability policy (ADR-0062): policy.yaml at the pack root, the only file the descriptor's mutability_policy
+  # A pack's mutability policy (ADR-0063): policy.yaml at the pack root, the only file the descriptor's mutability_policy
   # key may name in this version.
   - match: "*/policy.yaml"
     schema: policy

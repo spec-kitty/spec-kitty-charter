@@ -8,7 +8,7 @@ type: Changelog
 kind: Changelog
 related:
   - adr/0020-offering-and-activations
-  - adr/0062-pack-mutability-policy-file
+  - adr/0063-pack-mutability-policy-file
   - conformance/divergence-register
 audience:
   - profile: core-maintainer
@@ -24,7 +24,7 @@ Three refinements to the activation register, found in review before it shipped:
 - **Ids matched as declared.** An activation names each artifact by its declared id. Another spelling of the same
   artifact, which [ADR-0020](/adr/0020-offering-and-activations/) D4 allows, is not normalized yet and is refused as an
   unknown id (DIV-208 in the [divergence register](/conformance/divergence-register/)).
-- **A pack that is not configured is `pack_not_found`** in the mutability gate ([ADR-0062](/adr/0062-pack-mutability-policy-file/)),
+- **A pack that is not configured is `pack_not_found`** in the mutability gate ([ADR-0063](/adr/0063-pack-mutability-policy-file/)),
   as on every other read. A stored activation that names a pack no longer configured is still a `500 pack_unreadable`
   on its closure read: that is the service's own state, not the request.
 

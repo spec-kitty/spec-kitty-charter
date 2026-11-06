@@ -14,7 +14,7 @@ import java.util.Objects;
  * names, in a pack with no policy file, is open).
  *
  * <p>One source is one pack's policy: the adapter reads it from the pack-root file the descriptor's
- * {@code mutability_policy} names (ADR-0062), and a pack that names none has the {@link #empty()} source. Along a
+ * {@code mutability_policy} names (ADR-0063), and a pack that names none has the {@link #empty()} source. Along a
  * composition closure the sources are combined by {@link PerPackPolicy}, where the highest level wins; the built-in
  * pack's own file and the {@code replaceable-builtins.yaml} migration remain out of scope (ADR-0012 §Decision 5).
  */

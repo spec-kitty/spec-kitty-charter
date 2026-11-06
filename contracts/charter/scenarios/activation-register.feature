@@ -627,7 +627,7 @@ Feature: The activation register and the packs an activation builds on
   # User Story 6: a pack declares locks.
 
   Scenario: A directive an org pack's policy file locks cannot be deactivated
-    US6 AS1 (FR-022, ADR-0062).
+    US6 AS1 (FR-022, ADR-0063).
     Given the org pack "house" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943V
