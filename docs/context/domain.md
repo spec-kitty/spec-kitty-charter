@@ -2,7 +2,7 @@
 title: Charter domain vocabulary
 description: The charter vocabulary the service uses, taken from the core glossary and core ADRs 2026-10-06-2 and 2026-10-11-2.
 doc_status: active
-updated: 2026-10-31T00:00:00Z
+updated: 2026-11-05T00:00:00Z
 type: Context
 kind: Glossary
 tags: [glossary]
@@ -121,7 +121,7 @@ One file per mission type, `missions/<id>/<id>.mission-type.yaml`
 | **On-demand step** | A mission step invoked by an explicit command, outside the run order, listed in `on_demand_steps` (software-dev's `charter`, `tasks-outline`, `tasks-packages` and `tasks-finalize`; the documentation and research `retrospect` steps). |
 | **Step template** | [Glossary](/glossary/charter/#step-template). The prompt fed to the agent when a step runs, the step's prompt file `steps/<id>.prompt.md`; its frontmatter holds only its detailed description. Not a template payload. |
 | **Step guidelines** | A step's working notes, `steps/<id>.guidelines.md`. Not the glossary's charter *Guideline*. |
-| **Recipe ingredients** | [Glossary](/glossary/charter/#recipe-ingredients). The mission type's own `references`; a step's `references` are its action-scoped guidance. |
+| **Recipe ingredients** | [Glossary](/glossary/charter/#recipe-ingredients). The guidance the mission type's `scope` edges name in the pack's graph; a step's guidance is the edges from its `action:<mission-type>/<step>` node ([ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/)). |
 
 The authored pack files are drawn in the
 [pack write model](/architecture/descriptor-schemas/#pack-write-model).

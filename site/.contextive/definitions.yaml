@@ -154,7 +154,7 @@ contexts:
       - name: "Living Documentation Sync (Directive)"
         definition: "Directive DIRECTIVE_037. Requires behavior-describing artifacts to evolve together: when observable behavior changes, the canonical examples, acceptance checks, narrative specs, user docs, glossary entries, code-level docs, and architecture records are updated in the same change."
       - name: "Mission step"
-        definition: "One step of a mission type's recipe. A step names the role it needs, never a profile. It is a sub-item of its mission type's file, in `steps` (the run order) or `on_demand_steps`, with a one-line description of at most 160 characters, its expected input artifacts (preconditions) and output artifacts (postconditions), its references (its action-scoped guidance) and, as Markdown companions, its prompt and guidelines. A domain type, not an artifact kind: there is no `mission_steps` kind. The graph names it as an action, `action:<mission-type>/<step>` (ADR-0044)."
+        definition: "One step of a mission type's recipe. A step names the role it needs, never a profile. It is a sub-item of its mission type's file, in `steps` (the run order) or `on_demand_steps`, with a one-line description of at most 160 characters, its expected input artifacts (preconditions) and output artifacts (postconditions), its action-scoped guidance as graph edges from its `action:<mission-type>/<step>` node (ADR-0063) and, as Markdown companions, its prompt and guidelines. A domain type, not an artifact kind: there is no `mission_steps` kind. The graph names it as an action, `action:<mission-type>/<step>` (ADR-0044)."
         meta:
           status: "canonical"
       - name: "Mission type"
@@ -210,7 +210,7 @@ contexts:
       - name: "Project layer"
         definition: "The project's own charter components, under the one flat root `.kittify/charter-packs/` (`charter_pack_id` `project`). It is part of the Charter offering, ships no presets, and is listed by `spec-kitty charter pack list` as the `project` row. `spec-kitty charter synthesize` writes here."
       - name: "Qualified reference"
-        definition: "A cross-pack reference written `<pack-name>::<urn>`; the URN part stays opaque (ADR-0053 decision 7). A reference inside the same pack stays bare. The pack is provenance on the relationship, not identity: the artifact's URN stays bare. A bare reference is the referring pack's own artifact first. A bare reference that would only resolve in another pack is refused, naming the holding pack (`pack_reference_unqualified`); one that names a pack outside the referring pack's own `depends_on` closure is refused, naming the missing pack (`pack_reference_pack_missing`); one whose pack does not hold the artifact is refused too (`pack_reference_artifact_missing`)."
+        definition: "A cross-pack reference, an edge end in a graph document, written `<pack-name>::<urn>`; the URN part stays opaque (ADR-0053 decision 7). A reference inside the same pack stays bare. The pack is provenance on the relationship, not identity: the artifact's URN stays bare. A bare reference is the referring pack's own artifact first. A bare reference that would only resolve in another pack is refused, naming the holding pack (`pack_reference_unqualified`); one that names a pack outside the referring pack's own `depends_on` closure is refused, naming the missing pack (`pack_reference_pack_missing`); one whose pack does not hold the artifact is refused too (`pack_reference_artifact_missing`)."
         aliases:
           - "pack-qualified reference"
         meta:
@@ -218,7 +218,7 @@ contexts:
       - name: "Ratchet Baseline"
         definition: "A snapshot of a quality metric (failure count, symbol count, dead-module count) recorded in `tests/architectural/ratchet-baseline-*.md` and enforced by the corresponding architectural gate. A ratchet baseline only moves in the decreasing direction during normal development; any increase fails CI. Org packs may declare additional ratchet metrics via governance policies, but cannot lower an existing shipped baseline."
       - name: "Recipe ingredients"
-        definition: "The guidance a mission type names by id: the `references` of its mission-type file (core reads them from `governance-profile.yaml`, which the service retires). They are kept by id and mint no relationship until edge authority is ruled (#189); until then the graph's `scope` edges carry their activation meaning. While a mission of that type runs, these artifacts are added to the plate; activating the mission type is the consent. The ingredients name no profiles: roles stay the only link to profiles. Replaces Mission-Type Profile."
+        definition: "The guidance a mission type names: the targets of its `scope` edges in the pack's graph documents (core reads them from `governance-profile.yaml`, which the service retires). The mission-type file has no `references` field; a relationship is authored only in the graph documents (ADR-0063). While a mission of that type runs, these artifacts are added to the plate; activating the mission type is the consent. The ingredients name no profiles: roles stay the only link to profiles. Replaces Mission-Type Profile."
         meta:
           status: "canonical"
       - name: "Reconciliation — `reconciles_tension` (CRG Relation)"
@@ -262,7 +262,7 @@ contexts:
         meta:
           status: "canonical"
       - name: "Step enhancement"
-        definition: "An add-only extension that a specialist or org pack attaches to an existing step of a mission type: references, guards on its outgoing transitions and `emit` entries. It cannot remove or reorder steps; `overrides` replaces a step whole (ADR-0050)."
+        definition: "An add-only extension that a specialist or org pack attaches to an existing step of a mission type: guards on its outgoing transitions and `emit` entries (its guidance is graph edges, ADR-0063). It cannot remove or reorder steps; `overrides` replaces a step whole (ADR-0050)."
         meta:
           status: "canonical"
       - name: "Step guidelines"
@@ -350,7 +350,7 @@ contexts:
         meta:
           status: "canonical"
       - name: "Guide (toolguide)"
-        definition: "A toolguide's guide: the Markdown companion `<id>.guide.md` beside its toolguide, named by `guide_path`. It holds fixed blocks under canonical H2 headings (`Overview`, required, then `When to use`, `Setup`, `Usage`, `Cautions`, `Known limitations`, `References`) and freeform sections between `Usage` and `Cautions`. Its H1 is written from the toolguide's title, which, with the summary, commands and references, lives only in the toolguide. Over HTTP it travels as content or a fetched URI, never as a path (ADR-0043)."
+        definition: "A toolguide's guide: the Markdown companion `<id>.guide.md` beside its toolguide, named by `guide_path`. It holds fixed blocks under canonical H2 headings (`Overview`, required, then `When to use`, `Setup`, `Usage`, `Cautions`, `Known limitations`, `References`) and freeform sections between `Usage` and `Cautions`. Its H1 is written from the toolguide's title, which, with the summary and commands, lives only in the toolguide. Over HTTP it travels as content or a fetched URI, never as a path (ADR-0043)."
         meta:
           status: "canonical"
       - name: "Sanitized shape"

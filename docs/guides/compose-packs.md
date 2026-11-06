@@ -15,6 +15,8 @@ related:
   - development/http-status-codes
   - changelog/2026-11-03-pack-composition-depends-on-and-resolver
   - changelog/2026-11-05-open-packs-real-compose
+  - adr/0063-graph-documents-are-the-only-source-of-relationships
+  - changelog/2026-11-05-edges-only-in-graph-documents
 audience:
   - profile: pack-author
     guidance_text: Follow this when your pack builds on another pack, references its artifacts, or meets a composition refusal.
@@ -49,8 +51,8 @@ An **org or project pack that references a built-in artifact bare is now refused
 
 1. Add `depends_on` on built-in, with a range:
    `{pack_id: 01ARWG13C000000000000000FG, range: ">=1.0"}`. Declare `pack_level` too.
-2. Qualify each such reference in the form its place takes: `built-in::directive:DIRECTIVE_001` on a graph edge, and
-   `built-in::DIRECTIVE_001` in a typed reference's `id`. See [Reference another pack's artifact](#reference-another-packs-artifact).
+2. Qualify each such edge end: `built-in::directive:DIRECTIVE_001`. See
+   [Reference another pack's artifact](#reference-another-packs-artifact).
 
 The packs in spec-kitty-open-packs are migrated, and `OpenPacksComposeTest` composes the real ones at the pin.
 
@@ -83,19 +85,17 @@ on org or built-in packs; a built-in pack on built-in packs only.
 
 ## Reference another pack's artifact
 
-The form depends on where the reference is written, and the schemas refuse the other one. The `<pack-name>` is the
-`name` in the other pack's `pack.yaml`, whatever its directory is called.
-
-| Where | Form | Example |
-|---|---|---|
-| Either end of a graph edge (`source` or `target`) | `<pack-name>::<kind>:<id>` | `built-in::directive:DIRECTIVE_001` |
-| The `id` of a typed reference, whose `type` already says the kind | `<pack-name>::<id>` | `built-in::DIRECTIVE_001` |
-| An entry of a directive's `procedures` or a paradigm's `directive_refs`, whose field already says the kind | `<pack-name>::<id>` | `built-in::mission-wrap-up-sequence` |
+A reference across packs is an end of a graph edge. Edges are written only in a pack's graph documents: the root
+`*.graph.yaml` shards in built-in, `drg/fragment.yaml` in an org or project pack. No artifact field carries a reference
+([ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/)). Either end of an edge (`source` or
+`target`) is written `<pack-name>::<kind>:<id>`. The `<pack-name>` is the `name` in the other pack's `pack.yaml`,
+whatever its directory is called.
 
 ```yaml
-references:
-  - type: directive
-    id: built-in::DIRECTIVE_001
+edges:
+  - source: directive:ORG_001
+    target: built-in::directive:DIRECTIVE_001
+    relation: requires
 ```
 
 - A bare reference resolves in this order. If your own pack holds the artifact, it is yours, even when another pack
@@ -103,22 +103,23 @@ references:
   (`pack_reference_unqualified`). Else no pack holds it and nothing is refused, as for a kind the service does not serve.
 - The qualified pack must be in **your pack's own** `depends_on` closure, not merely in the compose, and it must
   hold that artifact.
-- The pack is provenance, not identity. The artifact's own URN stays bare, and the relationship it mints records
-  the qualifier you wrote.
+- The pack is provenance, not identity. The artifact's own URN stays bare, and the edge records the qualifier you
+  wrote.
 - A bare reference to the artifact's own id, or one qualified with the pack that writes it, is a self-loop, and the
   pack is refused as unreadable (`pack_unreadable`). A reference to the same id qualified with another pack, such as a
   project pack's `SHARE` writing `base-pack::SHARE`, is legal: it names a different artifact.
 - When you register a relationship, its `to` may be qualified and its `from` may not: `from` is an artifact of the
   pack you register into. The registration resolves the whole compose, so it is refused with the composition code
   (500) when another configured pack is broken.
-- Following a qualified reference across packs is part of a served read, the walk.
+- Resolving a qualified edge end across packs is part of a served read, such as an artifact's references.
 
 ## See how references resolve
 
-`GET /packs/{packId}/artifacts/{kind}/{artifactId}/references` (`listArtifactReferences`) lists the references one
-artifact writes, in the order it writes them and without repeats. Each item gives:
+`GET /packs/{packId}/artifacts/{kind}/{artifactId}/references` (`listArtifactReferences`) lists the edges in this
+pack's graph documents whose source is the artifact, each with its relation, then the artifact's derived relations
+(today only a guard's `implemented_by`). Each item gives:
 
-- the reference as written, bare or qualified, and the relation it is written under when the artifact mints one;
+- the reference as written, bare or qualified, and its relation;
 - the `holdingPack` that holds what it names (`packId`, `descriptorPackId`, `name`), and the bare `urn` it resolves to;
 - an `artifact` link to the pack-scoped read of the target.
 
@@ -183,7 +184,7 @@ pack-scoped reads still answer.
 | `pack_duplicate_id` | Two packs declare the same descriptor `pack_id`. | Give each pack its own ULID; a copied `pack.yaml` is the usual cause. |
 | `pack_name_conflict` | Two packs declare the same `name`. | Rename one. Names are the qualifier of references and are unique without exception. |
 | `pack_sibling_conflict` | Two packs at one level both change, or both define, the same artifact id, and no `overrides` edge settles it. | Remove one change, or declare `overrides` naming a contesting member (see the caveats above). |
-| `pack_reference_unqualified` | A bare reference, on an edge end or in a typed reference, `procedures` or `directive_refs`, names an artifact only another pack holds. | Write it `<pack-name>::<urn>` and depend on that pack. |
+| `pack_reference_unqualified` | A bare edge end names an artifact only another pack holds. | Write it `<pack-name>::<urn>` and depend on that pack. |
 | `pack_reference_pack_missing` | A qualified reference names a pack outside the referring pack's own `depends_on` closure. | Add a `depends_on` on that pack, or correct the name. |
 | `pack_reference_artifact_missing` | A qualified reference names a pack in the closure, but that pack holds no such artifact. | Correct the URN, or reference the pack that holds it. |
 

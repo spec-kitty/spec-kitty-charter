@@ -2,7 +2,7 @@
 title: Conceptual model
 description: What packs, the charter, its two levers, artifacts, mission types, profiles, values and the active charter mean, before any field, file or endpoint.
 doc_status: active
-updated: 2026-10-26T00:00:00Z
+updated: 2026-11-05T00:00:00Z
 type: Context
 kind: Explanation
 related:
@@ -13,6 +13,7 @@ related:
   - adr/0032-steps-name-roles-and-profile-selection-order
   - adr/0033-local-active-charter-is-source-of-truth
   - adr/0034-local-and-hosted-deployment-options
+  - adr/0063-graph-documents-are-the-only-source-of-relationships
   - architecture/logical-model
   - glossary
 audience:
@@ -198,6 +199,13 @@ one situation, with entry and exit conditions.
 
 ## Relationships
 
+A relationship between two artifacts is authored in one place: the pack's graph. An artifact does
+not declare its own relationships, and a relationship is written on its own, apart from the
+artifacts it joins. Some artifacts name others for another purpose, such as the doctrine a profile
+is handed; that is data, not a relationship. Only a few relations are derived from an artifact's
+data instead of authored, such as a guard's implementation
+(ADR [0061](/adr/0063-graph-documents-are-the-only-source-of-relationships/)).
+
 - **[Supports](/glossary/charter/#supports-supports-crg-relation)**: a resource helps check a rule
   (an asset supports a directive). It is distinct from *suggests*, which is a soft recommendation.
 - **[Tension](/glossary/charter/#tension-tension-crg-relation)**: two rules pull against each
@@ -226,7 +234,7 @@ is on the plate, Missions of that type can be run.
   also its own concept, with its own domain model, separate from the charter kinds and from
   profiles. It refers to other artifacts by role or by id, never by embedding them.
 - **[Recipe ingredients](/glossary/charter/#recipe-ingredients).** A mission type names the guidance
-  it calls for, by id. That guidance is added to the plate while a mission of that type runs.
+  it calls for through its relationships in the pack's graph. That guidance is added to the plate while a mission of that type runs.
   **Activating the mission type is the consent** to those additions. A mission type does not name
   profiles.
 
