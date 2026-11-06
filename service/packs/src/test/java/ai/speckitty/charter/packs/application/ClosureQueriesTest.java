@@ -289,6 +289,14 @@ class ClosureQueriesTest {
     }
 
     @Test
+    void absentRootsOfAServiceWithNoConfiguredPackGiveAnEmptyClosure() {
+        ClosureView view = queries().allConfigured();
+
+        assertThat(view.closurePackIds()).isEmpty();
+        assertThat(view.packs()).isEmpty();
+    }
+
+    @Test
     void aChildPackWhoseIdSortsBeforeItsParentMergesAfterItSoItsPresetWinsAndItsMustHaveStaysOnTheFloor() {
         Preset inherited = new Preset(
                 "team",
