@@ -8,8 +8,13 @@ put:
   description: >-
     Adds the artifact to deactivated and removes it from selected, as charter deactivate does. With cascade, removes
     the reached artifacts from selected, records a deny entry only for the named artifact, and keeps an artifact
-    another active one still reaches, or an active enhancer references (skippedShared). An artifact a pack requires
-    or locks is 409, naming every requiring pack, and nothing is stored. Requires If-Match (ADR-0020 D6). A
+    another active one still reaches, or an active enhancer references (skippedShared). A cascade never removes an
+    artifact a pack requires or locks: it is kept, with what it reaches, and a selected one the cascade reached is
+    reported in skippedShared. A named artifact a pack requires or locks is 409, naming every requiring pack, and
+    nothing is stored; only the deny entry the write adds is judged against that floor, so a stored one a pack
+    upgrade put on it is tolerated (ADR-0059 D4). Requires If-Match (ADR-0020 D6): 428 without it, 404
+    activation_not_found, 412 when stale and 400 when it is not one quoted revision come before any 422, a fault of
+    the body included. A
     cascading deactivate removes the reached artifacts from selected only where the kind holds a list; an absent
     kind selects none (absent means none), so there is nothing to remove, and the deny entry on the named artifact
     excludes it. A write that changes nothing (the id is already denied and not selected) answers 200 with the same
@@ -43,6 +48,8 @@ put:
           examples:
             selected:
               $ref: ../examples/ActivationChange.selected.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
     '401':
       $ref: ../responses/Unauthorized.yaml
     '403':
@@ -70,7 +77,7 @@ delete:
     Removes the artifact from deactivated and changes nothing else; the key is left out when its list empties. The
     id is in cleared and in applied (removed from deactivated). Requires If-Match (ADR-0020 D6). A write that
     changes nothing (the id is not in the list) answers 200 with the same revision and an empty applied and
-    cleared. A path id the activation's closure does not hold is 404 artifact_not_found; a kind outside the path's
+    cleared. A re-activate adds no deny entry, so it is never 409. A path id the activation's closure does not hold is 404 artifact_not_found; a kind outside the path's
     enum, mission_type included, is 422 activation_invalid with a violation at the path.
   tags:
   - Activation
@@ -90,6 +97,8 @@ delete:
           examples:
             selected:
               $ref: ../examples/ActivationChange.selected.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
     '401':
       $ref: ../responses/Unauthorized.yaml
     '403':

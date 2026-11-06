@@ -379,6 +379,33 @@ Feature: Applying a preset to an activation
     Then the response status is 404
     And the problem code is "preset_not_found"
 
+  Scenario: A preset whose member the closure does not hold is 422 at the whole request
+    FR-017: the preset is expanded into the document, and the document is judged as any write's is. A member no
+    pack of the closure holds (a preset gone stale after an upgrade) is an unknown_artifact; a preset write has no
+    body list for a pointer to index, so the violation points at the whole request. Nothing is stored.
+    Given the org pack "main" with the file "presets/stale.yaml":
+      """
+      schema_version: '1.0'
+      id: stale
+      description: A member the pack no longer holds.
+      activated_directives:
+        - id: GONE
+      """
+    And the activation "a-1" holds:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      """
+    When I PUT "/activations/a-1/presets/stale" with the stored ETag and the body:
+      """
+      {}
+      """
+    Then the response status is 422
+    And the problem code is "activation_invalid"
+    And the field at "/violations/0/pointer" is ""
+    And the field at "/violations/0/code" is "unknown_artifact"
+    When I GET "/activations/a-1"
+    Then the response header "ETag" is the stored ETag
+
   # The preconditions are judged before the content (FR-010).
 
   Scenario: Applying a preset without If-Match is 428

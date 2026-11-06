@@ -11,7 +11,9 @@
   never an entry. The preset is resolved in the activation's own closure (the last of two packs holding one preset id
   in merge order wins): a preset no pack of it holds, one held only outside it included, is `404 preset_not_found`,
   which becomes `raised: true` in `x-refusal`. The operation's `404` is the new `ActivationPresetNotFound` response,
-  which names only `activation_not_found` and `preset_not_found`. The write requires `If-Match` (`428`, `412`) and
+  which names only `activation_not_found` and `preset_not_found`. A preset member the closure does not hold (a preset a pack upgrade left
+  stale) is `422 activation_invalid` with an `unknown_artifact` violation at the whole request (pointer `""`), since
+  the write has no body list to point into; nothing is stored. The write requires `If-Match` (`428`, `412`) and
   answers an `ActivationChange` with the new revision as its `ETag`; a write that changes nothing answers `200` with
   the same revision.
 - This closes contract B: only the four effective reads (`listEffectiveArtifacts`, `getActivationSkippedReport`,
