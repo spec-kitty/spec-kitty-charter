@@ -49,6 +49,7 @@ owned_files:
 - service/activations/src/test/java/ai/speckitty/charter/activations/application/ActivationSelectionServiceTest.java
 - service/activations/src/test/java/ai/speckitty/charter/activations/application/ActivationExclusionServiceTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/application/ReachabilityTest.java
+review_status: acknowledged
 role: implementer
 tags: []
 tracker_refs: []
