@@ -92,7 +92,9 @@ loses its gating role. Those changes are follow-ups, not part of this record.
 1. **Five relations, no depth limit.** The activation cascade walks `requires`, `suggests`, `refines`, `scope`
    and `instantiates` forward, as core does. It stops at a denied artifact and reports it (ADR-0013 D4). Each
    artifact is visited once (the ADR-0025 visited-URN guard), so a cycle through `enhances` ends.
-2. **`enhances`, both ways, at read.** The edge runs from the enhancing artifact to its target, and the pull follows it in
+2. **`enhances`, both ways, at read.** *Superseded 2026-11-06 (R4):* `enhances` is a cascade relation like the
+   others, walked at write time in its declared direction, and there is no read-time pull; see the
+   [amendment](#amendment-2026-11-06). The rest of this point is kept as the record of the 2026-11-05 ruling. The edge runs from the enhancing artifact to its target, and the pull follows it in
    both directions. When a target comes into force, every artifact that enhances it joins and is walked in turn. When
    an enhancer comes into force, its target joins and is walked in turn. Any route into the effective set triggers the
    pull: selection, the cascade, a kind default, and the required or locked floor.
@@ -198,6 +200,18 @@ entries that match the preset's members (ADR-0020 D6). This is core's behavior.
 ([#291](https://github.com/spec-kitty/spec-kitty-charter/issues/291)). They amend D2 and D4 as stated; the rest of
 this record stands.
 
+- **R4. `enhances` is a relation like the others; no special case.** It supersedes D2.2.
+  - *At write.* The cascade walks `enhances` in its declared direction, from the enhancer to its target (`E enhances
+    T` runs from E to T), exactly as it walks `requires` and `scope`. The relation set is core's five and `enhances`.
+    Selecting E with a cascade selects T; selecting T selects nothing more; deactivating E with a cascade unselects T
+    unless another active artifact needs it, which the shared walk finds over `enhances` like any other relation.
+    The write-time special cases are gone: `includeDeactivated` no longer clears what an `enhances` pull reaches, and
+    a cascading deactivate no longer counts a one-hop enhancer as a reference of its own.
+  - *At read* (the effective reads, [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103), not built
+    yet). An enhancement is returned only when it is itself active. `E enhances T` also reads "T is enhanced by E",
+    so resolving T returns E when E is active. There is no automatic read-time pull: an enhancer does not come into
+    force because its target does, nor a target because its enhancer does. The `EffectiveArtifactReason` value for
+    the pull that the D2.2 follow-up asked for is not needed.
 - **R2. A cascading deactivate follows the lineage.** The target's own walk passes through every
   `specializes_from` ancestor exactly as a select's walk does (D2.4), so selecting a profile with a cascade and then
   deactivating it with a cascade round-trips: what the select reached through an ancestor leaves `selected` again.
@@ -217,9 +231,9 @@ this record stands.
 
 - Core switches without proof that the service agrees with its Python answers. Every deliberate difference must
   be in the divergence register before core switches, or core finds it in use.
-- A selected enhancer brings its target, the target's other enhancers and whatever those cascade to, within
-  `activatedKinds`, so a small add-on can put a large artifact and its neighbors in force. A pulled artifact is not
-  in `selected`, so unselecting cannot remove it: a deny entry is the way out.
+- *Superseded 2026-11-06 (R4):* a selected enhancer brought its target, the target's other enhancers and whatever
+  those cascade to, within `activatedKinds`. With R4 a cascading select of an enhancer selects its target and what
+  that cascades to, into `selected`, where unselecting or a cascading deactivate removes it again.
 - D3, D2.2 and D2.4 depart from core. A project with a partial override, with an artifact that enhances another, in either direction,
   or with a profile whose parent `requires` or `scope`s more, sees different content after the switch. Core's
   cascade excludes lineage, so it does not pass through `specializes_from`.
@@ -247,7 +261,8 @@ this record stands.
 - Add the skipped-report bucket or buckets for D4 and a `DiagnosticCode` value for D3's layer-override report, as
   0.x contract changes under [ADR-0022](/adr/0022-contract-versions-start-at-0-x/) in the #291 contract
   change.
-- Add the `EffectiveArtifactReason` value for D2.2 and widen both the description and the `x-derived` rule of
+- Add the `EffectiveArtifactReason` value for D2.2 (no longer needed: R4 of the 2026-11-06 amendment removes the
+  read-time pull) and widen both the description and the `x-derived` rule of
   `SkippedDeactivated.requiredBy`, as 0.x contract changes in the #291 contract change. The same change widens
   `skippedByScope`'s rule to mean outside `activatedKinds` at read and separates it from `kind_not_activated`.
 - State in the #291 contract change whether `ActivationChange.skipped` includes what the read-time pull skips.

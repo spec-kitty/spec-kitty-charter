@@ -196,7 +196,7 @@ re-review of the fixes. Folded on lane-m (369063b..ac1faa9 and the re-review fol
 | F2 | A floor artifact became a cascading-deactivate candidate | changed: the floor is never a candidate | `CascadeRules` |
 | F3 | A template or asset predecessor answered `500`; `referencedBy` could name an ancestor or an inactive intermediate | changed: back-walk to the nearest nameable or active artifact, code-point tie-break | `Predecessors` |
 | F4 | `includeDeactivated` left out-of-scope deny entries it walked through | changed: it clears what the walk went through, whatever the scope; an out-of-scope artifact is cleared, not selected. **Fixers' reading of the contract text, not stated in FR-013 or ADR-0059: operator to confirm** | contract `SelectionRequest`; DIV-207 |
-| F5 | The write-time `enhances` pull ignored `activatedKinds` | changed: bounded by `activatedKinds` (absent means none). Spec US3 AS3 does not state that precondition | `CascadeRules.pullKinds`; DIV-207 |
+| F5 | The write-time `enhances` pull ignored `activatedKinds` | changed: bounded by `activatedKinds` (absent means none). Superseded by operator ruling R4 (2026-11-06): there is no write-time pull; `enhances` is a cascade relation | `CascadeRules.CASCADE_RELATIONS`; DIV-207 |
 | F6 | A bad body answered `422` before `428`/`404`/`412` | changed: body faults deferred to the `422` step on the five writes; `415` still comes first | `DeferredBody` |
 | F7 | `400`, `409` and the stale-preset `422` undeclared | changed: `400` on five operations, `409` on deactivate only, the `422` documented | contract paths |
 | F8 | A mission type is never in a cascade's scope | kept: javadoc and docs corrected, pinned by a test | `CascadeRules` |

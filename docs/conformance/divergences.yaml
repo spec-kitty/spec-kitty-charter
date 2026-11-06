@@ -686,28 +686,29 @@
   surface: The enhances relation in an activation write
   core: Does not follow enhances in its cascade.
   service: >-
-    A write never adds an enhancer to selected: the enhances pull runs at read time. Two write-time
-    exceptions read enhances without writing to selected. A select with includeDeactivated clears
-    every deny entry the enhances pull reaches from what the walk selects, in both directions and
-    transitively over enhances, within the kinds the document's activatedKinds names (absent means
-    none); the pull does not continue through an artifact of another kind. A cascading deactivate
-    keeps a candidate an active enhancer references and reports it in skippedShared, naming the
-    enhancer in referencedBy.
+    The write cascade walks enhances as one of its relations, in its declared direction, from the
+    enhancer to what it enhances, exactly as it walks requires and scope. A cascading select of an
+    enhancer selects its target; a select of the target selects no enhancer; a cascading deactivate
+    of an enhancer unselects its target unless another active artifact still needs it, which is
+    then kept and reported in skippedShared. enhances has no rule of its own: there is no enhances
+    pull, so includeDeactivated clears only the deny entries the walk goes through.
   rationale: >-
-    selected stays what the client chose, and an enhancer a pack upgrade adds joins on the next read.
-    Clearing the deny entries the pull would reach makes includeDeactivated take back what the read
-    would otherwise skip; counting an enhancer as a reference keeps a deactivate from removing what an
-    active enhancer still adds to.
-  ruling: ADR-0059 D2.2 (as revised 2026-11-05)
+    enhances is a relation like the others, so one walk rule covers every relation and a cascading
+    select and a cascading deactivate of the same artifact round-trip. An enhancer and the artifact
+    it enhances stay in force together because the cascade selects both, not because a read pulls
+    one in.
+  ruling: ADR-0059 D2 as amended on 2026-11-06 (R4), superseding D2.2
   status: open
   since: 2026-11-06
   note: >-
-    The read-time enhances pull itself belongs to the effective reads, which still answer 501; this
-    entry covers only what the writes do with enhances.
+    The read half (the effective reads, which still answer 501) is ruled too: an enhancement is
+    returned only when it is itself active, and E enhances T also reads T is enhanced by E, so
+    resolving T returns an active E. There is no automatic read-time pull. This entry covers what
+    the writes do; the reads get their own entry when they are built, if they differ from core.
   evidence:
-    - "charter: service/activations/src/main/java/ai/speckitty/charter/activations/domain/CascadeRules.java"
-    - "charter: contracts/charter/scenarios/activation-selections.feature (includeDeactivated clears the walk's deny entries and the enhancer's, and selects no enhancer; includeDeactivated clears what the enhances pull reaches only in the kinds the document activates; A cascading deactivate keeps what a selected enhancer references)"
-    - "corpus case: cascade-enhances-clearing"
+    - "charter: service/activations/src/main/java/ai/speckitty/charter/activations/domain/CascadeRules.java (CASCADE_RELATIONS)"
+    - "charter: contracts/charter/scenarios/activation-selections.feature (A cascading select of an enhancer selects the artifact it enhances; A cascading select of an enhanced artifact selects no enhancer; A cascading deactivate of an enhancer unselects the artifact it enhances; includeDeactivated clears the deny entries the walk passes through, and no enhancer's)"
+    - "corpus case: cascade-enhances-relation"
 
 - id: DIV-208
   surface: The spelling of an artifact id in an activation document or path

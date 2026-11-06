@@ -41,7 +41,7 @@ knows nothing of projects.
 > per-artifact writes (select, unselect, deactivate, re-activate, apply a preset) with their cascade are built
 > ([#291](https://github.com/spec-kitty/spec-kitty-charter/issues/291),
 > [#360](https://github.com/spec-kitty/spec-kitty-charter/issues/360)). The four effective reads are declared and
-> answer `501`; they come with the resolution mission, and so do the read-time `enhances` pull and the layer merge.
+> answer `501`; they come with the resolution mission, and so does the layer merge.
 > The rest of this page is the design decided by ADR-0020 and
 > [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/). [What the labels mean](/#status).
 
@@ -270,8 +270,7 @@ document points at the whole request (`""`), and keeps the codes and the details
 
 Each write answers an `ActivationChange` with the new revision as its `ETag`. `applied` lists every id the write
 added to or removed from `selected`, `deactivated` or `missionTypes`; `cleared` lists the deny entries it removed;
-`skipped` is the write-time report of the cascade, never what the read-time `enhances` pull leaves out (the effective
-reads report that). A write's path has no `GET`, so the answer carries no `self`: its `up` link names the
+`skipped` is the write-time report of the cascade, never what a read leaves out (the effective reads report that). A write's path has no `GET`, so the answer carries no `self`: its `up` link names the
 activation.
 
 ### Presets
@@ -303,7 +302,11 @@ never cascades: its `cascade` is checked for its shape and then ignored, and so 
 
 **What a walk follows.** The five relations `requires`, `suggests`, `refines`, `scope` and `instantiates`, forward,
 with no depth limit, and `<pack>::` targets resolved in the closure. Each node is visited once, so a cycle ends and
-each artifact on it is selected once. No other relation is followed (D2.5); `enhances` is not one of the five.
+each artifact on it is selected once. **`enhances`** is walked the same way, in its declared direction, from the
+enhancer to what it enhances ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/#amendment-2026-11-06)
+R4, [DIV-207](/conformance/divergence-register/)): selecting an enhancer with a cascade selects its target, and
+selecting a target selects no enhancer. It has no rule of its own: no pull, at write or at read. No other relation is
+followed (D2.5).
 
 **Lineage** (D2.4, [DIV-206](/conformance/divergence-register/)). For a profile the walk reaches, the walk passes up
 the whole `specializes_from` chain and follows only `requires` and `scope` from each ancestor; their targets join the
@@ -331,32 +334,26 @@ a template, an asset, a lineage ancestor (to the descendant it was passed from) 
 `referencedBy` names the nearest artifact active after the write. Among the nearest, the first in code-point order
 is named, so the choice does not depend on the order the walk recorded its ways in.
 
-**`includeDeactivated`** (D2.2, [DIV-207](/conformance/divergence-register/)). The walk stops at no deny entry. The
-select clears the deny entries of everything the walk went through, whatever the `cascade` scope: the target, what
-it reached and the ancestors it passed. It also clears the deny entries of what the `enhances` pull reaches from what
-it selects: both directions of the edge, transitively over `enhances` and nothing else. The pull is bounded by the
-document's `activatedKinds`, as the read-time pull is: it reaches only those kinds and does not continue through
-another kind. An absent `activatedKinds` means none, as `[]` does, so the pull reaches nothing. A cleared artifact
-outside the scope is not selected and stays in `skippedByScope`; a cleared ancestor and a pulled artifact are never
-selected either. A pulled artifact that was denied is in `cleared` and in `applied` (removed from `deactivated`); a
-pulled artifact that was not denied is in neither, as nothing changes for it.
+**`includeDeactivated`** (ADR-0013 D4). The walk stops at no deny entry. The select clears the deny entries of
+everything the walk went through, whatever the `cascade` scope: the target, what it reached and the ancestors it
+passed. A cleared artifact outside the scope is not selected and stays in `skippedByScope`; a cleared ancestor is
+never selected either. Nothing the walk does not go through is cleared.
 
 **Deactivate.** The named artifact gets the only deny entry, and leaves `selected`. A required or locked artifact is
 refused first, `409 artifact_required` or `artifact_locked` naming the packs, before any walk, and nothing changes.
 With a cascade:
 
-1. The target's own walk follows the five relations and the lineage, as the select walk does, and stops nowhere
+1. The target's own walk follows the cascade's relations and the lineage, as the select walk does, and stops nowhere
    (ADR-0059 amendment of 2026-11-06), so a cascading deactivate undoes a cascading select. The candidates are what
    it reached that is selected and of a kind in scope, less the required or locked floor: a floor artifact is never
    a candidate.
 2. A shared walk starts from the other active artifacts (`selected` and the required or locked floor, less the target
-   and the candidates), crosses the five relations with the lineage, and stops at the target and the deny entries.
-   A candidate it reaches is shared. So is a candidate an active enhancer references, one hop over `enhances`. A
-   shared candidate is active after the write, so the shared walk runs again with it among its starts, until it
-   changes nothing (a fixed point on the same closure view).
+   and the candidates), crosses the cascade's relations with the lineage, and stops at the target and the deny
+   entries. A candidate it reaches is shared; an active enhancer's target is reached over `enhances` like any other
+   edge. The walk goes on through a shared candidate, so what that candidate reaches is shared too, in one walk.
 3. Each shared candidate stays selected and is reported in `skippedShared`. Its `referencedBy` is the nearest
-   artifact active after the write back along the shared walk's ways, or else the active enhancer that references
-   it. Every other candidate leaves `selected`; none gets a deny entry.
+   artifact active after the write back along the shared walk's ways. Every other candidate leaves `selected`; none
+   gets a deny entry.
 4. A selected floor artifact the target's walk reached stays a start of the shared walk, so it and what only it
    reaches stay selected. It is reported in `skippedShared` only when another active artifact reaches it, with
    `referencedBy` the nearest such artifact. One that no other active artifact reaches is not reported: it was never
@@ -366,12 +363,14 @@ With a cascade:
 A deactivate's `skippedByScope` lists only the out-of-scope artifacts the target reached that are selected; one that
 is not selected is left alone and not reported.
 
-**Not built here.** The `enhances` pull at read time, which puts an enhancer in force with its target and the reverse,
-is the effective reads', and they answer `501`. A write never writes an enhancer into `selected`; the two places it
-reads `enhances` are the `includeDeactivated` clearing and the deactivate's shared check.
+**`enhances` at read** (ADR-0059 amendment R4, recorded for the effective reads of
+[#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103), which answer `501`). An enhancement is returned
+only when it is itself active. `E enhances T` also reads "T is enhanced by E", so resolving T returns E when E is
+active. There is no automatic read-time pull: an enhancer does not come into force because its target does, nor a
+target because its enhancer does. This supersedes the read-time pull ADR-0059 D2.2 ruled on 2026-11-05.
 
 **Who owns what.** `packs` owns the traversal: `Reachability` runs every walk on `GraphWalk` over the closure's edges
-(`reach`, `enhancesPull`, `enhancersOf`), and `ClosureView` exposes them. `activations` owns the policy:
+(`reach`), and `ClosureView` exposes it. `activations` owns the policy:
 `CascadeRules` plans each walk (`ReachPlan`) and reads its answer (`Reach`) as pure functions; it walks nothing
 itself. One `ClosureQueries.snapshot` per request gives the verified view every walk and the rules check read.
 
@@ -390,7 +389,7 @@ sequenceDiagram
   P->>Q: snapshot(packs), once
   S->>R: plan the walk
   S->>P: reach(plan)
-  P->>V: reach, enhancesPull, enhancersOf
+  P->>V: reach
   S->>R: apply the answer: the change
   S->>DB: compare-and-set the new document
   S-->>C: ActivationChange, new revision

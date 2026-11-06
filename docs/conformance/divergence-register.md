@@ -444,9 +444,10 @@ switches; they do not gate the switch. No change to core's code is part of this 
 DIV-206 and DIV-207 were added on 2026-11-06 by the same mission's second pull request, which builds the five
 per-artifact writes (`selectActivationArtifact`, `unselectActivationArtifact`, `deactivateActivationArtifact`,
 `reactivateActivationArtifact` and `applyActivationPreset`). They record where the write cascade departs from core's
-under [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) D2.4 and D2.2 as revised on
-2026-11-05. They are `open`: `contracts/charter/scenarios/activation-selections.feature` pins them. The read-time
-`enhances` pull, which D2.2 also rules, belongs to the effective reads and has no entry yet.
+under [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) D2.4 as revised on 2026-11-05 and
+D2 as amended on 2026-11-06. They are `open`: `contracts/charter/scenarios/activation-selections.feature` pins them.
+The 2026-11-06 amendment replaced the `enhances` pull of D2.2 with `enhances` as one more cascade relation, and ruled
+that a read returns an enhancement only when it is itself active; the reads get their own entry when they are built.
 
 | Id | The charter answers | Core answers | Ruling | Corpus case |
 |---|---|---|---|---|
@@ -456,7 +457,7 @@ under [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) D2
 | DIV-204 | A create or replace whose deny list names a required or locked artifact, or a deactivate that adds such an entry, is refused `409` (`artifact_required`, `artifact_locked`), naming the pack, and nothing is stored; a stored entry is tolerated by the other per-artifact writes | Accepts the entry and ignores it, or warns | ADR-0020 D9; ADR-0059 D4 | `deny-required-refused-at-write` |
 | DIV-205 | The required floor is the must-have items of every governing preset in the activation's closure | The org packs' `required_*` lists | Decision `DM-01M6PCWSA65497T9A7J80K6V56`: an assumed default, flagged to the operator as open review item 1 | `floor-closure-scoped` |
 | DIV-206 | A cascade passes through every `specializes_from` ancestor of a profile it reaches, up the whole chain, following only `requires` and `scope` from each ancestor. An ancestor passed through is neither put in force nor reported. A denied ancestor stops the pass-through and is reported in `skippedDeactivated`; what lies only behind it is in `unreachedBehindDeactivated`. With `includeDeactivated` a denied ancestor is passed through and its deny entry cleared, never selected. `requiredBy` never names an ancestor passed through; it leads back to the descendant. A cascading deactivate's own walk passes through the lineage as a select's does, so the two round-trip | Does not follow `specializes_from` in its cascade | ADR-0059 D2.4 and its 2026-11-06 amendment | `cascade-lineage-pass-through` |
-| DIV-207 | A write never adds an enhancer to `selected`. With `includeDeactivated`, a select clears every deny entry the `enhances` pull reaches from what the walk selects, in both directions and transitively over `enhances`, within the kinds `activatedKinds` names (absent means none); the pull does not continue through another kind. A cascading deactivate keeps a candidate an active enhancer references and reports it in `skippedShared` | Does not follow `enhances` in its cascade | ADR-0059 D2.2 | `cascade-enhances-clearing` |
+| DIV-207 | The write cascade walks `enhances` as one of its relations, from the enhancer to what it enhances: a cascading select of an enhancer selects its target, a select of the target selects no enhancer, and a cascading deactivate of an enhancer unselects its target unless another active artifact needs it (`skippedShared`). There is no `enhances` pull, at write or at read | Does not follow `enhances` in its cascade | ADR-0059 D2 as amended on 2026-11-06 (R4) | `cascade-enhances-relation` |
 | DIV-208 | An artifact id is matched exactly as declared; another spelling of it is an unknown id (`422 activation_invalid` in a document, `404 artifact_not_found` in a per-artifact write's path). The normalization ADR-0020 D4 rules is not built | Accepts another known spelling, and the allow list can mix spellings | ADR-0020 D4 | `id-matched-as-declared` |
 
 Core's seam, to switch: read an absent list as none and write the default it means explicitly (DIV-203); clean a

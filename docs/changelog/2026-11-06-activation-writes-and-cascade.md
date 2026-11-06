@@ -16,7 +16,7 @@ audience:
   - profile: core-maintainer
     guidance_text: Read this for the writes core's seam can now route to the service, how their cascade differs from core's, and what still answers 501.
   - profile: charter-service-contributor
-    guidance_text: Read this before building the effective reads and the read-time enhances pull.
+    guidance_text: Read this before building the effective reads.
 ---
 
 # 2026-11-06 — The service serves the per-artifact activation writes and their cascade
@@ -29,11 +29,11 @@ writes of [ADR-0020](/adr/0020-offering-and-activations/) D6 under
   `reactivateActivationArtifact` and `applyActivationPreset`. Each requires `If-Match` and answers an
   `ActivationChange`. A bad body is `422`, after `428`, `404` and `412`. Only a deactivate answers `409`: a stored
   deny entry on the floor is tolerated.
-- **The cascade:** walks five relations forward and passes through a profile's ancestors, `requires` and `scope`
+- **The cascade:** walks six relations forward and passes through a profile's ancestors, `requires` and `scope`
   only. A deactivate walks the same way, so the two round-trip; it denies the named artifact alone and unselects
   what only it kept; the floor is never removed.
-- **`enhances` is not written:** with `includeDeactivated`, a select clears every deny entry its walk went through
-  and those the `enhances` pull reaches within `activatedKinds`. The pull runs at read time.
+- **`enhances` is a relation like the others:** walked from the enhancer to its target, with no pull at write
+  or read. `includeDeactivated` clears the deny entries the walk goes through.
 - **Presets:** each key the preset lists replaces that key; `force` clears its members' deny entries. A member
   the closure no longer holds is `422`.
 - **Still `501`:** the four effective reads.
