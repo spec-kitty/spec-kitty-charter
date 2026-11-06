@@ -124,22 +124,6 @@ public final class OfferingReadService {
     }
 
     /**
-     * The closure of a set of configured packs, in the compose's resolved order, with the digest of the inputs they
-     * were read from: the verified rooted counterpart of {@link #offering()}, read as {@link #composed(Collection)}
-     * reads it.
-     *
-     * @param roots the configured identifiers of the packs the closure is rooted at
-     * @return the entries of the closure and the verified fingerprint
-     * @throws CharterRefusal as {@link #composed(Collection)} refuses, or with {@code STALE_INPUT} when the inputs
-     *     changed while the closure was read
-     * @throws IllegalArgumentException when a root names no configured pack
-     */
-    public ConsistentRead.Verified<List<OfferingEntry>> closure(Collection<PackIdentifier> roots) {
-        Objects.requireNonNull(roots, "roots");
-        return read.read(STALE, () -> entriesOf(composed(roots)));
-    }
-
-    /**
      * The offering, in the compose's resolved order: dependencies before the packs that need them, and the merge
      * order across levels. A graph the resolver refuses refuses the offering, so a broken compose is never served
      * partially — two siblings changing one artifact among them, unless a pack of the compose settles it with an

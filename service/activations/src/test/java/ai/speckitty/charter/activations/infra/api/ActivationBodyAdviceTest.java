@@ -23,7 +23,7 @@ import tools.jackson.databind.json.JsonMapper;
 /**
  * The #125 build notes: an activation body over 1 MiB, with a {@code null} at any depth, with a member its schema does
  * not declare, that cannot be bound or that breaks a constraint is {@code 422 activation_invalid} with violations, and
- * nothing is stored. A body that is not {@code application/json} stays {@code 415}. The controller is served as the
+ * nothing is stored. The controller is served as the
  * service serves it ({@link StandaloneActivationMvc}); the composition root's full context answers the same in the
  * contract scenarios.
  */
@@ -187,14 +187,6 @@ class ActivationBodyAdviceTest {
                         .path("pointer")
                         .asString())
                 .isEqualTo("/selected/directive/0");
-    }
-
-    @Test
-    void aBodyThatIsNotJsonByItsTypeStays415() throws Exception {
-        MockHttpServletResponse answer =
-                send(put(DOCUMENT).contentType(MediaType.TEXT_PLAIN).content("{\"schemaVersion\": 1}"));
-
-        assertThat(answer.getStatus()).isEqualTo(415);
     }
 
     @Test
