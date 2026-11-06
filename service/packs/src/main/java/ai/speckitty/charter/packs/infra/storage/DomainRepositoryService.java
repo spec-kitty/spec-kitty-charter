@@ -25,6 +25,8 @@ import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackDocument;
+import ai.speckitty.charter.packs.domain.PackEdge;
+import ai.speckitty.charter.packs.domain.PackEdgeRepository;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRepository;
@@ -87,6 +89,7 @@ public final class DomainRepositoryService
                 PackDescriptorRepository,
                 PackCatalogRepository,
                 PackArtifactRepository,
+                PackEdgeRepository,
                 PackRepository,
                 MutabilityPolicyRepository {
 
@@ -296,6 +299,42 @@ public final class DomainRepositoryService
     // ---- PackArtifactRepository -------------------------------------------------------------------------------
 
     /**
+     * The edges of the pack's graph documents, in {@link FilesystemPackStore#readGraphs} order: the root shards by
+     * file name, then the fragment, each in document order (ADR-0064). An {@code in_tension_with} edge is a tension,
+     * not a relationship, and is left out.
+     *
+     * @param pack the pack
+     * @return the edges
+     * @throws CharterRefusal {@code PACK_UNREADABLE} when a graph document cannot be read or an edge names an unknown
+     *     relation
+     */
+    @Override
+    public List<PackEdge> edges(PackIdentifier pack) {
+        Resolved resolved = resolve(pack);
+        FilesystemPackStore.GraphRead graphs = resolved.store.readGraphs(resolved.key);
+        if (!graphs.violations().isEmpty()) {
+            throw new CharterRefusal(
+                    RefusalCode.PACK_UNREADABLE, "a graph document of " + pack.value() + " cannot be read");
+        }
+        List<PackEdge> edges = new ArrayList<>();
+        for (GraphDocument document : graphs.documents()) {
+            for (GraphDocument.Edge edge : document.edges()) {
+                if (PackPolicy.TENSION.equals(edge.relation())) {
+                    // A tension is read as a tension, never answered as a relationship (Relation.yaml).
+                    continue;
+                }
+                RelationType relation = RelationType.fromToken(edge.relation())
+                        .orElseThrow(() -> new CharterRefusal(
+                                RefusalCode.PACK_UNREADABLE,
+                                document.file() + " of " + pack.value() + ": unknown relation '" + edge.relation()
+                                        + "'"));
+                edges.add(new PackEdge(edge.source(), edge.target(), relation));
+            }
+        }
+        return List.copyOf(edges);
+    }
+
+    /**
      * What the compose needs to know about the pack, from one assembly of it and one read of its graph documents:
      *
      * <ul>
@@ -357,7 +396,7 @@ public final class DomainRepositoryService
 
     /**
      * Every typed edge the pack writes, as written: the edges of its graph documents in file order, then each of
-     * its components' relationships in assembly order (its typed references, {@code ArtifactEdges.build}), then the
+     * its components' derived relationships in assembly order (a guard's {@code implemented_by}, ADR-0064), then the
      * edges of its registered relationship shard ({@link RelationshipShard#SHARD_PATH}, a root shard the one graph read
      * already holds). Each (from, relation, to, qualifiers) is kept once, where it was first seen: the kernel
      * {@link Relationship#equals} ignores the relation and the qualifiers, so the key is explicit.
@@ -365,7 +404,9 @@ public final class DomainRepositoryService
     private static List<Relationship> typedEdges(List<GraphDocument> documents, Pack assembled) {
         Map<EdgeKey, Relationship> edges = new LinkedHashMap<>();
         documents.stream().filter(document -> !registered(document)).forEach(document -> graphEdges(document, edges));
-        assembled.artifacts().forEach(artifact -> artifact.relationships().forEach(edge -> keep(edge, edges)));
+        assembled
+                .artifacts()
+                .forEach(artifact -> artifact.derivedRelationships().forEach(edge -> keep(edge, edges)));
         documents.stream().filter(DomainRepositoryService::registered).forEach(document -> graphEdges(document, edges));
         return List.copyOf(edges.values());
     }
@@ -647,12 +688,6 @@ public final class DomainRepositoryService
         for (FilesystemPackStore.Stored<D> stored : read.elements(kind)) {
             try {
                 E entity = kind.toEntity(pack, stored.dso());
-                Optional<String> unsound =
-                        PackPolicy.referenceProblem(read.descriptor().name(), entity);
-                if (unsound.isPresent()) {
-                    builder.violation(new PackElementViolation(stored.file(), "reference", unsound.get()));
-                    continue;
-                }
                 Optional<UnresolvedTemplate> unresolved = MissionTemplates.firstUnresolved(entity, namableTemplates);
                 if (unresolved.isPresent()) {
                     builder.violation(new PackElementViolation(

@@ -54,9 +54,18 @@ public final class EdgeIndex implements ComposeResolver {
         }
     }
 
-    /** A held artifact as the walk sees it: its place and the indexed edges from it. */
-    private record EdgeNode(PackIdentifier packId, Urn urn, List<Relationship> relationships)
-            implements CharterArtifact {
+    /**
+     * A held artifact as the walk sees it: its place and the indexed edges from it. {@link GraphWalk} follows a
+     * component's {@link CharterArtifact#derivedRelationships()}, so this node answers its indexed graph-document edges
+     * there: it is a walk node, not a stored artifact, and nothing else reads it (ADR-0064; #397 retires or rebases the
+     * walk).
+     */
+    private record EdgeNode(PackIdentifier packId, Urn urn, List<Relationship> edges) implements CharterArtifact {
+
+        @Override
+        public List<Relationship> derivedRelationships() {
+            return edges;
+        }
 
         @Override
         public ArtifactKind kind() {

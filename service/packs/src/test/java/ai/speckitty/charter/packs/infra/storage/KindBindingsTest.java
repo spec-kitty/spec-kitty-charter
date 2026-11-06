@@ -211,7 +211,6 @@ class KindBindingsTest {
                 List.of(),
                 List.of(),
                 java.util.Optional.empty(),
-                List.of(),
                 java.util.Optional.empty());
         assertThat(ToolguideBinding.INSTANCE.companions(dso))
                 .allSatisfy(companion -> assertThat(ToolguideBinding.INSTANCE.companionStructures())

@@ -13,7 +13,6 @@ value:
     commands: []
     appliesToLanguages: []
     lastUpdated: null
-    references: []
   _links:
     self:
       href: /api/v1/packs/qa/artifacts/toolguide/git

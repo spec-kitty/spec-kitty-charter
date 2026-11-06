@@ -2,8 +2,8 @@
 title: "ADR-0024: Charter kinds share a thin CharterArtifact interface over per-kind entities and ports"
 description: Records why directive, styleguide, paradigm and tactic share one thin CharterArtifact interface over per-kind entities and ports, and why the kind registry is deferred.
 doc_status: active
-updated: 2026-10-27T00:00:00Z
-decision_status: Accepted, with Amendment 2026-10-26; superseded in part by ADR-0035 and ADR-0037 (2026-10-27)
+updated: 2026-11-05T00:00:00Z
+decision_status: 'Accepted, with Amendment 2026-10-26 and Amendment 2026-11-05 (ADR-0064); superseded in part by ADR-0035 and ADR-0037 (2026-10-27)'
 decision_date: '2026-10-24'
 type: ADR
 kind: ADR
@@ -66,6 +66,19 @@ The order is:
 The cheap #169 tidy-ups can land at any time: tactic onto the shared read path, and one owner for
 `toDso`.
 
+### Amendment 2026-11-05
+
+The operator ruled on [#240](https://github.com/spec-kitty/spec-kitty-charter/issues/240) on 2026-11-05
+that an edge is authored only in a pack's graph documents ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/)). The original text stands, and
+each changed point is annotated:
+
+- Context: `edges` is no longer part of the common spine. An artifact carries no authored edge
+  ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decisions 1 and 7).
+- Decision 1: the spine exposes derived relations only, as `derivedRelationships()`
+  ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decision 7).
+- Risks: the interim relation mapping is retired, and the question #167 held is decided
+  ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decision 8).
+
 ## Context
 
 The charter service first modelled only the **tactic** as a rich pack entity. Mission
@@ -83,6 +96,8 @@ derived `urn` are genuinely common. A fat shared base entity would force false c
 no abstraction at all would leave the aggregate, the charter-reference-graph view and reports
 switching on kind everywhere.
 
+*Amended 2026-11-05 ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decisions 1 and 7): `edges` is not common to the kinds. An edge is authored only in a pack's graph documents; the spine keeps only the relations derived from runtime data.*
+
 The mission's decision record first placed the shared interface in `kernel.domain`. That is
 wrong: the spine returns a `PackIdentifier`, which lives in `packs.domain`, so a kernel
 interface would invert the dependency and break the "no kernel change" guarantee (ADR-0006).
@@ -95,6 +110,8 @@ interface would invert the dependency and break the "no kernel change" guarantee
    because it returns a `PackIdentifier`; the kernel stays untouched (ADR-0006).
 
    *Superseded in part by ADR-0035: `CharterArtifact` and `PackIdentifier` live in `kernel.domain`, and `schemaVersion` is optional.*
+
+   *Amended 2026-11-05 ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decision 7): the spine carries no `edges`. Its only relation hook is `derivedRelationships()`, relations derived from runtime data and never authored.*
 2. **One rich entity per kind**, each with its own typed identifier value object, its
    concept-bearing body, `ModularRuleset` invariants, a package-private all-args constructor
    behind a public fluent builder, a flat persistence DSO whose record equality is the
@@ -132,6 +149,7 @@ interface would invert the dependency and break the "no kernel change" guarantee
   ([#167](https://github.com/spec-kitty/spec-kitty-charter/issues/167)). Nothing in production
   assembles these edges yet, so an interim-wrong mapping misleads no consumer today; #167 must
   be resolved before any code consumes `CharterArtifact.edges()`.
+  *Amended 2026-11-05: decided by [ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) ([#240](https://github.com/spec-kitty/spec-kitty-charter/issues/240)), decision 8. The mapping is retired, and no artifact mints an edge from a field.*
 
 ## Alternatives considered
 

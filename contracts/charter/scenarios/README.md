@@ -109,8 +109,8 @@ Keep it small; add a step only when a scenario cannot be written without it.
   If-Match "<value>" and the body:`, `When I remember the ETag` and `When I PUT "<path>" with the remembered ETag and the
   body:` — a registration with a JSON doc string, and its `If-Match` precondition. `When I send <method> "<path>" as
   JSON with the body:` — the same with any method, for an outline whose examples differ in the method.
-- `Then the artifact in the response body has <n> relationship(s)` and `Then a relationship of the artifact in the
-  response body points to "<urn>"` — the `relationships` of the member an `Artifact` envelope's `kind` names.
+- `Then the field at "<pointer>" is absent` — nothing stands at the JSON Pointer, for example a member a shape no
+  longer carries (an artifact's `relationships`, ADR-0064).
 - `When I PUT "<path>" with the body, its "<field>" padded to <n> bytes:` — the same PUT, after appending `a` to that
   top-level string field of the JSON doc string until it is exactly `<n>` bytes of UTF-8; for a size cap no doc string
   can spell out.

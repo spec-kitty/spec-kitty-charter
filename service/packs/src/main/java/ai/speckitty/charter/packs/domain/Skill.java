@@ -3,7 +3,6 @@ package ai.speckitty.charter.packs.domain;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
-import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import java.util.ArrayList;
@@ -261,17 +260,6 @@ public final class Skill implements CharterArtifact {
      */
     public Optional<String> enhances() {
         return enhances;
-    }
-
-    /**
-     * A skill mints no relationships: its links to procedures and directives are edges of the pack's fragment, and
-     * {@code overrides}/{@code enhances} only name another skill.
-     *
-     * @return an empty list
-     */
-    @Override
-    public List<Relationship> relationships() {
-        return List.of();
     }
 
     /** Entity identity: equal when the identifier is equal, whatever the other fields hold. */
