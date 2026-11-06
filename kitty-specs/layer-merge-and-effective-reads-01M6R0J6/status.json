@@ -1,19 +1,19 @@
 {
-  "event_count": 88,
-  "last_event_id": "01M6RX7MV8QYPG05VKM84ERP63",
-  "materialized_at": "2026-11-06T17:06:51.866886+00:00",
+  "event_count": 91,
+  "last_event_id": "01M6RX8FAK8SH6N6ZNKBCQ0B63",
+  "materialized_at": "2026-11-06T17:07:18.995082+00:00",
   "mission_number": "",
   "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
   "mission_type": "software-dev",
   "schema_version": 2,
   "summary": {
-    "approved": 4,
+    "approved": 5,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
     "done": 0,
     "for_review": 1,
-    "in_progress": 1,
+    "in_progress": 0,
     "in_review": 1,
     "planned": 22
   },
@@ -125,26 +125,27 @@
     },
     "WP04": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": "claude::reviewer-renata",
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 1,
       "implementer_of_record": "claude",
-      "lane": "in_review",
-      "last_event_id": "01M6RWWX790ZPT8CNS9RN0AVAB",
-      "last_transition_at": "2026-11-06T17:01:00.009511+00:00",
+      "lane": "approved",
+      "last_event_id": "01M6RX89Z5NCK8HAFV0NC3V8A9",
+      "last_transition_at": "2026-11-06T17:07:13.509250+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "Ready for review (36feaf5e). A4: DocumentRules.checkReplace judges PUT against the replaced doc (floor on added denies via reusable addedDenies; stale ids the stored doc names tolerated then dropped -> Written.dropped). B1: StaleIds drops unheld pins (pack kept unpinned) -> ActivationChange.droppedPins / Written.droppedPins for replace, per-artifact writes, preset; create keeps version_not_held. T018: ActivationWrites deniable/declared mission_type branches removed (404 mission_type_not_found kept, contract). Red first: 13 named tests failed on assertions/refusals before the code (log in scratchpad wp04-red.txt). Gates: ./gradlew --max-workers=1 -PcontractBaseline=none :activations:check -x test -> exit 0; :activations:test -> exit 1, 502 run, 5 failed = WP08-owned ActivationBodyAdviceTest(4)+ActivationJsonTest(1), same as lane baseline; :deployable:test --tests '*HexagonalArchitectureTest' -> HexagonalArchitectureTest 59/59 green, task exit 1 only from the 109 WP08-owned CharterContractSuite failures, scenario list identical before/after. Out-of-map: ActivationSelectionServiceTest (2 methods), ActivationExclusionServiceTest (1 method) rewritten from removed behaviour. For WP08: map Written.dropped/droppedPins into the replace answer and ActivationChange.droppedPins in ActivationChangeMapper; contract replaceActivation text still says stale ids are 422 (A4 changes it). Divergence note for docs WP: replace drops stale ids/unheld pins; mission_type path ids normalized by spelling.",
-        "Unchanged resubmit (identity-only cycle, #368 precedent)"
+        "Unchanged resubmit (identity-only cycle, #368 precedent)",
+        "Review passed (cycle 2). Green 36feaf5e. Red log wp04-red.txt: 13 named tests failed on assertions or wrong refusals, never on an undefined step.\n\nClaims checked:\n(1) A4: checkReplace judges the floor on addedDenies(stored, body less drops) only. An id the packs no longer hold is tolerated only when the stored document names it, in any spelling and in either list of its kind. StaleIds.drop then drops it and reports it in Written.dropped. An id never named is still unknown_artifact 422 (aPutStillRefusesAnUnknownIdTheStoredDocumentNeverNamed). This follows DM-01M6RA7XC5HC8915GZT2R3H83W (\"ids the packs no longer hold\"). Create (POST) still judges everything.\n(2) PUT without If-Match: the contract allows it (replaceActivation: \"without it the write is last-writer-wins\", ADR-0020 D6). The loop is bounded (8 attempts). Each attempt re-reads, re-judges, then CAS-writes at the read revision, so the final write is still last-writer-wins. A Missing or Stale result re-reads, so a create racing a delete is handled. Not sharing the tryLock mechanism is right: the lock lives inside FileActivationRepository (infra), and the domain port offers only find/create/CAS. The per-artifact writes use the same CAS pattern. The race test was written after the code, so it has no red evidence, but it is real: a mutation to LATEST_ATTEMPTS=1 fails aPutWithoutAValidatorIsJudgedAgainstTheDocumentAnotherWriterStoredInBetween, and a judge-once unconditional write would pass the refused deny. Non-blocking: when all 8 attempts fail, a request with no If-Match gets 412, which the contract does not describe. Exhaustion is not tested.\n(3) B1: StaleIds drops a pin no pack holds; the pack stays, unpinned. The pin is reported in droppedPins. A write that only drops a pin is not a no-op (b1AWriteThatDropsOnlyAPinIsNoNoOp, new revision). Create keeps version_not_held (DM-01M6RN5Y406SB4KA13QYMQ2P8J; pair tested in DocumentRulesTest and ActivationServiceTest). ActivationChange.droppedPins is declared, required (WP01).\n(4) T018: ActivationWrites.selectable and deniable take any activatable kind, and declared() no longer matches a mission type exactly (a7-codeshape rows 21-22, class a; this also aligns the path with the body, as the WP03 review asked). mission_type_not_found 404 is kept. The split with WP05 holds: a required or locked mission type is already 409 through the floor, and a non-floor mission-type deny stays in CascadeRules.requireDeniable, which is WP05 T022.\n(5) Out-of-map rewrites in WP05-owned tests (recorded in the commit). Each pins a ruled change and is not weakened. aMissionTypePathIdIsMatchedExactly is now any spelling, with a 404 negative control. aPinnedVersion...StillNotDropped is now dropped and reported, with an added no-op test. The ExclusionService /kind 422 test is now accepted at the path, with 409, 404 and spelling-insensitive reactivate. WP05 has no commits on these files yet, but expect a merge touch.\n\nGates (re-run): :activations:check gives 502 tests, 5 failed (ActivationBodyAdviceTest x4 and ActivationJsonTest x1, WP08 T034, the same as the lane baseline). Checkstyle, javadoc and spotless are green. HexagonalArchitectureTest is 59/59. CharterContractSuite: the before and after failure lists are identical, 109 each (WP08). No suppressions and no disabled tests.\n\nChecklist: dead code PASS (nit: ActivationChange.withDropped(List) is now used only by ActivationChangeMapperTest; Written.dropped/droppedPins reach the API in WP08 T035). Synthetic fixtures PASS. Silent returns PASS. FR-026/031/041 PASS. Frozen surface PASS. Locked decisions PASS. Shared files: noted above. Fragility: the 412 on exhaustion, noted above.\n\nFor later WPs:\n- WP08/WP01: the replaceActivation description still says a stale id is 422, a stored deny on the floor is 409, and \"this write never drops an artifact id the client sent\". That now contradicts A4.\n- WP08/WP01: Activation (the PUT 200/201 schema) has no dropped member, so A4's \"reporting them\" has no field.\n- WP08 T036/T147: activation-register.feature has scenarios that pin the old A4/B1 refusals: \"refused on write\", \"now locks/requires ... denying it anew is refused\" via PUT, and \"A pack pinned to a version ... refused at the pin\" (a PUT create now drops the pin). They are in the 109 and must be rewritten, not only the kind-gate ones.\n- WP09: divergence notes for the replace drops and the mission-type path spelling."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
       "review_result": {
-        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/layer-merge-and-effective-reads-01M6R0J6-coord/kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP04-a0-document-rules-rulings/review-cycle-1.md",
-        "reference": "review-cycle://layer-merge-and-effective-reads-01M6R0J6/WP04-a0-document-rules-rulings/review-cycle-1.md",
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/layer-merge-and-effective-reads-01M6R0J6-coord/kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP04-a0-document-rules-rulings/review-cycle-2.md",
+        "reference": "review-cycle://layer-merge-and-effective-reads-01M6R0J6/WP04-a0-document-rules-rulings/review-cycle-2.md",
         "reviewer": "claude::reviewer-renata",
-        "verdict": "changes_requested"
+        "verdict": "approved"
       },
       "role": "reviewer",
       "shell_pid": 9888,
@@ -219,17 +220,18 @@
     },
     "WP07": {
       "actor": "claude",
-      "agent": null,
-      "agent_profile": "java-jenny",
+      "agent": "claude",
+      "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 1,
       "implementer_of_record": "claude",
-      "lane": "in_progress",
-      "last_event_id": "01M6RX7MV8QYPG05VKM84ERP63",
-      "last_transition_at": "2026-11-06T17:06:51.866886+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M6RX8FAK8SH6N6ZNKBCQ0B63",
+      "last_transition_at": "2026-11-06T17:07:18.995082+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "A15 scoped locks (PackMutabilityPolicy.scopedPolicies, used by write gate and ClosureQueries), B8 own policy excluded from the write gate, A10 RequiredFloor.of(presets, held) + unheld() report, A14 enhances no longer a change (DomainRepositoryService.refines), exactly-one-winner pinned. Red first: 9 assertion failures with stubs (commit 2c166382 msg). Merged lane-f (WP06) and aligned PresetTest. Gates: ./gradlew --max-workers=1 -Dorg.gradle.internal.repository.max.retries=10 -PcontractBaseline=none :packs:check exit 0; :activations:test exit 1 (5 known WP08 failures: ActivationBodyAdviceTest x4, ActivationJsonTest x1); :deployable:test --tests '*HexagonalArchitectureTest' 59/59 pass; CharterContractSuite 109 failures (known WP08 count; composition.feature sibling scenarios moved to overrides edges, A14). Hand-off to WP08 fragment: A15 narrows locks (unrelated pack's lock no longer applies), B8 own-policy writes no longer 409, A10 unheld must-haves leave the floor, A14 sibling enhancers compose."
+        "A15 scoped locks (PackMutabilityPolicy.scopedPolicies, used by write gate and ClosureQueries), B8 own policy excluded from the write gate, A10 RequiredFloor.of(presets, held) + unheld() report, A14 enhances no longer a change (DomainRepositoryService.refines), exactly-one-winner pinned. Red first: 9 assertion failures with stubs (commit 2c166382 msg). Merged lane-f (WP06) and aligned PresetTest. Gates: ./gradlew --max-workers=1 -Dorg.gradle.internal.repository.max.retries=10 -PcontractBaseline=none :packs:check exit 0; :activations:test exit 1 (5 known WP08 failures: ActivationBodyAdviceTest x4, ActivationJsonTest x1); :deployable:test --tests '*HexagonalArchitectureTest' 59/59 pass; CharterContractSuite 109 failures (known WP08 count; composition.feature sibling scenarios moved to overrides edges, A14). Hand-off to WP08 fragment: A15 narrows locks (unrelated pack's lock no longer applies), B8 own-policy writes no longer 409, A10 unheld must-haves leave the floor, A14 sibling enhancers compose.",
+        "Unchanged resubmit (identity-only cycle, #368 precedent)"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
@@ -239,15 +241,15 @@
         "reviewer": "claude::reviewer-renata",
         "verdict": "changes_requested"
       },
-      "role": "implementer",
-      "shell_pid": null,
-      "shell_pid_created_at": null,
+      "role": "reviewer",
+      "shell_pid": 19163,
+      "shell_pid_created_at": "1793984787.21",
       "subtasks": {
-        "T029": "planned",
-        "T030": "planned",
-        "T031": "planned",
-        "T032": "planned",
-        "T033": "planned"
+        "T029": "done",
+        "T030": "done",
+        "T031": "done",
+        "T032": "done",
+        "T033": "done"
       }
     },
     "WP08": {
