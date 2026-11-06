@@ -2,7 +2,7 @@
 title: Divergence register
 description: The single register of every deliberate difference between the charter service and core, each with a stable id, the ruling behind it and the case or evidence that pins it.
 doc_status: draft
-updated: 2026-10-31T00:00:00Z
+updated: 2026-11-05T00:00:00Z
 type: API
 kind: Reference
 related:
@@ -35,7 +35,8 @@ Entries are grouped by block, one block per mission, so that two missions never 
 - **Pack schemas (DIV-001..025, ADR-0017)** is below, after the context-read block. DIV-001 and
   DIV-002 are withdrawn: they described the same differences as DIV-101 and DIV-102 and are
   recorded there.
-- **Activation (DIV-201..202, ADR-0020)** is proposed, below; its operations are not built yet.
+- **Activation (DIV-201..205, ADR-0020)** is below. DIV-201 and DIV-202 are proposed, because the effective reads
+  they concern are not built yet; DIV-203 to DIV-205 are open, because the register and the closure read are built.
 - **Pack-level files (DIV-301..399, ADR-0042)** is after the activation block.
 - **Procedures and toolguide guides (DIV-401..499, ADR-0043)** is after the pack-level files block.
 - **Mission types (DIV-501..599, ADR-0044)** is last.
@@ -46,7 +47,8 @@ is for programs: it holds every entry of every block (pack schemas, context read
 activation block, pack-level files, procedures and toolguide guides, and mission types) and
 documents its own schema at the top. The
 proposed activation entries carry status `proposed`, so the gate does not enforce them until their
-operations are built. Each entry has a status:
+operations are built. Since [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) D1 the register
+informs core of what changes when it switches; it does not gate the switch. Each entry has a status:
 
 - `open`: the difference stands.
 - `aligned`: core now agrees, so the difference is gone.
@@ -423,17 +425,40 @@ entry from the contract scenario that pins it. Add it to
 [`divergences.yaml`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/docs/conformance/divergences.yaml)
 too, with the same id and status.
 
-## Activation (DIV-201..202, ADR-0020), proposed
+## Activation (DIV-201..205, ADR-0020)
 
-Proposed with [ADR-0020](/adr/0020-offering-and-activations/) on #123, and agreed with core's
-activation ledger mission on 2026-10-20. Core's conformance-case table carries the same entries
-(core response, mirrored on #9). Both are to be settled before the first activation operation is
-routed to the service ([ADR-0021](/adr/0021-contract-first-seam-generated-client-and-routing-proxy/) D5).
+DIV-201 and DIV-202 were proposed with [ADR-0020](/adr/0020-offering-and-activations/) on #123, and agreed with
+core's activation ledger mission on 2026-10-20. Core's conformance-case table carries the same entries (core
+response, mirrored on #9). They stay `proposed`: they concern the effective reads, which still answer `501`.
 
-| Id | The charter answers | Core answers | Corpus case |
-|---|---|---|---|
-| DIV-201 | A required or locked artifact is active on read, even under an explicit allow list that omits it (ADR-0020 D7) | Does not add it under such an allow list; doctor and list warn | `required-under-allow-list` |
-| DIV-202 | The required floor is derived from the packs at read time and never stored (ADR-0020 D4) | Promotes org `required_*` into the allow list at write time | `required-promoted-at-write` |
+DIV-203 to DIV-205 were added on 2026-11-05 by mission `activation-register-and-closure-01M6NXBD`
+([#291](https://github.com/spec-kitty/spec-kitty-charter/issues/291),
+[#360](https://github.com/spec-kitty/spec-kitty-charter/issues/360)), which builds the activation register
+(`createActivation`, `getActivation`, `replaceActivation`, `deleteActivation`) and the closure read
+(`listActivationPacks`). They are `open`: the operations that carry them are built, and the behavioral scenarios in
+`contracts/charter/scenarios/activation-register.feature` pin them. Under
+[ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) D1 they tell core what changes when it
+switches; they do not gate the switch. No change to core's code is part of this mission.
+
+| Id | The charter answers | Core answers | Ruling | Corpus case |
+|---|---|---|---|---|
+| DIV-201 | A required or locked artifact is active on read, even under an explicit allow list that omits it (ADR-0020 D7) | Does not add it under such an allow list; doctor and list warn | ADR-0020 | `required-under-allow-list` |
+| DIV-202 | The required floor is derived from the packs at read time and never stored (ADR-0020 D4) | Promotes org `required_*` into the allow list at write time | ADR-0020 | `required-promoted-at-write` |
+| DIV-203 | An absent `selected.<kind>`, `activatedKinds` or `missionTypes` means none, the same as `[]`. This holds for `skill` too, which loses its "only the required skills" default. An absent `packs` still means every configured pack | A per-kind default when the key is absent: every available artifact, or only the required skills for `skill` | ADR-0053 d10; decision `DM-01M6NXQJ61D2GSFJFK02XW6F9N`. Holds until core's named-packs split ([ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/)) | `absent-kind-means-none` |
+| DIV-204 | A write whose deny list names a required or locked artifact is refused `409` (`artifact_required`, `artifact_locked`), naming the pack, and nothing is stored | Accepts the entry and ignores it, or warns | ADR-0020 D9; ADR-0059 D4 | `deny-required-refused-at-write` |
+| DIV-205 | The required floor is the must-have items of every governing preset in the activation's closure | The org packs' `required_*` lists | Operator ruling of 2026-11-06, which confirms the closure scope that decision `DM-01M6PCWSA65497T9A7J80K6V56` had assumed | `floor-closure-scoped` |
+
+Core's seam, to switch: read an absent list as none and write the default it means explicitly (DIV-203); clean a
+deny entry on a required or locked artifact out of a document before writing it (DIV-204); and take the required set
+from the closure's governing presets, not from `required_*` (DIV-205).
+
+A pack pinned in an activation to a version other than the one the service holds is refused `422 activation_invalid` (`version_not_held`, naming both versions), by operator ruling of 2026-11-06, so a pin is never recorded for a version the closure does not hold.
+
+`getActivation` and `listActivationPacks` declare no `Charter-Source-Fingerprint` on their `200`. The document read
+depends only on the stored document ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) D5),
+and the closure read reports a change through its `ETag`, which covers the revision and the closure's packs. This is
+an exception to the service's own fingerprint rule, not a different answer from core, so it has no id here. Core's
+seam reads the fingerprint only on the `200` of a verified read, and these two reads are not among them.
 
 Not divergences, because the contract matches core:
 

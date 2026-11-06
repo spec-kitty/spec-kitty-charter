@@ -111,21 +111,13 @@ public final class GraphWalk {
             if (relationshipDescent == Descent.SKIP) {
                 continue;
             }
-            // An effective-origin edge is either authored from this component or a bidirectional edge that names it
-            // as `to`; the neighbour is always the other endpoint. Its reference resolves to (holding pack, bare URN)
-            // before anything is compared: a qualified one names its pack, a bare one is in the pack of the component
-            // that writes it.
-            boolean forward = relationship.from().equals(component.urn());
-            Urn neighbour = forward ? relationship.to() : relationship.from();
-            Optional<String> qualifier = forward ? relationship.toPack() : relationship.fromPack();
-            Optional<PackIdentifier> holder = qualifier.isPresent()
-                    ? resolvers.holdingPack(
-                            new PackQualifiedReference(qualifier, neighbour.toString()), component.packId())
-                    : Optional.of(component.packId());
-            if (holder.isEmpty() || visited.contains(new Held(holder.get(), neighbour))) {
+            Optional<Held> neighbour = neighbourOf(component, relationship);
+            if (neighbour.isEmpty() || visited.contains(neighbour.get())) {
                 continue;
             }
-            Optional<CharterArtifact> resolved = resolvers.inPack(holder.get()).resolve(neighbour);
+            Optional<CharterArtifact> resolved = resolvers
+                    .inPack(neighbour.get().pack())
+                    .resolve(neighbour.get().urn());
             if (resolved.isEmpty()) {
                 continue;
             }
@@ -134,5 +126,24 @@ public final class GraphWalk {
             }
         }
         return true;
+    }
+
+    /**
+     * The place of the neighbour a relationship of {@code component} leads to. An effective-origin edge is either
+     * authored from this component or a bidirectional edge that names it as {@code to}; the neighbour is always the
+     * other endpoint. Its reference resolves to (holding pack, bare URN) before anything is compared: a qualified one
+     * names its pack, a bare one is in the pack of the component that writes it.
+     *
+     * @return the neighbour's place, or empty when the compose holds no pack for its qualified reference; the
+     *     compose's own refusal (a pack outside the writer's {@code depends_on} closure) is thrown, not returned
+     */
+    private Optional<Held> neighbourOf(CharterArtifact component, Relationship relationship) {
+        boolean forward = relationship.from().equals(component.urn());
+        Urn neighbour = forward ? relationship.to() : relationship.from();
+        Optional<String> qualifier = forward ? relationship.toPack() : relationship.fromPack();
+        Optional<PackIdentifier> holder = qualifier.isPresent()
+                ? resolvers.holdingPack(new PackQualifiedReference(qualifier, neighbour.toString()), component.packId())
+                : Optional.of(component.packId());
+        return holder.map(pack -> new Held(pack, neighbour));
     }
 }

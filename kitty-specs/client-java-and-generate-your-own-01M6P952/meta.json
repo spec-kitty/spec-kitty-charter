@@ -1,0 +1,37 @@
+{
+  "accept_commit": "00714c93aeb5377cd25581446bf45e7d7036c1cb",
+  "acceptance_history": [
+    {
+      "accept_commit": "532c1b0bc68d54561aadd3471bc46d724fa60ca1",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-11-05T17:23:21.837727+00:00",
+      "accepted_by": "claude",
+      "accepted_from_commit": "9ccc5992802ba9f713a01e0a51a5266a5be3f2ae"
+    },
+    {
+      "accept_commit": "00714c93aeb5377cd25581446bf45e7d7036c1cb",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-11-05T17:23:29.966667+00:00",
+      "accepted_by": "claude",
+      "accepted_from_commit": "a2dc2fe6c5ac89a005f9f9b7891d804e36d80e53"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-11-05T17:23:29.966667+00:00",
+  "accepted_by": "claude",
+  "accepted_from_commit": "a2dc2fe6c5ac89a005f9f9b7891d804e36d80e53",
+  "created_at": "2026-11-05T16:37:28.374023+00:00",
+  "flattened": false,
+  "friendly_name": "client java and generate your own",
+  "mid8": "01M6P952",
+  "mission_id": "01M6P952X7VYBH3A6ZVF5J2CAZ",
+  "mission_number": null,
+  "mission_slug": "client-java-and-generate-your-own-01M6P952",
+  "mission_type": "software-dev",
+  "purpose_context": "This mission advances client java and generate your own on claude/client-java-218-224 so stakeholders can track the work from mission creation onward.",
+  "purpose_tldr": "client java and generate your own",
+  "slug": "client-java-and-generate-your-own-01M6P952",
+  "status_phase": "1",
+  "target_branch": "claude/client-java-218-224",
+  "topology": "single_branch"
+}

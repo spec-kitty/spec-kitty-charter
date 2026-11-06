@@ -11,6 +11,9 @@ related:
   - adr/0008-rewrite-and-replace-against-bdd-and-openapi-contracts
   - adr/0043-sanitized-artifact-shapes-procedures-and-toolguide-guides
   - adr/0046-service-release-line-and-native-packaging
+  - adr/0060-native-build-runs-nightly-and-per-release
+  - guides/generate-a-client
+  - adr/0062-nightly-mutation-floor
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this before you build, test or change the contract.
@@ -63,6 +66,7 @@ How to build the charter service and run every check CI runs.
 | `:contracts:check` | The charter's own contract checks: `bundleContract`, `lintContract`, `lintFixtures`, `checkClosedResponseObjects`, `compatibilityFixtures` and `checkContractCompatibility` ([`contracts/lint/README.md`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/contracts/lint/README.md) says what each one does) |
 | `:charter-api:validateContract` | The split OpenAPI document parses and validates |
 | `:charter-api:generateContract` | Spring interfaces and DTOs are generated; controllers that drift from the contract fail to compile |
+| `:client-java:check` | The Java client is generated from the contract bundle and compiles for Java 21; `ProblemDetails` passes every gate and its tests; two generations are byte-identical ([The Java client](#the-java-client)) |
 | `:<module>:spotlessCheck` | Hand-written main and test sources are formatted by palantir-java-format |
 | `:<module>:checkstyleMain`, `checkstyleTest` | The Checkstyle rules in `config/checkstyle/checkstyle.xml`; any violation fails |
 | `:<module>:compileJava` | `-Xlint:all -Werror`, Error Prone, and NullAway on `@NullMarked` code (test sources get Error Prone without NullAway) |
@@ -80,9 +84,8 @@ so it is exempt by construction and still compiles. A new hand-written module un
 also be listed in `service/charter-reports/build.gradle.kts`; the build fails, naming it,
 until it is.
 
-Not in `verifyAll`: mutation testing. `./gradlew pitest` runs PIT on the hand-written
-service modules; `.github/workflows/mutation-nightly.yml` runs it nightly, and no pull
-request runs it.
+Not in `verifyAll`: mutation testing. It runs nightly, against a floor per module, and no pull request runs it; see
+[Mutation testing](#mutation-testing).
 
 Not in `verifyAll` either: the whole-pack round-trip gate (below), which CI runs as its own required group.
 
@@ -102,8 +105,79 @@ Today that is `PackFileSetBudgetTest`, the 10 s CPU-time budget of the generated
 source fingerprint). The checks themselves, whether the fingerprint changes exactly when it must and the store loads
 exactly the planted files, stay in `:packs:test` (`PackFileSetExactnessTest`). A test that holds work to a time or
 CPU-time budget is tagged `timing`. A hang cap (`@Timeout`) and a deadline check, which proves a guard cuts work off
-within a bound far above the work's own time, are not budgets and need no tag
-([#320](https://github.com/spec-kitty/spec-kitty-charter/issues/320) tracks the tight ones).
+within a bound far above the work's own time, are not budgets and need no tag. A deadline check is written as a hang
+cap of 30 s, next to an assertion of the cause it proves; the cap stops the test's wait, not work that ignores an
+interrupt; the deadline tests with no cap of their own stop at a whole-test cap of 90 s ([#320](https://github.com/spec-kitty/spec-kitty-charter/issues/320)).
+
+## Mutation testing
+
+PIT mutates the service's logic and checks each module's mutation score against a fixed floor
+([ADR-0062](/adr/0062-nightly-mutation-floor/), [#239](https://github.com/spec-kitty/spec-kitty-charter/issues/239)).
+It is its own task, never part of `check` or `verifyAll`:
+
+```bash
+# packs reads the synced open-packs checkout (-PopenPacksDir; see "Syncing the packs")
+./gradlew pitest --continue                            # every mutated module
+./gradlew :kernel:pitest                               # one module
+```
+
+`--continue` lets every module run and report even when one is below its floor.
+
+**What is mutated.** Every module that applies `charter.mutation-conventions` (`build-logic`), which holds PIT's
+versions, the HTML and XML reports and PIT's default mutators:
+
+| Module | Floor group | Mutated | Floor |
+|---|---|---|--:|
+| kernel | `kernel` | the whole module | 75 % |
+| missions | `missions` | the whole module | 70 % |
+| profiles | `profiles` | the whole module | 90 % |
+| activations | `activations` | the whole module | 85 % |
+| packs | `domain+application` | `packs.domain`, `packs.application`, without `application.config` | 85 % |
+| packs | `infra.storage` | `packs.infra.storage`, `infra.storage.config` included | 85 % |
+| packs | `infra.fetch` | `packs.infra.fetch`, without `infra.fetch.config` | 70 % |
+
+Kernel, missions and profiles apply the plugin through `charter.domain-conventions`; packs and activations apply it
+directly. Packs
+never mutates the Spring wiring (`application.config`, `infra.fetch.config`) or `infra.api` (the REST adapter), and
+PIT runs only the unit tests of the mutated packages: no `*WiredTest`, and no test tagged `open-packs`, `whole-pack` or
+`timing`. The three packs groups come from the one `:packs:pitest` run, which took 45m54s on an idle 4-core machine
+before `infra.fetch` joined it and about 2 minutes more with it; kernel, missions and profiles together take about
+3 minutes, so the whole run takes about 51 minutes.
+
+**The floors** live in each module's `build.gradle.kts`, in a `mutationFloors { group("...") { ... } }` block. A
+floor is raised by a pull request once the nightly score clears it by 5 points, and lowered only by an amendment to
+ADR-0062.
+
+**The floor check.** `pitest` is finalized by `checkMutationFloors`, which reads `build/reports/pitest/mutations.xml`
+leniently (PIT writes raw `<` into it), logs each group's mutants, score, test strength and floor, and writes
+`build/reports/mutation-floors/floors.json`. The score is PIT's mutation score: the detected mutants (KILLED,
+TIMED_OUT, NON_VIABLE, MEMORY_ERROR, RUN_ERROR, EQUIVALENT) over all mutants, uncovered ones included. Test strength,
+detected over covered mutants, is reported and never gated. A group passes when its exact score is at or above its
+floor; printed figures are truncated to one decimal, never rounded up. A group below its floor fails the task:
+
+```text
+:kernel kernel: mutation score 74.9 % is below its floor 75 % (#239, ADR-0062)
+```
+
+A group with no mutants, a missing `mutations.xml` and `<mutation>` elements without a status or a mutated class each
+fail the check too.
+
+**Narrowing a run.** `service/packs/pit-targets.init.gradle` narrows PIT to the classes and tests named with
+`-Dpit.classes` and `-Dpit.tests`, for one work package's classes; its header has the full command. A narrowed run is
+not a floor measurement: it skips `checkMutationFloors`, and the `floors.json` left from an earlier run may be stale.
+
+**The nightly.** `.github/workflows/mutation-nightly.yml` runs on a schedule and on `workflow_dispatch` only, with a
+90-minute timeout, 80 of them for the mutation step. It syncs the packs at the pin, then runs
+`./gradlew pitest --continue`. Whatever the result, it runs the summary script's unit tests,
+`scripts/ci/mutation_summary.py` turns every `floors.json` into a job-summary table (score, strength, uncovered
+mutants, floor, verdict and the classes with the most surviving or uncovered mutants), and every module's report goes
+up as the `mutation-report` artifact, kept for 14 days. When a scheduled run does not
+succeed, a timeout included, the workflow opens one issue labelled `mutation-nightly`, or comments on the open one; a
+`workflow_dispatch` with `force_issue` tests that path.
+
+**A surviving mutant** is triaged in this order: kill it by strengthening an existing test's assertion; mark it
+equivalent, with a one-line reason; or accept it, naming an owner. Never add a test whose only purpose is killing a
+mutant (DIRECTIVE_041).
 
 ## Syncing the packs
 
@@ -285,6 +359,34 @@ purpose: an HTML comment is text, so a column-0 `##` inside one is a heading.
 gates. It holds no entry today. An entry names the rule, the file, the reason and a sunset
 date; no gate is relaxed anywhere else, and blanket suppressions are not allowed.
 
+`checkCheckstyleRegister`, part of `check`, keeps the register in order. It fails when an entry's comment
+lacks one of `rule:`, `file:`, `reason:` or `sunset:`, when a sunset date has passed, or when the `Size:`
+line in the header does not count the entries. An entry is a `<suppress>` or `<suppress-xpath>`
+element or a comment-only entry (a comment with a `rule:` line); all are checked and counted alike. It does
+not run Checkstyle and does not ask whether an entry is still needed; an empty register passes.
+
+The four complexity limits decided in
+[ADR-0058](/adr/0058-sonarcloud-nightly-reported-and-checkstyle-complexity-per-pr/) are not on yet:
+cyclomatic complexity 15, NPath 1000, 60 non-empty lines per method and nested-if depth 1. No build
+fails on them today, so keep new methods within them.
+[#367](https://github.com/spec-kitty/spec-kitty-charter/issues/367) first refactors the methods over
+them, with no register entry, and
+[#371](https://github.com/spec-kitty/spec-kitty-charter/issues/371) then turns them on.
+
+## The nightly SonarCloud report
+
+`.github/workflows/sonar.yml`, shown in Actions as **Sonar (nightly, reported)**, analyzes `main` at
+04:23 UTC every day, and on a manual run from `main`. It never runs on a pull request.
+
+It is report-only. It is not part of `CI gate / gate`, and a red build, scan or quality gate never
+turns the run red. With the token, each run writes a job summary, a table of the outcome of the pack sync, the
+build, the coverage report, the scan and the quality gate. The quality-gate verdict appears in that
+table and on SonarCloud.
+
+Until the operator creates the SonarCloud project and the `SONAR_TOKEN` repository secret, the run
+skips green: its summary says that the token is not configured. The workflow assumes the project key
+`spec-kitty_spec-kitty-charter`, which the operator confirms when creating the project.
+
 ## Change the contract
 
 1. Edit the split files under `contracts/charter/` and list new files in the directory's
@@ -347,7 +449,10 @@ Core's service pin fetches and verifies these assets by name.
    ```
 
    It names the cause of a refusal, or writes `build/service-release/gate.properties`.
-4. **Merge the pull request.** The operator then tags the merge commit on `main` and pushes the tag:
+4. **Merge the pull request.** Run `service-native.yml` on `main` with `workflow_dispatch` at the merge commit, and tag
+   only when it is green. `CI gate / gate` no longer proves the native build
+   ([ADR-0060](/adr/0060-native-build-runs-nightly-and-per-release/)). The operator then tags the merge commit on
+   `main` and pushes the tag:
 
    ```bash
    git tag service-v0.2.0 <merge-commit> && git push origin service-v0.2.0
@@ -400,9 +505,44 @@ gh attestation verify spec-kitty-charter-service-0.2.0-linux-x64 --repo spec-kit
   --source-ref refs/tags/service-v0.2.0
 ```
 
-The native executables are built in CI only, on each runner. Locally,
+The native executables are built in CI only, on each runner, by `.github/workflows/service-native.yml`. It runs
+nightly on `main` and for each service release, not on a pull request, and it is not part of `CI gate / gate`
+([ADR-0060](/adr/0060-native-build-runs-nightly-and-per-release/)). To build them for a branch whose change
+risks the native build (a new reflective path, a dependency bump, a change to `service-native.yml`,
+`scripts/release/smoke-service.sh` or `charter.native-image.gradle.kts`), run the workflow on that branch with
+`workflow_dispatch`. Locally,
 `./gradlew :deployable:nativeCompile -Pcharter.native=true`
 needs a GraalVM 25 with `native-image` on `JAVA_HOME`. `verifyAll` never needs one.
+
+## The Java client
+
+`client-java/` generates the charter client for Java consumers ([#218](https://github.com/spec-kitty/spec-kitty-charter/issues/218)),
+with openapi-generator's `java` generator and `okhttp-gson` library at the version pinned in `gradle/libs.versions.toml`.
+Its build is the `charter.client-java` convention plugin.
+
+The nightly SonarCloud report does not cover `client-java`: `sonar.yml` names the service modules only.
+
+- **Input:** the single-file bundle `:contracts:bundleContract` writes, through the `contractBundle` variant, never the
+  split files under `contracts/charter/`. The client matches what is published, byte for byte.
+- **Tolerance:** a client generated today must read what a later 0.x minor adds. `TolerantClientNormalizer` reads every
+  closed object (`additionalProperties: false`) as open, so a member the client does not know lands in the model's
+  additional properties instead of failing the decode. `enumUnknownDefaultCase=true` maps an enum value it does not
+  know to `UNKNOWN_DEFAULT_OPEN_API`. The server build keeps the closed objects. Two consequences: a model that
+  carries an unknown member serializes it back (a request built from such a model can carry a member an older service
+  refuses), and it compares unequal to one without it.
+- **Java 21:** everything compiles with `--release 21` on the Java 25 toolchain; `ClientOutputTest` fails if a class
+  file targets a later release.
+- **Header:** `client-java/templates/licenseInfo.mustache` puts `SPDX-License-Identifier: MIT` and a do-not-edit note
+  in every generated file.
+- **Gates:** generated sources sit in their own source set, `generated`, outside the gates. The one hand-written class,
+  `ProblemDetails.from(ApiException)`, reads an error body as the contract's `Problem` and keeps every gate.
+- **Reproducible:** `checkClientReproducible` generates a second time and fails unless the sources are identical.
+
+Never edit generated code: change the contract, and the next build regenerates the client. The coordinates are group
+`ai.speckitty.charter`, artifact `charter-client`, package `ai.speckitty.charter.client`, version the contract's
+`info.version`. Nothing is published yet: the release zip, the JDK 21/25 matrix and the quickstart wait for contract
+0.1.0 ([#217](https://github.com/spec-kitty/spec-kitty-charter/issues/217)). Consumers in other languages, or who want
+their own Java client, follow [Generate your own client](/guides/generate-a-client/).
 
 ## Change a dependency
 
@@ -414,10 +554,46 @@ so a new or changed artifact needs its checksum recorded:
 ./gradlew --write-verification-metadata sha256 verifyAll
 ```
 
-Review the diff of `gradle/verification-metadata.xml`; never edit it by hand. The vacuum and
+Review the diff of `gradle/verification-metadata.xml`; never edit it by hand, except to empty
+`<components>` when pruning ([below](#pruning-stale-entries)). The vacuum and
 oasdiff binaries are not Gradle dependencies: their versions and SHA-256 checksums are pinned
 in `contracts/build.gradle.kts`.
 
 A module that is not a Spring module may still import the Spring Boot BOM as a platform, to
 pin a transitive dependency to the version the service uses. `packs` does this for
 the Jackson and slf4j versions that networknt's JSON Schema validator brings in.
+
+### Pruning stale entries
+
+Gradle adds entries to the metadata but never removes them. To prune, copy the file aside
+first, then empty the `<components>` element and keep `<configuration>` as it is. Then
+regenerate over every task family CI runs. `help` records every configuration Gradle can
+resolve, including those `-Pcharter.native=true` adds; the other lines add what the CI tasks
+resolve while they run. Some entries are therefore resolved by no CI job today, such as
+`junit-platform-native` through `nativeImageTestClasspath`:
+
+```bash
+./gradlew --write-verification-metadata sha256 help
+./gradlew --write-verification-metadata sha256 -Pcharter.native=true help
+./gradlew --write-verification-metadata sha256 verifyAll -PrequireSymlinks=true
+./gradlew --write-verification-metadata sha256 pitest
+./gradlew --write-verification-metadata sha256 :packs:wholePackRoundTrip :packs:timingBudgets \
+  :deployable:bootJar :charter-reports:aggregateJavadoc :contracts:bundleContract
+./gradlew --write-verification-metadata sha256 :deployable:nativeCompile -Pcharter.native=true
+```
+
+The last line is there for the dependencies the native build resolves. Without GraalVM's
+`native-image` it fails after it has resolved them; that is enough.
+
+Run the whole set twice: once with your usual `GRADLE_USER_HOME`, and once with a fresh, empty one
+(`GRADLE_USER_HOME=$(mktemp -d)`). A warm cache skips the BOM `.module` files a cold CI runner
+downloads, so a warm-only run drops entries that runner needs. Then review the diff: a removed
+entry should be a version the build no longer selects, and no kept artifact's checksum should change.
+
+The regeneration writes `origin="Generated by Gradle"` on every entry. From the copy, re-apply
+every other origin (one recorded by hand when the artifact was checked) to each artifact whose
+sha256 did not change.
+
+Run every command from the repository root. With `-p build-logic`, Gradle treats `build-logic` as a
+build of its own and writes a separate `build-logic/gradle/verification-metadata.xml`; delete that
+file. `verifyAll` already covers `build-logic` as an included build, against the root file.

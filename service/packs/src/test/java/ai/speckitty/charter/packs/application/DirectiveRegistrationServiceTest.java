@@ -12,6 +12,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.kernel.transport.PreconditionException;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.Enforcement;
@@ -168,7 +169,7 @@ class DirectiveRegistrationServiceTest {
         public Pack load(PackIdentifier pack) {
             Pack found = packs.get(pack);
             if (found == null) {
-                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "no pack " + pack.value());
+                throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + pack.value() + " was not found.");
             }
             return found;
         }

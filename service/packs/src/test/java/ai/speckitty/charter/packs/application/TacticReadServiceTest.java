@@ -25,6 +25,8 @@ class TacticReadServiceTest {
     private static final PackIdentifier PACK_A = new PackIdentifier("pack-a");
     private static final PackIdentifier PACK_B = new PackIdentifier("pack-b");
     private static final PackIdentifier ABSENT = new PackIdentifier("absent");
+    // Configured, but its files cannot be read: the storage refuses it PACK_UNREADABLE.
+    private static final PackIdentifier UNREADABLE = new PackIdentifier("unreadable");
     private static final TacticIdentifier ALPHA = new TacticIdentifier("alpha");
 
     private final Tactic alpha = tactic(PACK_A, "alpha");
@@ -64,20 +66,31 @@ class TacticReadServiceTest {
     }
 
     @Test
-    void anAbsentPackIsAClientSideNotFoundNotAnInternalError() {
+    void anAbsentOrUnreadablePackIsAClientSideNotFoundNotAnInternalError() {
         // Control: the same service answers the present pack, so the refusal is the absence's, not a broken setup.
         assertThat(service.tacticsOf(PACK_A).value()).isNotEmpty();
 
+        // The storage refuses an unknown pack PACK_NOT_FOUND itself; it passes through, with nothing chained.
         assertThatThrownBy(() -> service.tacticsOf(ABSENT)).isInstanceOfSatisfying(CharterRefusal.class, r -> {
             assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
-            // The original unreadable-pack refusal stays chained, so the diagnostic trail is not lost.
-            assertThat(r.getCause())
-                    .isInstanceOfSatisfying(
-                            CharterRefusal.class, c -> assertThat(c.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+            assertThat(r.getCause()).isNull();
         });
         assertThatThrownBy(() -> service.tactic(ABSENT, ALPHA))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND));
+        // A configured pack that cannot be read is not found too, and keeps the storage refusal as its cause.
+        assertThatThrownBy(() -> service.tacticsOf(UNREADABLE)).isInstanceOfSatisfying(CharterRefusal.class, r -> {
+            assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
+            assertThat(r.getCause())
+                    .isInstanceOfSatisfying(
+                            CharterRefusal.class, c -> assertThat(c.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+        });
+        assertThatThrownBy(() -> service.tactic(UNREADABLE, ALPHA)).isInstanceOfSatisfying(CharterRefusal.class, r -> {
+            assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
+            assertThat(r.getCause())
+                    .isInstanceOfSatisfying(
+                            CharterRefusal.class, c -> assertThat(c.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+        });
     }
 
     @Test
@@ -138,6 +151,18 @@ class TacticReadServiceTest {
                 .build();
     }
 
+    /** The stored tactics of a pack, refused as the storage refuses an unknown or an unreadable pack. */
+    private List<Tactic> storedIn(PackIdentifier pack) {
+        if (pack.equals(UNREADABLE)) {
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack unreadable has no pack.yaml");
+        }
+        List<Tactic> found = stored.get(pack);
+        if (found == null) {
+            throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + pack.value() + " was not found.");
+        }
+        return found;
+    }
+
     /** Point read only: assembling the aggregate fails the test, so the service cannot regress to it. */
     private final class InMemoryPacks implements PackRepository {
         @Override
@@ -147,11 +172,7 @@ class TacticReadServiceTest {
 
         @Override
         public List<Tactic> tacticsOf(PackIdentifier pack) {
-            List<Tactic> found = stored.get(pack);
-            if (found == null) {
-                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "no pack " + pack.value());
-            }
-            return found;
+            return storedIn(pack);
         }
     }
 
@@ -163,11 +184,7 @@ class TacticReadServiceTest {
 
         @Override
         public Optional<Tactic> load(PackIdentifier pack, TacticIdentifier tactic) {
-            List<Tactic> found = stored.get(pack);
-            if (found == null) {
-                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "no pack " + pack.value());
-            }
-            return found.stream().filter(t -> t.id().equals(tactic)).findFirst();
+            return storedIn(pack).stream().filter(t -> t.id().equals(tactic)).findFirst();
         }
     }
 }

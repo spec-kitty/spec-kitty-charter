@@ -1,53 +1,35 @@
-# Charter-offering promises
+# Charter-offering promises: where each one lives now
 
-<!-- Frozen-contract index for the charter-offering BDD suite. Each @promise id tags exactly one
-scenario and names the offering guarantee it asserts. Authored per the
-charter-offering-scenario-extraction procedure; evidence is read, never transcribed. Updated:
-2026-10-17. -->
+<!-- cspell:ignore organisation (a contract scenario title quoted as written) -->
 
-Each row maps a `@promise:` id to the offering guarantee it asserts and the FR/ADR that states it.
-The suite is the consumer contract on top of the Python `tests/e2e` / `tests/charter*` mechanism
-net, which stays in place in core. (The extraction trail and the lower-level mechanism net live
-in core today; see the note in `README.md` on paths that are re-homed as the offering moves
-here.)
+<!-- Pointer index for the nine promises of core's charter-offering acceptance suite. The scenarios
+themselves were removed by #374; each row says what accounts for the promise now. Updated:
+2026-11-05. -->
 
-## The governance in force is what I chose — `governance-in-force/`
+Every scenario named here is in `contracts/charter/scenarios/`. A `@contract` scenario runs in
+`CharterContractSuite`; a `@WIP` scenario or a reserved pin holds the place of a surface that is not
+built.
 
-| Promise | Consumer guarantee | Offering authority | Binding |
-|---------|--------------------|--------------------|---------|
-| `PR-CHARTER-GOVERNANCE-001` | Sharing a pack does not silently add its commands to every tool; a skill is in force only when the charter requires/selects it, not merely because a pack offers it. | `ArtifactKind.effective_when_absent == "required"` for `skill` — `src/charter/offering/artifact_kinds.py`; ADR `2026-09-27-1`. | bound |
-| `PR-CHARTER-GOVERNANCE-002` | A team's org-wide requirement is honored on top of the project's own choices (selection overlay). | `ArtifactKind.selection_overlayable` + org `required_<plural>` → `selected_<plural>` union — `src/charter/offering/artifact_kinds.py` / `src/charter/activation/org_charter.py`. | bound |
+## The governance in force is what I chose
 
-## The system refuses unsound governance with a clear reason — `refuses-unsound-governance/`
+| Promise | Guarantee | Verdict | Where it lives now |
+|---|---|---|---|
+| `PR-CHARTER-GOVERNANCE-001` | A skill is in force only when the charter requires or selects it, not because a pack offers it. | Retired to the activation surface | `activations.feature` "Reading the effective artifacts of an activation is reserved" (501 pin, ADR-0020 D8) and `composition.feature` `@WIP` "The compose is the closure of the activated packs, not every available pack" (#360). Rule: ADR-0053 decision 10, only what the charter activates is in force; ADR-0059 D2.2. |
+| `PR-CHARTER-GOVERNANCE-002` | An organization's required rule is in force on top of the project's own choices. | Retired: authority superseded | `journeys/journey-04-org-house-rules.feature` `@WIP` "A project of the organisation gets the required preset". Rule: ADR-0031, a requirement is authored as a preset. |
 
-| Promise | Consumer guarantee | Offering authority | Binding |
-|---------|--------------------|--------------------|---------|
-| `PR-CHARTER-REFUSAL-001` | Governance that would silently drop part of a profile is refused, not quietly accepted. | `enhances` field-merge preserves step sequence + I/O; a silent drop is rejected — agent-profile validation (AGENTS.md "Profile Load Diagnostics"). | bound |
-| `PR-CHARTER-REFUSAL-002` | A mistyped reference between pieces of governance is named, not dropped. | `unresolved_edge_endpoint` / `UnknownRelationError` — `src/charter/offering/drg/merge.py` (FR-010 / FR-003), closing ADR `2026-07-26-3`'s silent-drop path. | bound |
-| `PR-CHARTER-REFUSAL-003` | A broken charter fails closed instead of running half-applied. | `ActiveCharterConfigError` fail-closed; `plan_activation()` never mutates on validation failure — ADR `2026-05-16-1` (NFR-003). | bound |
+## The system refuses unsound governance with a clear reason
 
-## I can share governance across a team or project safely — `share-governance-safely/`
+| Promise | Guarantee | Verdict | Where it lives now |
+|---|---|---|---|
+| `PR-CHARTER-REFUSAL-001` | An `enhances` merge that would silently drop part of an agent profile is refused. | Gap: [#380](https://github.com/spec-kitty/spec-kitty-charter/issues/380) | `profiles.feature` `@WIP` "An agent profile enhancement that would drop fields of the profile it enhances is refused", with its provisional target answer. The service does not resolve a profile's `enhances` yet (ADR-0032). |
+| `PR-CHARTER-REFUSAL-002` | A reference to a name that does not exist is refused and named. | Mapped; the rest decided against | `composition.feature` "A pack-qualified reference to an artifact the named pack does not hold is refused naming both packs", "A bare cross-pack reference is refused naming the holding pack" and the outline "A relationship whose target the compose cannot resolve is refused 422 before anything is written"; `relationships.feature` "A relationship from a mission type the pack does not hold is still a conflict". A bare `to` that no pack holds is accepted as external, by ADR-0026 decision 1.3. |
+| `PR-CHARTER-REFUSAL-003` | A broken charter fails closed instead of running half-applied. | Retired to the activation surface | The service reads `charter.yaml` only as an input to the source fingerprint, never as governance; the active charter is local (ADR-0033). The activation document's refusal is reserved: `errors.feature` "activation_invalid is reserved for the activation set" and the 501 pins of `activations.feature`. |
 
-| Promise | Consumer guarantee | Offering authority | Binding |
-|---------|--------------------|--------------------|---------|
-| `PR-CHARTER-SHARING-001` | A team pack carrying an unsound profile is not reported healthy, even when its graph counts look right. | `AgentProfileRepository.skipped_profiles` → `doctor charter-packs` (FR-010) — `src/charter/offering/agent_profiles/repository.py`. | bound |
-| `PR-CHARTER-SHARING-002` | A project's own governance choice wins over the team pack it adopts. | Layered repository + override machinery — ADR `2026-05-16-1`. | `@wip` (needs #6137 override + layer-provenance fixture) |
-| `PR-CHARTER-SHARING-003` | A shared skill under a reserved namespace is not accepted as sound. | Reserved prefixes `spk-` / `spec-kitty-` / `spec-kitty.` + namespace grammar — `src/charter/activation/org_charter.py`, `skill_preparation`; ADR `2026-09-27-1`. | bound |
-| `PR-CHARTER-SHARING-004` | A shared asset that reaches outside its own pack folder is not accepted as sound. | `AssetPathEscapeError` fail-closed (NFR-006) — `src/charter/offering/assets/repository.py`. | bound |
+## I can share governance across a team or project safely
 
-## Binding status
-
-Every scenario drives, in its Act, the command that actually performs the governed check, so a red
-is honest: `doctor charter-packs` exits non-zero (not healthy) on an unsound shared pack, and
-`charter synthesize` fails closed on a broken charter — never `charter synthesize` on a fresh
-project, which takes the seed path and evaluates nothing. Eight scenarios are bound to a real
-outcome-verb step; one (`SHARING-002`) is `@wip` because witnessing that the project's choice WINS
-over an org pack needs the black-box override + layer-provenance fixture tracked by #6137.
-
-A bound scenario may still be red in the nightly Cucumber-JVM run for a real, documented reason
-(a defect's witness surfaces on a surface the Act does not yet drive, or a fixture gap), never
-because of a stub. In core today, the per-PR scenario contract
-(`tests/architectural/test_scenario_contract.py`) checks the tag and step-binding shape without a
-JDK and the nightly acceptance-bdd job runs the bound scenarios cross-OS. Neither that contract
-check nor a BDD CI job exists in this repository yet; standing up the runner (Layer B) is tracked
-by #31, and these references are re-homed as the offering moves here.
+| Promise | Guarantee | Verdict | Where it lives now |
+|---|---|---|---|
+| `PR-CHARTER-SHARING-001` | A team pack carrying an unsound profile is not reported healthy. | Wired | `offering.feature` "A configured pack holding an agent profile that fails its schema refuses the offering" (500 `pack_unreadable`). |
+| `PR-CHARTER-SHARING-002` | A project's own governance wins over the team pack it adopts. | Mapped in part | `composition.feature` "An org pack and a project pack defining one artifact compose as a layer override". That the project's version is the effective one waits on the layer merge and the effective reads (ADR-0055 D1, D2); the lock that keeps an org rule is `journeys/journey-04-org-house-rules.feature` `@WIP` "A locked directive cannot be deactivated by a project" (ADR-0012); ADR-0059 D3. |
+| `PR-CHARTER-SHARING-003` | A shared skill under a reserved name (`spk-`, `spec-kitty-`, `spec-kitty.`) is refused. | Gap: [#381](https://github.com/spec-kitty/spec-kitty-charter/issues/381) | No scenario until #381 is built: the org-charter schema puts no pattern on `skill_namespace` yet. |
+| `PR-CHARTER-SHARING-004` | A shared asset that reaches outside its pack is refused. | Wired | `offering.feature` "A configured pack holding an asset whose path leaves assets/ refuses the offering" (500 `pack_unreadable`). |

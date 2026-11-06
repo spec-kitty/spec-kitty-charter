@@ -14,8 +14,8 @@ public interface PackRevisions {
      *
      * @param pack the pack's identity
      * @return the current revision
-     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with {@code PACK_UNREADABLE} when the pack cannot be
-     *     resolved or read
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with {@code PACK_NOT_FOUND} when no configured pack has
+     *     this identifier, or with {@code PACK_UNREADABLE} when the pack cannot be read
      */
     PackRevision currentRevision(PackIdentifier pack);
 }

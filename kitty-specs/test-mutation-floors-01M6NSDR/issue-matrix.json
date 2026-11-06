@@ -1,0 +1,101 @@
+{
+  "rows": {
+    "#239": {
+      "evidence_ref": "WP01 19a14bbe+d5d1a71f (charter.mutation-conventions, lenient floor check, floors kernel 65/missions 70/profiles 50); WP02 2c0630c7+f5213a4c (PIT on packs, full run 45m54s, domain+application 92.7 %/infra.storage 90.7 %, floors 85/85); WP03 fdab77e3..8cc00501 (nightly --continue, summary, all reports, mutation-nightly alert, timeout 90); WP04 f16943ac+f699cf12 (ADR-0062, guide, changelog); WP05 e03de3d7+2f92b17e (kernel.domain survivors triaged 14 killed/11 equivalent)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "Mutation testing: fixed floors, PIT on packs, nightly alerting",
+      "verdict": "fixed",
+      "wp": "WP02"
+    },
+    "#291": {
+      "evidence_ref": "Cited for context or overlap only",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#359": {
+      "evidence_ref": "Cited for context or overlap only",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#360": {
+      "evidence_ref": "Cited for context or overlap only",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#368": {
+      "evidence_ref": "Cited for context or overlap only",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#376": {
+      "evidence_ref": "Cited for context or overlap only",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#377": {
+      "evidence_ref": "Cited for context or overlap only",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#384": {
+      "evidence_ref": "Cited for context or overlap only",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "not-applicable",
+      "wp": null
+    }
+  },
+  "schema_version": 1
+}

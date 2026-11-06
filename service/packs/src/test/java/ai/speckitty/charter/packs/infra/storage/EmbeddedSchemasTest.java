@@ -15,6 +15,12 @@ import org.junit.jupiter.api.Test;
 @DisplayName("Embedded config schemas are checked against the metaschema and never fetch (ADR-0054 decision 4)")
 class EmbeddedSchemasTest {
 
+    /**
+     * A hang cap far above the work's time, so load cannot trip it; a guard that stops cutting the work off fails at
+     * it (#320).
+     */
+    private static final Duration HANG_CAP = Duration.ofSeconds(30);
+
     private static ConfigValue tree(String yaml) {
         return ConfigValue.of(Yaml.load(yaml));
     }
@@ -74,11 +80,12 @@ class EmbeddedSchemasTest {
     @DisplayName("a pack-written pattern runs in linear time, and one the engine cannot run is refused (ReDoS)")
     void aCatastrophicPatternIsEvaluatedInLinearTime() {
         ConfigValue schema = tree("{type: object, properties: {a: {type: string, pattern: '^(.*a){12}$'}}}");
-        ConfigValue value = ConfigValue.of(Map.of("a", "a".repeat(40) + "!"));
+        // A backtracking engine needs minutes on this input even on a fast CPU, far past the hang cap.
+        ConfigValue value = ConfigValue.of(Map.of("a", "a".repeat(48) + "!"));
 
         assertThat(EmbeddedSchemas.schemaProblems(schema)).isEmpty();
         assertTimeoutPreemptively(
-                Duration.ofSeconds(5),
+                HANG_CAP,
                 () -> assertThat(EmbeddedSchemas.valueProblems(schema, Optional.of(value)))
                         .containsExactly("pattern at /a"));
     }

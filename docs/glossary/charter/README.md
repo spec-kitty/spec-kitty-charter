@@ -457,13 +457,13 @@ The middle layer of the three-layer CRG model, contributed by one or more org Ch
 
 ## Overlay Enhancement — `enhances` (CRG Relation)
 
-A directional org-pack overlay relation: a pack artifact field-merges additional content into a built-in artifact, preserving the built-in's existing action sequence and step I/O rather than discarding them. No built-in artifact emits this edge — by design, `enhances` only ever originates from an org- or project-tier pack fragment layered on top of a shipped artifact, never between two built-in nodes. Distinct from Overlay Override, which replaces rather than merges. Canonical source: `RELATION_DESCRIPTIONS[Relation.ENHANCES]` in `src/charter/offering/drg/models.py`.
+A directional org-pack overlay relation: a pack artifact field-merges additional content into a built-in artifact, preserving the built-in's existing action sequence and step I/O rather than discarding them. No built-in artifact emits this edge — by design, `enhances` only ever originates from an org- or project-tier pack fragment layered on top of a shipped artifact, never between two built-in nodes. An activation pulls an enhancer and its target into force together (ADR-0059 decision 2). Distinct from Overlay Override, which replaces rather than merges. Canonical source: `RELATION_DESCRIPTIONS[Relation.ENHANCES]` in `src/charter/offering/drg/models.py`.
 
 {#overlay-override-overrides-crg-relation}
 
 ## Overlay Override — `overrides` (CRG Relation)
 
-A directional org-pack overlay relation: a pack artifact declares a full replacement of a built-in artifact's content rather than a field-merge. Like Overlay Enhancement, no built-in artifact emits this edge by design — it only ever originates from an org- or project-tier overlay. Silently dropping steps or stripping step input/output when applying an `overrides` edge is rejected rather than tolerated. Canonical source: `RELATION_DESCRIPTIONS[Relation.OVERRIDES]` in `src/charter/offering/drg/models.py`. Not to be confused with the Overrides edge, a pack descriptor entry that settles a sibling conflict ([Overrides edge](#overrides-edge)), or with a layer override, a higher level's artifact taking the place of the same id at a lower level, which needs no relation or edge ([Sibling conflict](#sibling-conflict)).
+A directional org-pack overlay relation: a pack artifact declares a full replacement of a built-in artifact's content rather than a field-merge. Like Overlay Enhancement, no built-in artifact emits this edge by design — it only ever originates from an org- or project-tier overlay. Silently dropping steps or stripping step input/output when applying an `overrides` edge is rejected rather than tolerated. Canonical source: `RELATION_DESCRIPTIONS[Relation.OVERRIDES]` in `src/charter/offering/drg/models.py`. Not to be confused with the Overrides edge, a pack descriptor entry that settles a sibling conflict ([Overrides edge](#overrides-edge)), or with a layer override, the artifact of the level that applies (project over org over built-in) taking the place of the same id from a level nearer built-in, whole and with no field merge, which needs no relation or edge (ADR-0059 decision 3) ([Sibling conflict](#sibling-conflict)).
 
 {#paradigm}
 
@@ -509,7 +509,7 @@ A playbook: a bounded, step-by-step way to handle one situation, with entry and 
 
 ## Overrides edge
 
-An `overrides: [{artifact, member}]` entry on a pack descriptor that settles a sibling conflict on `artifact` by naming `member`, the descriptor pack id of a contesting pack (ADR-0053 decision 5). Until #358 any pack of the compose may declare it; until #357 settling only clears the refusal and the member's version is not yet put in force. Not to be confused with the CRG relation [Overlay Override](#overlay-override-overrides-crg-relation), which replaces a built-in artifact's content, or with a layer override, the same id at a higher level taking the place of the lower level's, which needs no edge.
+An `overrides: [{artifact, member}]` entry on a pack descriptor that settles a sibling conflict on `artifact` by naming `member`, the descriptor pack id of a contesting pack (ADR-0053 decision 5). Until #358 any pack of the compose may declare it; until #357 settling only clears the refusal and the member's version is not yet put in force. Not to be confused with the CRG relation [Overlay Override](#overlay-override-overrides-crg-relation), which replaces a built-in artifact's content, or with a layer override, the same id at the level that applies taking the place of the one nearer built-in, whole, which needs no edge (ADR-0059 decision 3).
 
 **Meta:**
 
@@ -775,7 +775,7 @@ A structured set of charter templates that shape output artifacts and interactio
 
 ## Sibling conflict
 
-Two packs at the same level that both change, or both define, the same artifact id, of any kind; a definer and an enhancer do not conflict. It is refused as `pack_sibling_conflict` unless an overrides edge naming a contesting member settles it (ADR-0048 decision 9, ADR-0053 decision 5). Across levels the same id is a legitimate layer override, not a conflict.
+Two packs at the same level that both change, or both define, the same artifact id, of any kind; a definer and an enhancer do not conflict. It is refused as `pack_sibling_conflict` unless an overrides edge naming a contesting member settles it (ADR-0048 decision 9, ADR-0053 decision 5). Across levels the same id is a legitimate layer override, not a conflict. Two packs at one level that hold a preset with the same id conflict too, unless one is on the other's `parent_pack` line; an overrides edge does not settle a preset (operator ruling of 2026-11-06).
 
 **Meta:**
 

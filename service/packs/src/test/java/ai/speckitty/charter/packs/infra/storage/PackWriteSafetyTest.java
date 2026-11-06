@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -69,7 +70,8 @@ class PackWriteSafetyTest {
         });
 
         assertThatThrownBy(() -> failing.write(PACK, TacticBinding.INSTANCE, tactic("alpha-tactic", "Never written")))
-                .isInstanceOf(CharterRefusal.class);
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
 
         assertThat(tempSeen[0])
                 .as("the temp file existed when the rename was attempted")
@@ -88,7 +90,8 @@ class PackWriteSafetyTest {
         FilesystemPackStore store = store(host);
 
         assertThatThrownBy(() -> store.write(PACK, TacticBinding.INSTANCE, tactic("escape-tactic", "Escape")))
-                .isInstanceOf(CharterRefusal.class);
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
         assertThat(Files.readString(outside)).isEqualTo("id: escape-tactic\n");
         assertThat(fileNames(pack)).isEqualTo(namesBefore);
 
@@ -104,8 +107,11 @@ class PackWriteSafetyTest {
         FilesystemPackStore store = store(host);
 
         assertThatThrownBy(() -> store.directoryOf(new PackIdentifier("../elsewhere")))
-                .isInstanceOf(CharterRefusal.class);
-        assertThatThrownBy(() -> store.directoryOf(new PackIdentifier("a/b"))).isInstanceOf(CharterRefusal.class);
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+        assertThatThrownBy(() -> store.directoryOf(new PackIdentifier("a/b")))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
         assertThat(store.directoryOf(PACK))
                 .isEqualTo(host.toAbsolutePath().normalize().resolve("pack-a"));
     }

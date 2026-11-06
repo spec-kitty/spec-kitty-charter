@@ -4,8 +4,8 @@ import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.transport.PreconditionException;
 import ai.speckitty.charter.packs.application.PackRevision;
-import ai.speckitty.charter.packs.application.PreconditionException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
@@ -144,9 +144,10 @@ public final class PackCommitStore {
      * @return the revision of the committed state
      * @throws PreconditionException {@link PreconditionException.Kind#STALE} when {@code ifMatch} does not match the
      *     live revision; nothing is staged or written
-     * @throws CharterRefusal with {@code PACK_UNREADABLE} when the pack is not configured, is not a directory, is
-     *     read-only through the service (a pack linked from outside the configuration root), or the commit fails; in
-     *     every failure case the live pack directory is unchanged
+     * @throws CharterRefusal with {@code PACK_NOT_FOUND} when no configured pack has this identifier, or with
+     *     {@code PACK_UNREADABLE} when the pack is not a directory, is read-only through the service (a pack linked
+     *     from outside the configuration root), or the commit fails; in every failure case the live pack directory is
+     *     unchanged
      */
     public PackRevision commit(
             PackIdentifier pack,
@@ -327,7 +328,8 @@ public final class PackCommitStore {
                 return candidate;
             }
         }
-        throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + pack.value() + " is not a configured pack");
+        // The identifier matches no configured pack: the caller asked wrongly (CharterRefusalCode pack_not_found).
+        throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + pack.value() + " was not found.");
     }
 
     private Resolved over(PackLocation location) {

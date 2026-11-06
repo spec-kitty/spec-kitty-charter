@@ -1,16 +1,33 @@
 name: Mutation testing (nightly)
 
-# PIT mutation testing of the plain-Java core (kernel, the module with
-# charter.domain-conventions), spec FR-009. `./gradlew pitest` is its own task, never part of `check`, and
-# this workflow has no pull-request trigger, so no pull-request run invokes it or waits for it.
-# Each module's HTML and XML report lists the killed and surviving mutants and the score; both go up as
-# the `mutation-report` artifact.
+# The nightly mutation floor (#239, ADR-0062): PIT on every module that applies charter.mutation-conventions
+# (kernel, missions, profiles, packs and activations). `./gradlew pitest` is its own task, never part of `check` or `verifyAll`,
+# and this workflow has only the schedule and workflow_dispatch triggers, so no pull-request run invokes it or
+# waits for it.
+# - `pitest --continue` runs every module even when one is below its floor; each module's checkMutationFloors
+#   fails naming the module, the group, the score and the floor, and writes
+#   build/reports/mutation-floors/floors.json.
+# - The job summary (scripts/ci/mutation_summary.py) shows every module and group, red or green, and "no report"
+#   for a module that wrote no floors.json.
+# - Every module's PIT report and floors.json go up as the `mutation-report` artifact, on a red run too, kept 14 days.
+# - On a scheduled run that does not succeed (red, timed out or cancelled), the alert job opens one issue labelled
+#   `mutation-nightly`, or comments on the open one. A green scheduled run never touches the issue. A workflow_dispatch
+#   with force_issue takes the same path whatever the result, marked as a forced test run, so the open-or-comment path
+#   can be proven without breaking a floor.
+# - The summary script's own unit tests run after PIT, whatever its result, so a broken summary turns the nightly red
+#   but can never stop PIT from running. Pull requests run the same tests (docs-cleanliness.yml, through ci.yml).
+# spec-kitty-open-packs is checked out at the pin and synced, as in service.yml: the packs storage tests read it.
 
 on:
   schedule:
     # Nightly, off the hour.
     - cron: '43 2 * * *'
   workflow_dispatch:
+    inputs:
+      force_issue:
+        description: "Test the alert: open or comment on the mutation-nightly issue whatever the result, marked as a forced test run."
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -22,12 +39,37 @@ concurrency:
 jobs:
   pitest:
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    # A full :packs:pitest measured 45m54s on an idle 4-core machine, ~2 min more with infra.fetch, plus ~3 min for
+    # kernel, missions and profiles: ~51 min of mutation testing. 90 gives >25 % headroom (NFR-002).
+    # The mutation step has 80 of the 90 minutes, so the summary and the upload still run when PIT runs out of time.
+    # A timeout raises the mutation-nightly issue.
+    timeout-minutes: 90
+    outputs:
+      summary: ${{ steps.summary.outputs.summary }}
     steps:
-      # No spec-kitty-open-packs checkout: PIT runs only the unit tests of the core modules; the
-      # open-packs round-trip lives in packs (infra.storage), which PIT does not target.
       - name: Check out
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+
+      # The pin lives in gradle.properties only (openPacksRef); Gradle reads it too.
+      - name: Read the open-packs pin
+        id: open-packs-pin
+        run: |
+          ref="$(grep '^openPacksRef=' gradle.properties | cut -d= -f2-)"
+          if ! printf '%s' "$ref" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "::error::openPacksRef in gradle.properties must be 40 lowercase hex characters, but is '$ref'"
+            exit 1
+          fi
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - name: Check out spec-kitty-open-packs
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          repository: spec-kitty/spec-kitty-open-packs
+          ref: ${{ steps.open-packs-pin.outputs.ref }}
+          path: .open-packs
+          persist-credentials: false
 
       - name: Set up Java 25
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
@@ -38,14 +80,109 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
 
-      - name: Mutation testing
-        run: ./gradlew pitest
+      # packs/internal and packs/qa are not committed: sync them from the checkout above and verify their digests
+      # against packs/open-packs.lock.yaml, as service.yml does.
+      - name: Sync and verify the packs
+        run: ./gradlew syncPacks -PopenPacksDir="$GITHUB_WORKSPACE/.open-packs"
 
+      # --continue: a module below its floor does not stop the others, so every module reports.
+      # -PrequireSymlinks=true: the link tests fail, rather than skip, on a runner that cannot make links (#286).
+      - name: Mutation testing
+        timeout-minutes: 80
+        run: ./gradlew pitest --continue -PopenPacksDir="$GITHUB_WORKSPACE/.open-packs" -PrequireSymlinks=true
+
+      # The summary script's own tests (standard library only): a broken summary turns the nightly red. They run after
+      # PIT, whatever its result, so they can never keep PIT from running.
+      - name: Test the summary script
+        if: always()
+        run: python3 -m unittest discover -s scripts/ci -p 'test_*.py'
+
+      # Report-only: it exits 0 whatever the verdicts; the step above is what makes the run red. The same table is
+      # passed to the alert job as the `summary` output.
+      - name: Summarise the mutation floors
+        id: summary
+        if: always()
+        run: |
+          python3 scripts/ci/mutation_summary.py > "$RUNNER_TEMP/mutation-summary.md"
+          delimiter="mutation_summary_$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')"
+          {
+            echo "summary<<$delimiter"
+            cat "$RUNNER_TEMP/mutation-summary.md"
+            echo "$delimiter"
+          } >> "$GITHUB_OUTPUT"
+
+      # Each module's HTML and XML report and its floors.json. A module that did not run simply adds nothing;
+      # the upload fails only when no module wrote anything at all.
+      # A single missing module is not checked here: the summary shows it as a "no report" row.
       - name: Upload the mutation reports
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: mutation-report
           path: |
-            service/kernel/build/reports/pitest
+            service/*/build/reports/pitest
+            service/*/build/reports/mutation-floors
           if-no-files-found: error
+          retention-days: 14
+
+  # One open issue labelled `mutation-nightly` at a time: opened on the first red night, commented on after that.
+  # Closing it is the maintainers' call once the nightly is green again. A scheduled run that is red, timed out or
+  # cancelled alerts (cancel-in-progress is false, so a cancel is not a superseded run); a green one never runs this job;
+  # a workflow_dispatch with force_issue runs it whatever the result, as a forced test run.
+  alert:
+    needs: pitest
+    if: >-
+      always() && (
+        (needs.pitest.result != 'success' && github.event_name == 'schedule')
+        || (github.event_name == 'workflow_dispatch' && inputs.force_issue)
+      )
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Open or comment on the mutation-nightly issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EVENT: ${{ github.event_name }}
+          RESULT: ${{ needs.pitest.result }}
+          SUMMARY: ${{ needs.pitest.outputs.summary }}
+        run: |
+          set -euo pipefail
+          label=mutation-nightly
+          # --force: creates the label, or updates it when it exists, so the step is idempotent.
+          gh label create "$label" --repo "$REPO" --force --color B60205 \
+            --description "The nightly mutation-testing run did not succeed (mutation-nightly.yml)"
+
+          body="$RUNNER_TEMP/mutation-issue.md"
+          {
+            if [ "$EVENT" = workflow_dispatch ]; then
+              echo "**Forced test run** (workflow_dispatch with force_issue), not a scheduled alert:"
+              echo "it checks that the nightly can open or comment on this issue."
+              echo "The \`pitest\` job result was: **$RESULT**. Run: $RUN_URL"
+            else
+              echo "The nightly mutation testing run did not succeed (\`pitest\` job result: **$RESULT**): $RUN_URL"
+            fi
+            echo
+            if [ -n "$SUMMARY" ]; then
+              printf '%s\n' "$SUMMARY"
+            else
+              echo "The run wrote no summary; read the \`pitest\` job log and the \`mutation-report\` artifact."
+            fi
+          } > "$body"
+
+          # A plain label filter, not --search: the search API is eventually consistent.
+          issue="$(gh issue list --repo "$REPO" --label "$label" --state open --limit 1 \
+            --json number --jq '.[0].number // empty')"
+          if [ -n "$issue" ]; then
+            gh issue comment "$issue" --repo "$REPO" --body-file "$body"
+            echo "Commented on #$issue"
+          else
+            title="Mutation testing nightly did not succeed"
+            if [ "$EVENT" = workflow_dispatch ]; then
+              title="Mutation testing nightly: forced alert test (pitest $RESULT)"
+            fi
+            gh issue create --repo "$REPO" --label "$label" --title "$title" --body-file "$body"
+          fi

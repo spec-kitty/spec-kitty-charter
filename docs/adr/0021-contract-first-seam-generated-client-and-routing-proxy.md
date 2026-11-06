@@ -2,8 +2,8 @@
 title: "ADR-0021: Core adopts the generated client now, behind a proxy that routes each operation"
 description: Proposes that the published contract is core's seam today, with a generated client and a proxy that routes each operation to core's Python or to the service.
 doc_status: active
-updated: 2026-11-03T00:00:00Z
-decision_status: Accepted
+updated: 2026-11-04T00:00:00Z
+decision_status: Accepted; the D5 switch gate answered by ADR-0059 (2026-11-04)
 decision_date: '2026-10-24'
 type: ADR
 kind: ADR
@@ -55,7 +55,8 @@ The operator ruled on 2026-11-03 that the Java service is built first and core's
 - **D2** and **D6:** core vendors the client when the service is built, not as soon as 0.1.0 is published, and its
   adoption no longer waits on the first release alone (ADR-0055 D1).
 - **D5:** the conformance corpus no longer gates a switch. The design is the acceptance oracle (ADR-0055 D3). What
-  gates each switch in phase 2 is an open question in ADR-0055.
+  gates each switch in phase 2 is an open question in ADR-0055. *Answered 2026-11-04: the design's BDD scenarios and
+  contract tests ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) decision 1).*
 
 D1, D3, D4 and the rest of D5 (per-operation switching, fail closed) are unchanged. They now apply in phase 2, when
 core integrates. The original text stands.
@@ -131,7 +132,8 @@ routing.
 
 *Amended 2026-11-03 ([ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/) D3): "the corpus passes for it" no longer gates a switch, because the design, not
 core's Python answers, is the acceptance oracle. What gates a switch in phase 2 is an open question in ADR-0055.
-Per-operation switching and fail closed are unchanged.*
+Per-operation switching and fail closed are unchanged. Answered 2026-11-04: the design's BDD scenarios and contract
+tests gate a switch ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) decision 1).*
 
 An operation moves from in-process (or shadow) to remote when the service implements it and the
 corpus passes for it. After it moves:

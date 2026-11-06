@@ -3,6 +3,9 @@
 plugins {
     id("charter.spring-conventions")
     id("charter.hand-written")
+    // The nightly mutation floor (#239). Packs cannot use charter.domain-conventions, which refuses external
+    // dependencies, so it applies the mutation conventions itself; the PIT scope and its floors are below.
+    id("charter.mutation-conventions")
 }
 
 dependencies {
@@ -30,6 +33,8 @@ dependencies {
 
     // infra.api: the inbound REST adapter implements the generated contract interfaces.
     api(project(":charter-api"))
+    // The service-wide transport: problem rendering, refusal mapping and the JSON body guard.
+    implementation(project(":web-transport"))
     implementation(catalog.lib("spring-boot-starter-webmvc"))
 
     testImplementation(catalog.lib("spring-boot-starter-test"))
@@ -192,38 +197,92 @@ tasks.register<Test>("timingBudgets") {
     testLogging { showStandardStreams = true }
 }
 
-tasks.test {
-    useJUnitPlatform { excludeTags("open-packs", "whole-pack", "timing") }
+// What the unit tests need from the repository, shared by `test` and `pitest` (below), which runs the same tests in its
+// own JVMs: the tags they leave out, the system properties they read and the repository files they read, declared as
+// inputs so a cached result never outlives them.
+val repositoryDir = rootProject.layout.projectDirectory
+val unitTestExcludedTags = listOf("open-packs", "whole-pack", "timing")
+// The link tests skip where the file system cannot make a symbolic link; -PrequireSymlinks=true, which CI passes
+// (service.yml), makes them fail there instead, so a runner without links cannot stay green by skipping (#286).
+val requireSymlinks = providers.gradleProperty("requireSymlinks").orElse("false")
+val unitTestSystemProperties = mapOf(
     // PackSchemasTest checks that every schema file in the repository is bundled and listed in file-kinds.yaml;
     // PlantedFilesTest reads the repository's conformance files. Both find the repository by this property.
-    val schemaFiles = packContracts.dir("schemas")
-    inputs.dir(schemaFiles).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("packSchemaFiles")
-    // PlantedFilesTest and DivergenceRegisterTest read the register in both forms.
-    val conformance = rootProject.layout.projectDirectory.dir("docs/conformance")
-    inputs.dir(conformance).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("conformanceDocs")
-    // ProjectCharterYamlSchemaTest validates the project's own charter.yaml against the charter schema (#131).
-    val projectCharter = rootProject.layout.projectDirectory.file(".kittify/charter/charter.yaml")
-    inputs.file(projectCharter).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("projectCharterYaml")
-    systemProperty("charter.repositoryRoot", rootProject.layout.projectDirectory.asFile.absolutePath)
+    "charter.repositoryRoot" to repositoryDir.asFile.absolutePath,
     // VocabularyEqualityTest checks that every load-path wire code is in the contract's code enums.
-    val contractSchemas = rootProject.layout.projectDirectory.dir("contracts/charter/schemas")
-    inputs.dir(contractSchemas).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("contractSchemas")
-    systemProperty("charter.contractSchemas", contractSchemas.asFile.absolutePath)
-    // The link tests skip where the file system cannot make a symbolic link; -PrequireSymlinks=true, which CI passes
-    // (service.yml), makes them fail there instead, so a runner without links cannot stay green by skipping (#286).
-    val requireSymlinks = providers.gradleProperty("requireSymlinks").orElse("false")
+    "charter.contractSchemas" to repositoryDir.dir("contracts/charter/schemas").asFile.absolutePath,
+    // ActivationConfigSchemaParityTest validates the ActivationConfig corpus against the canonical JSON Schema and its
+    // OpenAPI mirror (#125).
+    "charter.offering" to repositoryDir.dir("contracts/offering").asFile.absolutePath,
+    "charter.requireSymlinks" to requireSymlinks.get(),
+)
+fun Task.readsTheUnitTestInputs() {
+    mapOf(
+        "packSchemaFiles" to "contracts/packs/schemas",
+        // PlantedFilesTest and DivergenceRegisterTest read the register in both forms.
+        "conformanceDocs" to "docs/conformance",
+        "contractSchemas" to "contracts/charter/schemas",
+        "offering" to "contracts/offering",
+    ).forEach { (name, dir) ->
+        inputs.dir(repositoryDir.dir(dir)).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName(name)
+    }
+    // ProjectCharterYamlSchemaTest validates the project's own charter.yaml against the charter schema (#131).
+    inputs.file(repositoryDir.file(".kittify/charter/charter.yaml")).withPathSensitivity(PathSensitivity.RELATIVE)
+        .withPropertyName("projectCharterYaml")
     inputs.property("requireSymlinks", requireSymlinks)
-    systemProperty("charter.requireSymlinks", requireSymlinks.get())
     // SymbolicLinksTest fails a GitHub Actions run without -PrequireSymlinks=true; GITHUB_ACTIONS is an input, so a
     // cached result from a run without it never stands in for one with it.
     inputs.property("githubActions", providers.environmentVariable("GITHUB_ACTIONS").orElse(""))
-    // ActivationConfigSchemaParityTest validates the ActivationConfig corpus against the canonical JSON Schema and
-    // its OpenAPI mirror (#125).
-    val offering = rootProject.layout.projectDirectory.dir("contracts/offering")
-    inputs.dir(offering).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("offering")
-    systemProperty("charter.offering", offering.asFile.absolutePath)
+}
+
+tasks.test {
+    useJUnitPlatform { excludeTags(*unitTestExcludedTags.toTypedArray()) }
+    systemProperties(unitTestSystemProperties)
+    readsTheUnitTestInputs()
 }
 // The open-packs tests report no coverage: jacocoTestReport depends on `test`, which excludes the open-packs tag, and
 // this repository sets no coverage threshold (the charter's min_coverage is 0). The tag narrows the report, not a gate.
 tasks.check { dependsOn(openPacksRoundTrip) }
 
+// The nightly mutation floor (#239; operator rulings of 2026-11-05). PIT mutates domain, application, infra.storage
+// (infra.storage.config included) and infra.fetch, but never the Spring wiring (application.config,
+// infra.fetch.config) nor the inbound REST adapter (infra.api), and runs only the unit tests of those packages: the
+// Spring-wired tests (*WiredTest, the only @SpringBootTest among them) and the tagged suites that `test` leaves out
+// (open-packs, whole-pack, timing) stay out of PIT too. pit-targets.init.gradle narrows this scope further for a run of
+// one work package's classes.
+val packsPackage = "ai.speckitty.charter.packs"
+val mutatedPackages =
+    listOf("domain", "application", "infra.storage", "infra.fetch").map { "$packsPackage.$it.*" }.toSet()
+pitest {
+    targetClasses = mutatedPackages
+    excludedClasses = setOf(
+        "$packsPackage.application.config.*",
+        "$packsPackage.infra.fetch.config.*",
+        "$packsPackage.infra.api.*",
+    )
+    targetTests = mutatedPackages
+    excludedTestClasses = setOf("*WiredTest")
+    // The same tags, system properties and inputs as `test` (above): PIT runs those tests in its own JVMs.
+    excludedGroups = unitTestExcludedTags.toSet()
+    jvmArgs.addAll(unitTestSystemProperties.map { (key, value) -> "-D$key=$value" })
+}
+tasks.named("pitest") { readsTheUnitTestInputs() }
+
+// Three floor groups, as the operator ruled them on 2026-11-05 (C-001): each at or below floor5(score - 3) of its first
+// measured run. domain+application (92.7 %) and infra.storage (90.7 %) take 85; infra.fetch (77.3 %) takes 70.
+mutationFloors {
+    group("domain+application") {
+        packages.addAll("$packsPackage.domain", "$packsPackage.application")
+        excludes.add("$packsPackage.application.config")
+        floor = 85
+    }
+    group("infra.storage") {
+        packages.add("$packsPackage.infra.storage")
+        floor = 85
+    }
+    group("infra.fetch") {
+        packages.add("$packsPackage.infra.fetch")
+        excludes.add("$packsPackage.infra.fetch.config")
+        floor = 70
+    }
+}

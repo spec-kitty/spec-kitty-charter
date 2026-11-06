@@ -1,0 +1,110 @@
+{
+  "event_count": 17,
+  "last_event_id": "01M6PBRZWADRA1WQCWZPXF6EY3",
+  "materialized_at": "2026-11-05T17:23:17.002932+00:00",
+  "mission_number": "",
+  "mission_slug": "client-java-and-generate-your-own-01M6P952",
+  "mission_type": "software-dev",
+  "schema_version": 2,
+  "summary": {
+    "approved": 3,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 0,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 2,
+      "lane": "approved",
+      "last_event_id": "01M6PBRN659NG8A2G6AQ3GX854",
+      "last_transition_at": "2026-11-05T17:23:06.053627+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Implemented in 043c8c18 before the claim was recorded (spike during planning); verified: :build-logic:check and :client-java:check green on Java 25",
+        "Review passed: anti-pattern checklist 1-8 PASS; positive control and byte-identical server generation recorded in research.md",
+        "repair: record agent claude (implemented in place; the next-issued implement step recorded no claim)"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "review-cycle://client-java-and-generate-your-own-01M6P952/WP01-client-java-module/review-cycle-1.md",
+        "reviewer": "user",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "subtasks": {
+        "T001": "done",
+        "T002": "done",
+        "T003": "done",
+        "T004": "done",
+        "T005": "done",
+        "T006": "done"
+      }
+    },
+    "WP02": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 2,
+      "lane": "approved",
+      "last_event_id": "01M6PBRTKJ0VZ2R2H2AS9JK2YW",
+      "last_transition_at": "2026-11-05T17:23:11.602955+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Implemented in 079d0212 (no claim base was recorded by the next-issued implement step); path filters verified with grep against client-java paths",
+        "Review passed: checklist 1-8 PASS; append-only regex change in ci.yml (parallel session A edits ci.yml: coordinate at rebase); docs checks pass",
+        "repair: record agent claude (implemented in place; the next-issued implement step recorded no claim)"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "review-cycle://client-java-and-generate-your-own-01M6P952/WP02-ci-and-build-guide/review-cycle-1.md",
+        "reviewer": "user",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "subtasks": {
+        "T007": "done",
+        "T008": "done",
+        "T009": "done"
+      }
+    },
+    "WP03": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 2,
+      "lane": "approved",
+      "last_event_id": "01M6PBRZWADRA1WQCWZPXF6EY3",
+      "last_transition_at": "2026-11-05T17:23:17.002932+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "claim",
+        "Implemented in 027601c9; also adds two test inputs to charter.client-java (WP01-owned file) for HowToTest: coordination note",
+        "Review passed: every command run verbatim against the snapshot (Java: mvn package OK, 0 strict checks; Python: unknown enum -> UNKNOWN_DEFAULT_OPEN_API); HowToTest negative control fails on a stale version; docs checks pass",
+        "repair: record agent claude (implemented in place; the next-issued implement step recorded no claim)"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "review-cycle://client-java-and-generate-your-own-01M6P952/WP03-generate-a-client-how-to/review-cycle-1.md",
+        "reviewer": "user",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "subtasks": {
+        "T010": "done",
+        "T011": "done",
+        "T012": "done"
+      }
+    }
+  }
+}

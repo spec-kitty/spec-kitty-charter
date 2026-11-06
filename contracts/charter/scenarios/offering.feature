@@ -250,6 +250,63 @@ Feature: The offering lists the configured packs in force
     When I GET "/packs/docs/artifacts/tactic/rehearse"
     Then the response status is 200
 
+  Scenario: A configured pack holding an agent profile that fails its schema refuses the offering
+    PR-CHARTER-SHARING-001 (#374): a team pack carrying an unsound profile is not reported healthy. The
+    profile's role is not a lowercase role name, so the file fails the agent-profile schema, and the
+    offering names the pack and the file instead of answering the pack as sound.
+    Given the org pack "team" with the file "pack.yaml":
+      """
+      pack_id: 01ARWG13C00000000000000TEM
+      pack_version: 1.0.0
+      parent_pack: null
+      name: team-pack
+      pack_level: org
+      """
+    And the org pack "team" with the file "agent_profiles/reviewer.agent.yaml":
+      """
+      profile-id: reviewer
+      name: Reviewer
+      roles: [Reviewer]
+      purpose: Review the work
+      specialization:
+        primary-focus: review
+      """
+    When I GET "/offering"
+    Then the response status is 500
+    And the problem code is "pack_unreadable"
+    And the field "detail" of the response body is "the file agent_profiles/reviewer.agent.yaml of team cannot be read: pattern violated at /roles/0"
+    And the response has no "Charter-Source-Fingerprint" header
+
+  Scenario: A configured pack holding an asset whose path leaves assets/ refuses the offering
+    PR-CHARTER-SHARING-004 (#374): a shared asset that reaches outside its pack is not accepted as sound.
+    The sidecar's path climbs out of assets/ and out of the pack to a file that does exist, the project's
+    charter.yaml, so a check that only looks on disk would accept it. It names no payload the pack holds
+    (ADR-0040 decision 6): the load path names the payload it looked for, and the offering refuses the pack.
+    Given the project configuration file "charter.yaml":
+      """
+      charter: outside the pack
+      """
+    And the org pack "docs" with the file "pack.yaml":
+      """
+      pack_id: 01ARWG13C0000000000000D0C5
+      pack_version: 1.0.0
+      parent_pack: null
+      name: docs-pack
+      pack_level: org
+      """
+    And the org pack "docs" with the file "assets/notes.md.asset.yaml":
+      """
+      id: notes
+      mime: text/markdown
+      path: ../../../.kittify/charter.yaml
+      """
+    When I GET "/offering"
+    Then the response status is 500
+    And the problem code is "pack_unreadable"
+    # The detail says "does not exist" for an escaping path too; a reason of its own for an escape is #382.
+    And the field "detail" of the response body is "the file assets/notes.md.asset.yaml of docs cannot be read: payload assets/../../../.kittify/charter.yaml does not exist"
+    And the response has no "Charter-Source-Fingerprint" header
+
   Scenario: An offering whose inputs change while it is answered is refused with stale_input
     Given the built-in pack "core" with the file "pack.yaml":
       """

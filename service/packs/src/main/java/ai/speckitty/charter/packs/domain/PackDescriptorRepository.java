@@ -20,8 +20,9 @@ public interface PackDescriptorRepository {
      *
      * @param pack the pack's identity
      * @return the descriptor; empty when the pack has no {@code pack.yaml}
-     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with {@code PACK_UNREADABLE} when the pack is not
-     *     configured, its directory is missing, or its {@code pack.yaml} is there but cannot be read or is invalid
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with {@code PACK_NOT_FOUND} when no configured pack has
+     *     this identifier, or with {@code PACK_UNREADABLE} when its directory is missing, or its {@code pack.yaml} is
+     *     there but cannot be read or is invalid
      */
     Optional<PackDescriptor> find(PackIdentifier pack);
 

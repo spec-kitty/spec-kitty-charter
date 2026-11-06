@@ -39,6 +39,13 @@ class Pep440RangeTest {
         "==1!1.*, 1!1.2, true",
         "==1.0+abc, 1.0+ABC, true",
         "==1.0+abc.1, 1.0+abc.01, true",
+        // an identity clause compares the text, so a version that orders equal is still a different text
+        "===1.0, 1.0, true",
+        "===1.0, 1.0.0, false",
+        // the numbers of a prerelease and a development release order, not only their labels
+        "==1.0a1, 1.0a2, false",
+        "==1.0a1, 1.0a1.dev1, false",
+        "==1.0.dev1, 1.0.dev2, false",
     })
     void aRangeAdmitsOrRefusesAVersion(String range, String version, boolean admitted) {
         assertThat(Pep440Range.admits(range.trim(), version.trim())).isEqualTo(admitted);
@@ -88,7 +95,17 @@ class Pep440RangeTest {
                 // a local version is a different version for == when the operand names one
                 "==1.0+abc|==1.0+xyz|false",
                 "==1.0+abc|==1.0|true",
-                "==1.0+abc|!=1.0+abc|false"
+                "==1.0+abc|!=1.0+abc|false",
+                // an identity clause that names a version shares that version with an ordering clause
+                "===1.0|>=1|true",
+                // a version of a later epoch is reachable when both sets stay in that epoch
+                ">=1!1|<1!2|true",
+                // the shared version may be a post-release or a development release, kept as such
+                "==1.0.post0|>=1.0|true",
+                "==1.0.dev1|<=1.0|true",
+                // the next post-release or development release after an operand's own is a version between them
+                ">1.0.post0|<1.0.post2|true",
+                ">1.0.dev0|<1.0a1|true"
             })
     void twoRangesOverlapWhenSomeVersionSatisfiesBoth(String first, String second, boolean overlap) {
         assertThat(Pep440Range.overlaps(first, second)).isEqualTo(overlap);

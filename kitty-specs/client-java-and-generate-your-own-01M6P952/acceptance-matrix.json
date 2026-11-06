@@ -1,0 +1,169 @@
+{
+  "mission_slug": "client-java-and-generate-your-own-01M6P952",
+  "mission_number": "",
+  "mission_type": "software-dev",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "verifyAll: :client-java:generateClient (java/okhttp-gson, catalog pin 7.26.0)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:21:57.864075+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "charter.client-java resolves the contractBundle variant (bundle YAML only)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:22:01.659103+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "AdditiveMinorTest (UNKNOWN_DEFAULT_OPEN_API); configOptions in charter.client-java",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:22:05.297019+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "AdditiveMinorTest; ClientOutputTest.noGeneratedModelRefusesAMemberItDoesNotDeclare; TolerantClientNormalizerTest",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:22:08.940690+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "AdditiveMinorTest.anEnumValueThisClientDoesNotKnowDecodesToUnknown",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:22:12.563038+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "ClientOutputTest.everyClassFileLoadsOnTheConsumersJavaRelease (major 65); manual run on OpenJDK 21 against a live service",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:22:16.298625+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "ClientOutputTest.everyGeneratedSourceCarriesTheMitHeaderAndTheDoNotEditNote",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:22:19.966049+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "manual_review",
+      "evidence": "charter.client-java: group ai.speckitty.charter, archivesName charter-client, package ai.speckitty.charter.client; operator confirmation requested in PR",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:22:23.609932+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Verify FR-009 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "ProblemDetailsTest; manual: pack_not_found refusal read from a live service",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:22:27.336986+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "Verify FR-010 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "ProblemDetailsTest (6 tests)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:22:30.900366+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-011",
+      "description": "Verify FR-011 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "verifyAll: spotless, checkstyle, errorprone/NullAway, javadoc on client-java main/test",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:22:34.404315+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-012",
+      "description": "Verify FR-012 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "checkClientReproducible (second generation never from cache) + CheckTreesIdenticalTest",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:22:38.063966+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-013",
+      "description": "Verify FR-013 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "verifyAll includes :client-java:check; ci.yml service_re and service.yml paths include client-java/",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:22:41.792699+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-014",
+      "description": "Verify FR-014 is satisfied",
+      "proof_type": "manual_review",
+      "evidence": "docs/guides/generate-a-client.md; every command run verbatim (research.md R6, squad-pre-merge.md)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:22:45.724454+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-015",
+      "description": "Verify FR-015 is satisfied",
+      "proof_type": "manual_review",
+      "evidence": "docs/guides/generate-a-client.md 'The contract is not released yet'",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:22:49.454066+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-016",
+      "description": "Verify FR-016 is satisfied",
+      "proof_type": "manual_review",
+      "evidence": "docs/guides/service-build.md 'The Java client'; docs/changelog/2026-11-05-generated-java-client.md",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:22:53.160622+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}

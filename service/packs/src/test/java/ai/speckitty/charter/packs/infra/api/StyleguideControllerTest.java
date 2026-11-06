@@ -24,6 +24,7 @@ import ai.speckitty.charter.packs.domain.Styleguide;
 import ai.speckitty.charter.packs.domain.StyleguideIdentifier;
 import ai.speckitty.charter.packs.domain.StyleguideRepository;
 import ai.speckitty.charter.packs.domain.StyleguideScope;
+import ai.speckitty.charter.web.RefusalHandler;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -211,7 +212,7 @@ class StyleguideControllerTest {
         @Override
         public Pack load(PackIdentifier id) {
             if (!PACK.equals(id)) {
-                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "no pack " + id.value());
+                throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + id.value() + " was not found.");
             }
             return pack;
         }
@@ -224,7 +225,7 @@ class StyleguideControllerTest {
         @Override
         public Optional<Styleguide> load(PackIdentifier id, StyleguideIdentifier styleguide) {
             if (!PACK.equals(id)) {
-                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "no pack " + id.value());
+                throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + id.value() + " was not found.");
             }
             return pack.styleguides().stream()
                     .filter(s -> s.id().equals(styleguide))

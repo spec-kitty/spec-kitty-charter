@@ -1,7 +1,9 @@
 package ai.speckitty.charter.profiles.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
@@ -30,6 +32,235 @@ class AgentProfileEntityTest {
                 .purpose("Purpose of " + id)
                 .specialization(
                         new Specialization("Focus of " + id, Optional.empty(), Optional.empty(), Optional.empty()));
+    }
+
+    private static final Specialization JENNY_SPECIALIZATION = new Specialization(
+            "Java implementation, JUnit 5 testing, AssertJ assertions, Maven lifecycle",
+            Optional.of("Spring framework conventions, Hibernate/JPA, ArchUnit architecture rules"),
+            Optional.of("Architectural decisions, deployment strategies, infrastructure-as-code"),
+            Optional.of("Well-tested, idiomatic Java code that passes all Maven quality gates"));
+
+    private static final Collaboration JENNY_COLLABORATION = new Collaboration(
+            List.of("reviewer"),
+            List.of("architect", "planner"),
+            List.of("reviewer", "curator", "implementer"),
+            List.of("source-code", "unit-tests", "pull-request"),
+            List.of("test-first-bug-fixing"),
+            List.of("implement", "fix", "refactor", "test", "debug"));
+
+    private static final SpecializationContext JENNY_CONTEXT = new SpecializationContext(
+            List.of("java"),
+            List.of("junit5", "assertj", "maven"),
+            List.of("src/main/java/**/*.java", "src/test/java/**/*.java"),
+            List.of("java", "junit", "try-with-resources"),
+            List.of("pragmatic", "type-safe"),
+            List.of("low", "medium", "high"));
+
+    /**
+     * The built-in {@code java-jenny} profile as the pack authors it (abridged texts), every list with more than one
+     * entry so order counts. The fields she does not declare (avatar, model, effort, sentinel, toolguide and
+     * styleguide references, excluding) carry plausible values so that every field of the schema is set.
+     */
+    private static AgentProfile.Builder javaJenny() {
+        return AgentProfile.builder()
+                .id(new AgentProfileIdentifier("java-jenny"))
+                .packId(PACK)
+                .schemaVersion(Optional.of("1.0"))
+                .name("Java Jenny")
+                .description(Optional.of("Java-specialist implementer applying ATDD/TDD discipline"))
+                .role("implementer")
+                .role("reviewer")
+                .avatarImage(Optional.of("avatars/java-jenny.png"))
+                .capability("java-implementation")
+                .capability("junit-testing")
+                .capability("maven-build")
+                .routingPriority(Optional.of(80))
+                .maxConcurrentTasks(Optional.of(5))
+                .model(Optional.of("a-model"))
+                .effort(Optional.of("high"))
+                .purpose("Deliver idiomatic, well-tested Java code that faithfully implements specifications.")
+                .specialization(JENNY_SPECIALIZATION)
+                .collaboration(JENNY_COLLABORATION)
+                .modeDefault(new ModeDefault(
+                        "implementation",
+                        "ATDD/TDD-driven feature development in Java",
+                        "Building new features, writing production code with acceptance and unit tests first"))
+                .modeDefault(new ModeDefault(
+                        "debugging",
+                        "Investigating and fixing defects with reproduction tests",
+                        "Resolving bug reports with a failing test first"))
+                .initializationDeclaration(Optional.of("I am Java Jenny. I write idiomatic, well-tested Java code."))
+                .sentinel(Optional.of(true))
+                .specializationContext(JENNY_CONTEXT)
+                .appliesToLanguage("java")
+                .appliesToLanguage("kotlin")
+                .directiveReference(new DirectiveReference(
+                        "010", "Specification Fidelity Requirement", "Implementations reflect the specification"))
+                .directiveReference(new DirectiveReference(
+                        "034", "Test-First Development", "Tests define the contract before production code"))
+                .tacticReference(new ArtifactReference("acceptance-test-first", "ATDD outside-in"))
+                .tacticReference(new ArtifactReference("tdd-red-green-refactor", "Unit-level red-green-refactor"))
+                .toolguideReference(new ArtifactReference("java-supply-chain", "Exact commands for dependency checks"))
+                .toolguideReference(new ArtifactReference("gradle-build", "The build runs through the wrapper"))
+                .styleguideReference(new ArtifactReference("java-style", "Naming and null-safety conventions"))
+                .styleguideReference(new ArtifactReference("test-style", "Given-when-then test names"))
+                .selfReviewStep(new SelfReviewStep("compile", Optional.of("mvn compile"), "zero compilation errors"))
+                .selfReviewStep(new SelfReviewStep("run-tests", Optional.of("mvn test"), "all tests pass"))
+                .selfReviewStep(new SelfReviewStep(
+                        "acceptance-review",
+                        Optional.empty(),
+                        "each acceptance criterion from the specification has a corresponding passing test"))
+                .excluding(Optional.of(new Exclusion.WholeFields(List.of("capabilities", "mode-defaults"))));
+    }
+
+    @Test
+    @DisplayName("a profile built with every field set reads every field back, in authored order")
+    void everyFieldRoundTrips() {
+        AgentProfile profile = javaJenny().build();
+
+        assertThat(profile)
+                .as("identity and pack")
+                .satisfies(p -> {
+                    assertThat(p.id()).isEqualTo(new AgentProfileIdentifier("java-jenny"));
+                    assertThat(p.packId()).isEqualTo(PACK);
+                    assertThat(p.schemaVersion()).contains("1.0");
+                })
+                .as("descriptive texts")
+                .satisfies(p -> {
+                    assertThat(p.name()).isEqualTo("Java Jenny");
+                    assertThat(p.label()).isEqualTo("Java Jenny");
+                    assertThat(p.description()).contains("Java-specialist implementer applying ATDD/TDD discipline");
+                    assertThat(p.purpose())
+                            .isEqualTo("Deliver idiomatic, well-tested Java code that faithfully implements"
+                                    + " specifications.");
+                    assertThat(p.initializationDeclaration())
+                            .contains("I am Java Jenny. I write idiomatic, well-tested Java code.");
+                    assertThat(p.avatarImage()).contains("avatars/java-jenny.png");
+                })
+                .as("routing and execution")
+                .satisfies(p -> {
+                    assertThat(p.roles()).containsExactly("implementer", "reviewer");
+                    assertThat(p.capabilities()).containsExactly("java-implementation", "junit-testing", "maven-build");
+                    assertThat(p.routingPriority()).contains(80);
+                    assertThat(p.maxConcurrentTasks()).contains(5);
+                    assertThat(p.model()).contains("a-model");
+                    assertThat(p.effort()).contains("high");
+                    assertThat(p.sentinel()).contains(true);
+                    assertThat(p.appliesToLanguages()).containsExactly("java", "kotlin");
+                })
+                .as("specialization, its context and collaboration")
+                .satisfies(p -> {
+                    assertThat(p.specialization()).isEqualTo(JENNY_SPECIALIZATION);
+                    assertThat(p.specializationContext()).isEqualTo(JENNY_CONTEXT);
+                    assertThat(p.collaboration()).isEqualTo(JENNY_COLLABORATION);
+                })
+                .as("mode defaults with their record fields")
+                .satisfies(p -> assertThat(p.modeDefaults())
+                        .extracting(ModeDefault::mode, ModeDefault::description, ModeDefault::useCase)
+                        .containsExactly(
+                                tuple(
+                                        "implementation",
+                                        "ATDD/TDD-driven feature development in Java",
+                                        "Building new features, writing production code with acceptance and unit"
+                                                + " tests first"),
+                                tuple(
+                                        "debugging",
+                                        "Investigating and fixing defects with reproduction tests",
+                                        "Resolving bug reports with a failing test first")))
+                .as("governance references, each list on its own")
+                .satisfies(p -> {
+                    assertThat(p.directiveReferences())
+                            .extracting(DirectiveReference::code, DirectiveReference::name)
+                            .containsExactly(
+                                    tuple("010", "Specification Fidelity Requirement"),
+                                    tuple("034", "Test-First Development"));
+                    assertThat(p.directiveReferences().get(1).rationale())
+                            .isEqualTo("Tests define the contract before production code");
+                    assertThat(p.tacticReferences())
+                            .containsExactly(
+                                    new ArtifactReference("acceptance-test-first", "ATDD outside-in"),
+                                    new ArtifactReference("tdd-red-green-refactor", "Unit-level red-green-refactor"));
+                    assertThat(p.toolguideReferences())
+                            .containsExactly(
+                                    new ArtifactReference("java-supply-chain", "Exact commands for dependency checks"),
+                                    new ArtifactReference("gradle-build", "The build runs through the wrapper"));
+                    assertThat(p.styleguideReferences())
+                            .containsExactly(
+                                    new ArtifactReference("java-style", "Naming and null-safety conventions"),
+                                    new ArtifactReference("test-style", "Given-when-then test names"));
+                })
+                .as("self-review steps with their record fields, a step without a command included")
+                .satisfies(p -> assertThat(p.selfReviewSteps())
+                        .extracting(SelfReviewStep::name, SelfReviewStep::command, SelfReviewStep::gate)
+                        .containsExactly(
+                                tuple("compile", Optional.of("mvn compile"), "zero compilation errors"),
+                                tuple("run-tests", Optional.of("mvn test"), "all tests pass"),
+                                tuple(
+                                        "acceptance-review",
+                                        Optional.empty(),
+                                        "each acceptance criterion from the specification has a corresponding"
+                                                + " passing test")))
+                .as("excluding, as authored")
+                .satisfies(p -> assertThat(p.excluding())
+                        .contains(new Exclusion.WholeFields(List.of("capabilities", "mode-defaults"))));
+    }
+
+    @Test
+    @DisplayName("a built profile does not follow later changes to its builder")
+    void builtProfileIsDetachedFromItsBuilder() {
+        AgentProfile.Builder builder = javaJenny();
+        AgentProfile profile = builder.build();
+
+        builder.role("architect")
+                .capability("deployment")
+                .selfReviewStep(new SelfReviewStep("lint", Optional.empty(), "no warnings"))
+                .modeDefault(new ModeDefault("planning", "Plans", "Before a mission"))
+                .appliesToLanguage("scala")
+                .directiveReference(new DirectiveReference("999", "Later directive", "why"))
+                .tacticReference(new ArtifactReference("later-tactic", "why"))
+                .toolguideReference(new ArtifactReference("later-toolguide", "why"))
+                .styleguideReference(new ArtifactReference("later-styleguide", "why"));
+
+        assertThat(profile.appliesToLanguages()).containsExactly("java", "kotlin");
+        assertThat(profile.directiveReferences())
+                .hasSize(2)
+                .extracting(DirectiveReference::code)
+                .doesNotContain("999");
+        assertThat(profile.tacticReferences())
+                .extracting(ArtifactReference::id)
+                .containsExactly("acceptance-test-first", "tdd-red-green-refactor");
+        assertThat(profile.toolguideReferences())
+                .extracting(ArtifactReference::id)
+                .containsExactly("java-supply-chain", "gradle-build");
+        assertThat(profile.styleguideReferences())
+                .extracting(ArtifactReference::id)
+                .containsExactly("java-style", "test-style");
+        assertThat(profile.roles()).containsExactly("implementer", "reviewer");
+        assertThat(profile.capabilities()).containsExactly("java-implementation", "junit-testing", "maven-build");
+        assertThat(profile.selfReviewSteps())
+                .extracting(SelfReviewStep::name)
+                .containsExactly("compile", "run-tests", "acceptance-review");
+        assertThat(profile.modeDefaults()).extracting(ModeDefault::mode).containsExactly("implementation", "debugging");
+    }
+
+    @Test
+    @DisplayName("a self-review step needs a name and a gate but no command; a mode default needs all three fields")
+    void stepAndModeRefuseAMissingField() {
+        assertThat(new SelfReviewStep("locality-review", Optional.empty(), "only related files change").command())
+                .isEmpty();
+
+        assertThatNullPointerException()
+                .isThrownBy(() -> new SelfReviewStep("compile", Optional.of("mvn compile"), null))
+                .withMessage("gate");
+        assertThatNullPointerException()
+                .isThrownBy(() -> new SelfReviewStep(null, Optional.empty(), "all tests pass"))
+                .withMessage("name");
+        assertThatNullPointerException()
+                .isThrownBy(() -> new ModeDefault("debugging", "Investigating defects", null))
+                .withMessage("useCase");
+        assertThatNullPointerException()
+                .isThrownBy(() -> new ModeDefault(null, "Investigating defects", "Bug reports"))
+                .withMessage("mode");
     }
 
     @Test
@@ -98,7 +329,12 @@ class AgentProfileEntityTest {
     void rolesFollowTheSchema() {
         assertThat(valid("p").role("qa_lead-2").build().roles()).contains("qa_lead-2");
 
-        assertThatThrownBy(() -> valid("p").role("Implementer").build()).isInstanceOf(ConstraintBreachException.class);
+        assertThatThrownBy(() -> valid("p").role("Implementer").build())
+                .isInstanceOfSatisfying(
+                        ConstraintBreachException.class,
+                        breach -> assertThat(breach.constraintDescription())
+                                .isEqualTo("An agent profile's roles must be lowercase letters, digits, hyphens and"
+                                        + " underscores, starting with a letter."));
         assertThatThrownBy(() -> AgentProfile.builder()
                         .id(new AgentProfileIdentifier("p"))
                         .packId(PACK)
@@ -106,7 +342,10 @@ class AgentProfileEntityTest {
                         .purpose("p")
                         .specialization(new Specialization("f", Optional.empty(), Optional.empty(), Optional.empty()))
                         .build())
-                .isInstanceOf(ConstraintBreachException.class);
+                .isInstanceOfSatisfying(
+                        ConstraintBreachException.class,
+                        breach -> assertThat(breach.constraintDescription())
+                                .isEqualTo("An agent profile needs at least one role."));
     }
 
     @Test
@@ -152,9 +391,15 @@ class AgentProfileEntityTest {
     }
 
     @Test
-    @DisplayName("equality is by identity, not by other fields")
+    @DisplayName("equality and hash are by identity, not by other fields")
     void identityEquality() {
-        assertThat(valid("p").build()).isEqualTo(valid("p").name("Other").build());
-        assertThat(valid("p").build()).isNotEqualTo(valid("q").build());
+        AgentProfile jenny = javaJenny().build();
+        AgentProfile renamed = javaJenny().name("Jenny, renamed").build();
+
+        assertThat(jenny).isEqualTo(renamed).hasSameHashCodeAs(renamed);
+        assertThat(jenny)
+                .isNotEqualTo(javaJenny()
+                        .id(new AgentProfileIdentifier("java-jenny-2"))
+                        .build());
     }
 }

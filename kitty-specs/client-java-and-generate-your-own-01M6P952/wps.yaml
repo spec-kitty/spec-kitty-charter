@@ -1,0 +1,57 @@
+work_packages:
+  - id: WP01
+    title: "The :client-java module: okhttp-gson client from the bundle, tolerant, --release 21, ProblemDetails"
+    dependencies: []
+    owned_files:
+      - "build-logic/src/main/kotlin/charter.client-java.gradle.kts"
+      - "build-logic/src/main/kotlin/CheckTreesIdentical.kt"
+      - "build-logic/src/main/kotlin/SchemaWalker.kt"
+      - "build-logic/src/main/kotlin/SingleModelPerSchemaNormalizer.kt"
+      - "build-logic/src/main/kotlin/TolerantClientNormalizer.kt"
+      - "build-logic/src/test/kotlin/TolerantClientNormalizerTest.kt"
+      - "client-java/build.gradle.kts"
+      - "client-java/templates/**"
+      - "client-java/src/main/**"
+      - "client-java/src/test/java/ai/speckitty/charter/client/ProblemDetailsTest.java"
+      - "client-java/src/test/java/ai/speckitty/charter/client/AdditiveMinorTest.java"
+      - "client-java/src/test/java/ai/speckitty/charter/client/ClientOutputTest.java"
+      - "gradle/libs.versions.toml"
+      - "gradle/verification-metadata.xml"
+      - "settings.gradle.kts"
+    requirement_refs: [FR-001, FR-002, FR-003, FR-004, FR-005, FR-006, FR-007, FR-008, FR-009, FR-010, FR-011, FR-012, NFR-001, NFR-002, NFR-003, NFR-004, C-002, C-003, SC-001, SC-002, SC-004]
+    plan_concern_refs: [IC-01]
+    subtasks: [T001, T002, T003, T004, T005, T006]
+    prompt_file: "tasks/WP01-client-java-module.md"
+    agent_profile: "java-jenny"
+    role: "implementer"
+    agent: "claude"
+  - id: WP02
+    title: "CI path filters and the build guide"
+    dependencies: [WP01]
+    owned_files:
+      - ".github/workflows/ci.yml"
+      - ".github/workflows/service.yml"
+      - "docs/guides/service-build.md"
+      - "docs/changelog/2026-11-05-generated-java-client.md"
+    requirement_refs: [FR-013, FR-016, C-006]
+    plan_concern_refs: [IC-02]
+    subtasks: [T007, T008, T009]
+    prompt_file: "tasks/WP02-ci-and-build-guide.md"
+    agent_profile: "java-jenny"
+    role: "implementer"
+    agent: "claude"
+  - id: WP03
+    title: "How-to: generate your own client from the published contract"
+    dependencies: [WP01]
+    owned_files:
+      - "docs/guides/generate-a-client.md"
+      - "docs/guides/README.md"
+      - "docs/_meta/spelling-words.txt"
+      - "client-java/src/test/java/ai/speckitty/charter/client/HowToTest.java"
+    requirement_refs: [FR-014, FR-015, NFR-005, C-001, C-004, SC-003]
+    plan_concern_refs: [IC-03]
+    subtasks: [T010, T011, T012]
+    prompt_file: "tasks/WP03-generate-a-client-how-to.md"
+    agent_profile: "java-jenny"
+    role: "implementer"
+    agent: "claude"

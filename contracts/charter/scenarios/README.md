@@ -118,6 +118,18 @@ Keep it small; add a step only when a scenario cannot be written without it.
   with `x-reserved` and a `501` of its own (read from the declaration, with no `default` fallback), and the answer is
   `501` with an `application/problem+json` body whose `status` is 501 and which has no `code` member, with the
   `Charter-Contract-Version` and `Charter-Worktree` headers and no `Charter-Source-Fingerprint` (ADR-0020 D8).
+- `Given the project activates the pack "<id>"` (or `the packs "<id>, <id>"`) — stores the activation `project`
+  with a plain `PUT /activations/project` whose `packs` are those configured ids, in that order, and expects `201`.
+  `Given the activation "<id>" holds:` followed by a JSON doc string — the same `PUT` of that document under that id,
+  expecting `201`; the binding keeps the `ETag` it was stored with, and `When I GET "<path>" with If-None-Match the
+  stored ETag` sends it back. Every scenario starts with no activation stored.
+- `When I PUT "<path>" with the header "<name>": "<value>" and the body:` and `When I PUT "<path>" with the headers
+  "<name>": "<value>" and "<name>": "<value>" and the body:` — a JSON `PUT` with those extra headers, for the
+  conditional writes (`If-None-Match`, both validators at once).
+- `Then the field at "<json-pointer>" holds exactly <n> item(s)` — the member is an array of exactly that size; `Then
+  the answer holds exactly <n> packs` is the same for `/packs`.
+- `Then the response header "<name>" is the quoted field "<json-pointer>"` — the header is the string member that the
+  pointer names, in double quotes: an `ETag` that quotes a `revision`.
 - `Then the field at "<json-pointer>" is the lines:` followed by a doc string — the text the pointer names is the doc
   string's lines, each ending in a newline; for a Markdown guide.
 - `Given the guide host serves "<uri>" with:` followed by a doc string — a `guideUri` registration that names this URI
@@ -178,15 +190,35 @@ that calls it. A run that selects only some scenarios reports the others' operat
   defines, a `Problem` without a code, with no alias (FR-006); a `GET` on a write path and a `PUT` on the item of a
   kind without a write (a tactic) are a 405 `Problem` without a code. A write to a kind that cannot be written is
   not `kind_not_found`: the path names a served kind, and the method is what the path does not define.
-- `activations.feature`: the activation set (ADR-0020), declared in full and reserved: one 501 pin per operation.
+- `activation-register.feature`: the activation register (ADR-0020 D3-D6, ADR-0059 D4-D5, #125, #360): create,
+  register, read and remove an activation document in canonical form under its revision, its `ETag`, `If-Match` and
+  `If-None-Match`, its refusals (`activation_invalid` with `violations`, `artifact_required` and `artifact_locked`
+  with `requiredBy`, `activation_not_found`), and the closure read `GET /activations/{activationId}/packs`.
+- `activation-register-guards.feature`: the guards of the register: the worktree token (401), a browser request
+  (403), and the preconditions judged before the document (412 on a stale `If-Match`, on `If-None-Match: *` over a
+  stored id and on an `If-Match` over an id nothing is stored under).
+- `activations.feature`: the activation operations still reserved (ADR-0020 D8), the five per-artifact and preset
+  writes and the four effective reads: one 501 pin per operation, each removed when its operation is built.
 - `relationships.feature`: a registered relationship from a mission type the pack holds, and the refusal of one it
   does not hold (#194, ADR-0044).
+- `composition.feature`: the compose of the configured packs' `depends_on` closure on `GET /offering`, in the
+  resolver's order with each entry's resolved dependencies, and the eleven pack-composition refusals, each with a
+  negative control (ADR-0048, ADR-0053).
 - `journeys/journey-NN-<slug>.feature`: the eleven user journeys, each a mix of runnable and `@WIP` scenarios.
+- `registration/`, `trust/`, `integrity/`, `distribution/`: the pack registration and distribution scenarios of
+  ADR-0005 and ADR-0019 (#43), every one `@WIP` and none `@contract`. The surface is decided, not built, and
+  outside the cutover scope (ADR-0055 D1), so they are not executed, by decision (#374); each file's header says
+  what changes when they are bound. Their fixtures stay in `src/test/resources/fixtures/`.
+- `profiles.feature`: the refusal of an agent profile enhancement that would drop fields of the profile it enhances
+  (`PR-CHARTER-REFUSAL-001`), `@WIP` until the effective profile is built (#380); its header states the provisional
+  target answer.
 
 ## Tags
 
 - `@contract`: the scenario is part of the charter contract. The suite runs only scenarios with
-  this tag, so a file placed here is not picked up until it is bound and tagged.
+  this tag, so a file placed here is not picked up until it is bound and tagged. A file whose steps are not bound
+  carries no `@contract`: only `@WIP`, plus its cluster's tag for the four cluster folders (`@registration`,
+  `@trust`, `@integrity`, `@distribution`). `profiles.feature` carries `@WIP` alone.
 - `@provisional`: the behavior is not settled yet; the conformance corpus (issue #9) decides
   it. It is still asserted exactly, so a change to it is deliberate, and it matches an
   `x-provisional` part of `../openapi.yaml`.
@@ -203,9 +235,10 @@ that calls it. A run that selects only some scenarios reports the others' operat
 
   The charter's refusal score counts behavioral codes apart from the declared ones.
 - `@WIP`: the scenario needs a surface the contract does not have yet (activation, presets, roles and profiles, pins,
-  removal, mission types, values and creeds, upgrades, hosting, cold start). The suite excludes it
+  removal, mission types, values and creeds, upgrades, hosting, cold start, pack registration and distribution). The suite excludes it
   (`@ExcludeTags("WIP")` beside `@IncludeTags("contract")`), so its steps need not be bound; when the surface lands,
-  the tag comes off, the steps are bound with the vocabulary above, and the change gets a line in `../CHANGELOG.md`.
+  the tag comes off, the steps are bound with the vocabulary above, `@contract` goes on where the file had none, and
+  the change gets a changelog fragment under `../changes/` (ADR-0047).
   The released scenario archive includes `@WIP` scenarios: **any implementation that runs these scenarios must
   exclude `@WIP`**, as this repository's suite does.
 - `@journey-NN`: the feature concretizes user journey NN. The journey features live in `journeys/`, one per journey
@@ -217,6 +250,6 @@ that calls it. A run that selects only some scenarios reports the others' operat
 - Fixtures stay inline, as doc strings in the scenario. A YAML file under the contract tree is
   read as part of the contract by its checks, and a separate fixture hides what the scenario
   is about.
-- A scenario change (added, removed, renamed, or a changed expectation) gets a line in
-  `../CHANGELOG.md`: the OpenAPI diff cannot see it, and the scenarios are half of the
-  contract.
+- A scenario change (added, removed, renamed, or a changed expectation) gets a changelog fragment
+  under `../changes/` (ADR-0047), never a direct edit of `../CHANGELOG.md`: the OpenAPI diff cannot see
+  it, and the scenarios are half of the contract.

@@ -36,6 +36,7 @@ pages cannot drift from it. For entity diagrams of the descriptor kinds and thei
 - [Pack descriptor](/architecture/pack-schemas/pack-descriptor/) — the identity and lineage of a charter pack.
 - [Pack document](/architecture/pack-schemas/pack-document/) — the parsed Markdown structure of a pack description file pack.md.
 - [Pack manifest](/architecture/pack-schemas/pack-manifest/) — the generated list of a pack's constituent artifacts.
+- [Pack mutability policy](/architecture/pack-schemas/policy/) — the optional policy.yaml that sets a pack's mutability levels.
 - [Paradigm](/architecture/pack-schemas/paradigm/) — a worldview-level framing that guides how the charter is read.
 - [Preset](/architecture/pack-schemas/preset/) — an activation preset that selects artifacts and mission types.
 - [Procedure](/architecture/pack-schemas/procedure/) — a reusable workflow with entry and exit conditions.

@@ -82,9 +82,11 @@ Every operation requires the per-worktree bearer token (`charterWorktreeToken`).
 carries `Charter-Contract-Version` and `Charter-Worktree`. `Charter-Source-Fingerprint` is declared,
 and required, only on the 200 of a verified read: `getServiceInfo`, `getOffering`, `listPackArtifacts`,
 `getPackArtifact` and `listArtifactReferences` ([#175](https://github.com/spec-kitty/spec-kitty-charter/issues/175)). It carries the digest
-that read verified. The 200s of the five reserved activation reads (`getActivation`, `listEffectiveArtifacts`,
+that read verified. The 200s of the four reserved effective reads (`listEffectiveArtifacts`,
 `getActivationSkippedReport`, `getEffectiveGraph`, `getEffectiveActionContext`) declare it too, ahead of being
-built; while they answer `501` they send none. No refusal, write, root or contract-document answer carries it.
+built; while they answer `501` they send none. `getActivation` and `listActivationPacks` send none: the document
+read depends only on the stored document (ADR-0059 D5), and the closure read reports a change through its `ETag`.
+No refusal, write, root or contract-document answer carries it.
 
 **The offering in this version.** `GET /offering` is the pack list only, the smallest Gate-A set (operator ruling
 3 on [#126](https://github.com/spec-kitty/spec-kitty-charter/issues/126), 2026-10-31). The level is the one
@@ -242,24 +244,30 @@ sequences, is in [Offering and activation](/architecture/offering-and-activation
 | `GET` | `/offering/graph`, `/offering/presets`, `/offering/kinds` | The merged graph, offered presets, the kind taxonomy | [#97](https://github.com/spec-kitty/spec-kitty-charter/issues/97), [#98](https://github.com/spec-kitty/spec-kitty-charter/issues/98), [#112](https://github.com/spec-kitty/spec-kitty-charter/issues/112) |
 | `GET` | `/offering/mission-types…` | Mission types and the action index | [#99](https://github.com/spec-kitty/spec-kitty-charter/issues/99) |
 | `GET` | `/offering/mission-types/{missionType}/actions/{action}/context` | Today's action-context read, **moved here before 1.0.0** | [#95](https://github.com/spec-kitty/spec-kitty-charter/issues/95) |
-| `POST` | `/activations` | `createActivation`: create an activation; the service mints the id. **Declared, reserved (501)** | [#125](https://github.com/spec-kitty/spec-kitty-charter/issues/125) |
-| `PUT`, `GET`, `DELETE` | `/activations/{activationId}` | `replaceActivation`, `getActivation`, `deleteActivation`: register or replace, read, remove an activation. **Declared, reserved (501)** | [#125](https://github.com/spec-kitty/spec-kitty-charter/issues/125) |
+| `POST` | `/activations` | `createActivation`: create an activation; the service mints the id. **Built** | [#125](https://github.com/spec-kitty/spec-kitty-charter/issues/125) |
+| `PUT`, `GET`, `DELETE` | `/activations/{activationId}` | `replaceActivation`, `getActivation`, `deleteActivation`: register or replace, read, remove an activation. **Built** | [#125](https://github.com/spec-kitty/spec-kitty-charter/issues/125) |
+| `GET` | `/activations/{activationId}/packs` | `listActivationPacks`: the `depends_on` and `parent_pack` closure rooted at the document's packs. **Built** | [#360](https://github.com/spec-kitty/spec-kitty-charter/issues/360) |
 | `PUT`, `DELETE` | `…/{activationId}/selections/{kind}/{artifactId}`, `…/exclusions/{kind}/{artifactId}`; `PUT …/presets/{presetId}` | `selectActivationArtifact`, `unselectActivationArtifact`, `deactivateActivationArtifact`, `reactivateActivationArtifact`, `applyActivationPreset`: change one choice, with `If-Match`. **Declared, reserved (501)** | [#125](https://github.com/spec-kitty/spec-kitty-charter/issues/125) |
 | `GET` | `…/{activationId}/artifacts`, `skipped`, `graph`, `mission-types/…/context` | `listEffectiveArtifacts`, `getActivationSkippedReport`, `getEffectiveGraph`, `getEffectiveActionContext`: the effective reads (R9). **Declared, reserved (501)**; R9 gates cutover stage 3 | [#125](https://github.com/spec-kitty/spec-kitty-charter/issues/125) declares them; [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103) builds them |
 
 **The activation set is in the contract** (#125, inside `0.1.0-SNAPSHOT` by the operator's ruling of 2026-10-31):
-every activation operation is declared in full under the tag `Activation`, with `x-reserved` and a `501`, and
-answers `501` until it is built; the `ActivationConfig` document (canonical as JSON Schema 2020-12 in
+every activation operation is declared in full under the tag `Activation`. The register (`createActivation`,
+`replaceActivation`, `getActivation`, `deleteActivation`) and the closure read (`listActivationPacks`, #360) are
+built. The five per-artifact and preset writes and the four effective reads keep `x-reserved` and answer `501`
+until they are built. The set declares the `ActivationConfig` document (canonical as JSON Schema 2020-12 in
 `contracts/offering/schemas/`), `Activation`, `ActivationChange`, the skipped report and the effective-read schemas;
-`ETag`, `If-Match` and `If-None-Match`; the six activation refusal codes, declared and not raised; and the shared
-`Problem`'s `requiredBy` and `violations`. The rulings are in ADR-0020's amendment of 2026-10-31.
+`ETag`, `If-Match` and `If-None-Match`; the six activation refusal codes; and the shared `Problem`'s `requiredBy`
+and `violations`. The register raises four of the codes: `activation_not_found` (404), `activation_invalid` (422),
+`artifact_required` and `artifact_locked` (409). `artifact_not_found` and `preset_not_found` stay declared and not
+raised until the per-artifact and preset writes are built. The rulings are in ADR-0020's amendment of 2026-10-31.
 
 **Before 1.0.0, still to come:** the move of the action-context read and the hosted-first reshape of the security
 scheme, `Charter-Worktree`, `ServiceInfo.worktree` and the fingerprint inputs (ADR-0020 D12).
 
 ## Planned write surface (later)
 
-The activation writes are declared and reserved (#125) and are built before cutover stage 3 (ADR-0020). The other
+The activation register is built; its per-artifact and preset writes are declared and reserved (#125, #291) and are
+built before cutover stage 3 (ADR-0020). The other
 writes come after the read stages, one at a time: charter document save and compile. See
 [Strangler transition](/architecture/strangler-transition/).
 
@@ -290,8 +298,9 @@ writes come after the read stages, one at a time: charter document save and comp
   `getPackArtifact` and `listArtifactReferences`): inputs changed while the answer was computed, a failed
   load whose inputs changed included. It may be retried.
 - `governance_policy_violation` (409) is raised by the registration writes when the mutability level of the
-  pack that owns the target does not permit the write (ADR-0012, epic #55). No policy file is read yet, so every
-  target is open and no write is refused with it until one is.
+  pack that owns the target does not permit the write (ADR-0012, epic #55). Each pack's `policy.yaml` is read, per
+  pack, along the closure of the pack written ([ADR-0063](/adr/0063-pack-mutability-policy-file/)); no open pack ships one yet, so every target is open and
+  no write is refused with it until one does.
 - `pack_level_mismatch` and `drg_schema_error` are declared and raised by no operation: no operation reaches the
   whole-pack load that still refuses a graph as `drg_schema_error`. `ReservedRefusalCodesTest` reads every code the
   `x-refusal` map marks not raised and fails when a main class on the wire names one (#293).

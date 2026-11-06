@@ -2,8 +2,8 @@
 title: "ADR-0010: The 4.x cutover retires every Python offering read in one switch-over; core governs only the seam routing"
 description: All offering reads, including activation's, go through the API at once, gated by the conformance corpus; offering internals and pack structure are decided here.
 doc_status: active
-updated: 2026-11-03T00:00:00Z
-decision_status: Accepted
+updated: 2026-11-04T00:00:00Z
+decision_status: Accepted; the switch gate answered by ADR-0059 (2026-11-04)
 decision_date: '2026-10-19'
 type: ADR
 kind: ADR
@@ -39,6 +39,7 @@ criterion; it is annotated where it stands. The cutover scope and the other deci
 first and core's integration follows (ADR-0055 D1), and the `depends_on` resolver of
 [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) is on the cutover path (ADR-0055 D2). What gates each
 switch in core is an open question in ADR-0055. The original text stands.
+*Answered 2026-11-04: the design's BDD scenarios and contract tests gate each switch ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) decision 1).*
 
 ## Context
 
@@ -88,7 +89,8 @@ Four facts shape what that means:
    corpus fails core's CI (#72). There is no observation period (#75 is dropped).
 
    *Amended 2026-11-03 ([ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/) D3): the corpus no longer gates the switch. The service is accepted against the
-   design, and what gates each switch in core is an open question in ADR-0055. There is still no observation period.*
+   design, and what gates each switch in core is an open question in ADR-0055. There is still no observation period.
+   Answered 2026-11-04 by [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) decision 1: the design's BDD scenarios and contract tests.*
 6. **The split of authority.** Core ADR `2026-10-03-1` governs only the seam routing: the
    stages, the switch at the seam, and what the seam does on failure. Everything inside the
    offering is decided here: the domain model, resolution and merge rules, the contract, and
@@ -117,6 +119,10 @@ Four facts shape what that means:
 - Corpus coverage gaps. Mitigation: the corpus covers every contract operation and every
   refusal code before the gate turns blocking, and acceptance scenarios (#31) run against
   both implementations.
+
+  Clarification 2026-11-05 (the decision is unchanged): the in-repo acceptance suite of #31 was
+  re-scoped by the verdicts of #374 (`tests/scenarios/charter/PROMISES.md`), and ADR-0059 D1 now
+  gates each switch.
 - Rollback after the switch-over means a release downgrade, or restoring deleted code.
   Mitigation: delete the Python read code in the release after the switch-over, not the same
   one.

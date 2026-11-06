@@ -134,7 +134,8 @@ public final class ToolguideReadService {
     }
 
     /**
-     * A pack the storage cannot resolve or read is, to the caller, a pack that is not there. The original
+     * A pack the storage cannot read is, to the caller, a pack that is not there; an identifier no configured pack
+     * answers to is already refused {@code PACK_NOT_FOUND} by the storage and passes through. The original
      * {@code PACK_UNREADABLE} refusal is kept as the cause so the inbound edge can leave a diagnostic trail even though
      * the 404 body names nothing of it. Any other refusal passes through.
      */

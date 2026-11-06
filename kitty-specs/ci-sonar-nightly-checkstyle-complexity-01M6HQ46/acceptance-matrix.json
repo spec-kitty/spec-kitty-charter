@@ -1,0 +1,69 @@
+{
+  "mission_slug": "ci-sonar-nightly-checkstyle-complexity-01M6HQ46",
+  "mission_number": "",
+  "mission_type": "",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP01 6fca1013: four Checkstyle modules in checkstyle.xml; T004 planted methods fail each rule (CC 16, NPath 1,024, 61 lines, nested-if depth 2); re-verified by reviewer (cycle 2 approval)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-04T13:50:20.613640+00:00",
+      "notes": "Superseded at landing 2026-11-05: did not ship (no grandfathering, ADR-0058). See spec.md."
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP01 6fca1013+7b2af652: 15 method-scoped suppress-xpath entries, Size 15; WP02 f4112a85: checkCheckstyleRegister in check, 20 unit tests; planted stale entry -> STALE, wrong Size -> SIZE_MISMATCH; reviewer re-ran",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-04T13:50:26.926900+00:00",
+      "notes": "Superseded at landing 2026-11-05: did not ship (no grandfathering, ADR-0058). See spec.md."
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "inspection",
+      "evidence": "WP03 1ce3ae01: .github/workflows/sonar.yml (schedule 23 4 * * * + workflow_dispatch, main only), verifyAll then SHA-pinned sonarqube-scan-action with service-module binaries and aggregated JaCoCo XML, charter-api excluded; reviewer verified pins against core",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-04T13:50:31.952450+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP03: token probe outputs enabled=false and every later step is gated on it (SonarWorkflowGuardTest asserts probe first + gates); a real dispatch is only possible once sonar.yml is on main: post-merge follow-up (analysis U1)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-04T13:50:37.238944+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP03 SonarWorkflowGuardTest (11 tests, 6 negative controls): no pull_request/pull_request_target/merge_group/push trigger, ci.yml never references sonar, gate needs exclude it, all uses SHA-pinned, continue-on-error on every post-probe step",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-04T13:50:42.261946+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "inspection",
+      "evidence": "WP04 7029868c: docs/guides/service-build.md (Complexity limits, Exceptions to a gate, The stale check, The nightly SonarCloud report) + changelog 2026-11-04; docs gate clean; claims verified against WP01-WP03 code by reviewer",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-04T13:50:47.273222+00:00",
+      "notes": "Limits part superseded at landing 2026-11-05: did not ship (no grandfathering, ADR-0058). See spec.md."
+    }
+  ],
+  "negative_invariants": []
+}

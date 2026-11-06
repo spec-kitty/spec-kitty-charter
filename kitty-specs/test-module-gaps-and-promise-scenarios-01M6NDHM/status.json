@@ -1,0 +1,89 @@
+{
+  "event_count": 52,
+  "last_event_id": "01M6NGKVH4VWKC2ZSYQPQ75HT9",
+  "materialized_at": "2026-11-05T09:28:37.156967+00:00",
+  "mission_number": "",
+  "mission_slug": "test-module-gaps-and-promise-scenarios-01M6NDHM",
+  "mission_type": "",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 4,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M6NGKHAMMAV0RK60ST0YWYVK",
+      "last_transition_at": "2026-11-05T09:28:26.709027+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/test-module-gaps-and-promise-scenarios-01M6NDHM-coord/kitty-specs/test-module-gaps-and-promise-scenarios-01M6NDHM/tasks/WP01-kernel-validation-tests/review-cycle-2.md",
+        "reference": "review-cycle://test-module-gaps-and-promise-scenarios-01M6NDHM/WP01-kernel-validation-tests/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 9880,
+      "shell_pid_created_at": "1793870509.21"
+    },
+    "WP02": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M6NGKMKMHCWB32EYS3DSH7X0",
+      "last_transition_at": "2026-11-05T09:28:30.069016+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/test-module-gaps-and-promise-scenarios-01M6NDHM-coord/kitty-specs/test-module-gaps-and-promise-scenarios-01M6NDHM/tasks/WP02-profiles-tests/review-cycle-2.md",
+        "reference": "review-cycle://test-module-gaps-and-promise-scenarios-01M6NDHM/WP02-profiles-tests/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 31530,
+      "shell_pid_created_at": "1793869910.19"
+    },
+    "WP03": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M6NGKR3PE9ZV7CEPH2E9P6A3",
+      "last_transition_at": "2026-11-05T09:28:33.654631+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/test-module-gaps-and-promise-scenarios-01M6NDHM-coord/kitty-specs/test-module-gaps-and-promise-scenarios-01M6NDHM/tasks/WP03-capped-body-subscriber-tests/review-cycle-2.md",
+        "reference": "review-cycle://test-module-gaps-and-promise-scenarios-01M6NDHM/WP03-capped-body-subscriber-tests/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 6317,
+      "shell_pid_created_at": "1793870341.35"
+    },
+    "WP04": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M6NGKVH4VWKC2ZSYQPQ75HT9",
+      "last_transition_at": "2026-11-05T09:28:37.156967+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/test-module-gaps-and-promise-scenarios-01M6NDHM-coord/kitty-specs/test-module-gaps-and-promise-scenarios-01M6NDHM/tasks/WP04-promise-first-scenario-verdicts/review-cycle-2.md",
+        "reference": "review-cycle://test-module-gaps-and-promise-scenarios-01M6NDHM/WP04-promise-first-scenario-verdicts/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 12425,
+      "shell_pid_created_at": "1793870720.25"
+    }
+  }
+}

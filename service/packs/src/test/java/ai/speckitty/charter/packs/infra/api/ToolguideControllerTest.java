@@ -27,6 +27,7 @@ import ai.speckitty.charter.packs.domain.Toolguide;
 import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
 import ai.speckitty.charter.packs.domain.ToolguideRepository;
 import ai.speckitty.charter.packs.infra.storage.MarkdownGuideFormat;
+import ai.speckitty.charter.web.RefusalHandler;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -561,7 +562,7 @@ class ToolguideControllerTest {
         @Override
         public Optional<Toolguide> load(PackIdentifier id, ToolguideIdentifier toolguide) {
             if (!PACK.equals(id)) {
-                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "no pack " + id.value());
+                throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + id.value() + " was not found.");
             }
             return pack.toolguides().stream()
                     .filter(t -> t.id().equals(toolguide))

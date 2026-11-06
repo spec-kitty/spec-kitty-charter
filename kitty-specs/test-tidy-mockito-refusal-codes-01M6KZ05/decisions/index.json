@@ -1,0 +1,78 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-11-04T19:01:48.420450Z",
+      "decision_id": "01M6KZ0NR4CPPMNT9FH075Z7C8",
+      "final_answer": "Confirm",
+      "input_key": "intent_confirmation",
+      "mission_id": "01M6KZ0553DQBYH16HZDEWFH87",
+      "mission_slug": "test-tidy-mockito-refusal-codes-01M6KZ05",
+      "opened_by": "cli",
+      "options": [
+        "Confirm",
+        "Amend",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Confirm the extracted requirement set for Mission A (#373 Mockito removal, #369 refusal-code pins)?",
+      "rationale": null,
+      "resolved_at": "2026-11-04T19:10:05.083495Z",
+      "resolved_by": null,
+      "slot_key": "specify.intent.confirm-extracted-requirements",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-04T19:13:14.180990Z",
+      "decision_id": "01M6KZNKE4QW577JQ5MFXVVPPQ",
+      "final_answer": "Keep Mockito: keep our explicit dependency and the Java agent, but align the catalog version to the version the Spring stack provisions (spring-boot-dependencies 4.1.1 manages and spring-boot-starter-test requires 5.23.0; the highest it provisions). Record the reason it is kept (#373 allows recording why).",
+      "input_key": "starter_test_mockito",
+      "mission_id": "01M6KZ0553DQBYH16HZDEWFH87",
+      "mission_slug": "test-tidy-mockito-refusal-codes-01M6KZ05",
+      "opened_by": "cli",
+      "options": [
+        "Exclude org.mockito from the starter",
+        "Remove own declaration and agent only",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": true,
+      "question": "spring-boot-starter-test pulls Mockito transitively into :deployable and :packs tests. Exclude org.mockito from it, or only remove our own declaration and agent?",
+      "rationale": null,
+      "resolved_at": "2026-11-04T19:20:41.477255Z",
+      "resolved_by": null,
+      "slot_key": "plan.dependencies.starter-test-mockito",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-04T19:13:16.625009Z",
+      "decision_id": "01M6KZNNTG47M33595KY54671S",
+      "final_answer": "Regenerate from scratch over every task family",
+      "input_key": "metadata_pruning",
+      "mission_id": "01M6KZ0553DQBYH16HZDEWFH87",
+      "mission_slug": "test-tidy-mockito-refusal-codes-01M6KZ05",
+      "opened_by": "cli",
+      "options": [
+        "Regenerate from scratch over every task family",
+        "Leave stale entries",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Gradle never prunes verification-metadata.xml. How should the Mockito entries leave it?",
+      "rationale": null,
+      "resolved_at": "2026-11-04T19:20:43.604215Z",
+      "resolved_by": null,
+      "slot_key": "plan.dependencies.metadata-pruning",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M6KZ0553DQBYH16HZDEWFH87",
+  "version": 1
+}

@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "mission_slug": "ci-sonar-nightly-checkstyle-complexity-01M6HQ46",
+  "mission_id": "01M6HQ467X9NT5XZQESZK52BBK",
+  "mission_branch": "kitty/mission-ci-sonar-nightly-checkstyle-complexity-01M6HQ46",
+  "target_branch": "ci-sonar-nightly-checkstyle-complexity",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "config/checkstyle/checkstyle.xml",
+        "config/checkstyle/suppressions.xml",
+        "contracts/src/main/java/ai/speckitty/charter/contracts/bundle/ComposedBundle.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/ActivationConfigSchemaParityTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        ".github/workflows/sonar.yml",
+        "build-logic/src/test/kotlin/SonarWorkflowGuardTest.kt"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "tracker-integration"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "build-logic/src/main/kotlin/CheckstyleRegister.kt",
+        "build-logic/src/main/kotlin/charter.hand-written.gradle.kts",
+        "build-logic/src/test/kotlin/CheckstyleRegisterTest.kt"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-planning",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "docs/_meta/spelling-words.txt",
+        "docs/changelog/2026-11-04-complexity-gate-and-nightly-sonarcloud.md",
+        "docs/guides/service-build.md"
+      ],
+      "predicted_surfaces": [
+        "planning"
+      ],
+      "depends_on_lanes": [
+        "lane-a",
+        "lane-b",
+        "lane-c"
+      ],
+      "parallel_group": 2
+    }
+  ],
+  "computed_at": "2026-11-04T06:27:47.197383+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [
+    "WP04"
+  ],
+  "planning_commit_sha": "a641ef99664ba54c3ae4fb9945840d034b2b81b5"
+}

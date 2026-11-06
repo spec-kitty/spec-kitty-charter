@@ -24,6 +24,8 @@ import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,6 +39,12 @@ import org.junit.jupiter.api.io.TempDir;
  * was (ADR-0038 as amended 2026-10-31). Read and written through the production {@link StorageRootLocations}.
  */
 class InterruptedCommitRepairTest {
+
+    /**
+     * A hang cap far above the work's time, so load cannot trip it; a guard that stops cutting the work off fails at
+     * it (#320).
+     */
+    private static final Duration HANG_CAP = Duration.ofSeconds(30);
 
     private static final PackIdentifier PACK = new PackIdentifier("pack-a");
     private static final String SHARD =
@@ -163,7 +171,7 @@ class InterruptedCommitRepairTest {
 
         assertThat(read)
                 .as("the read waited for the swap and served the committed state")
-                .succeedsWithin(Duration.ofSeconds(10))
+                .succeedsWithin(HANG_CAP)
                 .satisfies(pack -> assertThat(pack.toolguides())
                         .extracting(guide -> guide.id().value())
                         .contains("fd"));
@@ -181,13 +189,15 @@ class InterruptedCommitRepairTest {
         CountDownLatch start = new CountDownLatch(1);
         CountDownLatch halfSwapped = new CountDownLatch(1);
         CountDownLatch release = new CountDownLatch(1);
-        // Another thread holds pack-a's lock with pack-a moved aside, as a swap in flight does, until released.
+        AtomicBoolean waitedOn = new AtomicBoolean();
+        // Another thread holds pack-a's lock with pack-a moved aside, as a swap in flight does, until released; it
+        // notes whether any thread waits on that lock meanwhile.
         CompletableFuture<Void> holder = CompletableFuture.runAsync(() -> {
             await(start);
             writeStore.exclusively(PACK, () -> {
                 move(live, live.resolveSibling("pack-a.pack-old-held"));
                 halfSwapped.countDown();
-                await(release);
+                noteWaitersUntil(release, PackWriteLocks.of(live), waitedOn);
                 move(live.resolveSibling("pack-a.pack-old-held"), live);
                 return null;
             });
@@ -198,7 +208,7 @@ class InterruptedCommitRepairTest {
         List<String> listed;
         try {
             listed = assertTimeoutPreemptively(
-                    Duration.ofSeconds(10),
+                    HANG_CAP,
                     () -> writeStore.exclusively(new PackIdentifier("pack-descriptor-only"), () -> {
                         start.countDown();
                         await(halfSwapped);
@@ -208,8 +218,11 @@ class InterruptedCommitRepairTest {
             start.countDown();
             release.countDown();
         }
-        holder.get(10, TimeUnit.SECONDS);
+        holder.get(HANG_CAP.toMillis(), TimeUnit.MILLISECONDS);
 
+        assertThat(waitedOn)
+                .as("the listing only tried the held lock; it never waited on it")
+                .isFalse();
         assertThat(listed).containsExactly("pack-descriptor-only");
         assertThat(locations.all()).extracting(PackLocation::name).contains("pack-a");
     }
@@ -336,7 +349,9 @@ class InterruptedCommitRepairTest {
         StorageRootLocations locations = new StorageRootLocations(packs);
 
         assertThat(locations.all()).as("the dangling link is not served").isEmpty();
-        assertThatThrownBy(() -> write(locations, null)).isInstanceOf(CharterRefusal.class);
+        assertThatThrownBy(() -> write(locations, null))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND));
 
         assertThat(target)
                 .as("nothing was restored outside the configuration root")
@@ -381,7 +396,8 @@ class InterruptedCommitRepairTest {
     private void crash(StorageRootLocations locations) {
         assertThatThrownBy(() -> new PackCommitStore(locations, strategy, CRASH_AFTER_ASIDE)
                         .commit(PACK, null, toolguide("lost"), SHARD))
-                .isInstanceOf(CharterRefusal.class);
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
     }
 
     /** A write of {@code fd} through the write store's lock, as a registration does. */
@@ -413,15 +429,29 @@ class InterruptedCommitRepairTest {
 
     /**
      * Spins until {@code thread} waits on the write lock of the pack at {@code entry}, or has finished (it answered
-     * without waiting, which the test then reports); fails after ten seconds.
+     * without waiting, which the test then reports); fails after the hang cap.
      */
     private static void awaitQueuedOnTheLockOf(Path entry, Thread thread) {
-        Instant deadline = Instant.now().plusSeconds(10);
+        Instant deadline = Instant.now().plus(HANG_CAP);
         while (!PackWriteLocks.of(entry).hasQueuedThread(thread) && thread.getState() != Thread.State.TERMINATED) {
             if (Instant.now().isAfter(deadline)) {
                 throw new AssertionError("the reader neither waited on the pack's lock nor answered");
             }
             Thread.onSpinWait();
+        }
+    }
+
+    /** Waits for {@code release}, noting every ten milliseconds whether a thread is waiting on {@code lock}. */
+    private static void noteWaitersUntil(CountDownLatch release, ReentrantLock lock, AtomicBoolean waitedOn) {
+        try {
+            while (!release.await(10, TimeUnit.MILLISECONDS)) {
+                if (lock.hasQueuedThreads()) {
+                    waitedOn.set(true);
+                }
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(e);
         }
     }
 
@@ -435,7 +465,7 @@ class InterruptedCommitRepairTest {
 
     private static void await(CountDownLatch latch) {
         try {
-            assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+            assertThat(latch.await(HANG_CAP.toMillis(), TimeUnit.MILLISECONDS)).isTrue();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException(e);

@@ -1,0 +1,30 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-11-05T00:08:32.071124Z",
+      "decision_id": "01M6MGJA27NG72JCTBXB1TWG80",
+      "final_answer": "Confirm, 30 s caps",
+      "input_key": "intent_confirmation",
+      "mission_id": "01M6MGHX20KBZ80BNT75KV35ZY",
+      "mission_slug": "test-deadline-hang-caps-01M6MGHX",
+      "opened_by": "cli",
+      "options": [
+        "Confirm, 30 s caps",
+        "Confirm, 60 s caps",
+        "Amend"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Confirm Mission C's extracted requirements and the hang-cap bound (#320)?",
+      "rationale": null,
+      "resolved_at": "2026-11-05T06:42:31.520515Z",
+      "resolved_by": null,
+      "slot_key": "specify.intent.confirm-extracted-requirements",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M6MGHX20KBZ80BNT75KV35ZY",
+  "version": 1
+}

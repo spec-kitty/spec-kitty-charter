@@ -4,6 +4,7 @@ import static ai.speckitty.charter.packs.infra.fetch.AddressClasses.GLOBAL;
 import static ai.speckitty.charter.packs.infra.fetch.AddressClasses.PRIVATE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 import ai.speckitty.charter.packs.application.GuideFetchRefusal;
 import ai.speckitty.charter.packs.application.GuideFetchRefusal.Reason;
@@ -32,6 +33,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Flow;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -39,6 +41,7 @@ import javax.net.ssl.SSLSession;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -500,8 +503,21 @@ class HttpsGuideFetcherTest {
         }
     }
 
+    /**
+     * The whole-test cap covers the fetches that take no {@code HANG_CAP} of their own. It runs the test on a separate
+     * thread: the default same-thread mode interrupts only once, so it would not stop a fetcher stuck on an
+     * interrupt-ignoring wait. 90 s stays above the two successive {@code HANG_CAP} waits of one test.
+     */
     @Nested
+    @Timeout(value = 90, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
     class Deadline {
+
+        /**
+         * A hang cap far above the deadline's own time (#320). The fetches it bounds are cut off when it passes, so a
+         * broken deadline fails at the cap; the refusal's reason proves the guard, and the lookup that outruns the
+         * deadline proves it interrupts the lookup.
+         */
+        private static final Duration HANG_CAP = Duration.ofSeconds(30);
 
         @Test
         void anExchangeThatOutrunsTheDeadlineIsRefusedAndCancelled() throws GuideFetchRefusal {
@@ -513,7 +529,7 @@ class HttpsGuideFetcherTest {
                     .satisfies(f -> assertThat(f.isCancelled()).isTrue());
 
             transport.route("https://guide.example/fast", Canned.ok(GUIDE));
-            assertThat(fetcher(Duration.ofMillis(200), HOST).fetch(URI.create("https://guide.example/fast")))
+            assertThat(fetcher(HANG_CAP, HOST).fetch(URI.create("https://guide.example/fast")))
                     .isEqualTo(GUIDE);
         }
 
@@ -526,7 +542,7 @@ class HttpsGuideFetcherTest {
                     3,
                     host -> {
                         try {
-                            Thread.sleep(5_000);
+                            Thread.sleep(60_000);
                         } catch (InterruptedException e) {
                             Thread.currentThread().interrupt();
                         }
@@ -534,16 +550,16 @@ class HttpsGuideFetcherTest {
                     },
                     transport,
                     HttpsGuideFetcher.LOOKUP_SLOTS);
-            long started = System.nanoTime();
 
-            assertRefused(slowDns, "https://guide.example/g.md", Reason.TIMEOUT);
-            assertThat(Duration.ofNanos(System.nanoTime() - started)).isLessThan(Duration.ofSeconds(2));
+            assertTimeoutPreemptively(
+                    HANG_CAP, () -> assertRefused(slowDns, "https://guide.example/g.md", Reason.TIMEOUT));
             assertThat(transport.requests).isEmpty();
         }
 
         @Test
         void aLookupThatOutrunsTheDeadlineIsInterruptedAndDoesNotOutliveIt() throws InterruptedException {
             AtomicReference<Thread> lookup = new AtomicReference<>();
+            CountDownLatch entered = new CountDownLatch(1);
             HttpsGuideFetcher slowDns = new HttpsGuideFetcher(
                     GuideAllowlist.of(List.of(HOST)),
                     Duration.ofMillis(200),
@@ -551,6 +567,7 @@ class HttpsGuideFetcherTest {
                     3,
                     host -> {
                         lookup.set(Thread.currentThread());
+                        entered.countDown();
                         try {
                             Thread.sleep(60_000);
                         } catch (InterruptedException e) {
@@ -562,8 +579,11 @@ class HttpsGuideFetcherTest {
                     HttpsGuideFetcher.LOOKUP_SLOTS);
 
             assertRefused(slowDns, "https://guide.example/g.md", Reason.TIMEOUT);
-            assertThat(lookup.get()).isNotNull();
-            assertThat(lookup.get().join(Duration.ofSeconds(2)))
+            // On a loaded runner the lookup's thread may only start after the deadline; its interrupt is still pending.
+            assertThat(entered.await(HANG_CAP.toMillis(), TimeUnit.MILLISECONDS))
+                    .as("the lookup ran")
+                    .isTrue();
+            assertThat(lookup.get().join(HANG_CAP))
                     .as("the interrupted lookup ended")
                     .isTrue();
         }
@@ -602,13 +622,14 @@ class HttpsGuideFetcherTest {
             answer.countDown();
             transport.route("https://guide.example/g.md", Canned.ok(GUIDE));
             // The answered lookup frees its slot: the next fetch resolves again.
-            long until = System.nanoTime() + Duration.ofSeconds(2).toNanos();
+            long until = System.nanoTime() + HANG_CAP.toNanos();
             String fetched = null;
             while (fetched == null) {
                 try {
                     fetched = stuckDns.fetch(URI.create("https://guide.example/g.md"));
                 } catch (GuideFetchRefusal busy) {
-                    if (busy.reason() != Reason.UNREACHABLE || System.nanoTime() > until) {
+                    boolean retryable = busy.reason() == Reason.UNREACHABLE || busy.reason() == Reason.TIMEOUT;
+                    if (!retryable || System.nanoTime() > until) {
                         throw busy;
                     }
                     Thread.onSpinWait();

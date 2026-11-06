@@ -1,0 +1,89 @@
+{
+  "event_count": 42,
+  "last_event_id": "01M6KD8VM9P08P34XC0JF81PVN",
+  "materialized_at": "2026-11-04T13:51:42.217059+00:00",
+  "mission_number": "",
+  "mission_slug": "ci-sonar-nightly-checkstyle-complexity-01M6HQ46",
+  "mission_type": "",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 4,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M6KD8H67W2MRCSVW6Z6JQDRK",
+      "last_transition_at": "2026-11-04T13:51:31.527073+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/ci-sonar-nightly-checkstyle-complexity-01M6HQ46-coord/kitty-specs/ci-sonar-nightly-checkstyle-complexity-01M6HQ46/tasks/WP01-complexity-limits-and-register/review-cycle-2.md",
+        "reference": "review-cycle://ci-sonar-nightly-checkstyle-complexity-01M6HQ46/WP01-complexity-limits-and-register/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 18953,
+      "shell_pid_created_at": "1793780625.02"
+    },
+    "WP02": {
+      "actor": "merge",
+      "agent": "claude::implementer-ivan",
+      "force_count": 1,
+      "implementer_of_record": "claude::implementer-ivan",
+      "lane": "done",
+      "last_event_id": "01M6KD8QYRQX30M01EESETFZKC",
+      "last_transition_at": "2026-11-04T13:51:38.456256+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/ci-sonar-nightly-checkstyle-complexity-01M6HQ46-coord/kitty-specs/ci-sonar-nightly-checkstyle-complexity-01M6HQ46/tasks/WP02-register-stale-check/review-cycle-2.md",
+        "reference": "review-cycle://ci-sonar-nightly-checkstyle-complexity-01M6HQ46/WP02-register-stale-check/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 4052,
+      "shell_pid_created_at": "1793794504.57"
+    },
+    "WP03": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M6KD8MVDEGH1QNQ6A9C1KS56",
+      "last_transition_at": "2026-11-04T13:51:35.277732+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/ci-sonar-nightly-checkstyle-complexity-01M6HQ46-coord/kitty-specs/ci-sonar-nightly-checkstyle-complexity-01M6HQ46/tasks/WP03-nightly-sonar-workflow/review-cycle-1.md",
+        "reference": "review-cycle://ci-sonar-nightly-checkstyle-complexity-01M6HQ46/WP03-nightly-sonar-workflow/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 1380,
+      "shell_pid_created_at": "1793772715.64"
+    },
+    "WP04": {
+      "actor": "merge",
+      "agent": "claude::scribe-sally",
+      "force_count": 0,
+      "implementer_of_record": "claude::scribe-sally",
+      "lane": "done",
+      "last_event_id": "01M6KD8VM9P08P34XC0JF81PVN",
+      "last_transition_at": "2026-11-04T13:51:42.217059+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/ci-sonar-nightly-checkstyle-complexity-01M6HQ46-coord/kitty-specs/ci-sonar-nightly-checkstyle-complexity-01M6HQ46/tasks/WP04-documentation/review-cycle-1.md",
+        "reference": "review-cycle://ci-sonar-nightly-checkstyle-complexity-01M6HQ46/WP04-documentation/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 330,
+      "shell_pid_created_at": "1793795232.95"
+    }
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "mission_slug": "test-mutation-floors-01M6NSDR",
+  "mission_number": "",
+  "mission_type": "",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP01: charter.mutation-conventions applied by domain-conventions and packs; MutationFloorsTest 16 tests green; same report shape for kernel/missions/profiles; reviewed in 2 passes",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-05T17:02:25.779237+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP02: full strict :packs:pitest green (45m54s), 3730 mutants only in domain/application/infra.storage (incl. storage.config per ruling), no application.config/infra.api, WiredTest and tagged tests excluded; one additive metadata entry matching Maven Central sha256; init script narrowing works",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-05T17:02:32.430319+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP01+WP02: floors kernel 65, missions 70, profiles 50, packs domain+application 85 and infra.storage 85 (operator rulings); forced floor 99 fails naming module/group, score and floor; --continue keeps the other modules running",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-05T17:02:38.679928+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "manual_review",
+      "evidence": "WP03: nightly runs pitest --continue after syncing open-packs, if: always() summary (10 tests run in the nightly), uploads all reports, alert job opens or comments one mutation-nightly issue on a non-success scheduled run or force_issue; actionlint clean; schedule + workflow_dispatch only. The live dispatch proof is the operator's after merge",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-05T17:02:45.165074+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "manual_review",
+      "evidence": "WP04: ADR-0062 Nightly mutation floor (ends the experiment status, amends ADR-0058), service-build guide section, changelog; every build fact verified against the code; markdownlint and cspell clean",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-05T17:02:51.101882+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP05: 25 kernel.domain survivors triaged (14 killed by strengthening existing tests, 11 equivalent, confirmed by an independent 4.38M-pair fuzz); kernel 72.4 % -> 76 %; no new test methods; planted breaks red",
+      "pass_fail": "pass",
+      "verified_by": "claude::reviewer-renata",
+      "verified_at": "2026-11-05T17:02:56.980619+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}

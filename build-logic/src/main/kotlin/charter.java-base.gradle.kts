@@ -1,6 +1,7 @@
 // Every Java module, generated or hand-written: one toolchain, JUnit Platform, the shared BOMs.
 // It holds no quality bar; hand-written modules add every gate with `charter.hand-written`, so generated
-// code (charter-api) is exempt by construction rather than by removing flags it inherited.
+// code (charter-api) is exempt by construction rather than by removing flags it inherited. The two exceptions, which
+// remove the flags by source-set name, are listed at the head of charter.hand-written.
 plugins {
     `java-library`
 }

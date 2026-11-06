@@ -7,9 +7,11 @@
 //
 // The one register of exceptions to these gates is config/checkstyle/suppressions.xml (rule, file, reason,
 // sunset); no gate is relaxed anywhere else for hand-written code. Generated sources stay outside them by
-// construction: charter-api, and the AOT source sets of charter.native-image.
+// construction: charter-api, the AOT source sets of charter.native-image, and the `generated` source set of
+// charter.client-java (the generated Java client).
 import net.ltgt.gradle.errorprone.CheckSeverity
 import net.ltgt.gradle.errorprone.errorprone
+import java.time.LocalDate
 
 plugins {
     java
@@ -46,6 +48,27 @@ checkstyle {
     isIgnoreFailures = false
     maxWarnings = 0
     maxErrors = 0
+}
+
+// The register's own bookkeeping (ADR-0058): each entry's comment fields, its sunset, and the header's Size. The
+// register is the one input; the check runs no Checkstyle. Part of `check`.
+val checkCheckstyleRegister = tasks.register("checkCheckstyleRegister") {
+    group = "verification"
+    description = "Fails on an entry lacking a field, past its sunset, or a wrong Size in config/checkstyle/suppressions.xml."
+    val register = rootProject.layout.projectDirectory.file("config/checkstyle/suppressions.xml")
+    inputs.file(register).withPropertyName("register").withPathSensitivity(PathSensitivity.NONE)
+    doLast {
+        val problems = CheckstyleRegister.check(register.asFile.readText(), LocalDate.now())
+        if (problems.isNotEmpty()) {
+            throw GradleException(
+                "config/checkstyle/suppressions.xml is out of order (ADR-0058):\n" + problems.joinToString("\n") { "  $it" },
+            )
+        }
+    }
+}
+
+tasks.named("check") {
+    dependsOn(checkCheckstyleRegister)
 }
 
 // Error Prone on main and test. NullAway runs on main only (operator ruling 2026-10-18) and only on code under
@@ -102,11 +125,15 @@ tasks.named("check") {
     dependsOn(tasks.named("javadoc"), tasks.named("jacocoTestReport"))
 }
 
-// Mockito where a hand-written fake is not worth it. It is loaded as a Java agent rather than self-attaching,
-// which the JDK warns about and will refuse.
+// Mockito is kept though no test uses it today (#373): spring-boot-starter-test brings it to :deployable and :packs
+// regardless; the other modules keep it only for a future use. The agent is attached because the JDK warns on
+// Mockito's dynamic self-attach today and will refuse it in a future release (JEP 451).
+// Its version follows Spring Boot's (see the mockito entry in the version catalog), and the agent resolves
+// consistently with the test runtime classpath, so a BOM that raises Mockito there raises the agent with it.
 val mockitoAgent = configurations.create("mockitoAgent") {
     isCanBeConsumed = false
     isTransitive = false
+    shouldResolveConsistentlyWith(configurations.testRuntimeClasspath.get())
 }
 
 dependencies {

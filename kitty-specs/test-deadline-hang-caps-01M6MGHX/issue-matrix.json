@@ -1,0 +1,65 @@
+{
+  "rows": {
+    "#316": {
+      "evidence_ref": "Cited for context: the CPU-time budget flake whose failure mode #320 avoids",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#320": {
+      "evidence_ref": "WP01 b375b8bd+e9d6d192 (storage, 6 bounds, cause asserted at the parse seam) and WP02 288772cc (fetch, 2 bounds over 60 s slow work): all 8 deadline checks are 30 s hang caps in :packs:test, untagged",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "fixed",
+      "wp": "WP02"
+    },
+    "#367": {
+      "evidence_ref": "Cited for context: HttpsGuideFetcherTest.send is on #367's list, owned by draft PR #368's mission; untouched here",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#368": {
+      "evidence_ref": "PR reference for overlap context only",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#377": {
+      "evidence_ref": "PR reference for overlap context only",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    }
+  },
+  "schema_version": 1
+}

@@ -1,12 +1,18 @@
 // Narrows PIT to the classes and tests named on the command line, so a mutation run covers one work package's
-// classes instead of the whole module (the module default in charter.domain-conventions targets ai.speckitty.charter.*).
+// classes instead of a module's whole PIT scope. A module's scope comes from charter.mutation-conventions
+// (ai.speckitty.charter.*) or, in packs, from its build file: domain, application, infra.storage and infra.fetch, with
+// their unit tests only. A narrowed packs run keeps the packs exclusions (application.config, infra.fetch.config,
+// infra.api, *WiredTest and the open-packs, whole-pack and timing tags); pass the -P flags every packs run takes.
 //
 //   ./gradlew :packs:pitest --no-configuration-cache --max-workers=2 \
 //     -I service/packs/pit-targets.init.gradle \
-//     -Dpit.classes=ai.speckitty.charter.packs.domain.PackPolicy,ai.speckitty.charter.domain.Pep440 \
-//     -Dpit.tests='ai.speckitty.charter.domain.*'
+//     -PopenPacksDir=../spec-kitty-open-packs -PrequireSymlinks=true \
+//     -Dpit.classes=ai.speckitty.charter.packs.domain.PackPolicy \
+//     -Dpit.tests='ai.speckitty.charter.packs.domain.*'
 //
-// -Dpit.classes and -Dpit.tests are comma-separated; -Dpit.tests is optional.
+// -Dpit.classes and -Dpit.tests are comma-separated; without -Dpit.tests the module's own target tests run. A narrowed
+// run is not a floor measurement: its mutationFloors groups would hold only some of their classes, or none, so
+// checkMutationFloors (#239) is skipped. The report is in build/reports/pitest as usual.
 allprojects {
     afterEvaluate { p ->
         if (p.plugins.hasPlugin('info.solidsoft.pitest') && System.getProperty('pit.classes')) {
@@ -14,6 +20,7 @@ allprojects {
             if (System.getProperty('pit.tests')) {
                 p.pitest.targetTests = System.getProperty('pit.tests').split(',') as Set
             }
+            p.tasks.matching { it.name == 'checkMutationFloors' }.configureEach { it.enabled = false }
         }
     }
 }

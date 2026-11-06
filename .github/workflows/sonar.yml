@@ -1,0 +1,197 @@
+name: Sonar (nightly, reported)
+
+# A nightly SonarCloud analysis of trusted main (ADR-0058). It is reported only: it is never a required
+# check (ADR-0023, `CI gate / gate` is the one required check) and ci.yml never calls it. It has no
+# pull_request, pull_request_target, merge_group or push trigger (ADR-0047: a workflow that produces no
+# required check does not run in the merge queue), so it never builds or runs code from a pull request.
+#
+# It skips green until the operator has created the SonarCloud project and the SONAR_TOKEN repository
+# secret: the first step probes for the token and, without it, writes a notice and a job-summary line and
+# every later step is skipped. With the token, every step after the probe is continue-on-error, so a red
+# build, scan or quality gate is reported in the job summary and never turns the night red. Verify, the scan
+# and the gate have step timeouts so that the summary is still written before the job's own timeout. The job is
+# continue-on-error too, but what the result of a job timeout is has not been checked. A cancelled night
+# starts no scan (!cancelled()).
+#
+# Schedule: 04:23 UTC every day. Not on minute 0 or 30 (the busiest scheduler minutes), outside
+# 13:00-16:00 UTC (06:00-09:00 PT), and not next to mutation-nightly.yml at 02:43 UTC.
+#
+# build-logic/src/test/kotlin/SonarWorkflowGuardTest.kt guards the triggers, the SHA pins and where the
+# token may appear.
+on:
+  schedule:
+    - cron: "23 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sonar-nightly
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    # Only the canonical repository's main: a fork or another ref has no reason to analyze.
+    if: github.repository == 'spec-kitty/spec-kitty-charter' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    # Above the step budgets (Verify 20, scan 8, gate 5) plus the setup steps, so the step timeouts fire first.
+    timeout-minutes: 40
+    # A step's continue-on-error does not cover the job's timeout; this setting is kept, but whether it makes a
+    # timed-out job not red has not been checked.
+    continue-on-error: true
+    steps:
+      # Without the secret this is the only step that runs, and it exits 0: the job is green and says why.
+      - name: Check the SonarCloud token
+        id: sonar_token
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          if [ -n "$SONAR_TOKEN" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::SONAR_TOKEN is not configured, so the SonarCloud analysis is skipped. The operator creates the SonarCloud project and the SONAR_TOKEN repository secret to enable it (ADR-0058)."
+            echo "### SonarCloud analysis skipped: the SONAR_TOKEN secret is not configured (ADR-0058)." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      # The full history: SonarCloud needs it for new-code detection and blame.
+      - name: Check out
+        id: checkout
+        if: steps.sonar_token.outputs.enabled == 'true'
+        continue-on-error: true
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # The pin lives in gradle.properties only (openPacksRef); Gradle reads it too.
+      - name: Read the open-packs pin
+        id: open-packs-pin
+        if: steps.sonar_token.outputs.enabled == 'true' && steps.checkout.outcome == 'success'
+        continue-on-error: true
+        run: |
+          ref="$(grep '^openPacksRef=' gradle.properties | cut -d= -f2-)"
+          if ! printf '%s' "$ref" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "::error::openPacksRef in gradle.properties must be 40 lowercase hex characters, but is '$ref'"
+            exit 1
+          fi
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - name: Check out spec-kitty-open-packs
+        id: open-packs
+        if: steps.sonar_token.outputs.enabled == 'true' && steps.open-packs-pin.outcome == 'success'
+        continue-on-error: true
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          repository: spec-kitty/spec-kitty-open-packs
+          ref: ${{ steps.open-packs-pin.outputs.ref }}
+          path: .open-packs
+          persist-credentials: false
+
+      - name: Set up Java 25
+        id: java
+        if: steps.sonar_token.outputs.enabled == 'true'
+        continue-on-error: true
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Set up Gradle
+        id: gradle
+        if: steps.sonar_token.outputs.enabled == 'true'
+        continue-on-error: true
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+
+      - name: Sync and verify the packs
+        id: sync
+        if: >-
+          steps.sonar_token.outputs.enabled == 'true' && steps.open-packs.outcome == 'success'
+          && steps.java.outcome == 'success' && steps.gradle.outcome == 'success'
+        continue-on-error: true
+        run: ./gradlew syncPacks -PopenPacksDir="$GITHUB_WORKSPACE/.open-packs"
+
+      # Builds the classes and the aggregated JaCoCo report the scan reads.
+      - name: Verify
+        id: build
+        if: steps.sonar_token.outputs.enabled == 'true' && steps.sync.outcome == 'success'
+        continue-on-error: true
+        timeout-minutes: 20
+        run: ./gradlew verifyAll -PopenPacksDir="$GITHUB_WORKSPACE/.open-packs" -PrequireSymlinks=true
+
+      # The scan runs only on a build that produced the coverage report: without it the analysis would report
+      # zero coverage. It also resolves the Gradle cache path, which `args` cannot expand.
+      - name: Look for the coverage report
+        id: coverage
+        if: ${{ !cancelled() && steps.sonar_token.outputs.enabled == 'true' }}
+        continue-on-error: true
+        run: |
+          report=service/charter-reports/build/reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml
+          if [ -f "$report" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::no coverage report at $report, so the SonarCloud scan is skipped"
+          fi
+          echo "libraries=$HOME/.gradle/caches/modules-2/files-2.1/**/*.jar" >> "$GITHUB_OUTPUT"
+
+      # The five hand-written service modules. charter-api is generated (no src/main/java) and contracts is the
+      # contract's own checker, not the service; the coverage aggregation leaves both out as well. The generated
+      # charter-api classes are a library only: packs and deployable import them, so the analyzer must resolve
+      # them, but they are neither sources nor binaries to analyze.
+      # The project key spec-kitty_spec-kitty-charter is an assumption the operator confirms when creating the project.
+      - name: SonarCloud scan
+        id: scan
+        if: ${{ !cancelled() && steps.sonar_token.outputs.enabled == 'true' && steps.coverage.outputs.present == 'true' }}
+        continue-on-error: true
+        timeout-minutes: 8
+        uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f # v8.2.1
+        with:
+          args: >
+            -Dsonar.organization=spec-kitty
+            -Dsonar.projectKey=spec-kitty_spec-kitty-charter
+            -Dsonar.sources=service/kernel/src/main/java,service/packs/src/main/java,service/profiles/src/main/java,service/missions/src/main/java,service/activations/src/main/java,service/web-transport/src/main/java,service/deployable/src/main/java
+            -Dsonar.tests=service/kernel/src/test/java,service/packs/src/test/java,service/profiles/src/test/java,service/missions/src/test/java,service/activations/src/test/java,service/web-transport/src/test/java,service/deployable/src/test/java
+            -Dsonar.java.binaries=service/kernel/build/classes/java/main,service/packs/build/classes/java/main,service/profiles/build/classes/java/main,service/missions/build/classes/java/main,service/activations/build/classes/java/main,service/web-transport/build/classes/java/main,service/deployable/build/classes/java/main
+            -Dsonar.java.test.binaries=service/kernel/build/classes/java/test,service/packs/build/classes/java/test,service/profiles/build/classes/java/test,service/missions/build/classes/java/test,service/activations/build/classes/java/test,service/web-transport/build/classes/java/test,service/deployable/build/classes/java/test
+            -Dsonar.java.libraries=${{ steps.coverage.outputs.libraries }},service/charter-api/build/classes/java/main
+            -Dsonar.coverage.jacoco.xmlReportPaths=service/charter-reports/build/reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml
+            -Dsonar.java.source=25
+            -Dsonar.scm.revision=${{ github.sha }}
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      # Reported, not enforced: a red quality gate shows in the summary below and in SonarCloud only.
+      - name: SonarCloud quality gate
+        id: quality_gate
+        if: ${{ !cancelled() && steps.sonar_token.outputs.enabled == 'true' && steps.scan.outcome == 'success' }}
+        continue-on-error: true
+        timeout-minutes: 5
+        uses: SonarSource/sonarqube-quality-gate-action@7a5fffe8e523c40e0c740b6bc2712ab503e52efa # v1.2.1
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      # The only step that runs on a cancelled night too (always, not !cancelled): it writes the summary.
+      - name: Report the outcomes
+        if: always() && steps.sonar_token.outputs.enabled == 'true'
+        continue-on-error: true
+        env:
+          SYNC: ${{ steps.sync.outcome }}
+          BUILD: ${{ steps.build.outcome }}
+          COVERAGE: ${{ steps.coverage.outputs.present }}
+          SCAN: ${{ steps.scan.outcome }}
+          GATE: ${{ steps.quality_gate.outcome }}
+          GATE_STATUS: ${{ steps.quality_gate.outputs.quality-gate-status }}
+        run: |
+          {
+            echo "### SonarCloud nightly analysis (reported only)"
+            echo ""
+            echo "| Step | Outcome |"
+            echo "| --- | --- |"
+            echo "| Pack sync | ${SYNC:-not run} |"
+            echo "| Build (verifyAll) | ${BUILD:-not run} |"
+            echo "| Coverage report present | ${COVERAGE:-unknown} |"
+            echo "| Scan | ${SCAN:-not run} |"
+            echo "| Quality gate | ${GATE_STATUS:-unknown} (step: ${GATE:-not run}) |"
+          } >> "$GITHUB_STEP_SUMMARY"

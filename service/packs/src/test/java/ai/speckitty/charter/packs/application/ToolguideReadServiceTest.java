@@ -28,6 +28,8 @@ class ToolguideReadServiceTest {
     private static final PackIdentifier PACK_A = new PackIdentifier("pack-a");
     private static final PackIdentifier PACK_B = new PackIdentifier("pack-b");
     private static final PackIdentifier ABSENT = new PackIdentifier("absent");
+    // Configured, but its files cannot be read: the storage refuses it PACK_UNREADABLE.
+    private static final PackIdentifier UNREADABLE = new PackIdentifier("unreadable");
     private static final ToolguideIdentifier GIT = new ToolguideIdentifier("git");
 
     private final Toolguide git = toolguide(PACK_A, "git", "2026-01-01");
@@ -98,19 +100,31 @@ class ToolguideReadServiceTest {
     }
 
     @Test
-    void anAbsentPackIsAClientSideNotFoundNotAnInternalError() {
+    void anAbsentOrUnreadablePackIsAClientSideNotFoundNotAnInternalError() {
         // Control: the present pack answers, so the refusal is the absence's, not a broken setup.
         assertThat(service.toolguidesOf(PACK_A).value()).isNotEmpty();
 
+        // The storage refuses an unknown pack PACK_NOT_FOUND itself; it passes through, with nothing chained.
         assertThatThrownBy(() -> service.toolguidesOf(ABSENT)).isInstanceOfSatisfying(CharterRefusal.class, r -> {
+            assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
+            assertThat(r.getCause()).isNull();
+        });
+        assertThatThrownBy(() -> service.toolguide(ABSENT, GIT))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND));
+        // A configured pack that cannot be read is not found too, and keeps the storage refusal as its cause.
+        assertThatThrownBy(() -> service.toolguidesOf(UNREADABLE)).isInstanceOfSatisfying(CharterRefusal.class, r -> {
             assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
             assertThat(r.getCause())
                     .isInstanceOfSatisfying(
                             CharterRefusal.class, c -> assertThat(c.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
         });
-        assertThatThrownBy(() -> service.toolguide(ABSENT, GIT))
-                .isInstanceOfSatisfying(
-                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND));
+        assertThatThrownBy(() -> service.toolguide(UNREADABLE, GIT)).isInstanceOfSatisfying(CharterRefusal.class, r -> {
+            assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
+            assertThat(r.getCause())
+                    .isInstanceOfSatisfying(
+                            CharterRefusal.class, c -> assertThat(c.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+        });
     }
 
     @Test
@@ -171,19 +185,24 @@ class ToolguideReadServiceTest {
                 .build();
     }
 
-    private Pack packOf(PackIdentifier pack) {
-        Pack.Builder builder = Pack.builder().id(pack).descriptor(descriptor(pack));
-        stored.getOrDefault(pack, List.of()).forEach(builder::toolguide);
-        return builder.build();
+    /** The stored toolguides of a pack, refused as the storage refuses an unknown or an unreadable pack. */
+    private List<Toolguide> storedIn(PackIdentifier pack) {
+        if (pack.equals(UNREADABLE)) {
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack unreadable has no pack.yaml");
+        }
+        List<Toolguide> found = stored.get(pack);
+        if (found == null) {
+            throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + pack.value() + " was not found.");
+        }
+        return found;
     }
 
     private final class InMemoryPacks implements PackRepository {
         @Override
         public Pack load(PackIdentifier pack) {
-            if (!stored.containsKey(pack)) {
-                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "no pack " + pack.value());
-            }
-            return packOf(pack);
+            Pack.Builder builder = Pack.builder().id(pack).descriptor(descriptor(pack));
+            storedIn(pack).forEach(builder::toolguide);
+            return builder.build();
         }
     }
 
@@ -195,11 +214,7 @@ class ToolguideReadServiceTest {
 
         @Override
         public Optional<Toolguide> load(PackIdentifier pack, ToolguideIdentifier toolguide) {
-            List<Toolguide> found = stored.get(pack);
-            if (found == null) {
-                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "no pack " + pack.value());
-            }
-            return found.stream().filter(t -> t.id().equals(toolguide)).findFirst();
+            return storedIn(pack).stream().filter(t -> t.id().equals(toolguide)).findFirst();
         }
     }
 }

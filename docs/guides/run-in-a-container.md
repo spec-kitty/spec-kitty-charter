@@ -2,12 +2,13 @@
 title: Run the service in a container
 description: Run the charter service under the container profile with docker compose, with its token as a mounted secret file and nothing secret committed.
 doc_status: draft
-updated: 2026-11-02T00:00:00Z
+updated: 2026-11-05T00:00:00Z
 type: Guide
 kind: How-To
 related:
   - adr/0041-containerized-configuration-model
   - architecture/service-lifecycle
+  - adr/0061-one-replica-per-deployment
 audience:
   - profile: governance-lead
     guidance_text: Follow this to run the charter service for a team in a container, and to see where its secrets go.
@@ -39,7 +40,7 @@ you built yourself.
 
    ```bash
    (umask 077 && mkdir -p secrets && openssl rand -hex 32 > secrets/charter.worktree-token)
-   printf 'localhost' > secrets/charter.container.allowed-hosts
+   printf 'localhost,charter.example.org' > secrets/charter.container.allowed-hosts   # every name clients use
    ```
 
    `./secrets` is ignored by git. The user the image runs as must be able to read the files: give them to that user
@@ -50,7 +51,8 @@ you built yourself.
    docker compose up
    ```
 
-   The example publishes port 8080 on the host's loopback address only (see [Limits for now](#limits-for-now)).
+   The example publishes port 8080 on the host's loopback address only (see "Plain HTTP" under
+   [Limits for now](#limits-for-now)).
    Send the token as `Authorization: Bearer <token>`.
 
 ## Where settings come from
@@ -68,6 +70,14 @@ you built yourself.
 - **Why files.** An env var's value shows in `docker inspect` and in the process environment; a mounted file does
   not.
 - **Whitespace.** One trailing newline in a file is dropped. Any other whitespace stays part of the value.
+- **Allowed hosts.** List every name clients use to reach the service, comma-separated, without a port. Each entry is
+  one of:
+  - a host name, such as `charter.example.org` or `localhost`;
+  - a dotted IPv4 address;
+  - a bracketed IPv6 address, such as `[::1]`.
+
+  Matching ignores case and the port. A wildcard, a port, a scheme, a trailing dot, non-ASCII text and the
+  any-address (`0.0.0.0`, `[::]`) are refused. A request whose `Host` is not on the list gets a 403.
 - **Another directory.** The service reads the directory at start-up, `/run/secrets` unless
   `CHARTER_CONTAINER_SECRETS_DIR` names another absolute directory; a trailing slash is not needed.
 - **Kubernetes.** The service-account files Kubernetes mounts under `/var/run/secrets/kubernetes.io` are left alone.
@@ -81,19 +91,52 @@ Among other checks, the service refuses to start, naming the property, file or d
 - a file in it sets anything other than the token or a `charter.container.*` key, such as `server.address`, or names
   the secrets directory itself.
 - there is no token, or it is blank or shorter than 32 characters.
-- `charter.container.allowed-hosts` is missing or empty, or has a blank entry.
+- `charter.container.allowed-hosts` is missing or empty, or has a malformed entry.
+- the environment widens the management endpoints:
+  - another exposed endpoint;
+  - a management port of its own;
+  - health details, components or probe groups;
+  - a moved `/actuator` path, an endpoint mapped to another path, or the discovery page switched on.
+- `server.forward-headers-strategy` is anything but `none`: forwarded headers are ignored.
+- `spring.mvc.log-request-details` is on: it would log the token.
+- `logging.level` puts `org.apache.coyote` or the request logger beneath it at `TRACE`, directly or through `root`,
+  `org` or `org.apache`, or `server.tomcat.accesslog.pattern` holds `%{Authorization}i`: either would log the token.
+  `DEBUG` stays allowed.
 - the configuration root is unset or does not exist, or the port is 0.
 - `charter.insecure-no-token` or `charter.project-config-dir` is set.
 
+## Health check
+
+`GET /actuator/health` answers `{"status":"UP"}` without the token, so a probe needs no secret. Only that exact
+path is exempt:
+
+- every other method and path needs the token, `/actuator/health/` and `HEAD` included; a query string is not part
+  of the path, so `/actuator/health?x=1` answers like `/actuator/health`;
+- no other management endpoint answers, with or without the token;
+- the answer never carries details, components or probe groups.
+
+The request still needs an allowed `Host` and no browser header, so point the probe at a listed name:
+
+```bash
+curl -fsS -H 'Host: localhost' http://127.0.0.1:8080/actuator/health
+```
+
+A Kubernetes `httpGet` probe sends the pod's IP as `Host`. Set `httpHeaders` to a listed name instead of listing the
+IP or a wildcard. The answer says only whether the process is up: one replica has nothing to drain
+([ADR-0061](/adr/0061-one-replica-per-deployment/)).
+
 ## Limits for now
 
-- **Host names.** The request guard still accepts only loopback `Host` names (`localhost`, `127.0.0.1`, `[::1]`), so
-  reach the service as `localhost:8080`. A request with a real host name gets a 403 until the guard reads
-  `allowed-hosts`.
-- **Health check.** There is no health endpoint, and so no compose health check
-  ([#232](https://github.com/spec-kitty/spec-kitty-charter/issues/232)).
+- **Plain HTTP.** The service speaks HTTP, and every request carries the token. Publish it beyond loopback only
+  behind a proxy that terminates TLS.
+- **Behind a proxy.** Forwarded headers (`X-Forwarded-Host`, `Forwarded`) are ignored. List the names the proxy sends
+  in `Host`.
 - **Configuration root.** The example's root, `/var/lib/spec-kitty/charter`, is local to the example until the image
   sets its own (#234).
+- **Single replica.** A deployment runs exactly one replica. Pack writes are serialized inside one process only, so
+  a second replica could lose a write that `If-Match` should have refused
+  ([ADR-0061](/adr/0061-one-replica-per-deployment/)). Stop the old container before starting a new one; do not use a
+  rolling update that overlaps them.
 - **One container per configuration root.** Never start two containers, or a container and a local daemon, over
   the same configuration root or volume. Only one process may write a pack, and nothing refuses a second one yet
   ([one writer per pack](/architecture/service-lifecycle/#one-writer-per-pack); #349).
@@ -102,4 +145,5 @@ Among other checks, the service refuses to start, naming the property, file or d
 ## See also
 
 - [ADR-0041](/adr/0041-containerized-configuration-model/)
+- [ADR-0061](/adr/0061-one-replica-per-deployment/)
 - [Service lifecycle](/architecture/service-lifecycle/)

@@ -24,6 +24,9 @@ import org.junit.jupiter.params.provider.MethodSource;
  */
 class ParsedYamlTest {
 
+    /** Only a hang cap, far above the work's time so load cannot trip it; the cause assertion is the guard (#320). */
+    private static final Duration HANG_CAP = Duration.ofSeconds(30);
+
     private static final String SHARD = "tactic.graph.yaml";
     private static final String FRAGMENT = "drg/fragment.yaml";
     private static final String HEADER = "schema_version: '1.0'\ngenerated_at: STATIC\n";
@@ -127,8 +130,14 @@ class ParsedYamlTest {
 
     @Test
     void anAliasBombIsAPackUnreadableForPackYamlWithinTheTimeout() {
-        FileRead<PackDescriptor> read = assertTimeoutPreemptively(
-                Duration.ofSeconds(2), () -> PackDescriptorReader.read(DESCRIPTOR + aliasBomb(16)));
+        ParsedYaml parsed =
+                assertTimeoutPreemptively(HANG_CAP, () -> ParsedYaml.parse(DESCRIPTOR + aliasBomb(16), "pack.yaml"));
+        assertThat(parsed.failure())
+                .as("the node budget refuses the bomb before anything walks it")
+                .isNotNull();
+        assertThat(parsed.failure().firstLine()).isEqualTo(TOO_LARGE);
+        FileRead<PackDescriptor> read =
+                assertTimeoutPreemptively(HANG_CAP, () -> PackDescriptorReader.read(DESCRIPTOR + aliasBomb(16)));
         assertThat(read).isInstanceOf(FileRead.Unreadable.class);
         assertThat(((FileRead.Unreadable<PackDescriptor>) read).parse().firstLine())
                 .isEqualTo(TOO_LARGE);
@@ -143,15 +152,20 @@ class ParsedYamlTest {
     @Test
     void anAliasBombInAShardOrFragmentIsADrgSchemaErrorWithinTheTimeout() {
         String bomb = aliasBomb(16);
+        ParsedYaml parsedShard =
+                assertTimeoutPreemptively(HANG_CAP, () -> ParsedYaml.parse(HEADER + "nodes: []\n" + bomb, SHARD));
+        assertThat(parsedShard.failure())
+                .as("the node budget refuses the bomb before anything walks it")
+                .isNotNull();
+        assertThat(parsedShard.failure().firstLine()).isEqualTo(TOO_LARGE);
         FileRead<RawGraph> shard = assertTimeoutPreemptively(
-                Duration.ofSeconds(2),
-                () -> GraphDocumentReader.read(HEADER + "nodes: []\n" + bomb, Shape.SHARD, SHARD));
+                HANG_CAP, () -> GraphDocumentReader.read(HEADER + "nodes: []\n" + bomb, Shape.SHARD, SHARD));
         assertThat(findings(shard)).singleElement().satisfies(f -> {
             assertThat(f.code()).isEqualTo(PackFindingCode.DRG_SCHEMA_ERROR);
             assertThat(f.detail()).isEqualTo("qa/tactic.graph.yaml is not valid YAML: " + TOO_LARGE);
         });
         FileRead<RawGraph> fragment = assertTimeoutPreemptively(
-                Duration.ofSeconds(2), () -> GraphDocumentReader.read("nodes: []\n" + bomb, Shape.FRAGMENT, FRAGMENT));
+                HANG_CAP, () -> GraphDocumentReader.read("nodes: []\n" + bomb, Shape.FRAGMENT, FRAGMENT));
         assertThat(findings(fragment)).singleElement().satisfies(f -> {
             assertThat(f.code()).isEqualTo(PackFindingCode.DRG_SCHEMA_ERROR);
             assertThat(f.detail()).isEqualTo("qa/drg/fragment.yaml is not valid YAML: " + TOO_LARGE);

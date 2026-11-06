@@ -23,6 +23,7 @@ import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Paradigm;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
 import ai.speckitty.charter.packs.domain.ParadigmRepository;
+import ai.speckitty.charter.web.RefusalHandler;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -198,7 +199,7 @@ class ParadigmControllerTest {
         @Override
         public Pack load(PackIdentifier id) {
             if (!PACK.equals(id)) {
-                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "no pack " + id.value());
+                throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + id.value() + " was not found.");
             }
             return pack;
         }
@@ -211,7 +212,7 @@ class ParadigmControllerTest {
         @Override
         public Optional<Paradigm> load(PackIdentifier id, ParadigmIdentifier paradigm) {
             if (!PACK.equals(id)) {
-                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "no pack " + id.value());
+                throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + id.value() + " was not found.");
             }
             return pack.paradigms().stream()
                     .filter(p -> p.id().equals(paradigm))

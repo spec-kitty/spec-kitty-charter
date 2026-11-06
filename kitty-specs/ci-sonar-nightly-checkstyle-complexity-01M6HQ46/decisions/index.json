@@ -1,0 +1,106 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-11-03T22:08:23.327167Z",
+      "decision_id": "01M6HQ9K8ZPB1W0PS5CNDEE9WR",
+      "final_answer": "Core-aligned limits + shrink-only register: CyclomaticComplexity 15, NPathComplexity 1000, MethodLength 60, NestedIfDepth 1, on main and test; existing violators as shrink-only suppressions with a reason each",
+      "input_key": "complexity_limits",
+      "mission_id": "01M6HQ467X9NT5XZQESZK52BBK",
+      "mission_slug": "ci-sonar-nightly-checkstyle-complexity-01M6HQ46",
+      "opened_by": "cli",
+      "options": [
+        "Core-aligned limits + shrink-only register",
+        "Ceiling just above today's worst (near-zero entries)",
+        "Strict norms (CC 10, NPath 200, 50 lines) + large register",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Which Checkstyle complexity limits should gate each pull request?",
+      "rationale": null,
+      "resolved_at": "2026-11-04T05:44:40.751511Z",
+      "resolved_by": null,
+      "slot_key": "specify.complexity.limits",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-04T05:44:43.389384Z",
+      "decision_id": "01M6JHD5KXEKETR34N646Q79SK",
+      "final_answer": "Yes, proceed",
+      "input_key": "scope_confirmation",
+      "mission_id": "01M6HQ467X9NT5XZQESZK52BBK",
+      "mission_slug": "ci-sonar-nightly-checkstyle-complexity-01M6HQ46",
+      "opened_by": "cli",
+      "options": [
+        "Yes, proceed",
+        "Also include #239",
+        "Checkstyle only for now",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Do FR-001..FR-005 (Checkstyle complexity gate; nightly sonar.yml with generic scan action; skip green without SONAR_TOKEN; reported only, never required; docs) match the intended scope, with #239, per-PR Sonar and project/token creation out of scope?",
+      "rationale": null,
+      "resolved_at": "2026-11-04T05:44:45.943566Z",
+      "resolved_by": null,
+      "slot_key": "specify.scope.requirements",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-04T05:50:34.195306Z",
+      "decision_id": "01M6JHQW6K8TH51XPHZK5VNJNB",
+      "final_answer": "XPath per method + stale check: suppress-xpath entries in the one suppressions.xml naming each method; a build-logic Gradle check re-runs Checkstyle (the build's own plugin) over the register's files with the filter off and fails verifyAll on a stale entry or a wrong Size; engineering alignment confirmed",
+      "input_key": "register_stale_detection",
+      "mission_id": "01M6HQ467X9NT5XZQESZK52BBK",
+      "mission_slug": "ci-sonar-nightly-checkstyle-complexity-01M6HQ46",
+      "opened_by": "cli",
+      "options": [
+        "Method-scoped XPath entries + a Gradle stale-entry check in verifyAll",
+        "Format/Size/sunset guard only; staleness caught at sunset",
+        "CI-only Python script",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "How is the complexity exception register kept shrink-only (stale entries detected, new methods not exempted)?",
+      "rationale": null,
+      "resolved_at": "2026-11-04T05:53:28.592052Z",
+      "resolved_by": null,
+      "slot_key": "plan.register.stale-detection",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-04T06:27:35.973276Z",
+      "decision_id": "01M6JKVNX57FSK0RHCKXX2KKJJ",
+      "final_answer": "Refactor 3 methods to reach 15: flatten ComposedBundle.checkReferences, ComposedBundle.reaches and ActivationConfigSchemaParityTest.inline (behavior-preserving), folded into WP01 as T017",
+      "input_key": "register_cap",
+      "mission_id": "01M6HQ467X9NT5XZQESZK52BBK",
+      "mission_slug": "ci-sonar-nightly-checkstyle-complexity-01M6HQ46",
+      "opened_by": "cli",
+      "options": [
+        "Raise cap to 18",
+        "Refactor 3 methods to reach 15",
+        "Refactor all 10 main-code methods",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Measured 18 over-limit methods vs SC-002 cap of 15: raise the cap, refactor 3 methods, or refactor all main-code methods?",
+      "rationale": null,
+      "resolved_at": "2026-11-04T06:27:38.592594Z",
+      "resolved_by": null,
+      "slot_key": "plan.register.cap",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M6HQ467X9NT5XZQESZK52BBK",
+  "version": 1
+}

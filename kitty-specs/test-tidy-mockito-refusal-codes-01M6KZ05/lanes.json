@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "mission_slug": "test-tidy-mockito-refusal-codes-01M6KZ05",
+  "mission_id": "01M6KZ0553DQBYH16HZDEWFH87",
+  "mission_branch": "kitty/mission-test-tidy-mockito-refusal-codes-01M6KZ05",
+  "target_branch": "test-tidy-mockito-refusal-codes",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "build-logic/src/main/kotlin/charter.hand-written.gradle.kts",
+        "gradle/libs.versions.toml",
+        "gradle/verification-metadata.xml"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/RegistrationListsTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/DomainRepositoryServiceTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/InterruptedCommitRepairTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/LinkedPackCommitTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackCommitStoreTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackWriteSafetyTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/TacticSaveContractTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackStoreTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    }
+  ],
+  "computed_at": "2026-11-04T19:24:16.621579+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "planning_commit_sha": "4a252dae63c0038b22e123b6476fec65f4b3592a"
+}

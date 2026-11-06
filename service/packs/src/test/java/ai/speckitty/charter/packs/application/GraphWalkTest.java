@@ -168,9 +168,8 @@ class GraphWalkTest {
     }
 
     @Test
-    @DisplayName(
-            "a walk across packs keys its visited set by (holding pack, bare urn) and keeps a bare reference in the"
-                    + " pack of the artifact that writes it")
+    @DisplayName("a walk across packs keys its visited set by (holding pack, bare urn), keeps a bare reference in the"
+            + " pack of the artifact that writes it and reads a reverse edge's pack from its from side")
     void crossPackWalkTerminatesAndResolvesBareReferencesInTheHoldingPack() {
         PackIdentifier packA = new PackIdentifier("pack-a");
         PackIdentifier packB = new PackIdentifier("pack-b");
@@ -178,15 +177,19 @@ class GraphWalkTest {
         Urn y = urn("Y");
         Urn z = urn("Z");
         // X (a) -> b::Y; Y (b) -> a::X (back where it started) and bare Z; Z (b) -> a::X again and a::Y, the Y that
-        // pack
-        // a holds beside pack b's own Y; absent::W is passed over
-        Node nodeX = new Node(packA, x, List.of(qualified(x, y, "b"), qualified(x, urn("W"), "absent")));
+        // pack a holds beside pack b's own Y; absent::W is passed over. X also holds an edge authored from b::R that
+        // names X as its bare "to": it is crossed backwards, and R is found in the pack its "from" side names.
+        Urn r = urn("R");
+        Relationship reverse = new Relationship(
+                r, Optional.of("b"), x, Optional.empty(), RelationType.REQUIRES, Optional.empty(), Optional.empty());
+        Node nodeX = new Node(packA, x, List.of(qualified(x, y, "b"), qualified(x, urn("W"), "absent"), reverse));
         Node nodeY = new Node(packB, y, List.of(qualified(y, x, "a"), Relationship.of(y, z, RelationType.REQUIRES)));
         Node nodeZ = new Node(packB, z, List.of(qualified(z, x, "a"), qualified(z, y, "a")));
         Node nodeYofA = new Node(packA, y, List.of());
+        Node nodeR = new Node(packB, r, List.of());
         // Z exists only in pack b, so a bare reference that stayed in pack a would never find it
         Map<PackIdentifier, Map<Urn, CharterArtifact>> packs =
-                Map.of(packA, Map.of(x, nodeX, y, nodeYofA), packB, Map.of(y, nodeY, z, nodeZ));
+                Map.of(packA, Map.of(x, nodeX, y, nodeYofA), packB, Map.of(y, nodeY, z, nodeZ, r, nodeR));
         List<String> asked = new ArrayList<>();
         ComposeResolver compose = new ComposeResolver() {
             @Override
@@ -211,9 +214,11 @@ class GraphWalkTest {
         new GraphWalk(compose).walk(nodeX, recorder);
 
         // pack b's Y and pack a's Y are two components of one bare urn: both are visited, neither shadows the other
-        assertThat(recorder.visited).containsExactly(x, y, z, y);
+        assertThat(recorder.visited).containsExactly(x, y, z, y, r);
         // X is the start and is never resolved again; each of the others is resolved once, in its own pack
-        assertThat(asked).containsExactly("pack-b/directive:Y", "pack-b/directive:Z", "pack-a/directive:Y");
+        assertThat(asked)
+                .containsExactly(
+                        "pack-b/directive:Y", "pack-b/directive:Z", "pack-a/directive:Y", "pack-b/directive:R");
     }
 
     private static Relationship qualified(Urn from, Urn to, String pack) {

@@ -6,5 +6,6 @@ files:
   - ServiceDescLink.yaml
   - WwwAuthenticate.yaml
   - ActivationETag.yaml
+  - ActivationPackListETag.yaml
   - EffectiveETag.yaml
   - Location.yaml

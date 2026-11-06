@@ -72,9 +72,10 @@ The conformance corpus joins these checks with roadmap step 3.
 ## Landing a pull request
 
 - The one required check is `CI gate / gate`
-  ([ADR-0023](/adr/0023-ci-gate-required-check/)). It runs the service build, the native
-  executables, the whole-pack round trip and the docs checks for the parts of the repository the
-  pull request changes.
+  ([ADR-0023](/adr/0023-ci-gate-required-check/)). It runs the service build, the whole-pack
+  round trip and the docs checks for the parts of the repository the pull request changes. The native
+  executables are not part of it: they are built nightly on `main` and for each service release
+  ([ADR-0060](/adr/0060-native-build-runs-nightly-and-per-release/)).
 - `main` lands pull requests through a merge queue
   ([ADR-0047](/adr/0047-generated-indexes-and-merge-queue/)). The gate runs again on each queue entry,
   against the `main` the pull request will land on. A pull request that fails in the queue is

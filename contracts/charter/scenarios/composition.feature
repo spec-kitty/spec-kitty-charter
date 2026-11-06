@@ -386,10 +386,11 @@ Feature: The compose resolves the configured packs' dependency graph
     And the field at "/packs/0/name" is "orphan-pack"
     And the response has no "Charter-Source-Fingerprint" header
 
-  Scenario: A parent_pack a configured pack declares resolves
+  Scenario: A parent_pack a configured pack declares resolves, the parent first
     The negative control of the unresolved-parent refusal: the same child with its parent
-    configured. The parent imposes no order of its own; the stable order — the configured
-    order — serves, and child is configured before root.
+    configured. The parent is an ordering edge, as a dependency is (the operator ruling of
+    2026-11-06): the pack it extends merges before it, whatever the configured order, so child is
+    served after root although it is configured before it.
     Given the org pack "root" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943R
@@ -408,8 +409,48 @@ Feature: The compose resolves the configured packs' dependency graph
       """
     When I GET "/offering"
     Then the response status is 200
-    And the field at "/packs/0/packId" is "child"
-    And the field at "/packs/1/packId" is "root"
+    And the field at "/packs/0/packId" is "root"
+    And the field at "/packs/1/packId" is "child"
+
+  Scenario: Two packs naming each other as parent_pack refuse the compose as a cycle
+    The parent_pack is a cycle edge as a dependency is (the operator ruling of 2026-11-06).
+    Given the org pack "alpha" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: 01M4P01D5TWB5FKZGNNQG3943S
+      name: alpha-pack
+      pack_level: org
+      """
+    And the org pack "beta" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+      pack_version: 1.0.0
+      parent_pack: 01M4P01D5TWB5FKZGNNQG3943R
+      name: beta-pack
+      pack_level: org
+      """
+    When I GET "/offering"
+    Then the response status is 500
+    And the problem code is "pack_dependency_cycle"
+    And the field "detail" of the response body is "pack `alpha-pack` (01M4P01D5TWB5FKZGNNQG3943R) is on a dependency cycle: `alpha-pack` -> `beta-pack` -> `alpha-pack`"
+    And the field at "/packs/0/packId" is "alpha"
+    And the response has no "Charter-Source-Fingerprint" header
+
+  Scenario: A pack naming itself as its parent_pack refuses the compose as a cycle
+    Given the org pack "alpha" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: 01M4P01D5TWB5FKZGNNQG3943R
+      name: alpha-pack
+      pack_level: org
+      """
+    When I GET "/offering"
+    Then the response status is 500
+    And the problem code is "pack_dependency_cycle"
+    And the field "detail" of the response body is "pack `alpha-pack` (01M4P01D5TWB5FKZGNNQG3943R) names itself as its parent_pack"
+    And the field at "/packs/0/packId" is "alpha"
 
   Scenario: An org pack depending on a project pack refuses the compose
     A pack may take a dependency or a parent only at its own level or one nearer built-in (ADR-0048
@@ -816,11 +857,188 @@ Feature: The compose resolves the configured packs' dependency graph
     And the field at "/packs/0/packId" is "house"
     And the field at "/packs/1/packId" is "team"
 
-  # Deferred to #360: roots come from the activation set (operator ruling 2026-11-03).
-  @WIP
+  Scenario: Two siblings holding one preset id refuse the compose
+    Two org packs related by no parent_pack both hold the preset "team": neither would win by anything but
+    load order, so the compose is refused (the operator ruling of 2026-11-06), as two siblings that define
+    one artifact are. The pack named first is the second contestant in the stable order.
+    Given the org pack "left" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: left-pack
+      pack_level: org
+      """
+    And the org pack "left" with the file "directives/LEFT_ONLY.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: LEFT_ONLY
+      title: Share the load
+      intent: Share it
+      enforcement: required
+      """
+    And the org pack "left" with the file "presets/team.yaml":
+      """
+      schema_version: '1.0'
+      id: team
+      description: The left copy of the team preset.
+      activated_directives:
+        - id: LEFT_ONLY
+          must_have: true
+      """
+    And the org pack "right" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+      pack_version: 1.0.0
+      parent_pack: null
+      name: right-pack
+      pack_level: org
+      """
+    And the org pack "right" with the file "directives/RIGHT_ONLY.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: RIGHT_ONLY
+      title: Share the load
+      intent: Share it
+      enforcement: required
+      """
+    And the org pack "right" with the file "presets/team.yaml":
+      """
+      schema_version: '1.0'
+      id: team
+      description: The right copy of the team preset.
+      activated_directives:
+        - id: RIGHT_ONLY
+          must_have: true
+      """
+    When I GET "/offering"
+    Then the response status is 500
+    And the problem code is "pack_sibling_conflict"
+    And the field "detail" of the response body is "packs `left-pack` (01M4P01D5TWB5FKZGNNQG3943R) and `right-pack` (01M4P01D5TWB5FKZGNNQG3943S) at org both hold the preset `team`, and neither extends the other by parent_pack"
+    And the field at "/packs/0/packId" is "right"
+    And the field at "/packs/1/packId" is "left"
+    And the response has no "Charter-Source-Fingerprint" header
+
+  Scenario: A child pack and the parent_pack it extends may hold one preset id
+    The negative control of the preset contest: the child extends the parent, so it merges after it and its copy
+    takes the place of the parent's. Both packs are served, the parent first.
+    Given the org pack "parent" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: parent-pack
+      pack_level: org
+      """
+    And the org pack "parent" with the file "directives/PARENT_ONLY.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: PARENT_ONLY
+      title: Share the load
+      intent: Share it
+      enforcement: required
+      """
+    And the org pack "parent" with the file "presets/team.yaml":
+      """
+      schema_version: '1.0'
+      id: team
+      description: The parent copy of the team preset.
+      activated_directives:
+        - id: PARENT_ONLY
+          must_have: true
+      """
+    And the org pack "child" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+      pack_version: 1.0.0
+      parent_pack: 01M4P01D5TWB5FKZGNNQG3943R
+      name: child-pack
+      pack_level: org
+      """
+    And the org pack "child" with the file "directives/CHILD_ONLY.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: CHILD_ONLY
+      title: Share the load
+      intent: Share it
+      enforcement: required
+      """
+    And the org pack "child" with the file "presets/team.yaml":
+      """
+      schema_version: '1.0'
+      id: team
+      description: The child copy of the team preset.
+      activated_directives:
+        - id: CHILD_ONLY
+          must_have: true
+      """
+    When I GET "/offering"
+    Then the response status is 200
+    And the field at "/packs/0/packId" is "parent"
+    And the field at "/packs/1/packId" is "child"
+
+  Scenario: An org pack and a project pack holding one preset id compose as a layer override
+    The cross-level negative control: a preset id held at two levels is the layer override of ADR-0053 decision 6
+    and ADR-0059 D3, not a contest. Both packs are served, the org pack first.
+    Given the org pack "house" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: house-pack
+      pack_level: org
+      """
+    And the org pack "house" with the file "directives/HOUSE_ONLY.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: HOUSE_ONLY
+      title: Share the load
+      intent: Share it
+      enforcement: required
+      """
+    And the org pack "house" with the file "presets/team.yaml":
+      """
+      schema_version: '1.0'
+      id: team
+      description: The house copy of the team preset.
+      activated_directives:
+        - id: HOUSE_ONLY
+          must_have: true
+      """
+    And the project pack "team" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+      pack_version: 1.0.0
+      parent_pack: null
+      name: team-pack
+      pack_level: project
+      """
+    And the project pack "team" with the file "directives/TEAM_ONLY.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: TEAM_ONLY
+      title: Share the load
+      intent: Share it
+      enforcement: required
+      """
+    And the project pack "team" with the file "presets/team.yaml":
+      """
+      schema_version: '1.0'
+      id: team
+      description: The team copy of the team preset.
+      activated_directives:
+        - id: TEAM_ONLY
+          must_have: true
+      """
+    When I GET "/offering"
+    Then the response status is 200
+    And the field at "/packs/0/packId" is "house"
+    And the field at "/packs/1/packId" is "team"
+
   Scenario: The compose is the closure of the activated packs, not every available pack
     FR-011: the catalog is the set of available packs and the activated packs are the closure's roots.
-    A pack that is neither activated nor depended on is available but is not in the compose.
+    A pack that is neither activated nor depended on is available but is not in the compose: the
+    activation's closure read (#360) lists beta, which alpha depends on, then alpha, and not gamma.
     Given the org pack "alpha" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943R
@@ -849,11 +1067,11 @@ Feature: The compose resolves the configured packs' dependency graph
       pack_level: org
       """
     And the project activates the pack "alpha"
-    When I GET "/offering"
+    When I GET "/activations/project/packs"
     Then the response status is 200
     And the field at "/packs/0/packId" is "beta"
     And the field at "/packs/1/packId" is "alpha"
-    And the offering holds exactly 2 packs
+    And the answer holds exactly 2 packs
 
   Scenario: A bare cross-pack reference is refused naming the holding pack
     SC-004's refusal half (FR-015), on the two-pack fixture shared with the two scenarios below: alpha's

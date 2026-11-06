@@ -23,6 +23,7 @@ import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.Enforcement;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackRepository;
+import ai.speckitty.charter.web.RefusalHandler;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -248,7 +249,7 @@ class RelationshipControllerTest {
         @Override
         public Pack load(PackIdentifier id) {
             if (!PACK.equals(id)) {
-                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "no pack " + id.value());
+                throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + id.value() + " was not found.");
             }
             return pack;
         }

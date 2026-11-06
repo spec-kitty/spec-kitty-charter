@@ -33,20 +33,22 @@ description: >-
 
   governance_policy_violation (409) is raised by the registration writes: a write the mutability level of
   the pack that owns its target does not permit is refused with it (ADR-0012, the mutability-policy epic
-  #55). An artifact no policy names is open, and open permits every write; this version reads no policy
-  file yet, so until it does every target is open and no write is refused with it. A lower-tier pack that breaks
+  #55). An artifact no policy names is open, and open permits every write. Each pack's policy.yaml is read, per
+  pack along the composition closure of the pack written (ADR-0063); no open pack ships one yet, so every target
+  of the open packs is open and none of their writes is refused with it. A lower-tier pack that breaks
   the mutability policy of an artifact it changes in the merged offering will be refused with it too,
   once the offering is merged (#10, #11).
 
-  Six codes are reserved for the activation set (ADR-0020 D9, D10, #125), declared before the operations
-  that raise them are built, which answer 501 until then (ADR-0020 D8): activation_not_found,
-  artifact_not_found and preset_not_found (404); artifact_required and artifact_locked (409), a
-  deactivation a pack requires or locks, whose refusal names every requiring pack in requiredBy;
-  activation_invalid (422), a document or body the service refuses, each refused part listed in violations.
-  No operation of this version raises them. Each scenario is a declaration pin, not behavior: it asserts
-  only what the x-refusal map below declares, and a unit test of the service fails when any main class
-  other than the enum and its mappings names a code the map marks not raised, outside the two classes no
-  operation reaches (the whole-pack load and its findings).
+  Six codes belong to the activation set (ADR-0020 D9, D10, #125). The activation register raises four
+  (#125, #360): activation_not_found (404), an activation no document is stored under; activation_invalid
+  (422), a document or body the service refuses, each refused part listed in violations; artifact_required
+  and artifact_locked (409), a deactivation a pack requires or locks, whose refusal names every requiring pack
+  in requiredBy. Two stay reserved, declared before the operations that raise them are built, which answer
+  501 until then (ADR-0020 D8): artifact_not_found and preset_not_found (404). No operation of this version
+  raises those two. Each of their scenarios is a declaration pin, not behavior: it asserts only what the
+  x-refusal map below declares, and a unit test of the service fails when any main class other than the enum
+  and its mappings names a code the map marks not raised, outside the two classes no operation reaches (the
+  whole-pack load and its findings).
 
   x-refusal declares, for every code, the HTTP status it is answered with, whether the read may be retried,
   and whether an operation of this version raises it (raised). A code has one status, except where its entry
@@ -71,7 +73,7 @@ description: >-
   exception is the registration of a relationship (putPackRelationship), which judges the request's own to
   against the compose of the pack it registers into: pack_reference_pack_missing (a qualified to naming a pack
   outside the source pack's depends_on closure), pack_reference_unqualified (a bare to that only another pack
-  holds) and pack_reference_artifact_missing (a qualified to naming an artifact the named pack does not hold)
+  holds) and pack_reference_artifact_missing (a qualified to naming an artifact the named pack does not hold, or a preset item or policy lock naming a held artifact only by case)
   answer 422 there, because the request is what is wrong, and are refused before any file is written.
   They are pack_dependency_cycle, pack_dependency_unknown, pack_dependency_out_of_range,
   pack_parent_unresolved, pack_level_violation, pack_name_conflict, pack_duplicate_id,
@@ -198,7 +200,7 @@ x-refusal:
   activation_not_found:
     status: 404
     retryable: false
-    raised: false
+    raised: true
   artifact_not_found:
     status: 404
     retryable: false
@@ -210,15 +212,15 @@ x-refusal:
   artifact_required:
     status: 409
     retryable: false
-    raised: false
+    raised: true
   artifact_locked:
     status: 409
     retryable: false
-    raised: false
+    raised: true
   activation_invalid:
     status: 422
     retryable: false
-    raised: false
+    raised: true
   pack_dependency_cycle:
     status: 500
     retryable: false

@@ -1,0 +1,37 @@
+{
+  "accept_commit": "db387db8177ef4559f43b8fc646faf978b4a996d",
+  "acceptance_history": [
+    {
+      "accept_commit": "db387db8177ef4559f43b8fc646faf978b4a996d",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-11-05T17:03:03.890087+00:00",
+      "accepted_by": "claude",
+      "accepted_from_commit": "44d68f9a58423ba627d897f8ac2b3e1c5df4c889"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-11-05T17:03:03.890087+00:00",
+  "accepted_by": "claude",
+  "accepted_from_commit": "44d68f9a58423ba627d897f8ac2b3e1c5df4c889",
+  "baseline_merge_commit": "63512c11159f5f4727dfe61f657844f37ca62af6",
+  "contracts": "none",
+  "contracts_rationale": "Build and CI mission: no API, event or schema interface is added or changed.",
+  "created_at": "2026-11-05T12:02:35.796732+00:00",
+  "flattened": true,
+  "friendly_name": "Mutation testing floors, and PIT on packs",
+  "merged_at": "2026-11-05T17:04:23.917779+00:00",
+  "merged_commit": "60450482d5d66e2721629afb6b6935a407eb8c36",
+  "mid8": "01M6NSDR",
+  "mission_id": "01M6NSDRM2CB30966R5GDMRX5V",
+  "mission_number": 17,
+  "mission_slug": "test-mutation-floors-01M6NSDR",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "The 2026-11-03 test suite assessment (W1, R1) and #239 found that the nightly PIT run gates nothing and never mutates packs, which holds 90 % of the code. The operator ruled to adopt #239 as designed: a fixed floor per module (kernel 65, missions 70, profiles 50, packs by floor5(score - 3)), PIT on packs.domain, packs.application and, by ruling, packs.infra.storage with its own floor; every module's report uploaded with a job summary; an issue opened on a red scheduled run; an ADR ending the experiment status.",
+  "purpose_tldr": "Make the nightly mutation run fail on a falling score, and extend it to the packs domain, application and storage code where most of the logic lives.",
+  "slug": "test-mutation-floors-01M6NSDR",
+  "status_phase": "1",
+  "target_branch": "test-mutation-floors",
+  "vcs": "git",
+  "vcs_locked_at": "2026-11-05T12:10:29.091060+00:00"
+}

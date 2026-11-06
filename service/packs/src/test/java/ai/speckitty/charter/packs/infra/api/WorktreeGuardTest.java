@@ -4,8 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
+import ai.speckitty.charter.web.ProblemJson;
 import jakarta.servlet.ServletException;
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -302,5 +304,144 @@ class WorktreeGuardTest {
             MockHttpServletResponse response = run(request).response();
             assertThat(response.getStatus()).as(method).isEqualTo(401);
         }
+    }
+
+    // A configured list (ADR-0041 D6) with the container's health exemption (D7), as GuardWiring builds it under the
+    // container profile; the packs module only sees the policy.
+
+    private static final String HEALTH = "/actuator/health";
+
+    private final WorktreeGuard named = new WorktreeGuard(
+            WorktreeToken.of(TOKEN),
+            GuardPolicy.named(List.of("charter.internal")).withTokenExemptGet(HEALTH),
+            info,
+            () -> mapper);
+
+    private static MockHttpServletRequest at(String method, String uri, String host) {
+        MockHttpServletRequest request = new MockHttpServletRequest(method, uri);
+        request.setRequestURI(uri);
+        request.setServerName(
+                host.startsWith("[") ? host.substring(0, host.indexOf(']') + 1) : host.replaceAll(":\\d*$", ""));
+        request.addHeader("Host", host);
+        return request;
+    }
+
+    private static MockHttpServletRequest withToken(MockHttpServletRequest request) {
+        request.addHeader("Authorization", "Bearer " + TOKEN);
+        return request;
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"charter.internal", "CHARTER.internal:8080", "charter.internal:", " charter.internal "})
+    void aListedHostPassesAtAnyPortAndInAnyCase(String host) throws Exception {
+        assertThat(run(named, withToken(at("GET", "/api/v1/info", host))).passed())
+                .isTrue();
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+            strings = {
+                "localhost",
+                "127.0.0.1",
+                "attacker.example",
+                "charter.internal.",
+                "charter.internal.attacker.example",
+                "attacker.charter.internal",
+                "[::1]"
+            })
+    void anUnlistedHostIsForbiddenUnderAListEvenWithTheRightToken(String host) throws Exception {
+        assertForbidden(run(named, withToken(at("GET", "/api/v1/info", host))));
+    }
+
+    @Test
+    void underAListARequestWithoutAHostHeaderIsForbidden() throws Exception {
+        MockHttpServletRequest request = withToken(new MockHttpServletRequest("GET", "/api/v1/info"));
+        request.setServerName("charter.internal");
+        assertForbidden(run(named, request));
+    }
+
+    @Test
+    void withoutAListARequestWithoutAHostHeaderIsStillJudgedOnTheServerName() throws Exception {
+        assertThat(run(authorized()).passed()).isTrue();
+        MockHttpServletRequest elsewhere = authorized();
+        elsewhere.setServerName("10.0.0.5");
+        assertForbidden(run(elsewhere));
+    }
+
+    @Test
+    void aHostWithWhitespaceBeforeItsPortIsStillForbidden() throws Exception {
+        assertForbidden(run(disagreeing("localhost", "localhost :8080")));
+    }
+
+    @Test
+    void underAListAnUnlistedServerNameIsForbiddenThoughHostIsListed() throws Exception {
+        assertForbidden(run(named, disagreeing("attacker.example", "charter.internal")));
+        assertThat(run(named, disagreeing("charter.internal", "charter.internal:8080"))
+                        .passed())
+                .isTrue();
+    }
+
+    @Test
+    void underAListABrowserHeaderIsStillForbidden() throws Exception {
+        MockHttpServletRequest request = withToken(at("GET", "/api/v1/info", "charter.internal"));
+        request.addHeader("Origin", "https://charter.internal");
+        assertForbidden(run(named, request));
+    }
+
+    @Test
+    void underAListTheTokenIsStillRequiredOutsideTheExemptPath() throws Exception {
+        assertUnauthorized(run(named, at("GET", "/api/v1/info", "charter.internal")));
+    }
+
+    @Test
+    void theExemptGetPassesWithoutAToken() throws Exception {
+        assertThat(run(named, at("GET", HEALTH, "charter.internal")).passed()).isTrue();
+    }
+
+    @Test
+    void theExemptGetStillNeedsAnAcceptedHostAndNoBrowserHeader() throws Exception {
+        assertForbidden(run(named, at("GET", HEALTH, "attacker.example")));
+        MockHttpServletRequest browser = at("GET", HEALTH, "charter.internal");
+        browser.addHeader("Sec-Fetch-Site", "cross-site");
+        assertForbidden(run(named, browser));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"HEAD", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"})
+    void onlyAGetOfTheExemptPathSkipsTheToken(String method) throws Exception {
+        assertUnauthorized(run(named, at(method, HEALTH, "charter.internal")));
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+            strings = {
+                "/actuator/health/",
+                "/actuator/health;x=y",
+                "/actuator/health/liveness",
+                "/actuator/health/readiness",
+                "/actuator/health/../env",
+                "/actuator/%68ealth",
+                "/ACTUATOR/health",
+                "/actuator/Health",
+                "/actuator/healthz",
+                "/actuator",
+                "/actuator/env",
+                "//actuator/health",
+                "/actuator//health"
+            })
+    void aNearMissOfTheExemptPathNeedsTheToken(String uri) throws Exception {
+        assertUnauthorized(run(named, at("GET", uri, "charter.internal")));
+    }
+
+    @Test
+    void theExemptPathUnderAContextPathNeedsTheToken() throws Exception {
+        MockHttpServletRequest request = at("GET", "/ctx" + HEALTH, "charter.internal");
+        request.setContextPath("/ctx");
+        assertUnauthorized(run(named, request));
+    }
+
+    @Test
+    void theLoopbackPolicyExemptsNothing() throws Exception {
+        assertUnauthorized(run(at("GET", HEALTH, "localhost")));
     }
 }

@@ -21,7 +21,7 @@ audience:
 
 **Every pull request that changes the contracts, the service or the build now has to keep the packs round-tripping**
 (epic [#186](https://github.com/spec-kitty/spec-kitty-charter/issues/186), operator ruling of 2026-11-05).
-`CI gate / gate` calls `whole-pack.yml` for a new `wholepack` group, beside `service`, `native` and `docs`
+`CI gate / gate` calls `whole-pack.yml` for a new `wholepack` group, beside `service` and `docs`
 ([ADR-0023](/adr/0023-ci-gate-required-check/), extended). The required check's name is unchanged. The workflow no
 longer runs on its own for a pull request, so nothing runs twice; it still runs on `main`. Its paths now cover every
 contract and `gradlew`, because `:packs` also reads `contracts/charter` and `contracts/offering`.

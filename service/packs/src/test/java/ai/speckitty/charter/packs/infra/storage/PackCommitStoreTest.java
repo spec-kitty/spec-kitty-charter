@@ -11,10 +11,10 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.kernel.transport.PreconditionException;
 import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.PackWriteStore.Change;
 import ai.speckitty.charter.packs.application.PermissiveWritePolicyGate;
-import ai.speckitty.charter.packs.application.PreconditionException;
 import ai.speckitty.charter.packs.application.RelationshipRegistrationService;
 import ai.speckitty.charter.packs.application.ToolguideRegistrationService;
 import ai.speckitty.charter.packs.domain.Guide;
@@ -120,6 +120,20 @@ class PackCommitStoreTest {
     }
 
     @Test
+    @DisplayName("a commit to an identifier no configured pack answers to is not found")
+    void aCommitToAnUnconfiguredPackIsNotFound(@TempDir Path host) throws IOException {
+        Path packDir = PackFixtures.copyOf("pack-a", host);
+        YamlSerializationStrategy strategy = new YamlSerializationStrategy();
+        PackCommitStore store = new PackCommitStore(locations(packDir), strategy);
+
+        assertThatThrownBy(() -> store.commit(new PackIdentifier("ghost"), null, toolguide("ripgrep"), SHARD))
+                .isInstanceOfSatisfying(CharterRefusal.class, r -> {
+                    assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
+                    assertThat(r.getMessage()).isEqualTo("Pack ghost was not found.");
+                });
+    }
+
+    @Test
     @DisplayName(
             "a failure injected before the swap leaves the live pack byte-for-byte unchanged and no residue (NFR-002)")
     void aPreSwapFailureChangesZeroFiles(@TempDir Path host) throws IOException {
@@ -136,7 +150,8 @@ class PackCommitStoreTest {
         Map<String, String> before = snapshot(packDir);
 
         assertThatThrownBy(() -> store.commit(PACK, null, toolguide("ripgrep"), SHARD))
-                .isInstanceOf(CharterRefusal.class);
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
 
         assertThat(snapshot(packDir))
                 .as("the live pack is byte-for-byte unchanged")

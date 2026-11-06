@@ -37,15 +37,20 @@ class ContractDescriptionsTest {
                         + " computed, so the answer and the Charter-Source-Fingerprint it would report might disagree")
                 .contains("The read may be retried")
                 .contains("governance_policy_violation (409) is raised by the registration writes")
-                .contains("this version reads no policy file yet, so until it does every target is open")
+                .contains("Each pack's policy.yaml is read, per pack along the composition closure of the pack written"
+                        + " (ADR-0063); no open pack ships one yet")
+                .doesNotContain("reads no policy file")
                 .doesNotContain("No operation of this version raises it");
     }
 
     @Test
-    void theRefusalCodeSaysTheActivationCodesAreReservedAndGivesEveryStatus() throws IOException {
+    void theRefusalCodeSaysWhichActivationCodesAreRaisedAndGivesEveryStatus() throws IOException {
         assertThat(description("contract/charter/schemas/CharterRefusalCode.yaml"))
-                .contains("Six codes are reserved for the activation set (ADR-0020 D9, D10, #125)")
-                .contains("No operation of this version raises them")
+                .contains("Six codes belong to the activation set (ADR-0020 D9, D10, #125). The activation register"
+                        + " raises four")
+                .contains("Two stay reserved")
+                .contains("No operation of this version raises those two")
+                .doesNotContain("No operation of this version raises them")
                 .contains("artifact_required and artifact_locked are 409")
                 .contains("validation_failed and activation_invalid are 422")
                 .doesNotContain("are no longer raised: the action-context operation");

@@ -29,6 +29,8 @@ class ParadigmReadServiceTest {
     private static final PackIdentifier PACK_A = new PackIdentifier("pack-a");
     private static final PackIdentifier PACK_B = new PackIdentifier("pack-b");
     private static final PackIdentifier ABSENT = new PackIdentifier("absent");
+    // Configured, but its files cannot be read: the storage refuses it PACK_UNREADABLE.
+    private static final PackIdentifier UNREADABLE = new PackIdentifier("unreadable");
     private static final ParadigmIdentifier CLEAN = new ParadigmIdentifier("clean-architecture");
 
     private final Paradigm clean = paradigmWithRelationships(PACK_A, "clean-architecture");
@@ -88,19 +90,33 @@ class ParadigmReadServiceTest {
     }
 
     @Test
-    void anAbsentPackIsAClientSideNotFoundNotAnInternalError() {
+    void anAbsentOrUnreadablePackIsAClientSideNotFoundNotAnInternalError() {
         // Control: the present pack answers, so the refusal is the absence's, not a broken setup.
         assertThat(service.paradigmsOf(PACK_A).value()).isNotEmpty();
 
+        // The storage refuses an unknown pack PACK_NOT_FOUND itself; it passes through, with nothing chained.
         assertThatThrownBy(() -> service.paradigmsOf(ABSENT)).isInstanceOfSatisfying(CharterRefusal.class, r -> {
+            assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
+            assertThat(r.getCause()).isNull();
+        });
+        assertThatThrownBy(() -> service.paradigm(ABSENT, CLEAN))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND));
+        // A configured pack that cannot be read is not found too, and keeps the storage refusal as its cause.
+        assertThatThrownBy(() -> service.paradigmsOf(UNREADABLE)).isInstanceOfSatisfying(CharterRefusal.class, r -> {
             assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
             assertThat(r.getCause())
                     .isInstanceOfSatisfying(
                             CharterRefusal.class, c -> assertThat(c.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
         });
-        assertThatThrownBy(() -> service.paradigm(ABSENT, CLEAN))
-                .isInstanceOfSatisfying(
-                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND));
+        assertThatThrownBy(() -> service.paradigm(UNREADABLE, CLEAN))
+                .isInstanceOfSatisfying(CharterRefusal.class, r -> {
+                    assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND);
+                    assertThat(r.getCause())
+                            .isInstanceOfSatisfying(
+                                    CharterRefusal.class,
+                                    c -> assertThat(c.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+                });
     }
 
     @Test
@@ -163,19 +179,24 @@ class ParadigmReadServiceTest {
                 .build();
     }
 
-    private Pack packOf(PackIdentifier pack) {
-        Pack.Builder builder = Pack.builder().id(pack).descriptor(descriptor(pack));
-        stored.getOrDefault(pack, List.of()).forEach(builder::paradigm);
-        return builder.build();
+    /** The stored paradigms of a pack, refused as the storage refuses an unknown or an unreadable pack. */
+    private List<Paradigm> storedIn(PackIdentifier pack) {
+        if (pack.equals(UNREADABLE)) {
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack unreadable has no pack.yaml");
+        }
+        List<Paradigm> found = stored.get(pack);
+        if (found == null) {
+            throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + pack.value() + " was not found.");
+        }
+        return found;
     }
 
     private final class InMemoryPacks implements PackRepository {
         @Override
         public Pack load(PackIdentifier pack) {
-            if (!stored.containsKey(pack)) {
-                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "no pack " + pack.value());
-            }
-            return packOf(pack);
+            Pack.Builder builder = Pack.builder().id(pack).descriptor(descriptor(pack));
+            storedIn(pack).forEach(builder::paradigm);
+            return builder.build();
         }
     }
 
@@ -187,11 +208,7 @@ class ParadigmReadServiceTest {
 
         @Override
         public Optional<Paradigm> load(PackIdentifier pack, ParadigmIdentifier paradigm) {
-            List<Paradigm> found = stored.get(pack);
-            if (found == null) {
-                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "no pack " + pack.value());
-            }
-            return found.stream().filter(p -> p.id().equals(paradigm)).findFirst();
+            return storedIn(pack).stream().filter(p -> p.id().equals(paradigm)).findFirst();
         }
     }
 }

@@ -7,7 +7,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import ai.speckitty.charter.api.model.Problem;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
@@ -52,18 +51,17 @@ import ai.speckitty.charter.packs.domain.Toolguide;
 import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
 import ai.speckitty.charter.packs.domain.ToolguideRepository;
 import ai.speckitty.charter.packs.infra.storage.MarkdownGuideFormat;
-import jakarta.validation.ConstraintViolationException;
+import ai.speckitty.charter.web.ProblemHandler;
+import ai.speckitty.charter.web.RefusalHandler;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -139,7 +137,6 @@ class ArtifactControllerTest {
     private ArtifactController controller(ConsistentRead read, PackRevisions revisions) {
         InMemoryStore store = new InMemoryStore();
         ArtifactReadService reads = new ArtifactReadService(
-                store,
                 store,
                 store,
                 read,
@@ -358,18 +355,6 @@ class ArtifactControllerTest {
     }
 
     @Test
-    void aParameterOutOfItsDeclaredBoundsIsA400ProblemWithoutACode() {
-        // The generated interface is @Validated: in the service a method validation proxy refuses a pageSize of 0
-        // or 201 before the controller runs (pinned by artifacts.feature); this slice has no validator, so the
-        // handler is asked directly.
-        ResponseEntity<Object> answer = controller.outOfBounds(new ConstraintViolationException(Set.of()));
-
-        assertThat(answer.getStatusCode().value()).isEqualTo(400);
-        assertThat(answer.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_PROBLEM_JSON);
-        assertThat(answer.getBody()).isEqualTo(new Problem("Bad Request", 400));
-    }
-
-    @Test
     void anUnknownPackIsPackNotFoundOnTheList() throws Exception {
         mvc.perform(get("/api/v1/packs/nope/artifacts"))
                 .andExpect(status().isNotFound())
@@ -379,7 +364,7 @@ class ArtifactControllerTest {
                 .andExpect(jsonPath("$.status").value(404));
     }
 
-    /** Every port the reads ask, over the one pack; another pack is unreadable, as storage refuses it. */
+    /** Every port the reads ask, over the one pack; another pack is not found, as storage refuses it. */
     private final class InMemoryStore
             implements PackRepository,
                     TacticRepository,
@@ -394,7 +379,7 @@ class ArtifactControllerTest {
         @Override
         public Pack load(PackIdentifier asked) {
             if (!asked.equals(PACK)) {
-                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "no pack " + asked.value());
+                throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + asked.value() + " was not found.");
             }
             return pack;
         }

@@ -1,0 +1,37 @@
+{
+  "accept_commit": "6cde72858648e85b491250efb5f189ff41b31fa5",
+  "acceptance_history": [
+    {
+      "accept_commit": "6cde72858648e85b491250efb5f189ff41b31fa5",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-11-05T07:22:08.291785+00:00",
+      "accepted_by": "claude",
+      "accepted_from_commit": "d18852d12e2fe8d710b36ecc6f21dc98d816f7fe"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-11-05T07:22:08.291785+00:00",
+  "accepted_by": "claude",
+  "accepted_from_commit": "d18852d12e2fe8d710b36ecc6f21dc98d816f7fe",
+  "baseline_merge_commit": "a452cbe4c85a1c29ec688bf8d0b44b1bf58995f6",
+  "contracts": "none",
+  "contracts_rationale": "Test-only mission: no API, event or schema interface is added or changed.",
+  "created_at": "2026-11-05T00:08:19.471993+00:00",
+  "flattened": true,
+  "friendly_name": "Deadline checks become hang caps",
+  "merged_at": "2026-11-05T07:22:54.487422+00:00",
+  "merged_commit": "81d05ac4baab14281bbf21ee8fd0cc3c294f9b1c",
+  "mid8": "01M6MGHX",
+  "mission_id": "01M6MGHX20KBZ80BNT75KV35ZY",
+  "mission_number": 17,
+  "mission_slug": "test-deadline-hang-caps-01M6MGHX",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "The 2026-11-03 test suite assessment (W3, R2) and #320 found eight wall-clock deadline checks in five packs test files that a starved CI runner could trip, the failure mode of #316. Per ADR-0057 and the operator's landing pass they stay in :packs:test and are not tagged timing; each is widened into a hang cap far above the work's own time, or made to assert the cause instead of the clock.",
+  "purpose_tldr": "Stop eight tight wall-clock checks in the packs tests from flaking on a loaded runner, while they keep gating the guards they prove.",
+  "slug": "test-deadline-hang-caps-01M6MGHX",
+  "status_phase": "1",
+  "target_branch": "test-deadline-hang-caps",
+  "vcs": "git",
+  "vcs_locked_at": "2026-11-05T06:46:11.070392+00:00"
+}
