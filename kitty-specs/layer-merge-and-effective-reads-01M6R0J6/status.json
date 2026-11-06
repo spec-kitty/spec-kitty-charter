@@ -1,7 +1,7 @@
 {
-  "event_count": 7,
-  "last_event_id": "01M6RG8E5FD30QKR22H9PKY139",
-  "materialized_at": "2026-11-06T13:20:06.320018+00:00",
+  "event_count": 8,
+  "last_event_id": "01M6RG8H6ZVCV6R8D36F7NYSWN",
+  "materialized_at": "2026-11-06T13:20:09.439558+00:00",
   "mission_number": "",
   "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
   "mission_type": "",
@@ -15,7 +15,7 @@
     "for_review": 0,
     "in_progress": 0,
     "in_review": 0,
-    "planned": 7
+    "planned": 8
   },
   "work_packages": {
     "WP01": {
@@ -66,6 +66,13 @@
       "lane": "planned",
       "last_event_id": "01M6RG8E5FD30QKR22H9PKY139",
       "last_transition_at": "2026-11-06T13:20:06.320018+00:00"
+    },
+    "WP08": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01M6RG8H6ZVCV6R8D36F7NYSWN",
+      "last_transition_at": "2026-11-06T13:20:09.439558+00:00"
     }
   }
 }
