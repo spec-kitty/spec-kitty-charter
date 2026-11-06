@@ -26,7 +26,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * The typed edges of one composed closure, indexed by (holding pack, source URN), as a {@link ComposeResolver} (WP11):
+ * The typed edges of one composed closure, indexed by (holding pack, source URN), as a {@link ComposeResolver}:
  * a {@link GraphWalk} over it reaches every graph-authored kind from the {@link PackCompositionFacts#edges() facts} the
  * compose already read, with no read of its own (NFR-007). A pack is named by its descriptor {@code pack_id}, the
  * identity the {@link ClosureView} uses; a {@code <pack>::} reference resolves by the compose's one rule

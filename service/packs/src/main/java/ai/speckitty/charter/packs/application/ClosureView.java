@@ -36,7 +36,7 @@ import java.util.function.Predicate;
  *     a view by id over this list
  * @param parents each closure pack's {@code parent_pack}, by descriptor {@code pack_id}; a pack without one is absent
  * @param fingerprint the verified digest of the inputs every field was read from
- * @param edges the typed edges of the closure's packs, indexed from the facts the same read holds (WP11); the reach and
+ * @param edges the typed edges of the closure's packs, indexed from the facts the same read holds; the reach and
  *     the {@code enhances} lookups answer from it with no further read
  */
 public record ClosureView(

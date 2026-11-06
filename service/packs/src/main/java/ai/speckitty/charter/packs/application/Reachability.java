@@ -25,7 +25,7 @@ import java.util.function.Predicate;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The one traversal of the cascade (WP11, ADR-0059 D2): every walk here is a {@link GraphWalk} over an
+ * The one traversal of the cascade (ADR-0059 D2): every walk here is a {@link GraphWalk} over an
  * {@link EdgeIndex}, never a walker of its own. It supplies the mechanism; the caller supplies the policy (the relations,
  * the deny set, the lineage).
  *

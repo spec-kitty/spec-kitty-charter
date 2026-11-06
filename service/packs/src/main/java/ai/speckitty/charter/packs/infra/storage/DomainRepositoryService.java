@@ -356,7 +356,7 @@ public final class DomainRepositoryService
     }
 
     /**
-     * Every typed edge the pack writes, as written (WP11): the edges of its graph documents in file order, then each of
+     * Every typed edge the pack writes, as written: the edges of its graph documents in file order, then each of
      * its components' relationships in assembly order (its typed references, {@code ArtifactEdges.build}), then the
      * edges of its registered relationship shard ({@link RelationshipShard#SHARD_PATH}, a root shard the one graph read
      * already holds). Each (from, relation, to, qualifiers) is kept once, where it was first seen: the kernel

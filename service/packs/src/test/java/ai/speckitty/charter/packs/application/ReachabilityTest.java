@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
 /**
- * The one traversal of the cascade (WP11 T064, T065; ADR-0059 D2): {@link Reachability} runs on {@link GraphWalk} over
+ * The one traversal of the cascade (ADR-0059 D2): {@link Reachability} runs on {@link GraphWalk} over
  * a hand-built {@link EdgeIndex} and reports what it reached, with every predecessor, what it stopped at, what lies
  * behind a stop and the lineage ancestors it passed through.
  */

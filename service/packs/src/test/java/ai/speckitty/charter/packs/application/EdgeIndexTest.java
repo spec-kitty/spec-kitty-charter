@@ -28,7 +28,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 /**
- * The edge-backed resolver (WP11 T063): the typed edges of a closure's facts, indexed by (holding pack, source URN), so
+ * The edge-backed resolver: the typed edges of a closure's facts, indexed by (holding pack, source URN), so
  * a {@link GraphWalk} reaches every graph-authored kind from the facts the compose already read. Packs are named by
  * their descriptor {@code pack_id} ({@code id-<name>}), the identity the {@link ClosureView} uses.
  */

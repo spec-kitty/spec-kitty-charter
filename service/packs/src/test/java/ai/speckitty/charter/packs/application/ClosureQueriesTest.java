@@ -370,7 +370,7 @@ class ClosureQueriesTest {
     }
 
     /**
-     * WP11 T066: the view answers the reach and the enhances lookups from the edges of the facts the one verified read
+     * The view answers the reach and the enhances lookups from the edges of the facts the one verified read
      * already holds; asking them reads nothing more.
      */
     @Test

@@ -48,7 +48,7 @@ class ReservedOperationCoverageTest {
 
     @Test
     void theActivationSetReservesFourOperations() {
-        // PR B built the per-artifact writes and the preset write: only the four effective reads stay reserved.
+        // #291 built the per-artifact writes and the preset write: only the four effective reads stay reserved.
         assertThat(reservedOperations()).hasSize(4);
     }
 

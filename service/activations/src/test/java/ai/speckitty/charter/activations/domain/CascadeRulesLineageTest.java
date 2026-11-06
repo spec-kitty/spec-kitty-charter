@@ -104,7 +104,7 @@ class CascadeRulesLineageTest {
         assertInNoBucket(change.skipped(), ref("agent_profile:Q"));
     }
 
-    // unreachedBehindDeactivated (T071)
+    // unreachedBehindDeactivated
 
     @Test
     void whatLiesOnlyBehindADeniedArtifactIsReported() {

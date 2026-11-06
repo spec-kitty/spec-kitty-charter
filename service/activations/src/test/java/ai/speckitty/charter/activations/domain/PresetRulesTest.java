@@ -180,7 +180,7 @@ class PresetRulesTest {
 
     @Test
     void aPresetNeverAddsADenyEntrySoItsMustHaveFloorCannotBeBroken() {
-        // The must-have items are the floor (WP04); a preset only removes deny entries, so no 409 arises from one.
+        // The must-have items are the floor; a preset only removes deny entries, so no 409 arises from one.
         ActivationDocument before = document()
                 .deactivated(ArtifactKind.DIRECTIVE, List.of("M"))
                 .build()

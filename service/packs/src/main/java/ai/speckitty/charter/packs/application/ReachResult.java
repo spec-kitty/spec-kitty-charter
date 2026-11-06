@@ -10,7 +10,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * What one {@link Reachability#reach reach} found (WP11, ADR-0059 D2). Every map keeps every predecessor, not only the
+ * What one {@link Reachability#reach reach} found (ADR-0059 D2). Every map keeps every predecessor, not only the
  * first: a later artifact that also reaches a node is never dropped (ADR-0059 D2.2 reporting).
  *
  * @param reached each node the walk put in force, with every {@link Via} it was reached by; a start has none of its own

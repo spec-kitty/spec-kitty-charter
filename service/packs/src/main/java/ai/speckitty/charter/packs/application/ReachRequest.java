@@ -9,7 +9,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 /**
- * What one {@link Reachability#reach reach} walks (WP11, ADR-0059 D2): the mechanism only. Which relations, which stops
+ * What one {@link Reachability#reach reach} walks (ADR-0059 D2): the mechanism only. Which relations, which stops
  * and whether the lineage passes through are the caller's policy.
  *
  * @param starts the artifacts the walk starts from; each is walked in every closure pack that holds it

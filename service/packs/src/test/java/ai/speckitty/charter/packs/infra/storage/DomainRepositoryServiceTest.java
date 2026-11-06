@@ -658,7 +658,7 @@ class DomainRepositoryServiceTest {
                 .containsExactlyInAnyOrder("directive:D1", "procedure:release", "anti_pattern:big-ball-of-mud");
     }
 
-    // ---- the typed edges (WP11 T062) -----------------------------------------------------------------------------
+    // ---- the typed edges -----------------------------------------------------------------------------
 
     private static List<String> typed(PackCompositionFacts facts) {
         return facts.edges().stream()
