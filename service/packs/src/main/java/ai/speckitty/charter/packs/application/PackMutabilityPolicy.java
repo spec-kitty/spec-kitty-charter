@@ -40,8 +40,9 @@ import org.springframework.stereotype.Component;
  * closure and its policies are one answer from one source, the source the closure snapshot reads too. A pack change
  * during the read refuses the write as {@code stale_input}, never a mixed answer. Registrations are rare, so the read
  * is acceptable; a closure that cannot be composed, or a member whose policy file is missing or invalid, refuses the
- * write as the compose refuses it, since a lock that cannot be read is never taken as open. No pack ships a policy file yet, so every target is open and today's writes
- * keep working (tighten never loosen).
+ * write as the compose refuses it, since a lock that cannot be read is never taken as open. Each pack's
+ * {@code policy.yaml} is read (ADR-0062); no open pack ships one yet, so every target of the open packs is open and
+ * their writes keep working (tighten never loosen).
  *
  * <p>It is a Spring-managed edge (it carries the framework annotations), so it lives in the application ring, not in
  * the pure {@code packs.domain} ring where the policy model resides; {@code HexagonalArchitectureTest} gates that split.

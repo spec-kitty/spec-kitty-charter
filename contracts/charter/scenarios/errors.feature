@@ -95,9 +95,9 @@ Feature: Failures outside the charter's refusals
 
   Scenario: governance_policy_violation is raised by the registration writes (#293)
     A declaration, not behavior. The registration writes refuse a write the mutability level of the
-    pack that owns its target does not permit (ADR-0012, epic #55). The service configures no
-    mutability policy yet, so every target is open and no request here can provoke the refusal; the
-    unit tests of PackMutabilityPolicy and of the registration services pin the behavior, and
+    pack that owns its target does not permit (ADR-0012, epic #55). Each pack's policy.yaml is read
+    (ADR-0062); no open pack ships one yet, so every target here is open and no request here can provoke
+    the refusal; the unit tests of PackMutabilityPolicy and of the registration services pin the behavior, and
     ReservedRefusalCodesTest fails while the contract marks a code not raised that a main class names.
     Then the contract declares the refusal code "governance_policy_violation"
     And the contract says "governance_policy_violation" is answered with status 409
