@@ -263,12 +263,13 @@ class ActivationSelectionServiceTest {
 
         assertThatThrownBy(() -> service.select(
                         ID, "directive", "D", Optional.of(List.of("all", "tactic")), false, List.of(), quoted(before)))
-                .isInstanceOfSatisfying(
-                        CharterRefusal.class,
-                        refusal -> assertThat(refusal.violations())
-                                .singleElement()
-                                .satisfies(violation ->
-                                        assertThat(violation.pointer()).isEqualTo("/cascade")));
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_INVALID);
+                    assertThat(refusal.violations())
+                            .singleElement()
+                            .satisfies(
+                                    violation -> assertThat(violation.pointer()).isEqualTo("/cascade"));
+                });
         assertThat(packs.calls()).isZero();
     }
 

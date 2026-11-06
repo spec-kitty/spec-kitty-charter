@@ -181,7 +181,13 @@ class ActivationExclusionServiceTest {
                                     violation -> assertThat(violation.pointer()).isEqualTo("/kind"));
                 });
         assertThatThrownBy(() -> service.reactivate(ID, "mission_type", "research", quoted(before)))
-                .isInstanceOf(CharterRefusal.class);
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_INVALID);
+                    assertThat(refusal.violations())
+                            .singleElement()
+                            .satisfies(
+                                    violation -> assertThat(violation.pointer()).isEqualTo("/kind"));
+                });
         assertThat(packs.calls()).isZero();
     }
 
