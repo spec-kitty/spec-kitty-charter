@@ -275,6 +275,47 @@ class ActivationServiceTest {
         assertThat(repository.find(ID)).isEmpty();
     }
 
+    /**
+     * A put without If-Match is judged against the document it replaces, read just before the write; when another
+     * writer wins every one of its eight compare-and-sets, it answers 412 (replaceActivation's description) and stores
+     * nothing.
+     */
+    @Test
+    void aPutWithoutIfMatchThatLosesEveryAttemptIsAFailedPreconditionAndStoresNothing() {
+        StoredActivation before = stored(selecting("D1"));
+        int[] attempts = {0};
+        ActivationRepository alwaysLosing = new ActivationRepository() {
+            @Override
+            public Optional<StoredActivation> find(ActivationId id) {
+                return repository.find(id);
+            }
+
+            @Override
+            public Optional<StoredActivation> create(ActivationId id, ActivationDocument document) {
+                return Optional.empty();
+            }
+
+            @Override
+            public CasResult replace(ActivationId id, Optional<Revision> expected, ActivationDocument document) {
+                attempts[0]++;
+                return new CasResult.Stale(before.revision());
+            }
+
+            @Override
+            public DeleteResult delete(ActivationId id, Optional<Revision> expected) {
+                return repository.delete(id, expected);
+            }
+        };
+        ActivationService losing = new ActivationService(alwaysLosing, packs, new ActivationIdMint());
+
+        assertThatThrownBy(() -> losing.put(ID, selecting("D2"), null, null))
+                .isInstanceOfSatisfying(
+                        PreconditionException.class,
+                        stale -> assertThat(stale.kind()).isEqualTo(PreconditionException.Kind.STALE));
+        assertThat(attempts[0]).isEqualTo(8);
+        assertThat(repository.find(ID)).contains(before);
+    }
+
     @Test
     void aDenyOnARequiredArtifactIsRefusedNamingThePackAndNothingIsStored() {
         assertThatThrownBy(() -> service.put(ID, denying("D1"), null, null))

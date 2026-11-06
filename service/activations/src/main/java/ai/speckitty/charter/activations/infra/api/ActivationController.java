@@ -105,7 +105,7 @@ public class ActivationController implements ActivationApi {
     @Override
     public ResponseEntity<Activation> createActivation(ActivationConfig activationConfig) {
         StoredActivation stored = activations.create(mapper.toDocument(activationConfig));
-        return created(stored);
+        return created(stored, mapper.toActivation(stored));
     }
 
     @Override
@@ -185,11 +185,11 @@ public class ActivationController implements ActivationApi {
         ActivationService.Written written = activations.put(
                 new ActivationId(activationId), mapper.toDocument(activationConfig), ifMatch, ifNoneMatch);
         if (written.created()) {
-            return created(written.stored());
+            return created(written.stored(), mapper.toReplaced(written));
         }
         return ResponseEntity.ok()
                 .eTag(EntityTags.quote(written.stored().revision().token()))
-                .body(mapper.toActivation(written.stored()));
+                .body(mapper.toReplaced(written));
     }
 
     @Override
@@ -225,10 +225,10 @@ public class ActivationController implements ActivationApi {
                 .body(changes.toChange(outcome));
     }
 
-    private ResponseEntity<Activation> created(StoredActivation stored) {
+    private ResponseEntity<Activation> created(StoredActivation stored, Activation body) {
         return ResponseEntity.created(URI.create(mapper.self(stored.id().value())))
                 .eTag(EntityTags.quote(stored.revision().token()))
-                .body(mapper.toActivation(stored));
+                .body(body);
     }
 
     /** A read's answer: {@code 304} with the {@code ETag} and no body, or {@code 200} with both. */
