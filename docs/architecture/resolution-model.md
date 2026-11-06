@@ -134,8 +134,11 @@ in the [divergence register](/conformance/divergence-register/).
 Activation is a **plan, then commit**: planning validates and never mutates; committing
 writes only after the plan succeeds. The service's per-artifact writes keep that shape: each
 computes the whole new document from one view of the closure, judges it, and stores it by one
-compare-and-set ([The per-artifact writes](/architecture/offering-and-activation/#the-per-artifact-writes)). Applying a preset over customized lists is refused
-without `--force`, and the applied preset name is not persisted. Three YAML write paths
+compare-and-set ([The per-artifact writes](/architecture/offering-and-activation/#the-per-artifact-writes)).
+In core, applying a preset over customized lists is refused without `--force`, and the
+applied preset name is not persisted. The service applies a preset over any list: its
+`force` clears the deny entries of the preset's members
+([Presets](/architecture/offering-and-activation/#presets)). Three YAML write paths
 exist in core today, and each is a separate operation to migrate
 ([Strangler transition](/architecture/strangler-transition/)):
 

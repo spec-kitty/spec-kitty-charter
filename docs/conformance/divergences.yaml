@@ -663,7 +663,10 @@
     passed through is neither put in force nor reported, and the cascade scope does not filter one.
     A denied ancestor stops
     the pass-through there and is reported in skippedDeactivated; what lies only behind it is in
-    unreachedBehindDeactivated.
+    unreachedBehindDeactivated. With includeDeactivated a denied ancestor is passed through and its
+    deny entry cleared, never selected. requiredBy never names an ancestor passed through; it leads
+    back to the descendant the ancestor was passed from. A cascading deactivate's own walk does not
+    pass through the lineage (FR-015 names five relations), pending an operator ruling.
   rationale: >-
     A specialized profile needs what its parent requires or scopes, but selecting the profile must
     not put the parent in force beside it. Passing only requires and scope keeps the parent's
@@ -683,8 +686,10 @@
     A write never adds an enhancer to selected: the enhances pull runs at read time. Two write-time
     exceptions read enhances without writing to selected. A select with includeDeactivated clears
     every deny entry the enhances pull reaches from what the walk selects, in both directions and
-    transitively over enhances. A cascading deactivate keeps a candidate an active enhancer
-    references and reports it in skippedShared, naming the enhancer in referencedBy.
+    transitively over enhances, within the kinds the document's activatedKinds names (absent means
+    none); the pull does not continue through an artifact of another kind. A cascading deactivate
+    keeps a candidate an active enhancer references and reports it in skippedShared, naming the
+    enhancer in referencedBy.
   rationale: >-
     selected stays what the client chose, and an enhancer a pack upgrade adds joins on the next read.
     Clearing the deny entries the pull would reach makes includeDeactivated take back what the read
@@ -698,7 +703,7 @@
     entry covers only what the writes do with enhances.
   evidence:
     - "charter: service/activations/src/main/java/ai/speckitty/charter/activations/domain/CascadeRules.java"
-    - "charter: contracts/charter/scenarios/activation-selections.feature (includeDeactivated clears the walk's deny entries and the enhancer's, and selects no enhancer; A cascading deactivate keeps what a selected enhancer references)"
+    - "charter: contracts/charter/scenarios/activation-selections.feature (includeDeactivated clears the walk's deny entries and the enhancer's, and selects no enhancer; includeDeactivated clears what the enhances pull reaches only in the kinds the document activates; A cascading deactivate keeps what a selected enhancer references)"
     - "corpus case: cascade-enhances-clearing"
 
 # Pack-level files (DIV-301..399), mission pack-level-files-round-trip-01M60H1A (#195, ADR-0042).

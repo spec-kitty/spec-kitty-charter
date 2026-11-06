@@ -221,21 +221,31 @@ Five operations change one part of a stored document (ADR-0020 D6):
 | `reactivateActivationArtifact` | `DELETE …/exclusions/{kind}/{artifactId}` | Removes the artifact's deny entry (a deny list it empties is dropped); nothing else, no cascade |
 | `applyActivationPreset` | `PUT …/presets/{presetId}`, body `force` | Replaces each key the preset lists; see [Presets](#presets) |
 
-Every write shares one flow (`ActivationWrites`), in this order:
+An `If-Match` that is not one quoted revision breaks its pattern and is `400`, before anything else is judged. All
+five operations declare that `400`. Every other answer comes from one flow (`ActivationWrites`), in this order:
 
 1. The preconditions, before the packs are read: no `If-Match` is `428`, an id nothing is stored under is
    `404 activation_not_found`, and an `If-Match` that does not name the stored revision is `412`.
-2. The path's kind and the body's `cascade`, still before the packs are read: a kind the operation does not take is
-   `422 activation_invalid` with a violation at `/kind` (`mission_type` on the exclusions path included); a
-   `cascade` that mixes `all` with kinds is `422` with a violation at `/cascade`, and one that names a kind no
-   document gates is `422` with a violation at that item (`/cascade/0`, …).
+2. The body, the path's kind and the body's `cascade`, still before the packs are read. A body fault is
+   `422 activation_invalid` at its pointer: a member the schema does not declare, a `null`, a value of the wrong
+   type, an empty `cascade`, a body that is too large, not JSON or missing. The inbound adapter records the fault while it
+   reads the body and the use case refuses it here, so a bad body never comes before `428`, `404` or `412`. A kind the
+   operation does not take is `422` with a violation at `/kind` (`mission_type` on the exclusions path included); a
+   `cascade` that mixes `all` with kinds is `422` with a violation at `/cascade`, and a token that names no kind a
+   document gates is `422` with the violation `unknown_kind` at that item (`/cascade/0`, …). `createActivation` and
+   `replaceActivation` are not in this flow: they still refuse a bad document as they read it.
 3. One verified view of the closure for the whole request (NFR-007): every walk and the rules check read it.
 4. The path id against that closure: an id it does not hold is `404 artifact_not_found`, or
    `404 mission_type_not_found` for a mission type; a preset it does not hold is `404 preset_not_found`. A write
    sees only the closure (FR-010): an artifact or preset held only by a pack outside it is not found.
 5. The computed document. A document equal to the stored one is a no-op: `200` with the same revision, an empty
    `applied` and `cleared`, and nothing stored. Any other is judged by the document's rules and stored by a
-   compare-and-set at the loaded revision (`412` when another writer came in between).
+   compare-and-set at the loaded revision (`412` when another writer came in between). Every id is judged
+   (FR-017), but the required or locked floor only on the deny entries the write adds. A deny entry stored before a
+   pack upgrade put its artifact on the floor is tolerated, not applied
+   ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) D4): a write of another id answers as if
+   it were not there, and keeps it. Only a deactivate adds a deny entry, so only `deactivateActivationArtifact`
+   declares `409`. `createActivation` and `replaceActivation` judge the whole document they are sent.
 
 A per-artifact write has no body list for a pointer to index, so a `422` the document's rules raise on the computed
 document points at the whole request (`""`), and keeps the codes and the details.
@@ -262,9 +272,8 @@ nothing, so its `skipped` report is empty. A replaced key's dropped ids are in `
 
 A member the closure no longer holds (a stale preset) is selected as the preset says, and the rules refuse the result
 `422 activation_invalid`, with a violation `unknown_artifact` at the whole request whose detail names the artifact,
-not the preset. Nothing is stored. A broken preset is a fault of its pack, not a silent skip. The contract does not
-describe this refusal yet: neither the operation's description nor a scenario of `activation-presets.feature`
-mentions it, and `ActivationPresetServiceTest` alone pins it. That is a follow-up for the contract.
+not the preset. Nothing is stored. A broken preset is a fault of its pack, not a silent skip. The operation's
+description documents this refusal, and a scenario of `activation-presets.feature` pins it.
 
 ## The cascade
 
@@ -283,40 +292,64 @@ the whole `specializes_from` chain and follows only `requires` and `scope` from 
 walk as if the profile wrote them. An ancestor passed through is never put in force and never reported, and the
 `cascade` scope does not filter it. A denied ancestor stops the pass-through there and is reported.
 
-**Select.** The target and every artifact the walk reached of a kind in scope join `selected` (a mission type joins
-`missionTypes`). The walk stops at every deny entry of the document except the target's own, which the select
-clears. What the walk did not select is reported in `skipped`:
+**Mission types.** No `cascade` scope admits a mission type, `["all"]` included. A walk that reaches one never puts it
+in `missionTypes` and never makes it a deactivate candidate: it is reported in `skippedByScope`, and a selected one
+stays selected.
+
+**Select.** The target and every artifact the walk reached of a kind in scope join `selected`. The walk stops at
+every deny entry of the document except the target's own, which the select clears. What the walk did not select is reported in `skipped`:
 
 | Bucket | What it holds |
 |---|---|
 | `skippedByScope` | Artifacts the walk reached of a kind outside `cascade` |
-| `skippedDeactivated` | Each denied artifact the walk stopped at, with `viaRequires` (it was reached over `requires`) and `requiredBy` (the artifacts whose edge reached it) |
+| `skippedDeactivated` | Each denied artifact the walk stopped at, with `viaRequires` (it was reached over `requires`) and `requiredBy` (for each way to it, the artifact that put it in the walk; see below) |
 | `unreachedBehindDeactivated` | Artifacts that lie only behind a denied artifact: a walk without the stops would reach them, this one did not; whatever the scope |
 | `skippedShared` | Empty for a select; see the deactivate below |
 
+**Who is named.** `requiredBy` and `referencedBy` name only an artifact an `ArtifactReference` can name and the
+contract means. The service follows each way back from the reported artifact, one predecessor level at a time, past
+a template, an asset, a lineage ancestor (to the descendant it was passed from) and an unselected intermediate.
+`requiredBy` names the nearest artifact of a kind a document gates that is not an ancestor passed through;
+`referencedBy` names the nearest artifact active after the write. Among the nearest, the first in code-point order
+is named, so the choice does not depend on the order the walk recorded its ways in.
+
 **`includeDeactivated`** (D2.2, [DIV-207](/conformance/divergence-register/)). The walk stops at no deny entry. The
-select clears the deny entries of what it selects, and of every artifact the `enhances` pull reaches from what it
-selects: both directions of the edge, transitively over `enhances` and nothing else. A pulled artifact is in
-`cleared` and in `applied` (removed from `deactivated`), but never in `selected`. A denied artifact the walk reached
-of a kind outside `cascade` is not selected, and keeps its deny entry unless the pull reaches it.
+select clears the deny entries of everything the walk went through, whatever the `cascade` scope: the target, what
+it reached and the ancestors it passed. It also clears the deny entries of what the `enhances` pull reaches from what
+it selects: both directions of the edge, transitively over `enhances` and nothing else. The pull is bounded by the
+document's `activatedKinds`, as the read-time pull is: it reaches only those kinds and does not continue through
+another kind. An absent `activatedKinds` means none, as `[]` does, so the pull reaches nothing. A cleared artifact
+outside the scope is not selected and stays in `skippedByScope`; a cleared ancestor and a pulled artifact are never
+selected either. A pulled artifact that was denied is in `cleared` and in `applied` (removed from `deactivated`); a
+pulled artifact that was not denied is in neither, as nothing changes for it.
 
 **Deactivate.** The named artifact gets the only deny entry, and leaves `selected`. A required or locked artifact is
 refused first, `409 artifact_required` or `artifact_locked` naming the packs, before any walk, and nothing changes.
 With a cascade:
 
-1. The target's own walk follows the five relations and stops nowhere. The candidates are what it reached that is
-   selected (or an in-force mission type) and of a kind in scope.
+1. The target's own walk follows the five relations and stops nowhere. It does not follow the lineage, while the
+   select walk and the shared walk do; see the open question below. The candidates are what it reached that is
+   selected and of a kind in scope, less the required or locked floor: a floor artifact is never a candidate.
 2. A shared walk starts from the other active artifacts (`selected` and the required or locked floor, less the target
    and the candidates), crosses the five relations with the lineage, and stops at the target and the deny entries.
    A candidate it reaches is shared. So is a candidate an active enhancer references, one hop over `enhances`. A
    shared candidate is active after the write, so the shared walk runs again with it among its starts, until it
    changes nothing (a fixed point on the same closure view).
-3. Each shared candidate stays selected and is reported in `skippedShared`, with `referencedBy` naming the artifact
-   that reached it or the enhancer that references it. Every other candidate leaves `selected`; none gets a deny
-   entry.
+3. Each shared candidate stays selected and is reported in `skippedShared`. Its `referencedBy` is the nearest
+   artifact active after the write back along the shared walk's ways, or else the active enhancer that references
+   it. Every other candidate leaves `selected`; none gets a deny entry.
+4. A selected floor artifact the target's walk reached stays a start of the shared walk, so it and what only it
+   reaches stay selected. It is reported in `skippedShared` too, with `referencedBy` the nearest active artifact
+   that reaches it, or itself when none does (the floor keeps it).
 
 A deactivate's `skippedByScope` lists only the out-of-scope artifacts the target reached that are selected; one that
 is not selected is left alone and not reported.
+
+**Open question: the deactivate walk and the lineage.** The target's own walk does not pass up the
+`specializes_from` chain, while the select walk and the shared walk do. FR-015 names exactly "the five relations",
+and the service reads it literally: what only an ancestor of a reached profile requires is not a candidate, so a
+cascading deactivate leaves it selected. The asymmetry is deliberate and pinned by a test. It awaits an operator
+ruling.
 
 **Not built here.** The `enhances` pull at read time, which puts an enhancer in force with its target and the reverse,
 is the effective reads', and they answer `501`. A write never writes an enhancer into `selected`; the two places it
