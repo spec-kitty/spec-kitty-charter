@@ -44,11 +44,15 @@ It restates decisions; it decides nothing. Where two sources disagree, the rule 
 read and carries a **⚠ Unclear** note. The prose pages remain the design: [Logical model](/architecture/logical-model/),
 [Resolution model](/architecture/resolution-model/) and [Offering and activation](/architecture/offering-and-activation/).
 
-> **Status labels.** **Built**: the service does it today (branch `issue-10-layer-merge-effective-reads`, on top of
-> #398 and #399). **Ruled, not built**: an operator ruling or an accepted ADR decides it, and no code does it yet.
+> **Status labels.** **Built**: the service does it today, as of #399 at `1d37ccd9` (branch
+> `issue-291-activation-writes`), which merges the landed #398. **Ruled, not built**: an operator ruling or an accepted ADR decides it, and no code does it yet.
 > **Planned, not built**: the design of the layer-merge mission (`kitty-specs/layer-merge-and-effective-reads-01M6R0J6/`,
 > plan, research and data model), derived from rulings but not itself a ruling. **Partly built**: the rule holds in
-> part, and the note says which part.
+> part, and the note says which part. **Ruled, planned** names where a ruling is to be built: a layer-merge pull
+> request (PR A, B or C of the plan) or a #399 follow-up.
+>
+> **Rulings of 2026-11-06.** The operator's answers to the ruleset consistency review (layer-merge mission,
+> `research/ruleset-review-2026-11-06.md`, items A1–A15 and B1–B8) are folded into the rules and cite their decision ids (`DM-01M6RA…`, under the layer-merge mission's `decisions/`).
 
 ## 1. Notation
 
@@ -68,11 +72,13 @@ from its starting set. Both always exist here, because every universe is finite.
   - `par(p) ∈ P ∪ {⊥}` its `parent_pack`;
   - `ovr(p)` its descriptor `overrides` entries `{artifact, member}`, which settle sibling conflicts.
 - `succ(p) = {q | (q, ρ) ∈ deps(p)} ∪ {par(p)} ∖ {⊥}`: the packs `p` builds on.
+- `Cdep(S) = lfp X. S ∪ ⋃ {q | (q, ρ) ∈ deps(p), p ∈ X}`: the `depends_on`-only closure, without `parent_pack`.
 
 ### Artifacts, kinds and edges
 
-- `K`: the artifact kinds. `Kₐ = K ∖ {template, asset}`: the activatable kinds. `Kₛ = Kₐ ∖ {mission_type}`: the kinds
-  with a `selected` and a `deactivated` list (a mission type lives in `missionTypes`).
+- `K`: the artifact kinds. `Kₐ = K ∖ {template, asset}`: the activatable kinds, each with a `selected` and a
+  `deactivated` list; `mission_type` is one of them like any other (A7, decision `DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY`; one kind registry, decision
+  `DM-01M6RCY40CQQTHC130RWF43W0D`).
 - `U`: URNs `<kind>:<id>`, with `kind: U → K`. A reference is a bare URN `u` or a qualified `n::u`.
 - `holds ⊆ P × U`. A **place** is a pair `(p, u)` with `holds(p, u)`. Two packs holding one URN are two places.
 - `Rel`: the relations, among them `requires`, `suggests`, `refines`, `scope`, `instantiates`, `enhances`,
@@ -83,32 +89,44 @@ from its starting set. Both always exist here, because every universe is finite.
 - `Rc = {requires, suggests, refines, scope, instantiates, enhances}`: the cascade relations.
 - `Lin = (specializes_from, {requires, scope})`: the lineage pass-through: the ancestry relation and the relations
   crossed from each ancestor.
-- `defines(p, u) ⇔ holds(p, u)`; `changes(p, u) ⇔ ∃x. holds(p, x) ∧ (enhances(x, u) ∨ overrides(x, u))`.
+- `bnd(u)`: the mission type `u` is bound to, or `⊥`. A step `action:M/s` is bound to `mission_type:M`; an artifact
+  that declares a mission-type binding is bound to that mission type. `steps(M) = {u ∈ H(C) | bnd(u) = M, kind(u) =
+  action}`.
+- `defines(p, u) ⇔ holds(p, u)`; `changes(p, u) ⇔ ∃x. holds(p, x) ∧ overrides(x, u)`. An enhancement is additive and
+  changes nothing (A14).
+- `fold(u)`: `u` with its id in lower case (`Locale.ROOT`); two URNs with one `fold` and different spellings differ
+  only by case.
 
 ### Mutability
 
 - `M = (open < extendable < locked)`. `μ_p(u) ∈ M` is pack `p`'s declared level for `u`: its `artifacts` entry, else
-  its `kind_defaults` entry, else `open`. A pack whose descriptor names no policy file has `μ_p ≡ open`.
+  its `kind_defaults` entry, else `open`, **and only for `u` held by `p` or a pack it builds on**:
+  `μ_p(u) = open` when `¬∃q ∈ C({p}). holds(q, u)` (A15, decision `DM-01M6RA97220XBR7RR447FE2JXD`). A pack whose
+  descriptor names no policy file has `μ_p ≡ open`.
 - `μ_S(u) = max {μ_p(u) | p ∈ S}` for a set of packs `S`: the strictest declared level.
-- `ops(open) = {override, enhance, remove}`, `ops(extendable) = {enhance, remove}`, `ops(locked) = ∅`.
+- `ops(open) = {replace, register, relate}`, `ops(extendable) = {register, relate}`, `ops(locked) = ∅`, as
+  `MutabilityLevel.permits` names them (`REPLACE`, `REGISTER`, `RELATIONSHIP`): replacing an artifact, adding one, and
+  adding an edge that touches one. A layer override and an `overrides` edge are a `replace`; an enhancement and a
+  removal by a derived pack (C26) are judged separately.
 
 ### Presets and the floor
 
-- `Pre(p)`: the presets `p` holds. For a preset `π`: `π[k]` its members of kind `k`, `π.kinds` its kind gate,
-  `π.mts` its mission types, and `must(π) ⊆ U` its must-have items. `gov(π) ⇔ must(π) ≠ ∅`.
-- `Req(C)`: the required set of closure `C`. `Lk(C) = {u | μ_C(u) = locked}`: the locked set.
+- `Pre(p)`: the presets `p` holds. For a preset `π`: `π[k]` its members of kind `k ∈ Kₐ`, mission types included,
+  and `must(π) ⊆ U` its must-have items. `gov(π) ⇔ must(π) ≠ ∅`.
+- `Req(C)`: the required set of closure `C` (C31). `Lk(C) = {u | μ_C(u) = locked}`: the locked set.
   `Fl(C) = Req(C) ∪ Lk(C)`: the floor as the writes see it.
 
 ### The activation document
 
-- `D = ⟨packs, kinds, mts, sel, deny, langs⟩`, the stored `ActivationConfig`:
+- `D = ⟨packs, sel, deny, langs⟩`, the stored `ActivationConfig` (`schemaVersion: 2`):
   - `packs`: `⊥` or a list of `(cid, version?)`, in order;
-  - `kinds ⊆ Kₐ`, `mts` (mission type ids) and `langs`: each `⊥` or a set;
-  - `sel, deny: Kₛ → ⊥ or a set of ids`.
+  - `langs`: `⊥` or a set;
+  - `sel, deny: Kₐ → ⊥ or a set of ids`.
+  The kind gate `activatedKinds` and the separate `missionTypes` list are withdrawn (A7; W34).
 - `⟦x⟧ = ∅` when `x = ⊥`, else `x`: **absent means none**.
-- `Sel(D) = {⟨k:i⟩ | i ∈ ⟦sel(k)⟧} ∪ {⟨mission_type:i⟩ | i ∈ ⟦mts⟧}`: what the document selects.
-  `Den(D) = {⟨k:i⟩ | i ∈ ⟦deny(k)⟧}`: what it denies.
-- `C(D)`: the activation's closure (C1, C2). `H(C)` its held URNs. `Mt(C)` its held mission types.
+- `Sel(D) = {⟨k:i⟩ | i ∈ ⟦sel(k)⟧}`: what the document selects. `Den(D) = {⟨k:i⟩ | i ∈ ⟦deny(k)⟧}`: what it denies.
+- `C(D)`: the activation's closure (C1, C2). `H(C)` its held URNs, mission types included. `Mt(C) = {u ∈ H(C) |
+  kind(u) = mission_type}`.
 
 ## 2. Composition rules
 
@@ -118,8 +136,9 @@ Composition decides which packs one request sees, in what order, and which versi
 The composition closure is every pack reachable from the roots over `depends_on` and `parent_pack`.
 *Source:* ADR-0048 d8; ADR-0053 d6 (amended 2026-11-03); `PackCompositionResolver.compositionClosure`. **Built.**
 > ⚠ **Unclear:** ADR-0048 and ADR-0053 speak of the `depends_on` closure, and ADR-0048 d5 says `parent_pack` "sets no
-> load order". The resolver also walks `parent_pack` into the closure (research R2 of the activation mission). Whether
-> lineage is meant to widen the closure is not stated in an ADR.
+> load order". The built resolver walks `parent_pack` into the closure, orders by it and counts it as a cycle edge
+> (C5, C6); qualified references use the `depends_on`-only closure (C12). No ADR records that lineage widens the
+> closure.
 
 **C2 Rooting.** `roots(D) = {cid | (cid, _) ∈ packs}` when `packs ≠ ⊥`, else `P`; the offering's roots are `P`.
 An activation composes the closure of its own `packs`, or of every configured pack when `packs` is absent.
@@ -133,15 +152,16 @@ A root that names no configured pack composes nothing.
 An unrelated broken pack does not refuse an activation's closure.
 *Source:* activation mission research R2, US2 AS2; `PackCompositionResolver.resolveRooted`. **Built.**
 
-**C5 Order.** `C` is listed in a topological order of `succ` (dependencies first), ties broken by `lv` in merge order,
-then by `cid` in code points.
+**C5 Order.** `C` is listed in a topological order of `succ` (dependencies first, a `parent_pack` before its child),
+ties broken by `lv` in merge order, then by `cid` in code points.
 Each level stays contiguous, and the order never depends on how the packs were listed.
-*Source:* ADR-0048 d9; logical model (Composition); `PackCompositionResolver.topologicalOrder`, `STABLE_ORDER`.
-**Built.**
+*Source:* ADR-0048 d9; logical model (Composition); `PackCompositionResolver.topologicalOrder`, `dependenciesOf`,
+`STABLE_ORDER` (`service/packs/.../domain/PackCompositionResolver.java`). **Built.**
 
-**C6 No dependency cycle.** The `depends_on` graph on `C` is acyclic, else `pack_dependency_cycle`.
-A dependency cycle refuses the compose.
-*Source:* ADR-0048 d4. **Built.**
+**C6 No dependency cycle.** The graph of `succ` on `C` (`depends_on` and `parent_pack` edges) is acyclic, else
+`pack_dependency_cycle`; a pack that depends on itself or names itself as its `parent_pack` is a cycle.
+A dependency or lineage cycle refuses the compose.
+*Source:* ADR-0048 d4; `PackCompositionResolver.dependenciesOf`, `cycleOf`. **Built.**
 
 **C7 Known dependency.** `∀p ∈ C, (q, ρ) ∈ deps(p): q ∈ P`, else `pack_dependency_unknown`.
 *Source:* ADR-0048 d4. **Built.**
@@ -161,10 +181,11 @@ A pack may build on, or derive from, only packs at its own level or one nearer b
 **C11 Pack identity.** `pid` and `name` are each unique within `C`, else `pack_duplicate_id` or `pack_name_conflict`.
 *Source:* ADR-0053 d6, d7 (amended); `PackCompositionResolver.indexById`, `indexByName`. **Built.**
 
-**C12 Qualified reference.** A reference `n::u` written in `p` resolves to the `q ∈ C({p})` with `name(q) = n`, else
+**C12 Qualified reference.** A reference `n::u` written in `p` resolves to the `q ∈ Cdep({p})` with `name(q) = n`, else
 `pack_reference_pack_missing`; and `holds(q, u)`, else `pack_reference_artifact_missing`.
-A cross-pack reference must name a pack in the referring pack's own closure, and that pack must hold the artifact.
-*Source:* ADR-0053 d7 (amended 2026-11-03); `PackCompositionResolver.checkReferences`. **Built.**
+A cross-pack reference must name the referring pack or a pack of its own `depends_on` closure (not its `parent_pack`
+line), and that pack must hold the artifact.
+*Source:* ADR-0053 d7 (amended 2026-11-03); `PackCompositionResolver.checkReferences`, `dependsOnClosure`. **Built.**
 
 **C13 Bare reference.** A bare `u` written in `p` resolves to `p` when `holds(p, u)`; it is refused
 `pack_reference_unqualified` when only another pack of `C` holds `u`; otherwise it has no holder.
@@ -176,14 +197,19 @@ A cross-pack reference must name a pack in the referring pack's own closure, and
 
 **C14 Sibling conflict.** For `u ∈ U` and `ℓ ∈ L`: `|{p ∈ C | lv(p) = ℓ ∧ defines(p, u)}| ≥ 2` or
 `|{p ∈ C | lv(p) = ℓ ∧ changes(p, u)}| ≥ 2` is a conflict, refused `pack_sibling_conflict` unless settled (C15).
-Two packs at one level that both define, or both change, one artifact conflict; a definer and an enhancer do not.
-*Source:* ADR-0048 d9; ADR-0053 d5 (amended 2026-11-03), d21. **Built.**
+Two packs at one level that both define, or both override, one artifact conflict; a definer and an enhancer do not,
+and two enhancers do not.
+*Source:* ADR-0048 d9; ADR-0053 d5 (amended 2026-11-03), d21; A14, decision `DM-01M6RA92BS6GGCYTRCFQDYYY5S`.
+**Partly built:** the built `changedArtifacts` still counts `enhances` (two sibling enhancers are refused); dropping it
+is ruled, planned (layer-merge PR A).
 
-**C15 Sibling settlement.** A conflict on `u` among siblings `S` is settled when `∃p ∈ C, {artifact: u, member: m} ∈
-ovr(p)` with `m ∈ {pid(s) | s ∈ S}`; then `m`'s version of `u` is the one in force at level `ℓ`.
-The compose names the winning sibling explicitly; there is no "last loaded wins".
-*Source:* ADR-0048 d9; ADR-0053 d5; spec FR-012 of the layer-merge mission. **Partly built:** settlement clears the
-refusal (built); putting `m`'s version in force (#357) is ruled, not built; until #358 any pack of `C` may settle.
+**C15 Sibling settlement.** Let `Win(u, S) = {m ∈ {pid(s) | s ∈ S} | ∃p ∈ C. {artifact: u, member: m} ∈ ovr(p)}`. A
+conflict on `u` among siblings `S` is settled iff `|Win(u, S)| = 1`; then that `m`'s version of `u` is the one in force
+at level `ℓ`. No entry, an entry naming a non-contestant only, or entries naming two different winners leave it
+refused.
+The compose names exactly one winning sibling; there is no "last loaded wins".
+*Source:* ADR-0048 d9; ADR-0053 d5; spec FR-012 of the layer-merge mission;
+`PackCompositionResolver.refuseContests`. **Partly built:** settlement by exactly one winner clears the refusal (built); putting `m`'s version in force (#357) is ruled, not built; until #358 any pack of `C` may settle.
 > ⚠ **Unclear:** ADR-0053 d5 says the conflict is settled by "the distribution pack's own `overrides` edge". The
 > built resolver and the layer-merge spec use a descriptor `overrides` entry `{artifact, member}` in `pack.yaml`, from
 > any pack of the compose. The two are not the same mechanism.
@@ -206,8 +232,9 @@ An edge the overridden artifact declared leaves with it.
 *Source:* ADR-0059 D3; spec FR-010. **Ruled, not built.**
 
 **C20 Edges to a loser.** `(p, x)` loses and `r(y, (p, x)) ⇒ r(y, win(x))`, bare or `<pack>::` written.
-What depended on the overridden id stays connected to the version in force.
-*Source:* ADR-0059 D3; spec FR-010; research R3. **Ruled, not built.**
+What depended on the overridden id stays connected to the version in force. An `overrides` edge whose re-pointed
+target is its own source never forms: it is refused at registration (C36).
+*Source:* ADR-0059 D3; spec FR-010; research R3; A12, decision `DM-01M6RA8S9G57W4BW55SNVHBQ10`. **Ruled, not built.**
 
 **C21 Override gate.** A layer override of `u` by the winning pack `w` is allowed iff `μ_{C∖{w}}(u) = open`, else the
 read refuses `500 pack_unreadable` naming the artifact, both packs and the level.
@@ -220,8 +247,11 @@ Only an `open` artifact may be replaced by a later level; `extendable` and `lock
 
 **C22 Mutability along the closure.** `μ_C(u) = max_{p ∈ C} μ_p(u)`; `setBy(u)` is the first `p` in closure order with
 `μ_p(u) = μ_C(u) > open`.
-A target's level is the strictest any pack of the closure declares, whatever the order.
-*Source:* ADR-0063 D3; ADR-0012 d3; `PerPackPolicy.levelIn`. **Built.**
+A target's level is the strictest any pack of the closure declares, whatever the order. A pack's declaration counts
+only for what it or a pack it builds on holds (notation, A15): a pack may lock the artifacts of the packs it builds on
+(an enterprise pack enforcing a built-in practice), not those of an unrelated pack that shares the closure.
+*Source:* ADR-0063 D3; ADR-0012 d3; `PerPackPolicy.levelIn`; A15, decision `DM-01M6RA97220XBR7RR447FE2JXD`.
+**Partly built:** the strictest level is built; the scope limit is ruled, planned (#399 follow-up).
 
 **C23 Tighten, never loosen.** `S ⊆ S' ⇒ μ_S(u) ≤ μ_{S'}(u)`.
 Adding a pack to a closure can raise a target's mutability, never relax it. (A consequence of C22.)
@@ -232,42 +262,52 @@ Adding a pack to a closure can raise a target's mutability, never relax it. (A c
 A lock that cannot be read is never taken as `open`.
 *Source:* ADR-0063 D1, D4. **Built.**
 
-**C25 Registration gate.** A write into pack `p` targeting `u` is refused `409 governance_policy_violation` when its
-operation is not in `ops(μ_{C({p})}(u))`: replacing an artifact needs `open`, adding one or an edge touching one needs
-not `locked`.
-The per-artifact registrations obey the owner's level along the written pack's closure.
-*Source:* ADR-0012 d1, d9; ADR-0026 D4; ADR-0063 D3; `PackMutabilityPolicy`, `MutabilityLevel.permits`. **Built.**
+**C25 Registration gate.** A write into pack `p` targeting `u` with operation `o` is refused
+`409 governance_policy_violation` when `o ∉ ops(μ_{C({p}) ∖ {p}}(u))`: `replace` needs `open`, `register` and `relate`
+need not `locked`.
+The per-artifact registrations obey the level the packs `p` builds on declare; `p`'s own policy protects its artifacts
+from other packs and does not bind `p` itself (B8, as C21 excludes the winning pack).
+*Source:* ADR-0012 d1, d9; ADR-0026 D4; ADR-0063 D3; `PackMutabilityPolicy`, `MutabilityLevel.permits`; B8, decision
+`DM-01M6RAA6Y7NVVGKVKQV05GZYES`. **Partly built:** the gate is built over `C({p})`, `p` included; excluding `p` is
+ruled, planned (#399 follow-up).
 
 **C26 Removal by a derived pack.** A derived pack's pack-wide removal of `u` is allowed iff `μ(u) ≠ locked`.
 `open` and `extendable` artifacts may be removed by a pack built on them; `locked` ones may not.
 *Source:* ADR-0030 d1–d3. **Ruled, not built** (the representation is left to a later record, ADR-0030 d7).
 
-**C27 CRG overrides at read.** For active `E` (E4): `overrides(E, T) ∧ T ∉ Lk(C) ⇒ T` is not in force, reason
-`overridden`; `overrides(E, T) ∧ T ∈ Lk(C) ⇒ T` stays and `(T, E)` is listed in `overrideNotApplied`.
-An active overriding artifact hides its target, unless the target is locked.
-*Source:* decisions `DM-01M6R0TGX3DSR54EVS58Q1V8FV`, `DM-01M6R2X2SW8KVAJCDX23PGJBMT`; research R11; spec FR-016.
-**Ruled, not built.**
-> ⚠ **Unclear:** "overrides are not permitted on locked artifacts" (operator, Q9) reads either as a refusal of the
-> `overrides` edge (ADR-0012 d1 and d9: `governance_policy_violation`, and C25 refuses an edge touching a locked
-> artifact at registration) or as a read that leaves the override unapplied (research R11). The plan builds the second.
-> ADR-0012 also forbids override of an `extendable` artifact, while the read rule exempts only a locked target.
+**C27 CRG overrides at read.** `ov(E, T) ⇔ overrides(E, T) ∧ μ_C(T) = open`. For `E` in the candidate set (E4):
+`ov(E, T) ⇒ T` is not in force, reason `overridden`; `overrides(E, T) ∧ μ_C(T) ≠ open ⇒ T` stays and `(T, E)` is
+listed in `overrideNotApplied`.
+Both override paths share one gate: only an `open` artifact can be overridden, by a later level (C21) or by an
+`overrides` edge. Such an edge onto an `extendable` or `locked` target is refused at registration
+(`409 governance_policy_violation`, C25 with `replace`); one that still meets a non-`open` target at read, because
+another pack tightened it later, is not applied.
+*Source:* decisions `DM-01M6R0TGX3DSR54EVS58Q1V8FV`, `DM-01M6R2X2SW8KVAJCDX23PGJBMT`; research R11; spec FR-016;
+A6, decision `DM-01M6RA86QPBM1VE5QZTB9AZ195`. **Ruled, not built.**
 
-**C28 Override cycle.** A cycle of `overrides` among active artifacts refuses the read `500 pack_unreadable`.
-No cycle is broken by an arbitrary pick.
-*Source:* spec Edge Cases, FR-016; research R2. **Ruled, not built.**
+**C28 Override cycle.** A cycle of `ov` among `Base ∪ Req(C)` (E3, C31) is refused: at registration by the impact
+check (G8), and at read `500 pack_unreadable` should one remain.
+No cycle is broken by an arbitrary pick, and the requirement fixed point (E5) always ends.
+*Source:* spec Edge Cases, FR-016; research R2; A2, decision `DM-01M6RA7M56M1409EV9JX1EW83K`. **Ruled, not built.**
 
 **C29 Winning preset.** For a preset id `i` held by several packs of `C`, the copy held by the last of them in closure
-order (merge order) wins; the other copies are ignored, their must-have items included.
+order (merge order) wins as the preset applied (W17); the other copies' members are ignored, but their must-have
+items still count (C31). Two copies at one level are refused (C34).
 *Source:* ADR-0053 d6 (applied to presets); activation mission Assumptions; `ClosureQueries.winningPresets`. **Built.**
 
 **C30 Governing preset.** `gov(π) ⇔ must(π) ≠ ∅`.
 A preset with at least one must-have item governs; nothing else declares it.
 *Source:* ADR-0031 d1–d2; ADR-0042 §2. **Built.**
 
-**C31 Required set.** `Req(C) = ⋃ {must(π) | π a winning preset of C, gov(π)}`, never stored.
-The requirement is the must-have items of the governing presets of the whole closure.
-*Source:* ADR-0031 d2; DIV-205; decision `DM-01M6R0TK6F4CC0Z00CZTS21V72` (ratifies DIV-205); `RequiredFloor.of`.
-**Built** (the ratification is ruled; DIV-205 stays open until the reads are built).
+**C31 Required set.** `Req₀(C) = ⋃ {must(π) | π ∈ Pre(p), p ∈ C, gov(π)}` over **every** copy of each preset id;
+`Req(C) = Req₀(C) ∩ H(C)`; `Unheld(C) = Req₀(C) ∖ Req(C)` is reported, never put in force. Never stored.
+The requirement is the union of the must-have items of every governing preset of the closure, so a later copy of a
+preset can only tighten it; a must-have item no pack holds is dropped from the floor and reported.
+*Source:* ADR-0031 d2; DIV-205; decision `DM-01M6R0TK6F4CC0Z00CZTS21V72` (ratifies DIV-205); `ClosureQueries`
+(`RequiredFloor.of(byHolder(closurePackIds, winningPresets(composed)))`), `RequiredFloor.of`; A1, decision
+`DM-01M6RA7FHRC5K8QPX7KN5FZ4S8`; A10, decision `DM-01M6RA8MG55V8C2V9PXWDTRNQS`. **Partly built:** the built floor
+reads the winning copies only and does not restrict to held ids; both changes are ruled, planned (#399 follow-up).
+DIV-205 stays open until the reads are built.
 
 **C32 Floor at write.** `Fl(C) = Req(C) ∪ Lk(C)`.
 The writes treat a locked artifact as required too.
@@ -275,11 +315,36 @@ The writes treat a locked artifact as required too.
 **Built.**
 > ⚠ **Unclear:** ADR-0012 d7 and the code say locked implies required. The logical model says "a `locked` artifact is
 > not thereby required", and the layer-merge research R11 splits the two at read (locked is forced, required is a
-> requirement an override may satisfy).
+> requirement an override may satisfy). A15 ruled the scope of a lock, not whether a lock also forces the artifact
+> active.
 
 **C33 Offering stays a catalog.** `/offering` composes `C(P)` and never applies C17–C21 or any activation.
 *Source:* ADR-0020 D1; spec FR-023; activation mission FR-020. **Built** (the offering); the "never merges" half is
 **Ruled, not built** with the merge.
+
+**C34 Same-level preset conflict.** For a preset id `i` and `p ≠ q ∈ C` with `lv(p) = lv(q)`, both holding `i`, and
+neither on the other's `parent_pack` line: refused `pack_sibling_conflict`.
+Two unrelated packs of one level cannot hold one preset id; a child's copy takes the place of its parent's. No
+`overrides` entry settles it, since a preset is not an artifact.
+*Source:* operator ruling of 2026-11-06; `PackCompositionResolver.refusePresetContests`, called from
+`OfferingReadService`. **Built.**
+
+**C35 Case-only mention.** A preset item or a policy lock in `p ∈ C` naming `u'` with `u' ∉ H(C)` and
+`∃u ∈ H(C). fold(u) = fold(u')` is refused `pack_reference_artifact_missing`, naming `p` and the holder.
+A mention that differs from a held id only by case would govern nothing, so it is refused; a mention of an id no pack
+holds is left alone.
+*Source:* operator ruling of 2026-11-06; `PackCompositionResolver.refuseCaseOnlyMatches`, called from
+`OfferingReadService`. **Built.**
+
+**C36 Edge shape.** Refused `422` at registration (G8):
+`enhances⁺(E, E)` (an `enhances` cycle, `enhances(E, E)` included);
+an `E` with `enhances(E, T)` whose every `enhances` chain ends at an enhancer, never at an artifact that enhances nothing;
+`enhances(E, T) ∧ overrides(E, T)` for one pair;
+`overrides(x, y)` whose target, re-pointed by C20, is `x` itself.
+An enhancement never stands alone and always links to a real artifact; an artifact cannot both enhance and override one
+target; nothing overrides itself.
+*Source:* A8, decision `DM-01M6RA8G0RGRWSFW4DERH8W319`; A11 and A12, decision `DM-01M6RA8S9G57W4BW55SNVHBQ10`; operator
+ruling Q8 ("enhancers do not stand on their own"). **Ruled, not built** (layer-merge PR B).
 
 ## 3. Registration rules
 
@@ -298,14 +363,19 @@ Registering a whole pack replaces what was known of it, removals included.
 **Ruled, not built.**
 
 **G3 Version rule.** Let `s` be the stored pack and `z` the staged one: `rev(z) = rev(s) ⇒ 200`, nothing written;
-`ver(z) = ver(s) ∧ rev(z) ≠ rev(s) ⇒ 409 pack_version_conflict`; otherwise `z` replaces `s`.
-Any version may replace; one version always means one content.
-*Source:* decision `DM-01M6R0TCAGHF27RKCB20QSCN8W`; spec FR-002; research R4. **Ruled, not built.**
+`ver(z) = ver(s) ∧ rev(z) ≠ rev(s) ⇒ 409 pack_version_conflict`; and, with `hist(cid)` the version → content-digest
+history of every version ever stored under `cid`, `hist(cid)(ver(z)) ∉ {⊥, rev(z)} ⇒ 409 pack_version_conflict`;
+otherwise `z` replaces `s` and `hist(cid)(ver(z)) := rev(z)`.
+Any version may replace; one version always means one content, also after it was replaced.
+*Source:* decision `DM-01M6R0TCAGHF27RKCB20QSCN8W`; spec FR-002; research R4; B1, decision
+`DM-01M6RA9BKJY7X9BFV93QW1KM1T`. **Ruled, not built** (layer-merge PR B).
 
 **G4 Fixed identity.** On a replace: `pid(z) = pid(s) ∧ lv(z) = lv(s)`, else `422`. On a create: `pid(z)` and
 `name(z)` are unused in `P`, else `409 registration_conflict`.
 A pack's identity and level are fixed for its configured id.
-*Source:* spec Edge Cases, FR-003; decision `DM-01M6R2X0H0VXGZZGSQC9C2SCSF`; research R1. **Planned, not built.**
+*Source:* spec Edge Cases, FR-003; decision `DM-01M6R2X0H0VXGZZGSQC9C2SCSF`; research R1. **Ruled, not built:** the level
+`lv(z) ∈ {O, R}` and `lv(z) = lv(s)` on a replace (the decision). **Planned, not built:** the fixed `pid` and the
+create-time uniqueness.
 
 **G5 Archive validity.** An archive with an unknown file, a path leaving the pack, a link or device, an invalid
 artifact, more than 32 MiB or more than 10,000 entries is refused (`413` or `422`) before any file is written.
@@ -317,20 +387,31 @@ no-op is judged before them. Both `DELETE`s require `If-Match` (`428` when absen
 An identical re-send is a no-op even under a stale validator; a removal is always conditional.
 *Source:* spec FR-003; research R-lock (API guarantees). **Planned, not built.**
 
-**G7 Write gate on the diff.** Every artifact the replace adds, changes or removes passes C25 and C26 along the new
-pack's closure, else `409 governance_policy_violation`.
-*Source:* ADR-0063 D3; ADR-0030 d3; plan IC-04 step 7. **Planned, not built.**
+**G7 Write gate on the diff.** Every artifact the replace adds, changes or removes passes C25 and C26 along
+`C({z}) ∖ {z}`, else `409 governance_policy_violation`.
+The packs the new pack builds on judge the diff; its own policy, old or new, does not (B8).
+*Source:* ADR-0063 D3; ADR-0030 d3; plan IC-04 step 7; B8, decision `DM-01M6RAA6Y7NVVGKVKQV05GZYES`. **Planned, not
+built.**
 
-**G8 Compose check.** `P ∖ {s} ∪ {z}` composes under C1–C16, else `422` with the composition code.
-A registration never leaves the configured packs unable to compose.
-*Source:* plan IC-04 step 8. **Planned, not built.**
+**G8 Impact check.** Let `P' = P ∖ {s} ∪ {z}` and `Aff(z) = {C'(S) | S ∈ Roots, z ∈ C'(S)}`, where `Roots` is `P'`
+and the roots of every stored activation, and `C'` composes over `P'`. Every closure in `Aff(z)` must pass C1–C16,
+C20, C21, C27, C28 and C34–C36, and its floor must hold (E13 under I10), else `422` with the composition code, naming
+the packs of the failing closure. A closure that does not contain `z` is not judged.
+A registration never leaves a closure it joins unable to compose or merge, and never blocks an author over a closure it
+does not join.
+*Source:* plan IC-04 step 8; A5, decision `DM-01M6RA8225EXG6GAT1MM2R9T6C`. **Ruled, not built** (layer-merge PR B;
+the scope replaces the plan's one global compose).
 
-**G9 Reference check.** For each artifact `u` a `DELETE` or replace removes from `p`:
-`Inbound(p, u) = {(q, a) | q ∈ P, a held by q, a references u, holderOf_q(reference) = p}`, plus every descriptor
-`overrides` entry naming `p` as member for `u`; `Inbound(p, u) ≠ ∅ ⇒ 409 artifact_referenced`.
-A referenced artifact cannot be removed, whether the reference comes from the same pack or from another one.
+**G9 Reference check.** For each artifact `u` a `DELETE` or replace removes from `p`, judged against the configured
+packs as the request would leave them (`P'`, with `p`'s new tree): `Inbound(p, u) = {(q, a) | q ∈ P', a held by q in
+P', a references u, holderOf_q(reference) = p}`, plus every descriptor `overrides` entry naming `p` as member for `u`,
+plus every preset item of a pack `q ≠ p` naming `u`; `Inbound(p, u) ≠ ∅ ⇒ 409 artifact_referenced`, listing every
+referring artifact or preset with its pack.
+A referenced artifact cannot be removed, whether the reference comes from the same pack or from another one; what the
+same request removes refers to nothing, so two artifacts that reference each other can be removed together.
 *Source:* operator ruling of 2026-11-06; decisions `DM-01M6R0TEM8YJK1J0DP0JSMSJNX`, `DM-01M6R2WSARGC382BHX89GZB64E`,
-`DM-01M6R2WVRKB4JGZM40D6QF60BQ`; research R6. **Ruled, not built.**
+`DM-01M6R2WVRKB4JGZM40D6QF60BQ`; research R6; A10, decision `DM-01M6RA8MG55V8C2V9PXWDTRNQS`; B3, decision
+`DM-01M6RA9MQ6YAP048KD43DNFS4F`. **Ruled, not built.**
 
 **G10 Artifact `DELETE`.** `holds(p, u)` else `404`; then G9, then C25/C26 (`locked` is `409
 governance_policy_violation`); then remove `u`'s file and companions, every edge whose source is `u`, its graph node,
@@ -338,9 +419,7 @@ and every preset item of `p` naming `u`.
 `DELETE` removes one artifact with what only it declared; a preset key it empties reads as not listed.
 *Source:* operator ruling of 2026-11-06; decision `DM-01M6R0TEM8YJK1J0DP0JSMSJNX`; spec FR-005; plan IC-06.
 **Ruled, not built.**
-> ⚠ **Unclear:** decision `DM-01M6R0TEM8YJK1J0DP0JSMSJNX` drops a preset item of the same pack that names the artifact,
-> while `DM-01M6R2WSARGC382BHX89GZB64E` refuses a delete that another artifact of the same pack references. A preset
-> is not an artifact, so the plan drops its item; whether a same-pack preset item counts as a reference is not ruled.
+A preset item of the same pack is dropped (this rule); a preset item of another pack is an inbound reference (G9, A10).
 
 **G11 Relationship `DELETE`.** Removes the one edge of the unordered pair `{from, to}` from `p`'s shard or graph
 documents; `404 relationship_not_found` when `p` holds none; an edge that is a field of an artifact's body is
@@ -381,6 +460,24 @@ last-writer-wins on the whole pack.
 A removed artifact a document still selects becomes a stale id (W9, E1).
 *Source:* research R-lock (The activations side); plan IC-06. **Ruled, not built** (with G2 and G10).
 
+**G19 Asynchronous registration.** `PUT /packs/{cid}` and `POST /packs` answer `202 Accepted` with a status URI; the
+status resource reports `pending`, then `registered` (with the G20 report) or `refused` (with the refusal G1–G13 would
+have answered). Preconditions (G6) and the body bound (G5) may still be answered synchronously.
+A client learns that a registration completed from the status URI, not from the request.
+*Source:* A5, decision `DM-01M6RA8225EXG6GAT1MM2R9T6C`. **Ruled, not built** (layer-merge PR B; the contract delta and
+G6's status codes are to be revised to it).
+
+**G20 Impact report.** A completed registration reports, for every closure in `Aff(z)` (G8): the artifacts that joined
+or left `Req` or `Lk`, the `Unheld` items (C31), and the stored activations whose effective set changes, by id.
+A pack upgrade that moves the floor is never silent.
+*Source:* B4, decision `DM-01M6RA9SAKCBSKGX165JM3CAGS`. **Ruled, not built** (layer-merge PR B).
+
+**G21 Repair writes.** A registration into `p` whose closure `C({p})` does not compose today is let through when the
+closure composes after it (G8 holds for the new state); one that leaves it broken is refused as before.
+A write that fixes a broken compose is not blocked by the breakage it fixes.
+*Source:* ADR-0063 amendment of 2026-11-06 (repair writes); issue #404. **Ruled, not built:** today any write into a
+closure that cannot compose is refused.
+
 ## 4. Activation write rules
 
 Every activation write stores one canonical document, judged against one snapshot of its closure. `D` is the stored
@@ -392,42 +489,50 @@ document, `D'` the one the write computes, `C = C(D)` and `t` the artifact the p
 type or more than 1 MiB is `422 activation_invalid`.
 *Source:* ADR-0020 D4, D9 and build notes; activation mission FR-006. **Built.**
 
-**W2 Absent means none.** `⟦⊥⟧ = ∅` for `sel(k)`, `kinds` and `mts`; `packs = ⊥` means `P`; `⊥` and `∅` stay distinct
-on the wire.
+**W2 Absent means none.** `⟦⊥⟧ = ∅` for `sel(k)`, `mission_type` included; `packs = ⊥` means `P`; `⊥` and `∅` stay
+distinct on the wire.
 An absent list puts nothing of its kind in force, `skill` included.
-*Source:* ADR-0053 d10; ADR-0013 d2 and ADR-0020 D6 (amended 2026-11-05); DIV-203. **Built.**
+*Source:* ADR-0053 d10; ADR-0013 d2 and ADR-0020 D6 (amended 2026-11-05); DIV-203; A7. **Built** for `sel`, `kinds`
+and `mts`; the single `sel` form is ruled (A7), planned (layer-merge; PR placement pending).
 > ⚠ **Unclear:** `langs` does not follow W2 at read. Research R2 of the layer-merge mission has an absent `languages`
 > filter nothing and `[]` filter every tagged artifact, while ADR-0053 d10 says an absent activation key means none.
 
-**W3 Canonical form.** Ids are stored as declared, sorted and once; `packs` keeps its order; `rev(D) =
-"sha256:" + hex(SHA-256(JCS(D)))`, which is the `ETag`.
+**W3 Canonical form.** Every known spelling of an id (the declared id, its full URN, a case variant of either) is
+stored as the declared id; ids are stored sorted and once; `packs` keeps its order; `rev(D) =
+"sha256:" + hex(SHA-256(JCS(D)))`, which is the `ETag`. A spelling that matches two held ids differing only by case is
+`422 activation_invalid` (`ambiguous_artifact`); an unknown spelling is kept as written for W5 to refuse. A mission
+type id is normalized like any other id (A7); the built code still matches it exactly, as it did `missionTypes`.
 Two equivalent documents have one revision, so `GET` is byte-stable.
-*Source:* ADR-0020 D4; activation mission FR-005, research R3. **Built.**
-> ⚠ **Unclear:** ADR-0020 D4 rules that another known spelling of an id is normalized to the declared id. The register
-> matches ids exactly (DIV-208), so another spelling is an unknown id.
+*Source:* ADR-0020 D4; activation mission FR-005, research R3; operator ruling of 2026-11-06 (DIV-208 withdrawn);
+`DocumentRules.normalize`, `ArtifactSpellings.resolve`. **Built.**
 
 **W4 No empty deny list.** `deny(k) ≠ ⊥ ⇒ deny(k) ≠ ∅`; `[]` is `422` (`empty_deny_list`). A write that empties a deny
 list removes the key.
 *Source:* ADR-0020 D4; activation mission FR-006, US1 AS7. **Built.**
 
-**W5 Ids in the closure.** `⋃_k ⟦sel(k)⟧ ∪ ⟦deny(k)⟧ ⊆ held_k(C)`, `⟦mts⟧ ⊆ Mt(C)`, each pinned version `= ver`, no
+**W5 Ids in the closure.** `⋃_k ⟦sel(k)⟧ ∪ ⟦deny(k)⟧ ⊆ held_k(C)` over every `k ∈ Kₐ`, each pinned version `= ver`, no
 duplicate pack; else `422` (`unknown_artifact`, `unknown_mission_type`, `unknown_pack`, `version_not_held`,
-`duplicate_pack`).
+`duplicate_pack`), after W3's normalization and, for a replace, after W6's stale drop.
 A document names only what its own closure holds.
-*Source:* ADR-0020 D9; activation mission FR-006, FR-010; `DocumentRules.check`. **Built.**
+*Source:* ADR-0020 D9; activation mission FR-006, FR-010; `DocumentRules.check` (`version_not_held`,
+`ambiguous_artifact`), `ActivationWrites`. **Built.**
 
-**W6 Floor refusal on the whole document.** For create and replace: `Den(D') ∩ Lk(C) ≠ ∅ ⇒ 409 artifact_locked`;
-otherwise `Den(D') ∩ Req(C) ≠ ∅ ⇒ 409 artifact_required`; `requiredBy` names each pack with its `parent_pack` chain.
-A document that denies a locked or required artifact is never stored; locked is judged first.
-*Source:* ADR-0012 d7; ADR-0013 d5; ADR-0020 D7, D9, D10; DIV-204; `DocumentRules.floorRefusal`. **Built.**
-Relaxed by W26.
+**W6 Floor refusal on the whole document.** Let `New = Den(D')` for a create and `New = Den(D') ∖ Den(D)` for a
+replace. `New ∩ Lk(C) ≠ ∅ ⇒ 409 artifact_locked`; otherwise `New ∩ Req(C) ≠ ∅ ⇒ 409 artifact_required`; `requiredBy`
+names each pack with its `parent_pack` chain. A replace first drops from its body the ids of `stale(D, C)` (W11) and
+reports them in `dropped`; any other id the closure does not hold is still `422` (W5).
+A create never denies a locked or required artifact; a replace is judged only on the deny entries it adds, so a
+`GET` → `PUT` of the stored document is never refused for the floor or a stale id. Locked is judged first.
+*Source:* ADR-0012 d7; ADR-0013 d5; ADR-0020 D7, D9, D10; DIV-204; `DocumentRules.floorRefusal`; A4, decision
+`DM-01M6RA7XC5HC8915GZT2R3H83W`. **Partly built:** the whole-document refusal is built; judging only added entries and
+the replace's stale drop are ruled, planned (#399 follow-up). Relaxed by W26.
 
 ### Preconditions and order
 
 **W7 Precondition order (per-artifact and preset writes).** `400` (malformed `If-Match`) → `428` (no `If-Match`) →
-`404 activation_not_found` → `412` (stale `If-Match`) → `422` (body, path kind, `cascade`) → one snapshot (W8) →
-`404 artifact_not_found`, `mission_type_not_found` or `preset_not_found` → W9 → the change → `422` or `409` (W5, W25) →
-compare-and-set (W29).
+`404 activation_not_found` → `412` (stale `If-Match`) → `422` (body, path kind, `cascade`) → one snapshot (W9) →
+path id (W10: `422 ambiguous_artifact`, then `404 artifact_not_found`, `mission_type_not_found` or `preset_not_found`) →
+W11 → the change → `422` or `409` (W5, W25) → compare-and-set (W30).
 Preconditions are judged before content, and no pack is read before them.
 *Source:* ADR-0020 D6, D9; RFC 9110 §13.2.2; activation mission FR-010, finding F6; `ActivationWrites`. **Built.**
 
@@ -440,22 +545,30 @@ replace is last-writer-wins; `DELETE` answers `204`, then `404` on a second call
 One request never mixes two states of the packs.
 *Source:* activation mission NFR-007; `ClosureQueries.snapshot`. **Built.**
 
-**W10 Path id.** `t ∈ H(C)` (or `t ∈ Mt(C)`, or the preset id is held), else `404`; except that an unselect of
-`t ∈ Sel(D)`, or a re-activate of `t ∈ Den(D)`, proceeds for a `t ∉ H(C)`.
-A write only sees its closure, but may still remove a stale id the document holds.
-*Source:* activation mission FR-010, FR-017; ADR-0059 amendment R5; `ActivationWrites.requireHeldOrStale`. **Built.**
+**W10 Path id.** The path id is first resolved to a declared id (W3's spellings), against `H(C)` and, when the closure
+holds no match, against the ids of the stored `D`; two case-only matches are `422 ambiguous_artifact`; a mission type
+id is matched exactly (until A7 is built). Then `t ∈ H(C)` (or the preset id is held), else `404`; except that an
+unselect of `t ∈ Sel(D)`, or a re-activate of `t ∈ Den(D)`, proceeds for a `t ∉ H(C)`.
+A write only sees its closure, but may still remove a stale id the document holds, in the spelling it was stored.
+*Source:* activation mission FR-010, FR-017; ADR-0059 amendment A5 (formerly R5); operator ruling of 2026-11-06;
+`ActivationWrites.declared`, `requireHeldOrStale`. **Built.**
 
 ### The document a write starts from
 
-**W11 Stale drop.** `stale(D, C) = (Sel(D) ∪ Den(D)) ∖ (H(C) ∪ Mt(C))`; the write computes from
-`D₀ = D ∖ stale(D, C)` and reports `dropped = stale(D, C)`.
-Every per-artifact and preset write first removes the ids the closure no longer declares and reports them.
-*Source:* operator ruling R5 (ADR-0059 amendment of 2026-11-06); DIV-204 notes; `StaleIds.drop`,
-`ActivationWrites.current`. **Built.**
+**W11 Stale drop.** `stale(D, C) = (Sel(D) ∪ Den(D)) ∖ H(C)`; `deadPins(D, C) = {(cid, v) ∈ packs | v ≠ ⊥,
+v ≠ ver(cid)}`; the write computes from `D₀ = D ∖ stale(D, C)`, with each dead pin's version removed (its pack kept),
+and reports both in `dropped`.
+Every per-artifact and preset write first removes the ids the closure no longer declares and the version pins it no
+longer holds, and reports them. Dropping is eager: any write drops every stale id, not only the one it names.
+*Source:* operator ruling A5 (formerly R5, ADR-0059 amendment of 2026-11-06); DIV-204 notes; `StaleIds.drop`,
+`ActivationWrites.current`; B1, decision `DM-01M6RA9BKJY7X9BFV93QW1KM1T`; B2, decision `DM-01M6RA9G56DTA5GFY5Z28S0DB1`.
+**Partly built:** stale ids are built; dead pins are ruled, planned (#399 follow-up).
 
-**W12 Stale drop scope.** W11 leaves `packs`, `kinds` and `langs` alone; an unknown pack or a pinned version the closure does not hold
-still makes every per-artifact write `422`; create and replace drop nothing (an unknown id in their body is `422`).
-*Source:* ADR-0059 amendment R5; activation mission FR-017. **Built.**
+**W12 Stale drop scope.** W11 leaves `langs` and the `cid`s of `packs` alone; an unknown pack still makes
+every per-artifact write `422`; a create drops nothing; a replace drops only what W6 says.
+*Source:* ADR-0059 amendment A5; activation mission FR-017; A4 and B1 (decisions above). **Partly built:** until the
+W6 and W11 follow-ups, a dead pin still makes every per-artifact write `422 version_not_held` and a replace drops
+nothing.
 
 ### The five writes
 
@@ -475,11 +588,14 @@ Only the named id gets a deny entry; the cascade unselects what only it kept in 
 **W16 Re-activate.** `Den(D') = Den(D₀) ∖ {t}`; nothing else, no cascade.
 *Source:* ADR-0013 d3; ADR-0020 D6; activation mission FR-015. **Built.**
 
-**W17 Apply a preset.** For the winning preset `π` (C29) and each key it lists (`π[k] ≠ ∅`, `π.kinds ≠ ∅`,
-`π.mts ≠ ∅`): `sel'(k) = π[k] ∖ ⟦deny(k)⟧` without `force`, `= π[k]` with `force`; `kinds' = π.kinds ∩ Kₛ`;
-`mts' = π.mts`. With `force`, `Den(D') = Den(D₀) ∖ ⋃_k π[k]`. Every other key is unchanged.
-A preset replaces each key it lists; `force` clears only the deny entries of its members.
-*Source:* ADR-0059 D6; ADR-0020 D6; activation mission FR-016, open review item 4; `PresetRules.apply`. **Built.**
+**W17 Apply a preset.** For the winning preset `π` (C29) and each kind it lists (`π[k] ≠ ∅`, `k ∈ Kₐ`, mission types
+included): `sel'(k) = π[k] ∖ ⟦deny(k)⟧` without `force`, `= π[k]` with `force`. With `force`,
+`Den(D') = Den(D₀) ∖ ⋃_k π[k]`. Every other key is unchanged.
+A preset replaces each kind list it names, any kind included; `force` clears only the deny entries of its members. A
+preset no longer sets a kind gate or a separate mission-type list.
+*Source:* ADR-0059 D6; ADR-0020 D6; activation mission FR-016, open review item 4; `PresetRules.apply`; A7, decisions
+`DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY`, `DM-01M6RCY40CQQTHC130RWF43W0D`. **Built** with the kind gate (`kinds' = π.kinds` without `skill` and `glossary_pack`) and `mts' = π.mts`;
+the uniform form is ruled (A7), planned (layer-merge; PR placement pending).
 
 **W18 A preset walks nothing and denies nothing.** The preset write's `skipped` is empty, and `Den(D') ⊆ Den(D₀)`.
 A preset member the closure does not hold is selected and then refused by W5 (`422 unknown_artifact`).
@@ -491,44 +607,49 @@ A preset member the closure does not hold is selected and then refused by W5 (`4
 crossed from `E` to `T`.
 No other relation (`overrides`, `replaces`, `rejects`, `delegates_to`, `vocabulary`, `applies`, the tension edges,
 `implemented_by`, pack `depends_on`) is followed.
-*Source:* ADR-0059 D2.1, D2.5 and operator ruling R4; DIV-207; `CascadeRules.CASCADE_RELATIONS`. **Built.**
+*Source:* ADR-0059 D2.1, D2.5 and operator ruling A4; DIV-207; `CascadeRules.CASCADE_RELATIONS`. **Built.**
 > ⚠ **Unclear:** two design pages still carry the superseded `enhances` pull of ADR-0059 D2.2. The logical model's
 > Relations section says the cascade follows "`enhances` both ways" with a read-time pull, and the resolution model's
-> step 2 names "the read-time `enhances` pull" as the next mission's. Operator ruling R4 removed the pull at write and
+> step 2 names "the read-time `enhances` pull" as the next mission's. Operator ruling A4 removed the pull at write and
 > at read.
 
 **W20 Reach as a least fixed point.** For starts `S`, stops `Σ` and lineage `Lin`:
 `Anc(x) = lfp Y. {a ∉ Σ | specializes_from(x, a)} ∪ {a' ∉ Σ | a ∈ Y, specializes_from(a, a')}`;
-`Next(X) = {y ∈ H(C) | x ∈ X ∖ Σ, r ∈ Rc, r(x, y)} ∪ {y ∈ H(C) | x ∈ X ∖ Σ, a ∈ Anc(x), r ∈ {requires, scope}, r(a, y)}`;
+`Next(X) = {y ∈ H(C) | x ∈ X ∖ Σ, r ∈ Rc, r(x, y)} ∪ {y ∈ H(C) | x ∈ X ∖ Σ, a ∈ Anc(x), r ∈ {requires, scope}, r(a, y)}
+∪ {y ∈ steps(x) | x ∈ X ∖ Σ, kind(x) = mission_type}`;
 `Reach(S, Σ) = lfp X. S ∪ Next(X)`; `Reached = Reach ∖ Σ`; `Stopped = (Reach ∩ Σ) ∪ {a ∈ Σ | a an ancestor met}`;
 `Passed = ⋃ {Anc(x) | x ∈ Reached}`.
-The cascade is the closure of the targets over the six relations and the lineage pass-through, stopping at the stops.
-*Source:* ADR-0059 D2.1, D2.3, D2.4; activation mission FR-012, FR-014; `Reachability.reach`, `ReachRequest.Lineage`.
-**Built.**
+The cascade is the closure of the targets over the six relations, the lineage pass-through and a mission type's
+steps (crossed like `requires`), stopping at the stops.
+*Source:* ADR-0059 D2.1, D2.3, D2.4; activation mission FR-012, FR-014; `Reachability.reach`, `ReachRequest.Lineage`;
+A7 Q1, decision `DM-01M6RCXTS0SMDNTWZ8G7GJ2P5S`. **Built** without the step term; the step term is ruled (A7), planned (layer-merge; PR placement pending).
 
-**W21 Stops and scope.** Select: `Σ = Den(D₀) ∖ {t}`. Deactivate, own walk: `Σ = ∅` (R2). Deactivate, shared walk:
-`Σ = Den(D₀) ∪ {t}`. `Scope ⊆ Kₛ` or `all = Kₛ`; `mission_type ∉ Scope` always; no `cascade` means `Reach = {t}`.
+**W21 Stops and scope.** Select: `Σ = Den(D₀) ∖ {t}`. Deactivate, own walk: `Σ = ∅` (A2). Deactivate, shared walk:
+`Σ = Den(D₀) ∪ {t}`. `Scope ⊆ Kₐ` or `all = Kₐ`, `mission_type` included; no `cascade` means `Reach = {t}`.
 A select stops at deny entries, a deactivate's own walk stops nowhere, and the shared walk stops at the target and the
 deny entries.
-*Source:* ADR-0013 d4; ADR-0020 D6 and amendment ruling 6; ADR-0059 D2.4 and operator ruling R2; activation mission
-FR-012, finding F8; `CascadeRules.planSelect`, `planDeactivate`, `planShared`. **Built.**
+*Source:* ADR-0013 d4; ADR-0020 D6 and amendment ruling 6; ADR-0059 D2.4 and operator ruling A2; activation mission
+FR-012, finding F8; `CascadeRules.planSelect`, `planDeactivate`, `planShared`. **Built** with `mission_type ∉ Scope`;
+dropping that exclusion is ruled (A7), planned (layer-merge; PR placement pending).
 
 **W22 `includeDeactivated`.** `Σ = (Den(D₀) ∖ {t}) ∖ {u | kind(u) ∈ Scope}`; `Clr = (Reached ∪ Passed) ∩ Den(D₀) ∩
 {u | kind(u) ∈ Scope}`.
 It clears only the in-scope deny entries the walk passes through; an out-of-scope denied artifact still stops the walk
 and keeps its entry.
-*Source:* operator ruling R3 (ADR-0059 amendment of 2026-11-06); ADR-0013 d4; DIV-206; `CascadeRules.walkedThrough`.
-**Built.**
+*Source:* operator ruling A3 (formerly R3, ADR-0059 amendment of 2026-11-06); ADR-0013 d4; DIV-206;
+`CascadeRules.walkedThrough`. **Built** as stated. **Ruled, planned (#399 follow-up):** B5 (decision
+`DM-01M6RA9XQSH3E07C7VCPCVD6R4`) narrows it to `Clr = Reached ∩ Den(D₀) ∩ {u | kind(u) ∈ Scope}`: a lineage ancestor the
+walk passes through and does not select keeps its deny entry.
 
 **W23 Deactivate candidates.** `Cand = (Reached_own ∩ {u | kind(u) ∈ Scope} ∩ Sel(D₀)) ∖ Fl(C)`.
 What the target's own walk reached, is selected and is in scope is a candidate, unless it is on the floor.
-*Source:* ADR-0020 D6; ADR-0059 operator ruling R2; activation mission finding F2; `CascadeRules.candidates`.
+*Source:* ADR-0020 D6; ADR-0059 operator ruling A2; activation mission finding F2; `CascadeRules.candidates`.
 **Built.**
 
 **W24 The shared-walk keep set.** `Others = (Sel(D₀) ∪ Fl(C)) ∖ ({t} ∪ Cand)`;
 `Kept = Cand ∩ Reach(Others, Den(D₀) ∪ {t}).Reached`.
 A candidate another active artifact still reaches, directly or through another kept candidate, stays selected.
-*Source:* ADR-0020 D6; ADR-0059 operator rulings R2, R4; activation mission FR-015, Assumptions (`skippedShared`);
+*Source:* ADR-0020 D6; ADR-0059 operator rulings A2, A4; activation mission FR-015, Assumptions (`skippedShared`);
 `CascadeRules.planShared`. **Built.**
 
 **W25 Floor refusal on a write.** A per-artifact or preset write judges the floor only on `Den(D') ∖ Den(D₀)`: a
@@ -546,13 +667,14 @@ A required artifact may be denied while an active override of it is in force, un
 *Source:* decision `DM-01M6R3YX23H46PXGNEFC31E6CT` (operator, Q9); research R12; plan IC-13. **Ruled, not built.**
 > ⚠ **Unclear:** ADR-0013 d2 and ADR-0020 D7 say a required artifact "is never subtracted" and is "active whatever
 > the document says". The 2026-11-06 rulings let an active override hide a required artifact and let it be denied.
-> Research R12 plans an ADR-0059 amendment R6 to record it; until then the ADR texts and the ruling disagree.
+> Research R12 plans an ADR-0059 amendment (A6, after the relabelled A2–A5) to record it; until then the ADR texts and
+> the ruling disagree.
 
 ### Report, no-op and storage
 
 **W27 Change report.** `applied = (Sel(D') △ Sel(D₀)) ∪ (Den(D') △ Den(D₀))`, `cleared = Den(D₀) ∖ Den(D')`,
 `dropped = stale(D, C)`; `applied` and `cleared` are measured against `D₀`; a kind is never an entry.
-*Source:* activation mission FR-011, FR-015, FR-016, FR-017; ADR-0059 amendment R5; `ActivationChange.of`. **Built.**
+*Source:* activation mission FR-011, FR-015, FR-016, FR-017; ADR-0059 amendment A5; `ActivationChange.of`. **Built.**
 
 **W28 Skipped report of a write.** Select: `skippedByScope = Reached ∖ Scope`, `skippedDeactivated = Stopped` (each
 with `viaRequires` and `requiredBy`), `unreachedBehindDeactivated = Reach(S, ∅) ∖ (Reached ∪ Stopped)`,
@@ -563,7 +685,7 @@ selected floor artifact the target reached that another active artifact reaches,
 
 **W29 No-op.** `D' = D ∧ stale(D, C) = ∅ ⇒ 200` with `rev(D)`, empty `applied` and `cleared`, nothing stored.
 A write that drops a stale id is never a no-op.
-*Source:* activation mission FR-011, FR-017; ADR-0059 amendment R5. **Built.**
+*Source:* activation mission FR-011, FR-017; ADR-0059 amendment A5. **Built.**
 
 **W30 Compare-and-set.** `D'` is stored iff the stored revision still equals the one loaded, else `412`; the write
 goes to a temporary file, forced to the device, then moved atomically, under a per-id lock.
@@ -574,10 +696,25 @@ goes to a temporary file, forced to the device, then moved atomically, under a p
 Only the user's explicit choice adds or removes a deny entry.
 *Source:* ADR-0013 d2, d3; ADR-0020 D6, amendment 2026-11-05 to ADR-0013 d2. **Built.**
 
-**W32 Mission types in a write.** A select of kind `mission_type` adds the id to `mts` and never cascades; a mission
-type has no deny list (`422` on the exclusions path); a walk that reaches a mission type never adds it to `mts` and
-never makes it a candidate.
-*Source:* ADR-0020 amendment 2026-10-31 (design decisions); activation mission US3 AS7, finding F8. **Built.**
+**W32 Mission types in a write.** *Withdrawn* (A7). A mission type is selected, denied and cascaded like any kind
+(W13–W24); a select of `M` cascades to `steps(M)` (W20); a deny of `M` is refused only when `M ∈ Fl(C)` (W25).
+*Source:* A7, decisions `DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY`, `DM-01M6RCXTS0SMDNTWZ8G7GJ2P5S`, `DM-01M6RCXZ9HSHT4K3443YYZ8ZFC`. Formerly: ADR-0020 amendment 2026-10-31; activation mission US3 AS7, finding
+F8. **Built** as the withdrawn rule (`mts`, no cascade, no deny list); the withdrawal is ruled (A7), planned (layer-merge; PR placement pending).
+
+**W33 Write warnings.** The change report carries `warnings`, one per artifact of `Sel(D') ∖ Sel(D₀)` that `Eff(D', M)`
+leaves out, with the E9 reason that decides it (for example `enhanced_target_not_in_force`,
+`mission_type_not_in_force`).
+A write that will not bring what it selected into force says so; it is still applied.
+*Source:* B6 and B7, decision `DM-01M6RAA2B2G9PNXN2F9SJ7B1CR`. **Ruled, not built** (needs `Eff`; layer-merge PR C,
+with W26).
+
+**W34 Withdrawn keys refused.** A create, replace or preset body carrying `activatedKinds` or `missionTypes` is
+`422 activation_invalid`, with no deprecation window; core regenerates its DTOs first. A stored version-1 document is
+upgraded on read to `schemaVersion: 2`: its `missionTypes` move to `selected.mission_type`, its kind gate is dropped
+along with the selections it gated off, and what is in force does not change (locks and the floor were never gated).
+Each stored document's `ETag` changes once.
+*Source:* A7 Q4, decision `DM-01M6RCY8MYNGNPJ247M2Y4880N`; research `a7-kind-model-2026-11-06.md` (proposed revision, items 2–3). **Ruled, not
+built** (PR placement pending).
 
 ## 5. Read rules
 
@@ -588,70 +725,81 @@ in `Kₐ`, `Lk = Lk(C)` and `Req = Req(C)`.
 
 **E1 Stale ids.** `staleIds = (Sel(D) ∪ Den(D)) ∖ W`; a stale id has no state.
 A stored document is served as stored; what the packs no longer hold is reported, not refused.
-*Source:* ADR-0059 D4; spec FR-017, US3 AS3; data model (EffectiveSkippedReport). **Ruled, not built.**
-`GET /activations/{id}` serving the document unchanged is **Built**.
+A pinned version the closure no longer holds is reported too, as `{cid, pinned, held}` (B1).
+*Source:* ADR-0059 D4; spec FR-017, US3 AS3; data model (EffectiveSkippedReport); B1, decision
+`DM-01M6RA9BKJY7X9BFV93QW1KM1T`. **Ruled, not built.** `GET /activations/{id}` serving the document unchanged is
+**Built**.
 
-**E2 Candidates.** `Cand(D) = {u ∈ W ∩ Sel(D) | kind(u) ∈ ⟦kinds⟧ ∪ {mission_type} ∧ lang(u) ∧ mt(u) ∧ u ∉ Den(D)}`,
-where `lang(u) ⇔ langs = ⊥ ∨ tags(u) = ∅ ∨ tags(u) ∩ langs ≠ ∅` and `mt(u) ⇔ u` is bound to no mission type, or to
-one in `⟦mts⟧`.
-A selected artifact is a candidate when its kind is activated, its languages and mission type are in force, and it is
-not denied.
-*Source:* ADR-0020 D7; ADR-0053 d10; ADR-0059 D2.2 (step targets); spec FR-013; research R2. **Planned, not built.**
-> ⚠ **Unclear:** whether `activatedKinds` gates mission types. The precedence table applies "kind outside
-> `activatedKinds`" to every kind, and `kinds ⊆ Kₐ` may list `mission_type`, while `missionTypes` is its own key.
+**E2 Candidates.** `Cand(D) = {u ∈ W ∩ Sel(D) | lang(u) ∧ u ∉ Den(D)}`, where
+`lang(u) ⇔ langs = ⊥ ∨ tags(u) = ∅ ∨ tags(u) ∩ langs ≠ ∅`.
+A selected artifact of any kind is a candidate when its languages are in force and it is not denied. There is no kind
+gate; whether a bound artifact's mission type is in force is judged on the effective set (E6), not on the document.
+*Source:* ADR-0020 D7; ADR-0053 d10; spec FR-013; research R2; A7, decision `DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY` (the kind gate withdrawn).
+**Planned, not built.**
 
-**E3 Base set.** `Base = Cand(D) ∪ Lk`.
-A locked artifact is in force whatever the document, the kind gate or the filters say.
+**E3 Base set.** `Base = Cand(D) ∪ Lk`, the **candidate set** E4–E7 work on; "active" in the rules below means a
+member of the set the rule names, never of `Base` alone.
+A locked artifact is a candidate whatever the document or the language filter says.
 *Source:* ADR-0012 d7; ADR-0013 d2; ADR-0020 D7; DIV-201; research R11 (operator, Q6). **Ruled, not built.**
 
-**E4 Override hiding.** `Ov(X) = {T | ∃E ∈ X. overrides(E, T)}`; `A₁ = Base ∖ (Ov(Base) ∖ Lk)`.
-Overrides apply from the whole base set at once, so a chain `F → E → T` hides both `E` and `T`; a locked target stays
-(C27).
-*Source:* decisions `DM-01M6R0TGX3DSR54EVS58Q1V8FV`, `DM-01M6R2X2SW8KVAJCDX23PGJBMT`; research R2 step 4, R11.
-**Ruled, not built.**
+**E4 Override hiding.** `ov⁺` is the transitive closure of `ov` (C27); `Ov(X) = {T | ∃E ∈ X. ov⁺(E, T)}`;
+`A₁ = Base ∖ Ov(Base)`.
+Overrides compose transitively from the top: a chain `F → E → T` of candidates leaves `F` in force and hides `E` and
+`T`; a hidden overrider still hides what it overrides; a non-`open` target stays and stops the chain there (C27).
+*Source:* decisions `DM-01M6R0TGX3DSR54EVS58Q1V8FV`, `DM-01M6R2X2SW8KVAJCDX23PGJBMT`; research R2 step 4, R11; A3,
+decision `DM-01M6RA7RPNZS810FTFC98Z13GH`. **Ruled, not built.**
 
-**E5 Requirement.** `Unsat = {T ∈ Req ∖ Lk | T ∉ A₁ ∧ ¬∃E ∈ A₁. overrides(E, T)}`;
-`A₂ = (A₁ ∪ Unsat) ∖ (Ov(Unsat) ∖ Lk)`.
-A required artifact is satisfied by itself in force or by an active override of it; otherwise it is put in force, and
-what it overrides is hidden once more.
+**E5 Requirement.** `Unsat(A) = {T ∈ Req ∖ Lk | T ∉ A ∧ ¬∃E ∈ A. ov⁺(E, T)}`;
+`Step(A) = (A ∪ Unsat(A)) ∖ Ov(A ∪ Unsat(A))`; `A₂` is the fixed point of `Step` from `A₁`, satisfaction judged on the
+final set.
+A required artifact is satisfied by itself in force or by an artifact in force that overrides it, directly or through a
+chain (`F → E → T` satisfies `T`); otherwise it is put in force, what it overrides is hidden, and the check repeats
+until nothing changes. C28 refuses the `ov` cycles among `Base ∪ Req` that could keep it from ending.
 *Source:* operator ruling of 2026-11-06 ("required means T, or an active override of T, must be in force");
-decisions `DM-01M6R2X2SW8KVAJCDX23PGJBMT`, `DM-01M6R3YTNT1P2MBERBN7WV71ND`; research R11. **Ruled, not built.**
+decisions `DM-01M6R2X2SW8KVAJCDX23PGJBMT`, `DM-01M6R3YTNT1P2MBERBN7WV71ND`; research R11; A2, decision
+`DM-01M6RA7M56M1409EV9JX1EW83K`; A3, decision `DM-01M6RA7RPNZS810FTFC98Z13GH`. **Ruled, not built.**
 > ⚠ **Unclear:** decision `DM-01M6R2X2SW8KVAJCDX23PGJBMT` says an override **or an enhancement** satisfies a
 > requirement; the later `DM-01M6R3YTNT1P2MBERBN7WV71ND` says an enhancer never does. This page follows the later one.
-> Whether an unsatisfied required artifact is also put in force when the language or mission-type filter excludes it
-> is not stated; US3 AS4 states it only for the kind gate.
+> Whether an unsatisfied required artifact is also put in force when the language filter excludes it is not stated;
+> US3 AS4 stated it only for the kind gate, which A7 withdrew.
 
-**E6 Enhancer pruning.** `Eff₀ = gfp X ⊆ A₂. {u ∈ A₂ | u ∈ Lk ∨ ¬∃T. enhances(u, T) ∨ stepEnh(u) ∨ ∃T ∈ X.
-enhances(u, T)}`.
-An enhancer is in force only while at least one of its targets is; pruning repeats down chains of enhancers.
+**E6 Enhancer and binding pruning.** `Eff₀ = lfp X. {u ∈ A₂ | (¬∃T. enhances(u, T) ∨ ∃T ∈ X. enhances(u, T)) ∧
+(bnd(u) = ⊥ ∨ bnd(u) ∈ X)}`.
+An enhancer is in force only when it is grounded: one of its targets is in force, and that target is an artifact
+that enhances nothing or is itself grounded. An artifact bound to mission type `M`, a step of `M` included, is in
+force only while `M` is. A required or locked artifact pruned by either condition is not in force either; it is
+reported required-but-ungrounded (E14). An enhancer is never in force on its own, and nothing bound to a mission type
+outlives it.
 *Source:* operator ruling of 2026-11-06 ("an enhancer needs its target T active to work"); decision
-`DM-01M6R3YTNT1P2MBERBN7WV71ND`; research R11 step 4; data model rule 8. **Ruled, not built** (the greatest fixed
-point is this page's reading of "repeats down chains").
-> ⚠ **Unclear:** the operator says an enhancer whose target is not in force "has no effect". The plan makes it
-> `inactive` (`enhanced_target_not_in_force`); the superseded ADR-0059 D2.2 had it "stay in force and add nothing".
-> The order "requirement, then pruning" also leaves open whether a required or locked enhancer with no target in
-> force stays in force; this page keeps a locked one (data model rule 1). The question is open as decision
-> `DM-01M6R4W3ZMSESETMQ0ZQTCZCFJ`.
+`DM-01M6R3YTNT1P2MBERBN7WV71ND`; research R11 step 4; data model rule 8; A8, decision `DM-01M6RA8G0RGRWSFW4DERH8W319`
+(least fixed point); decision `DM-01M6R4W3ZMSESETMQ0ZQTCZCFJ` (the enhancer rule wins over the floor); A7 Q1, decision
+`DM-01M6RCXTS0SMDNTWZ8G7GJ2P5S` (the binding; it replaces the former `stepEnh` exemption). **Ruled, not
+built.** C36 refuses `enhances` cycles at registration, so the least and greatest fixed points agree on every
+registered closure.
 
 **E7 Withdrawn overrides.** If `Eff₀` removed an artifact that declares `overrides`, E4–E6 run once more without
-those overrides; if that run removes another overriding enhancer, the read refuses `500 pack_unreadable`.
+those overrides; if that run removes another overriding enhancer, the read refuses `500 pack_unreadable`. C36
+refuses the one shape (an artifact that both enhances and overrides one target) that had no stable answer.
 `Eff(D, M)` is the result.
-*Source:* research R11 step 5, open review item 7. **Planned, not built.**
+*Source:* research R11 step 5, open review item 7; A11, decision `DM-01M6RA8S9G57W4BW55SNVHBQ10`. **Planned, not
+built.**
 
 **E8 The effective set.** In closed form, `Eff(D, M) = Prune(Require(Hide(Cand(D) ∪ Lk)))`, with `Hide`, `Require`
 and `Prune` as E4, E5 and E6 (and E7 once).
 What is in force is computed from the document and the merged closure alone, by one function the reads and W26 share.
 *Source:* research R2, R11, R12; plan IC-09, IC-13. **Planned, not built.**
 
-**E9 State and reason.** For `u ∈ W`, `(state, reason)` is the first row that holds: locked → `active, locked`; kind
-outside `⟦kinds⟧` → `inactive, kind_not_activated`; language → `inactive, language_filtered`; mission type not in
-force → `inactive, mission_type_not_in_force`; denied → `excluded, deactivated`; not selected →
-`inactive, not_selected`; overridden by an active artifact → `inactive, overridden`; enhancer without a target in
-force → `inactive, enhanced_target_not_in_force`; otherwise `active, selected`. A required artifact active by the
-table gets `required`; one put in force by E5 is `active, required`; one satisfied by an override keeps its row and
-gains `satisfiedBy`.
+**E9 State and reason.** For `u ∈ W`, `(state, reason)` is the first row that holds: bound to a mission type not in
+`Eff` → `inactive, mission_type_not_in_force`; enhancer without a grounded target in force →
+`inactive, enhanced_target_not_in_force` (these two rows come before `locked` and the floor, E6); locked →
+`active, locked`; language → `inactive, language_filtered`; denied → `excluded, deactivated`; not selected →
+`inactive, not_selected`; hidden by E4 or E5 → `inactive, overridden`; otherwise
+`active, selected`. A required artifact active by the table gets `required`; one put in force by E5 is
+`active, required`; one satisfied by an override, directly or through a chain, keeps its row and gains `satisfiedBy`
+(the overrider in force).
+There is no `kind_not_activated` and no `kind_default` reason (A7).
 *Source:* ADR-0020 D7; data model (EffectiveArtifact, Precedence); decision `DM-01M6R0TNEBR7KGJMW2SQXQGJ0A`
-(`kind_default` dropped). **Planned, not built.**
+(`kind_default` dropped); A7, decision `DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY` (`kind_not_activated` dropped). **Planned, not built.**
 
 **E10 In force.** `u` is in force `⇔ u ∈ Eff(D, M) ⇔ state(u) = active`.
 *Source:* decision `DM-01M6R2WPZM7K1FBJCFFE0R2TVR` (operator, Q1); ADR-0020 D7. **Ruled, not built.**
@@ -667,18 +815,22 @@ gains `satisfiedBy`.
 **E12 Enhancement, both ways.** For `T ∈ Eff`: `enhancedBy(T) = {E ∈ Eff | enhances(E, T)}`; `E ∉ Eff ⇒ E` is never
 returned for `T`, and no read adds `E` or `T` to `Eff`.
 An enhancement is returned only when it is itself active, and is read from either end; nothing is pulled in.
-*Source:* operator ruling R4 (ADR-0059 amendment of 2026-11-06); spec FR-015, US3 AS5; DIV-207 note.
+*Source:* operator ruling A4 (ADR-0059 amendment of 2026-11-06); spec FR-015, US3 AS5; DIV-207 note.
 **Ruled, not built.**
 
-**E13 Floor satisfaction.** `∀T ∈ Req: T ∈ Eff ∨ ∃E ∈ Eff. overrides(E, T)`, and `∀T ∈ Lk: T ∈ Eff`; an enhancer never
-satisfies `T`.
-*Source:* operator rulings of 2026-11-06 (Q6, Q8); research R11. **Ruled, not built.**
+**E13 Floor satisfaction.** For every `T ∈ Fl` that is not an ungrounded enhancer (E6): `T ∈ Req ⇒ T ∈ Eff ∨ ∃E ∈ Eff.
+ov⁺(E, T)`, and `T ∈ Lk ⇒ T ∈ Eff`; an enhancer never satisfies `T`. An ungrounded floor enhancer is reported
+required-but-ungrounded.
+*Source:* operator rulings of 2026-11-06 (Q6, Q8); research R11; decision `DM-01M6R4W3ZMSESETMQ0ZQTCZCFJ` (A9). **Ruled,
+not built.**
 
 **E14 Skipped buckets.** Each `u ∈ Sel(D) ∪ Den(D)` that is not in force is listed once, in the bucket of its first
-deciding row: `staleIds`, `skippedByScope` (kind not activated), `languageFiltered`, `missionTypeNotInForce`,
-`skippedDeactivated` (`viaRequires = false`, `requiredBy = []` at read), `overridden`, `enhancedTargetNotInForce`.
+deciding row: `staleIds`, `missionTypeNotInForce`, `enhancedTargetNotInForce`, `languageFiltered`,
+`skippedDeactivated` (`viaRequires = false`, `requiredBy = []` at read), `overridden`. There is no kind bucket at
+read (A7).
 `denyNotApplied` (`{u, reason: required or locked}`) and `overrideNotApplied` (`{T, overriddenBy}`) list rules not
-applied; `unreachedBehindDeactivated` and `skippedShared` are empty at read.
+applied; `requiredUngrounded` lists the floor enhancers E6 pruned; `unheldRequired` lists `Unheld` (C31);
+`deadPins` lists the pins E1 reports; `unreachedBehindDeactivated` and `skippedShared` are empty at read.
 *Source:* decision `DM-01M6R0TNEBR7KGJMW2SQXQGJ0A`; ADR-0059 D4 and follow-ups; spec FR-017, US4 AS1; data model.
 **Ruled, not built** (the bucket set is **Planned**).
 
@@ -688,9 +840,12 @@ The graph holds only the edges among artifacts in force, after C19–C20, and li
 *Source:* decision `DM-01M6R0TNEBR7KGJMW2SQXQGJ0A`; spec FR-018, US5 AS1–AS3; research R3. **Ruled, not built.**
 
 **E16 Action context.** `getEffectiveActionContext(mt, a)` is ADR-0018's five-step walk from `action:mt/a` over
-`E_M` restricted to `Eff`, each listed artifact with `enhancedBy` (E12); `mt ∉ ⟦mts⟧ ⇒ artifacts = []` and
+`E_M` restricted to `Eff`, each listed artifact with `enhancedBy` (E12); `mission_type:mt ∉ Eff ⇒ artifacts = []` and
 `missionTypeNotInForce = {mt}`; an unknown `mt` or `a` is `404 mission_type_not_found` or `action_not_found`.
-*Source:* ADR-0018 D1, D2, D5; spec FR-019, US5 AS4–AS5; research open review item 4. **Planned, not built.**
+Whether a mission type is in force is read from the effective set, the one predicate E6 and E9 use; the walk stays on
+the packs side.
+*Source:* ADR-0018 D1, D2, D5; spec FR-019, US5 AS4–AS5; research open review item 4; A7, decision `DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY`. **Planned,
+not built.**
 > ⚠ **Unclear:** FR-019 says the context is what "the step contract names"; the plan reads it as the ADR-0018 walk.
 > The data model allows `depth` 0 or 1, while ADR-0018 D4 allows 0 to 2.
 
@@ -707,12 +862,19 @@ An effective answer changes with the document or the packs, and nothing else.
 to 3 times on `stale_input`.
 *Source:* spec NFR-007; decision `DM-01M6R2X563762EDCVBR02W4FK7`. **Ruled, not built.**
 
-**E20 Writes stay unmerged.** The write cascade (W20) walks the closure's unmerged edges; only W26 reads `M`.
-*Source:* research R2 (open point), open review item 3; plan IC-07, IC-13. **Planned, not built.**
-> ⚠ **Unclear:** whether the write cascade should follow merged edges is not ruled (open decision
-> `DM-01M6R4W1H9P3451V89KHP97XKM`), so a cascade from an overridden
-> `D` may still follow an edge `D`'s losing version declared. Likewise W23–W24 treat every `Fl(C)` item as active,
-> while at read a required item may be hidden by an override.
+**E20 Writes walk merged edges.** The write cascade (W20) walks `E_M`, the edges of the merged closure after C17–C20,
+so a cascade never follows an edge a losing version declared; W26 and W33 read `Eff` over `M`.
+*Source:* research R2 (open point), open review item 3; plan IC-07, IC-13; decision `DM-01M6R4W1H9P3451V89KHP97XKM`
+(merged edges). **Ruled, not built** (layer-merge PR C, with the merge). Until then the built cascade walks the
+unmerged edges, which is the same while no layer override exists.
+> ⚠ **Unclear:** W23–W24 treat every `Fl(C)` item as active, while at read a required item may be hidden by an override
+> and a floor enhancer may be ungrounded (E6). Whether the keep set should use `Eff` is not ruled.
+
+**E21 Deny entries not applied.** `GET /activations/{id}` carries a marker (`denyNotApplied`, a count or the list) when
+`Den(D) ∩ Fl(C) ≠ ∅`; the document itself is served as stored.
+A project sees that a deny entry it stored no longer applies (for example after a pack upgrade raised the floor),
+without an effective read.
+*Source:* B4, decision `DM-01M6RA9SAKCBSKGX165JM3CAGS`. **Ruled, not built** (layer-merge PR C).
 
 ## 6. Invariants
 
@@ -730,8 +892,9 @@ is merged after its own. (C10)
 **I4 Monotone mutability.** `μ_C(u)` never decreases as packs join `C`. (C22, C23)
 
 **I5 Canonical, valid storage.** Every stored `D` is canonical (W3, W4), and, at the moment it was written, every id it
-holds is held by its closure (W5, W11). Its revision is `rev(D)`, and a `PUT` of a fetched, non-stale `config` returns
-the same `ETag`.
+holds is held by its closure (W5, W11). Its revision is `rev(D)`. A `PUT` of a fetched `config` is never refused for
+the floor or a stale id (W6, A4): with nothing stale it returns the same `ETag`; otherwise it drops the stale ids and
+reports them.
 
 **I6 The floor is derived.** No stored document holds `Req`, `Lk` or a skipped report. (ADR-0020 D4, C31)
 
@@ -741,22 +904,29 @@ create or replace whose body named it. (W31)
 **I8 No new floor denial.** No write adds a deny entry on `Lk(C)`; no write adds one on `Req(C)` except under W26.
 (W6, W25, W26)
 
-**I9 Locked is in force.** `Lk(C) ⊆ Eff(D, M)` for every `D`; no override hides a locked artifact. (E3, E4, C27)
+**I9 Locked is in force.** `Lk(C) ∖ Ung ⊆ Eff(D, M)` for every `D`, where `Ung` is the floor enhancers with no
+grounded target in force (E6); no override hides a non-`open` artifact. (E3, E4, E6, C27)
 
-**I10 Requirement holds.** Every `T ∈ Req(C)` is in force or overridden by an artifact in force. (E13)
+**I10 Requirement holds.** Every `T ∈ Req(C)` is in force or overridden, directly or through a chain, by an artifact
+in force, unless it is an enhancer without a grounded target in force, which is reported required-but-ungrounded.
+(E5, E6, E13)
 
-**I11 No enhancer stands alone.** `E ∈ Eff ∧ ∃T. enhances(E, T) ⇒ (∃T ∈ Eff. enhances(E, T)) ∨ stepEnh(E) ∨ E ∈ Lk`.
-(E6)
+**I11 No enhancer stands alone; nothing outlives its mission type.** `E ∈ Eff ∧ ∃T. enhances(E, T) ⇒ ∃T ∈ Eff.
+enhances(E, T)`, and every `enhances` chain from `E` inside `Eff` ends at an artifact that enhances nothing;
+`u ∈ Eff ∧ bnd(u) ≠ ⊥ ⇒ bnd(u) ∈ Eff`. Floor membership is no exception to either. (E6, C36)
 
 **I12 No ancestor in force by lineage.** A cascade never adds a `specializes_from` ancestor it passed through to
-`Sel(D')`. (W20, W22)
+`Sel(D')`, and (once B5 is built) never clears its deny entry. (W20, W22)
 
-**I13 Termination.** Every walk, every closure and every fixed point terminates: the universes are finite and each
-node is visited once. (C1, W20, E6)
+**I13 Termination.** Every walk, every closure and every fixed point terminates: the universes are finite, each
+node is visited once, and the requirement iteration ends because C28 refuses the `ov` cycles it could loop on.
+(C1, W20, E5, E6, C28)
 
-**I14 Round trip of a cascade.** With no deny entry met, no floor item and no other active referrer, a cascading select
-of `t` followed by a cascading deactivate of `t` with the same scope leaves `Sel` as it was, less `t`. (W13, W15, W21,
-operator ruling R2)
+**I14 Cascading deactivate.** A cascading deactivate of `t` leaves `Sel(D₀) ∖ ({t} ∪ (Cand ∖ Kept))`: it removes `t`
+and what `t`'s walk reaches unless something else active keeps it. No selection history is kept, so a cascading
+select followed by a cascading deactivate of `t` also unselects what the user had selected before and only `t` reached;
+the deactivate is not an exact inverse of the select. (W13, W15, W21, W23, W24, operator ruling A2; A13, decision
+`DM-01M6RA8XSM9CZZX1ADX6G80T3X`)
 
 **I15 Reports are exact.** At read, each artifact the document names and that is not in force is in exactly one bucket
 (E14); at write, `applied`, `cleared` and `dropped` are disjoint (W27).
@@ -770,6 +940,12 @@ document as stored. (W26, E8)
 **I18 The offering ignores activations.** `/offering` and `listActivationPacks` never depend on a document's
 selections. (C33)
 
+**I19 Requirements and locks only tighten.** Adding a pack, or a copy of a preset, to a closure never removes an item
+from `Req(C)` or `Lk(C)`. (C22, C23, C31; A1)
+
+**I20 No silent floor change.** Every registration that changes `Req` or `Lk` of a closure names the change and the
+activations it affects (G20), and every stored deny entry that the floor overrides is marked on read (E21). (B4)
+
 ## 7. Source and status table
 
 | Rule | Source | Status |
@@ -778,44 +954,47 @@ selections. (C33)
 | C2 Rooting | ADR-0053 d6; ADR-0020 D4 | Built |
 | C3 Known roots | activation mission FR-006 | Built |
 | C4 Isolation | activation mission R2, US2 | Built |
-| C5 Order | ADR-0048 d9; logical model | Built |
-| C6 No dependency cycle | ADR-0048 d4 | Built |
+| C5 Order | ADR-0048 d9; logical model; `dependenciesOf` | Built |
+| C6 No dependency cycle | ADR-0048 d4; `dependenciesOf` (`parent_pack` included) | Built |
 | C7 Known dependency | ADR-0048 d4 | Built |
 | C8 Range | ADR-0048 d1, d4, d8; ADR-0053 d4 | Built |
 | C9 Parent resolves | ADR-0048 d6 | Built |
 | C10 Level direction | ADR-0048 d7; ADR-0053 d8 | Built |
 | C11 Pack identity | ADR-0053 d6, d7 | Built |
-| C12 Qualified reference | ADR-0053 d7 | Built |
+| C12 Qualified reference | ADR-0053 d7; `dependsOnClosure` | Built |
 | C13 Bare reference | ADR-0053 d7 | Built |
-| C14 Sibling conflict | ADR-0048 d9; ADR-0053 d5, d21 | Built |
-| C15 Sibling settlement | ADR-0053 d5; spec FR-012 | Partly built (#357, #358) |
+| C14 Sibling conflict | ADR-0048 d9; ADR-0053 d5, d21; A14 | Partly built; dropping `enhances` ruled, planned (PR A) |
+| C15 Sibling settlement | ADR-0053 d5; spec FR-012; A14 | Partly built: exactly one winner built; in force #357, #358 |
 | C16 Artifact identity per level | ADR-0053 d6 | Built |
 | C17 Layer winner | ADR-0053 d6; ADR-0059 D3 | Ruled, not built |
 | C18 Whole replacement | ADR-0059 D3 | Ruled, not built |
 | C19 Edges from a loser | ADR-0059 D3 | Ruled, not built |
-| C20 Edges to a loser | ADR-0059 D3 | Ruled, not built |
+| C20 Edges to a loser | ADR-0059 D3; A12 | Ruled, not built |
 | C21 Override gate | ADR-0012 d1, d8; ADR-0059 D3; FR-011 | Ruled, not built |
-| C22 Mutability along the closure | ADR-0063 D3 | Built |
+| C22 Mutability along the closure | ADR-0063 D3; A15 | Partly built; the scope ruled, planned (#399 follow-up) |
 | C23 Tighten, never loosen | ADR-0012 d3 | Built |
 | C24 Unreadable policy | ADR-0063 D4 | Built |
-| C25 Registration gate | ADR-0012 d1, d9; ADR-0026 D4 | Built |
+| C25 Registration gate | ADR-0012 d1, d9; ADR-0026 D4; B8 | Partly built; excluding the own policy ruled, planned (#399 follow-up) |
 | C26 Removal by a derived pack | ADR-0030 d1 to d3 | Ruled, not built |
-| C27 CRG overrides at read | `DM-01M6R0TGX3`, `DM-01M6R2X2SW`; R11 | Ruled, not built |
-| C28 Override cycle | spec FR-016 | Ruled, not built |
+| C27 CRG overrides at read | `DM-01M6R0TGX3`, `DM-01M6R2X2SW`; R11; A6 | Ruled, planned (PR C; the registration refusal PR B) |
+| C28 Override cycle | spec FR-016; A2 | Ruled, planned (PR B at registration, PR C at read) |
 | C29 Winning preset | ADR-0053 d6 | Built |
 | C30 Governing preset | ADR-0031; ADR-0042 §2 | Built |
-| C31 Required set | ADR-0031; DIV-205; `DM-01M6R0TK6F` | Built |
+| C31 Required set | ADR-0031; DIV-205; `DM-01M6R0TK6F`; A1, A10 | Partly built; union and held-only ruled, planned (#399 follow-up) |
 | C32 Floor at write | ADR-0012 d7 | Built |
 | C33 Offering stays a catalog | ADR-0020 D1; FR-023 | Built; the merge half ruled, not built |
+| C34 Same-level preset conflict | operator 2026-11-06; `refusePresetContests` | Built |
+| C35 Case-only mention | operator 2026-11-06; `refuseCaseOnlyMatches` | Built |
+| C36 Edge shape | A8, A11, A12 | Ruled, planned (PR B) |
 | G1 Writable levels | `DM-01M6R1GQYF` | Ruled, not built |
 | G2 Full replacement | operator 2026-11-06; `DM-01M6R0TA37` | Ruled, not built |
-| G3 Version rule | `DM-01M6R0TCAG` | Ruled, not built |
-| G4 Fixed identity | spec FR-003; `DM-01M6R2X0H0` | Planned, not built |
+| G3 Version rule | `DM-01M6R0TCAG`; B1 | Ruled, planned (PR B) |
+| G4 Fixed identity | spec FR-003; `DM-01M6R2X0H0` | Level ruled, not built; `pid` and uniqueness planned, not built |
 | G5 Archive validity | FR-003, NFR-004, NFR-005 | Ruled, not built |
 | G6 Preconditions | FR-003; research R-lock | Planned, not built |
-| G7 Write gate on the diff | ADR-0063 D3; plan IC-04 | Planned, not built |
-| G8 Compose check | plan IC-04 | Planned, not built |
-| G9 Reference check | operator 2026-11-06; `DM-01M6R0TEM8`, `DM-01M6R2WSAR`, `DM-01M6R2WVRK` | Ruled, not built |
+| G7 Write gate on the diff | ADR-0063 D3; plan IC-04; B8 | Planned, not built |
+| G8 Impact check | plan IC-04; A5 | Ruled, planned (PR B) |
+| G9 Reference check | operator 2026-11-06; `DM-01M6R0TEM8`, `DM-01M6R2WSAR`, `DM-01M6R2WVRK`; A10, B3 | Ruled, planned (PR B) |
 | G10 Artifact `DELETE` | operator 2026-11-06; FR-005 | Ruled, not built |
 | G11 Relationship `DELETE` | `DM-01M6R0TEM8`; FR-006 | Ruled, not built |
 | G12 Registration by source | `DM-01M6R1GNR6`, `DM-01M6R1T0HK`; FR-004 | Ruled, not built |
@@ -825,58 +1004,64 @@ selections. (C33)
 | G16 One writer | ADR-0061 | Built (documented) |
 | G17 Unconditional per-artifact registration | ADR-0026 D5 | Built |
 | G18 Activations unaffected | research R-lock | Ruled, not built |
+| G19 Asynchronous registration | A5 | Ruled, planned (PR B) |
+| G20 Impact report | B4 | Ruled, planned (PR B) |
+| G21 Repair writes | ADR-0063 amendment 2026-11-06; #404 | Ruled, not built |
 | W1 Closed body | ADR-0020 D4, D9 | Built |
-| W2 Absent means none | ADR-0053 d10; DIV-203 | Built |
-| W3 Canonical form | ADR-0020 D4 | Built (no spelling normalization, DIV-208) |
+| W2 Absent means none | ADR-0053 d10; DIV-203; A7 | Built; one `sel` form A7 ruled, planned (layer-merge; PR placement pending) |
+| W3 Canonical form | ADR-0020 D4; operator 2026-11-06; `ArtifactSpellings` | Built (spellings normalized; DIV-208 withdrawn) |
 | W4 No empty deny list | ADR-0020 D4 | Built |
-| W5 Ids in the closure | ADR-0020 D9 | Built |
-| W6 Floor refusal, whole document | ADR-0012 d7; ADR-0013 d5; ADR-0020 D9; DIV-204 | Built; relaxed by W26 |
+| W5 Ids in the closure | ADR-0020 D9; `DocumentRules.check` | Built |
+| W6 Floor refusal, whole document | ADR-0012 d7; ADR-0013 d5; ADR-0020 D9; DIV-204; A4 | Partly built; A4 ruled, planned (#399 follow-up); relaxed by W26 |
 | W7 Precondition order | ADR-0020 D6, D9 | Built |
 | W8 Create and replace order | ADR-0020 D3, D6, D9 | Built |
 | W9 One snapshot | activation mission NFR-007 | Built |
-| W10 Path id | activation mission FR-010; R5 | Built |
-| W11 Stale drop | operator ruling R5 | Built |
-| W12 Stale drop scope | R5; FR-017 | Built |
+| W10 Path id | activation mission FR-010; A5; `ActivationWrites.declared` | Built |
+| W11 Stale drop | operator ruling A5; B1, B2 | Partly built; dead pins ruled, planned (#399 follow-up) |
+| W12 Stale drop scope | A5; FR-017; A4, B1 | Partly built (as W6, W11) |
 | W13 Select | ADR-0020 D6; ADR-0013 d3 | Built |
 | W14 Unselect | ADR-0020 D6 | Built |
 | W15 Deactivate | ADR-0013 d3; ADR-0020 D6 | Built |
 | W16 Re-activate | ADR-0013 d3; ADR-0020 D6 | Built |
-| W17 Apply a preset | ADR-0059 D6; ADR-0020 D6 | Built |
+| W17 Apply a preset | ADR-0059 D6; ADR-0020 D6; A7 | Built with the kind gate; A7 ruled, planned (layer-merge; PR placement pending) |
 | W18 A preset walks nothing | ADR-0013 d2 | Built |
-| W19 Cascade relations | ADR-0059 D2, R4; DIV-207 | Built |
-| W20 Reach as a least fixed point | ADR-0059 D2.1, D2.3, D2.4; DIV-206 | Built |
-| W21 Stops and scope | ADR-0013 d4; ADR-0059 R2 | Built |
-| W22 `includeDeactivated` | operator ruling R3 | Built |
-| W23 Deactivate candidates | ADR-0059 R2; finding F2 | Built |
-| W24 The shared-walk keep set | ADR-0059 R2, R4 | Built |
+| W19 Cascade relations | ADR-0059 D2, A4; DIV-207 | Built |
+| W20 Reach as a least fixed point | ADR-0059 D2.1, D2.3, D2.4; DIV-206; A7 Q1 | Built; the step term A7 ruled, planned (layer-merge; PR placement pending) |
+| W21 Stops and scope | ADR-0013 d4; ADR-0059 A2; A7 | Built; `mission_type` in scope A7 ruled, planned (layer-merge; PR placement pending) |
+| W22 `includeDeactivated` | operator ruling A3; B5 | Built; B5 narrowing ruled, planned (#399 follow-up) |
+| W23 Deactivate candidates | ADR-0059 A2; finding F2 | Built |
+| W24 The shared-walk keep set | ADR-0059 A2, A4 | Built |
 | W25 Floor refusal on a write | ADR-0059 D4; DIV-204 | Built; relaxed by W26 |
 | W26 Relaxed required rule | `DM-01M6R3YX23`; research R12 | Ruled, not built |
-| W27 Change report | FR-011 to FR-017; R5 | Built |
+| W27 Change report | FR-011 to FR-017; A5 | Built |
 | W28 Skipped report of a write | ADR-0013 d4; ADR-0020 D6 | Built |
-| W29 No-op | FR-011; R5 | Built |
+| W29 No-op | FR-011; A5 | Built |
 | W30 Compare-and-set | ADR-0020 D6, D9 | Built |
 | W31 Who changes a deny entry | ADR-0013 d2, d3 | Built |
-| W32 Mission types in a write | ADR-0020 amendment 2026-10-31 | Built |
-| E1 Stale ids | ADR-0059 D4; FR-017 | Ruled, not built (the stored document is served: built) |
-| E2 Candidates | ADR-0020 D7; ADR-0053 d10; FR-013 | Planned, not built |
+| W32 Mission types in a write | A7 | Withdrawn; still built, A7 ruled, planned (layer-merge; PR placement pending) |
+| W33 Write warnings | B6, B7 | Ruled, planned (PR C) |
+| W34 Withdrawn keys refused | A7 Q4 | Ruled, not built (PR placement pending) |
+| E1 Stale ids | ADR-0059 D4; FR-017; B1 | Ruled, not built (the stored document is served: built) |
+| E2 Candidates | ADR-0020 D7; ADR-0053 d10; FR-013; A7 | Planned, not built |
 | E3 Base set | ADR-0012 d7; ADR-0020 D7; Q6 | Ruled, not built |
-| E4 Override hiding | `DM-01M6R0TGX3`, `DM-01M6R2X2SW` | Ruled, not built |
-| E5 Requirement | operator 2026-11-06; `DM-01M6R3YTNT` | Ruled, not built |
-| E6 Enhancer pruning | operator 2026-11-06; `DM-01M6R3YTNT` | Ruled, not built |
-| E7 Withdrawn overrides | research R11 | Planned, not built |
+| E4 Override hiding | `DM-01M6R0TGX3`, `DM-01M6R2X2SW`; A3, A6 | Ruled, not built |
+| E5 Requirement | operator 2026-11-06; `DM-01M6R3YTNT`; A2, A3 | Ruled, not built |
+| E6 Enhancer and binding pruning | operator 2026-11-06; `DM-01M6R3YTNT`, `DM-01M6R4W3ZM`; A8; A7 Q1 | Ruled, not built |
+| E7 Withdrawn overrides | research R11; A11 | Planned, not built |
 | E8 The effective set | research R2, R11, R12 | Planned, not built |
-| E9 State and reason | ADR-0020 D7; data model | Planned, not built |
+| E9 State and reason | ADR-0020 D7; data model; A7 | Planned, not built |
 | E10 In force | `DM-01M6R2WPZM` | Ruled, not built |
 | E11 The listing | `DM-01M6R2WPZM`, `DM-01M6R0TNEB`; ADR-0059 D5 | Ruled, not built |
-| E12 Enhancement, both ways | operator ruling R4; FR-015 | Ruled, not built |
-| E13 Floor satisfaction | operator 2026-11-06 (Q6, Q8) | Ruled, not built |
+| E12 Enhancement, both ways | operator ruling A4; FR-015 | Ruled, not built |
+| E13 Floor satisfaction | operator 2026-11-06 (Q6, Q8); `DM-01M6R4W3ZM` (A9) | Ruled, not built |
 | E14 Skipped buckets | `DM-01M6R0TNEB`; FR-017 | Ruled, not built |
 | E15 Graph projection | `DM-01M6R0TNEB`; FR-018 | Ruled, not built |
-| E16 Action context | ADR-0018 D1, D2; FR-019 | Planned, not built |
+| E16 Action context | ADR-0018 D1, D2; FR-019; A7 | Planned, not built |
 | E17 Validators | ADR-0059 D5; FR-020 | Ruled, not built |
 | E18 Read refusals | FR-021 | Ruled, not built |
 | E19 One verified read | NFR-007; `DM-01M6R2X563` | Ruled, not built |
-| E20 Writes stay unmerged | research R2, open item 3 | Planned, not built |
+| E20 Writes walk merged edges | research R2; `DM-01M6R4W1H9` | Ruled, planned (PR C) |
+| E21 Deny entries not applied | B4 | Ruled, planned (PR C) |
 
 Decision ids are shortened to their first twelve characters in the table; the full ids are in the rule text. "Spec",
 "FR", "NFR" and "plan IC" without a mission name are the layer-merge mission's
@@ -895,8 +1080,8 @@ Decision ids are shortened to their first twelve characters in the table; the fu
   [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/),
   [ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/),
   [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) with its
-  [amendment of 2026-11-06](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/#amendment-2026-11-06) (R2 to
-  R5), [ADR-0061](/adr/0061-one-replica-per-deployment/), [ADR-0063](/adr/0063-pack-mutability-policy-file/).
+  [amendment of 2026-11-06](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/#amendment-2026-11-06) (A2 to
+  A5), [ADR-0061](/adr/0061-one-replica-per-deployment/), [ADR-0063](/adr/0063-pack-mutability-policy-file/).
 - Design: [Logical model](/architecture/logical-model/), [Resolution model](/architecture/resolution-model/),
   [Offering and activation](/architecture/offering-and-activation/).
 - Divergences: [Divergence register](/conformance/divergence-register/) (DIV-201 to DIV-208).
@@ -908,4 +1093,8 @@ Decision ids are shortened to their first twelve characters in the table; the fu
   `service/activations`: `DocumentRules`, `CascadeRules`, `StaleIds`, `PresetRules`, `ActivationWrites`,
   `ActivationExclusionService`.
 - Operator rulings of 2026-11-06 not yet in an ADR: registration is a full replacement (planned ADR-0065), the floor
-  and override rules Q6, Q8 and Q9 (planned ADR-0059 amendment R6).
+  and override rules Q6, Q8 and Q9 (planned ADR-0059 amendment A6), and the answers to the ruleset consistency review
+  (`research/ruleset-review-2026-11-06.md` of the layer-merge mission; decisions `DM-01M6RA7FHR…` to `DM-01M6RAA6Y7…`).
+- Code read for the fidelity corrections: `PackCompositionResolver` (`refuseContests`, `refusePresetContests`,
+  `refuseCaseOnlyMatches`, `dependenciesOf`, `dependsOnClosure`), `ClosureQueries.winningPresets`, `RequiredFloor.of`,
+  `ArtifactSpellings`, `DocumentRules.normalize`, `ActivationWrites.declared`, at #399 `1d37ccd9`.
