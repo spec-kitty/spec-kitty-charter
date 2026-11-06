@@ -2,50 +2,6 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://schemas.spec-kitty.ai/charter/packs/mission-type.schema.json",
   "$defs": {
-    "GuidanceKind": {
-      "description": "The artifact kinds a mission type or step may reference: the guidance kinds. A mission type names roles, not agent profiles (ADR-0032).",
-      "enum": [
-        "directive",
-        "tactic",
-        "styleguide",
-        "toolguide",
-        "paradigm",
-        "procedure"
-      ],
-      "title": "GuidanceKind",
-      "type": "string"
-    },
-    "Reference": {
-      "additionalProperties": false,
-      "description": "A reference to guidance, stored verbatim; never minted as a relationship (#189).",
-      "properties": {
-        "type": {
-          "$ref": "#/$defs/GuidanceKind"
-        },
-        "id": {
-          "title": "Id",
-          "type": "string",
-          "minLength": 1,
-          "pattern": "^([a-z0-9][a-z0-9_-]*::)?[A-Za-z][A-Za-z0-9_-]*$"
-        },
-        "when": {
-          "title": "When",
-          "type": "string",
-          "minLength": 1
-        },
-        "reason": {
-          "title": "Reason",
-          "type": "string",
-          "minLength": 1
-        }
-      },
-      "required": [
-        "type",
-        "id"
-      ],
-      "title": "Reference",
-      "type": "object"
-    },
     "Step": {
       "additionalProperties": false,
       "description": "A step of the mission type, a sub-item of steps or on_demand_steps. Its prompt and guidelines are Markdown companions beside the mission-type file.",
@@ -101,15 +57,6 @@
           },
           "minItems": 1,
           "title": "Expected Output Artifacts",
-          "type": "array"
-        },
-        "references": {
-          "description": "The step's action-scoped guidance, in authored order.",
-          "items": {
-            "$ref": "#/$defs/Reference"
-          },
-          "minItems": 1,
-          "title": "References",
           "type": "array"
         }
       },
@@ -291,15 +238,6 @@
       },
       "minItems": 1,
       "title": "Expected Output Artifacts",
-      "type": "array"
-    },
-    "references": {
-      "description": "The type's recipe ingredients, in authored order.",
-      "items": {
-        "$ref": "#/$defs/Reference"
-      },
-      "minItems": 1,
-      "title": "References",
       "type": "array"
     },
     "steps": {

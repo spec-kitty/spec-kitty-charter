@@ -12,8 +12,8 @@ document storage and the nine operations #125 reserved (eight writes and `getAct
 Core cannot ask the charter service what is in force for a project until the service stores that project's
 activation and resolves packs from it ([ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/) D1). Today
 every activation operation answers `501`, and the compose roots at every configured pack. This mission builds the
-activation register and the activated-pack closure. The effective reads (R9, the read-time `enhances` pull and its
-reporting) and the layer merge are the next mission.
+activation register and the activated-pack closure. The effective reads (R9 and their reporting) and the layer merge
+are the next mission.
 
 Rulings this mission builds to:
 
@@ -22,7 +22,9 @@ Rulings this mission builds to:
 - [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) (on `main`) as revised on PR #376 by the operator's
   rulings of 2026-11-05, which supersede this mission's 13:15 discovery decisions on the `enhances` pull and the
   lineage pass-through:
-  - **D2.2:** the pull runs at read time, both ways, and never writes `selected`.
+  - **D2.2:** the pull runs at read time, both ways, and never writes `selected`. *Superseded 2026-11-06 by the
+    operator (ADR-0059 amendment A4):* `enhances` is a cascade relation like the others, walked in its declared
+    direction, and there is no pull at write or at read.
   - **D2.4:** lineage passes `requires` and `scope` only, up the whole ancestor chain.
 - The other discovery and planning decisions under `decisions/`:
   - the nine operations #125 reserved (eight writes and `getActivation`);
@@ -105,14 +107,14 @@ back beta then alpha, alpha's entry carries its resolved dependency on beta, and
 ### User Story 3 - Select and unselect one artifact, with cascade (Priority: P2)
 
 Core selects one artifact. The service adds it to the document's selection and, when asked to cascade, also selects
-what it reaches over the five cascade relations and through profile lineage, skipping and reporting anything denied
+what it reaches over the five cascade relations and `enhances` (amended 2026-11-06, A4) and through profile lineage, skipping and reporting anything denied
 or outside the cascade's kind scope. Unselecting removes it.
 
 **Why this priority**: Per-artifact selection is how a project changes what is in force between full replaces.
 
 **Independent Test**: A fixture where directive D requires tactic T, D requires tactic X, X is denied, and T is
 enhanced by tactic E. Selecting D with cascade selects D and T, reports X as skipped-deactivated, and does not select
-E (the `enhances` pull runs at read, ADR-0059 D2.2).
+E (`enhances` runs from E to T, ADR-0059 amendment A4).
 
 **Acceptance Scenarios**:
 
@@ -122,9 +124,8 @@ E (the `enhances` pull runs at read, ADR-0059 D2.2).
 2. **Given** the same fixture and cascade `["directive"]`, **When** core selects D, **Then** only D is selected and T
    is in `skippedByScope`.
 3. **Given** the same fixture, **When** core selects D with cascade and `includeDeactivated: true`, **Then** X is
-   selected too, and its deny entry, and every deny entry the `enhances` pull would reach from what the walk
-   selects, appear in `cleared` (ADR-0013 D4, ADR-0059 D2.2). With E denied in the starting document, E is in
-   `cleared` and in `applied` (removed from `deactivated`), and **not** in `selected`.
+   selected too and its deny entry appears in `cleared` (ADR-0013 D4). With E denied in the starting document, E
+   stays denied: the walk from D never reaches E (amended 2026-11-06, ADR-0059 amendment A4).
 4. **Given** a profile P that specializes from Q, and Q requires directive R and suggests directive S, **When** core
    selects P with cascade, **Then** P and R are selected, and Q and S are not. When Q is denied, R is not reached and
    is in `unreachedBehindDeactivated`; Q is in `skippedDeactivated`.
@@ -158,7 +159,8 @@ selected directive; the shared one stays selected and is reported in `skippedSha
    in `skippedShared` naming the other directive; only D gets a deny entry; `applied` lists D (added to
    `deactivated`, removed from `selected`) and T (removed from `selected`), and not T2.
 2. **Given** a tactic T3 reached only through D, and an active selected artifact E2 that `enhances` T3, **When** core
-   deactivates D with cascade, **Then** T3 stays and is in `skippedShared` naming E2 (ADR-0059 D2.2).
+   deactivates D with cascade, **Then** T3 stays and is in `skippedShared` naming E2: the shared walk crosses
+   `enhances` from E2 to T3 (ADR-0059 amendment A4).
 3. **Given** a locked or required artifact, **When** core deactivates it, **Then** the service answers `409
    artifact_locked` or `artifact_required` and the revision is unchanged.
 4. **Given** a denied artifact, **When** core reactivates it, **Then** its deny entry is in `cleared` and the id is in
@@ -239,14 +241,14 @@ declares bind every later pack and every activation over that pack.
 | FR-007 | The floor cannot be denied | As core, I want a write that denies a required or locked artifact refused `409 artifact_required` or `artifact_locked`, with `requiredBy` naming the pack, and nothing stored. | High | Open | [build] | no |
 | FR-008 | Absent means none | As core, I want an absent `selected.<kind>`, `activatedKinds` or `missionTypes` to mean nothing in force, the same as `[]`, while both stay distinct on the wire; an absent `packs` means every configured pack. | High | Open | [build] | no |
 | FR-009 | Activation closure read | As core, I want `GET /activations/{id}/packs` to answer the `depends_on` closure rooted at the activation's packs, in dependency order, each entry in the offering's pack shape (`packId`, `descriptorPackId`, level, name, version, resolved `dependsOn`), refusing with the composition codes when the closure cannot compose. | High | Open | [build] | no |
-| FR-010 | Writes see only the closure | As core, I want every write to resolve ids against the activation's closure only: in a body, an id outside it answers `422`; in a path, `404 artifact_not_found`, `mission_type_not_found` or `preset_not_found`; a per-artifact or preset write without `If-Match` answers `428`, and a path kind outside the activatable kinds answers `422 activation_invalid` with a violation at the path. Preconditions are judged before content: `428`, `412` and `400` (malformed validators) come before any `422` or `409`, and a refused precondition reads no packs. | High | Open | [build] | no |
+| FR-010 | Writes see only the closure | As core, I want every write to resolve ids against the activation's closure only: in a body, an id outside it answers `422`; in a path, `404 artifact_not_found`, `mission_type_not_found` or `preset_not_found`, except that an unselect or a re-activate of an id the stored list it removes from still names proceeds and drops it as stale (FR-017); a per-artifact or preset write without `If-Match` answers `428`, and a path kind outside the activatable kinds answers `422 activation_invalid` with a violation at the path. Preconditions are judged before content: `428`, `412` and `400` (malformed validators) come before any `422` or `409`, and a refused precondition reads no packs. | High | Open | [build] | no |
 | FR-011 | Select and unselect | As core, I want `PUT`/`DELETE …/selections/{kind}/{artifactId}` to add or remove one id from `selected` (or `missionTypes` for kind `mission_type`), clearing the id's own deny entry on select, and answer an `ActivationChange`; `applied` lists every id the write added to or removed from `selected`, `deactivated` or `missionTypes`, and `cleared` the deny entries it removed (the contract's `ActivationChange` rule); a no-op answers `200` with the same revision and empty `applied` and `cleared`. | High | Open | [build] | no |
-| FR-012 | Cascade on select | As core, I want a cascading select to walk `requires`, `suggests`, `refines`, `scope` and `instantiates` forward and unbounded, follow `<pack>::` targets, add what it reaches to `selected`, stop at denied artifacts and report them in `skippedDeactivated` (with `viaRequires` and `requiredBy`), report what lies only behind them in `unreachedBehindDeactivated`, and report out-of-scope kinds in `skippedByScope`; `["all"]` cannot be mixed with kinds (`422`). | High | Open | [build] | no |
-| FR-013 | Include deactivated | As core, I want `includeDeactivated: true` to take denied artifacts back into the cascade, clearing their deny entries and every deny entry the read-time `enhances` pull would reach from what the walk selects (both directions: enhancers of a selected artifact and targets of a selected enhancer, transitively over `enhances` only; the write's own cascade still walks only the five relations), all reported in `cleared`; the write never adds a pulled artifact to `selected` (ADR-0059 D2.2). | Medium | Open | [build] | no |
+| FR-012 | Cascade on select | As core, I want a cascading select to walk `requires`, `suggests`, `refines`, `scope`, `instantiates` and `enhances` (amended 2026-11-06, operator ruling, ADR-0059 amendment A4: `enhances` in its declared direction, from the enhancer to its target) forward and unbounded, follow `<pack>::` targets, add what it reaches to `selected`, stop at denied artifacts and report them in `skippedDeactivated` (with `viaRequires` and `requiredBy`), report what lies only behind them in `unreachedBehindDeactivated`, and report out-of-scope kinds in `skippedByScope`; `["all"]` cannot be mixed with kinds (`422`). | High | Open | [build] | no |
+| FR-013 | Include deactivated | As core, I want `includeDeactivated: true` to take denied artifacts of the cascade's kinds back into the cascade, clearing the deny entries the walk passes through within its scope (what it reaches in scope, each lineage ancestor of a kind in scope, and the target), all reported in `cleared`; a denied artifact outside the scope stops the walk, keeps its deny entry and is reported as without `includeDeactivated` (amended 2026-11-06, operator ruling, ADR-0059 amendment A3). There is no `enhances` pull: `enhances` is one of the cascade's relations, walked in its declared direction (amended 2026-11-06, operator ruling, ADR-0059 amendment A4, superseding the write-time pull of D2.2). | Medium | Open | [build] | no |
 | FR-014 | Lineage pass-through | As core, I want the cascade to pass through every `specializes_from` ancestor of a profile it reaches, following only `requires` and `scope` from each ancestor, without putting any ancestor in force; a denied ancestor stops the pass-through and is reported. | Medium | Open | [build] | no |
-| FR-015 | Deactivate and reactivate | As core, I want `PUT …/exclusions/{kind}/{artifactId}` to add the id to `deactivated` and unselect it, and with cascade to unselect what only it reached over the five relations, keeping and reporting in `skippedShared` anything another active artifact reaches or an active enhancer references; only the named id gets a deny entry. `DELETE` removes the deny entry, reported in `cleared` and in `applied`. `applied` lists every id the write added to or removed from `selected`, `deactivated` or `missionTypes`, and `cleared` the deny entries it removed (the contract's `ActivationChange` rule); a no-op answers `200` with the same revision and empty `applied` and `cleared`. | High | Open | [build] | no |
+| FR-015 | Deactivate and reactivate | As core, I want `PUT …/exclusions/{kind}/{artifactId}` to add the id to `deactivated` and unselect it, and with cascade to unselect what only it reached over the cascade's relations (`enhances` included, amended 2026-11-06, A4) and the `specializes_from` lineage, walked as a select walks it but stopping at no deny entry, so it crosses a denied ancestor a select would stop at, as it crosses a denied artifact on the forward relations (amended 2026-11-06, operator ruling, ADR-0059 amendment A2: activate-then-deactivate round-trips), keeping and reporting in `skippedShared` anything another active artifact reaches over those relations (an active enhancer's target included); only the named id gets a deny entry. `DELETE` removes the deny entry, reported in `cleared` and in `applied`. `applied` lists every id the write added to or removed from `selected`, `deactivated` or `missionTypes`, and `cleared` the deny entries it removed (the contract's `ActivationChange` rule); a no-op answers `200` with the same revision and empty `applied` and `cleared`. | High | Open | [build] | no |
 | FR-016 | Apply a preset | As core, I want `PUT …/presets/{presetId}` to replace each key the preset lists (`activatedKinds` and `missionTypes` included), leave other keys untouched, and clear matching deny entries only with `force`. A preset lists a key when its file holds at least one member for it; a key with an empty list counts as not listed (default; research.md open review item 4). `applied` lists every id the write added to or removed from `selected`, `deactivated` or `missionTypes`, and `cleared` the deny entries it removed (the contract's `ActivationChange` rule); a no-op answers `200` with the same revision and empty `applied` and `cleared`; `activatedKinds` changes are not reported in `applied` (a kind is not an `ArtifactReference`). | Medium | Open | [build] | no |
-| FR-017 | Stale stored documents | As core, I want a stored document that names an id the closure no longer holds to be served unchanged by `GET`, and a write that still carries it refused `422`, so that a pack upgrade never breaks a read. | Medium | Open | [build] | no |
+| FR-017 | Stale stored documents | As core, I want a stored document that names an id the closure no longer holds to be served unchanged by `GET`, and a `PUT` or create that still carries it refused `422`, so that a pack upgrade never breaks a read. A per-artifact or preset write instead drops every such id from `selected`, `deactivated` and `missionTypes` first and reports them in `ActivationChange.dropped`; a write that only drops is not a no-op, and `applied` and `cleared` are measured after the drop, so a dropped id appears only in `dropped` (amended 2026-11-06, operator ruling, ADR-0059 amendment A5). An unselect or a re-activate whose path names a stale id still in the stored `selected` (or `missionTypes`) or `deactivated` respectively proceeds: the id is dropped and reported in `dropped`, with a new revision. A select or deactivate of such an id, and an unselect or re-activate of an id in neither the closure nor that stored list, is still `404` (FR-010). An unknown pack or a pinned version the closure does not hold is still `422`. | Medium | Open | [build] | no |
 | FR-018 | Activation answer without offering data | As core, I want the `Activation` answer to carry no `summary` or `governanceFingerprint`, with both moved to an effective read in the contract, so that its bytes depend only on the stored document. | Medium | Open | [build] | no |
 | FR-019 | Durable storage | As core, I want documents stored behind a repository port with an in-memory adapter and a file adapter under `<config-root>/activations/<encoded id>/activation.json`, where the directory name is a reversible, case-safe encoding of the id,, so that a restart loses nothing and tests run without disk. | High | Open | [build] | no |
 | FR-020 | The offering is unchanged | As core, I want `/offering` and its compose refusals to keep answering as today (every configured pack is a root). | Medium | Open | [ratchet] | yes — paired with US2 AS1 and AS2 (FR-009) on the same fixtures, which must exclude gamma |

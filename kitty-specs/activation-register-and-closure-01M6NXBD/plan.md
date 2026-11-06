@@ -234,7 +234,8 @@ The concerns are listed in dependency order. A concern belongs to PR **A** or PR
 - **One traversal.** `Reachability.reach(snapshot, starts, relations, stop, lineage)` is built on `GraphWalk` over an
   edge-backed `ComponentResolver`. It returns the reached nodes with the relation and the predecessor, and the
   nodes it stopped at.
-- **Enhancer lookup.** `enhancersOf(snapshot, urns)` serves the deny-clearing and shared checks.
+- **Enhancer lookup.** `enhancersOf(snapshot, urns)` serves the deny-clearing and shared checks. *Removed 2026-11-06
+  (ADR-0059 amendment A4): `enhances` is walked as a cascade relation, so neither check needs a lookup of its own.*
 - **No second walker anywhere.**
 - **Requirements:** enables FR-012 to FR-015. PR #377 touches `DomainRepositoryService`.
 

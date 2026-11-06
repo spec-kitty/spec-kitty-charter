@@ -3,8 +3,8 @@ description: >-
   The links of a resource: an open map from a relation key in the relation table of
   docs/development/hypermedia-hateoas.md to a Link. Clients must tolerate a key they do not know.
   No relation points at an operation that is not built (ADR-0019 D3, ADR-0020 D8). self is always the
-  answered resource: the activation for an Activation or an ActivationChange, the report, page, graph or
-  context for an effective read.
+  answered resource: the activation for an Activation, the report, page, graph or context for an effective
+  read. An ActivationChange answers a write whose path has no GET, so it has no self; its up is the activation.
 type: object
 additionalProperties:
   $ref: Link.yaml

@@ -4,7 +4,9 @@ files:
   - Forbidden.yaml
   - OfferingUnreadable.yaml
   - Unauthorized.yaml
+  - ActivationArtifactNotFound.yaml
   - ActivationInvalid.yaml
+  - ActivationPresetNotFound.yaml
   - ActivationNotFound.yaml
   - ArtifactPolicyRefused.yaml
   - NotImplemented.yaml

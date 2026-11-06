@@ -2,7 +2,7 @@
 title: "ADR-0037: A kind-keyed pack registry and the whole-pack seam"
 description: The Pack aggregate and pack storage key their artifacts by kind, so a new kind only registers itself; a whole pack is loaded from and written to a directory through that registry.
 doc_status: active
-updated: 2026-11-02T00:00:00Z
+updated: 2026-11-05T00:00:00Z
 decision_status: 'Accepted; extended in part by ADR-0039 and ADR-0040 (2026-10-27) and ADR-0042 (2026-10-28); decision 6 reversed again by ADR-0044 (2026-10-30, accepted 2026-10-31); decision 4 superseded in part by ADR-0052 and the #190 amendment (2026-10-27) by ADR-0049 (2026-11-02)'
 decision_date: '2026-10-27'
 type: ADR
@@ -224,6 +224,8 @@ nothing about how a new kind is shaped.
      gone.)*
    - The CRG documents stay outside the aggregate, so the domain's graph merge is unchanged; whether
      it becomes set-based is decided with the authority of an edge (open on #189).
+     *(Edge authority decided by [ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) ([#240](https://github.com/spec-kitty/spec-kitty-charter/issues/240)), 2026-11-05: the graph documents are an
+     edge's only source. Whether their merge is set-based is not ruled there.)*
 
 ### Amendment 2026-10-27 (#191): a binding names its schema
 

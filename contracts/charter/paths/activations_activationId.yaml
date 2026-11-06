@@ -58,7 +58,9 @@ put:
     declared pattern. A body over 1 MiB, an unknown member or a null is 422 activation_invalid. A
     stored document an offering change made stale is served on read and refused on write (ADR-0059 D4): a write
     that still names an id the closure no longer holds is 422, and one that denies an id now required or locked is
-    409, whatever the stored document held. A storage 500 may follow a committed change; read before retrying.
+    409, whatever the stored document held. A per-artifact or preset write instead drops the stored ids the closure
+    no longer holds and reports them in its dropped (ADR-0059 amendment of 2026-11-06); this write never drops an
+    id the client sent. A storage 500 may follow a committed change; read before retrying.
   tags:
   - Activation
   parameters:

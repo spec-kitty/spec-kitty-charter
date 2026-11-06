@@ -3,13 +3,17 @@ package ai.speckitty.charter.deployable;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ai.speckitty.charter.activations.application.ActivationExclusionService;
 import ai.speckitty.charter.activations.application.ActivationIdMint;
+import ai.speckitty.charter.activations.application.ActivationPresetService;
+import ai.speckitty.charter.activations.application.ActivationSelectionService;
 import ai.speckitty.charter.activations.application.ActivationService;
+import ai.speckitty.charter.activations.application.ActivationWrites;
 import ai.speckitty.charter.activations.application.AvailablePacks;
 import ai.speckitty.charter.activations.domain.ActivationRepository;
+import ai.speckitty.charter.activations.infra.api.ActivationChangeMapper;
 import ai.speckitty.charter.activations.infra.api.ActivationController;
 import ai.speckitty.charter.activations.infra.api.ActivationMapper;
 import ai.speckitty.charter.api.ActivationApi;
@@ -28,18 +32,30 @@ import org.springframework.web.server.ResponseStatusException;
 /**
  * A mark on a controller method that overrides a generated {@link ActivationApi} method is honoured (ADR-0020 D8):
  * Spring routes the request to the controller's own method, whose {@link ReservedOperation} the interceptor reads,
- * although the interface method that carries the mapping is unmarked. The interceptor answers before the body is
- * bound, so a body the operation would refuse is answered {@code 501}, not {@code 400}.
+ * although the interface method that carries the mapping is unmarked. The interceptor answers before the request is
+ * bound, so a request the operation would refuse is answered {@code 501}, not {@code 400}. No reserved operation takes
+ * a body any more ({@code ReservedOperationCoverageTest.noReservedOperationTakesABody}), so the request the binding
+ * would refuse is a query parameter of the wrong type.
  */
 class ReservedActivationOperationTest {
 
-    private static final String SELECTION = "/api/v1/activations/a1/selections/directive/D1";
+    /** The reserved effective context, with a depth that cannot be bound to its integer parameter. */
+    private static final String UNBINDABLE_CONTEXT =
+            "/api/v1/activations/a1/mission-types/software-dev/actions/implement/context?depth=deep";
 
     /** A controller whose use cases a reserved operation never reaches: every port they use fails when called. */
     private static ActivationController controller() {
-        ActivationService service = new ActivationService(
-                untouched(ActivationRepository.class), untouched(AvailablePacks.class), new ActivationIdMint());
-        return new ActivationController(service, new ActivationMapper("/api/v1"));
+        ActivationRepository repository = untouched(ActivationRepository.class);
+        AvailablePacks packs = untouched(AvailablePacks.class);
+        ActivationWrites writes = new ActivationWrites(repository, packs);
+        ActivationMapper mapper = new ActivationMapper("/api/v1");
+        return new ActivationController(
+                new ActivationService(repository, packs, new ActivationIdMint()),
+                new ActivationSelectionService(writes),
+                new ActivationExclusionService(writes),
+                new ActivationPresetService(writes),
+                mapper,
+                new ActivationChangeMapper(mapper));
     }
 
     /** A port that fails the test when any of its methods is called: a reserved operation reaches no use case. */
@@ -83,12 +99,8 @@ class ReservedActivationOperationTest {
     }
 
     @Test
-    void aReservedActivationOperationAnswers501BeforeItsBodyIsRead() throws Exception {
-        mvc.perform(put(SELECTION)
-                        .header("If-Match", "*")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{ not json"))
-                .andExpect(status().isNotImplemented());
+    void aReservedActivationOperationAnswers501BeforeItsRequestIsBound() throws Exception {
+        mvc.perform(get(UNBINDABLE_CONTEXT).accept(MediaType.APPLICATION_JSON)).andExpect(status().isNotImplemented());
     }
 
     @Test
@@ -98,13 +110,10 @@ class ReservedActivationOperationTest {
     }
 
     @Test
-    void withoutTheInterceptorTheSameBodyIsRefusedWhenItIsBound() throws Exception {
+    void withoutTheInterceptorTheSameRequestIsRefusedWhenItIsBound() throws Exception {
         MockMvcBuilders.standaloneSetup(controller())
                 .build()
-                .perform(put(SELECTION)
-                        .header("If-Match", "*")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{ not json"))
+                .perform(get(UNBINDABLE_CONTEXT).accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
     }
 }

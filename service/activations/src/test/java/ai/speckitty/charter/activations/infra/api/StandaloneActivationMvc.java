@@ -1,7 +1,12 @@
 package ai.speckitty.charter.activations.infra.api;
 
+import ai.speckitty.charter.activations.application.ActivationExclusionService;
 import ai.speckitty.charter.activations.application.ActivationIdMint;
+import ai.speckitty.charter.activations.application.ActivationPresetService;
+import ai.speckitty.charter.activations.application.ActivationSelectionService;
 import ai.speckitty.charter.activations.application.ActivationService;
+import ai.speckitty.charter.activations.application.ActivationWrites;
+import ai.speckitty.charter.activations.application.AvailablePacks;
 import ai.speckitty.charter.activations.application.FakeAvailablePacks;
 import ai.speckitty.charter.activations.domain.ClosureSnapshots;
 import ai.speckitty.charter.activations.infra.storage.InMemoryActivationRepository;
@@ -41,9 +46,7 @@ final class StandaloneActivationMvc {
         for (ArtifactKind kind : ArtifactKind.values()) {
             closure.held(kind, IDS);
         }
-        ActivationController controller = new ActivationController(
-                new ActivationService(repository, new FakeAvailablePacks(closure.build()), new ActivationIdMint()),
-                new ActivationMapper("/api/v1"));
+        ActivationController controller = controller(repository, new FakeAvailablePacks(closure.build()));
         RefusalHandler refusals = new RefusalHandler();
         JsonMapper json = JsonMapper.builder()
                 .addModule(new ActivationJson().activationJsonModule())
@@ -51,18 +54,45 @@ final class StandaloneActivationMvc {
                 .build();
         return MockMvcBuilders.standaloneSetup(validated(controller))
                 .setControllerAdvice(
-                        new ActivationBodyAdvice(), new ActivationProblems(refusals), refusals, new ProblemHandler())
+                        new ActivationBodyAdvice(validator()),
+                        new ActivationProblems(refusals),
+                        refusals,
+                        new ProblemHandler())
                 .setMessageConverters(new JacksonJsonHttpMessageConverter(json))
                 .build();
     }
 
+    /**
+     * A controller over a register and packs, wired as Spring wires it.
+     *
+     * @param repository the register's store
+     * @param packs the packs
+     * @return the controller
+     */
+    static ActivationController controller(InMemoryActivationRepository repository, AvailablePacks packs) {
+        ActivationWrites writes = new ActivationWrites(repository, packs);
+        ActivationMapper mapper = new ActivationMapper("/api/v1");
+        return new ActivationController(
+                new ActivationService(repository, packs, new ActivationIdMint()),
+                new ActivationSelectionService(writes),
+                new ActivationExclusionService(writes),
+                new ActivationPresetService(writes),
+                mapper,
+                new ActivationChangeMapper(mapper));
+    }
+
     /** The controller behind the method validation Spring Boot applies to the {@code @Validated} interface. */
     private static Object validated(ActivationController controller) {
-        LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
-        validator.afterPropertiesSet();
         ProxyFactory proxy = new ProxyFactory(controller);
         proxy.setProxyTargetClass(true);
-        proxy.addAdvice(new MethodValidationInterceptor((jakarta.validation.Validator) validator));
+        proxy.addAdvice(new MethodValidationInterceptor(validator()));
         return proxy.getProxy();
+    }
+
+    /** The bean validator Spring Boot configures. */
+    private static jakarta.validation.Validator validator() {
+        LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
+        validator.afterPropertiesSet();
+        return validator;
     }
 }

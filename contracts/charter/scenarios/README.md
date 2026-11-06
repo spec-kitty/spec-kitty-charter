@@ -109,8 +109,8 @@ Keep it small; add a step only when a scenario cannot be written without it.
   If-Match "<value>" and the body:`, `When I remember the ETag` and `When I PUT "<path>" with the remembered ETag and the
   body:` — a registration with a JSON doc string, and its `If-Match` precondition. `When I send <method> "<path>" as
   JSON with the body:` — the same with any method, for an outline whose examples differ in the method.
-- `Then the artifact in the response body has <n> relationship(s)` and `Then a relationship of the artifact in the
-  response body points to "<urn>"` — the `relationships` of the member an `Artifact` envelope's `kind` names.
+- `Then the field at "<pointer>" is absent` — nothing stands at the JSON Pointer, for example a member a shape no
+  longer carries (an artifact's `relationships`, ADR-0064).
 - `When I PUT "<path>" with the body, its "<field>" padded to <n> bytes:` — the same PUT, after appending `a` to that
   top-level string field of the JSON doc string until it is exactly `<n>` bytes of UTF-8; for a size cap no doc string
   can spell out.
@@ -126,6 +126,16 @@ Keep it small; add a step only when a scenario cannot be written without it.
 - `When I PUT "<path>" with the header "<name>": "<value>" and the body:` and `When I PUT "<path>" with the headers
   "<name>": "<value>" and "<name>": "<value>" and the body:` — a JSON `PUT` with those extra headers, for the
   conditional writes (`If-None-Match`, both validators at once).
+- `When I PUT "<path>" with the stored ETag and the body:` and `When I DELETE "<path>" with the stored ETag` — a JSON
+  `PUT`, or a `DELETE`, whose `If-Match` is the `ETag` the last `Given the activation "<id>" holds:` stored; for the
+  per-artifact and preset writes, which require `If-Match`.
+- `Then the response header "<name>" is the stored ETag` and `... differs from the stored ETag` — the header equals,
+  or is present and differs from, that stored `ETag`: a write that changed nothing, or one that stored a new revision.
+- `Then the field at "<json-pointer>" holds exactly the ids:` followed by a doc string, one id per line — the member
+  is an array whose ids are those lines, in order: a string item as it is, and an item with a `kind` and an
+  `artifactId` (an `ArtifactReference`, a skipped entry) as `<kind>:<artifactId>`.
+- `Then the response body has no field at "<json-pointer>"` — the pointer names no member of the body: a key a write
+  dropped, such as an emptied deny list.
 - `Then the field at "<json-pointer>" holds exactly <n> item(s)` — the member is an array of exactly that size; `Then
   the answer holds exactly <n> packs` is the same for `/packs`.
 - `Then the response header "<name>" is the quoted field "<json-pointer>"` — the header is the string member that the
@@ -197,8 +207,14 @@ that calls it. A run that selects only some scenarios reports the others' operat
 - `activation-register-guards.feature`: the guards of the register: the worktree token (401), a browser request
   (403), and the preconditions judged before the document (412 on a stale `If-Match`, on `If-None-Match: *` over a
   stored id and on an `If-Match` over an id nothing is stored under).
-- `activations.feature`: the activation operations still reserved (ADR-0020 D8), the five per-artifact and preset
-  writes and the four effective reads: one 501 pin per operation, each removed when its operation is built.
+- `activation-selections.feature`: the per-artifact writes (ADR-0020 D6, ADR-0059 D2, #291): select and unselect
+  one artifact or mission type under `…/selections/{kind}/{artifactId}`, deactivate and re-activate one under
+  `…/exclusions/{kind}/{artifactId}`, the cascade (`enhances` among its relations), the `ActivationChange` each answers, their
+  preconditions (`428`, `412`, `400`) and their refusals.
+- `activation-presets.feature`: applying a preset, `PUT …/presets/{presetId}` (ADR-0059 D6, #291): the keys it
+  replaces, `force`, `preset_not_found` and a stale preset member.
+- `activations.feature`: the activation operations still reserved (ADR-0020 D8), the four effective reads: one 501
+  pin per operation, each removed when its operation is built.
 - `relationships.feature`: a registered relationship from a mission type the pack holds, and the refusal of one it
   does not hold (#194, ADR-0044).
 - `composition.feature`: the compose of the configured packs' `depends_on` closure on `GET /offering`, in the

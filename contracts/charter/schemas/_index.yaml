@@ -24,7 +24,6 @@ files:
   - Sha256Digest.yaml
   - Slug.yaml
   - Tactic.yaml
-  - TacticReference.yaml
   - TacticStep.yaml
   - Urn.yaml
   - ActivatableKind.yaml

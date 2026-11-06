@@ -1,6 +1,10 @@
 package ai.speckitty.charter.activations.infra.api;
 
+import ai.speckitty.charter.activations.application.ActivationExclusionService;
+import ai.speckitty.charter.activations.application.ActivationPresetService;
+import ai.speckitty.charter.activations.application.ActivationSelectionService;
 import ai.speckitty.charter.activations.application.ActivationService;
+import ai.speckitty.charter.activations.application.ActivationWrites;
 import ai.speckitty.charter.activations.domain.ActivationId;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.activations.domain.StoredActivation;
@@ -19,7 +23,9 @@ import ai.speckitty.charter.api.model.SelectionRequest;
 import ai.speckitty.charter.kernel.transport.EntityTags;
 import ai.speckitty.charter.kernel.transport.ReservedOperation;
 import java.net.URI;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,9 +38,15 @@ import org.springframework.web.server.ResponseStatusException;
 /**
  * The activation set (ADR-0020). The register is built: {@code createActivation}, {@code getActivation},
  * {@code replaceActivation}, {@code deleteActivation} and the closure read {@code listActivationPacks} answer through
- * {@link ActivationService}, and a refusal it throws is answered by the problem handlers. The other nine operations
- * stay reserved (ADR-0020 D8): each carries its own {@link ReservedOperation} mark, so an operation is built by removing
- * its mark alone. The composition root's {@code ReservedOperationInterceptor} answers a marked one {@code 501} before
+ * {@link ActivationService}; the per-artifact writes ({@code selectActivationArtifact},
+ * {@code unselectActivationArtifact}, {@code deactivateActivationArtifact} and {@code reactivateActivationArtifact}) and
+ * the preset write ({@code applyActivationPreset}) through {@link ActivationSelectionService},
+ * {@link ActivationExclusionService} and {@link ActivationPresetService}, each answering the {@code ActivationChange}
+ * with the stored revision as its {@code ETag}. A refusal they throw is answered by the problem handlers. The faults
+ * {@link ActivationBodyAdvice} found in a write's body ({@link DeferredBody}) go to the use case, which refuses them
+ * once the preconditions hold. The four
+ * effective reads stay reserved (ADR-0020 D8): each carries its own {@link ReservedOperation} mark,
+ * so an operation is built by removing its mark alone. The composition root's {@code ReservedOperationInterceptor} answers a marked one {@code 501} before
  * the request is bound; each throws the same answer in case one is reached. A marked method reads and stores nothing
  * ({@code HexagonalArchitectureTest}).
  *
@@ -50,25 +62,44 @@ import org.springframework.web.server.ResponseStatusException;
 public class ActivationController implements ActivationApi {
 
     private final ActivationService activations;
+    private final ActivationSelectionService selections;
+    private final ActivationExclusionService exclusions;
+    private final ActivationPresetService presets;
     private final ActivationMapper mapper;
+    private final ActivationChangeMapper changes;
 
     /**
-     * A controller over the activation register.
+     * A controller over the activation register and its per-artifact writes.
      *
      * @param activations the register's use cases
-     * @param mapper the wire mapper
+     * @param selections the select and the unselect
+     * @param exclusions the deactivate and the re-activate
+     * @param presets the preset write
+     * @param mapper the document's wire mapper
+     * @param changes the per-artifact writes' wire mapper
      */
     @Autowired
-    public ActivationController(ActivationService activations, ActivationMapper mapper) {
+    public ActivationController(
+            ActivationService activations,
+            ActivationSelectionService selections,
+            ActivationExclusionService exclusions,
+            ActivationPresetService presets,
+            ActivationMapper mapper,
+            ActivationChangeMapper changes) {
         this.activations = Objects.requireNonNull(activations, "activations");
+        this.selections = Objects.requireNonNull(selections, "selections");
+        this.exclusions = Objects.requireNonNull(exclusions, "exclusions");
+        this.presets = Objects.requireNonNull(presets, "presets");
         this.mapper = Objects.requireNonNull(mapper, "mapper");
+        this.changes = Objects.requireNonNull(changes, "changes");
     }
 
     @Override
-    @ReservedOperation
     public ResponseEntity<ActivationChange> applyActivationPreset(
             String activationId, String presetId, PresetApplication presetApplication, @Nullable String ifMatch) {
-        throw notBuilt();
+        boolean force = Boolean.TRUE.equals(presetApplication.getForce());
+        return changed(
+                presets.apply(new ActivationId(activationId), presetId, force, DeferredBody.recorded(), ifMatch));
     }
 
     @Override
@@ -78,14 +109,16 @@ public class ActivationController implements ActivationApi {
     }
 
     @Override
-    @ReservedOperation
     public ResponseEntity<ActivationChange> deactivateActivationArtifact(
             String activationId,
             String kind,
             String artifactId,
             ExclusionRequest exclusionRequest,
             @Nullable String ifMatch) {
-        throw notBuilt();
+        Optional<List<String>> cascade =
+                Optional.ofNullable(exclusionRequest.getCascade()).map(List::copyOf);
+        return changed(exclusions.deactivate(
+                new ActivationId(activationId), kind, artifactId, cascade, DeferredBody.recorded(), ifMatch));
     }
 
     @Override
@@ -138,10 +171,9 @@ public class ActivationController implements ActivationApi {
     }
 
     @Override
-    @ReservedOperation
     public ResponseEntity<ActivationChange> reactivateActivationArtifact(
             String activationId, String kind, String artifactId, @Nullable String ifMatch) {
-        throw notBuilt();
+        return changed(exclusions.reactivate(new ActivationId(activationId), kind, artifactId, ifMatch));
     }
 
     @Override
@@ -161,21 +193,36 @@ public class ActivationController implements ActivationApi {
     }
 
     @Override
-    @ReservedOperation
     public ResponseEntity<ActivationChange> selectActivationArtifact(
             String activationId,
             String kind,
             String artifactId,
             SelectionRequest selectionRequest,
             @Nullable String ifMatch) {
-        throw notBuilt();
+        Optional<List<String>> cascade =
+                Optional.ofNullable(selectionRequest.getCascade()).map(List::copyOf);
+        boolean includeDeactivated = Boolean.TRUE.equals(selectionRequest.getIncludeDeactivated());
+        return changed(selections.select(
+                new ActivationId(activationId),
+                kind,
+                artifactId,
+                cascade,
+                includeDeactivated,
+                DeferredBody.recorded(),
+                ifMatch));
     }
 
     @Override
-    @ReservedOperation
     public ResponseEntity<ActivationChange> unselectActivationArtifact(
             String activationId, String kind, String artifactId, @Nullable String ifMatch) {
-        throw notBuilt();
+        return changed(selections.unselect(new ActivationId(activationId), kind, artifactId, ifMatch));
+    }
+
+    /** A per-artifact write's answer: {@code 200} with the stored revision as the {@code ETag}, a no-op's unchanged. */
+    private ResponseEntity<ActivationChange> changed(ActivationWrites.Outcome outcome) {
+        return ResponseEntity.ok()
+                .eTag(EntityTags.quote(outcome.stored().revision().token()))
+                .body(changes.toChange(outcome));
     }
 
     private ResponseEntity<Activation> created(StoredActivation stored) {

@@ -1,12 +1,13 @@
 package ai.speckitty.charter.packs.domain;
 
+import ai.speckitty.charter.kernel.domain.Relationship;
 import java.util.List;
 import java.util.Objects;
 
 /**
  * What the compose needs to know about one pack, read from one assembly of it: the artifacts its graph documents say it
- * changes, the artifacts it holds, the references it writes, the mutability policy it declares and the activation presets
- * it holds.
+ * changes, the artifacts it holds, the references it writes, the mutability policy it declares, the activation presets
+ * it holds and the typed edges it writes.
  *
  * @param changed the distinct targets of its {@code enhances} and {@code overrides} relations, in first-seen order
  * @param defined the artifacts it holds, as bare URNs ({@code <kind>:<id>}), in a stable order
@@ -15,13 +16,18 @@ import java.util.Objects;
  *     names none
  * @param presets the activation presets the pack holds ({@link Pack#presets()}), from the same assembly; empty when it
  *     holds none
+ * @param edges every typed edge the pack writes, as written: the kernel {@link Relationship} with its relation type and
+ *     any {@code <pack>::} qualifier of either endpoint, from its graph documents, its components' derived relationships and its
+ *     registered relationship shard, each (from, relation, to, qualifiers) once, in first-seen order; empty when it
+ *     writes none
  */
 public record PackCompositionFacts(
         List<String> changed,
         List<String> defined,
         List<String> references,
         MutabilityPolicySource policy,
-        List<Preset> presets) {
+        List<Preset> presets,
+        List<Relationship> edges) {
 
     /** A pack that changes, holds and writes nothing, declares no policy and holds no preset. */
     public static final PackCompositionFacts NONE = new PackCompositionFacts(List.of(), List.of(), List.of());
@@ -34,6 +40,7 @@ public record PackCompositionFacts(
      * @param references the references it writes
      * @param policy the mutability policy it declares
      * @param presets the presets it holds
+     * @param edges the typed edges it writes
      */
     public PackCompositionFacts {
         Objects.requireNonNull(changed, "changed");
@@ -41,10 +48,30 @@ public record PackCompositionFacts(
         Objects.requireNonNull(references, "references");
         Objects.requireNonNull(policy, "policy");
         Objects.requireNonNull(presets, "presets");
+        Objects.requireNonNull(edges, "edges");
         changed = List.copyOf(changed);
         defined = List.copyOf(defined);
         references = List.copyOf(references);
         presets = List.copyOf(presets);
+        edges = List.copyOf(edges);
+    }
+
+    /**
+     * The facts of a pack that writes no typed edge.
+     *
+     * @param changed the artifacts it changes
+     * @param defined the artifacts it holds
+     * @param references the references it writes
+     * @param policy the mutability policy it declares
+     * @param presets the presets it holds
+     */
+    public PackCompositionFacts(
+            List<String> changed,
+            List<String> defined,
+            List<String> references,
+            MutabilityPolicySource policy,
+            List<Preset> presets) {
+        this(changed, defined, references, policy, presets, List.of());
     }
 
     /**

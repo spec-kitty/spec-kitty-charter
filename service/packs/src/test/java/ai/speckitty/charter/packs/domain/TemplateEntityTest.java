@@ -38,7 +38,7 @@ class TemplateEntityTest {
         assertThat(template.label()).isEqualTo("meeting-minutes.md");
         assertThat(template.description()).isEmpty();
         assertThat(template.schemaVersion()).isEmpty();
-        assertThat(template.relationships()).isEmpty();
+        assertThat(template.derivedRelationships()).isEmpty();
         assertThat(template.urn().toString()).isEqualTo("template:writing/meeting-minutes.md");
     }
 

@@ -1,8 +1,11 @@
 package ai.speckitty.charter.deployable;
 
 import ai.speckitty.charter.activations.application.AvailablePacks;
+import ai.speckitty.charter.activations.application.PacksSession;
 import ai.speckitty.charter.activations.domain.ActivationDocument;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
+import ai.speckitty.charter.activations.domain.Reach;
+import ai.speckitty.charter.activations.domain.ReachPlan;
 import ai.speckitty.charter.activations.infra.storage.InMemoryActivationRepository;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import java.util.EnumMap;
@@ -61,9 +64,20 @@ public class ActivationTestWiring {
         private volatile String fingerprint = "sha256:fixture";
 
         @Override
-        public ClosureSnapshot snapshot(Optional<List<String>> packIds) {
+        public PacksSession session(Optional<List<String>> packIds) {
             reads.incrementAndGet();
-            return fixture(fingerprint);
+            ClosureSnapshot snapshot = fixture(fingerprint);
+            return new PacksSession() {
+                @Override
+                public ClosureSnapshot snapshot() {
+                    return snapshot;
+                }
+
+                @Override
+                public Reach reach(ReachPlan plan) {
+                    return Reach.empty();
+                }
+            };
         }
 
         /**

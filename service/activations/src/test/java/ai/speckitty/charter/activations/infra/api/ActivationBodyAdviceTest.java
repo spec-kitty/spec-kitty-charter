@@ -134,6 +134,20 @@ class ActivationBodyAdviceTest {
     }
 
     @Test
+    void aScalarOfTheWrongTypeIsNeverCoercedOnEitherDocumentWrite() throws Exception {
+        refused(putBody("{\"schemaVersion\": true}"), "/schemaVersion", "unreadable_body");
+        refused(putBody("{\"schemaVersion\": 1, \"missionTypes\": [7]}"), "/missionTypes/0", "unreadable_body");
+        refused(
+                putBody("{\"schemaVersion\": 1, \"packs\": [{\"packId\": \"alpha\", \"version\": 1}]}"),
+                "/packs/0/version",
+                "unreadable_body");
+        MockHttpServletResponse created = send(post("/api/v1/activations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"schemaVersion\": \"1\"}"));
+        assertThat(created.getStatus()).as(created.getContentAsString()).isEqualTo(422);
+    }
+
+    @Test
     void aBrokenConstraintIsRefusedAsBeanValidationFindsIt() throws Exception {
         refused(putBody("{\"schemaVersion\": 2}"), "/schemaVersion", "invalid_value");
         refused(

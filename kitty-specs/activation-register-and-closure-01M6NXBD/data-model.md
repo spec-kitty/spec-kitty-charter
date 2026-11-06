@@ -78,7 +78,7 @@ Each transition is a compare-and-set on the revision, under the per-id lock.
 | `PolicyFile` / `PerPackPolicy` (new) | `kind_defaults: Map<NodeKind, MutabilityLevel>`, `artifacts: Map<Urn, MutabilityLevel>`, keyed by pack; `levelIn(closure, urn)` returns the highest level along the closure and the pack that set it, shared with the registration write gate |
 | `PackDescriptor` | gains optional `mutabilityPolicy` (pack-relative path) |
 | `ClosureQueries` (application) | one verified read → the closure snapshot: closure facts, held URNs per kind, `requiredIn`, lock levels, presets |
-| `Reachability` (application, PR B) | `reach(snapshot, starts, relations, stop, lineage)` on `GraphWalk` over typed edges; `enhancersOf(snapshot, urns)` |
+| `Reachability` (application, PR B) | `reach(snapshot, starts, relations, stop, lineage)` on `GraphWalk` over typed edges; `enhances` is one of the relations a caller may ask for (ADR-0059 amendment A4: no `enhancersOf` and no pull) |
 
 ## Kernel
 

@@ -189,14 +189,14 @@ class PackMutabilityPolicyTest {
                 new DirectiveRegistrationService(store, store, new PackMutabilityPolicy(source));
         int before = store.commits;
 
-        assertThatThrownBy(() -> service.registerDirective(PACK, directive("LOCKED"), List.of(), false, null))
+        assertThatThrownBy(() -> service.registerDirective(PACK, directive("LOCKED"), false, null))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION));
         assertThat(store.commits).as("a refused write commits nothing").isEqualTo(before);
 
         // Same fixture, an open (unlisted) target: the write lands.
-        assertThatCode(() -> service.registerDirective(PACK, directive("OPEN"), List.of(), false, null))
+        assertThatCode(() -> service.registerDirective(PACK, directive("OPEN"), false, null))
                 .doesNotThrowAnyException();
         assertThat(store.commits).isEqualTo(before + 1);
     }

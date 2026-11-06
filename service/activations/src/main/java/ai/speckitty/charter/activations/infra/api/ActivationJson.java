@@ -1,5 +1,6 @@
 package ai.speckitty.charter.activations.infra.api;
 
+import ai.speckitty.charter.api.model.ActivationChange;
 import ai.speckitty.charter.api.model.ActivationConfig;
 import ai.speckitty.charter.api.model.DeactivatedArtifacts;
 import ai.speckitty.charter.api.model.ExclusionRequest;
@@ -46,7 +47,8 @@ public class ActivationJson {
                 .setMixInAnnotation(DeactivatedArtifacts.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(SelectionRequest.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(ExclusionRequest.class, OmitAbsentMembers.class)
-                .setMixInAnnotation(PresetApplication.class, OmitAbsentMembers.class);
+                .setMixInAnnotation(PresetApplication.class, OmitAbsentMembers.class)
+                .setMixInAnnotation(ActivationChange.class, OmitAbsentMembers.class);
     }
 
     /**

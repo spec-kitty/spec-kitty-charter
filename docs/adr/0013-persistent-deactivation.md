@@ -85,8 +85,10 @@ A user can deactivate a charter element, but nothing records the choice durably.
    ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) d10;
    [DIV-203](/conformance/divergence-register/)). New artifacts arrive through a selection, not through an absent
    key. A preset applied with `force` clears only the deny entries that match its members
-   ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) D6); a write whose deny list names a
-   required or locked artifact is refused `409` ([DIV-204](/conformance/divergence-register/)).*
+   ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) D6). A create or replace whose deny list
+   names a required or locked artifact is refused `409`; the per-artifact writes (#291) tolerate such an entry already
+   stored, and refuse `409` a deny entry they add ([DIV-204](/conformance/divergence-register/)). #291 builds the
+   writes and #360 the closure read.*
 3. **Only the user's explicit choice changes a deny-list.** A user deactivation adds the named
    id. `charter activate <kind> <id>` removes it. Elements that a cascade deactivates along with
    the named id are not added.
