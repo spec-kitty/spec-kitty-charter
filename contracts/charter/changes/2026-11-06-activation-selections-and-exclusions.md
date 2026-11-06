@@ -28,3 +28,8 @@
   write-time `enhances` pull, so `includeDeactivated` clears no deny entry the walk does not reach, and a cascading
   deactivate keeps an artifact an active enhancer enhances because the shared walk crosses `enhances` to it, not by a
   rule of its own. `SelectionRequest.includeDeactivated`, `ActivationChange` and the two write descriptions say so.
+- The path id of the four per-artifact writes is read as an id of the activation document is (`ArtifactIdPath`,
+  ADR-0020 D4, operator ruling of 2026-11-06): the declared id, its full URN of the path's kind or another case of
+  either names the declared id, which is what the write stores and reports. An unselect or re-activate reads a stale
+  id the same way against the stored list. A spelling that matches two declared ids differing only by case is
+  `422 activation_invalid` (`ambiguous_artifact`, at `/artifactId`); a URN of another kind is an unknown id, `404`.

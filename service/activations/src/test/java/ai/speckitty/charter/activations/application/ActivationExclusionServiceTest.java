@@ -370,6 +370,30 @@ class ActivationExclusionServiceTest {
     }
 
     @Test
+    void aDeactivateAndAReactivateInAnotherSpellingWriteTheDeclaredId() {
+        // ADR-0020 D4 (operator ruling of 2026-11-06): the path id is read as a document's id is.
+        StoredActivation before = stored(ActivationDocument.builder());
+
+        ActivationWrites.Outcome denied =
+                service.deactivate(ID, "directive", "directive:d2", Optional.empty(), List.of(), quoted(before));
+        ActivationWrites.Outcome cleared = service.reactivate(ID, "directive", "d2", quoted(denied.stored()));
+
+        assertThat(denied.change().applied()).containsExactly(D2);
+        assertThat(cleared.change().applied()).containsExactly(D2);
+        assertThat(now().deactivated(ArtifactKind.DIRECTIVE)).isEmpty();
+    }
+
+    @Test
+    void aReactivateOfAStaleIdInAnotherSpellingDropsIt() {
+        StoredActivation before = stored(ActivationDocument.builder().deactivated(ArtifactKind.TACTIC, List.of("old")));
+
+        ActivationWrites.Outcome outcome = service.reactivate(ID, "tactic", "tactic:OLD", quoted(before));
+
+        assertThat(outcome.change().dropped()).containsExactly(new ArtifactRef(ArtifactKind.TACTIC, "old"));
+        assertThat(now().deactivated()).isEmpty();
+    }
+
+    @Test
     void aReactivateOfAnIdNeitherTheClosureNorTheDenyListNamesIsStill404() {
         // old is stale and selected, not denied: the re-activate removes from deactivated, so it is not its to drop.
         StoredActivation before = stored(ActivationDocument.builder()

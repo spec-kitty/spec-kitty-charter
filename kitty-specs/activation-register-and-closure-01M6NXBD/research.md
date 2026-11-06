@@ -208,20 +208,18 @@ re-review of the fixes. Folded on lane-m (369063b..ac1faa9 and the re-review fol
 
 ## Open review items (logged, not silent)
 
-1. The required floor is closure-scoped (R5), an assumed default flagged to the operator on 2026-11-05.
-2. A version pin that differs from the held version is refused rather than served side by side (R2).
-3. ADR-0059 open questions 1 and 4 (do reserved `501` pins count toward the gate; edges of an overridden artifact)
-   remain unruled. This mission's NFR-002 keeps every built operation on a behavioural scenario, and no layer merge is
-   built here.
-4. A preset "lists" a key when its file holds at least one member for it; a key with an empty list counts as not
+1. The required floor is closure-scoped (R5). Ruled by the operator on 2026-11-06 (DIV-205); it was an assumed default.
+2. A version pin that differs from the held version is refused rather than served side by side (R2). Ruled by the
+   operator on 2026-11-06.
+3. A preset "lists" a key when its file holds at least one member for it; a key with an empty list counts as not
    listed (the packs `Preset` record cannot tell an absent key from an empty one). Assumed default, applied in FR-016
    and WP14.
-5. Ruled 2026-11-06 (R2): a deactivate's own cascade follows the lineage as a select's does (F9), so a cascading
+4. Ruled 2026-11-06 (R2): a deactivate's own cascade follows the lineage as a select's does (F9), so a cascading
    select and a cascading deactivate of the same profile round-trip. FR-015 and ADR-0059 carry the amendment.
-6. Ruled 2026-11-06: `includeDeactivated` clears only the deny entries the walk passes through within the `cascade`
+5. Ruled 2026-11-06: `includeDeactivated` clears only the deny entries the walk passes through within the `cascade`
    scope (R3, reversing F4), and there is no write-time `enhances` pull to bound (R4, superseding F5). FR-013 and
    ADR-0059 carry the amendment.
-7. Ruled 2026-11-06 (R5): stale ids are dropped on write. Every per-artifact and preset write first removes the
+6. Ruled 2026-11-06 (R5): stale ids are dropped on write. Every per-artifact and preset write first removes the
    stored ids the closure no longer declares (`selected`, `deactivated`, `missionTypes`) and reports them in the new
    `ActivationChange.dropped`; a write that only drops is not a no-op. A select or deactivate of a path id the closure no
    longer holds is still `404`; an unselect or re-activate of one the stored list still names drops it (an id in

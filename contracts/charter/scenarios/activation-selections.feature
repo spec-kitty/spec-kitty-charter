@@ -648,6 +648,59 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       """
     Then the response status is 404
     And the problem code is "artifact_not_found"
+
+  Scenario: A select names its artifact in any known spelling and stores the declared id
+    ADR-0020 D4 (operator ruling of 2026-11-06): the path id is read as a document's id is, so the full URN of the
+    path's kind and another case select the declared D2.
+    Given the activation "a-1" holds:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      """
+    When I PUT "/activations/a-1/selections/directive/directive:d2" with the stored ETag and the body:
+      """
+      {}
+      """
+    Then the response status is 200
+    And the field at "/applied" holds exactly the ids:
+      """
+      directive:D2
+      """
+    When I GET "/activations/a-1"
+    Then the field at "/config/selected/directive" holds exactly the ids:
+      """
+      D2
+      """
+
+  Scenario: An unselect in another case removes the declared id
+    ADR-0020 D4 (operator ruling of 2026-11-06).
+    Given the activation "a-1" holds:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "main"}], "selected": {"directive": ["D", "D2"]}}
+      """
+    When I DELETE "/activations/a-1/selections/directive/d" with the stored ETag
+    Then the response status is 200
+    And the field at "/applied" holds exactly the ids:
+      """
+      directive:D
+      """
+    When I GET "/activations/a-1"
+    Then the field at "/config/selected/directive" holds exactly the ids:
+      """
+      D2
+      """
+
+  Scenario: A path id spelled as a URN of another kind is 404 artifact_not_found
+    ADR-0020 D4: a URN of another kind than the path's names no artifact of that kind.
+    Given the activation "a-1" holds:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      """
+    When I PUT "/activations/a-1/selections/directive/tactic:D" with the stored ETag and the body:
+      """
+      {}
+      """
+    Then the response status is 404
+    And the problem code is "artifact_not_found"
     When I GET "/activations/a-1"
     Then the response header "ETag" is the stored ETag
 

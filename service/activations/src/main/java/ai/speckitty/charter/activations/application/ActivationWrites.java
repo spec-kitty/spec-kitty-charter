@@ -6,6 +6,7 @@ import ai.speckitty.charter.activations.domain.ActivationId;
 import ai.speckitty.charter.activations.domain.ActivationRepository;
 import ai.speckitty.charter.activations.domain.ActivationRepository.CasResult;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
+import ai.speckitty.charter.activations.domain.ArtifactSpellings;
 import ai.speckitty.charter.activations.domain.CascadeScope;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.activations.domain.DocumentRules;
@@ -23,6 +24,7 @@ import ai.speckitty.charter.kernel.transport.PreconditionException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.SortedSet;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,9 +42,12 @@ import org.springframework.stereotype.Component;
  *       before the packs are read;
  *   <li>one {@link PacksSession} (NFR-007), refused {@code 422} when a pack the document names is configured as none
  *       any more;
- *   <li>the path id against that closure ({@code 404 artifact_not_found}, or {@code mission_type_not_found}); an
- *       unselect or a re-activate also takes an id the closure no longer holds when the stored list it removes the id
- *       from still names it, since the drop below removes it (ADR-0059 amendment R5);
+ *   <li>the path id against that closure, read in any known spelling ({@link #declared}: the declared id, its full
+ *       URN, or another case, as {@link ArtifactSpellings} reads an id of the activation document; {@code 422} when it
+ *       matches two declared ids that differ only by case), then held or not ({@code 404 artifact_not_found}, or
+ *       {@code mission_type_not_found}); an unselect or a re-activate also takes an id the closure no longer holds
+ *       when the stored list it removes the id from still names it, since the drop below removes it (ADR-0059
+ *       amendment R5);
  *   <li>the stored document without the ids the closure no longer declares ({@link #current}, {@link StaleIds}): the use
  *       case computes its change from it, and the ids dropped are reported in {@code dropped} (ADR-0059 amendment R5);
  *   <li>after the use case computed its {@link ActivationChange}: a document equal to the stored one is a no-op, which
@@ -62,6 +67,7 @@ import org.springframework.stereotype.Component;
 public class ActivationWrites {
 
     private static final String KIND_POINTER = "/kind";
+    private static final String ARTIFACT_ID_POINTER = "/artifactId";
     private static final String WHOLE_REQUEST = "";
 
     private final ActivationRepository repository;
@@ -220,6 +226,57 @@ public class ActivationWrites {
     }
 
     /**
+     * The path's artifact with its id as declared (ADR-0020 D4, operator ruling of 2026-11-06): a known spelling of an
+     * id the closure holds (the declared id, the full URN of the path's kind, or another case of either) is that
+     * declared id, as {@link DocumentRules#normalize} reads an id of the document. A spelling the closure holds no id
+     * for is read against the stored list the write removes the id from, so a stale id (ADR-0059 amendment R5) is
+     * matched the same way. A spelling neither names is kept as written, for {@link #requireHeldOrStale} to refuse.
+     *
+     * @param snapshot the closure
+     * @param target the path's artifact, as written
+     * @param stored the ids of the stored list the write removes the id from; empty for a select or a deactivate
+     * @return the artifact with its declared id, or as written when nothing declares it
+     * @throws CharterRefusal with {@code activation_invalid}, a violation {@code ambiguous_artifact} at
+     *     {@code /artifactId}, when the spelling matches two declared ids that differ only by case
+     */
+    static ArtifactRef declared(ClosureSnapshot snapshot, ArtifactRef target, Set<String> stored) {
+        Set<String> held = target.kind() == ArtifactKind.MISSION_TYPE
+                ? snapshot.missionTypes()
+                : snapshot.held(target.kind());
+        ArtifactSpellings.Resolution resolution = ArtifactSpellings.resolve(target.kind(), target.id(), held);
+        if (resolution instanceof ArtifactSpellings.Resolution.Unknown) {
+            resolution = ArtifactSpellings.resolve(target.kind(), target.id(), stored);
+        }
+        return switch (resolution) {
+            case ArtifactSpellings.Resolution.Declared found -> new ArtifactRef(target.kind(), found.id());
+            case ArtifactSpellings.Resolution.Unknown _ -> target;
+            case ArtifactSpellings.Resolution.Ambiguous ambiguous ->
+                throw CharterRefusal.withViolations(
+                        RefusalCode.ACTIVATION_INVALID,
+                        "The request's artifact id matches several declared ids.",
+                        List.of(new RefusalViolation(
+                                ARTIFACT_ID_POINTER,
+                                "ambiguous_artifact",
+                                "'" + target.id() + "' matches " + String.join(", ", ambiguous.candidates())
+                                        + ", which differ only by case; write the declared id.")));
+        };
+    }
+
+    /**
+     * The ids of the stored list an unselect removes an id from: {@code selected} of its kind, or
+     * {@code missionTypes}.
+     *
+     * @param document the stored document
+     * @param target the artifact
+     * @return the ids; empty when the list is absent
+     */
+    static Set<String> selectedOf(ActivationDocument document, ArtifactRef target) {
+        Optional<SortedSet<String>> ids =
+                target.kind() == ArtifactKind.MISSION_TYPE ? document.missionTypes() : document.selected(target.kind());
+        return ids.<Set<String>>map(set -> set).orElse(Set.of());
+    }
+
+    /**
      * Refuses a path id the closure does not hold (FR-010).
      *
      * @param snapshot the closure
@@ -260,9 +317,7 @@ public class ActivationWrites {
      * @return whether it is selected
      */
     static boolean selects(ActivationDocument document, ArtifactRef target) {
-        Optional<SortedSet<String>> ids =
-                target.kind() == ArtifactKind.MISSION_TYPE ? document.missionTypes() : document.selected(target.kind());
-        return ids.map(set -> set.contains(target.id())).orElse(false);
+        return selectedOf(document, target).contains(target.id());
     }
 
     /**

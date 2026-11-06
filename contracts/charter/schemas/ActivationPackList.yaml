@@ -12,13 +12,14 @@ properties:
     type: array
     description: >-
       Every pack of the closure, in dependency order: dependencies before the packs that need them, each level
-      contiguous, as the offering orders them. Never empty: a document names at least one pack, and without packs
-      the closure is every configured pack.
+      contiguous, as the offering orders them. A document that names packs has at least one, so the list is empty
+      only for a document without packs on a service that has no configured pack: without packs the closure is every
+      configured pack.
     items:
       $ref: OfferingPack.yaml
     x-derived:
       rule: >-
-        The depends_on closure rooted at the document's packs (every configured pack when it has none), composed and
+        The depends_on and parent_pack closure rooted at the document's packs (every configured pack when it has none), composed and
         ordered as the offering.
       inputs:
       - schemas/ActivationConfig.yaml#/properties/packs

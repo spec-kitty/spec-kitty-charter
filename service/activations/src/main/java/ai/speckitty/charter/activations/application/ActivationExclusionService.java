@@ -71,10 +71,11 @@ public class ActivationExclusionService {
             @Nullable String ifMatch) {
         StoredActivation loaded = writes.loaded(id, ifMatch);
         ActivationWrites.requireWellFormed(bodyFaults);
-        ArtifactRef target = ActivationWrites.deniable(kind, artifactId);
+        ArtifactRef written = ActivationWrites.deniable(kind, artifactId);
         CascadeScope scope = ActivationWrites.scope(cascade);
         PacksSession session = writes.session(loaded);
         ClosureSnapshot snapshot = session.snapshot();
+        ArtifactRef target = ActivationWrites.declared(snapshot, written, Set.of());
         ActivationWrites.requireHeld(snapshot, target);
         ActivationDocument before = ActivationWrites.current(loaded, snapshot);
         refuseFloor(before, target, snapshot);
@@ -100,8 +101,10 @@ public class ActivationExclusionService {
     public ActivationWrites.Outcome reactivate(
             ActivationId id, String kind, String artifactId, @Nullable String ifMatch) {
         StoredActivation loaded = writes.loaded(id, ifMatch);
-        ArtifactRef target = ActivationWrites.deniable(kind, artifactId);
+        ArtifactRef written = ActivationWrites.deniable(kind, artifactId);
         PacksSession session = writes.session(loaded);
+        ArtifactRef target = ActivationWrites.declared(
+                session.snapshot(), written, loaded.document().deactivated(written.kind()));
         ActivationWrites.requireHeldOrStale(
                 session.snapshot(), target, ActivationWrites.denies(loaded.document(), target));
         ActivationDocument before = ActivationWrites.current(loaded, session.snapshot());
