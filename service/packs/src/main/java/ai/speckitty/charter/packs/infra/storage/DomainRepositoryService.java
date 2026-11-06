@@ -47,6 +47,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -483,20 +484,24 @@ public final class DomainRepositoryService
 
     /**
      * The nodes a graph document declares for a kind that is never a file of its own: an {@code anti_pattern} lives
-     * only as a node of a graph document, so the document is where the pack holds it.
+     * only as a node of a graph document, and so does a mission type's step {@code action:<M>/<step>}, a value of its
+     * mission type's file that a graph names as a node (A7 Q1, rule W20's {@code steps(M)}).
      */
     private static List<String> declaredWithoutFile(GraphDocument document) {
-        String token = NodeKind.ANTI_PATTERN.token();
+        Set<NodeKind> withoutFile = EnumSet.of(NodeKind.ANTI_PATTERN, NodeKind.ACTION);
         return switch (document) {
             case GraphDocument.Shard shard ->
                 shard.nodes().stream()
-                        .filter(node -> token.equals(node.kind()))
+                        .filter(node -> withoutFile.stream()
+                                .anyMatch(kind -> kind.token().equals(node.kind())))
                         .map(GraphDocument.ShardNode::urn)
                         .toList();
             case GraphDocument.Fragment fragment ->
                 fragment.nodes().stream()
-                        .filter(node -> NodeKind.ANTI_PATTERN.plural().equals(node.kind()))
-                        .map(node -> token + ":" + node.id())
+                        .flatMap(node -> NodeKind.fromPlural(node.kind())
+                                .filter(withoutFile::contains)
+                                .map(kind -> kind.token() + ":" + node.id())
+                                .stream())
                         .toList();
         };
     }

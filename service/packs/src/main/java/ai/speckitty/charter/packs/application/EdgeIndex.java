@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.application;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.Relationship;
@@ -148,6 +149,20 @@ public final class EdgeIndex implements ComposeResolver {
         return closure.stream()
                 .filter(pack -> pack.holds(urn.toString()))
                 .map(pack -> new Place(idOf(pack), urn))
+                .toList();
+    }
+
+    /**
+     * The places of a mission type's steps (A7 Q1, rule W20's {@code steps(M)}): every place of the closure, in closure
+     * order, that holds an {@code action:<M>/<step>} node.
+     */
+    List<Place> stepsOf(Urn missionType) {
+        String prefix = missionType.id() + "/";
+        return closure.stream()
+                .flatMap(pack -> pack.definedArtifacts().stream()
+                        .flatMap(defined -> Urn.parse(defined).stream())
+                        .filter(urn -> urn.kind() == NodeKind.ACTION && urn.id().startsWith(prefix))
+                        .map(urn -> new Place(idOf(pack), urn)))
                 .toList();
     }
 

@@ -12,8 +12,10 @@ import java.util.function.Predicate;
  * What one {@link Reachability#reach reach} walks (ADR-0059 D2): the mechanism only. Which relations, which stops
  * and whether the lineage passes through are the caller's policy.
  *
- * @param starts the artifacts the walk starts from; each is walked in every closure pack that holds it
- * @param relations the forward relations the walk crosses; every other relation is left uncrossed
+ * @param starts the artifacts the walk starts from, a mission type included; each is walked in every closure pack that
+ *     holds it
+ * @param relations the forward relations the walk crosses; every other relation is left uncrossed. With
+ *     {@code requires}, a reached mission type also reaches its steps ({@link Reachability#reach}, A7 Q1)
  * @param stopAt the nodes the walk does not descend into (the caller's deny set): they are reported, never reached
  * @param lineage the lineage pass-through, when the walk follows one
  */
