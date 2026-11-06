@@ -54,6 +54,7 @@ class SchemaKeywordCoverageTest {
             "description",
             "default",
             "properties",
+            "patternProperties",
             "items",
             "allOf",
             "if",
