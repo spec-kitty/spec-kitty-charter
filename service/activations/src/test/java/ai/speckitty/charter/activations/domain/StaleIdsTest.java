@@ -9,7 +9,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /**
- * ADR-0059 amendment R5 (operator ruling of 2026-11-06): a write drops from the stored document every id its closure no
+ * ADR-0059 amendment A5 (operator ruling of 2026-11-06): a write drops from the stored document every id its closure no
  * longer declares, in {@code selected}, {@code deactivated} and {@code missionTypes}, and names each one.
  */
 class StaleIdsTest {

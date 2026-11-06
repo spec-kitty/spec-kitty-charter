@@ -134,7 +134,9 @@ public final class ClosureQueries {
 
     /**
      * The closure's presets, each id once, de-duplicated once: when two packs hold one preset id, the last holder in
-     * merge order wins (ADR-0053 d6). The list is in first-seen order of the ids.
+     * merge order wins (ADR-0053 d6). The compose has refused two packs of one level that hold one id unless one
+     * extends the other, so the last holder is a pack of a nearer level or a child, which merges after its parent.
+     * The list is in first-seen order of the ids.
      */
     private static List<ClosureView.HeldPreset> winningPresets(OfferingReadService.ComposedClosure composed) {
         Map<String, ClosureView.HeldPreset> byId = new LinkedHashMap<>();
