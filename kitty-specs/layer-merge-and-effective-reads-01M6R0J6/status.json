@@ -125,15 +125,18 @@
     },
     "WP04": {
       "actor": "claude",
-      "agent": "claude",
-      "agent_profile": "java-jenny",
-      "agent_profile_version": "1.0",
+      "agent": "claude::java-jenny",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude",
       "lane": "for_review",
       "last_event_id": "01M6RWTGZH08705FEHEE35EBV1",
       "last_transition_at": "2026-11-06T16:59:41.937109+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review (36feaf5e). A4: DocumentRules.checkReplace judges PUT against the replaced doc (floor on added denies via reusable addedDenies; stale ids the stored doc names tolerated then dropped -> Written.dropped). B1: StaleIds drops unheld pins (pack kept unpinned) -> ActivationChange.droppedPins / Written.droppedPins for replace, per-artifact writes, preset; create keeps version_not_held. T018: ActivationWrites deniable/declared mission_type branches removed (404 mission_type_not_found kept, contract). Red first: 13 named tests failed on assertions/refusals before the code (log in scratchpad wp04-red.txt). Gates: ./gradlew --max-workers=1 -PcontractBaseline=none :activations:check -x test -> exit 0; :activations:test -> exit 1, 502 run, 5 failed = WP08-owned ActivationBodyAdviceTest(4)+ActivationJsonTest(1), same as lane baseline; :deployable:test --tests '*HexagonalArchitectureTest' -> HexagonalArchitectureTest 59/59 green, task exit 1 only from the 109 WP08-owned CharterContractSuite failures, scenario list identical before/after. Out-of-map: ActivationSelectionServiceTest (2 methods), ActivationExclusionServiceTest (1 method) rewritten from removed behaviour. For WP08: map Written.dropped/droppedPins into the replace answer and ActivationChange.droppedPins in ActivationChangeMapper; contract replaceActivation text still says stale ids are 422 (A4 changes it). Divergence note for docs WP: replace drops stale ids/unheld pins; mission_type path ids normalized by spelling."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 11093,
