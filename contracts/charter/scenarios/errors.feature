@@ -113,17 +113,24 @@ Feature: Failures outside the charter's refusals
     And the contract says "activation_not_found" may not be retried
     And the contract says "activation_not_found" is raised by an operation
 
-  @reserved
-  Scenario: artifact_not_found is reserved for the activation set
-    A declaration pin, not behavior. No operation of this version raises the code: the activation
-    operations that will raise it answer 501 until they are built (ADR-0020 D8, D10), and the unit
-    test ReservedRefusalCodesTest fails when a main class other than the enum and its title mapping
-    names it. #291, which builds the activation writes, raises it and deletes this pin. Nothing here
-    calls the service.
+  Scenario: artifact_not_found is raised by the per-artifact activation writes
+    A declaration pin: the select, unselect, deactivate and re-activate of an activation raise the code when
+    the path names an artifact the activation's closure does not hold (#291), and the scenarios of
+    activation-selections.feature pin the behavior. ReservedRefusalCodesTest fails when the contract marks it
+    raised and no main class names it. Nothing here calls the service.
     Then the contract declares the refusal code "artifact_not_found"
     And the contract says "artifact_not_found" is answered with status 404
     And the contract says "artifact_not_found" may not be retried
-    And the contract says "artifact_not_found" is raised by no operation
+    And the contract says "artifact_not_found" is raised by an operation
+
+  Scenario: mission_type_not_found is raised by the select and unselect of a mission type
+    A declaration pin: a select or an unselect of kind mission_type raises the code when the path names a
+    mission type the activation's closure does not hold (#291), and activation-selections.feature pins the
+    behavior. Nothing here calls the service.
+    Then the contract declares the refusal code "mission_type_not_found"
+    And the contract says "mission_type_not_found" is answered with status 404
+    And the contract says "mission_type_not_found" may not be retried
+    And the contract says "mission_type_not_found" is raised by an operation
 
   @reserved
   Scenario: preset_not_found is reserved for the activation set
@@ -170,14 +177,14 @@ Feature: Failures outside the charter's refusals
     code, and these are all the codes raised. The generic item read adds the not-found code of each
     served kind (tactic_not_found, directive_not_found, styleguide_not_found, paradigm_not_found and
     toolguide_not_found) and kind_not_found; the registration writes add validation_failed,
-    registration_conflict and governance_policy_violation. mission_type_not_found and action_not_found
-    are not raised: the operations that answered them are gone, and the reserved activation operations
-    that will answer them again (ADR-0020 D7) answer 501 until they are built. unresolved_edge_endpoint, and, with the load that
+    registration_conflict and governance_policy_violation. action_not_found is not raised: the
+    operation that answered it is gone, and the reserved activation operation that will answer it again
+    (ADR-0020 D7) answers 501 until it is built. unresolved_edge_endpoint, and, with the load that
     judged a pack's graph, pack_level_mismatch and drg_schema_error, are raised by no operation (no
-    operation reaches the whole-pack load that still refuses a graph as drg_schema_error); neither are
-    the two codes still reserved for the activation set, artifact_not_found and preset_not_found. The
-    activation register adds activation_not_found, activation_invalid, artifact_required and
-    artifact_locked.
+    operation reaches the whole-pack load that still refuses a graph as drg_schema_error); neither is
+    the code still reserved for the activation set, preset_not_found. The activation register adds
+    activation_not_found, activation_invalid, artifact_required and artifact_locked, and its per-artifact
+    writes add artifact_not_found and mission_type_not_found.
     Then the contract says exactly these refusal codes are raised by an operation:
       | pack_unreadable             |
       | internal_error              |
@@ -207,3 +214,5 @@ Feature: Failures outside the charter's refusals
       | activation_invalid          |
       | artifact_required           |
       | artifact_locked             |
+      | artifact_not_found          |
+      | mission_type_not_found      |

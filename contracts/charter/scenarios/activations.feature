@@ -7,41 +7,8 @@ Feature: The activation set is declared and reserved
   sends a well-formed request to one operation and is removed when that operation is built.
   ReservedOperationCoverageTest keeps the pins and the reserved operations one to one. The
   register (create, register, read, remove) is built and pinned by activation-register.feature;
-  the four effective reads are built with R9 (#103); the five per-artifact and preset writes, PR B.
-
-  @reserved
-  Scenario: Selecting an artifact is reserved
-    When I PUT "/activations/a-1/selections/directive/DIRECTIVE_001" with If-Match "\"sha256:1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f\"" and the body:
-      """
-      {"cascade": ["tactic"], "includeDeactivated": false}
-      """
-    Then the operation is refused as not implemented
-
-  @reserved
-  Scenario: Selecting a mission type is reserved
-    When I PUT "/activations/a-1/selections/mission_type/software-dev" with If-Match "\"sha256:1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f\"" and the body:
-      """
-      {}
-      """
-    Then the operation is refused as not implemented
-
-  @reserved
-  Scenario: Unselecting an artifact is reserved
-    When I DELETE "/activations/a-1/selections/directive/DIRECTIVE_001" with the header "If-Match": "\"sha256:1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f\""
-    Then the operation is refused as not implemented
-
-  @reserved
-  Scenario: Deactivating an artifact is reserved
-    When I PUT "/activations/a-1/exclusions/directive/DIRECTIVE_001" with If-Match "\"sha256:1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f\"" and the body:
-      """
-      {"cascade": ["all"]}
-      """
-    Then the operation is refused as not implemented
-
-  @reserved
-  Scenario: Re-activating an artifact is reserved
-    When I DELETE "/activations/a-1/exclusions/directive/DIRECTIVE_001" with the header "If-Match": "\"sha256:1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f\""
-    Then the operation is refused as not implemented
+  the four per-artifact writes (select, unselect, deactivate, re-activate) are built and pinned by
+  activation-selections.feature; the four effective reads are built with R9 (#103); the preset write, PR B.
 
   @reserved
   Scenario: Applying a preset is reserved
@@ -73,11 +40,11 @@ Feature: The activation set is declared and reserved
 
   @reserved
   Scenario: A reserved operation answers 501 before it reads its request
-    The 501 comes before the body is bound or validated: this body cannot even be bound (a number
-    where the schema has a list, a string where it has a boolean), which without the interceptor
-    is a 400 before the operation runs. While the operation is reserved it is answered 501.
-    When I PUT "/activations/a-1/selections/directive/DIRECTIVE_001" with If-Match "\"sha256:1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f\"" and the body:
+    The 501 comes before the body is bound or validated: this body cannot even be bound (a string
+    where the schema has a boolean), which without the interceptor is a 400 before the operation
+    runs. While the operation is reserved it is answered 501.
+    When I PUT "/activations/a-1/presets/event-driven" with If-Match "\"sha256:1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f\"" and the body:
       """
-      {"cascade": 5, "includeDeactivated": "no"}
+      {"force": "yes"}
       """
     Then the operation is refused as not implemented

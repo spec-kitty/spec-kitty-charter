@@ -8,7 +8,9 @@ import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
@@ -18,9 +20,10 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * The step vocabulary of the activation register and its closure read (activation-register.feature, ADR-0020 D3-D6,
- * ADR-0059 D4-D5): storing an activation as a precondition, the conditional requests a register answers, and the
- * assertions on a list's size and on an {@code ETag} that quotes a body field. Every scenario shares one Spring
+ * The step vocabulary of the activation register, its closure read and its per-artifact writes
+ * (activation-register.feature, activation-selections.feature, ADR-0020 D3-D6, ADR-0059 D4-D5): storing an activation as
+ * a precondition, the conditional requests a register answers, a write conditional on the stored {@code ETag}, and the
+ * assertions on a list's size or ids, on a missing member and on an {@code ETag}. Every scenario shares one Spring
  * context, so the in-memory register is emptied before each one.
  */
 public class ActivationSteps {
@@ -90,6 +93,52 @@ public class ActivationSteps {
                 "PUT", path, Map.of(HttpHeaders.CONTENT_TYPE, JSON_TYPE, first, firstValue, second, secondValue), body);
     }
 
+    @When("I PUT {string} with the stored ETag and the body:")
+    public void putWithStoredETag(String path, String body) throws Exception {
+        http.perform("PUT", path, Map.of(HttpHeaders.CONTENT_TYPE, JSON_TYPE, HttpHeaders.IF_MATCH, stored()), body);
+    }
+
+    @When("I DELETE {string} with the stored ETag")
+    public void deleteWithStoredETag(String path) throws Exception {
+        http.perform("DELETE", path, Map.of(HttpHeaders.IF_MATCH, stored()), null);
+    }
+
+    @Then("the response header {string} is the stored ETag")
+    public void headerIsStoredETag(String name) {
+        assertThat(http.response().getHeader(name)).isEqualTo(stored());
+    }
+
+    @Then("the response header {string} differs from the stored ETag")
+    public void headerDiffersFromStoredETag(String name) {
+        assertThat(http.response().getHeader(name)).isNotNull().isNotEqualTo(stored());
+    }
+
+    /**
+     * The ids a list holds, in order: a string item as it is, and an {@code ArtifactReference}-shaped item (or one with
+     * a {@code kind} and an {@code artifactId}, such as a skipped entry) as {@code kind:artifactId}.
+     */
+    @Then("the field at {string} holds exactly the ids:")
+    public void holdsIds(String pointer, String ids) throws Exception {
+        JsonNode list = JSON.readTree(http.body()).at(pointer);
+        assertThat(list.isArray())
+                .as("%s is an array: %s", pointer, http.body())
+                .isTrue();
+        List<String> held = new ArrayList<>();
+        for (JsonNode item : list) {
+            held.add(item.isString()
+                    ? item.asString()
+                    : item.path("kind").asString() + ":" + item.path("artifactId").asString());
+        }
+        assertThat(held).as("the ids of %s", pointer).isEqualTo(ids.lines().map(String::strip).toList());
+    }
+
+    @Then("the response body has no field at {string}")
+    public void noField(String pointer) throws Exception {
+        assertThat(JSON.readTree(http.body()).at(pointer).isMissingNode())
+                .as("%s is absent: %s", pointer, http.body())
+                .isTrue();
+    }
+
     @Then("the answer holds exactly {int} packs")
     public void holdsPacks(int count) throws Exception {
         itemCount("/packs", count);
@@ -111,6 +160,13 @@ public class ActivationSteps {
                 .as("%s is a string: %s", pointer, http.body())
                 .isTrue();
         assertThat(http.response().getHeader(name)).isEqualTo("\"" + field.asString() + "\"");
+    }
+
+    private String stored() {
+        if (storedETag == null) {
+            throw new IllegalStateException("no activation has been stored yet");
+        }
+        return storedETag;
     }
 
     /** Stores a document with a plain PUT, which must create it, and keeps the ETag it was stored with. */
