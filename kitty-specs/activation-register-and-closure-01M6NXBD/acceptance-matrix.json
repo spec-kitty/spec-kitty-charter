@@ -108,10 +108,10 @@
       "criterion_id": "FR-011",
       "description": "Verify FR-011 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "activation-selections.feature: 'A cascading select selects what the target requires...' (applied, new ETag), 'Unselecting a selected artifact removes it, lists it in applied and clears nothing', 'Unselecting an artifact that is not selected changes nothing' (200 same revision), 'Selecting what is already selected changes nothing', 'Selecting a mission type adds it to missionTypes'; ActivationSelectionServiceTest, ActivationChangeMapperTest. lane-m HEAD 7f6264b: ./gradlew verifyAll --rerun-tasks --max-workers=1 -PcontractBaseline=none BUILD SUCCESSFUL (127/127 tasks executed; 7200 tests, 0 failures, 0 errors, 4 pre-existing env skips in packs; 341 BDD scenarios incl. activation-register 35/35, activation-selections 41/41, activation-presets 14/14, activation-register-guards 5/5, activations 4/4)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:qa-test-executor-elena",
+      "verified_at": "2026-11-06T02:55:54.386784+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
