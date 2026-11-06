@@ -68,10 +68,10 @@
       "criterion_id": "FR-007",
       "description": "Verify FR-007 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "activation-register.feature 'A deny entry on a must-have item of a governing preset is refused, naming the pack' (409 artifact_required, requiredBy), 'A directive an org pack's policy file locks cannot be deactivated' (409 artifact_locked); activation-selections.feature 'Deactivating a locked artifact is 409 artifact_locked and stores nothing', 'Deactivating a required artifact is 409 artifact_required and stores nothing', 'A stored deny entry on the floor is tolerated by a write of another id' (F1); errors.feature 'artifact_required/artifact_locked is raised by the activation register'; DocumentRulesTest. lane-m HEAD 7f6264b: ./gradlew verifyAll --rerun-tasks --max-workers=1 -PcontractBaseline=none BUILD SUCCESSFUL (127/127 tasks executed; 7200 tests, 0 failures, 0 errors, 4 pre-existing env skips in packs; 341 BDD scenarios incl. activation-register 35/35, activation-selections 41/41, activation-presets 14/14, activation-register-guards 5/5, activations 4/4)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:qa-test-executor-elena",
+      "verified_at": "2026-11-06T02:55:32.860268+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
