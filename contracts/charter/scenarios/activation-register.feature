@@ -154,6 +154,77 @@ Feature: The activation register and the packs an activation builds on
     When I GET "/activations/a-1"
     Then the response status is 404
 
+  Scenario: A child pack's preset takes the place of its parent's, and its must-have item stays required
+    The operator ruling of 2026-11-06: the parent_pack is an ordering edge, so "aaa-child", which sorts before
+    "zzz-parent", still merges after it, and its copy of the preset "team" is the governing one. Its must-have
+    item CHILD_ONLY is required and cannot be denied; the parent's losing copy requires nothing, so PARENT_ONLY can.
+    Given the org pack "zzz-parent" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943T
+      pack_version: 1.0.0
+      parent_pack: null
+      name: parent-pack
+      pack_level: org
+      """
+    And the org pack "zzz-parent" with the file "directives/PARENT_ONLY.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: PARENT_ONLY
+      title: The parent's directive
+      intent: Do the parent's thing
+      enforcement: required
+      """
+    And the org pack "zzz-parent" with the file "presets/team.yaml":
+      """
+      schema_version: '1.0'
+      id: team
+      description: The parent's copy.
+      activated_directives:
+        - id: PARENT_ONLY
+          must_have: true
+      """
+    And the org pack "aaa-child" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943V
+      pack_version: 1.0.0
+      parent_pack: 01M4P01D5TWB5FKZGNNQG3943T
+      name: child-pack
+      pack_level: org
+      """
+    And the org pack "aaa-child" with the file "directives/CHILD_ONLY.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: CHILD_ONLY
+      title: The child's directive
+      intent: Do the child's thing
+      enforcement: required
+      """
+    And the org pack "aaa-child" with the file "presets/team.yaml":
+      """
+      schema_version: '1.0'
+      id: team
+      description: The child's copy.
+      activated_directives:
+        - id: CHILD_ONLY
+          must_have: true
+      """
+    When I PUT "/activations/a-1" with the body:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "aaa-child"}], "deactivated": {"directive": ["CHILD_ONLY"]}}
+      """
+    Then the response status is 409
+    And the problem code is "artifact_required"
+    And the field at "/requiredBy/0/packId" is "aaa-child"
+    When I PUT "/activations/a-1" with the body:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "aaa-child"}], "deactivated": {"directive": ["PARENT_ONLY"]}}
+      """
+    Then the response status is 201
+    When I GET "/activations/a-1/packs"
+    Then the response status is 200
+    And the field at "/packs/0/packId" is "zzz-parent"
+    And the field at "/packs/1/packId" is "aaa-child"
+
   Scenario: An empty deny list is refused, never stored
     US1 AS7.
     When I PUT "/activations/a-1" with the body:

@@ -178,7 +178,8 @@ level contiguous, in merge order: built-in, then org, then project. The offering
 naming the pack, rather than serving part of it.
 
 - **Level direction.** A pack may take a `parent_pack`, and may `depends_on` a pack, only at its own level or one
-  nearer built-in. `parent_pack` stays lineage only; it orders nothing.
+  nearer built-in. `parent_pack` is an ordering and a cycle edge, as `depends_on` is (operator ruling of 2026-11-06): the
+  pack a child extends merges before it, and a `parent_pack` cycle is refused as `pack_dependency_cycle`.
 - **Identity.** A pack id and a pack name are unique across a compose without exception. An artifact id is unique
   within a level, except where an `overrides` edge settles it. Across levels the same id is a layer override.
 - **Sibling conflict.** Two packs at one level that both change or both define the same artifact id, of any kind, are a

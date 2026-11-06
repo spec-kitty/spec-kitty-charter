@@ -79,6 +79,13 @@ class PackCompositionResolverTest {
                         List.of(new PackOverride(artifact, member))));
     }
 
+    /** A pack that extends another by {@code parent_pack}, with no dependencies. */
+    private static PackUnderResolution extending(String id, String name, PackLevel level, String parent) {
+        return new PackUnderResolution(
+                new ConfiguredPack(new PackIdentifier(id), level),
+                new PackDescriptor(id, "1.0.0", Optional.of(parent), name, Optional.of(level), Optional.empty()));
+    }
+
     private static List<String> ids(List<PackUnderResolution> resolved) {
         return resolved.stream().map(entry -> entry.descriptor().packId()).toList();
     }
@@ -95,6 +102,151 @@ class PackCompositionResolverTest {
 
         assertThat(ids(PackCompositionResolver.resolve(List.of(top, middle, base))))
                 .containsExactly("01ZBASE", "01MID0", "01AATOP");
+    }
+
+    // The child's id sorts before its parent's: only the parent_pack edge can put the parent first (ADR-0048).
+    @Test
+    void aParentPackComesBeforeTheChildThatExtendsItWhateverTheirIdsSort() {
+        PackUnderResolution parent = pack("01ZPARENT", "parent", "1.0.0", PackLevel.ORG);
+        PackUnderResolution child = extending("01ACHILD", "child", PackLevel.ORG, "01ZPARENT");
+
+        assertThat(ids(PackCompositionResolver.resolve(List.of(child, parent))))
+                .containsExactly("01ZPARENT", "01ACHILD");
+    }
+
+    @Test
+    void aParentChainIsOrderedFromTheTopDownAcrossAChain() {
+        PackUnderResolution top = pack("01ZTOP", "top", "1.0.0", PackLevel.ORG);
+        PackUnderResolution middle = extending("01MID", "middle", PackLevel.ORG, "01ZTOP");
+        PackUnderResolution leaf = extending("01ALEAF", "leaf", PackLevel.ORG, "01MID");
+
+        assertThat(ids(PackCompositionResolver.resolve(List.of(leaf, middle, top))))
+                .containsExactly("01ZTOP", "01MID", "01ALEAF");
+    }
+
+    @Test
+    void aPackThatNamesItselfAsParentIsADependencyCycle() {
+        PackUnderResolution loop = extending("01LOOP", "loop", PackLevel.ORG, "01LOOP");
+
+        PackCompositionResolver.Refusal refusal = refusing(List.of(loop));
+
+        assertThat(refusal.failure()).isEqualTo(Failure.CYCLE);
+        assertThat(refusal.failure().code()).isEqualTo(RefusalCode.PACK_DEPENDENCY_CYCLE);
+        assertThat(refusal.packId()).isEqualTo("01LOOP");
+        assertThat(refusal.detail()).contains("parent_pack");
+    }
+
+    @Test
+    void twoPacksThatNameEachOtherAsParentAreADependencyCycle() {
+        PackUnderResolution first = extending("01FIRST", "first", PackLevel.ORG, "01SECOND");
+        PackUnderResolution second = extending("01SECOND", "second", PackLevel.ORG, "01FIRST");
+
+        PackCompositionResolver.Refusal refusal = refusing(List.of(first, second));
+
+        assertThat(refusal.failure()).isEqualTo(Failure.CYCLE);
+        assertThat(refusal.packs()).extracting(RefusalPack::packId).containsExactlyInAnyOrder("01FIRST", "01SECOND");
+    }
+
+    @Test
+    void aParentCycleThroughADependencyIsADependencyCycle() {
+        PackUnderResolution parent =
+                pack("01PARENT", "parent", "1.0.0", PackLevel.ORG, List.of(new PackDependency("01CHILD", ">=1.0")));
+        PackUnderResolution child = extending("01CHILD", "child", PackLevel.ORG, "01PARENT");
+
+        assertThat(refusing(List.of(parent, child)).failure()).isEqualTo(Failure.CYCLE);
+    }
+
+    /** Two packs of one level, related by nothing, hold the preset {@code team}: the resolver names no winner. */
+    @Nested
+    class PresetContests {
+
+        private final Map<String, List<String>> presetIds = new LinkedHashMap<>();
+
+        private PackUnderResolution holding(PackUnderResolution pack, String... presets) {
+            presetIds.put(pack.descriptor().packId(), List.of(presets));
+            return pack;
+        }
+
+        private void check(PackUnderResolution... packs) {
+            PackCompositionResolver.refusePresetContests(
+                    List.of(packs),
+                    pack -> presetIds.getOrDefault(pack.descriptor().packId(), List.of()));
+        }
+
+        @Test
+        void twoUnrelatedPacksOfOneLevelHoldingOnePresetIdAreRefused() {
+            PackUnderResolution left = holding(pack("01LEFT", "left", "1.0.0", PackLevel.ORG), "team");
+            PackUnderResolution right = holding(pack("01RIGHT", "right", "1.0.0", PackLevel.ORG), "team");
+
+            PackCompositionResolver.Refusal refusal = refusalOf(() -> check(left, right));
+
+            assertThat(refusal.failure()).isEqualTo(Failure.SIBLING_CONFLICT);
+            assertThat(refusal.failure().code()).isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT);
+            assertThat(refusal.packs()).extracting(RefusalPack::packId).containsExactly("01RIGHT", "01LEFT");
+            assertThat(refusal.detail())
+                    .isEqualTo("packs `left` (01LEFT) and `right` (01RIGHT) at org both hold the preset `team`,"
+                            + " and neither extends the other by parent_pack");
+        }
+
+        @Test
+        void aChildAndItsParentMayHoldOnePresetIdTheChildOverridesIt() {
+            PackUnderResolution parent = holding(pack("01PARENT", "parent", "1.0.0", PackLevel.ORG), "team");
+            PackUnderResolution child = holding(extending("01CHILD", "child", PackLevel.ORG, "01PARENT"), "team");
+
+            assertThatCode(() -> check(parent, child)).doesNotThrowAnyException();
+        }
+
+        @Test
+        void aGrandchildAndItsGrandparentAreRelatedThroughTheChain() {
+            PackUnderResolution top = holding(pack("01TOP", "top", "1.0.0", PackLevel.ORG), "team");
+            PackUnderResolution middle = extending("01MID", "middle", PackLevel.ORG, "01TOP");
+            PackUnderResolution leaf = holding(extending("01LEAF", "leaf", PackLevel.ORG, "01MID"), "team");
+
+            assertThatCode(() -> check(top, middle, leaf)).doesNotThrowAnyException();
+        }
+
+        @Test
+        void twoChildrenOfOneParentAreSiblingsAndAreRefused() {
+            PackUnderResolution parent = pack("01PARENT", "parent", "1.0.0", PackLevel.ORG);
+            PackUnderResolution one = holding(extending("01ONE", "one", PackLevel.ORG, "01PARENT"), "team");
+            PackUnderResolution two = holding(extending("01TWO", "two", PackLevel.ORG, "01PARENT"), "team");
+
+            assertThat(refusalOf(() -> check(parent, one, two)).failure()).isEqualTo(Failure.SIBLING_CONFLICT);
+        }
+
+        @Test
+        void packsOfDifferentLevelsMayHoldOnePresetIdTheNearerToTheProjectOverrides() {
+            PackUnderResolution org = holding(pack("01ORG", "org", "1.0.0", PackLevel.ORG), "team");
+            PackUnderResolution project = holding(pack("01PROJ", "project", "1.0.0", PackLevel.PROJECT), "team");
+
+            assertThatCode(() -> check(org, project)).doesNotThrowAnyException();
+        }
+
+        @Test
+        void differentPresetIdsContestNothing() {
+            PackUnderResolution left = holding(pack("01LEFT", "left", "1.0.0", PackLevel.ORG), "team");
+            PackUnderResolution right = holding(pack("01RIGHT", "right", "1.0.0", PackLevel.ORG), "crew");
+
+            assertThatCode(() -> check(left, right)).doesNotThrowAnyException();
+        }
+
+        private PackCompositionResolver.Refusal refusalOf(Runnable compose) {
+            try {
+                compose.run();
+            } catch (PackCompositionResolver.Refusal refusal) {
+                return refusal;
+            }
+            throw new AssertionError("the check was expected to refuse");
+        }
+    }
+
+    private static PackCompositionResolver.Refusal refusing(List<PackUnderResolution> packs) {
+        try {
+            PackCompositionResolver.resolve(packs);
+        } catch (PackCompositionResolver.Refusal refusal) {
+            return refusal;
+        }
+        throw new AssertionError("the compose was expected to refuse");
     }
 
     @Test
@@ -561,11 +713,24 @@ class PackCompositionResolverTest {
         }
 
         @Test
-        void theParentPackIsInTheCompositionClosure() {
-            PackUnderResolution delta = withParent("01DELTA", "delta", "01BETA");
+        void theParentPackIsInTheCompositionClosureAndComesBeforeItsChild() {
+            // The child's id sorts before the parent's, so only the parent_pack edge puts beta first.
+            PackUnderResolution child = withParent("01ACHILD", "child", "01BETA");
 
-            assertThat(ids(rooted(List.of(gamma, alpha, beta, delta), "01DELTA")))
-                    .containsExactly("01BETA", "01DELTA");
+            assertThat(ids(rooted(List.of(gamma, alpha, beta, child), "01ACHILD")))
+                    .containsExactly("01BETA", "01ACHILD");
+        }
+
+        @Test
+        void aParentCycleIsRefusedByTheRootedComposeAndTheClosureWalkTerminates() {
+            PackUnderResolution first = withParent("01FIRST", "first", "01SECOND");
+            PackUnderResolution second = withParent("01SECOND", "second", "01FIRST");
+
+            assertThat(PackCompositionResolver.compositionClosure(List.of("01FIRST"), byPackId(first, second)))
+                    .containsExactly("01FIRST", "01SECOND");
+            assertThat(refusalOf(() -> rooted(List.of(first, second, gamma), "01FIRST"))
+                            .failure())
+                    .isEqualTo(Failure.CYCLE);
         }
 
         @Test

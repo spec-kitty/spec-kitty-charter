@@ -14,6 +14,7 @@ import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackPolicy;
+import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.ResolvedEdge;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -291,6 +292,15 @@ public final class OfferingReadService {
             refuseTargetOnlyAnUnreadablePackCouldDeclare(reads, closure);
             List<PackUnderResolution> composed = PackCompositionResolver.resolveRooted(members, roots);
             checkReferences(composed, facts);
+            PackCompositionResolver.refusePresetContests(
+                    composed,
+                    pack ->
+                            Objects.requireNonNull(
+                                            facts.get(pack.configured().id().value()), "read above")
+                                    .presets()
+                                    .stream()
+                                    .map(Preset::id)
+                                    .toList());
             return new ComposedClosure(composed, facts);
         } catch (PackCompositionResolver.Refusal refusal) {
             throw refusal.toCharterRefusal();
