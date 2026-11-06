@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 
 /**
  * What one verified read of a composition closure answers (NFR-007, FR-009, FR-023): a read-only value an adapter maps
@@ -35,6 +36,8 @@ import java.util.Set;
  *     a view by id over this list
  * @param parents each closure pack's {@code parent_pack}, by descriptor {@code pack_id}; a pack without one is absent
  * @param fingerprint the verified digest of the inputs every field was read from
+ * @param edges the typed edges of the closure's packs, indexed from the facts the same read holds (WP11); the reach and
+ *     the {@code enhances} lookups answer from it with no further read
  */
 public record ClosureView(
         List<OfferingReadService.OfferingEntry> packs,
@@ -46,7 +49,8 @@ public record ClosureView(
         List<String> closurePackIds,
         List<HeldPreset> heldPresets,
         Map<String, String> parents,
-        String fingerprint) {
+        String fingerprint,
+        EdgeIndex edges) {
 
     /**
      * A preset of the closure with the pack that holds it.
@@ -81,6 +85,7 @@ public record ClosureView(
      * @param heldPresets the presets, each id once
      * @param parents the parent of each pack that has one
      * @param fingerprint the verified digest
+     * @param edges the closure's typed edges
      */
     public ClosureView {
         packs = List.copyOf(Objects.requireNonNull(packs, "packs"));
@@ -93,6 +98,89 @@ public record ClosureView(
         heldPresets = List.copyOf(Objects.requireNonNull(heldPresets, "heldPresets"));
         parents = Map.copyOf(Objects.requireNonNull(parents, "parents"));
         Objects.requireNonNull(fingerprint, "fingerprint");
+        Objects.requireNonNull(edges, "edges");
+    }
+
+    /**
+     * A view whose closure writes no typed edge.
+     *
+     * @param packs the closure's packs
+     * @param heldIds the held ids per kind
+     * @param holderOf the holder of each held URN
+     * @param missionTypes the held mission types
+     * @param floor the required floor
+     * @param policy the per-pack policies
+     * @param closurePackIds the closure's {@code pack_id}s
+     * @param heldPresets the presets, each id once
+     * @param parents the parent of each pack that has one
+     * @param fingerprint the verified digest
+     */
+    public ClosureView(
+            List<OfferingReadService.OfferingEntry> packs,
+            Map<ArtifactKind, Set<String>> heldIds,
+            Map<Urn, String> holderOf,
+            Set<String> missionTypes,
+            RequiredFloor floor,
+            PerPackPolicy policy,
+            List<String> closurePackIds,
+            List<HeldPreset> heldPresets,
+            Map<String, String> parents,
+            String fingerprint) {
+        this(
+                packs,
+                heldIds,
+                holderOf,
+                missionTypes,
+                floor,
+                policy,
+                closurePackIds,
+                heldPresets,
+                parents,
+                fingerprint,
+                EdgeIndex.empty());
+    }
+
+    /**
+     * The forward reach over the closure's edges ({@link Reachability#reach}).
+     *
+     * @param request what to walk
+     * @return what the walk reached, stopped at, left behind a stop and passed through
+     */
+    public ReachResult reach(ReachRequest request) {
+        return Reachability.reach(edges, request);
+    }
+
+    /**
+     * What the {@code enhances} pull reaches from the artifacts, both ways and transitively
+     * ({@link Reachability#enhancesPull}).
+     *
+     * @param starts the artifacts the pull starts from
+     * @return each pulled artifact with every way it was reached
+     */
+    public Map<Urn, List<ReachResult.Pulled>> enhancesPull(Set<Urn> starts) {
+        return Reachability.enhancesPull(edges, starts);
+    }
+
+    /**
+     * The {@code enhances} pull bounded by the caller's policy ({@link Reachability#enhancesPull}): a node it does not
+     * admit is neither pulled nor walked through.
+     *
+     * @param starts the artifacts the pull starts from
+     * @param admits the nodes the pull may reach
+     * @return each pulled artifact with every way it was reached
+     */
+    public Map<Urn, List<ReachResult.Pulled>> enhancesPull(Set<Urn> starts, Predicate<Urn> admits) {
+        return Reachability.enhancesPull(edges, starts, admits);
+    }
+
+    /**
+     * The artifacts that enhance each target, one hop ({@link Reachability#enhancersOf}).
+     *
+     * @param targets the targets
+     * @return each target that has an enhancer, with its enhancers' places
+     */
+    public Map<Urn, List<EdgeIndex.Place>> enhancersOf(Set<Urn> targets) {
+        return Reachability.enhancersOf(edges, targets);
     }
 
     /**

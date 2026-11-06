@@ -8,6 +8,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.missions.domain.UnresolvedTemplate;
@@ -310,7 +311,8 @@ public final class DomainRepositoryService
      *       references a kind keeps without minting an edge);
      *   <li>the mutability policy its descriptor names by {@code mutability_policy} (ADR-0063), or the empty policy;
      *   <li>the activation presets it holds, from the same assembly; a preset the domain refuses is a violation, which
-     *       makes the pack unreadable here as any other file does.
+     *       makes the pack unreadable here as any other file does;
+     *   <li>the typed edges it writes, as written, from the same graph read and assembly ({@link #typedEdges}).
      * </ul>
      *
      * <p>The answer fails closed: a graph document or a file of the pack that cannot be read refuses it
@@ -345,7 +347,69 @@ public final class DomainRepositoryService
         }
         defined.addAll(declared);
         return new PackCompositionFacts(
-                List.copyOf(changed), List.copyOf(defined), List.copyOf(references), policy, assembled.presets());
+                List.copyOf(changed),
+                List.copyOf(defined),
+                List.copyOf(references),
+                policy,
+                assembled.presets(),
+                typedEdges(graphs.documents(), assembled));
+    }
+
+    /**
+     * Every typed edge the pack writes, as written (WP11): the edges of its graph documents in file order, then each of
+     * its components' relationships in assembly order (its typed references, {@code ArtifactEdges.build}), then the
+     * edges of its registered relationship shard ({@link RelationshipShard#SHARD_PATH}, a root shard the one graph read
+     * already holds). Each (from, relation, to, qualifiers) is kept once, where it was first seen: the kernel
+     * {@link Relationship#equals} ignores the relation and the qualifiers, so the key is explicit.
+     */
+    private static List<Relationship> typedEdges(List<GraphDocument> documents, Pack assembled) {
+        Map<EdgeKey, Relationship> edges = new LinkedHashMap<>();
+        documents.stream().filter(document -> !registered(document)).forEach(document -> graphEdges(document, edges));
+        assembled.artifacts().forEach(artifact -> artifact.relationships().forEach(edge -> keep(edge, edges)));
+        documents.stream().filter(DomainRepositoryService::registered).forEach(document -> graphEdges(document, edges));
+        return List.copyOf(edges.values());
+    }
+
+    /** What makes two typed edges the same edge. */
+    private record EdgeKey(Urn from, Optional<String> fromPack, RelationType type, Urn to, Optional<String> toPack) {}
+
+    private static void keep(Relationship edge, Map<EdgeKey, Relationship> edges) {
+        edges.putIfAbsent(new EdgeKey(edge.from(), edge.fromPack(), edge.type(), edge.to(), edge.toPack()), edge);
+    }
+
+    private static boolean registered(GraphDocument document) {
+        return RelationshipShard.SHARD_PATH.equals(document.file());
+    }
+
+    private static void graphEdges(GraphDocument document, Map<EdgeKey, Relationship> edges) {
+        for (GraphDocument.Edge edge : document.edges()) {
+            typedEdge(edge).ifPresent(typed -> keep(typed, edges));
+        }
+    }
+
+    /**
+     * One graph-document edge as the kernel's typed edge, with each endpoint's qualifier as written; empty for an
+     * endpoint or a relation that is no reference, which the reads that judge the document report.
+     */
+    private static Optional<Relationship> typedEdge(GraphDocument.Edge edge) {
+        try {
+            PackQualifiedReference source = PackQualifiedReference.parse(edge.source());
+            PackQualifiedReference target = PackQualifiedReference.parse(edge.target());
+            Optional<RelationType> relation = RelationType.fromToken(edge.relation());
+            if (source.asUrn().isEmpty() || target.asUrn().isEmpty() || relation.isEmpty()) {
+                return Optional.empty();
+            }
+            return Optional.of(new Relationship(
+                    source.asUrn().get(),
+                    source.packName(),
+                    target.asUrn().get(),
+                    target.packName(),
+                    relation.get(),
+                    edge.when(),
+                    edge.reason()));
+        } catch (IllegalArgumentException malformed) {
+            return Optional.empty();
+        }
     }
 
     /**
