@@ -119,7 +119,7 @@ public final class OfferingReadService {
      *     when the inputs changed while the offering was read
      */
     public ConsistentRead.Verified<List<OfferingEntry>> offering() {
-        return read.read(STALE, () -> entries(composed()));
+        return read.read(STALE, () -> entriesOf(composed()));
     }
 
     /**
@@ -135,7 +135,7 @@ public final class OfferingReadService {
      */
     public ConsistentRead.Verified<List<OfferingEntry>> closure(Collection<PackIdentifier> roots) {
         Objects.requireNonNull(roots, "roots");
-        return read.read(STALE, () -> entries(composed(roots)));
+        return read.read(STALE, () -> entriesOf(composed(roots)));
     }
 
     /**
@@ -146,10 +146,14 @@ public final class OfferingReadService {
      * FR-017). Each entry carries the dependency edges its descriptor declared, with the range
      * and the satisfying version the compose resolved (FR-020).
      *
+     * <p>It is the one mapping from a resolved compose to the offering's shape; a read that composes inside its own
+     * {@link ConsistentRead} (the closure snapshot) maps its compose with it rather than copying it.
+     *
      * @param closure the resolved compose
      * @return the entries
      */
-    private static List<OfferingEntry> entries(List<PackUnderResolution> closure) {
+    public static List<OfferingEntry> entriesOf(List<PackUnderResolution> closure) {
+        Objects.requireNonNull(closure, "closure");
         Map<String, String> heldVersions = new HashMap<>();
         for (PackUnderResolution pack : closure) {
             heldVersions.put(pack.descriptor().packId(), pack.descriptor().packVersion());
@@ -195,8 +199,64 @@ public final class OfferingReadService {
      *     descriptor, or with a composition refusal when the graph cannot be served
      */
     public List<PackUnderResolution> composed() {
+        return composedWithFacts().packs();
+    }
+
+    /**
+     * A resolved compose with the composition facts it was judged on, so a read that needs more of each pack than the
+     * resolver keeps (its presets, its policy) never reads the facts a second time.
+     *
+     * @param packs the closure, dependencies first, each pack once
+     * @param facts the facts read for each pack of the closure, by configured identifier ({@link PackIdentifier#value()})
+     */
+    public record ComposedClosure(List<PackUnderResolution> packs, Map<String, PackCompositionFacts> facts) {
+
+        /**
+         * Checks and copies the fields.
+         *
+         * @param packs the closure
+         * @param facts the facts by configured identifier
+         */
+        public ComposedClosure {
+            packs = List.copyOf(Objects.requireNonNull(packs, "packs"));
+            facts = Map.copyOf(Objects.requireNonNull(facts, "facts"));
+        }
+
+        /**
+         * The facts one pack of the closure was read with.
+         *
+         * @param pack a pack of the closure
+         * @return its facts
+         */
+        public PackCompositionFacts factsOf(PackUnderResolution pack) {
+            return Objects.requireNonNull(facts.get(pack.configured().id().value()), "a pack of the closure");
+        }
+    }
+
+    /**
+     * The compose rooted at every configured pack with its facts, resolved now and not verified, as {@link #composed()}
+     * resolves it.
+     *
+     * @return the closure and the facts it was judged on
+     * @throws CharterRefusal as {@link #composed()} refuses
+     */
+    public ComposedClosure composedWithFacts() {
         List<ConfiguredPack> configured = catalog.configured();
         return composed(configured, configured.stream().map(ConfiguredPack::id).toList());
+    }
+
+    /**
+     * The compose rooted at a set of configured packs with its facts, resolved now and not verified, as
+     * {@link #composed(Collection)} resolves it: each pack's facts are read once, for the resolve and the caller alike.
+     *
+     * @param roots the configured identifiers of the packs the compose is rooted at
+     * @return the closure and the facts it was judged on
+     * @throws CharterRefusal as {@link #composed(Collection)} refuses
+     * @throws IllegalArgumentException when a root names no configured pack
+     */
+    public ComposedClosure composedWithFacts(Collection<PackIdentifier> roots) {
+        Objects.requireNonNull(roots, "roots");
+        return composed(catalog.configured(), roots);
     }
 
     /**
@@ -219,11 +279,10 @@ public final class OfferingReadService {
      * @throws IllegalArgumentException when a root names no configured pack
      */
     public List<PackUnderResolution> composed(Collection<PackIdentifier> roots) {
-        Objects.requireNonNull(roots, "roots");
-        return composed(catalog.configured(), roots);
+        return composedWithFacts(roots).packs();
     }
 
-    private List<PackUnderResolution> composed(List<ConfiguredPack> configured, Collection<PackIdentifier> roots) {
+    private ComposedClosure composed(List<ConfiguredPack> configured, Collection<PackIdentifier> roots) {
         try {
             List<DescriptorRead> reads = readDescriptors(configured);
             Set<String> closure = closureMembers(reads, roots);
@@ -232,7 +291,7 @@ public final class OfferingReadService {
             refuseTargetOnlyAnUnreadablePackCouldDeclare(reads, closure);
             List<PackUnderResolution> composed = PackCompositionResolver.resolveRooted(members, roots);
             checkReferences(composed, facts);
-            return composed;
+            return new ComposedClosure(composed, facts);
         } catch (PackCompositionResolver.Refusal refusal) {
             throw refusal.toCharterRefusal();
         }

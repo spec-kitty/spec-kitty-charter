@@ -714,6 +714,45 @@ class DomainRepositoryServiceTest {
                 });
     }
 
+    /**
+     * The presets ride on the facts from the assembly the facts already load (WP04, FR-023): a governing preset is
+     * there with its must-have items; a pack without presets has none; a broken preset makes the pack unreadable.
+     */
+    @Test
+    void theCompositionFactsCarryThePacksPresetsFromTheSameAssembly(@TempDir Path host) throws IOException {
+        Path pack = PackFixtures.copyOf("pack-descriptor-only", host);
+        DomainRepositoryService over = overOne("pack-descriptor-only", pack);
+        PackIdentifier id = new PackIdentifier("pack-descriptor-only");
+        assertThat(over.compositionFacts(id).presets()).isEmpty();
+
+        Files.createDirectories(pack.resolve("presets"));
+        Files.writeString(pack.resolve("presets/governing.yaml"), """
+                schema_version: '1.0'
+                id: governing
+                description: The directive is required.
+                activated_directives:
+                  - id: D1
+                    must_have: true
+                  - id: D2
+                """);
+
+        assertThat(over.compositionFacts(id).presets()).singleElement().satisfies(preset -> {
+            assertThat(preset.id()).isEqualTo("governing");
+            assertThat(preset.governing()).isTrue();
+            assertThat(preset.required()).containsEntry(ArtifactKind.DIRECTIVE, List.of("D1"));
+        });
+
+        Files.writeString(pack.resolve("presets/broken.yaml"), """
+                schema_version: '1.0'
+                id: broken
+                description: '   '
+                """);
+        assertThatThrownBy(() -> over.compositionFacts(id))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refused -> assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+    }
+
     /** No key: the pack has no policy, so every artifact of it is open, whatever lies at the pack root. */
     @Test
     void aPackWhoseDescriptorNamesNoPolicyHasTheEmptyPolicy(@TempDir Path host) throws IOException {

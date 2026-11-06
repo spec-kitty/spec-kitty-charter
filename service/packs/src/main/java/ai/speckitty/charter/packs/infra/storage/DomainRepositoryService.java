@@ -307,7 +307,9 @@ public final class DomainRepositoryService
      *       graph documents, then what each of its artifacts writes ({@link CharterArtifact#writtenReferences()}, which
      *       is the targets of the relationships the walk follows, so the check and the walk cannot disagree, and the
      *       references a kind keeps without minting an edge);
-     *   <li>the mutability policy its descriptor names by {@code mutability_policy} (ADR-0062), or the empty policy.
+     *   <li>the mutability policy its descriptor names by {@code mutability_policy} (ADR-0062), or the empty policy;
+     *   <li>the activation presets it holds, from the same assembly; a preset the domain refuses is a violation, which
+     *       makes the pack unreadable here as any other file does.
      * </ul>
      *
      * <p>The answer fails closed: a graph document or a file of the pack that cannot be read refuses it
@@ -341,7 +343,8 @@ public final class DomainRepositoryService
             }
         }
         defined.addAll(declared);
-        return new PackCompositionFacts(List.copyOf(changed), List.copyOf(defined), List.copyOf(references), policy);
+        return new PackCompositionFacts(
+                List.copyOf(changed), List.copyOf(defined), List.copyOf(references), policy, assembled.presets());
     }
 
     /**
