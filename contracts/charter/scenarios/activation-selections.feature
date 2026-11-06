@@ -725,6 +725,49 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     Then the response status is 404
     And the problem code is "activation_not_found"
 
+  Scenario: A malformed body without If-Match is 428, before the body is judged
+    FR-010: the preconditions come before any 422. A member the schema does not declare and a cascade token
+    outside its kinds are faults of the body, judged only once the preconditions hold.
+    When I PUT "/activations/no-such/selections/directive/D" with the body:
+      """
+      {"cascade": ["bogus"], "favourite": 1}
+      """
+    Then the response status is 428
+
+  Scenario: A malformed body on an activation that does not exist is 404 activation_not_found
+    When I PUT "/activations/no-such/exclusions/directive/D" with If-Match "\"sha256:1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f\"" and the body:
+      """
+      {"cascade": null}
+      """
+    Then the response status is 404
+    And the problem code is "activation_not_found"
+
+  Scenario: A malformed body is 422 once the preconditions hold, a cascade token at its index
+    Given the activation "a-1" holds:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      """
+    When I PUT "/activations/a-1/selections/directive/D" with the stored ETag and the body:
+      """
+      {"cascade": ["directive", "bogus"]}
+      """
+    Then the response status is 422
+    And the problem code is "activation_invalid"
+    And the field at "/violations/0/pointer" is "/cascade/1"
+    And the field at "/violations/0/code" is "unknown_kind"
+
+  Scenario: A malformed If-Match on a select is 400
+    J10: an If-Match that is not one quoted revision breaks its pattern.
+    Given the activation "a-1" holds:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      """
+    When I PUT "/activations/a-1/selections/directive/D" with If-Match "not-a-revision" and the body:
+      """
+      {}
+      """
+    Then the response status is 400
+
   Scenario: A path kind outside the selectable kinds is 422 with a violation at the path
     FR-010: template is never activated.
     Given the activation "a-1" holds:

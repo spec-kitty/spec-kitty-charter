@@ -54,7 +54,10 @@ final class StandaloneActivationMvc {
                 .build();
         return MockMvcBuilders.standaloneSetup(validated(controller))
                 .setControllerAdvice(
-                        new ActivationBodyAdvice(), new ActivationProblems(refusals), refusals, new ProblemHandler())
+                        new ActivationBodyAdvice(validator()),
+                        new ActivationProblems(refusals),
+                        refusals,
+                        new ProblemHandler())
                 .setMessageConverters(new JacksonJsonHttpMessageConverter(json))
                 .build();
     }
@@ -80,11 +83,16 @@ final class StandaloneActivationMvc {
 
     /** The controller behind the method validation Spring Boot applies to the {@code @Validated} interface. */
     private static Object validated(ActivationController controller) {
-        LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
-        validator.afterPropertiesSet();
         ProxyFactory proxy = new ProxyFactory(controller);
         proxy.setProxyTargetClass(true);
-        proxy.addAdvice(new MethodValidationInterceptor((jakarta.validation.Validator) validator));
+        proxy.addAdvice(new MethodValidationInterceptor(validator()));
         return proxy.getProxy();
+    }
+
+    /** The bean validator Spring Boot configures. */
+    private static jakarta.validation.Validator validator() {
+        LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
+        validator.afterPropertiesSet();
+        return validator;
     }
 }

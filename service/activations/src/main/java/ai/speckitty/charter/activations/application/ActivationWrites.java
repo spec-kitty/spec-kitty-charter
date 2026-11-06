@@ -33,8 +33,9 @@ import org.springframework.stereotype.Component;
  *   <li>the preconditions, before anything else is judged and before the packs are read: no {@code If-Match} is
  *       {@code 428}, an activation that is not stored {@code 404 activation_not_found}, and an {@code If-Match} that
  *       does not name the stored revision {@code 412};
- *   <li>the path's kind ({@code 422 activation_invalid}, a violation at {@code /kind}) and the body's cascade
- *       ({@code 422}, at {@code /cascade}), still before the packs are read;
+ *   <li>the body's faults the inbound adapter recorded ({@code 422 activation_invalid}, at their pointers), the path's
+ *       kind ({@code 422}, a violation at {@code /kind}) and the body's cascade ({@code 422}, at {@code /cascade}), still
+ *       before the packs are read;
  *   <li>one {@link PacksSession} (NFR-007), refused {@code 422} when a pack the document names is configured as none
  *       any more;
  *   <li>the path id against that closure ({@code 404 artifact_not_found}, or {@code mission_type_not_found});
@@ -113,6 +114,23 @@ public class ActivationWrites {
             throw stale(id);
         }
         return stored;
+    }
+
+    /**
+     * Refuses the faults of a write's body, at the {@code 422} step: after the preconditions, before the path and the
+     * packs are judged. The inbound adapter records them while it reads the body instead of refusing them there, so a
+     * bad body never comes before {@code 428}, {@code 404 activation_not_found} or {@code 412} (FR-010).
+     *
+     * @param violations the faults the adapter found, at their pointers into the body; empty for a well-formed body
+     * @throws CharterRefusal with {@code activation_invalid} when there is one
+     */
+    static void requireWellFormed(List<RefusalViolation> violations) {
+        if (!violations.isEmpty()) {
+            throw CharterRefusal.withViolations(
+                    RefusalCode.ACTIVATION_INVALID,
+                    "The activation request body breaks its schema in " + violations.size() + " place(s).",
+                    violations);
+        }
     }
 
     /**

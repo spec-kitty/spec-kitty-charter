@@ -7,6 +7,8 @@ import ai.speckitty.charter.activations.domain.PresetRules;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RefusalViolation;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
@@ -46,7 +48,28 @@ public class ActivationPresetService {
      * @throws CharterRefusal with {@code preset_not_found} when the activation's closure holds no such preset
      */
     public ActivationWrites.Outcome apply(ActivationId id, String presetId, boolean force, @Nullable String ifMatch) {
+        return apply(id, presetId, force, List.of(), ifMatch);
+    }
+
+    /**
+     * Applies one preset, whose request body may be malformed.
+     *
+     * @param id the activation's id
+     * @param presetId the path's preset id
+     * @param force whether the deny entries of the preset's members are cleared
+     * @param bodyFaults the faults the inbound adapter found in the body, refused once the preconditions hold
+     * @param ifMatch the {@code If-Match} header, verbatim; null when absent
+     * @return the outcome
+     * @throws CharterRefusal with {@code preset_not_found} when the activation's closure holds no such preset
+     */
+    public ActivationWrites.Outcome apply(
+            ActivationId id,
+            String presetId,
+            boolean force,
+            List<RefusalViolation> bodyFaults,
+            @Nullable String ifMatch) {
         StoredActivation loaded = writes.loaded(id, ifMatch);
+        ActivationWrites.requireWellFormed(bodyFaults);
         PacksSession session = writes.session(loaded);
         ClosureSnapshot snapshot = session.snapshot();
         PresetView preset = Optional.ofNullable(snapshot.presets().get(presetId))

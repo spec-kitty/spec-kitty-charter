@@ -42,7 +42,9 @@ import org.springframework.web.server.ResponseStatusException;
  * {@code unselectActivationArtifact}, {@code deactivateActivationArtifact} and {@code reactivateActivationArtifact}) and
  * the preset write ({@code applyActivationPreset}) through {@link ActivationSelectionService},
  * {@link ActivationExclusionService} and {@link ActivationPresetService}, each answering the {@code ActivationChange}
- * with the stored revision as its {@code ETag}. A refusal they throw is answered by the problem handlers. The four
+ * with the stored revision as its {@code ETag}. A refusal they throw is answered by the problem handlers. The faults
+ * {@link ActivationBodyAdvice} found in a write's body ({@link DeferredBody}) go to the use case, which refuses them
+ * once the preconditions hold. The four
  * effective reads stay reserved (ADR-0020 D8): each carries its own {@link ReservedOperation} mark,
  * so an operation is built by removing its mark alone. The composition root's {@code ReservedOperationInterceptor} answers a marked one {@code 501} before
  * the request is bound; each throws the same answer in case one is reached. A marked method reads and stores nothing
@@ -96,7 +98,8 @@ public class ActivationController implements ActivationApi {
     public ResponseEntity<ActivationChange> applyActivationPreset(
             String activationId, String presetId, PresetApplication presetApplication, @Nullable String ifMatch) {
         boolean force = Boolean.TRUE.equals(presetApplication.getForce());
-        return changed(presets.apply(new ActivationId(activationId), presetId, force, ifMatch));
+        return changed(
+                presets.apply(new ActivationId(activationId), presetId, force, DeferredBody.recorded(), ifMatch));
     }
 
     @Override
@@ -112,11 +115,10 @@ public class ActivationController implements ActivationApi {
             String artifactId,
             ExclusionRequest exclusionRequest,
             @Nullable String ifMatch) {
-        Optional<List<String>> cascade = Optional.ofNullable(exclusionRequest.getCascade())
-                .map(tokens -> tokens.stream()
-                        .map(ExclusionRequest.CascadeEnum::getValue)
-                        .toList());
-        return changed(exclusions.deactivate(new ActivationId(activationId), kind, artifactId, cascade, ifMatch));
+        Optional<List<String>> cascade =
+                Optional.ofNullable(exclusionRequest.getCascade()).map(List::copyOf);
+        return changed(exclusions.deactivate(
+                new ActivationId(activationId), kind, artifactId, cascade, DeferredBody.recorded(), ifMatch));
     }
 
     @Override
@@ -197,13 +199,17 @@ public class ActivationController implements ActivationApi {
             String artifactId,
             SelectionRequest selectionRequest,
             @Nullable String ifMatch) {
-        Optional<List<String>> cascade = Optional.ofNullable(selectionRequest.getCascade())
-                .map(tokens -> tokens.stream()
-                        .map(SelectionRequest.CascadeEnum::getValue)
-                        .toList());
+        Optional<List<String>> cascade =
+                Optional.ofNullable(selectionRequest.getCascade()).map(List::copyOf);
         boolean includeDeactivated = Boolean.TRUE.equals(selectionRequest.getIncludeDeactivated());
         return changed(selections.select(
-                new ActivationId(activationId), kind, artifactId, cascade, includeDeactivated, ifMatch));
+                new ActivationId(activationId),
+                kind,
+                artifactId,
+                cascade,
+                includeDeactivated,
+                DeferredBody.recorded(),
+                ifMatch));
     }
 
     @Override
