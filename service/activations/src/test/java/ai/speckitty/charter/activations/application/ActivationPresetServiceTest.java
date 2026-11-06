@@ -39,8 +39,17 @@ class ActivationPresetServiceTest {
         packs = new FakeAvailablePacks(ClosureSnapshots.snapshot()
                 .pack("main", "1.0.0")
                 .held(ArtifactKind.DIRECTIVE, "A", "B", "C", "M")
+                .held(ArtifactKind.SKILL, "pr-review")
+                .held(ArtifactKind.GLOSSARY_PACK, "core-terms")
+                .held(ArtifactKind.MISSION_TYPE, "software-dev")
                 .preset(new PresetView("team", Map.of(ArtifactKind.DIRECTIVE, Set.of("B", "C"))))
                 .preset(new PresetView("stale", Map.of(ArtifactKind.DIRECTIVE, Set.of("GONE"))))
+                .preset(new PresetView(
+                        "every-kind",
+                        Map.of(
+                                ArtifactKind.SKILL, Set.of("pr-review"),
+                                ArtifactKind.GLOSSARY_PACK, Set.of("core-terms"),
+                                ArtifactKind.MISSION_TYPE, Set.of("software-dev"))))
                 .build());
         service = new ActivationPresetService(new ActivationWrites(repository, packs));
     }
@@ -76,6 +85,24 @@ class ActivationPresetServiceTest {
                 .containsExactly("B", "C");
         assertThat(packs.calls()).isEqualTo(1);
         assertThat(packs.lastRoots()).contains(List.of("main"));
+    }
+
+    @Test
+    void aPresetOfSkillsGlossaryPacksAndMissionTypesAppliesAndReportsEachKind() {
+        // FR-041 (Q3): a preset may name any kind, and the change reports what was applied per kind.
+        StoredActivation before = stored(ActivationDocument.builder());
+
+        ActivationWrites.Outcome outcome = service.apply(ID, "every-kind", false, List.of(), quoted(before));
+
+        assertThat(outcome.change().applied())
+                .containsExactlyInAnyOrder(
+                        new ArtifactRef(ArtifactKind.SKILL, "pr-review"),
+                        new ArtifactRef(ArtifactKind.GLOSSARY_PACK, "core-terms"),
+                        new ArtifactRef(ArtifactKind.MISSION_TYPE, "software-dev"));
+        ActivationDocument stored = repository.find(ID).orElseThrow().document();
+        assertThat(stored.selected(ArtifactKind.SKILL).orElseThrow()).containsExactly("pr-review");
+        assertThat(stored.selected(ArtifactKind.GLOSSARY_PACK).orElseThrow()).containsExactly("core-terms");
+        assertThat(stored.selected(ArtifactKind.MISSION_TYPE).orElseThrow()).containsExactly("software-dev");
     }
 
     @Test

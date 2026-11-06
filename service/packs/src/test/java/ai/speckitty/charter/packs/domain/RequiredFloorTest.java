@@ -35,16 +35,18 @@ class RequiredFloorTest {
             items.add(PresetItem.mustHave(directive));
         }
         items.add(PresetItem.of("D2"));
-        return new Preset(id, "governs", List.of(), Map.of(ArtifactKind.DIRECTIVE, items), List.of());
+        return new Preset(id, "governs", Map.of(ArtifactKind.DIRECTIVE, items));
     }
 
     private static Preset convenience(String id) {
         return new Preset(
                 id,
                 "conveniences",
-                List.of(),
-                Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.of("D1"), PresetItem.of("D3"))),
-                List.of(PresetItem.of("research")));
+                Map.of(
+                        ArtifactKind.DIRECTIVE,
+                        List.of(PresetItem.of("D1"), PresetItem.of("D3")),
+                        ArtifactKind.MISSION_TYPE,
+                        List.of(PresetItem.of("research"))));
     }
 
     @Test
@@ -80,9 +82,9 @@ class RequiredFloorTest {
         Preset missions = new Preset(
                 "missions",
                 "mission types",
-                List.of(),
-                Map.of(),
-                List.of(PresetItem.mustHave("software-dev"), PresetItem.of("research")));
+                Map.of(
+                        ArtifactKind.MISSION_TYPE,
+                        List.of(PresetItem.mustHave("software-dev"), PresetItem.of("research"))));
 
         RequiredFloor floor = floorOf(List.of(Map.entry("org", List.of(missions))));
 

@@ -3,7 +3,6 @@ package ai.speckitty.charter.packs.infra.storage;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.PresetItem;
-import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -26,8 +25,6 @@ final class PresetFiles {
     private static final String SUFFIX = ".yaml";
 
     private static final String ACTIVATED = "activated_";
-
-    private static final String MISSION_TYPES = "activated_mission_types";
 
     private PresetFiles() {}
 
@@ -77,49 +74,34 @@ final class PresetFiles {
      */
     static Preset toPreset(PresetDso dso) {
         Map<ArtifactKind, List<PresetItem>> artifacts = new EnumMap<>(ArtifactKind.class);
-        List<PresetItem> missionTypes = List.of();
-        for (Map.Entry<String, List<PresetDso.Item>> list : dso.lists().entrySet()) {
-            List<PresetItem> items = list.getValue().stream()
-                    .map(item -> new PresetItem(item.id(), item.mustHave()))
-                    .toList();
-            if (MISSION_TYPES.equals(list.getKey())) {
-                missionTypes = items;
-            } else {
-                artifacts.put(kindOf(list.getKey().substring(ACTIVATED.length())), items);
-            }
-        }
-        return new Preset(
-                dso.id(),
-                dso.description(),
-                dso.activatedKinds().stream().map(PresetFiles::kindOf).toList(),
-                artifacts,
-                missionTypes);
+        dso.lists()
+                .forEach((key, items) -> artifacts.put(
+                        kindOf(key.substring(ACTIVATED.length())),
+                        items.stream()
+                                .map(item -> new PresetItem(item.id(), item.mustHave()))
+                                .toList()));
+        return new Preset(dso.id(), dso.description(), artifacts);
     }
 
     /**
-     * The persistence shape of a domain preset, its lists in the schema's key order.
+     * The persistence shape of a domain preset, its lists in the kind registry's order.
      *
      * @param preset the preset
      * @return the shape
      */
     static PresetDso toDso(Preset preset) {
         Map<String, List<PresetDso.Item>> lists = new LinkedHashMap<>();
-        for (String key : PresetYaml.LIST_KEYS) {
-            List<PresetItem> items = MISSION_TYPES.equals(key)
-                    ? preset.missionTypes()
-                    : preset.artifacts().getOrDefault(kindOf(key.substring(ACTIVATED.length())), List.of());
+        for (ArtifactKind kind : Preset.ACTIVATION_KINDS) {
+            List<PresetItem> items = preset.artifacts().getOrDefault(kind, List.of());
             if (!items.isEmpty()) {
-                List<PresetDso.Item> out = new ArrayList<>();
-                items.forEach(item -> out.add(new PresetDso.Item(item.id(), item.mustHave())));
-                lists.put(key, out);
+                lists.put(
+                        PresetYaml.keyOf(kind),
+                        items.stream()
+                                .map(item -> new PresetDso.Item(item.id(), item.mustHave()))
+                                .toList());
             }
         }
-        return new PresetDso(
-                "1.0",
-                preset.id(),
-                preset.description(),
-                preset.activatedKinds().stream().map(ArtifactKind::plural).toList(),
-                lists);
+        return new PresetDso("1.0", preset.id(), preset.description(), lists);
     }
 
     private static ArtifactKind kindOf(String plural) {
