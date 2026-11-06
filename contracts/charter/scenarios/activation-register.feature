@@ -312,6 +312,38 @@ Feature: The activation register and the packs an activation builds on
       """
     Then the response status is 422
     And the problem code is "activation_invalid"
+    And the field at "/violations/0/pointer" is "/favourite"
+    And the field at "/violations/0/code" is "unknown_member"
+
+  Scenario: A member stated twice is refused, never read last-wins
+    When I PUT "/activations/a-1" with the body:
+      """
+      {"schemaVersion": 1, "selected": {"directive": ["DIRECTIVE_001"], "directive": []}}
+      """
+    Then the response status is 422
+    And the problem code is "activation_invalid"
+    And the field at "/violations/0/pointer" is "/selected/directive"
+    And the field at "/violations/0/code" is "duplicate_member"
+    When I GET "/activations/a-1"
+    Then the response status is 404
+
+  Scenario Outline: A scalar of another type than the declared one is refused, never coerced
+    When I PUT "/activations/a-1" with the body:
+      """
+      <body>
+      """
+    Then the response status is 422
+    And the problem code is "activation_invalid"
+    And the field at "/violations/0/pointer" is "<pointer>"
+    And the field at "/violations/0/code" is "unreadable_body"
+    When I GET "/activations/a-1"
+    Then the response status is 404
+
+    Examples:
+      | body                                                          | pointer                 |
+      | {"schemaVersion": "1"}                                        | /schemaVersion          |
+      | {"schemaVersion": 1.0}                                        | /schemaVersion          |
+      | {"schemaVersion": 1, "selected": {"directive": [1, true]}}    | /selected/directive/0   |
 
   Scenario: A null list is refused
     When I PUT "/activations/a-1" with the body:

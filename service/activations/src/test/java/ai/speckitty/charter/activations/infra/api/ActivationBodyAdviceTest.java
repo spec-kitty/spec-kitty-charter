@@ -148,6 +148,33 @@ class ActivationBodyAdviceTest {
     }
 
     @Test
+    void aMemberRepeatedInTheBodyIsRefusedAtItsPointerNotReadLastWins() throws Exception {
+        refused(putBody("{\"schemaVersion\": 1, \"schemaVersion\": 2}"), "/schemaVersion", "duplicate_member");
+        refused(
+                putBody("{\"schemaVersion\": 1, \"selected\": {\"directive\": [\"a-1\"], \"directive\": []}}"),
+                "/selected/directive",
+                "duplicate_member");
+        refused(
+                putBody("{\"schemaVersion\": 1, \"packs\": [{\"packId\": \"fixture\", \"packId\": \"other\"}]}"),
+                "/packs/0/packId",
+                "duplicate_member");
+    }
+
+    @Test
+    void aScalarOfAnotherTypeIsNeverCoercedToTheDeclaredOne() throws Exception {
+        refused(putBody("{\"schemaVersion\": \"1\"}"), "/schemaVersion", "unreadable_body");
+        refused(putBody("{\"schemaVersion\": 1.0}"), "/schemaVersion", "unreadable_body");
+        refused(
+                putBody("{\"schemaVersion\": 1, \"selected\": {\"directive\": [1, true]}}"),
+                "/selected/directive/0",
+                "unreadable_body");
+        refused(
+                putBody("{\"schemaVersion\": 1, \"packs\": [{\"packId\": \"fixture\", \"version\": 7}]}"),
+                "/packs/0/version",
+                "unreadable_body");
+    }
+
+    @Test
     void aCreateIsGuardedAsAReplaceIs() throws Exception {
         MockHttpServletResponse answer = send(post("/api/v1/activations")
                 .contentType(MediaType.APPLICATION_JSON)
