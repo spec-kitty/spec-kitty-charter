@@ -118,6 +118,18 @@ Keep it small; add a step only when a scenario cannot be written without it.
   with `x-reserved` and a `501` of its own (read from the declaration, with no `default` fallback), and the answer is
   `501` with an `application/problem+json` body whose `status` is 501 and which has no `code` member, with the
   `Charter-Contract-Version` and `Charter-Worktree` headers and no `Charter-Source-Fingerprint` (ADR-0020 D8).
+- `Given the project activates the pack "<id>"` (or `the packs "<id>, <id>"`) — stores the activation `project`
+  with a plain `PUT /activations/project` whose `packs` are those configured ids, in that order, and expects `201`.
+  `Given the activation "<id>" holds:` followed by a JSON doc string — the same `PUT` of that document under that id,
+  expecting `201`; the binding keeps the `ETag` it was stored with, and `When I GET "<path>" with If-None-Match the
+  stored ETag` sends it back. Every scenario starts with no activation stored.
+- `When I PUT "<path>" with the header "<name>": "<value>" and the body:` and `When I PUT "<path>" with the headers
+  "<name>": "<value>" and "<name>": "<value>" and the body:` — a JSON `PUT` with those extra headers, for the
+  conditional writes (`If-None-Match`, both validators at once).
+- `Then the field at "<json-pointer>" holds exactly <n> item(s)` — the member is an array of exactly that size; `Then
+  the answer holds exactly <n> packs` is the same for `/packs`.
+- `Then the response header "<name>" is the quoted field "<json-pointer>"` — the header is the string member that the
+  pointer names, in double quotes: an `ETag` that quotes a `revision`.
 - `Then the field at "<json-pointer>" is the lines:` followed by a doc string — the text the pointer names is the doc
   string's lines, each ending in a newline; for a Markdown guide.
 - `Given the guide host serves "<uri>" with:` followed by a doc string — a `guideUri` registration that names this URI

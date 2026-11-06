@@ -42,7 +42,8 @@ tags:
   - name: Activation
     description: >-
       The activation set (ADR-0020): active charters the service stores under an opaque id, their writes and their
-      effective reads. Declared in full and reserved: every operation answers 501 until it is built (ADR-0020 D8).
+      effective reads, and the packs an activation builds on. Declared in full: an operation not built yet carries
+      x-reserved and answers 501 until it is (ADR-0020 D8).
 paths:
   /:
     $ref: paths/root.yaml
@@ -80,6 +81,8 @@ paths:
     $ref: paths/activations.yaml
   /activations/{activationId}:
     $ref: paths/activations_activationId.yaml
+  /activations/{activationId}/packs:
+    $ref: paths/activations_activationId_packs.yaml
   /activations/{activationId}/selections/{kind}/{artifactId}:
     $ref: paths/activations_activationId_selections_kind_artifactId.yaml
   /activations/{activationId}/exclusions/{kind}/{artifactId}:
