@@ -32,7 +32,7 @@ request or in the required check.
   uploads every module's report, and opens or comments on one `mutation-nightly` issue when a scheduled run does not
   succeed. Its timeout is 90 minutes.
 - **Kernel survivors triaged:** 14 surviving `kernel.domain` mutants are killed by strengthening existing tests and
-  11 are marked equivalent, raising kernel from 72.4 % to 76 %. The triage found a `Pep440Range.overlaps` defect,
+  11 are marked equivalent, raising kernel from 72.4 % to 76 % (this pull request's own triage); kernel is 82.3 % after #384. The triage found a `Pep440Range.overlaps` defect,
   tracked in [#386](https://github.com/spec-kitty/spec-kitty-charter/issues/386).
 
 [The service build guide](/guides/service-build/#mutation-testing) says how to run PIT, read the floors and narrow a

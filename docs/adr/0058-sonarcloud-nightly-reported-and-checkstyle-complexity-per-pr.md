@@ -2,8 +2,8 @@
 title: "ADR-0058: SonarCloud runs nightly and report-only; complexity is gated per pull request by Checkstyle"
 description: "Static analysis beyond correctness: a nightly, never-required SonarCloud scan with new-code coverage, and Checkstyle complexity rules in the per-PR gate."
 doc_status: active
-updated: 2026-11-05T00:00:00Z
-decision_status: Accepted
+updated: 2026-11-06T00:00:00Z
+decision_status: Accepted; the description of mutation-nightly amended by ADR-0062 (2026-11-06)
 decision_date: '2026-11-03'
 type: ADR
 kind: ADR
@@ -12,6 +12,7 @@ related:
   - adr/0023-ci-gate-required-check
   - adr/0047-generated-indexes-and-merge-queue
   - adr/0057-performance-budgets-never-block-a-pull-request
+  - adr/0062-nightly-mutation-floor
   - guides/service-build
 audience:
   - profile: charter-service-contributor
@@ -68,6 +69,8 @@ pull request's build next to `SONAR_TOKEN`.
 This repository already has the local shape to follow: `.github/workflows/mutation-nightly.yml`
 runs nightly and on manual dispatch, has no pull-request trigger and gates nothing. The SonarCloud
 workflow follows it.
+
+*2026-11-06: amended by [ADR-0062](/adr/0062-nightly-mutation-floor/): the mutation nightly now turns red below a floor; it still gates no pull request.*
 
 The required-check rules this must respect:
 
@@ -177,5 +180,5 @@ the stronger signal.
 - [#367](https://github.com/spec-kitty/spec-kitty-charter/issues/367) — refactor the existing
   over-limit methods; a prerequisite of the complexity gate
 - [#371](https://github.com/spec-kitty/spec-kitty-charter/issues/371) and [#372](https://github.com/spec-kitty/spec-kitty-charter/issues/372) — the complexity gate and the nightly scan
-- `.github/workflows/mutation-nightly.yml` — the local nightly, report-only shape
+- `.github/workflows/mutation-nightly.yml` — the local nightly, report-only shape (*2026-11-06: amended by [ADR-0062](/adr/0062-nightly-mutation-floor/): the mutation nightly now turns red below a floor; it still gates no pull request.*)
 - [#239](https://github.com/spec-kitty/spec-kitty-charter/issues/239) — mutation floors

@@ -19,11 +19,11 @@ history:
 agent_profile: java-jenny
 authoritative_surface: docs/
 create_intent:
-- docs/adr/0060-nightly-mutation-floor.md
+- docs/adr/0062-nightly-mutation-floor.md
 - docs/changelog/2026-11-05-nightly-mutation-floors.md
 execution_mode: code_change
 owned_files:
-- docs/adr/0060-nightly-mutation-floor.md
+- docs/adr/0062-nightly-mutation-floor.md
 - docs/guides/service-build.md
 - docs/changelog/2026-11-05-nightly-mutation-floors.md
 role: implementer
