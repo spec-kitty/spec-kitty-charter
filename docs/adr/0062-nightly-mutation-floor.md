@@ -2,7 +2,7 @@
 title: "ADR-0062: Nightly mutation floor"
 description: "The nightly PIT run stops being an experiment: each mutated module and packs group has a fixed floor that turns the nightly red, never a pull request."
 doc_status: active
-updated: 2026-11-05T00:00:00Z
+updated: 2026-11-06T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-11-05'
 type: ADR
@@ -51,7 +51,7 @@ Until this change, `.github/workflows/mutation-nightly.yml` ran `./gradlew pites
   code, cannot apply `charter.domain-conventions` (it refuses external dependencies), so it was never mutated.
 - **Barely visible.** There was no job summary and no issue on a red run, and only kernel's report was uploaded.
 
-Measured on main's tests (JDK 25):
+First-run scores, measured on main's tests (JDK 25):
 
 | Module / group | Mutants | Score |
 |---|--:|--:|
@@ -61,6 +61,17 @@ Measured on main's tests (JDK 25):
 | packs `domain+application` | 1638 | 92.7 % |
 | packs `infra.storage` | 2092 | 90.7 % |
 | packs `infra.fetch` | 269 | 77.3 % |
+
+After [#384](https://github.com/spec-kitty/spec-kitty-charter/pull/384) merged, the scores are:
+
+| Module / group | Detected / mutants | Score | Margin over floor |
+|---|--:|--:|--:|
+| kernel | 312 / 379 | 82.3 % | 65 |
+| missions | 108 / 144 | 75.0 % | 7 |
+| profiles | 64 / 66 | 96.9 % | 31 |
+| packs `domain+application` | 1519 / 1632 | 93.0 % | 131 |
+| packs `infra.storage` | 1900 / 2092 | 90.8 % | 121 |
+| packs `infra.fetch` | 208 / 269 | 77.3 % | 19 |
 
 A full `:packs:pitest` took 45m54s on an idle 4-core machine without `infra.fetch`, which adds about 2 minutes: its
 narrowed run (the `infra.fetch` classes against every packs target test) took 116 s in the `pitest` task, 311 s for the
@@ -100,8 +111,8 @@ characters in mutator descriptions, so it is not well-formed XML.
    - **What a floor catches.** A floor backstops a large regression: a deleted test class, a module's tests no longer
      running, a large piece of code arriving untested. It does not catch a single weakened test, which costs a few
      mutants, well inside every packs and kernel margin.
-   - **Missions and profiles are near the trigger.** A margin of 7 and of 2 mutants means a small change there, even
-     moving a few lines of covered code, can turn the nightly red.
+   - **Missions is near the trigger.** A margin of 7 mutants means a small change there, even moving a few lines of
+     covered code, can turn the nightly red. Profiles had a margin of 2 in the first run and has 31 after #384.
 4. **The packs scope.** PIT mutates `packs.domain.*`, `packs.application.*`, `packs.infra.storage.*`
    (`infra.storage.config` included, operator ruling) and `packs.infra.fetch.*` (operator ruling), and never the
    Spring wiring (`application.config.*`, `infra.fetch.config.*`) or `infra.api.*` (the REST adapter). It runs only
@@ -115,8 +126,8 @@ characters in mutator descriptions, so it is not well-formed XML.
 6. **Moving a floor.**
    - **Raise** a floor by pull request when the nightly score is 5 or more points above it.
    - **Lower** a floor only by an amendment to this ADR.
-   - Kernel and profiles are to be raised in a follow-up pull request after
-     [#384](https://github.com/spec-kitty/spec-kitty-charter/pull/384) merges.
+   - [#384](https://github.com/spec-kitty/spec-kitty-charter/pull/384) has merged, so kernel and profiles now qualify
+     under the raise rule; the raise is a follow-up pull request.
 7. **Triage of a surviving mutant**, in this order:
    1. kill it by strengthening an **existing** test's assertion;
    2. mark it equivalent, with a one-line reason;
@@ -138,7 +149,7 @@ characters in mutator descriptions, so it is not well-formed XML.
    - Every module's report and `floors.json` are uploaded, on a red run too, and kept for 14 days.
    - When a scheduled run does not succeed, a timeout included, an alert job with only `issues: write` opens one
      issue labelled `mutation-nightly`, or comments on the open one. A `workflow_dispatch` with `force_issue` takes
-     the same path, marked as a forced test run.
+     the same path, marked as a forced test run. Proving the alert with `force_issue` costs a full PIT run.
    - `timeout-minutes` is 90 (operator ruling). The mutation step has 80 of them, so the summary and the upload
      still run when PIT runs out of time.
 9. **Never on a pull request.** No pull-request or `merge_group` trigger runs PIT, `verifyAll` contains no `pitest` or
@@ -164,8 +175,8 @@ measurement: it skips the floor check, and the `floors.json` it leaves may be st
 - Mutation coverage of a change is seen a day late, never in the pull request that caused it.
 - Floors of 50 to 70 on kernel, missions and profiles sit well below the packs `domain+application` and
   `infra.storage` floors until the follow-up raises them.
-- A floor does not catch a single weakened test: the margins of packs and kernel absorb tens of mutants. Missions and
-  profiles, with margins of 7 and 2 mutants, are close to the trigger instead.
+- A floor does not catch a single weakened test: the margins of packs, kernel and profiles absorb tens of mutants.
+  Missions, with a margin of 7 mutants, is close to the trigger instead.
 
 ### Risks
 
@@ -206,8 +217,8 @@ module, and asked whether the thresholds should live in `gradle.properties`. Not
 ## References
 
 - [#239](https://github.com/spec-kitty/spec-kitty-charter/issues/239) — the design and the operator's decisions
-- [#384](https://github.com/spec-kitty/spec-kitty-charter/pull/384) — kernel and profiles test gaps; the floors are
-  raised after it merges
+- [#384](https://github.com/spec-kitty/spec-kitty-charter/pull/384) — kernel and profiles test gaps; it has merged, and the
+  floors are raised in a follow-up pull request
 - [#386](https://github.com/spec-kitty/spec-kitty-charter/issues/386) — a pre-existing `Pep440Range.overlaps` defect
   found during the kernel triage
 - [The service build guide](/guides/service-build/#mutation-testing) — how to run PIT and read the floors

@@ -48,7 +48,7 @@
       "criterion_id": "FR-005",
       "description": "Verify FR-005 is satisfied",
       "proof_type": "manual_review",
-      "evidence": "WP04: ADR-0060 Nightly mutation floor (ends the experiment status, amends ADR-0058), service-build guide section, changelog; every build fact verified against the code; markdownlint and cspell clean",
+      "evidence": "WP04: ADR-0062 Nightly mutation floor (ends the experiment status, amends ADR-0058), service-build guide section, changelog; every build fact verified against the code; markdownlint and cspell clean",
       "pass_fail": "pass",
       "verified_by": "claude::reviewer-renata",
       "verified_at": "2026-11-05T17:02:51.101882+00:00",
