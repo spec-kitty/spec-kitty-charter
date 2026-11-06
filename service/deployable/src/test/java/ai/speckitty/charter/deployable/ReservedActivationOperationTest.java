@@ -2,16 +2,19 @@ package ai.speckitty.charter.deployable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ai.speckitty.charter.activations.application.ActivationIdMint;
 import ai.speckitty.charter.activations.application.ActivationService;
+import ai.speckitty.charter.activations.application.AvailablePacks;
+import ai.speckitty.charter.activations.domain.ActivationRepository;
 import ai.speckitty.charter.activations.infra.api.ActivationController;
 import ai.speckitty.charter.activations.infra.api.ActivationMapper;
 import ai.speckitty.charter.api.ActivationApi;
 import ai.speckitty.charter.kernel.transport.ReservedOperation;
+import java.lang.reflect.Proxy;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -32,9 +35,20 @@ class ReservedActivationOperationTest {
 
     private static final String SELECTION = "/api/v1/activations/a1/selections/directive/D1";
 
-    /** A controller whose use cases a reserved operation never reaches. */
+    /** A controller whose use cases a reserved operation never reaches: every port they use fails when called. */
     private static ActivationController controller() {
-        return new ActivationController(mock(ActivationService.class), new ActivationMapper("/api/v1"));
+        ActivationService service = new ActivationService(
+                untouched(ActivationRepository.class), untouched(AvailablePacks.class), new ActivationIdMint());
+        return new ActivationController(service, new ActivationMapper("/api/v1"));
+    }
+
+    /** A port that fails the test when any of its methods is called: a reserved operation reaches no use case. */
+    private static <T> T untouched(Class<T> port) {
+        return port.cast(
+                Proxy.newProxyInstance(port.getClassLoader(), new Class<?>[] {port}, (proxy, method, arguments) -> {
+                    throw new AssertionError(
+                            "A reserved operation reached " + port.getSimpleName() + "." + method.getName());
+                }));
     }
 
     private final MockMvc mvc = MockMvcBuilders.standaloneSetup(controller())

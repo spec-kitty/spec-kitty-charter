@@ -2,8 +2,6 @@ package ai.speckitty.charter.activations.infra.packs;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import ai.speckitty.charter.activations.domain.ActivationDocument;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
@@ -16,7 +14,6 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
-import ai.speckitty.charter.packs.application.ClosureQueries;
 import ai.speckitty.charter.packs.application.ClosureView;
 import ai.speckitty.charter.packs.application.OfferingReadService.OfferingEntry;
 import ai.speckitty.charter.packs.application.UnknownRootException;
@@ -33,10 +30,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 
 /**
- * The adapter over the packs slice: one {@link ClosureQueries#snapshot} per call, copied field by field, with each pack
+ * The adapter over the packs slice: one {@code ClosureQueries.snapshot} per call, copied field by field, with each pack
  * of the floor and the locks named by its configured id; an unknown root named by the typed UnknownRootException alone (R4); and a refusal
  * of the compose passed on unchanged.
  */
@@ -45,8 +43,39 @@ class PacksAvailabilityTest {
     private static final String ALPHA = "01M4P01D5TWB5FKZGNNQG3943R";
     private static final String BETA = "01M4P01D5TWB5FKZGNNQG3943S";
 
-    private final ClosureQueries closures = mock(ClosureQueries.class);
+    private final FakeClosures closures = new FakeClosures();
     private final PacksAvailability adapter = new PacksAvailability(closures);
+
+    /**
+     * A closure read that answers one set of roots with what it was given, and refuses every other set: a call with
+     * roots the test did not expect fails the test instead of answering.
+     */
+    private static final class FakeClosures implements PacksAvailability.Closures {
+        private Optional<List<PackIdentifier>> expected = Optional.empty();
+        private Supplier<ClosureView> answer = () -> {
+            throw new AssertionError("no answer was given");
+        };
+        private int calls;
+
+        void answers(Optional<List<PackIdentifier>> roots, ClosureView view) {
+            expected = roots;
+            answer = () -> view;
+        }
+
+        void throwsOn(Optional<List<PackIdentifier>> roots, RuntimeException fault) {
+            expected = roots;
+            answer = () -> {
+                throw fault;
+            };
+        }
+
+        @Override
+        public ClosureView snapshot(Optional<List<PackIdentifier>> roots) {
+            calls++;
+            assertThat(roots).as("the roots the adapter asks for").isEqualTo(expected);
+            return answer.get();
+        }
+    }
 
     /** beta, then alpha, which depends on it; alpha locks D1 and its governing preset requires D2. */
     private static ClosureView view() {
@@ -97,11 +126,11 @@ class PacksAvailabilityTest {
 
     @Test
     void theViewIsCopiedFieldByField() {
-        when(closures.snapshot(Optional.of(List.of(new PackIdentifier("alpha")))))
-                .thenReturn(view());
+        closures.answers(Optional.of(List.of(new PackIdentifier("alpha"))), view());
 
         ClosureSnapshot snapshot = adapter.snapshot(Optional.of(List.of("alpha")));
 
+        assertThat(closures.calls).as("one verified read per snapshot").isEqualTo(1);
         assertThat(snapshot.resolved()).isTrue();
         assertThat(snapshot.packs())
                 .extracting(ClosureSnapshot.PackEntry::packId)
@@ -125,7 +154,7 @@ class PacksAvailabilityTest {
 
     @Test
     void theFloorAndTheLocksNameTheConfiguredPackAndOnlyLockedLevelsCount() {
-        when(closures.snapshot(Optional.empty())).thenReturn(view());
+        closures.answers(Optional.empty(), view());
 
         ClosureSnapshot snapshot = adapter.snapshot(Optional.empty());
 
@@ -135,7 +164,7 @@ class PacksAvailabilityTest {
 
     @Test
     void thePresetsAreCopiedWithTheirMustHaveItemsAmongTheMembers() {
-        when(closures.snapshot(Optional.empty())).thenReturn(view());
+        closures.answers(Optional.empty(), view());
 
         ClosureSnapshot.PresetView preset =
                 adapter.snapshot(Optional.empty()).presets().get("governing");
@@ -148,8 +177,9 @@ class PacksAvailabilityTest {
 
     @Test
     void anUnknownRootIsNamedAndTheWriteIsRefusedAtItsPosition() {
-        when(closures.snapshot(Optional.of(List.of(new PackIdentifier("alpha"), new PackIdentifier("ghost")))))
-                .thenThrow(new UnknownRootException(List.of("ghost")));
+        closures.throwsOn(
+                Optional.of(List.of(new PackIdentifier("alpha"), new PackIdentifier("ghost"))),
+                new UnknownRootException(List.of("ghost")));
 
         ClosureSnapshot snapshot = adapter.snapshot(Optional.of(List.of("alpha", "ghost")));
 
@@ -170,8 +200,7 @@ class PacksAvailabilityTest {
     @Test
     void anyOtherArgumentErrorOfTheComposeIsNoUnknownPackAndPropagatesUnchanged() {
         IllegalArgumentException fault = new IllegalArgumentException("a fault of the compose");
-        when(closures.snapshot(Optional.of(List.of(new PackIdentifier("alpha")))))
-                .thenThrow(fault);
+        closures.throwsOn(Optional.of(List.of(new PackIdentifier("alpha"))), fault);
 
         assertThatThrownBy(() -> adapter.snapshot(Optional.of(List.of("alpha"))))
                 .isSameAs(fault);
@@ -180,7 +209,7 @@ class PacksAvailabilityTest {
     @Test
     void aRefusalOfTheComposePassesUnchanged() {
         CharterRefusal missing = new CharterRefusal(RefusalCode.PACK_REFERENCE_PACK_MISSING, "alpha names beta-pack");
-        when(closures.snapshot(Optional.empty())).thenThrow(missing);
+        closures.throwsOn(Optional.empty(), missing);
 
         assertThatThrownBy(() -> adapter.snapshot(Optional.empty())).isSameAs(missing);
     }
