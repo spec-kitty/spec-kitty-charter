@@ -168,6 +168,43 @@ class RefusalHandlerTest {
     }
 
     @Test
+    @DisplayName("at most 100 violations render, and the detail counts the ones left out")
+    void violationsAreCappedAndTheRestCounted() {
+        List<ai.speckitty.charter.kernel.domain.RefusalViolation> violations = java.util.stream.IntStream.range(0, 250)
+                .mapToObj(index -> new ai.speckitty.charter.kernel.domain.RefusalViolation(
+                        "/selected/tactic/" + index, "unknown_artifact", "No tactic t-" + index + " is in the packs."))
+                .toList();
+
+        CharterRefusal body = handler.refused(ai.speckitty.charter.kernel.domain.CharterRefusal.withViolations(
+                        RefusalCode.ACTIVATION_INVALID, "The activation names unknown tactics.", violations))
+                .getBody();
+
+        assertThat(body).isNotNull();
+        assertThat(body.getViolations()).hasSize(RefusalHandler.MAX_VIOLATIONS).hasSize(100);
+        assertThat(body.getViolations().getFirst().getPointer()).isEqualTo("/selected/tactic/0");
+        assertThat(body.getViolations().getLast().getPointer()).isEqualTo("/selected/tactic/99");
+        assertThat(body.getDetail())
+                .isEqualTo("The activation names unknown tactics. 150 more violations are not listed.");
+    }
+
+    @Test
+    @DisplayName("exactly 100 violations render whole, and the detail is unchanged")
+    void violationsAtTheCapRenderWhole() {
+        List<ai.speckitty.charter.kernel.domain.RefusalViolation> violations = java.util.stream.IntStream.range(0, 100)
+                .mapToObj(index -> new ai.speckitty.charter.kernel.domain.RefusalViolation(
+                        "/selected/tactic/" + index, "unknown_artifact", "No tactic t-" + index + " is in the packs."))
+                .toList();
+
+        CharterRefusal body = handler.refused(ai.speckitty.charter.kernel.domain.CharterRefusal.withViolations(
+                        RefusalCode.ACTIVATION_INVALID, "The activation names unknown tactics.", violations))
+                .getBody();
+
+        assertThat(body).isNotNull();
+        assertThat(body.getViolations()).hasSize(100);
+        assertThat(body.getDetail()).isEqualTo("The activation names unknown tactics.");
+    }
+
+    @Test
     @DisplayName("a refusal's requiring packs render on the problem body, each with its extends chain")
     void requiredByRendersOnTheBody() {
         CharterRefusal body = handler.refused(ai.speckitty.charter.kernel.domain.CharterRefusal.withRequiredBy(

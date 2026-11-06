@@ -13,3 +13,6 @@
 - `replaceActivation`, `deleteActivation`, `PreconditionFailed` and `UnknownActivation` say that an `If-Match` on an
   activation that does not exist is `412`, not `404`: no stored revision matches it (RFC 9110 §13.1.1). Two
   scenarios in `activation-register-guards.feature` pin it. The behavior is unchanged.
+- The shared `Problem` caps `violations` at `maxItems: 100`. A refusal of more parts lists the first 100 and ends
+  `detail` with "N more violations are not listed." A 1 MiB body of nulls or unknown ids used to answer about
+  200,000 entries. Core's seam reads at most 100 entries and takes the count from `detail`.
