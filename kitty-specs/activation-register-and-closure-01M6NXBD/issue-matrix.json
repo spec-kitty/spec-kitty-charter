@@ -97,7 +97,7 @@
       "wp": null
     },
     "#359": {
-      "evidence_ref": "Dependency facts and rooted closure (PackCompositionResolver.resolveRooted, ClosureQueries); composition.feature",
+      "evidence_ref": "Rooted compose (PackCompositionResolver.resolveRooted, WP02) and dependency facts in ClosureQueries; composition.feature",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -106,7 +106,7 @@
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
       "verdict": "fixed",
-      "wp": "WP03"
+      "wp": "WP02"
     },
     "#360": {
       "evidence_ref": "GET /activations/{id}/packs closure read; former @WIP #360 composition scenario re-pointed and passing",
