@@ -18,8 +18,8 @@ import org.junit.jupiter.api.Test;
 /**
  * FR-013, US3 AS3: {@code includeDeactivated} takes back only the deny entries the walk passes through within the
  * cascade's scope: what it reached in scope, the ancestors it passed whose kind is in scope, and the target (ADR-0059 as
- * amended on 2026-11-06, R3). A denied artifact outside the scope stops the walk and keeps its deny entry, as it would
- * without {@code includeDeactivated}. There is no {@code enhances} pull at write time (R4): the write adds to
+ * amended on 2026-11-06, A3). A denied artifact outside the scope stops the walk and keeps its deny entry, as it would
+ * without {@code includeDeactivated}. There is no {@code enhances} pull at write time (A4): the write adds to
  * {@code selected} only the target and what the walk reached, which every test checks with
  * {@link #assertOnlyTheWalkSelected}.
  */
@@ -92,7 +92,7 @@ class CascadeRulesClearingTest {
 
     @Test
     void aDeniedArtifactOutsideTheScopeStopsTheWalkAndKeepsItsDenyEntry() {
-        // R3: X is a tactic, outside a cascade into directives, so the walk stops at it as it would without
+        // A3: X is a tactic, outside a cascade into directives, so the walk stops at it as it would without
         // includeDeactivated: it is reported in skippedDeactivated and its deny entry stays.
         ActivationDocument before = denying("tactic:X");
         Reach reach = reach().start("directive:D")
@@ -140,7 +140,7 @@ class CascadeRulesClearingTest {
 
     @Test
     void aDeniedAncestorOutsideTheScopeStopsTheLineageAndKeepsItsDenyEntry() {
-        // R3: the ancestor's kind is outside a cascade into directives, so it is a stop, as without includeDeactivated.
+        // A3: the ancestor's kind is outside a cascade into directives, so it is a stop, as without includeDeactivated.
         ArtifactRef p = ref("agent_profile:P");
         ActivationDocument before = denying("agent_profile:Q");
         Reach passed = reach().start("agent_profile:P")

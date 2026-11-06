@@ -20,7 +20,8 @@
 # Start 2, under the container profile with every rule met but charter.container.allowed-hosts: the service must
 # refuse to start, naming that property (the profile is read at run time, not when the image was built).
 # Start 3, under the container profile with every setting it requires: the service starts and answers (the settings
-# are bound and validated, which in a native executable needs the validator's reflection hints).
+# are bound and validated, which in a native executable needs the validator's reflection hints), and its health check
+# answers {"status":"UP"} without the token.
 #
 # Portable bash and curl only, for Linux, macOS and Git Bash on Windows. Exits non-zero, printing the service's own
 # output, on the first failed check.
@@ -235,6 +236,17 @@ done
 [[ "$(cat "$work/container-info.json")" == *"\"serviceVersion\":\"$service_version\""* ]] \
   || fail "GET /info under the container profile: $(cat "$work/container-info.json")"
 echo "ok: under the container profile with its settings the service starts and answers"
+# The health check answers up or down without the token, and nothing more (ADR-0041 decision 7).
+status="$(http "$work/container-health.json" "http://127.0.0.1:$port/actuator/health")"
+[[ "$status" == "200" && "$(cat "$work/container-health.json")" == '{"status":"UP"}' ]] \
+  || fail "GET /actuator/health without a token under the container profile: $status $(cat "$work/container-health.json")"
+echo "ok: under the container profile the health check answers {\"status\":\"UP\"} without the token"
+# The exemption is that one request: the info operation still needs the token, and no other endpoint answers.
+status="$(http /dev/null "$base/info")"
+[[ "$status" == "401" ]] || fail "GET /info without a token under the container profile: $status, not 401"
+status="$(http /dev/null -H "$auth" "http://127.0.0.1:$port/actuator/env")"
+[[ "$status" == "404" ]] || fail "GET /actuator/env with the token under the container profile: $status, not 404"
+echo "ok: under the container profile only the health check skips the token, and /actuator/env is not exposed"
 stop
 log=""
 
