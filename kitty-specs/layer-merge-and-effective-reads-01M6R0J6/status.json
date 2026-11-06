@@ -160,7 +160,7 @@
     },
     "WP05": {
       "actor": "claude",
-      "agent": "claude::java-jenny",
+      "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -173,6 +173,7 @@
         "Ready for review (commit 0ef213ba). Q1: Reachability step term (mission type reaches held action:M/<s> like requires); CascadeScope admits mission_type; selection no longer forces cascade=none. Q2: exclusion service accepts mission_type (via ActivationWrites.selectable); floor 409s apply. B5: includeDeactivated clears only reached-and-selected. Red first: 19 new/rewritten tests failed on assertions/guards (scratchpad red-wp05.log), now green. Gates: ':packs:test --tests *Reachability*' EXIT=0; ':activations:checkstyleMain :activations:checkstyleTest :packs:checkstyleMain :packs:checkstyleTest' EXIT=0; ':packs:timingBudgets' EXIT=0 (Reachability p95 14.3 ms); ':deployable:test --tests *HexagonalArchitectureTest*' 59/59 green (task EXIT=1 only from the 109 known CharterContractSuite failures, WP08); ':activations:test' EXIT=1 with only the known WP08 failures (ActivationBodyAdviceTest x4, ActivationJsonTest[2]). Out-of-map: EdgeIndex.stepsOf accessor; ActivationWriteOrderTest one assertion. Follow-ups: WP08 must rewrite activation-selections.feature 'includeDeactivated clears a denied ancestor inside the scope' and SelectionRequest.includeDeactivated text for B5; WP04 should delete now-unused ActivationWrites.deniable; packs do not yet hold action:M/s (facts defined set), so the step term reaches nothing in production until steps are held; ClosureViewSession drops vias from actions, so requiredBy of a stop behind a step is empty (WP24)."
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/layer-merge-and-effective-reads-01M6R0J6-coord/kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP05-a0-cascade-mission-types/review-cycle-1.md",
         "reference": "review-cycle://layer-merge-and-effective-reads-01M6R0J6/WP05-a0-cascade-mission-types/review-cycle-1.md",
@@ -180,14 +181,14 @@
         "verdict": "changes_requested"
       },
       "role": "implementer",
-      "shell_pid": 11093,
-      "shell_pid_created_at": "1793982740.61",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T020": "done",
-        "T021": "done",
-        "T022": "done",
-        "T023": "done",
-        "T024": "done"
+        "T020": "planned",
+        "T021": "planned",
+        "T022": "planned",
+        "T023": "planned",
+        "T024": "planned"
       }
     },
     "WP06": {
