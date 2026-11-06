@@ -15,7 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 /**
  * The activation set is reserved one operation at a time (ADR-0020 D8): the controller carries no mark of its own, and
- * each of the thirteen operations it overrides carries one, so an operation is built by removing its mark alone.
+ * each of the fourteen operations it overrides carries one, so an operation is built by removing its mark alone.
  */
 class ActivationControllerTest {
 
@@ -32,8 +32,8 @@ class ActivationControllerTest {
     }
 
     @Test
-    void everyOneOfTheThirteenOperationsIsOverriddenAndMarked() throws NoSuchMethodException {
-        assertThat(operations()).hasSize(13);
+    void everyOneOfTheFourteenOperationsIsOverriddenAndMarked() throws NoSuchMethodException {
+        assertThat(operations()).hasSize(14);
         for (Method operation : operations()) {
             Method overridden =
                     ActivationController.class.getMethod(operation.getName(), operation.getParameterTypes());
@@ -46,7 +46,7 @@ class ActivationControllerTest {
 
     @Test
     void anOperationReachedPastTheInterceptorAnswers501() {
-        assertThatThrownBy(() -> new ActivationController().getActivation("a1"))
+        assertThatThrownBy(() -> new ActivationController().getActivation("a1", null))
                 .isInstanceOfSatisfying(
                         ResponseStatusException.class,
                         notBuilt -> assertThat(notBuilt.getStatusCode()).isEqualTo(HttpStatus.NOT_IMPLEMENTED));

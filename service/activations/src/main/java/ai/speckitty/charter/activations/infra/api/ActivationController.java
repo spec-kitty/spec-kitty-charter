@@ -4,6 +4,7 @@ import ai.speckitty.charter.api.ActivationApi;
 import ai.speckitty.charter.api.model.Activation;
 import ai.speckitty.charter.api.model.ActivationChange;
 import ai.speckitty.charter.api.model.ActivationConfig;
+import ai.speckitty.charter.api.model.ActivationPackList;
 import ai.speckitty.charter.api.model.ActivationSkippedReport;
 import ai.speckitty.charter.api.model.EffectiveActionContext;
 import ai.speckitty.charter.api.model.EffectiveArtifactList;
@@ -66,26 +67,37 @@ public class ActivationController implements ActivationApi {
 
     @Override
     @ReservedOperation
-    public ResponseEntity<Activation> getActivation(String activationId) {
+    public ResponseEntity<Activation> getActivation(String activationId, @Nullable String ifNoneMatch) {
         throw notBuilt();
     }
 
     @Override
     @ReservedOperation
-    public ResponseEntity<ActivationSkippedReport> getActivationSkippedReport(String activationId) {
+    public ResponseEntity<ActivationSkippedReport> getActivationSkippedReport(
+            String activationId, @Nullable String ifNoneMatch) {
         throw notBuilt();
     }
 
     @Override
     @ReservedOperation
     public ResponseEntity<EffectiveActionContext> getEffectiveActionContext(
-            String activationId, String missionType, String action, Integer depth) {
+            String activationId, String missionType, String action, @Nullable String ifNoneMatch, Integer depth) {
         throw notBuilt();
     }
 
     @Override
     @ReservedOperation
-    public ResponseEntity<EffectiveGraph> getEffectiveGraph(String activationId) {
+    public ResponseEntity<EffectiveGraph> getEffectiveGraph(String activationId, @Nullable String ifNoneMatch) {
+        throw notBuilt();
+    }
+
+    /**
+     * The closure read (#360). Declared without {@code x-reserved} in the contract, it is marked here until it is
+     * built, so it answers {@code 501} like a reserved operation in the meantime.
+     */
+    @Override
+    @ReservedOperation
+    public ResponseEntity<ActivationPackList> listActivationPacks(String activationId, @Nullable String ifNoneMatch) {
         throw notBuilt();
     }
 
@@ -93,6 +105,7 @@ public class ActivationController implements ActivationApi {
     @ReservedOperation
     public ResponseEntity<EffectiveArtifactList> listEffectiveArtifacts(
             String activationId,
+            @Nullable String ifNoneMatch,
             @Nullable String kind,
             @Nullable String state,
             Integer pageSize,

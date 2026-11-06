@@ -1,11 +1,15 @@
 title: EffectiveArtifactList
-description: The artifacts of the offering under an activation, one page at a time (ADR-0020 D7).
+description: >-
+  The artifacts of the offering under an activation, one page at a time (ADR-0020 D7), with the counts of the whole
+  effective set (summary), which moved here from Activation (ADR-0059 D5): they depend on the offering, so they are
+  answered with governanceFingerprint and covered by this read's ETag.
 type: object
 additionalProperties: false
 required:
 - activationId
 - revision
 - governanceFingerprint
+- summary
 - items
 - pageInfo
 - _links
@@ -38,6 +42,8 @@ properties:
       rule: The source fingerprint of the packs the answer was computed from.
       inputs:
       - schemas/ServiceInfo.yaml#/properties/sourceFingerprint
+  summary:
+    $ref: ActivationSummary.yaml
   items:
     type: array
     items:

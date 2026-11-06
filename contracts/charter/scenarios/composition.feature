@@ -816,11 +816,10 @@ Feature: The compose resolves the configured packs' dependency graph
     And the field at "/packs/0/packId" is "house"
     And the field at "/packs/1/packId" is "team"
 
-  # Deferred to #360: roots come from the activation set (operator ruling 2026-11-03).
-  @WIP
   Scenario: The compose is the closure of the activated packs, not every available pack
     FR-011: the catalog is the set of available packs and the activated packs are the closure's roots.
-    A pack that is neither activated nor depended on is available but is not in the compose.
+    A pack that is neither activated nor depended on is available but is not in the compose: the
+    activation's closure read (#360) lists beta, which alpha depends on, then alpha, and not gamma.
     Given the org pack "alpha" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943R
@@ -849,11 +848,11 @@ Feature: The compose resolves the configured packs' dependency graph
       pack_level: org
       """
     And the project activates the pack "alpha"
-    When I GET "/offering"
+    When I GET "/activations/project/packs"
     Then the response status is 200
     And the field at "/packs/0/packId" is "beta"
     And the field at "/packs/1/packId" is "alpha"
-    And the offering holds exactly 2 packs
+    And the answer holds exactly 2 packs
 
   Scenario: A bare cross-pack reference is refused naming the holding pack
     SC-004's refusal half (FR-015), on the two-pack fixture shared with the two scenarios below: alpha's

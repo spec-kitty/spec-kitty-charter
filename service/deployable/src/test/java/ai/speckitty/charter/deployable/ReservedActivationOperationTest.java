@@ -41,9 +41,10 @@ class ReservedActivationOperationTest {
 
         assertThat(routed).isInstanceOf(HandlerMethod.class);
         HandlerMethod handler = (HandlerMethod) routed;
-        assertThat(handler.getMethod()).isEqualTo(ActivationController.class.getMethod("getActivation", String.class));
+        assertThat(handler.getMethod())
+                .isEqualTo(ActivationController.class.getMethod("getActivation", String.class, String.class));
         assertThat(ActivationApi.class
-                        .getMethod("getActivation", String.class)
+                        .getMethod("getActivation", String.class, String.class)
                         .isAnnotationPresent(ReservedOperation.class))
                 .as("the generated interface method that carries the mapping is unmarked")
                 .isFalse();
