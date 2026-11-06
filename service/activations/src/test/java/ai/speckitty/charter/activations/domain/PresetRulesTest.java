@@ -111,7 +111,8 @@ class PresetRulesTest {
         assertThat(denied.after().selected(ArtifactKind.SKILL).orElseThrow()).containsExactly("pr-review");
         assertThat(denied.after().selected(ArtifactKind.GLOSSARY_PACK)).isEmpty();
         assertThat(denied.after().deactivated(ArtifactKind.GLOSSARY_PACK)).containsExactly("core-terms");
-        assertThat(forced.after().selected(ArtifactKind.GLOSSARY_PACK).orElseThrow()).containsExactly("core-terms");
+        assertThat(forced.after().selected(ArtifactKind.GLOSSARY_PACK).orElseThrow())
+                .containsExactly("core-terms");
         assertThat(forced.after().deactivated(ArtifactKind.GLOSSARY_PACK)).isEmpty();
         assertThat(forced.applied())
                 .contains(

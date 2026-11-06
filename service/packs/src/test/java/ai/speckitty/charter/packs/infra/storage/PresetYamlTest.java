@@ -61,7 +61,8 @@ class PresetYamlTest {
     }
 
     @Test
-    @DisplayName("a preset carrying activated_kinds is refused on its file at registration's load; without it, it loads")
+    @DisplayName(
+            "a preset carrying activated_kinds is refused on its file at registration's load; without it, it loads")
     void theKindGateKeyIsRefused(@TempDir Path host) throws IOException {
         String preset = "schema_version: '1.0'\nid: p\ndescription: d\nactivated_skills:\n  - id: s\n";
         WholePackStore store = new WholePackStore(new YamlSerializationStrategy());
@@ -71,8 +72,9 @@ class PresetYamlTest {
                 store.load(onePresetPack(host.resolve("refused"), preset + "activated_kinds:\n  - skills\n"));
 
         assertThat(clean.pack().violations()).isEmpty();
-        assertThat(clean.pack().presets()).singleElement().satisfies(p -> assertThat(p.artifacts())
-                .containsOnlyKeys(ArtifactKind.SKILL));
+        assertThat(clean.pack().presets())
+                .singleElement()
+                .satisfies(p -> assertThat(p.artifacts()).containsOnlyKeys(ArtifactKind.SKILL));
         assertThat(refused.pack().presets()).isEmpty();
         assertThat(refused.pack().violations()).singleElement().satisfies(violation -> {
             assertThat(violation.file()).isEqualTo("presets/p.yaml");
