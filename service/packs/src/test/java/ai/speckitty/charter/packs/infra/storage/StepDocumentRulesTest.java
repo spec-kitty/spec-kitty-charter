@@ -192,8 +192,7 @@ class StepDocumentRulesTest {
                         Optional.of(prompt),
                         first.guidelines(),
                         first.expectedInputArtifacts(),
-                        first.expectedOutputArtifacts(),
-                        first.references()));
+                        first.expectedOutputArtifacts()));
         MissionType.Builder builder = MissionType.builder()
                 .id(type.id())
                 .packId(type.packId())
@@ -204,7 +203,6 @@ class StepDocumentRulesTest {
                 .requiresSubstantiveSpec(type.requiresSubstantiveSpec())
                 .pathConventions(type.pathConventions().orElse(null));
         type.expectedOutputArtifacts().forEach(builder::expectedOutputArtifact);
-        type.references().forEach(builder::reference);
         steps.forEach(builder::step);
         type.onDemandSteps().forEach(builder::onDemandStep);
         return builder.build();
