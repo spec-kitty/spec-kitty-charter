@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * A write replaces {@code activation.json} whole, never in place (T111). It replaces the old
+ * A write replaces {@code activation.json} whole, never in place. It replaces the old
  * {@code readersRacingWritersOnlyEverSeeAWholeWrittenDocument}, which read through {@code find}: {@code find} takes the
  * id's lock, as every writer does, so no reader ever ran during a write and that test passed with a non-atomic write.
  *

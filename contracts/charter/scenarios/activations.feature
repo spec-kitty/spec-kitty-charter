@@ -7,7 +7,7 @@ Feature: The activation set is declared and reserved
   sends a well-formed request to one operation and is removed when that operation is built.
   ReservedOperationCoverageTest keeps the pins and the reserved operations one to one. The
   register (create, register, read, remove) is built and pinned by activation-register.feature;
-  the four effective reads are built with R9 (#103); the five per-artifact and preset writes, PR B.
+  the four effective reads are built with R9 (#103); and the five per-artifact and preset writes with #291.
 
   @reserved
   Scenario: Selecting an artifact is reserved

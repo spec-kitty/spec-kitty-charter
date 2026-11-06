@@ -10,7 +10,7 @@ import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 
 /**
- * The directory name of an activation id (T106): two ids that differ only in case get names that differ on a
+ * The directory name of an activation id: two ids that differ only in case get names that differ on a
  * case-insensitive file system too, and every name decodes back to its id.
  */
 class ActivationDirectoryNameTest {

@@ -13,7 +13,7 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * A test data builder of {@link ClosureSnapshot}, for the activation tests of every ring (WP06 to WP14): a snapshot holds only
+ * A test data builder of {@link ClosureSnapshot}, for the activation tests of every ring: a snapshot holds only
  * what a test names, and every pack is at {@code org} with no dependency unless the test says otherwise.
  */
 public final class ClosureSnapshots {

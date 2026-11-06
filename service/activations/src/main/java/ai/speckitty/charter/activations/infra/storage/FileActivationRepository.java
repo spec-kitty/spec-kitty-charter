@@ -28,7 +28,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * The activation documents on disk (FR-019): {@code <root>/<encoded id>/activation.json}, holding exactly the
  * canonical bytes of {@link ActivationFileCodec}. The directory is named by {@link ActivationDirectoryName}, a
- * reversible encoding that keeps ids differing only in case apart on a case-insensitive file system (T106). The file
+ * reversible encoding that keeps ids differing only in case apart on a case-insensitive file system. The file
  * holds the document alone, not its id, since its bytes are the bytes its revision hashes (FR-005); a read checks
  * instead that the directory's name decodes to the id asked for ({@link #checkedName}). No register was released
  * before this layout, so nothing is migrated. Decision {@code DM-01M6P92QKYFZW9KDGGQGX9H9VS}: an atomic move under an in-process
@@ -41,7 +41,7 @@ import org.jspecify.annotations.Nullable;
  * A temporary file a crash left behind is never read and is deleted by the id's next write.
  *
  * <p><b>Locking:</b> every operation, {@link #find} included, holds its id's lock across its read-compare-write, which
- * makes each id linearisable. The locks are striped (T107): a fixed array of {@value #LOCK_STRIPES}
+ * makes each id linearisable. The locks are striped: a fixed array of {@value #LOCK_STRIPES}
  * {@link ReentrantLock}s, an id's stripe chosen by the hash of its encoded directory name, so the structure never grows
  * with the ids written and case variants never share a key by accident (they may share a stripe, which only serialises
  * them). Striping is preferred to removing a lock on release, which would race a writer that already holds it.

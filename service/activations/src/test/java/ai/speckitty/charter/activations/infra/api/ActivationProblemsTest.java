@@ -21,7 +21,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * The activation set's answers to a request Spring refuses before the controller runs, at unit level (WP09's contract
+ * The activation set's answers to a request Spring refuses before the controller runs, at unit level (the contract
  * scenarios answer the same through the whole service): a body that cannot be bound is {@code 422 activation_invalid},
  * a header or path parameter that breaks its pattern and a malformed precondition are a plain {@code 400 Problem}, and a
  * body that is not JSON by its type stays {@code 415}. The mapping is ordered before the shared {@link ProblemHandler},
