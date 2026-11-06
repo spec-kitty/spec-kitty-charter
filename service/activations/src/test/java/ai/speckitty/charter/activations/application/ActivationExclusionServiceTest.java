@@ -350,4 +350,51 @@ class ActivationExclusionServiceTest {
         assertThat(outcome.change().applied()).containsExactly(T);
         assertThat(now().deactivated(ArtifactKind.TACTIC)).containsExactly("t");
     }
+
+    @Test
+    void aReactivateOfAStaleIdTheDocumentDeniesDropsItAndReportsItInDroppedNotCleared() {
+        StoredActivation before = stored(ActivationDocument.builder()
+                .selected(ArtifactKind.DIRECTIVE, List.of("GONE"))
+                .deactivated(ArtifactKind.TACTIC, List.of("old", "t")));
+
+        ActivationWrites.Outcome outcome = service.reactivate(ID, "tactic", "old", quoted(before));
+
+        assertThat(outcome.change().dropped())
+                .containsExactly(
+                        new ArtifactRef(ArtifactKind.DIRECTIVE, "GONE"), new ArtifactRef(ArtifactKind.TACTIC, "old"));
+        assertThat(outcome.change().applied()).isEmpty();
+        assertThat(outcome.change().cleared()).isEmpty();
+        assertThat(outcome.stored().revision()).isNotEqualTo(before.revision());
+        assertThat(now().deactivated(ArtifactKind.TACTIC)).containsExactly("t");
+        assertThat(repository.replaces()).isEqualTo(1);
+    }
+
+    @Test
+    void aReactivateOfAnIdNeitherTheClosureNorTheDenyListNamesIsStill404() {
+        // old is stale and selected, not denied: the re-activate removes from deactivated, so it is not its to drop.
+        StoredActivation before = stored(ActivationDocument.builder()
+                .selected(ArtifactKind.TACTIC, List.of("old"))
+                .deactivated(ArtifactKind.TACTIC, List.of("gone")));
+
+        assertThatThrownBy(() -> service.reactivate(ID, "tactic", "no-such", quoted(before)))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_NOT_FOUND));
+        assertThatThrownBy(() -> service.reactivate(ID, "tactic", "old", quoted(before)))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_NOT_FOUND));
+        assertThat(repository.replaces()).isZero();
+    }
+
+    @Test
+    void aDeactivateOfAStaleIdTheDocumentDeniesIsStill404() {
+        StoredActivation before = stored(ActivationDocument.builder().deactivated(ArtifactKind.TACTIC, List.of("old")));
+
+        assertThatThrownBy(() -> service.deactivate(ID, "tactic", "old", Optional.empty(), List.of(), quoted(before)))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_NOT_FOUND));
+        assertThat(repository.replaces()).isZero();
+    }
 }

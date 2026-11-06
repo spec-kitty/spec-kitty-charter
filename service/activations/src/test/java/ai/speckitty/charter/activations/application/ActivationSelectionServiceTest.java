@@ -369,15 +369,87 @@ class ActivationSelectionServiceTest {
     }
 
     @Test
-    void anUnselectOfAStaleIdIs404AndDropsNothing() {
-        StoredActivation before =
-                stored(ActivationDocument.builder().selected(ArtifactKind.DIRECTIVE, List.of("GONE")));
+    void anUnselectOfAStaleIdTheDocumentSelectsDropsItAndReportsItInDroppedOnly() {
+        StoredActivation before = stored(ActivationDocument.builder()
+                .selected(ArtifactKind.DIRECTIVE, List.of("D", "GONE"))
+                .deactivated(ArtifactKind.TACTIC, List.of("old")));
 
-        assertThatThrownBy(() -> service.unselect(ID, "directive", "GONE", quoted(before)))
+        ActivationWrites.Outcome outcome = service.unselect(ID, "directive", "GONE", quoted(before));
+
+        assertThat(outcome.change().dropped())
+                .containsExactly(
+                        new ArtifactRef(ArtifactKind.DIRECTIVE, "GONE"), new ArtifactRef(ArtifactKind.TACTIC, "old"));
+        assertThat(outcome.change().applied()).isEmpty();
+        assertThat(outcome.change().cleared()).isEmpty();
+        assertThat(outcome.stored().revision()).isNotEqualTo(before.revision());
+        assertThat(now().selected(ArtifactKind.DIRECTIVE).orElseThrow()).containsExactly("D");
+        assertThat(now().deactivated()).isEmpty();
+        assertThat(repository.replaces()).isEqualTo(1);
+    }
+
+    @Test
+    void anUnselectOfAStaleMissionTypeTheDocumentNamesDropsIt() {
+        StoredActivation before = stored(ActivationDocument.builder().missionTypes(List.of("gone-type")));
+
+        ActivationWrites.Outcome outcome = service.unselect(ID, "mission_type", "gone-type", quoted(before));
+
+        assertThat(outcome.change().dropped()).containsExactly(new ArtifactRef(ArtifactKind.MISSION_TYPE, "gone-type"));
+        assertThat(outcome.change().applied()).isEmpty();
+        assertThat(now().missionTypes())
+                .hasValueSatisfying(ids -> assertThat(ids).isEmpty());
+    }
+
+    @Test
+    void anUnselectOfAnIdNeitherTheClosureNorTheDocumentNamesIsStill404AndDropsNothing() {
+        StoredActivation before = stored(ActivationDocument.builder()
+                .missionTypes(List.of("gone-type"))
+                .selected(ArtifactKind.DIRECTIVE, List.of("GONE")));
+
+        assertThatThrownBy(() -> service.unselect(ID, "directive", "NO_SUCH", quoted(before)))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_NOT_FOUND));
+        assertThatThrownBy(() -> service.unselect(ID, "mission_type", "no-such", quoted(before)))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.MISSION_TYPE_NOT_FOUND));
+        assertThat(repository.replaces()).isZero();
+    }
+
+    @Test
+    void anUnselectOfAStaleIdTheDocumentOnlyDeniesIs404() {
+        // The unselect removes from selected: a stale id named only in deactivated is not the unselect's to drop.
+        StoredActivation before = stored(ActivationDocument.builder().deactivated(ArtifactKind.TACTIC, List.of("old")));
+
+        assertThatThrownBy(() -> service.unselect(ID, "tactic", "old", quoted(before)))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_NOT_FOUND));
         assertThat(repository.replaces()).isZero();
+    }
+
+    @Test
+    void aSelectOfAStaleIdTheDocumentSelectsIsStill404() {
+        StoredActivation before =
+                stored(ActivationDocument.builder().selected(ArtifactKind.DIRECTIVE, List.of("GONE")));
+
+        assertThatThrownBy(() ->
+                        service.select(ID, "directive", "GONE", Optional.empty(), false, List.of(), quoted(before)))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_NOT_FOUND));
+        assertThat(repository.replaces()).isZero();
+    }
+
+    @Test
+    void aStaleIfMatchOnAnUnselectOfAStaleIdIs412BeforeTheArtifactIsJudged() {
+        stored(ActivationDocument.builder().selected(ArtifactKind.DIRECTIVE, List.of("GONE")));
+
+        assertThatThrownBy(() -> service.unselect(ID, "directive", "NO_SUCH", "\"other\""))
+                .isInstanceOfSatisfying(
+                        PreconditionException.class,
+                        refused -> assertThat(refused.kind()).isEqualTo(PreconditionException.Kind.STALE));
+        assertThat(packs.calls()).isZero();
     }
 
     @Test

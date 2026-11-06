@@ -1309,9 +1309,69 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       directive:OLD
       """
 
-  Scenario: An unselect that names a stale id is 404 and drops nothing
-    FR-010, ADR-0059 amendment R5: the path id is judged against the closure before any drop, so naming the removed
-    OLD is artifact_not_found and nothing is stored; any other write of the activation drops OLD.
+  Scenario: An unselect that names a stale id drops it and stores a new revision
+    FR-010, ADR-0059 amendment R5: the closure no longer holds OLD, but the stored document still selects it, so the
+    unselect proceeds; OLD is dropped with every other stale id and reported in dropped only.
+    Given the org pack "main" with the file "directives/OLD.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: OLD
+      title: Old
+      intent: OLD
+      enforcement: required
+      """
+    And the activation "a-1" holds:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "main"}], "selected": {"directive": ["D2", "OLD"]}}
+      """
+    And the file "directives/OLD.directive.yaml" of the pack "main" is deleted
+    When I DELETE "/activations/a-1/selections/directive/OLD" with the stored ETag
+    Then the response status is 200
+    And the response header "ETag" differs from the stored ETag
+    And the response header "ETag" is the quoted field "/revision"
+    And the field at "/applied" holds exactly 0 items
+    And the field at "/cleared" holds exactly 0 items
+    And the field at "/dropped" holds exactly the ids:
+      """
+      directive:OLD
+      """
+    When I GET "/activations/a-1"
+    Then the field at "/config/selected/directive" holds exactly the ids:
+      """
+      D2
+      """
+
+  Scenario: A re-activate that names a stale id drops its deny entry and stores a new revision
+    FR-010, ADR-0059 amendment R5: the closure no longer holds the tactic old, but the stored document still denies it,
+    so the re-activate proceeds; old is dropped, reported in dropped only, and not in cleared.
+    Given the org pack "main" with the file "tactics/old.tactic.yaml":
+      """
+      schema_version: '1.0'
+      id: old
+      name: old
+      steps:
+        - title: Only step
+      """
+    And the activation "a-1" holds:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "main"}], "deactivated": {"tactic": ["old"]}}
+      """
+    And the file "tactics/old.tactic.yaml" of the pack "main" is deleted
+    When I DELETE "/activations/a-1/exclusions/tactic/old" with the stored ETag
+    Then the response status is 200
+    And the response header "ETag" differs from the stored ETag
+    And the field at "/applied" holds exactly 0 items
+    And the field at "/cleared" holds exactly 0 items
+    And the field at "/dropped" holds exactly the ids:
+      """
+      tactic:old
+      """
+    When I GET "/activations/a-1"
+    Then the response body has no field at "/config/deactivated"
+
+  Scenario: An unselect or a re-activate of an id neither the closure nor the document names is 404 and drops nothing
+    FR-010: GONE is in no pack and in no list of the stored document, so both deletes are artifact_not_found, and the
+    stale OLD is not dropped by them.
     Given the org pack "main" with the file "directives/OLD.directive.yaml":
       """
       schema_version: '1.0'
@@ -1325,7 +1385,10 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       {"schemaVersion": 1, "packs": [{"packId": "main"}], "selected": {"directive": ["OLD"]}}
       """
     And the file "directives/OLD.directive.yaml" of the pack "main" is deleted
-    When I DELETE "/activations/a-1/selections/directive/OLD" with the stored ETag
+    When I DELETE "/activations/a-1/selections/directive/GONE" with the stored ETag
+    Then the response status is 404
+    And the problem code is "artifact_not_found"
+    When I DELETE "/activations/a-1/exclusions/directive/GONE" with the stored ETag
     Then the response status is 404
     And the problem code is "artifact_not_found"
     When I GET "/activations/a-1"

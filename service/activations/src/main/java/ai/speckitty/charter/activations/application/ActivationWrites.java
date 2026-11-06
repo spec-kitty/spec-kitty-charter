@@ -23,6 +23,7 @@ import ai.speckitty.charter.kernel.transport.PreconditionException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.SortedSet;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -39,7 +40,9 @@ import org.springframework.stereotype.Component;
  *       before the packs are read;
  *   <li>one {@link PacksSession} (NFR-007), refused {@code 422} when a pack the document names is configured as none
  *       any more;
- *   <li>the path id against that closure ({@code 404 artifact_not_found}, or {@code mission_type_not_found});
+ *   <li>the path id against that closure ({@code 404 artifact_not_found}, or {@code mission_type_not_found}); an
+ *       unselect or a re-activate also takes an id the closure no longer holds when the stored list it removes the id
+ *       from still names it, since the drop below removes it (ADR-0059 amendment R5);
  *   <li>the stored document without the ids the closure no longer declares ({@link #current}, {@link StaleIds}): the use
  *       case computes its change from it, and the ids dropped are reported in {@code dropped} (ADR-0059 amendment R5);
  *   <li>after the use case computed its {@link ActivationChange}: a document equal to the stored one is a no-op, which
@@ -223,15 +226,53 @@ public class ActivationWrites {
      * @throws CharterRefusal with {@code artifact_not_found}, or {@code mission_type_not_found} for a mission type
      */
     static void requireHeld(ClosureSnapshot snapshot, ArtifactRef target) {
+        requireHeldOrStale(snapshot, target, false);
+    }
+
+    /**
+     * Refuses a path id the closure does not hold, unless the stored list the write removes it from still names it:
+     * then it is a stale id, which {@link #current} drops and {@link #commit} reports in {@code dropped} (ADR-0059
+     * amendment R5). An id named in neither place is refused as {@link #requireHeld} refuses it (FR-010).
+     *
+     * @param snapshot the closure
+     * @param target the path's artifact
+     * @param stored whether the stored list the write removes the id from names it
+     * @throws CharterRefusal with {@code artifact_not_found}, or {@code mission_type_not_found} for a mission type
+     */
+    static void requireHeldOrStale(ClosureSnapshot snapshot, ArtifactRef target, boolean stored) {
         boolean missionType = target.kind() == ArtifactKind.MISSION_TYPE;
         boolean held = missionType
                 ? snapshot.missionTypes().contains(target.id())
                 : snapshot.held(target.kind()).contains(target.id());
-        if (!held) {
+        if (!held && !stored) {
             throw new CharterRefusal(
                     missionType ? RefusalCode.MISSION_TYPE_NOT_FOUND : RefusalCode.ARTIFACT_NOT_FOUND,
                     "The activation's packs hold no " + target.kind().token() + " '" + target.id() + "'.");
         }
+    }
+
+    /**
+     * Whether a document selects an artifact: in {@code selected}, or in {@code missionTypes} for a mission type.
+     *
+     * @param document the document
+     * @param target the artifact
+     * @return whether it is selected
+     */
+    static boolean selects(ActivationDocument document, ArtifactRef target) {
+        Optional<SortedSet<String>> ids =
+                target.kind() == ArtifactKind.MISSION_TYPE ? document.missionTypes() : document.selected(target.kind());
+        return ids.map(set -> set.contains(target.id())).orElse(false);
+    }
+
+    /**
+     * Whether a document denies an artifact.
+     *
+     * @param document the document
+     * @param target the artifact
+     * @return whether its deny list names it
+     */
+    static boolean denies(ActivationDocument document, ArtifactRef target) {
+        return document.deactivated(target.kind()).contains(target.id());
     }
 
     /**
