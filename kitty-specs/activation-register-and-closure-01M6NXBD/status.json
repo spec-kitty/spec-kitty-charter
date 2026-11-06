@@ -1,7 +1,7 @@
 {
-  "event_count": 134,
-  "last_event_id": "01M6Q6QFXJ4DZBKC4YHQ4Q08HF",
-  "materialized_at": "2026-11-06T01:14:19.442184+00:00",
+  "event_count": 136,
+  "last_event_id": "01M6Q6RHY7SZ9WMW4X838CJVYW",
+  "materialized_at": "2026-11-06T01:14:54.272109+00:00",
   "mission_number": "",
   "mission_slug": "activation-register-and-closure-01M6NXBD",
   "mission_type": "",
@@ -13,9 +13,9 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 1
+    "planned": 0
   },
   "work_packages": {
     "WP01": {
@@ -516,11 +516,20 @@
       }
     },
     "WP15": {
-      "actor": "finalize-tasks",
+      "actor": "claude",
+      "agent": "claude:claude-opus-5-5:scribe-sally",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M6PHGVN83QM4W342YHMHQ4EA",
-      "last_transition_at": "2026-11-05T19:03:41.992864+00:00"
+      "implementer_of_record": "claude:claude-opus-5-5:scribe-sally",
+      "lane": "in_progress",
+      "last_event_id": "01M6Q6RHY7SZ9WMW4X838CJVYW",
+      "last_transition_at": "2026-11-06T01:14:54.272109+00:00",
+      "model": "__resolved_model_absent__",
+      "provider": "__resolved_provider_absent__",
+      "role": "implementer",
+      "shell_pid": 5769,
+      "shell_pid_created_at": "1793927688.68"
     },
     "WP16": {
       "actor": "claude",
