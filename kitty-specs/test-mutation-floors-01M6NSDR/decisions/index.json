@@ -1,0 +1,29 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-11-05T12:02:53.569022Z",
+      "decision_id": "01M6NSEB00FQ43TR39ES2BPVKE",
+      "final_answer": "Confirm",
+      "input_key": "intent_confirmation",
+      "mission_id": "01M6NSDRM2CB30966R5GDMRX5V",
+      "mission_slug": "test-mutation-floors-01M6NSDR",
+      "opened_by": "cli",
+      "options": [
+        "Confirm",
+        "Amend"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Confirm Mission D's extracted requirements (#239 as designed plus rulings)?",
+      "rationale": null,
+      "resolved_at": "2026-11-05T12:04:55.071748Z",
+      "resolved_by": null,
+      "slot_key": "specify.intent.confirm-extracted-requirements",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M6NSDRM2CB30966R5GDMRX5V",
+  "version": 1
+}

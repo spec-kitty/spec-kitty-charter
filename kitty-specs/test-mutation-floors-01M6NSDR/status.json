@@ -1,0 +1,106 @@
+{
+  "event_count": 65,
+  "last_event_id": "01M6PAP2S35QH5F0616CVATJ50",
+  "materialized_at": "2026-11-05T17:04:13.091242+00:00",
+  "mission_number": "",
+  "mission_slug": "test-mutation-floors-01M6NSDR",
+  "mission_type": "",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 5,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M6PANMQH4J18EYDV2XANYG4A",
+      "last_transition_at": "2026-11-05T17:03:58.705903+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/test-mutation-floors-01M6NSDR-coord/kitty-specs/test-mutation-floors-01M6NSDR/tasks/WP01-mutation-conventions-and-floor-check/review-cycle-2.md",
+        "reference": "review-cycle://test-mutation-floors-01M6NSDR/WP01-mutation-conventions-and-floor-check/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 24544,
+      "shell_pid_created_at": "1793882763.78"
+    },
+    "WP02": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M6PANVZNYTV1A2C2KTWMFWEC",
+      "last_transition_at": "2026-11-05T17:04:06.134005+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/test-mutation-floors-01M6NSDR-coord/kitty-specs/test-mutation-floors-01M6NSDR/tasks/WP02-pit-on-packs/review-cycle-2.md",
+        "reference": "review-cycle://test-mutation-floors-01M6NSDR/WP02-pit-on-packs/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 16582,
+      "shell_pid_created_at": "1793897140.49"
+    },
+    "WP03": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M6PANZHGT32GMNBAQJRJKRP0",
+      "last_transition_at": "2026-11-05T17:04:09.776712+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/test-mutation-floors-01M6NSDR-coord/kitty-specs/test-mutation-floors-01M6NSDR/tasks/WP03-nightly-workflow/review-cycle-2.md",
+        "reference": "review-cycle://test-mutation-floors-01M6NSDR/WP03-nightly-workflow/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 781,
+      "shell_pid_created_at": "1793893810.98"
+    },
+    "WP04": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M6PAP2S35QH5F0616CVATJ50",
+      "last_transition_at": "2026-11-05T17:04:13.091242+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/test-mutation-floors-01M6NSDR-coord/kitty-specs/test-mutation-floors-01M6NSDR/tasks/WP04-adr-and-docs/review-cycle-2.md",
+        "reference": "review-cycle://test-mutation-floors-01M6NSDR/WP04-adr-and-docs/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 22106,
+      "shell_pid_created_at": "1793897886.48"
+    },
+    "WP05": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M6PANRB2MGGHQ0C5RJP65AE3",
+      "last_transition_at": "2026-11-05T17:04:02.402322+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/test-mutation-floors-01M6NSDR-coord/kitty-specs/test-mutation-floors-01M6NSDR/tasks/WP05-kernel-survivor-triage/review-cycle-2.md",
+        "reference": "review-cycle://test-mutation-floors-01M6NSDR/WP05-kernel-survivor-triage/review-cycle-2.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 5156,
+      "shell_pid_created_at": "1793884517.97"
+    }
+  }
+}
