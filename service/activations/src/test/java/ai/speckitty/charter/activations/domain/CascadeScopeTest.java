@@ -7,7 +7,9 @@ import static ai.speckitty.charter.kernel.domain.ArtifactKind.TACTIC;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -35,7 +37,10 @@ class CascadeScopeTest {
         assertThat(parsed.violations()).isEmpty();
         assertThat(parsed.scope()).isEqualTo(CascadeScope.all());
         assertThat(parsed.scope().cascades()).isTrue();
-        assertThat(parsed.scope().kinds()).containsExactlyInAnyOrderElementsOf(ActivationDocument.kinds());
+        assertThat(parsed.scope().kinds())
+                .containsExactlyInAnyOrderElementsOf(Arrays.stream(ArtifactKind.values())
+                        .filter(kind -> kind.activatable() && kind != MISSION_TYPE)
+                        .toList());
         assertThat(parsed.scope().admits(AGENT_PROFILE)).isTrue();
         assertThat(parsed.scope().admits(MISSION_TYPE)).isFalse();
     }

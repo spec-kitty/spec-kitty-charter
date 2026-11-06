@@ -14,8 +14,8 @@ import java.util.TreeSet;
  * select, unselect, deactivate, reactivate and preset:
  *
  * <ul>
- *   <li>{@code applied}: every id the write added to or removed from {@code selected}, {@code deactivated} or
- *       {@code missionTypes}. A kind ({@code activatedKinds}) is never an entry.
+ *   <li>{@code applied}: every id the write added to or removed from {@code selected} or {@code deactivated}, of every
+ *       kind, {@code mission_type} included.
  *   <li>{@code cleared}: every id the write removed from {@code deactivated}.
  * </ul>
  *
@@ -90,7 +90,6 @@ public record ActivationChange(
         Set<ArtifactRef> applied = new TreeSet<>();
         applied.addAll(changed(refs(before.selected()), refs(after.selected())));
         applied.addAll(changed(refs(before.deactivated()), refs(after.deactivated())));
-        applied.addAll(changed(missionTypes(before), missionTypes(after)));
         Set<ArtifactRef> cleared = new TreeSet<>(refs(before.deactivated()));
         cleared.removeAll(refs(after.deactivated()));
         return new ActivationChange(after, List.copyOf(applied), List.copyOf(cleared), skipped);
@@ -99,13 +98,6 @@ public record ActivationChange(
     static SortedSet<ArtifactRef> refs(Map<ArtifactKind, SortedSet<String>> lists) {
         SortedSet<ArtifactRef> refs = new TreeSet<>();
         lists.forEach((kind, ids) -> ids.forEach(id -> refs.add(new ArtifactRef(kind, id))));
-        return refs;
-    }
-
-    private static Set<ArtifactRef> missionTypes(ActivationDocument document) {
-        Set<ArtifactRef> refs = new TreeSet<>();
-        document.missionTypes()
-                .ifPresent(ids -> ids.forEach(id -> refs.add(new ArtifactRef(ArtifactKind.MISSION_TYPE, id))));
         return refs;
     }
 

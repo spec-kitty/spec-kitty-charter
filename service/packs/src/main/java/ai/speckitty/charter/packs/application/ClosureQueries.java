@@ -106,7 +106,6 @@ public final class ClosureQueries {
                 OfferingReadService.entriesOf(packs),
                 heldIds,
                 holderOf,
-                heldIds.getOrDefault(ArtifactKind.MISSION_TYPE, Set.of()),
                 RequiredFloor.of(byHolder(closurePackIds, presets)),
                 policyOf(composed),
                 closurePackIds,

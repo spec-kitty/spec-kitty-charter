@@ -177,7 +177,7 @@ class ClosureQueriesTest {
                 .isFalse();
         assertThat(view.holds(ArtifactKind.DIRECTIVE, "B1")).isTrue();
         assertThat(view.holderOf()).containsEntry(new Urn(NodeKind.DIRECTIVE, "B1"), "beta");
-        assertThat(view.missionTypes()).containsExactly("software-dev");
+        assertThat(view.heldIds().get(ArtifactKind.MISSION_TYPE)).containsExactly("software-dev");
         assertThat(view.closurePackIds()).containsExactly("beta", "alpha");
         assertThat(view.fingerprint()).isEqualTo(D1);
     }

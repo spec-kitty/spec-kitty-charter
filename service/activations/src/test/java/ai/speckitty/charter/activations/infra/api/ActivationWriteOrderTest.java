@@ -43,7 +43,7 @@ class ActivationWriteOrderTest {
     void storeTheActivation() throws Exception {
         MockHttpServletResponse created = mvc.perform(put("/api/v1/activations/a-1")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"schemaVersion\": 1}"))
+                        .content("{\"schemaVersion\": 2}"))
                 .andReturn()
                 .getResponse();
         assertThat(created.getStatus()).isEqualTo(201);

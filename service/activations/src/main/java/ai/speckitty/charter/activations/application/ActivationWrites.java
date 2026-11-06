@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.SortedSet;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -150,8 +149,7 @@ public class ActivationWrites {
     }
 
     /**
-     * The artifact a select or an unselect names: a kind of {@link ActivationDocument#kinds()}, or
-     * {@code mission_type}.
+     * The artifact a select or an unselect names: an activatable kind, {@code mission_type} included.
      *
      * @param kind the path's kind token
      * @param artifactId the path's id
@@ -163,8 +161,8 @@ public class ActivationWrites {
     }
 
     /**
-     * The artifact a deactivate or a re-activate names: a kind of {@link ActivationDocument#kinds()}, which has a deny
-     * list ({@code mission_type} has none).
+     * The artifact a deactivate or a re-activate names: an activatable kind other than {@code mission_type}, which
+     * these writes do not deny.
      *
      * @param kind the path's kind token
      * @param artifactId the path's id
@@ -177,8 +175,7 @@ public class ActivationWrites {
 
     private static ArtifactKind kindOf(String token, boolean missionTypes) {
         return ArtifactKind.fromToken(token)
-                .filter(kind -> ActivationDocument.kinds().contains(kind)
-                        || (missionTypes && kind == ArtifactKind.MISSION_TYPE))
+                .filter(kind -> kind.activatable() && (missionTypes || kind != ArtifactKind.MISSION_TYPE))
                 .orElseThrow(() -> invalid(new RefusalViolation(
                         KIND_POINTER, "unknown_kind", "This write takes no '" + token + "' artifacts.")));
     }
@@ -232,8 +229,7 @@ public class ActivationWrites {
      * declared id, as {@link DocumentRules#normalize} reads an id of the document. A spelling the closure holds no id
      * for is read against the stored list the write removes the id from, so a stale id (ADR-0059 amendment A5) is
      * matched the same way. A spelling neither names is kept as written, for {@link #requireHeldOrStale} to refuse.
-     * A mission type is matched exactly, as {@code missionTypes} is in the document, which is not normalized: its path
-     * id is kept as written.
+     * A mission type is matched exactly: its path id is kept as written.
      *
      * @param snapshot the closure
      * @param target the path's artifact, as written
@@ -267,17 +263,14 @@ public class ActivationWrites {
     }
 
     /**
-     * The ids of the stored list an unselect removes an id from: {@code selected} of its kind, or
-     * {@code missionTypes}.
+     * The ids of the stored list an unselect removes an id from: {@code selected} of its kind.
      *
      * @param document the stored document
      * @param target the artifact
      * @return the ids; empty when the list is absent
      */
     static Set<String> selectedOf(ActivationDocument document, ArtifactRef target) {
-        Optional<SortedSet<String>> ids =
-                target.kind() == ArtifactKind.MISSION_TYPE ? document.missionTypes() : document.selected(target.kind());
-        return ids.<Set<String>>map(set -> set).orElse(Set.of());
+        return document.selected(target.kind()).<Set<String>>map(set -> set).orElse(Set.of());
     }
 
     /**
@@ -303,10 +296,7 @@ public class ActivationWrites {
      */
     static void requireHeldOrStale(ClosureSnapshot snapshot, ArtifactRef target, boolean stored) {
         boolean missionType = target.kind() == ArtifactKind.MISSION_TYPE;
-        boolean held = missionType
-                ? snapshot.missionTypes().contains(target.id())
-                : snapshot.held(target.kind()).contains(target.id());
-        if (!held && !stored) {
+        if (!snapshot.held(target.kind()).contains(target.id()) && !stored) {
             throw new CharterRefusal(
                     missionType ? RefusalCode.MISSION_TYPE_NOT_FOUND : RefusalCode.ARTIFACT_NOT_FOUND,
                     "The activation's packs hold no " + target.kind().token() + " '" + target.id() + "'.");
@@ -314,7 +304,7 @@ public class ActivationWrites {
     }
 
     /**
-     * Whether a document selects an artifact: in {@code selected}, or in {@code missionTypes} for a mission type.
+     * Whether a document selects an artifact: in {@code selected} of its kind.
      *
      * @param document the document
      * @param target the artifact

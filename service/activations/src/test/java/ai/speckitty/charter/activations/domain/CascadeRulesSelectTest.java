@@ -145,14 +145,14 @@ class CascadeRulesSelectTest {
     }
 
     @Test
-    void selectingAMissionTypeAddsItToMissionTypes() {
+    void selectingAMissionTypeAddsItToItsAllowList() {
         ArtifactRef software = new ArtifactRef(MISSION_TYPE, "software-dev");
 
         ActivationChange change =
                 CascadeRules.applySelect(X_DENIED, software, CascadeScope.none(), false, Reach.empty());
 
-        assertThat(change.after().missionTypes().orElseThrow()).containsExactly("software-dev");
-        assertThat(change.after().selected()).isEmpty();
+        assertThat(change.after().selected(MISSION_TYPE).orElseThrow()).containsExactly("software-dev");
+        assertThat(change.after().selected()).containsOnlyKeys(MISSION_TYPE);
         assertThat(change.applied()).containsExactly(software);
     }
 
@@ -164,7 +164,7 @@ class CascadeRulesSelectTest {
 
         ActivationChange change = select(X_DENIED, CascadeScope.all(), reach);
 
-        assertThat(change.after().missionTypes()).isEmpty();
+        assertThat(change.after().selected(MISSION_TYPE)).isEmpty();
         assertThat(change.skipped().skippedByScope()).containsExactly(new ArtifactRef(MISSION_TYPE, "m"));
     }
 
@@ -239,7 +239,7 @@ class CascadeRulesSelectTest {
     @Test
     void aMissionTypeChangeIsApplied() {
         ActivationDocument after = ActivationDocument.builder()
-                .missionTypes(List.of("software-dev"))
+                .selected(MISSION_TYPE, List.of("software-dev"))
                 .build()
                 .document();
 
