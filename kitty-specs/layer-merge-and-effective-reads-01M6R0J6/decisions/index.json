@@ -222,6 +222,30 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-06T09:07:33.555823Z",
+      "decision_id": "01M6R1T0HK0F078S0VPA6YSTXW",
+      "final_answer": "System git binary is a host requirement (no JGit); documented in the docs and the repository README.md",
+      "input_key": "git_client",
+      "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",
+      "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
+      "opened_by": "cli",
+      "options": [
+        "JGit library",
+        "system git binary required on the host",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "How does POST /packs fetch a git source?",
+      "rationale": null,
+      "resolved_at": "2026-11-06T09:07:35.833586Z",
+      "resolved_by": null,
+      "slot_key": "plan.registration.git-client",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",
