@@ -3,6 +3,7 @@ package ai.speckitty.charter.activations.domain;
 import static ai.speckitty.charter.activations.domain.Reaches.reach;
 import static ai.speckitty.charter.activations.domain.Reaches.ref;
 import static ai.speckitty.charter.activations.domain.Reaches.refs;
+import static ai.speckitty.charter.kernel.domain.ArtifactKind.AGENT_PROFILE;
 import static ai.speckitty.charter.kernel.domain.ArtifactKind.DIRECTIVE;
 import static ai.speckitty.charter.kernel.domain.ArtifactKind.STYLEGUIDE;
 import static ai.speckitty.charter.kernel.domain.ArtifactKind.TACTIC;
@@ -207,7 +208,9 @@ class CascadeRulesClearingTest {
     }
 
     @Test
-    void aDeniedArtifactOutsideTheScopeKeepsItsDenyEntry() {
+    void aDeniedArtifactOutsideTheScopeIsClearedButNotSelected() {
+        // The walk went through X (includeDeactivated stops nowhere), so its deny entry is cleared whatever the scope;
+        // X is out of the scope, so it is reported there and not selected.
         CascadeScope directives =
                 CascadeScope.parse(Optional.of(List.of("directive"))).scope();
         ActivationDocument before = denying("tactic:X");
@@ -215,8 +218,41 @@ class CascadeRulesClearingTest {
         ActivationChange change = CascadeRules.applySelect(before, D, directives, true, US3, Set.of());
         assertNoEnhancerSelected(before, change, D, US3);
 
-        assertThat(change.cleared()).isEmpty();
-        assertThat(change.after().deactivated(TACTIC)).containsExactly("X");
+        assertThat(change.cleared()).containsExactly(ref("tactic:X"));
+        assertThat(change.after().deactivated()).isEmpty();
+        assertThat(change.after().selected(TACTIC)).isEmpty();
         assertThat(change.skipped().skippedByScope()).containsExactly(T, ref("tactic:X"));
+    }
+
+    @Test
+    void aDeniedAncestorTheWalkPassedIsClearedAndNeverSelected() {
+        ArtifactRef p = ref("agent_profile:P");
+        ArtifactRef q = ref("agent_profile:Q");
+        Reach reach = reach().start("agent_profile:P")
+                .ancestor("agent_profile:Q", "agent_profile:P")
+                .reached("directive:R", "agent_profile:Q", REQUIRES)
+                .build();
+        ActivationDocument before = denying("agent_profile:Q");
+
+        ActivationChange change = include(before, p, reach, Set.of());
+
+        assertThat(change.cleared()).containsExactly(q);
+        assertThat(change.after().selected(AGENT_PROFILE).orElseThrow()).containsExactly("P");
+        assertThat(change.applied()).containsExactly(p, q, ref("directive:R"));
+    }
+
+    @Test
+    void thePullIsBoundedByTheKindsTheDocumentActivatesAndAbsentMeansNone() {
+        ActivationDocument absent = denying("tactic:X");
+        ActivationDocument none =
+                ActivationDocument.builder().activatedKinds(List.of()).build().document();
+        ActivationDocument some = ActivationDocument.builder()
+                .activatedKinds(List.of(TACTIC, DIRECTIVE))
+                .build()
+                .document();
+
+        assertThat(CascadeRules.pullKinds(absent)).isEmpty();
+        assertThat(CascadeRules.pullKinds(none)).isEmpty();
+        assertThat(CascadeRules.pullKinds(some)).containsExactlyInAnyOrder(DIRECTIVE, TACTIC);
     }
 }

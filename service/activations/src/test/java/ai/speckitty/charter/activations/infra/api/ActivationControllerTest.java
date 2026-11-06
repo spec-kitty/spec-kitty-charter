@@ -20,12 +20,12 @@ import org.springframework.web.server.ResponseStatusException;
 /**
  * The activation set is reserved one operation at a time (ADR-0020 D8): the controller carries no mark of its own, and
  * each of the fourteen operations it overrides carries one until it is built, so an operation is built by removing
- * its mark alone. The register, its closure read and the four per-artifact writes are built; the five others stay
- * reserved.
+ * its mark alone. The register, its closure read, the four per-artifact writes and the preset write are built; the four
+ * effective reads stay reserved.
  */
 class ActivationControllerTest {
 
-    /** The operations the activation register (#125, #360) and its per-artifact writes (#291) build. */
+    /** The operations the activation register (#125, #360), its per-artifact writes (#291) and the preset write build. */
     private static final Set<String> BUILT = Set.of(
             "createActivation",
             "getActivation",
@@ -35,7 +35,8 @@ class ActivationControllerTest {
             "selectActivationArtifact",
             "unselectActivationArtifact",
             "deactivateActivationArtifact",
-            "reactivateActivationArtifact");
+            "reactivateActivationArtifact",
+            "applyActivationPreset");
 
     private static ActivationController controller() {
         return StandaloneActivationMvc.controller(
@@ -56,7 +57,7 @@ class ActivationControllerTest {
     }
 
     @Test
-    void everyOneOfTheFourteenOperationsIsOverriddenAndOnlyTheFiveUnbuiltAreMarked() throws NoSuchMethodException {
+    void everyOneOfTheFourteenOperationsIsOverriddenAndOnlyTheFourUnbuiltAreMarked() throws NoSuchMethodException {
         assertThat(operations()).hasSize(14);
         assertThat(operations()).extracting(Method::getName).containsAll(BUILT);
         for (Method operation : operations()) {

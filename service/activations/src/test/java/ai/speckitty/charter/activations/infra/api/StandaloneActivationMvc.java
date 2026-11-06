@@ -2,6 +2,7 @@ package ai.speckitty.charter.activations.infra.api;
 
 import ai.speckitty.charter.activations.application.ActivationExclusionService;
 import ai.speckitty.charter.activations.application.ActivationIdMint;
+import ai.speckitty.charter.activations.application.ActivationPresetService;
 import ai.speckitty.charter.activations.application.ActivationSelectionService;
 import ai.speckitty.charter.activations.application.ActivationService;
 import ai.speckitty.charter.activations.application.ActivationWrites;
@@ -53,7 +54,10 @@ final class StandaloneActivationMvc {
                 .build();
         return MockMvcBuilders.standaloneSetup(validated(controller))
                 .setControllerAdvice(
-                        new ActivationBodyAdvice(), new ActivationProblems(refusals), refusals, new ProblemHandler())
+                        new ActivationBodyAdvice(validator()),
+                        new ActivationProblems(refusals),
+                        refusals,
+                        new ProblemHandler())
                 .setMessageConverters(new JacksonJsonHttpMessageConverter(json))
                 .build();
     }
@@ -72,17 +76,23 @@ final class StandaloneActivationMvc {
                 new ActivationService(repository, packs, new ActivationIdMint()),
                 new ActivationSelectionService(writes),
                 new ActivationExclusionService(writes),
+                new ActivationPresetService(writes),
                 mapper,
                 new ActivationChangeMapper(mapper));
     }
 
     /** The controller behind the method validation Spring Boot applies to the {@code @Validated} interface. */
     private static Object validated(ActivationController controller) {
-        LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
-        validator.afterPropertiesSet();
         ProxyFactory proxy = new ProxyFactory(controller);
         proxy.setProxyTargetClass(true);
-        proxy.addAdvice(new MethodValidationInterceptor((jakarta.validation.Validator) validator));
+        proxy.addAdvice(new MethodValidationInterceptor(validator()));
         return proxy.getProxy();
+    }
+
+    /** The bean validator Spring Boot configures. */
+    private static jakarta.validation.Validator validator() {
+        LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
+        validator.afterPropertiesSet();
+        return validator;
     }
 }

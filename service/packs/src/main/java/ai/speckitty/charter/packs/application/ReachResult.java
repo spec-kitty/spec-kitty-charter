@@ -19,9 +19,16 @@ import java.util.Set;
  *     lists only what the unstopped walk would put in force: a lineage pass-through target behind a stop is listed, but
  *     an ancestor that would only be passed through (never in force) is not, even when it lies behind a stop
  * @param ancestorsPassed the lineage ancestors walked through; an ancestor is never put in force by the lineage
+ * @param ancestry each ancestor passed, with every {@link Via} it was passed by: the child that writes
+ *     {@code specializes_from} onto it. A pass-through {@link Via} names the ancestor as its predecessor; this leads
+ *     from the ancestor back to the descendant the walk reached
  */
 public record ReachResult(
-        Map<Urn, List<Via>> reached, Map<Urn, List<Via>> stopped, Set<Urn> behindStopped, Set<Urn> ancestorsPassed) {
+        Map<Urn, List<Via>> reached,
+        Map<Urn, List<Via>> stopped,
+        Set<Urn> behindStopped,
+        Set<Urn> ancestorsPassed,
+        Map<Urn, List<Via>> ancestry) {
 
     /**
      * How a node was reached: the node before it and the relation crossed.
@@ -78,12 +85,14 @@ public record ReachResult(
      * @param stopped the stopped nodes
      * @param behindStopped the nodes behind a stop
      * @param ancestorsPassed the ancestors passed through
+     * @param ancestry the ways each ancestor was passed by
      */
     public ReachResult {
         reached = copyOf(Objects.requireNonNull(reached, "reached"));
         stopped = copyOf(Objects.requireNonNull(stopped, "stopped"));
         behindStopped = Set.copyOf(Objects.requireNonNull(behindStopped, "behindStopped"));
         ancestorsPassed = Set.copyOf(Objects.requireNonNull(ancestorsPassed, "ancestorsPassed"));
+        ancestry = copyOf(Objects.requireNonNull(ancestry, "ancestry"));
     }
 
     private static Map<Urn, List<Via>> copyOf(Map<Urn, List<Via>> vias) {

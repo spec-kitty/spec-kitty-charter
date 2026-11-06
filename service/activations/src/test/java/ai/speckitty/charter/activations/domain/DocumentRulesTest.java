@@ -248,6 +248,26 @@ class DocumentRulesTest {
         assertThat(refusal.requiredBy()).isEmpty();
     }
 
+    @Test
+    void aWriteIsJudgedOnTheFloorOnlyForTheDenyEntriesItAdds() {
+        ActivationDocument stale = ActivationDocument.builder()
+                .deactivated(DIRECTIVE, List.of("D1"))
+                .build()
+                .document();
+        ActivationDocument selecting = stale.withSelected(TACTIC, "T1");
+        ActivationDocument denying = stale.withDeny(DIRECTIVE, "D2");
+
+        assertThat(DocumentRules.checkWrite(stale, selecting, CLOSURE))
+                .as("a stored deny entry on the floor is tolerated, not applied")
+                .isEmpty();
+        assertThat(DocumentRules.checkWrite(stale, denying, CLOSURE)).hasValueSatisfying(refusal -> {
+            assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_LOCKED);
+            assertThat(refusal.getMessage()).contains("directive:D2").doesNotContain("directive:D1");
+        });
+        assertThat(DocumentRules.checkWrite(stale, stale.withSelected(TACTIC, "NOPE"), CLOSURE))
+                .hasValueSatisfying(refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_INVALID));
+    }
+
     // ---- RequiringPack.via: the extends chain from the document's packs (T113)
 
     /** team extends org, which extends internal; helper is only depended on. */

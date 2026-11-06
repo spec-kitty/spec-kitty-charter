@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -46,21 +47,40 @@ class ReservedOperationCoverageTest {
     }
 
     @Test
-    void theActivationSetReservesFiveOperations() {
-        // PR B built select, unselect, deactivate and re-activate: the preset write and the four effective reads stay.
-        assertThat(reservedOperations()).hasSize(5);
+    void theActivationSetReservesFourOperations() {
+        // PR B built the per-artifact writes and the preset write: only the four effective reads stay reserved.
+        assertThat(reservedOperations()).hasSize(4);
+    }
+
+    @Test
+    void noReservedOperationTakesABody() {
+        // The interceptor answers a reserved operation 501 before its body is bound (ADR-0020 D8). That was pinned by
+        // a scenario sending an unbindable body to the last reserved write; with every write built, no reserved
+        // operation takes a body, so the pin went. A reserved operation that declares a requestBody needs it back.
+        assertThat(reserved().entrySet())
+                .as(
+                        "reserved operations that declare a requestBody: restore the '501 before the body is bound' pin"
+                                + " in %s for each",
+                        FEATURE)
+                .filteredOn(operation -> operation.getValue().node().containsKey("requestBody"))
+                .isEmpty();
     }
 
     private Set<String> reservedOperations() {
+        return reserved().keySet();
+    }
+
+    /** The reserved operations, keyed {@code METHOD /template}. */
+    private Map<String, ContractConformance.DeclaredOperation> reserved() {
         Map<?, ?> paths = (Map<?, ?>) load(OPENAPI).get("paths");
-        Set<String> reserved = new TreeSet<>();
+        Map<String, ContractConformance.DeclaredOperation> reserved = new TreeMap<>();
         for (Object template : paths.keySet()) {
             for (String method : METHODS) {
                 String concrete = String.valueOf(template).replaceAll("\\{[^}]+}", "x");
                 contract.operation(method, concrete)
                         .filter(operation -> operation.pathTemplate().equals(template))
                         .filter(ContractConformance.DeclaredOperation::reserved)
-                        .ifPresent(operation -> reserved.add(key(method, operation.pathTemplate())));
+                        .ifPresent(operation -> reserved.put(key(method, operation.pathTemplate()), operation));
             }
         }
         return reserved;

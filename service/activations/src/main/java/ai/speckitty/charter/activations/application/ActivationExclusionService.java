@@ -13,6 +13,7 @@ import ai.speckitty.charter.activations.domain.ReachPlan;
 import ai.speckitty.charter.activations.domain.SkippedReport;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.Urn;
 import java.util.List;
 import java.util.Map;
@@ -63,7 +64,30 @@ public class ActivationExclusionService {
      */
     public ActivationWrites.Outcome deactivate(
             ActivationId id, String kind, String artifactId, Optional<List<String>> cascade, @Nullable String ifMatch) {
+        return deactivate(id, kind, artifactId, cascade, List.of(), ifMatch);
+    }
+
+    /**
+     * Deactivates one artifact, with an optional cascade, whose request body may be malformed.
+     *
+     * @param id the activation's id
+     * @param kind the path's kind token
+     * @param artifactId the path's id
+     * @param cascade the body's {@code cascade} tokens; empty when absent
+     * @param bodyFaults the faults the inbound adapter found in the body, refused once the preconditions hold
+     * @param ifMatch the {@code If-Match} header, verbatim; null when absent
+     * @return the outcome
+     * @throws CharterRefusal with {@code artifact_locked} or {@code artifact_required} for a target on the floor
+     */
+    public ActivationWrites.Outcome deactivate(
+            ActivationId id,
+            String kind,
+            String artifactId,
+            Optional<List<String>> cascade,
+            List<RefusalViolation> bodyFaults,
+            @Nullable String ifMatch) {
         StoredActivation loaded = writes.loaded(id, ifMatch);
+        ActivationWrites.requireWellFormed(bodyFaults);
         ArtifactRef target = ActivationWrites.deniable(kind, artifactId);
         CascadeScope scope = ActivationWrites.scope(cascade);
         PacksSession session = writes.session(loaded);

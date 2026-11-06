@@ -37,8 +37,9 @@ class OperationCoverageTest {
                 .doesNotContain(
                         new Success("get", "/activations/{activationId}/skipped", 200),
                         new Success("get", "/activations/{activationId}/artifacts", 200),
-                        new Success("put", "/activations/{activationId}/presets/{presetId}", 200))
+                        new Success("get", "/activations/{activationId}/graph", 200))
                 .contains(
+                        new Success("put", "/activations/{activationId}/presets/{presetId}", 200),
                         new Success("post", "/activations", 201),
                         new Success("get", "/activations/{activationId}", 200),
                         new Success("put", "/activations/{activationId}", 201),

@@ -163,6 +163,16 @@ class ReachabilityTest {
     }
 
     @Test
+    void anAncestorIsRecordedWithTheChildItWasPassedFromSoAPassThroughLeadsBackToTheDescendant() {
+        ReachResult result =
+                Reachability.reach(lineageIndex(false), request(urns("agent_profile:P"), urn -> false, true));
+
+        assertThat(result.ancestry())
+                .containsOnlyKeys(urn("agent_profile:Q"))
+                .containsEntry(urn("agent_profile:Q"), List.of(via("agent_profile:P", RelationType.SPECIALIZES_FROM)));
+    }
+
+    @Test
     void withoutLineageTheAncestorChainIsNotWalked() {
         ReachResult result =
                 Reachability.reach(lineageIndex(false), request(urns("agent_profile:P"), urn -> false, false));
@@ -349,6 +359,26 @@ class ReachabilityTest {
                 .index();
 
         assertThat(Reachability.enhancesPull(index, urns("tactic:T"))).containsOnlyKeys(urn("tactic:E"));
+    }
+
+    @Test
+    void aBoundedPullKeepsOnlyWhatItAdmitsAndDoesNotContinueThroughTheRest() {
+        // T is enhanced by the styleguide S, which is enhanced by the tactic E2: with only tactics admitted, S is not
+        // pulled, so neither is E2 behind it; E1 enhances T directly and is.
+        EdgeIndex index = new Closure()
+                .pack(
+                        "alpha",
+                        List.of("tactic:T", "tactic:E1", "styleguide:S", "tactic:E2"),
+                        edge("tactic:E1", RelationType.ENHANCES, "tactic:T"),
+                        edge("styleguide:S", RelationType.ENHANCES, "tactic:T"),
+                        edge("tactic:E2", RelationType.ENHANCES, "styleguide:S"))
+                .index();
+
+        assertThat(Reachability.enhancesPull(
+                        index, urns("tactic:T"), urn -> urn.toString().startsWith("tactic:")))
+                .containsOnlyKeys(urn("tactic:E1"));
+        assertThat(Reachability.enhancesPull(index, urns("tactic:T")))
+                .containsOnlyKeys(urn("tactic:E1"), urn("styleguide:S"), urn("tactic:E2"));
     }
 
     @Test

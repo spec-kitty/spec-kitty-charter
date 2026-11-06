@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 
 /**
  * What one verified read of a composition closure answers (NFR-007, FR-009, FR-023): a read-only value an adapter maps
@@ -158,6 +159,18 @@ public record ClosureView(
      */
     public Map<Urn, List<ReachResult.Pulled>> enhancesPull(Set<Urn> starts) {
         return Reachability.enhancesPull(edges, starts);
+    }
+
+    /**
+     * The {@code enhances} pull bounded by the caller's policy ({@link Reachability#enhancesPull}): a node it does not
+     * admit is neither pulled nor walked through.
+     *
+     * @param starts the artifacts the pull starts from
+     * @param admits the nodes the pull may reach
+     * @return each pulled artifact with every way it was reached
+     */
+    public Map<Urn, List<ReachResult.Pulled>> enhancesPull(Set<Urn> starts, Predicate<Urn> admits) {
+        return Reachability.enhancesPull(edges, starts, admits);
     }
 
     /**

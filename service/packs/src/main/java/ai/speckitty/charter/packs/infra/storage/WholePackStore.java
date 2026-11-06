@@ -363,40 +363,7 @@ public final class WholePackStore {
             Files.createDirectories(parent);
             reserved = reserve(destination, pack);
             staging = Files.createTempDirectory(parent, ".pack-write-");
-            Set<String> written = new HashSet<>();
-            putDescriptor(staging, loaded, written);
-            for (CharterArtifact artifact : pack.artifacts()) {
-                putArtifact(staging, loaded.layout().pathOf(artifact), artifact, written);
-            }
-            for (AssetFile file : pack.assetFiles()) {
-                putPayload(
-                        staging,
-                        PackFileSet.ASSETS + file.path(),
-                        file.payload().bytes(),
-                        PackFileKind.ASSET_PAYLOAD,
-                        written);
-            }
-            for (Preset preset : pack.presets()) {
-                put(
-                        staging,
-                        PresetFiles.pathOf(preset.id()),
-                        utf8(strategy.writePreset(PresetFiles.toDso(preset))),
-                        written);
-            }
-            for (GraphDocument graph : loaded.graphs()) {
-                put(staging, graph.file(), utf8(strategy.writeGraph(graph)), written);
-            }
-            if (pack.document().isPresent()) {
-                put(
-                        staging,
-                        PackDocumentMarkdown.FILE,
-                        utf8(PackDocumentMarkdown.toWritableText(
-                                pack.id(), pack.document().get())),
-                        written);
-            }
-            if (loaded.manifest().isPresent()) {
-                putManifest(staging, pack, loaded.manifest().get(), written);
-            }
+            putContents(staging, loaded);
             moveOver(staging, reserved);
             staging = null; // moved into place; nothing left to clean up
             reserved = null;
@@ -411,6 +378,45 @@ public final class WholePackStore {
                     RefusalCode.PACK_UNREADABLE,
                     "cannot write pack " + pack.id().value(),
                     failure);
+        }
+    }
+
+    /** Puts every file of the loaded pack into the staging directory, each path once. */
+    private void putContents(Path staging, LoadedPack loaded) throws IOException {
+        Pack pack = loaded.pack();
+        Set<String> written = new HashSet<>();
+        putDescriptor(staging, loaded, written);
+        for (CharterArtifact artifact : pack.artifacts()) {
+            putArtifact(staging, loaded.layout().pathOf(artifact), artifact, written);
+        }
+        for (AssetFile file : pack.assetFiles()) {
+            putPayload(
+                    staging,
+                    PackFileSet.ASSETS + file.path(),
+                    file.payload().bytes(),
+                    PackFileKind.ASSET_PAYLOAD,
+                    written);
+        }
+        for (Preset preset : pack.presets()) {
+            put(
+                    staging,
+                    PresetFiles.pathOf(preset.id()),
+                    utf8(strategy.writePreset(PresetFiles.toDso(preset))),
+                    written);
+        }
+        for (GraphDocument graph : loaded.graphs()) {
+            put(staging, graph.file(), utf8(strategy.writeGraph(graph)), written);
+        }
+        if (pack.document().isPresent()) {
+            put(
+                    staging,
+                    PackDocumentMarkdown.FILE,
+                    utf8(PackDocumentMarkdown.toWritableText(
+                            pack.id(), pack.document().get())),
+                    written);
+        }
+        if (loaded.manifest().isPresent()) {
+            putManifest(staging, pack, loaded.manifest().get(), written);
         }
     }
 
