@@ -20,7 +20,7 @@
   "work_packages": {
     "WP01": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": "claude::reviewer-renata",
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 1,
@@ -31,7 +31,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "WP01 commit 7245f338. Contract: ActivatableKind+mission_type, SelectableKind removed (bundler refuses a $ref alias; ArtifactReference/SelectableKindPath/_index repointed); selected/deactivated/CascadeKind gain mission_type; activatedKinds/missionTypes removed, 422 validation_failed on writes; schemaVersion 2 as minimum/maximum 2 (const made an int enum DTO); ActivationChange.droppedPins required (PackPin); preset schema: no activated_kinds, +activated_skills/+activated_glossary_packs; FR-042: empty selected.<kind> left out of the canonical form. Corpus v2, fragment (one ### Breaking block: README allows one ### per fragment), activation-kind-model.feature @contract @activations @WIP (new steps listed in its header for WP08). RED: packs ActivationConfigSchemaParityTest 30/32 failed (assertion) on new corpus vs old schemas; PackLevelSchemasTest failed against old preset.schema.json. GREEN: both pass. Gates (all with --max-workers=1 -Dorg.gradle.internal.repository.max.retries=10 -PcontractBaseline=none): ./gradlew :contracts:check exit 0; ./gradlew :charter-api:check :activations:compileJava :activations:compileTestJava exit 0; ./gradlew :packs:test --tests '*ActivationConfigSchemaParityTest*' --tests '*PackLevelSchemasTest*' :packs:spotlessCheck :packs:checkstyleTest exit 0; ./gradlew :activations:test --tests '*ActivationMapperTest*' --tests '*ActivationChangeMapperTest*' :activations:checkstyleMain :activations:checkstyleTest :activations:spotlessCheck exit 0; :deployable HexagonalArchitectureTest 59/59 green; :client-java:compileTestJava exit 0. Expected fallout for later WPs: @contract activation scenarios send v1/activatedKinds bodies (WP08); ActivationConfigConformanceTest lacks a 'minimum' reason case for invalid/02 (WP08); PresetYamlTest + PresetRoundTripTest pin activated_kinds (WP06). Open: replaceActivation answers Activation, not ActivationChange, so its dropped pins are visible only as the config without them; ArtifactIdPath.yaml still cites the document's missionTypes (WP08). Divergences for WP09: activated_kinds narrowing not honoured; schemaVersion 2.",
-        "Unchanged resubmit of 7245f338 (identity-only cycle, #368 precedent)"
+        "Unchanged resubmit of 7245f338 (identity-only cycle, #368 precedent)",
+        "Review passed: commit 7245f338 meets T001-T006 and the DoD exit check (:contracts:check, :charter-api:check, :activations:compileJava/compileTestJava green with -PcontractBaseline=none; HexagonalArchitectureTest green; activation-kind-model.feature committed @contract @WIP). Breaking set matches contract-delta A7. No disabled tests or suppressions; out-of-map edits minimal and recorded. Coordination: besides 109 CharterContractSuite failures (WP08) and PresetYamlTest/PresetRoundTripTest (WP06), :activations:test has 29 failures not in the hand-off: ActivationBodyAdviceTest, ActivationJsonTest (WP08-owned), ActivationWriteOrderTest, ActivationProblemsTest (unowned; schemaVersion 1 bodies). WP03's exit check (:activations:test green) will hit them. droppedPins is List.of() and toConfig emits schemaVersion 1 until WP03/WP04/WP08. Nits: ArtifactIdPath.yaml still cites missionTypes; FR-042 scenario GET absence checks lack a positive control."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
