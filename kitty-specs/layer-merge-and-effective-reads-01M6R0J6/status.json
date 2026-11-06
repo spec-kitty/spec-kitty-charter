@@ -56,7 +56,7 @@
     },
     "WP02": {
       "actor": "claude",
-      "agent": "claude::java-jenny",
+      "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -69,6 +69,7 @@
         "Ready for review: ArtifactKind is the one kind registry. Deleted dead orgRequirable/selectionOverlayable/InForceWhenAbsent (no main readers; their test assertions removed from ArtifactKindTest); mission_type activatable and requirable (javadoc); NodeKind.plural routes mission_types to ArtifactKind; fromToken documented as the one exact parse, with every-token and case-only-refusal tests. Parity test in ArtifactKindTest pins the activatable set to every generated ActivatableKind copy (ArtifactReference/EffectiveArtifact/SharedSkip/SkippedDeactivated KindEnum, SelectedArtifacts members); shown failing when GUARD was flipped activatable. Red first: commit cb8bb5b1 (theRegistryHoldsOnlyTheFactsItsConsumersRead AssertionError naming the 3 dead facts), green 83d69e5c. Gates: ./gradlew --max-workers=1 -Dorg.gradle.internal.repository.max.retries=10 -PcontractBaseline=none :kernel:check exit 0; :deployable:test HexagonalArchitectureTest 59/59 pass (deployable CharterContractSuite has 109 pre-existing failures from WP01's contract removals, owned by WP03-WP06). out-of-map: service/kernel/build.gradle.kts - test-only :charter-api + Spring Boot BOM for the parity test. Divergence: none new (mission_type requirable note for docs WP)."
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/layer-merge-and-effective-reads-01M6R0J6-coord/kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP02-a0-kernel-kind-registry/review-cycle-1.md",
         "reference": "review-cycle://layer-merge-and-effective-reads-01M6R0J6/WP02-a0-kernel-kind-registry/review-cycle-1.md",
@@ -76,12 +77,12 @@
         "verdict": "changes_requested"
       },
       "role": "implementer",
-      "shell_pid": 21767,
-      "shell_pid_created_at": "1793979287.76",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T007": "done",
-        "T008": "done",
-        "T009": "done"
+        "T007": "planned",
+        "T008": "planned",
+        "T009": "planned"
       }
     },
     "WP03": {
