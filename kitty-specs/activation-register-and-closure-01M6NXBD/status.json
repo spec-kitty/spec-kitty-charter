@@ -1,7 +1,7 @@
 {
-  "event_count": 126,
-  "last_event_id": "01M6Q4RFP5JV22XBT1HDA5WVH9",
-  "materialized_at": "2026-11-06T00:39:54.806398+00:00",
+  "event_count": 127,
+  "last_event_id": "01M6Q512FV2WPM9N9VDNKVQY8D",
+  "materialized_at": "2026-11-06T00:44:36.219385+00:00",
   "mission_number": "",
   "mission_slug": "activation-register-and-closure-01M6NXBD",
   "mission_type": "",
@@ -12,8 +12,8 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 0,
-    "in_progress": 1,
+    "for_review": 1,
+    "in_progress": 0,
     "in_review": 0,
     "planned": 2
   },
@@ -449,9 +449,9 @@
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
       "implementer_of_record": "claude:claude-opus-5-5:java-jenny",
-      "lane": "in_progress",
-      "last_event_id": "01M6Q4RFP5JV22XBT1HDA5WVH9",
-      "last_transition_at": "2026-11-06T00:39:54.806398+00:00",
+      "lane": "for_review",
+      "last_event_id": "01M6Q512FV2WPM9N9VDNKVQY8D",
+      "last_transition_at": "2026-11-06T00:44:36.219385+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "Red first (06d0be2): 32 scenarios of activation-selections.feature all answered 501. Green (8a53b3f): 32/32, deployable 774 tests 0 failures; activations, packs (-x openPacksRoundTrip), web-transport, contracts (baseline none) checks green. Reserved ops 9->5 (ReservedOperationCoverageTest hasSize(5)), @reserved 11->6, binding pin on applyActivationPreset. One ClosureQueries.snapshot per session (PacksAvailabilityTest). Divergences: ActivationChange carries an up link, no self (LinkChecks forbids self on a GET-less path; Links.yaml and example updated); missing activation with If-Match answers 404 activation_not_found; new ActivationArtifactNotFound response (ActivationNotFound names unraised codes); ContractDescriptionsTest, OperationCoverageTest, ReservedActivationOperationTest, errors.feature updated."
@@ -468,15 +468,15 @@
       "shell_pid": null,
       "shell_pid_created_at": null,
       "subtasks": {
-        "T075": "planned",
-        "T076": "planned",
-        "T077": "planned",
-        "T078": "planned",
-        "T079": "planned",
-        "T080": "planned",
-        "T081": "planned",
-        "T082": "planned",
-        "T083": "planned"
+        "T075": "done",
+        "T076": "done",
+        "T077": "done",
+        "T078": "done",
+        "T079": "done",
+        "T080": "done",
+        "T081": "done",
+        "T082": "done",
+        "T083": "done"
       }
     },
     "WP14": {
