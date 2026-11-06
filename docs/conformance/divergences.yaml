@@ -626,11 +626,13 @@
   core: Accepts the entry and ignores it, or warns.
   service: >-
     Refuses the write 409 artifact_required or artifact_locked, naming the requiring or locking
-    pack in requiredBy, and stores nothing.
+    pack in requiredBy, and stores nothing. Create and replace judge every deny entry of the
+    document; a per-artifact or preset write judges only the deny entries it adds.
   rationale: >-
     A deny entry that can never apply misleads the reader of the document. Refusing it at write
     keeps every stored deny entry meaningful; a stale entry left by a pack upgrade is served as
-    stored and refused only on the next write (ADR-0059 D4).
+    stored, tolerated by a per-artifact write that does not add it, and refused on the next create
+    or replace (ADR-0059 D4).
   ruling: ADR-0020 D9; ADR-0059 D4
   status: open
   since: 2026-11-05
