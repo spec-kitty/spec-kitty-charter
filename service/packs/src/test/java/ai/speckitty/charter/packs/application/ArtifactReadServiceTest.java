@@ -103,7 +103,7 @@ class ArtifactReadServiceTest {
         return D1;
     });
 
-    /** The graph-document edges of each pack, the references an artifact writes (ADR-0063). */
+    /** The graph-document edges of each pack, the references an artifact writes (ADR-0064). */
     private final Map<PackIdentifier, List<PackEdge>> edges = new HashMap<>();
 
     private ArtifactReadService serviceDigesting(PackSources sources) {
@@ -480,7 +480,7 @@ class ArtifactReadServiceTest {
     @Test
     void aTargetReachedUnderTwoRelationsIsListedOnceForEachRelation() {
         // The real packs hold such pairs (a tactic that both requires and suggests one styleguide); dropping one
-        // relation would hide an authored edge (ADR-0063 decision 6). The same edge written twice, from an
+        // relation would hide an authored edge (ADR-0064 decision 6). The same edge written twice, from an
         // own-qualified
         // source or to an own-qualified target, is still listed once, under its first spelling.
         ArtifactReadService service = referenceFixture(() -> D1);

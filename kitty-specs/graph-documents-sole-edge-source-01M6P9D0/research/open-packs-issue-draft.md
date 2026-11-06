@@ -1,12 +1,12 @@
 # Issue draft for spec-kitty/spec-kitty-open-packs
 
-**Title:** Move artifact reference fields into the graph documents (charter #240, ADR-0063)
+**Title:** Move artifact reference fields into the graph documents (charter #240, ADR-0064)
 
 ---
 
 The charter now reads relationships only from a pack's graph documents (`*.graph.yaml`,
 `drg/fragment.yaml`) and writes them only through `PUT /packs/{packId}/relationships`
-(spec-kitty/spec-kitty-charter#240, ADR-0063). The artifact fields that used to carry references
+(spec-kitty/spec-kitty-charter#240, ADR-0064). The artifact fields that used to carry references
 (`references` on directives, paradigms, tactics and tactic steps, procedures, styleguides, toolguides,
 mission types and mission steps; `directive_refs` on paradigms; a directive's `procedures`) are
 dropped from the charter's pack schemas, which refuse unknown fields.

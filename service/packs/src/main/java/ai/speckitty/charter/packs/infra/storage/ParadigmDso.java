@@ -5,7 +5,7 @@ import java.util.Objects;
 /**
  * The persistence shape of a paradigm: a flat mirror of the fields of a {@code *.paradigm.yaml}, not the domain
  * entity. Its record equality is the round-trip fidelity assertion. A paradigm carries no relationship fields
- * (ADR-0063).
+ * (ADR-0064).
  *
  * @param id the paradigm's {@code id}
  * @param schemaVersion the {@code schema_version}

@@ -1,7 +1,7 @@
 title: Styleguide
 description: >-
   One styleguide of a Charter Pack, as the pack declares it. Its relationships are graph edges, read through
-  listArtifactReferences (ADR-0063). Every field is
+  listArtifactReferences (ADR-0064). Every field is
   a closed shape: the tooling map is projected onto an ordered array of closed entries, and the arbitrary
   structural-lint-config tree is carried as its canonical JSON text, because a closed response object admits
   neither an open-keyed map nor a recursive tree.

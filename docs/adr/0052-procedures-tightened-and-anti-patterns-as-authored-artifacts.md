@@ -3,7 +3,7 @@ title: "ADR-0052: Procedures tightened, and anti-patterns as authored artifacts"
 description: "The procedure kind stays with a tightened definition and a re-homing list; anti-patterns become authored files with a severity, referenced through rejects."
 doc_status: active
 updated: 2026-11-05T00:00:00Z
-decision_status: 'Accepted, with Amendment 2026-11-02 (ADR-0053) and Amendment 2026-11-05 (ADR-0063)'
+decision_status: 'Accepted, with Amendment 2026-11-02 (ADR-0053) and Amendment 2026-11-05 (ADR-0064)'
 decision_date: '2026-11-02'
 type: ADR
 kind: ADR
@@ -57,11 +57,11 @@ this record; the original text stands and each changed point is annotated:
 ### Amendment 2026-11-05
 
 The operator ruled on [#240](https://github.com/spec-kitty/spec-kitty-charter/issues/240) on 2026-11-05 that an edge is authored only in a pack's graph documents
-([ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/)). One point of this record changes; the original text stands and it is annotated:
+([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/)). One point of this record changes; the original text stands and it is annotated:
 
 - decision 9: no kind carries a `rejects` list, and no field mints `Relation.rejects`. Guidance rejects an
   anti-pattern with a `rejects` edge in its graph documents, and a `references` entry of `type: anti_pattern`
-  migrates to that edge ([ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/) decision 12).
+  migrates to that edge ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decision 12).
 
 ## Context
 
@@ -157,7 +157,7 @@ The operator ruled on [#240](https://github.com/spec-kitty/spec-kitty-charter/is
    cascade follows, so it would activate the anti-pattern; such entries migrate into `rejects`. Styleguides,
    procedures, directives, tactics, paradigms, mission types and steps may carry `rejects`.
 
-   *Amended 2026-11-05: edge authority is decided by [ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/) ([#240](https://github.com/spec-kitty/spec-kitty-charter/issues/240)), decision 12. The `rejects` list is retired before it is built, and no field mints `Relation.rejects`. Guidance rejects an anti-pattern with a `rejects` edge in its pack's graph documents; an anti-pattern reference migrates to that edge.*
+   *Amended 2026-11-05: edge authority is decided by [ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) ([#240](https://github.com/spec-kitty/spec-kitty-charter/issues/240)), decision 12. The `rejects` list is retired before it is built, and no field mints `Relation.rejects`. Guidance rejects an anti-pattern with a `rejects` edge in its pack's graph documents; an anti-pattern reference migrates to that edge.*
 10. **AP2, severity** is a three-level ladder: `smell` (worth a remark), `severe` (should block review), `breaking`
     (must block). The same ladder is used by the `gate` kind (ADR-0050 decision 14), to align with core's
     (spec-kitty/spec-kitty#3416).

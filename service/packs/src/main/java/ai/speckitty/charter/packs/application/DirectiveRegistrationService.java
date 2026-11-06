@@ -21,7 +21,7 @@ import org.springframework.stereotype.Service;
  * {@link Pack} &rarr; commit atomically</em>, so the aggregate invariants (belongs-to-pack, no-duplicate-id) gate the
  * write, and a refusal changes zero stored files (NFR-002, the {@link PackWriteStore}'s stage-and-swap enforces it).
  *
- * <h2>One write path for an edge (ADR-0063)</h2>
+ * <h2>One write path for an edge (ADR-0064)</h2>
  *
  * A registration body carries the directive's own fields only. A relationship is authored in the pack's graph documents
  * and written through {@link RelationshipRegistrationService#registerRelationship} ({@code PUT

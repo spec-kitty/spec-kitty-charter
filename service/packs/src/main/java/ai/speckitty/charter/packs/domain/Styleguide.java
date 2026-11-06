@@ -18,7 +18,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * A styleguide of a {@link Pack}: conventions for the shape of a work product, identified by its
  * {@link StyleguideIdentifier}. Two styleguides are equal when they have the same identity. It has no description and
- * carries no relationship fields: its relationships are authored in the pack's graph documents (ADR-0063). Build one
+ * carries no relationship fields: its relationships are authored in the pack's graph documents (ADR-0064). Build one
  * with {@link #builder()}.
  */
 public final class Styleguide implements CharterArtifact {

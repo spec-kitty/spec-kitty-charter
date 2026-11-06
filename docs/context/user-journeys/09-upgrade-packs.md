@@ -11,7 +11,7 @@ related:
   - adr/0005-service-registers-and-distributes-packs
   - adr/0020-offering-and-activations
   - adr/0026-write-surface-is-functional-registration
-  - adr/0063-graph-documents-are-the-only-source-of-relationships
+  - adr/0064-graph-documents-are-the-only-source-of-relationships
 audience:
   - profile: core-maintainer
     guidance_text: Read this for what core shows during an upgrade, the write-through and the outdated notice.
@@ -58,7 +58,7 @@ A pack version whose files still carry a field that minted relationships, such a
 `procedures` or `directive_refs`, is refused: the pack schemas are closed, so the field is an
 unknown field. The maintainer moves those relationships into the pack's graph documents before
 registering the version
-([ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/)).
+([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/)).
 
 ## Diagram
 

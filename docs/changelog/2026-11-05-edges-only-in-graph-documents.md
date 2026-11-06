@@ -7,7 +7,7 @@ updated: 2026-11-05T00:00:00Z
 type: Changelog
 kind: Changelog
 related:
-  - adr/0063-graph-documents-are-the-only-source-of-relationships
+  - adr/0064-graph-documents-are-the-only-source-of-relationships
   - guides/compose-packs
   - architecture/descriptors
 audience:
@@ -21,7 +21,7 @@ audience:
 
 **A relationship between two artifacts is authored only in a pack's graph documents**
 ([#240](https://github.com/spec-kitty/spec-kitty-charter/issues/240),
-[ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/)). These are the `*.graph.yaml` shards
+[ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/)). These are the `*.graph.yaml` shards
 in built-in and `drg/fragment.yaml` in an org or project pack. Over the API, `PUT /packs/{packId}/relationships`
 (`putPackRelationship`) is the only write of an edge.
 

@@ -73,7 +73,7 @@ class ParadigmReadServiceTest {
 
     @Test
     void aReturnedParadigmCarriesNoRelationship() {
-        // ADR-0063: a paradigm's relationships are graph edges, never derived from a field, listed or single.
+        // ADR-0064: a paradigm's relationships are graph edges, never derived from a field, listed or single.
         Paradigm read = service.paradigmsOf(PACK_A).value().stream()
                 .filter(p -> p.id().equals(CLEAN))
                 .findFirst()

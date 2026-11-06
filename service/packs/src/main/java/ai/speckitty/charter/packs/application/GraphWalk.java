@@ -24,7 +24,7 @@ import java.util.Set;
  * <p>It lives in the application ring, where the ports exist (ADR-0006). It is plain orchestration over the resolver
  * and a {@link GraphWalker} visitor — no IO, no framework; the composition root constructs it.
  *
- * <p><strong>It does not walk authored edges.</strong> Since ADR-0063 a relationship is authored only in a pack's graph
+ * <p><strong>It does not walk authored edges.</strong> Since ADR-0064 a relationship is authored only in a pack's graph
  * documents, read through {@link ai.speckitty.charter.packs.domain.PackEdgeRepository}; the derived relationships it
  * follows are a guard's {@code implemented_by} alone. No read is wired through it, and a caller wired to it walks
  * almost nothing: retire it or feed it from the edge port first (#397).

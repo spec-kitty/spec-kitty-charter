@@ -17,7 +17,7 @@ import org.jspecify.annotations.Nullable;
  * storage representation, not here.
  *
  * <p>It owns its steps; their order and duplicates are significant. Its relationships are authored in the pack's
- * graph documents (ADR-0063). Build one with {@link #builder()}.
+ * graph documents (ADR-0064). Build one with {@link #builder()}.
  */
 public final class Tactic implements CharterArtifact {
 

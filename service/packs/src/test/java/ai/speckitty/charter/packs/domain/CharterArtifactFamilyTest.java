@@ -119,7 +119,7 @@ class CharterArtifactFamilyTest {
     }
 
     @Test
-    @DisplayName("no member of the family derives a relationship: relationships are graph edges (ADR-0063)")
+    @DisplayName("no member of the family derives a relationship: relationships are graph edges (ADR-0064)")
     void noMemberDerivesARelationship() {
         assertThat(FAMILY)
                 .allSatisfy(artifact -> assertThat(artifact.derivedRelationships())

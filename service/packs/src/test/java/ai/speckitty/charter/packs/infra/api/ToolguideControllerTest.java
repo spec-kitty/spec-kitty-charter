@@ -284,7 +284,7 @@ class ToolguideControllerTest {
         assertThat(store.commits).as("a refused registration commits nothing").isZero();
     }
 
-    // ---- ADR-0063: the body is closed; a removed citation list is refused, the same body without it is created -----
+    // ---- ADR-0064: the body is closed; a removed citation list is refused, the same body without it is created -----
 
     @Test
     void aBodyStillSendingReferencesIsA422AndWritesNothing() throws Exception {

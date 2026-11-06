@@ -1,6 +1,6 @@
 # open-packs migration for charter #240 (draft)
 
-The charter stops reading relationship fields on artifacts (ADR-0063). The packs in
+The charter stops reading relationship fields on artifacts (ADR-0064). The packs in
 `spec-kitty/spec-kitty-open-packs` still author references in those fields, so their content moves
 into the graph documents (`*.graph.yaml` in `packs/built-in`, `drg/fragment.yaml` in the other
 packs) before this mission's PR moves `openPacksRef`. This session has no push access to

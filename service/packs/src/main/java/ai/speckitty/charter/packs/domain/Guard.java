@@ -131,7 +131,7 @@ public final class Guard implements CharterArtifact {
     /**
      * The one relationship a guard originates: {@code implemented_by} its asset, derived from the field (ADR-0054
      * decision 3). It is derived runtime data, never authored: the write refuses a derived relation and the round trip
-     * never compares it (ADR-0063). A built-in has no node, so it derives none; neither does an asset of another pack, which the load
+     * never compares it (ADR-0064). A built-in has no node, so it derives none; neither does an asset of another pack, which the load
      * refuses until the pack dependency closure (ADR-0048) resolves it, and which a URN cannot yet qualify.
      *
      * @return the derived relationship, or an empty list

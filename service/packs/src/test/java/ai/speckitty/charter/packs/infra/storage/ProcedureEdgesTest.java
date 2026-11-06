@@ -23,12 +23,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * A pack's relationships are the edges of its graph documents, and no artifact derives one from a field (ADR-0063).
+ * A pack's relationships are the edges of its graph documents, and no artifact derives one from a field (ADR-0064).
  * The fixture pack holds a tactic and a procedure that both relate to the same directive, and one root graph shard that
  * holds those two edges: the edge port reads them back in document order, while every loaded artifact derives none, so
  * the edges can only come from the graph document.
  */
-@DisplayName("A loaded pack's edges come from its graph document; no artifact derives one (ADR-0063)")
+@DisplayName("A loaded pack's edges come from its graph document; no artifact derives one (ADR-0064)")
 class ProcedureEdgesTest {
 
     private static final PackIdentifier PACK = new PackIdentifier("01M60H9BPR0CEDVREEDGES000A");

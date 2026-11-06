@@ -6,7 +6,7 @@ Feature: Toolguides are read and registered functionally
   (ADR-0026): the whole pack aggregate is revalidated and committed atomically, a refusal leaves the pack
   unchanged (NFR-002), and every write answers an ETag revision for optimistic concurrency (FR-012). A
   toolguide carries no relationship field: its relationships are registered through PUT
-  /packs/{packId}/relationships (ADR-0063), and a body that still sends one is refused. There is no DELETE or PATCH. The guide travels as content, never as a
+  /packs/{packId}/relationships (ADR-0064), and a body that still sends one is refused. There is no DELETE or PATCH. The guide travels as content, never as a
   path (FR-010, US5): a registration carries exactly one of guide (its Markdown) or guideUri (fetched by the
   service), and a read answers the stored guide with its H1 written from the title (FR-011).
 

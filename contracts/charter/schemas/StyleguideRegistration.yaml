@@ -2,9 +2,9 @@ title: StyleguideRegistration
 description: >-
   The registration body of a styleguide: its fields only. A styleguide carries no relationships — every relationship
   is authored in the pack's graph documents and registered through PUT /packs/{packId}/relationships, the only
-  operation that writes one (ADR-0063).
+  operation that writes one (ADR-0064).
   A member this schema does not declare is refused 422 validation_failed, naming the member, before the body is bound
-  and nothing is written (ADR-0063).
+  and nothing is written (ADR-0064).
   On POST to the collection the id
   is optional (the server answers with Location); on PUT the id is taken from the path. The tooling map is
   carried as ordered {tool, configuration} entries and the structural-lint-config tree as its JSON text,

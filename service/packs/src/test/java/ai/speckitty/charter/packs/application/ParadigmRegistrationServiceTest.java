@@ -34,7 +34,7 @@ class ParadigmRegistrationServiceTest {
     private final WritePolicyGate policy = new PermissiveWritePolicyGate();
     private final ParadigmRegistrationService service = new ParadigmRegistrationService(store, store, policy);
 
-    // ---- FR-014 / SC-001: register, read back value-equal; the registration writes no edge (ADR-0063) -----------
+    // ---- FR-014 / SC-001: register, read back value-equal; the registration writes no edge (ADR-0064) -----------
 
     @Test
     void registersAParadigmWithItsFieldsAndReadsItBackValueEqual() {

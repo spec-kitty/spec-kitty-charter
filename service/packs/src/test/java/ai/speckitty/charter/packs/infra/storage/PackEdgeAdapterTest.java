@@ -18,11 +18,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * The file-system adapter of the edge port (ADR-0063): the edges of a pack's root graph shards in file-name order, the
+ * The file-system adapter of the edge port (ADR-0064): the edges of a pack's root graph shards in file-name order, the
  * registered shard among them, each in document order; none for a pack with no graph document; and a refusal, not a
  * partial answer, when a graph document cannot be read or names a relation the service does not know.
  */
-@DisplayName("The edge port's file-system adapter (ADR-0063)")
+@DisplayName("The edge port's file-system adapter (ADR-0064)")
 class PackEdgeAdapterTest {
 
     private static final String PACK = "pack-descriptor-only";

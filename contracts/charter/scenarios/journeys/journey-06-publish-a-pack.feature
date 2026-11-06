@@ -3,7 +3,7 @@
 Feature: Journey 06 — a pack author publishes a pack
   A pack author registers a paradigm with its principles, the directives that carry its rules, a
   procedure, and a companion asset that supports a rule. Registering paradigms, directives and
-  relationships works today; a relationship is registered only through the relationship write (ADR-0063).
+  relationships works today; a relationship is registered only through the relationship write (ADR-0064).
   Companion assets and publishing a pack version are not in the contract yet.
 
   Background:

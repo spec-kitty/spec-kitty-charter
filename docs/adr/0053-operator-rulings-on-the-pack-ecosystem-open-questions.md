@@ -3,7 +3,7 @@ title: "ADR-0053: Operator rulings on the pack-ecosystem open questions"
 description: "The operator's rulings of 2026-11-02 on every open question of ADR-0048 to ADR-0052, and the decisions of those records that the rulings amend."
 doc_status: active
 updated: 2026-11-05T00:00:00Z
-decision_status: Accepted; layer-override grain of d6 settled by ADR-0059 (2026-11-04); Amendment 2026-11-05 (ADR-0063)
+decision_status: Accepted; layer-override grain of d6 settled by ADR-0059 (2026-11-04); Amendment 2026-11-05 (ADR-0064)
 decision_date: '2026-11-02'
 type: ADR
 kind: ADR
@@ -45,10 +45,10 @@ layer override (decision 3) and the edges the cascade follows (decision 2).*
 ### Amendment 2026-11-05
 
 The operator ruled on [#240](https://github.com/spec-kitty/spec-kitty-charter/issues/240) on 2026-11-05 that an edge is authored only in a pack's graph documents
-([ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/)). One point of this record changes; the original text stands and it is annotated:
+([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/)). One point of this record changes; the original text stands and it is annotated:
 
 - decision 22: a step enhancement's additions are guards and emits; it holds no `references`, and guidance it adds
-  to a step is a graph edge ([ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/) decision 12).
+  to a step is a graph edge ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decision 12).
 
 ## Context
 
@@ -150,7 +150,7 @@ The operator also replaced ADR-0050's `gate` kind with asset-backed guards (ADR-
     and merge rules are the same, and for a step the merge is add-only. This amends ADR-0050 decisions 22 and 23 (a
     mechanism of its own, and a step-enhancement file with a `target:` field). The enhancing artifact's file layout
     is left to the schema work.
-    *Amended 2026-11-05 ([ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/) decision 12): the additions lose `references`. An enhancement holds guards and emits; guidance it adds to a step is an edge in the enhancing pack's graph documents.*
+    *Amended 2026-11-05 ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decision 12): the additions lose `references`. An enhancement holds guards and emits; guidance it adds to a step is an edge in the enhancing pack's graph documents.*
 23. **The `{kind}` path segment uses the kebab operator token** (question 9): `/packs/{packId}/artifacts/mission-type/{id}`,
     `event-registry`, `anti-pattern`, and the same in `selections/{kind}` and `exclusions/{kind}`.
     - This is a breaking change on the 0.x line, with a `### Breaking` entry (ADR-0022): every multi-word `{kind}`

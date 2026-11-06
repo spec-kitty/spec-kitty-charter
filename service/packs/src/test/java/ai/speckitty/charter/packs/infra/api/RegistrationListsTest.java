@@ -36,14 +36,14 @@ class RegistrationListsTest {
         assertThat(RegistrationLists.of(DirectiveRegistration.class))
                 .containsExactly("explicitAllowances", "integrityRules", "validationCriteria");
         assertThatThrownBy(() -> RegistrationLists.of(ParadigmRegistration.class))
-                .as("a paradigm registration has no list left (ADR-0063), so its guard names none")
+                .as("a paradigm registration has no list left (ADR-0064), so its guard names none")
                 .isInstanceOf(IllegalStateException.class);
         assertThat(RegistrationLists.of(StyleguideRegistration.class))
                 .containsExactly("antiPatterns", "appliesToLanguages", "patterns", "principles", "tooling");
         assertThat(RegistrationLists.of(ToolguideRegistration.class)).containsExactly("appliesToLanguages", "commands");
     }
 
-    /** ADR-0063: the members a body may send are read off the DTO, so a removed relationship field is not among them. */
+    /** ADR-0064: the members a body may send are read off the DTO, so a removed relationship field is not among them. */
     @Test
     void theMembersOfEachRegistrationAreReadOffItsDtoWithoutTheRemovedFields() {
         assertThat(RegistrationLists.members(DirectiveRegistration.class))

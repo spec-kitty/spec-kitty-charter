@@ -16,7 +16,7 @@ related:
   - adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions
   - guides/compose-packs
   - adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts
-  - adr/0063-graph-documents-are-the-only-source-of-relationships
+  - adr/0064-graph-documents-are-the-only-source-of-relationships
 audience:
   - profile: pack-author
     guidance_text: Read this to find the file, fields and naming of each descriptor you author.
@@ -214,7 +214,7 @@ tactics for `software-dev`).
 Each artifact descriptor is one file named `<name>.<suffix>`, placed in the kind's directory.
 Its `id` becomes the node URN `<kind>:<id>`; its relations to other artifacts live only in the
 graph (shards or fragment), never in the descriptor
-([ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/)). A few fields name
+([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/)). A few fields name
 other artifacts as data, not as relations: an agent profile's `*-references`, a skill's `enhances`
 and `overrides`. A schema is closed, so a file that still carries a removed field, such as
 `references`, `procedures` or `directive_refs`, is refused as an unknown field.
@@ -398,7 +398,7 @@ type is an artifact kind (`mission_type`, DIV-501); a mission step is not.
   `governance-profile.yaml`, `expected-artifacts.yaml`, `actions/<a>/index.yaml`,
   `mission-steps/**` and `command-templates/*` are refused by name (DIV-502).
 - **CRG:** `mission_type:<id>`. The graph keeps `action:<id>/<step>` as a step's node
-  ([ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/) decision 12).
+  ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decision 12).
 
 > **Decided, not built yet:** [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) makes
 > the mission type a declared state machine (explicit transitions, guards, `emit` actions) and adds the `lifecycle`

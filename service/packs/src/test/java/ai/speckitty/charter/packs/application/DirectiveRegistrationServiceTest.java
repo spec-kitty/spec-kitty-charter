@@ -35,7 +35,7 @@ class DirectiveRegistrationServiceTest {
     private final WritePolicyGate policy = new PermissiveWritePolicyGate();
     private final DirectiveRegistrationService service = new DirectiveRegistrationService(store, store, policy);
 
-    // ---- FR-007 / SC-001: register, read back value-equal; the registration writes no edge (ADR-0063) ----------
+    // ---- FR-007 / SC-001: register, read back value-equal; the registration writes no edge (ADR-0064) ----------
 
     @Test
     void registersADirectiveWithItsFieldsAndReadsItBackValueEqual() {

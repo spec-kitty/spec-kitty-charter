@@ -380,7 +380,7 @@ public final class ArtifactReadService {
     }
 
     /**
-     * The references an artifact writes (ADR-0063): the edges of its pack's graph documents whose source is the
+     * The references an artifact writes (ADR-0064): the edges of its pack's graph documents whose source is the
      * artifact, written bare or qualified with the pack's own name, in document order, then its derived relations. Each
      * carries its relation. A target is listed once per relation: the same artifact written bare and qualified with
      * its holder's name is one reference, and the first spelling is kept.

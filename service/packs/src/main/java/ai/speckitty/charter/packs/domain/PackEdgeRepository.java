@@ -5,7 +5,7 @@ import java.util.List;
 
 /**
  * The port through which a pack's relationships are read, whatever the storage: the edges of its graph documents, the
- * only place a relationship is authored (ADR-0063).
+ * only place a relationship is authored (ADR-0064).
  */
 @FunctionalInterface
 public interface PackEdgeRepository {

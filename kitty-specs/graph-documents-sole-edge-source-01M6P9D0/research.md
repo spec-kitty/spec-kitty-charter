@@ -126,7 +126,7 @@ opposite to an existing edge. 19 `when` texts exist only on the field. Directive
 | D2 | which reference fields go | all typed refs + styleguide/toolguide citations | deferred (DM 01M6P9E9SMVNKD968XCPMXSYS8) |
 | D3 | read shapes' relationships arrays | remove; references `relation` from graph docs | deferred (DM 01M6P9EDD6KC327Y1KK0Q2SM7K) |
 | D4 | runtime/selection fields (FR-013) | keep as data | assumption A-4, asked as Q4 |
-| D5 | ADR number | chosen at writing: 0063 (0059 to 0062 are taken on main) | C-005 |
+| D5 | ADR number | chosen at writing: 0064 (0059 to 0062 on main, 0063 taken by #398) | C-005 |
 
 ## R7. The open-packs migration is forward-compatible (part A)
 

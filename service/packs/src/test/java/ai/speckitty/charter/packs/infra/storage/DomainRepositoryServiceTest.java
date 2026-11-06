@@ -485,7 +485,7 @@ class DomainRepositoryServiceTest {
     }
 
     /**
-     * The references a pack writes are both endpoints of its graph edges (ADR-0063): a qualified edge source is checked
+     * The references a pack writes are both endpoints of its graph edges (ADR-0064): a qualified edge source is checked
      * beside its target, and no artifact field writes one.
      */
     @Test

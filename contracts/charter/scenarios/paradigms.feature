@@ -6,7 +6,7 @@ Feature: Paradigms are read and registered functionally
   committed atomically, a refusal leaves the pack unchanged (NFR-002), and every write answers an ETag
   revision for optimistic concurrency (FR-012). A paradigm carries no relationship field: its relationships
   to directives and other artifacts are registered through PUT /packs/{packId}/relationships and read
-  through the paradigm's references (ADR-0063), and a body that still sends one is refused. There is no
+  through the paradigm's references (ADR-0064), and a body that still sends one is refused. There is no
   DELETE or PATCH.
 
   Background:
@@ -22,7 +22,7 @@ Feature: Paradigms are read and registered functionally
       pack_drg: drg/fragment.yaml
       """
 
-  Scenario: A registered paradigm is read back value-equal, with no relationship field (FR-014, SC-001, ADR-0063)
+  Scenario: A registered paradigm is read back value-equal, with no relationship field (FR-014, SC-001, ADR-0064)
     When I PUT "/packs/qa/artifacts/paradigm/clean-architecture" with the body:
       """
       {"schemaVersion": "1.0", "name": "Clean Architecture", "summary": "Dependencies point inward"}
@@ -36,7 +36,7 @@ Feature: Paradigms are read and registered functionally
     And the field at "/paradigm/directiveRefs" is absent
     And the field at "/paradigm/relationships" is absent
 
-  Scenario: A paradigm's directives are related through the relationship write and read through its references (US2, ADR-0063)
+  Scenario: A paradigm's directives are related through the relationship write and read through its references (US2, ADR-0064)
     When I PUT "/packs/qa/artifacts/paradigm/clean-architecture" with the body:
       """
       {"schemaVersion": "1.0", "name": "Clean Architecture", "summary": "Dependencies point inward"}
@@ -94,7 +94,7 @@ Feature: Paradigms are read and registered functionally
       """
     Then the response status is 201
 
-  Scenario Outline: A body that still sends a removed relationship field is refused, naming it, and nothing is written (ADR-0063)
+  Scenario Outline: A body that still sends a removed relationship field is refused, naming it, and nothing is written (ADR-0064)
     When I PUT "/packs/qa/artifacts/paradigm/clean-architecture" with the body:
       """
       {"schemaVersion": "1.0", "name": "Clean", "summary": "inward", "<member>": <value>}

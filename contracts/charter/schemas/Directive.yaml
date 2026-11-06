@@ -1,7 +1,7 @@
 title: Directive
 description: >-
   One directive of a Charter Pack, as the pack declares it. Its relationships are graph edges, read through
-  listArtifactReferences (ADR-0063).
+  listArtifactReferences (ADR-0064).
 type: object
 additionalProperties: false
 required:

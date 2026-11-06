@@ -29,7 +29,7 @@ import tools.jackson.core.JsonToken;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * The members of a registration body: the first one the body sends that its schema does not declare (ADR-0063), the
+ * The members of a registration body: the first one the body sends that its schema does not declare (ADR-0064), the
  * first list it sends as an explicit {@code null} (#292) or with a {@code null} item (#309), and the bounded read of the
  * body (#310).
  *
@@ -79,7 +79,7 @@ final class RegistrationLists {
     private static final Set<String> DETECTED =
             Set.of("UTF-8", "UTF-16BE", "UTF-16LE", "UTF-32BE", "UTF-32LE", "US-ASCII", "UTF-16", "UTF-32");
 
-    /** The registration members ADR-0063 removed because they carried relationships, as the wire spells them. */
+    /** The registration members ADR-0064 removed because they carried relationships, as the wire spells them. */
     private static final Set<String> REMOVED_EDGE_MEMBERS =
             Set.of("relationships", "references", "directiveRefs", "procedures");
 
@@ -159,7 +159,7 @@ final class RegistrationLists {
 
     /**
      * The refusal detail for a member the registration's schema does not declare. A member that once carried
-     * relationships (ADR-0063) is told where a relationship is written now; any other member, a typo say, is named
+     * relationships (ADR-0064) is told where a relationship is written now; any other member, a typo say, is named
      * only.
      *
      * @param registration the registration's kind, as a refusal names it

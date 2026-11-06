@@ -177,7 +177,7 @@ class ProblemResponsesTest {
     }
 
     /**
-     * A registration that still sends a member its schema does not declare, a relationship field ADR-0063 removed among
+     * A registration that still sends a member its schema does not declare, a relationship field ADR-0064 removed among
      * them, is a {@code 422 validation_failed} naming the member, for each kind, in the assembled application: the
      * converter as Spring Boot configures it would skip the member and answer a success, so the body advice refuses it
      * before the body is read. The per-member matrices are the controller tests'.

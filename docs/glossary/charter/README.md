@@ -411,7 +411,7 @@ Directive DIRECTIVE_037. Requires behavior-describing artifacts to evolve togeth
 
 ## Mission step
 
-One step of a mission type's recipe. A step names the role it needs, never a profile. It is a sub-item of its mission type's file, in `steps` (the run order) or `on_demand_steps`, with a one-line description of at most 160 characters, its expected input artifacts (preconditions) and output artifacts (postconditions), its action-scoped guidance as graph edges from its `action:<mission-type>/<step>` node (ADR-0063) and, as Markdown companions, its prompt and guidelines. A domain type, not an artifact kind: there is no `mission_steps` kind. The graph names it as an action, `action:<mission-type>/<step>` (ADR-0044).
+One step of a mission type's recipe. A step names the role it needs, never a profile. It is a sub-item of its mission type's file, in `steps` (the run order) or `on_demand_steps`, with a one-line description of at most 160 characters, its expected input artifacts (preconditions) and output artifacts (postconditions), its action-scoped guidance as graph edges from its `action:<mission-type>/<step>` node (ADR-0064) and, as Markdown companions, its prompt and guidelines. A domain type, not an artifact kind: there is no `mission_steps` kind. The graph names it as an action, `action:<mission-type>/<step>` (ADR-0044).
 
 **Meta:**
 
@@ -583,7 +583,7 @@ A snapshot of a quality metric (failure count, symbol count, dead-module count) 
 
 ## Recipe ingredients
 
-The guidance a mission type names: the targets of its `scope` edges in the pack's graph documents (core reads them from `governance-profile.yaml`, which the service retires). The mission-type file has no `references` field; a relationship is authored only in the graph documents (ADR-0063). While a mission of that type runs, these artifacts are added to the plate; activating the mission type is the consent. The ingredients name no profiles: roles stay the only link to profiles. Replaces Mission-Type Profile.
+The guidance a mission type names: the targets of its `scope` edges in the pack's graph documents (core reads them from `governance-profile.yaml`, which the service retires). The mission-type file has no `references` field; a relationship is authored only in the graph documents (ADR-0064). While a mission of that type runs, these artifacts are added to the plate; activating the mission type is the consent. The ingredients name no profiles: roles stay the only link to profiles. Replaces Mission-Type Profile.
 
 **Meta:**
 
@@ -699,7 +699,7 @@ The structural sub-steps of one mission step and what each delegates to (the `mi
 
 ## Step enhancement
 
-An add-only extension that a specialist or org pack attaches to an existing step of a mission type: guards on its outgoing transitions and `emit` entries (its guidance is graph edges, ADR-0063). It cannot remove or reorder steps; `overrides` replaces a step whole (ADR-0050).
+An add-only extension that a specialist or org pack attaches to an existing step of a mission type: guards on its outgoing transitions and `emit` entries (its guidance is graph edges, ADR-0064). It cannot remove or reorder steps; `overrides` replaces a step whole (ADR-0050).
 
 **Meta:**
 

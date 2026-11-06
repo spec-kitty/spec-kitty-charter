@@ -37,7 +37,7 @@ import tools.jackson.databind.json.JsonMapper;
  * stale {@code If-Match} precondition, as a plain {@code 412} problem (not a refusal code), per ADR-0020.
  *
  * <p>Bodies are the generated contract DTOs only; a storage DSO is never exposed (C-002). Neither the registration body
- * nor the response carries a relationship: its edges are read through the references (ADR-0063). The tooling map is carried as ordered {@code {tool, configuration}} entries, and the
+ * nor the response carries a relationship: its edges are read through the references (ADR-0064). The tooling map is carried as ordered {@code {tool, configuration}} entries, and the
  * arbitrary structural-lint-config tree as its JSON text, because a closed response object admits neither an
  * open-keyed map nor a recursive tree.
  */

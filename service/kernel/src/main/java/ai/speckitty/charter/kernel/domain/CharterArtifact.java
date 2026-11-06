@@ -55,7 +55,7 @@ public interface CharterArtifact {
     /**
      * The relationships this artefact derives from its own runtime data: never authored, refused on write, and never
      * compared by the round trip. No artifact field authors a relationship: a pack's relationships are authored only
-     * in its graph documents (ADR-0063). Today only a guard derives one, {@code implemented_by} its in-pack asset; every
+     * in its graph documents (ADR-0064). Today only a guard derives one, {@code implemented_by} its in-pack asset; every
      * returned relation is {@linkplain RelationType#derived() derived}.
      *
      * @return the derived relationships; empty for every kind but a guard

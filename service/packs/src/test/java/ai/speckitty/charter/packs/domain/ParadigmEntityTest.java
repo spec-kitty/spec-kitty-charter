@@ -33,7 +33,7 @@ class ParadigmEntityTest {
     }
 
     @Test
-    @DisplayName("a paradigm is a charter artifact that derives no relationship: its edges are graph edges (ADR-0063)")
+    @DisplayName("a paradigm is a charter artifact that derives no relationship: its edges are graph edges (ADR-0064)")
     void spineAndNoDerivedRelationship() {
         Paradigm paradigm = valid("ddd").build();
 

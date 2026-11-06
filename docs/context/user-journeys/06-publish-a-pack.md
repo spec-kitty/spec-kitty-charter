@@ -12,7 +12,7 @@ related:
   - adr/0026-write-surface-is-functional-registration
   - adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship
   - adr/0012-pack-mutability-policy
-  - adr/0063-graph-documents-are-the-only-source-of-relationships
+  - adr/0064-graph-documents-are-the-only-source-of-relationships
 audience:
   - profile: pack-author
     guidance_text: Read this for what goes into a pack, how a resource makes a rule checkable, and how the pack reaches the service.
@@ -47,7 +47,7 @@ check one of the rules for itself.
 2. The author writes the paradigm: its name and a short list of principles. The guidance it brings
    in is linked by relationships in the pack's graph documents, not by fields on the paradigm.
    Every relationship in the steps below is written there too
-   ([ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/)).
+   ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/)).
 3. The author writes the rules: directives, tactics, a styleguide. Each rule may carry a value
    impact (strength and rationale per value). Two rules that pull against each other get an
    authored *tension* relationship.
@@ -90,7 +90,7 @@ sequenceDiagram
 | --- | --- | --- |
 | Register a pack by source | envisioned | ADR [0005](/adr/0005-service-registers-and-distributes-packs/), ADR [0019](/adr/0019-packs-resource-model-and-hypermedia/); `POST /packs` |
 | Register one artifact into a pack (paradigms, directives, tactics, styleguides, toolguides) | exists | `contracts/charter/paths/packs_packId_*.yaml` (`POST`, and `PUT` by id); ADR [0026](/adr/0026-write-surface-is-functional-registration/) |
-| Register a relationship (the only write of a relationship; an artifact registration carries none) | exists | `contracts/charter/paths/packs_packId_relationships.yaml` (`PUT`); ADR [0026](/adr/0026-write-surface-is-functional-registration/), ADR [0061](/adr/0063-graph-documents-are-the-only-source-of-relationships/) |
+| Register a relationship (the only write of a relationship; an artifact registration carries none) | exists | `contracts/charter/paths/packs_packId_relationships.yaml` (`PUT`); ADR [0026](/adr/0026-write-surface-is-functional-registration/), ADR [0061](/adr/0064-graph-documents-are-the-only-source-of-relationships/) |
 | Read a pack's paradigms, directives, tactics, styleguides, toolguides | exists | `contracts/charter/paths/packs_packId_*.yaml` |
 | Read a pack's relationships | exists | `contracts/charter/paths/packs_packId_relationships.yaml` |
 | Read a pack's procedures | missing | — |

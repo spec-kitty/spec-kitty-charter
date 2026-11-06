@@ -14,7 +14,7 @@ import org.jspecify.annotations.Nullable;
  * A paradigm of a {@link Pack}: a way of working, identified by its {@link ParadigmIdentifier}. Two paradigms are
  * equal when they have the same identity, whatever their other fields hold.
  *
- * <p>It carries no relationship fields: its relationships are authored in the pack's graph documents (ADR-0063).
+ * <p>It carries no relationship fields: its relationships are authored in the pack's graph documents (ADR-0064).
  * Build one with {@link #builder()}.
  */
 public final class Paradigm implements CharterArtifact {

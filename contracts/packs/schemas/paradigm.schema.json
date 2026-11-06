@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://schemas.spec-kitty.ai/charter/packs/paradigm.schema.json",
   "additionalProperties": false,
-  "description": "A worldview-level framing that guides doctrine interpretation.\n\nA paradigm carries no relationship fields: its relationships to directives,\ntactics, procedures and other artifacts are authored in the pack's graph\ndocuments (ADR-0063). The retired legacy ``tactic_refs`` / ``paradigm_refs``,\n``directive_refs`` and ``references`` fields are rejected.",
+  "description": "A worldview-level framing that guides doctrine interpretation.\n\nA paradigm carries no relationship fields: its relationships to directives,\ntactics, procedures and other artifacts are authored in the pack's graph\ndocuments (ADR-0064). The retired legacy ``tactic_refs`` / ``paradigm_refs``,\n``directive_refs`` and ``references`` fields are rejected.",
   "properties": {
     "schema_version": {
       "pattern": "^1\\.0$",

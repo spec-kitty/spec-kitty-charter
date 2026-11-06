@@ -1,9 +1,9 @@
 title: ToolguideRegistration
 description: >-
   The registration body of a toolguide: its fields only. A toolguide carries no relationships: every relationship is
-  authored in the pack's graph documents and registered through PUT /packs/{packId}/relationships (ADR-0063).
+  authored in the pack's graph documents and registered through PUT /packs/{packId}/relationships (ADR-0064).
   A member this schema does not declare is refused 422 validation_failed, naming the member, before the body is bound
-  and nothing is written (ADR-0063).
+  and nothing is written (ADR-0064).
   On POST to the collection the id is
   optional (the server answers with Location); on PUT the id is taken from the path. The guide travels in the body,
   never as a path: the body carries exactly one of guide (the Markdown content) or guideUri (a URI the service fetches

@@ -6,7 +6,7 @@ Feature: Directives are read and registered functionally
   unchanged (NFR-002), and every write answers an ETag revision for optimistic concurrency (FR-012) and the
   artifact in the envelope the item read answers. There is no DELETE or PATCH. A directive carries no relationship
   field: a relationship is registered only through PUT /packs/{packId}/relationships and read through the
-  directive's references (ADR-0063), and a body that still sends one is refused.
+  directive's references (ADR-0064), and a body that still sends one is refused.
 
   Background:
     Given the org pack "qa" with the file "pack.yaml":
@@ -21,7 +21,7 @@ Feature: Directives are read and registered functionally
       pack_drg: drg/fragment.yaml
       """
 
-  Scenario: A registered directive is read back value-equal, with no relationship field (FR-006, SC-001, ADR-0063)
+  Scenario: A registered directive is read back value-equal, with no relationship field (FR-006, SC-001, ADR-0064)
     When I PUT "/packs/qa/artifacts/directive/GUARD" with the body:
       """
       {"schemaVersion": "1.0", "title": "Guard the gate", "intent": "Guard it", "enforcement": "required", "integrityRules": ["The gate runs before the merge."]}
@@ -36,7 +36,7 @@ Feature: Directives are read and registered functionally
     And the field at "/directive/relationships" is absent
     And the field at "/directive/references" is absent
 
-  Scenario: A directive's relationship is registered through the relationship write and read through its references (ADR-0063)
+  Scenario: A directive's relationship is registered through the relationship write and read through its references (ADR-0064)
     When I POST "/packs/qa/artifacts/directive" as JSON with the body:
       """
       {"id": "GUARD", "schemaVersion": "1.0", "title": "Guard", "intent": "guard", "enforcement": "required"}
@@ -92,7 +92,7 @@ Feature: Directives are read and registered functionally
       """
     Then the response status is 201
 
-  Scenario Outline: A body that still sends a removed relationship field is refused, naming it, and nothing is written (ADR-0063)
+  Scenario Outline: A body that still sends a removed relationship field is refused, naming it, and nothing is written (ADR-0064)
     When I POST "/packs/qa/artifacts/directive" as JSON with the body:
       """
       {"id": "GUARD", "schemaVersion": "1.0", "title": "Guard", "intent": "guard", "enforcement": "required", "<member>": <value>}

@@ -130,7 +130,7 @@ class DirectiveControllerTest {
     @ParameterizedTest(name = "{0}")
     @ValueSource(strings = {"relationships", "references", "procedures"})
     void aBodyStillSendingARemovedRelationshipFieldIsA422AndWritesNothing(String member) throws Exception {
-        // ADR-0063: the body is closed, so a client still asserting edges here is refused, never silently dropped.
+        // ADR-0064: the body is closed, so a client still asserting edges here is refused, never silently dropped.
         String bad = body("GUARD")
                 .replace(
                         "}",

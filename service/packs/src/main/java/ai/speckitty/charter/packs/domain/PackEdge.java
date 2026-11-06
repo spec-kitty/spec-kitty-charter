@@ -4,7 +4,7 @@ import ai.speckitty.charter.kernel.domain.RelationType;
 import java.util.Objects;
 
 /**
- * One edge of a pack's graph documents, as the pack authors it (ADR-0063): the only place a relationship is authored.
+ * One edge of a pack's graph documents, as the pack authors it (ADR-0064): the only place a relationship is authored.
  * The endpoints are as written, bare ({@code <kind>:<id>}) or pack-qualified ({@code <pack-name>::<kind>:<id>}).
  *
  * @param source the source, as written

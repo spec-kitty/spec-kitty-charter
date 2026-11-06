@@ -97,7 +97,7 @@ class ParadigmControllerTest {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON));
     }
 
-    // ---- ADR-0063: a paradigm body carries no relationship field; one still sent is refused, whatever its value ---
+    // ---- ADR-0064: a paradigm body carries no relationship field; one still sent is refused, whatever its value ---
 
     @ParameterizedTest(name = "{0}: {1}")
     @CsvSource(

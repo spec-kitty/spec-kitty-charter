@@ -71,7 +71,7 @@ class DirectiveReadServiceTest {
 
     @Test
     void aReturnedDirectiveCarriesNoRelationship() {
-        // ADR-0063: no field mints an edge, so a directive derives none, listed or single.
+        // ADR-0064: no field mints an edge, so a directive derives none, listed or single.
         Directive read = service.directivesOf(PACK_A).value().stream()
                 .filter(d -> d.id().equals(ALPHA))
                 .findFirst()

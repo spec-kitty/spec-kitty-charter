@@ -16,7 +16,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * A mission type of a pack (ADR-0044): its steps in order, the steps invoked on demand and the artifacts it expects.
- * The guidance it scopes is authored as graph edges (ADR-0063). It is identified by its {@link MissionTypeIdentifier}; two mission types are equal when
+ * The guidance it scopes is authored as graph edges (ADR-0064). It is identified by its {@link MissionTypeIdentifier}; two mission types are equal when
  * they have the same identity, whatever their other fields hold.
  *
  * <p>It owns its steps: the order of {@link #steps()} is the run order, and the order of {@link #onDemandSteps()} is

@@ -13,7 +13,7 @@ related:
   - adr/0032-steps-name-roles-and-profile-selection-order
   - adr/0033-local-active-charter-is-source-of-truth
   - adr/0034-local-and-hosted-deployment-options
-  - adr/0063-graph-documents-are-the-only-source-of-relationships
+  - adr/0064-graph-documents-are-the-only-source-of-relationships
   - architecture/logical-model
   - glossary
 audience:
@@ -204,7 +204,7 @@ not declare its own relationships, and a relationship is written on its own, apa
 artifacts it joins. Some artifacts name others for another purpose, such as the doctrine a profile
 is handed; that is data, not a relationship. Only a few relations are derived from an artifact's
 data instead of authored, such as a guard's implementation
-(ADR [0061](/adr/0063-graph-documents-are-the-only-source-of-relationships/)).
+(ADR [0061](/adr/0064-graph-documents-are-the-only-source-of-relationships/)).
 
 - **[Supports](/glossary/charter/#supports-supports-crg-relation)**: a resource helps check a rule
   (an asset supports a directive). It is distinct from *suggests*, which is a soft recommendation.

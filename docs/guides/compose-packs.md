@@ -15,7 +15,7 @@ related:
   - development/http-status-codes
   - changelog/2026-11-03-pack-composition-depends-on-and-resolver
   - changelog/2026-11-05-open-packs-real-compose
-  - adr/0063-graph-documents-are-the-only-source-of-relationships
+  - adr/0064-graph-documents-are-the-only-source-of-relationships
   - changelog/2026-11-05-edges-only-in-graph-documents
 audience:
   - profile: pack-author
@@ -87,7 +87,7 @@ on org or built-in packs; a built-in pack on built-in packs only.
 
 A reference across packs is an end of a graph edge. Edges are written only in a pack's graph documents: the root
 `*.graph.yaml` shards in built-in, `drg/fragment.yaml` in an org or project pack. No artifact field carries a reference
-([ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/)). Either end of an edge (`source` or
+([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/)). Either end of an edge (`source` or
 `target`) is written `<pack-name>::<kind>:<id>`. The `<pack-name>` is the `name` in the other pack's `pack.yaml`,
 whatever its directory is called.
 

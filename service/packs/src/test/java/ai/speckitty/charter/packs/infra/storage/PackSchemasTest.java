@@ -241,7 +241,7 @@ class PackSchemasTest {
     }
 
     /**
-     * The artifact fields that minted, or carried, a relationship are gone (ADR-0063): each kind's minimal file is
+     * The artifact fields that minted, or carried, a relationship are gone (ADR-0064): each kind's minimal file is
      * valid, and the same file with the field is refused for that one undeclared key, so a relationship can only be
      * authored in the pack's graph documents.
      */
@@ -283,7 +283,7 @@ class PackSchemasTest {
                 });
     }
 
-    /** A step's references went with its kind's (ADR-0063): a tactic step and a mission-type step refuse them. */
+    /** A step's references went with its kind's (ADR-0064): a tactic step and a mission-type step refuse them. */
     @ParameterizedTest
     @CsvSource(
             delimiter = '|',

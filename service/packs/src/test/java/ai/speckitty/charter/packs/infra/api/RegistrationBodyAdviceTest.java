@@ -111,7 +111,7 @@ class RegistrationBodyAdviceTest {
     }
 
     /**
-     * ADR-0063: a registration body is closed. A member its schema does not declare, a removed relationship field
+     * ADR-0064: a registration body is closed. A member its schema does not declare, a removed relationship field
      * among them, is refused before the converter reads the body, so a client still sending one is never answered as
      * though what it asserted was written; the same body without the member is handed on (the positive control).
      */

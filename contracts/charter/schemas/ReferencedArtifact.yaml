@@ -1,7 +1,7 @@
 title: ReferencedArtifact
 description: >-
   One reference an artifact writes, resolved through the compose: an edge of its pack's graph documents whose source
-  is the artifact, or a relation it derives (ADR-0063). It carries the target as written, the edge's relation, the
+  is the artifact, or a relation it derives (ADR-0064). It carries the target as written, the edge's relation, the
   pack that holds what it names, the bare URN it resolves to and, when the target is an artifact the service serves,
   the link to read it. A bare reference is held
   by the pack that writes it, which shadows a same-named artifact of another pack (FR-014); a pack-qualified one is

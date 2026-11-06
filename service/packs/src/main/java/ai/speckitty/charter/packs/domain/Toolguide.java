@@ -18,7 +18,7 @@ import org.jspecify.annotations.Nullable;
  * hold; the fidelity of a round trip is asserted on the storage representation, not here.
  *
  * <p>A toolguide carries no relationship fields: its relationships are authored in the pack's graph documents
- * (ADR-0063), and a link in its guide's prose is text. List order and duplicates are significant. Build one with
+ * (ADR-0064), and a link in its guide's prose is text. List order and duplicates are significant. Build one with
  * {@link #builder()}.
  *
  * <p>Its {@link Guide} (#194) is stored as a Markdown companion beside the toolguide's file, at {@code guidePath}, which

@@ -18,7 +18,7 @@ import org.springframework.stereotype.Service;
  * digested before and after the load, and the answer carries the digest both agree on.
  *
  * <p>A paradigm carries no relationship: its relationships are authored in the pack's graph documents and read through
- * the references read ({@link ArtifactReadService#references}), ADR-0063.
+ * the references read ({@link ArtifactReadService#references}), ADR-0064.
  *
  * <p>The list asks the aggregating {@link PackRepository} for the pack and projects its paradigms (the sanctioned list
  * path; it adds no method to the persistence service), while the single read is a point read through

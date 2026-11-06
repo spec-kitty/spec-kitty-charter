@@ -29,7 +29,7 @@ import org.springframework.stereotype.Service;
  * enforces it).
  *
  * <p>A registration body carries no relationship: an edge is written only through the relationship write
- * (ADR-0063). The commit leaves the pack's relationship shard untouched, so a toolguide write never erases an edge.
+ * (ADR-0064). The commit leaves the pack's relationship shard untouched, so a toolguide write never erases an edge.
  *
  * <p>The guide arrives as a {@link GuideSource}: its Markdown content, or a URI (FR-010). A URI is fetched through the
  * {@link GuideFetcher} port <em>before</em> the pack's write lock is taken, never while it is held (NFR-005), on every

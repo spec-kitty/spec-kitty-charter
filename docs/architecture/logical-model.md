@@ -29,7 +29,7 @@ related:
   - adr/0050-mission-types-and-lifecycles-as-declared-state-machines
   - adr/0051-event-registry-a-thin-provider-neutral-consistency-check
   - adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts
-  - adr/0063-graph-documents-are-the-only-source-of-relationships
+  - adr/0064-graph-documents-are-the-only-source-of-relationships
 audience:
   - profile: pack-author
     guidance_text: Read this for the parts of the charter and how they relate.
@@ -190,7 +190,7 @@ naming the pack, rather than serving part of it.
 - **Qualified reference.** A reference to an artifact of another pack is written `<pack-name>::<urn>`
   ([qualified reference](/glossary/charter/#qualified-reference)). The pack is provenance, not identity: the
   artifact's URN stays bare, and the qualifier is provenance on the edge. A reference is an edge end in a graph
-  document; no artifact field carries one ([ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/)).
+  document; no artifact field carries one ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/)).
   The named pack must be in the *referring* pack's own `depends_on` closure and must hold the artifact. A bare
   reference is the referring pack's own artifact if it holds one, is refused as unqualified if only another pack holds
   it, and has no holder otherwise. A composed read checks every edge end, and following one across packs is part of a
@@ -401,7 +401,7 @@ In YAML and shards this link is an *edge* (`DrgEdge`); in the domain it is a *re
 An edge is authored only in a pack's graph documents: the root `*.graph.yaml` shards, the registered shard
 `registered.graph.yaml` among them, and `drg/fragment.yaml`. No artifact field creates one, and
 `putPackRelationship` is the only operation that writes one
-([ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/)).
+([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/)).
 
 In the Java domain a relationship is a first-class value object — `from`, `to`, a
 behavior-carrying `RelationType` (directionality and activation propagation derive from the type),
@@ -417,7 +417,7 @@ and empty by default. Only a guard derives one today, `implemented_by` to its in
 authored edges come from the graph documents through the `PackEdgeRepository` port, which
 `ArtifactReadService` reads to answer an artifact's references. The on-demand walk of
 [ADR-0025](/adr/0025-relationships-first-class-and-lazy-repository-walk/) (`GraphWalk`) is wired to no read: it
-sees derived relations only, and its retirement is a follow-up of ADR-0063. `DrgEdge`
+sees derived relations only, and its retirement is a follow-up of ADR-0064. `DrgEdge`
 is the storage-side serialization object for a relationship, not the domain concept. The identity is
 a bounded, conditional unidirectional collapse with a revisit trigger when a symmetric relation is
 minted; see
@@ -546,7 +546,7 @@ store binds the kind and depends on the module.
   from profiles, matching the mission-types and profiles slices of
   [ADR-0006](/adr/0006-onion-vertical-slices-archunit/).
 - **Recipe ingredients.** The graph's `scope` edges from the mission type. The type carries no
-  `references` field ([ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/)).
+  `references` field ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/)).
   Core reads the ingredients from `governance-profile.yaml` (`MissionTypeProfile`), a file the service retires
   (DIV-502).
 - **Folder layout** (decided, ADR-0044 decision 5). `missions/<type>/<type>.mission-type.yaml`,

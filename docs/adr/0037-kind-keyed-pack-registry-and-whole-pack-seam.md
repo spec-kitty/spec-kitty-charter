@@ -224,7 +224,7 @@ nothing about how a new kind is shaped.
      gone.)*
    - The CRG documents stay outside the aggregate, so the domain's graph merge is unchanged; whether
      it becomes set-based is decided with the authority of an edge (open on #189).
-     *(Edge authority decided by [ADR-0063](/adr/0063-graph-documents-are-the-only-source-of-relationships/) ([#240](https://github.com/spec-kitty/spec-kitty-charter/issues/240)), 2026-11-05: the graph documents are an
+     *(Edge authority decided by [ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) ([#240](https://github.com/spec-kitty/spec-kitty-charter/issues/240)), 2026-11-05: the graph documents are an
      edge's only source. Whether their merge is set-based is not ruled there.)*
 
 ### Amendment 2026-10-27 (#191): a binding names its schema

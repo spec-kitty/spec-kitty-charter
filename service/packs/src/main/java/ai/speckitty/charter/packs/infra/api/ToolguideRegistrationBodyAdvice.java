@@ -36,7 +36,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestBodyAdviceAd
  *       ({@code commands}, {@code appliesToLanguages}), or a {@code null} item in one: an absent
  *       list is empty, and {@code null} is never a value (#292, #309, as {@link RegistrationBodyAdvice} does for the
  *       other registrations).
- *   <li><b>Closed.</b> A member the registration's schema does not declare is refused (ADR-0063).
+ *   <li><b>Closed.</b> A member the registration's schema does not declare is refused (ADR-0064).
  * </ul>
  *
  * <p>All three are {@code 422 validation_failed}. The body is handed on unchanged. A body that is not JSON is passed
@@ -52,7 +52,7 @@ public class ToolguideRegistrationBodyAdvice extends RequestBodyAdviceAdapter {
     /** The registration's list members, looked at for a {@code null} after the guide fields. */
     private static final List<String> LISTS = RegistrationLists.of(ToolguideRegistration.class);
 
-    /** The members a toolguide registration may send; any other is refused (ADR-0063). */
+    /** The members a toolguide registration may send; any other is refused (ADR-0064). */
     private static final Set<String> MEMBERS = RegistrationLists.members(ToolguideRegistration.class);
 
     /** JSON bytes allowed per byte of guide: a JSON escape of one character is six. */

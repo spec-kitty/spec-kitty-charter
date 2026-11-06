@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The single copy of the pure relationship rules of the one edge write (ADR-0063): the writable-relation rule and the
+ * The single copy of the pure relationship rules of the one edge write (ADR-0064): the writable-relation rule and the
  * unordered-pair upsert. Package-private on purpose: it is an application-internal
  * helper, not a port.
  */

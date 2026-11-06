@@ -57,7 +57,7 @@ class DirectiveEntityTest {
     }
 
     @Test
-    @DisplayName("a directive derives no relationship: its procedures are reached through graph edges (ADR-0063)")
+    @DisplayName("a directive derives no relationship: its procedures are reached through graph edges (ADR-0064)")
     void aDirectiveDerivesNoRelationship() {
         Directive directive = valid("DIRECTIVE_006").build();
 

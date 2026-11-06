@@ -92,7 +92,7 @@ class ToolguideReadServiceTest {
 
     @Test
     void everyReturnedToolguideMintsNoRelationships() {
-        // ADR-0063: a toolguide's relationships are graph edges, never derived from a field.
+        // ADR-0064: a toolguide's relationships are graph edges, never derived from a field.
         assertThat(service.toolguidesOf(PACK_A).value())
                 .allSatisfy(t -> assertThat(t.derivedRelationships()).isEmpty());
         assertThat(service.toolguide(PACK_A, GIT).value().derivedRelationships())

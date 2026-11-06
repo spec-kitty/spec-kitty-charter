@@ -19,11 +19,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * ADR-0063: a pack's relationships are authored only in its graph documents, so no artifact field mints one. The check
+ * ADR-0064: a pack's relationships are authored only in its graph documents, so no artifact field mints one. The check
  * is structural, over every kind the pack store binds: restoring a minting override, or a reference field, on any kind
  * turns it red, and the kind list it walks is pinned to be the whole registry, so it cannot pass over an empty list.
  */
-@DisplayName("No artifact field mints an edge (ADR-0063)")
+@DisplayName("No artifact field mints an edge (ADR-0064)")
 class NoArtifactFieldMintsAnEdgeTest {
 
     /** The accessors a relationship-authoring field used to have on an entity. */

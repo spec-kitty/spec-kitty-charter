@@ -80,7 +80,7 @@ class WholePackOpenPacksRoundTripTest {
 
     /**
      * The meaning the gate compares. Edges are compared only through {@code graphs}, the pack's graph documents: no
-     * artifact DSO carries a relationship field (ADR-0063), so no edge is compared twice or from a second source.
+     * artifact DSO carries a relationship field (ADR-0064), so no edge is compared twice or from a second source.
      */
     private static Map<String, Object> meaning(WholePackStore.LoadedPack loaded) {
         Map<String, Object> out = new LinkedHashMap<>();

@@ -1,6 +1,6 @@
 ### Breaking
 
-- Removed members (issue #240, ADR-0063): a relationship is authored only in a pack's graph documents and written
+- Removed members (issue #240, ADR-0064): a relationship is authored only in a pack's graph documents and written
   only through `putPackRelationship`, so no artifact shape carries one any more.
   - Registration bodies: `DirectiveRegistration` loses `procedures`, `references` and `relationships`; `ParadigmRegistration` loses
     `directiveRefs`, `references` and `relationships`; `StyleguideRegistration` and `ToolguideRegistration` lose

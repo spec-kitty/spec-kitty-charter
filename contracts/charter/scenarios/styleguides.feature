@@ -6,7 +6,7 @@ Feature: Styleguides are read and registered functionally
   (ADR-0026): the whole pack aggregate is revalidated and committed atomically, a refusal leaves the pack
   unchanged (NFR-002), and every write answers an ETag revision for optimistic concurrency (FR-012). A
   styleguide carries no relationship field: its relationships are registered through PUT
-  /packs/{packId}/relationships and read through its references (ADR-0063), and a body that still sends
+  /packs/{packId}/relationships and read through its references (ADR-0064), and a body that still sends
   one is refused. There is no DELETE or PATCH.
 
   Background:
@@ -22,7 +22,7 @@ Feature: Styleguides are read and registered functionally
       pack_drg: drg/fragment.yaml
       """
 
-  Scenario: A registered styleguide is read back value-equal, with no relationship field (FR-013, SC-001, ADR-0063)
+  Scenario: A registered styleguide is read back value-equal, with no relationship field (FR-013, SC-001, ADR-0064)
     When I PUT "/packs/qa/artifacts/styleguide/java-style" with the body:
       """
       {"schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": ["Prefer immutability"]}

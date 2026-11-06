@@ -1,5 +1,5 @@
 ---
-title: "ADR-0063: Relationships are authored only in a pack's graph documents"
+title: "ADR-0064: Relationships are authored only in a pack's graph documents"
 description: "Operator ruling of 2026-11-05 on #240: graph documents are the only home of an edge, putPackRelationship its only write, and every edge-minting field is dropped."
 doc_status: active
 updated: 2026-11-05T00:00:00Z
@@ -31,7 +31,7 @@ audience:
     guidance_text: Read this before touching an artifact's fields, its registration body, the references read or the round-trip gate.
 ---
 
-# ADR-0063: Relationships are authored only in a pack's graph documents
+# ADR-0064: Relationships are authored only in a pack's graph documents
 
 ## Status
 

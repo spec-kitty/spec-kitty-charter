@@ -65,7 +65,7 @@ class ToolguideEntityTest {
     }
 
     @Test
-    @DisplayName("a toolguide derives no relationship: its relationships are graph edges (ADR-0063)")
+    @DisplayName("a toolguide derives no relationship: its relationships are graph edges (ADR-0064)")
     void relationshipsAreEmpty() {
         assertThat(valid().build().derivedRelationships()).isEmpty();
     }

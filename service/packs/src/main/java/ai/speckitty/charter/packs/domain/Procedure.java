@@ -17,7 +17,7 @@ import org.jspecify.annotations.Nullable;
  * procedures are equal when they have the same identity, whatever their other fields hold.
  *
  * <p>It owns its steps and anti-patterns; their order and duplicates are significant. Its relationships are authored
- * in the pack's graph documents (ADR-0063). Build one with
+ * in the pack's graph documents (ADR-0064). Build one with
  * {@link #builder()}.
  */
 public final class Procedure implements CharterArtifact {

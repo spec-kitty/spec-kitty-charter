@@ -3,7 +3,7 @@ description: >-
   A relationship edge between two components, as registered on the wire. Identity is the unordered
   {from, to} pair (ADR-0025/0027): re-registering a pair, in either orientation, replaces it
   (last-write-wins). It is the request body of PUT /packs/{packId}/relationships, the only write of an
-  edge (ADR-0063); an artifact registration carries none. As the
+  edge (ADR-0064); an artifact registration carries none. As the
   body of PUT /packs/{packId}/relationships it is at most 1 MiB; a larger body is refused 422 validation_failed
   before it is read.
 type: object

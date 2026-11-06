@@ -221,7 +221,7 @@ class FileSystemPackSourcesTest {
      * 90de8f9 and on this branch until 2026-11-03, when the {@code pack_id} of pack-a and pack-descriptor-only became
      * valid ULIDs (FR-003); their two fingerprints and the combined one were re-captured from the unchanged digest
      * code, so the pin still guards the digest scheme. pack-a's fingerprint (and so the combined one) was re-captured on
-     * 2026-11-05 from the unchanged digest code after its alpha tactic lost its {@code references} (ADR-0063).
+     * 2026-11-05 from the unchanged digest code after its alpha tactic lost its {@code references} (ADR-0064).
      */
     private static final List<PinnedPack> PINNED = List.of(
             new PinnedPack(

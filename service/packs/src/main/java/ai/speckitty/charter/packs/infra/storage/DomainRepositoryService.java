@@ -295,7 +295,7 @@ public final class DomainRepositoryService
 
     /**
      * The edges of the pack's graph documents, in {@link FilesystemPackStore#readGraphs} order: the root shards by
-     * file name, then the fragment, each in document order (ADR-0063).
+     * file name, then the fragment, each in document order (ADR-0064).
      *
      * @param pack the pack
      * @return the edges

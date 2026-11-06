@@ -1140,7 +1140,7 @@ Feature: The compose resolves the configured packs' dependency graph
 
   Scenario: The references of an artifact are read across packs, each resolved through the compose
     A composed read (operator ruling of 2026-11-03). Alpha depends on beta, and alpha's graph document relates its
-    directive USE to beta-pack::SHARE (ADR-0063): the read answers the edge's target as written, under the edge's
+    directive USE to beta-pack::SHARE (ADR-0064): the read answers the edge's target as written, under the edge's
     relation, held by beta, resolved to the bare URN, and its artifact link reads beta's directive. The artifact the
     read is asked for must exist, exactly as for the pack-scoped read.
     Given the org pack "alpha" with the file "pack.yaml":
@@ -1317,7 +1317,7 @@ Feature: The compose resolves the configured packs' dependency graph
 
   Scenario: A bare cross-pack edge from a tactic is refused naming the holding pack
     The same refusal as above (FR-015), from a tactic: alpha's graph document relates its tactic to directive
-    SHARE bare, and only beta holds it. A graph edge is the one carrier of a reference (ADR-0063).
+    SHARE bare, and only beta holds it. A graph edge is the one carrier of a reference (ADR-0064).
     Given the org pack "alpha" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943R

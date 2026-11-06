@@ -81,7 +81,7 @@ class StyleguideReadServiceTest {
 
     @Test
     void aReturnedStyleguideCarriesNoRelationship() {
-        // ADR-0063: a styleguide's relationships are graph edges, never derived from a field.
+        // ADR-0064: a styleguide's relationships are graph edges, never derived from a field.
         Styleguide listed = service.styleguidesOf(PACK_A).value().stream()
                 .filter(s -> s.id().equals(JAVA_STYLE))
                 .findFirst()
