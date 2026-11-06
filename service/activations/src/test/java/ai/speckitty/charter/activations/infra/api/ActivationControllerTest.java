@@ -3,8 +3,6 @@ package ai.speckitty.charter.activations.infra.api;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import ai.speckitty.charter.activations.application.ActivationIdMint;
-import ai.speckitty.charter.activations.application.ActivationService;
 import ai.speckitty.charter.activations.application.FakeAvailablePacks;
 import ai.speckitty.charter.activations.domain.ClosureSnapshots;
 import ai.speckitty.charter.activations.infra.storage.InMemoryActivationRepository;
@@ -22,21 +20,28 @@ import org.springframework.web.server.ResponseStatusException;
 /**
  * The activation set is reserved one operation at a time (ADR-0020 D8): the controller carries no mark of its own, and
  * each of the fourteen operations it overrides carries one until it is built, so an operation is built by removing
- * its mark alone. The register and its closure read are built; the nine others stay reserved.
+ * its mark alone. The register, its closure read, the four per-artifact writes and the preset write are built; the four
+ * effective reads stay reserved.
  */
 class ActivationControllerTest {
 
-    /** The operations the activation register builds (#125, #360). */
-    private static final Set<String> BUILT =
-            Set.of("createActivation", "getActivation", "replaceActivation", "deleteActivation", "listActivationPacks");
+    /** The operations the activation register (#125, #360), its per-artifact writes (#291) and the preset write build. */
+    private static final Set<String> BUILT = Set.of(
+            "createActivation",
+            "getActivation",
+            "replaceActivation",
+            "deleteActivation",
+            "listActivationPacks",
+            "selectActivationArtifact",
+            "unselectActivationArtifact",
+            "deactivateActivationArtifact",
+            "reactivateActivationArtifact",
+            "applyActivationPreset");
 
     private static ActivationController controller() {
-        return new ActivationController(
-                new ActivationService(
-                        new InMemoryActivationRepository(),
-                        new FakeAvailablePacks(ClosureSnapshots.snapshot().build()),
-                        new ActivationIdMint()),
-                new ActivationMapper("/api/v1"));
+        return StandaloneActivationMvc.controller(
+                new InMemoryActivationRepository(),
+                new FakeAvailablePacks(ClosureSnapshots.snapshot().build()));
     }
 
     private static List<Method> operations() {
@@ -52,7 +57,7 @@ class ActivationControllerTest {
     }
 
     @Test
-    void everyOneOfTheFourteenOperationsIsOverriddenAndOnlyTheNineUnbuiltAreMarked() throws NoSuchMethodException {
+    void everyOneOfTheFourteenOperationsIsOverriddenAndOnlyTheFourUnbuiltAreMarked() throws NoSuchMethodException {
         assertThat(operations()).hasSize(14);
         assertThat(operations()).extracting(Method::getName).containsAll(BUILT);
         for (Method operation : operations()) {

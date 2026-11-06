@@ -1,7 +1,11 @@
 package ai.speckitty.charter.activations.infra.packs;
 
 import ai.speckitty.charter.activations.application.AvailablePacks;
+import ai.speckitty.charter.activations.application.PacksSession;
+import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
+import ai.speckitty.charter.activations.domain.Reach;
+import ai.speckitty.charter.activations.domain.ReachPlan;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.Urn;
@@ -30,7 +34,8 @@ import org.springframework.stereotype.Component;
  * {@code packs.domain} values its answers expose), never {@code packs.infra}; {@code HexagonalArchitectureTest} pins
  * both.
  *
- * <p>Each call is one verified read, {@link ClosureQueries#snapshot} (NFR-007), copied field by field into a
+ * <p>Each session is one verified read, {@link ClosureQueries#snapshot} (NFR-007), kept for the request: its walks
+ * ({@link ClosureViewSession}) answer from the same view. The view is copied field by field into a
  * {@link ClosureSnapshot}: the packs with their resolved dependencies, the held ids, the mission types, the required
  * floor, the locks (only {@code LOCKED} levels) and the presets. The floor and the locks name each pack by the id it is
  * configured under, as a {@code 409}'s {@code requiredBy} does; a refusal of the compose propagates unchanged.
@@ -75,13 +80,33 @@ public class PacksAvailability implements AvailablePacks {
     }
 
     @Override
-    public ClosureSnapshot snapshot(Optional<List<String>> packIds) {
+    public PacksSession session(Optional<List<String>> packIds) {
         Optional<List<PackIdentifier>> roots =
                 packIds.map(ids -> ids.stream().map(PackIdentifier::new).toList());
         try {
-            return snapshotOf(closures.snapshot(roots));
+            ClosureView view = closures.snapshot(roots);
+            return new ClosureViewSession(view, snapshotOf(view));
         } catch (UnknownRootException unknownRoot) {
-            return ClosureSnapshot.unresolved(new LinkedHashSet<>(unknownRoot.unknownIds()));
+            return new Unresolved(ClosureSnapshot.unresolved(new LinkedHashSet<>(unknownRoot.unknownIds())));
+        }
+    }
+
+    /** The session of roots of which some name no configured pack: no closure, so every walk reaches nothing. */
+    private record Unresolved(ClosureSnapshot snapshot) implements PacksSession {
+
+        @Override
+        public Reach reach(ReachPlan plan) {
+            return Reach.empty();
+        }
+
+        @Override
+        public Set<ArtifactRef> enhancesPull(Set<ArtifactRef> starts, Set<ArtifactKind> kinds) {
+            return Set.of();
+        }
+
+        @Override
+        public Map<ArtifactRef, Set<ArtifactRef>> enhancersOf(Set<ArtifactRef> targets) {
+            return Map.of();
         }
     }
 

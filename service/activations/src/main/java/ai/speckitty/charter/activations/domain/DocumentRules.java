@@ -88,11 +88,50 @@ public final class DocumentRules {
         if (violations.isEmpty()) {
             return floorRefusal(built.document(), snapshot);
         }
+        return Optional.of(invalid(violations));
+    }
+
+    /**
+     * Checks the document a per-artifact or preset write computed (data model: "the floor is never denied"): every id
+     * is judged as {@link #check(ActivationDocument, ClosureSnapshot)} judges it (FR-017), but the floor only on the
+     * deny entries the write adds. A stored deny entry on an artifact a pack upgrade made required or locked is
+     * tolerated, not applied (ADR-0059 D4), so it never refuses a write of another id.
+     *
+     * @param before the document as stored
+     * @param after the document the write computed
+     * @param snapshot the closure the document names
+     * @return the refusal; empty when the document may be stored
+     */
+    public static Optional<CharterRefusal> checkWrite(
+            ActivationDocument before, ActivationDocument after, ClosureSnapshot snapshot) {
+        Optional<CharterRefusal> refusal = check(after, snapshot);
+        if (refusal.isEmpty() || !refusal.orElseThrow().violations().isEmpty()) {
+            return refusal;
+        }
+        return floorRefusal(addedDenies(before, after), snapshot);
+    }
+
+    /** The document's packs and the deny entries {@code after} holds and {@code before} does not. */
+    private static ActivationDocument addedDenies(ActivationDocument before, ActivationDocument after) {
+        ActivationDocument.Builder added = ActivationDocument.builder();
+        after.packs().ifPresent(added::packs);
+        after.deactivated().forEach((kind, ids) -> {
+            List<String> adding = ids.stream()
+                    .filter(id -> !before.deactivated(kind).contains(id))
+                    .toList();
+            if (!adding.isEmpty()) {
+                added.deactivated(kind, adding);
+            }
+        });
+        return added.build().document();
+    }
+
+    private static CharterRefusal invalid(List<RefusalViolation> violations) {
         violations.sort(Comparator.comparing(RefusalViolation::pointer, POINTER_ORDER));
-        return Optional.of(CharterRefusal.withViolations(
+        return CharterRefusal.withViolations(
                 RefusalCode.ACTIVATION_INVALID,
                 "The activation document names " + violations.size() + " thing(s) its packs do not hold.",
-                violations));
+                violations);
     }
 
     private static List<RefusalViolation> packViolations(ActivationDocument.Written written, ClosureSnapshot snapshot) {
