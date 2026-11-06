@@ -158,10 +158,10 @@
       "criterion_id": "FR-016",
       "description": "Verify FR-016 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "activation-presets.feature: 'A preset replaces each key it lists and leaves the others untouched' (US5 AS1, activatedKinds not in applied), 'A preset that lists no kind leaves activatedKinds untouched', 'Without force a denied member is not selected and its deny entry stays', 'With force the deny entries of the preset's members are cleared and the members selected', 'A preset that lists mission types replaces missionTypes', 'A preset that lists no mission types leaves missionTypes untouched', 'Applying a preset that changes nothing answers the same revision', 'A preset no pack holds is 404 preset_not_found', 'A preset whose member the closure does not hold is 422', 'A force of the wrong type is 422 at its pointer'; PresetRulesTest, ActivationPresetServiceTest. Open review item 4 (empty list = not listed) is the stated default. lane-m HEAD 7f6264b: ./gradlew verifyAll --rerun-tasks --max-workers=1 -PcontractBaseline=none BUILD SUCCESSFUL (127/127 tasks executed; 7200 tests, 0 failures, 0 errors, 4 pre-existing env skips in packs; 341 BDD scenarios incl. activation-register 35/35, activation-selections 41/41, activation-presets 14/14, activation-register-guards 5/5, activations 4/4)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:qa-test-executor-elena",
+      "verified_at": "2026-11-06T02:56:17.849580+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
