@@ -50,13 +50,17 @@ import java.util.function.Predicate;
  */
 public final class CascadeRules {
 
-    /** The relations a cascade walks forward (ADR-0059 D2.1). */
+    /**
+     * The relations a cascade walks, each in its declared direction (ADR-0059 D2.1, and D2 as amended on 2026-11-06):
+     * core's five and {@code enhances}, from the enhancer to its target.
+     */
     public static final Set<RelationType> CASCADE_RELATIONS = Collections.unmodifiableSet(EnumSet.of(
             RelationType.REQUIRES,
             RelationType.SUGGESTS,
             RelationType.REFINES,
             RelationType.SCOPE,
-            RelationType.INSTANTIATES));
+            RelationType.INSTANTIATES,
+            RelationType.ENHANCES));
 
     private CascadeRules() {}
 

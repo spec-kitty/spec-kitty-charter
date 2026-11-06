@@ -26,7 +26,7 @@ class CascadeRulesSelectTest {
             .build()
             .document();
 
-    /** What packs answers for the fixture: E enhances T is not a cascade relation, so E is not reached. */
+    /** What packs answers for the fixture: E enhances T runs from E to T, so a walk from D never reaches E. */
     private static final Reach US3 = reach().start("directive:D")
             .reached("tactic:T", "directive:D", REQUIRES)
             .stopped("tactic:X", "directive:D", REQUIRES)
@@ -37,13 +37,18 @@ class CascadeRulesSelectTest {
     }
 
     @Test
-    void theCascadePlanWalksTheFiveRelationsWithTheLineageAndStopsAtTheDenyEntries() {
+    void theCascadePlanWalksTheSixRelationsWithTheLineageAndStopsAtTheDenyEntries() {
         ReachPlan plan = CascadeRules.planSelect(X_DENIED, D, CascadeScope.all(), false);
 
         assertThat(plan.starts()).containsExactly(D);
         assertThat(plan.relations())
                 .containsExactlyInAnyOrder(
-                        REQUIRES, SUGGESTS, RelationType.REFINES, RelationType.SCOPE, RelationType.INSTANTIATES);
+                        REQUIRES,
+                        SUGGESTS,
+                        RelationType.REFINES,
+                        RelationType.SCOPE,
+                        RelationType.INSTANTIATES,
+                        RelationType.ENHANCES);
         assertThat(plan.stopAt()).containsExactly(ref("tactic:X"));
         assertThat(plan.lineage()).isTrue();
         assertThat(plan.walks()).isTrue();

@@ -68,11 +68,11 @@ class CascadeRulesDeactivateTest {
     }
 
     @Test
-    void theOwnPlanWalksTheFiveRelationsAndStopsNowhere() {
+    void theOwnPlanWalksTheSixRelationsAndStopsNowhere() {
         ReachPlan plan = CascadeRules.planDeactivate(US4, D, CascadeScope.all());
 
         assertThat(plan.starts()).containsExactly(D);
-        assertThat(plan.relations()).hasSize(5);
+        assertThat(plan.relations()).isEqualTo(CascadeRules.CASCADE_RELATIONS).hasSize(6);
         assertThat(plan.stopAt()).isEmpty();
     }
 

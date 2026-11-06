@@ -685,6 +685,81 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     And the field at "/applied" holds exactly 0 items
     And the field at "/cleared" holds exactly 0 items
 
+  Scenario: A cascading select of an enhancer selects the artifact it enhances
+    ADR-0059 D2 (operator ruling of 2026-11-06): enhances is a cascade relation like the others, walked in its
+    declared direction, from e to t.
+    Given the activation "a-1" holds:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      """
+    When I PUT "/activations/a-1/selections/tactic/e" with the stored ETag and the body:
+      """
+      {"cascade": ["all"]}
+      """
+    Then the response status is 200
+    And the field at "/applied" holds exactly the ids:
+      """
+      tactic:e
+      tactic:t
+      """
+
+  Scenario: A cascading select of an enhanced artifact selects no enhancer
+    ADR-0059 D2 (operator ruling of 2026-11-06): e enhances t runs from e to t, so a walk from t never reaches e.
+    Given the activation "a-1" holds:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      """
+    When I PUT "/activations/a-1/selections/tactic/t" with the stored ETag and the body:
+      """
+      {"cascade": ["all"]}
+      """
+    Then the response status is 200
+    And the field at "/applied" holds exactly the ids:
+      """
+      tactic:t
+      """
+
+  Scenario: A cascading deactivate of an enhancer unselects the artifact it enhances
+    ADR-0059 D2 (operator ruling of 2026-11-06): the deactivate walks enhances from e to t, and nothing else keeps t.
+    Given the activation "a-1" holds:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "main"}], "selected": {"tactic": ["e", "t"]}}
+      """
+    When I PUT "/activations/a-1/exclusions/tactic/e" with the stored ETag and the body:
+      """
+      {"cascade": ["all"]}
+      """
+    Then the response status is 200
+    And the field at "/applied" holds exactly the ids:
+      """
+      tactic:e
+      tactic:t
+      """
+    When I GET "/activations/a-1"
+    Then the field at "/config/selected/tactic" holds exactly 0 items
+
+  Scenario: A cascading deactivate of an enhancer keeps the artifact it enhances when another needs it
+    ADR-0059 D2 (operator ruling of 2026-11-06): D is selected and requires t, so t is shared and stays, naming D.
+    Given the activation "a-1" holds:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "main"}], "selected": {"directive": ["D"], "tactic": ["e", "t"]}}
+      """
+    When I PUT "/activations/a-1/exclusions/tactic/e" with the stored ETag and the body:
+      """
+      {"cascade": ["all"]}
+      """
+    Then the response status is 200
+    And the field at "/applied" holds exactly the ids:
+      """
+      tactic:e
+      """
+    And the field at "/skipped/skippedShared" holds exactly the ids:
+      """
+      tactic:t
+      """
+    And the field at "/skipped/skippedShared/0/referencedBy/kind" is "directive"
+    And the field at "/skipped/skippedShared/0/referencedBy/artifactId" is "D"
+
   # The preconditions are judged before the content (FR-010).
 
   Scenario: A select without If-Match is 428
