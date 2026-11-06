@@ -157,15 +157,18 @@
     },
     "WP06": {
       "actor": "claude",
-      "agent": "claude",
-      "agent_profile": "java-jenny",
-      "agent_profile_version": "1.0",
+      "agent": "claude::java-jenny",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude",
       "lane": "for_review",
       "last_event_id": "01M6RW5G36M3EC2FSR294XDHY7",
       "last_transition_at": "2026-11-06T16:48:12.902798+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Presets name any kind (FR-041): Preset is one kind->items map over ArtifactKind activatable kinds; missionTypes/requiredMissionTypes/activatedKinds removed; PresetYaml/PresetFiles/PresetDso derive activated_<plural> from the registry; activated_kinds refused at load (schema, one violation on the file). Red first: 10d18efc (6 assertion failures in PresetYamlTest/PresetRoundTripTest), green: f7479198. Gates: ./gradlew --max-workers=1 -Dorg.gradle.internal.repository.max.retries=10 -PcontractBaseline=none :packs:check -> exit 0; :activations:check -> exit 1, only the WP08-owned ActivationBodyAdviceTest (4) and ActivationJsonTest (1); checkstyle/javadoc/spotless green; :deployable:test --tests HexagonalArchitectureTest,ProductionWiringTest,CharterWiringTest,ConfigRootWiringTest,ScenarioPacksTest -> exit 1, only the 109 WP08-owned CharterContractSuite failures, all named tests green. Out-of-map: PacksAvailability(+Test) listed; RequiredFloor(+Test) WP07, ClosureQueriesTest WP12, PackPresetsTest, ReadOnlyPackSaveTest - constructor/one-line folds; governing.yaml fixture. Divergence note for docs WP: preset activated_kinds removed; skills/glossary packs allowed in presets."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 11093,
