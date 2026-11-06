@@ -37,6 +37,7 @@ import org.springframework.core.env.Environment;
  *       logs request headers, the bearer token among them; so does TRACE on the Tomcat logger that writes the raw
  *       request, set there or on a parent such as {@code root}, and an access-log pattern with the
  *       {@code Authorization} header (ADR-0041 decision 8);
+ *   <li>no endpoint is mapped to another path and the discovery page stays off.
  * </ul>
  *
  * A breach fails the start, and the message names the property, never a value. This check reads the environment
@@ -54,6 +55,8 @@ public class ExposureStartupCheck implements InitializingBean {
     static final String LOG_REQUEST_DETAILS_PROPERTY = "spring.mvc.log-request-details";
     static final String HEALTH_GROUPS_PROPERTY = "management.endpoint.health.group";
     static final String PROBES_PROPERTY = "management.endpoint.health.probes.enabled";
+    static final String DISCOVERY_PROPERTY = "management.endpoints.web.discovery.enabled";
+    static final String PATH_MAPPING_PROPERTY = "management.endpoints.web.path-mapping";
     static final String LOGGING_LEVEL_PROPERTY = "logging.level";
     static final String LOGGING_GROUP_PROPERTY = "logging.group";
     static final String ACCESS_LOG_PATTERN_PROPERTY = "server.tomcat.accesslog.pattern";
@@ -126,6 +129,11 @@ public class ExposureStartupCheck implements InitializingBean {
                     + " must be /actuator when it is set: the request guard exempts only /actuator/health");
         }
         requireHealthOnly(environment);
+        if (isOn(environment, DISCOVERY_PROPERTY)) {
+            throw new IllegalStateException(DISCOVERY_PROPERTY
+                    + " must be false: the discovery page at /actuator would list the endpoints (ADR-0041 decision 7)");
+        }
+        refusePathMapping(environment);
         for (String property : NEVER_PROPERTIES) {
             requireValue(environment, property, NEVER, "it would reveal more than up or down (ADR-0041 decision 7)");
         }
@@ -259,6 +267,17 @@ public class ExposureStartupCheck implements InitializingBean {
                 .isEmpty()) {
             throw new IllegalStateException(HEALTH_GROUPS_PROPERTY
                     + " must not be set: the health answer would list the group (ADR-0041 decision 7)");
+        }
+    }
+
+    /** No endpoint is mapped to another path: the request guard exempts {@code /actuator/health} and nothing else. */
+    private static void refusePathMapping(Environment environment) {
+        if (!Binder.get(environment)
+                .bind(PATH_MAPPING_PROPERTY, Bindable.mapOf(String.class, String.class))
+                .orElse(Map.of())
+                .isEmpty()) {
+            throw new IllegalStateException(PATH_MAPPING_PROPERTY
+                    + " must not be set: the request guard exempts only /actuator/health (ADR-0041 decision 7)");
         }
     }
 
