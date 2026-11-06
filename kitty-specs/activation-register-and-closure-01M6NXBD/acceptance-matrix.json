@@ -28,10 +28,10 @@
       "criterion_id": "FR-003",
       "description": "Verify FR-003 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "activation-register.feature: 'A fetched config registered unchanged answers 200 with the same ETag', 'A stale If-Match is refused and the current revision is kept' (412 + GET old revision), 'Without If-Match the last writer wins' (200, ADR-0020 D6); activation-register-guards.feature 'A stale If-Match is refused before the body is judged'. lane-m HEAD 7f6264b: ./gradlew verifyAll --rerun-tasks --max-workers=1 -PcontractBaseline=none BUILD SUCCESSFUL (127/127 tasks executed; 7200 tests, 0 failures, 0 errors, 4 pre-existing env skips in packs; 341 BDD scenarios incl. activation-register 35/35, activation-selections 41/41, activation-presets 14/14, activation-register-guards 5/5, activations 4/4)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:qa-test-executor-elena",
+      "verified_at": "2026-11-06T02:55:14.143278+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
