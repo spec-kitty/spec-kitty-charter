@@ -18,7 +18,6 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.Ordered;
@@ -166,11 +165,20 @@ public class ActivationProblems {
         return invalid(violations);
     }
 
+    /**
+     * Whether a violation is not on a request parameter, as the shared {@code ProblemHandler} judges it (#268): a
+     * return value, for one, is the service's own failure. A violation inside a parameter (a header, the path's id, a
+     * member of the body) is the request's.
+     */
     private static boolean breaksAReturnValue(ConstraintViolationException invalid) {
-        return invalid.getConstraintViolations().stream()
-                .flatMap(violation ->
-                        StreamSupport.stream(violation.getPropertyPath().spliterator(), false))
-                .anyMatch(node -> node.getKind() == ElementKind.RETURN_VALUE);
+        return invalid.getConstraintViolations().stream().anyMatch(violation -> {
+            for (Path.Node node : violation.getPropertyPath()) {
+                if (node.getKind() == ElementKind.PARAMETER || node.getKind() == ElementKind.CROSS_PARAMETER) {
+                    return false;
+                }
+            }
+            return true;
+        });
     }
 
     /** The segments of a validation path, an indexed one written {@code name[i]}; a container element node left out. */
