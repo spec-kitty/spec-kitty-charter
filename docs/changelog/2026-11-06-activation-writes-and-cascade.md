@@ -38,5 +38,7 @@ writes of [ADR-0020](/adr/0020-offering-and-activations/) D6 under
 - **Still `501`:** the four effective reads.
 - **Differences from core:** DIV-206 and DIV-207 ([divergence register](/conformance/divergence-register/)).
 - **Open question:** a deactivate's own walk skips the lineage, per FR-015; it awaits an operator ruling.
+- **Stale documents:** an id a pack upgrade removed makes every per-artifact write `422`; a full `PUT` without it
+  recovers the document.
 
 [Offering and activation](/architecture/offering-and-activation/#the-cascade) has the rules.
