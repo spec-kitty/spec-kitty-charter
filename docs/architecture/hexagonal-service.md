@@ -2,7 +2,7 @@
 title: Hexagonal service
 description: The Gradle modules of the Java charter service and the rule that infrastructure depends inward on a plain-Java domain.
 doc_status: draft
-updated: 2026-10-18T00:00:00Z
+updated: 2026-11-05T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -42,6 +42,7 @@ One Gradle module per **vertical concern slice** ([ADR-0006](/adr/0006-onion-ver
 |---|---|---|
 | `kernel` | nothing outside the JDK | The shared domain kernel: the cross-slice vocabulary — packs, the CRG, `PackSource`, artifact kinds, refusal codes. Pure; no infra |
 | `packs` | `kernel` | The packs slice (pack registration, validation and storage), built; its layers are: `domain` (models, repository ports, services), `application` (read/write use cases, and the ports of what a use case needs from outside the domain: `GuideFormat`, `GuideFetcher`), `infra` (`api.rest`, reserved `api.graphql`, `storage`, and `fetch`, the outbound HTTPS adapter that fetches a toolguide's guide by URI, [ADR-0043](/adr/0043-sanitized-artifact-shapes-procedures-and-toolguide-guides/)) |
+| `activations` | `kernel`, `packs` | The activation register: the document, its storage, its write rules and its HTTP adapter; asks `packs` through one port (`AvailablePacks`, implemented in `infra.packs`). Its layers are `domain`, `application`, `infra.api` and `infra.packs`; the composition root chooses where its documents are stored |
 | `missiontypes` | `kernel` | The mission-types slice, same four layers as packages |
 | `profiles` | `kernel` | The agent-profiles slice, built with its `domain` ring only (`AgentProfile`); `packs.infra.storage` stores the kind ([ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/), amendment of 2026-10-27) |
 | `artifacts` | `kernel` | The other-charter-artifacts slice (directives, tactics, styleguides, procedures, …), same four layers as packages |
@@ -89,6 +90,19 @@ infra.fetch (outbound HTTPS) ────────┴────────
   port and is composed by `deployable`. No other adapter names it, and it names no other adapter
   (the `FETCH_ADAPTER_STANDS_ALONE` rule); the entry point reaches it only through the application
   ring (`ENTRYPOINT_OVER_APPLICATION`).
+
+### A slice over another slice
+
+A slice may build on another slice's use cases, never on its rings directly. Exactly one adapter package of the
+upper slice, `<slice>.infra.<other>`, names the other slice, and only its `application` ring (with the `domain`
+values that ring's answers expose); it never names the other slice's adapters. That adapter implements one
+application-ring port of the upper slice, so the upper slice's own rings ask through the port and never see the other
+slice. The `activations` slice is the first: `activations.infra.packs.PacksAvailability` implements
+`activations.application.AvailablePacks` over `packs.application`
+(`ACTIVATIONS_NAME_PACKS_ONLY_FROM_ADAPTER`, `ACTIVATIONS_ADAPTER_NAMES_PACKS_APPLICATION`). This extends
+[ADR-0006](/adr/0006-onion-vertical-slices-archunit/)'s slices; the slice and its port are the planning decision of
+2026-11-05 (mission `activation-register-and-closure-01M6NXBD`). The per-slice rules (`SLICE_RINGS`) hold every slice
+listed in `SLICES` to the same rings as `packs`.
 
 An ArchUnit test pins these directions, so the rule is a gate, not a habit (the named rule set
 is in [pack registration and distribution](/architecture/pack-registration-distribution/) §6).
