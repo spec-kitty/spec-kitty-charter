@@ -192,7 +192,7 @@ pack-scoped reads still answer.
 | `pack_sibling_conflict` | Two packs at one level both change, or both define, the same artifact id, and no `overrides` edge settles it. | Remove one change, or declare `overrides` naming a contesting member (see the caveats above). |
 | `pack_reference_unqualified` | A bare reference, on an edge end or in a typed reference, `procedures` or `directive_refs`, names an artifact only another pack holds. | Write it `<pack-name>::<urn>` and depend on that pack. |
 | `pack_reference_pack_missing` | A qualified reference names a pack outside the referring pack's own `depends_on` closure. | Add a `depends_on` on that pack, or correct the name. |
-| `pack_reference_artifact_missing` | A qualified reference names a pack in the closure, but that pack holds no such artifact. | Correct the URN, or reference the pack that holds it. |
+| `pack_reference_artifact_missing` | A qualified reference names a pack in the closure, but that pack holds no such artifact. Also: a preset item or a `policy.yaml` lock names an artifact the closure holds only under another case (`directive_001` for `DIRECTIVE_001`); ids are matched exactly, so it would govern nothing (operator ruling of 2026-11-06). | Correct the URN or the id to the declared spelling, or reference the pack that holds it. |
 
 ## See also
 
