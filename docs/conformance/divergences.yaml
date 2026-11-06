@@ -670,7 +670,9 @@
     stops the pass-through as without includeDeactivated. requiredBy never names an ancestor passed through; it leads
     back to the descendant the ancestor was passed from. A cascading deactivate's own walk passes
     through the lineage as a select's does, so a cascading select and a cascading deactivate of
-    the same profile round-trip (operator ruling of 2026-11-06).
+    the same profile round-trip (operator ruling of 2026-11-06), but it stops at no deny entry: it
+    crosses a denied ancestor a select would stop at, as it crosses a denied artifact on the forward
+    relations.
   rationale: >-
     A specialized profile needs what its parent requires or scopes, but selecting the profile must
     not put the parent in force beside it. Passing only requires and scope keeps the parent's

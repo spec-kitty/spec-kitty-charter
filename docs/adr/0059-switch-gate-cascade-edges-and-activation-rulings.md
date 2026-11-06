@@ -134,9 +134,10 @@ loses its gating role. Those changes are follow-ups, not part of this record.
    ancestor is put in force. A denied ancestor stops the pass-through at that ancestor and is reported (ADR-0013 D4);
    what lies behind a denied ancestor goes in `unreachedBehindDeactivated`. The `cascade` scope does not filter an
    ancestor, which is not a candidate.
-   *Amended 2026-11-06 (R2, R3):* a cascading deactivate's own walk passes through the lineage exactly as a select's
-   walk does, and with `includeDeactivated` a denied ancestor is passed through only when its kind is in the
-   `cascade` scope; see the [amendment](#amendment-2026-11-06).
+   *Amended 2026-11-06 (R2, R3):* a cascading deactivate's own walk passes through the lineage as a select's walk
+   does, but stops at no deny entry, so it crosses a denied ancestor a select would stop at; and with
+   `includeDeactivated` a denied ancestor is passed through only when its kind is in the `cascade` scope; see the
+   [amendment](#amendment-2026-11-06).
 5. **No other edge is followed.** `overrides` and `replaces` are replacement edges: following them would bring the
    replaced original back into force. `rejects` points at an anti-pattern (ADR-0052). `delegates_to` is a runtime
    handoff. `vocabulary`, `applies`, `reconciles_tension`, the tension edges and the derived `implemented_by` are
@@ -243,8 +244,10 @@ this record stands.
   an id the closure no longer holds, and an unselect or a re-activate of an id in neither the closure nor that stored
   list, is still `404 artifact_not_found` or `mission_type_not_found` (FR-010) and drops nothing. This answers the open review item on stale documents (research item 7).
 - **R2. A cascading deactivate follows the lineage.** The target's own walk passes through every
-  `specializes_from` ancestor exactly as a select's walk does (D2.4), so selecting a profile with a cascade and then
-  deactivating it with a cascade round-trips: what the select reached through an ancestor leaves `selected` again.
+  `specializes_from` ancestor to what it `requires` or `scope`s, as a select's walk does (D2.4), so selecting a
+  profile with a cascade and then deactivating it with a cascade round-trips: what the select reached through an
+  ancestor leaves `selected` again. Unlike a select's walk, it stops at no deny entry: it crosses a denied ancestor
+  that a select would stop at, as it already crosses a denied artifact on the forward relations.
   The shared-reference rule still applies: an artifact another active artifact needs is kept and reported in
   `skippedShared`. This replaces the earlier reading of FR-015 ("the five relations" only), which left the
   deactivate's walk without the lineage.
