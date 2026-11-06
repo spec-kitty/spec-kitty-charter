@@ -335,6 +335,132 @@ class DocumentRulesTest {
                 .hasValueSatisfying(refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_INVALID));
     }
 
+    // ---- replace (A4, B1): the floor on the deny entries it adds, stale ids and unheld pins tolerated
+
+    private static final ActivationDocument NOTHING_STORED =
+            ActivationDocument.builder().build().document();
+
+    @Test
+    void a4AGetThenPutOfADenyEntryOnANowRequiredArtifactIsAccepted() {
+        // The review's counter-example: the stored document denies T (D1 here), which a pack now requires; the client
+        // sends back the body it read.
+        ActivationDocument.Built body = ActivationDocument.builder()
+                .selected(TACTIC, List.of("T1"))
+                .deactivated(DIRECTIVE, List.of("D1"))
+                .build();
+        ActivationDocument stored = body.document();
+
+        assertThat(DocumentRules.check(body, CLOSURE))
+                .as("a create still judges every deny entry")
+                .hasValueSatisfying(refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_REQUIRED));
+        assertThat(DocumentRules.checkReplace(body, stored, CLOSURE)).isEmpty();
+    }
+
+    @Test
+    void aReplaceJudgesTheFloorOnEveryDenyEntryItAdds() {
+        ActivationDocument stored = ActivationDocument.builder()
+                .deactivated(DIRECTIVE, List.of("D1"))
+                .build()
+                .document();
+        ActivationDocument.Built adding = ActivationDocument.builder()
+                .deactivated(DIRECTIVE, List.of("D1", "D2"))
+                .build();
+
+        assertThat(DocumentRules.checkReplace(adding, stored, CLOSURE)).hasValueSatisfying(refusal -> {
+            assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_LOCKED);
+            assertThat(refusal.getMessage()).contains("directive:D2").doesNotContain("directive:D1");
+        });
+        ActivationDocument.Built denyingD1 = ActivationDocument.builder()
+                .deactivated(DIRECTIVE, List.of("D1"))
+                .build();
+        assertThat(DocumentRules.checkReplace(denyingD1, NOTHING_STORED, CLOSURE))
+                .as("with nothing stored every deny entry is added")
+                .hasValueSatisfying(refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_REQUIRED));
+    }
+
+    @Test
+    void a4AReplaceToleratesAnIdThePacksNoLongerHoldOnlyWhenTheStoredDocumentNamesIt() {
+        ActivationDocument stored = ActivationDocument.builder()
+                .selected(DIRECTIVE, List.of("D3", "GONE"))
+                .deactivated(TACTIC, List.of("OLD"))
+                .build()
+                .document();
+        ActivationDocument.Built roundTrip = ActivationDocument.builder()
+                .selected(DIRECTIVE, List.of("D3", "GONE"))
+                .deactivated(TACTIC, List.of("OLD"))
+                .build();
+        ActivationDocument.Built typo = ActivationDocument.builder()
+                .selected(DIRECTIVE, List.of("D3", "GONE", "NOPE"))
+                .build();
+
+        assertThat(DocumentRules.checkReplace(roundTrip, stored, CLOSURE)).isEmpty();
+        assertThat(DocumentRules.checkReplace(typo, stored, CLOSURE)
+                        .orElseThrow()
+                        .violations())
+                .as("an id the stored document never named is still unknown")
+                .extracting(RefusalViolation::pointer, RefusalViolation::code)
+                .containsExactly(tuple("/selected/directive/2", "unknown_artifact"));
+        assertThat(DocumentRules.checkReplace(roundTrip, NOTHING_STORED, CLOSURE)
+                        .orElseThrow()
+                        .violations())
+                .extracting(RefusalViolation::pointer)
+                .containsExactly("/deactivated/tactic/0", "/selected/directive/1");
+    }
+
+    @Test
+    void b1ACreateRefusesAPinNoPackHoldsAndAReplaceOfTheSameBodyDoesNot() {
+        ActivationDocument.Built body = ActivationDocument.builder()
+                .packs(List.of(PackRef.pinned("org-a", "2.0.0")))
+                .build();
+
+        assertThat(DocumentRules.check(body, CLOSURE).orElseThrow().violations())
+                .extracting(RefusalViolation::pointer, RefusalViolation::code)
+                .containsExactly(tuple("/packs/0/version", "version_not_held"));
+        assertThat(DocumentRules.checkReplace(body, NOTHING_STORED, CLOSURE)).isEmpty();
+        assertThat(DocumentRules.checkReplace(body, body.document(), CLOSURE)).isEmpty();
+    }
+
+    @Test
+    void aReplaceStillRefusesAnUnknownPack() {
+        ActivationDocument.Built body = ActivationDocument.builder()
+                .packs(List.of(PackRef.pinned("zeta", "1.0.0")))
+                .build();
+
+        assertThat(DocumentRules.checkReplace(body, body.document(), CLOSURE)
+                        .orElseThrow()
+                        .violations())
+                .extracting(RefusalViolation::pointer, RefusalViolation::code)
+                .containsExactly(tuple("/packs/0/packId", "unknown_pack"));
+    }
+
+    @Test
+    void aDenyEntryOnARequiredOrLockedMissionTypeIsJudgedAsOnAnyKind() {
+        ClosureSnapshot closure = snapshot()
+                .held(ArtifactKind.MISSION_TYPE, "software-dev", "research", "free")
+                .requiredBy("mission_type:software-dev", "built-in")
+                .lockedBy("mission_type:research", "built-in")
+                .build();
+
+        assertThat(DocumentRules.check(
+                        ActivationDocument.builder()
+                                .deactivated(ArtifactKind.MISSION_TYPE, List.of("software-dev"))
+                                .build(),
+                        closure))
+                .hasValueSatisfying(refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_REQUIRED));
+        assertThat(DocumentRules.check(
+                        ActivationDocument.builder()
+                                .deactivated(ArtifactKind.MISSION_TYPE, List.of("research"))
+                                .build(),
+                        closure))
+                .hasValueSatisfying(refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_LOCKED));
+        assertThat(DocumentRules.check(
+                        ActivationDocument.builder()
+                                .deactivated(ArtifactKind.MISSION_TYPE, List.of("free"))
+                                .build(),
+                        closure))
+                .isEmpty();
+    }
+
     // ---- RequiringPack.via: the extends chain from the document's packs
 
     /** team extends org, which extends internal; helper is only depended on. */
