@@ -2,17 +2,25 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import static ai.speckitty.charter.packs.infra.storage.PackFixtures.BROKEN_FILE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.application.ConsistentRead;
+import ai.speckitty.charter.packs.application.OfferingReadService;
+import ai.speckitty.charter.packs.application.PackMutabilityPolicy;
 import ai.speckitty.charter.packs.domain.Asset;
 import ai.speckitty.charter.packs.domain.AssetFile;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
+import ai.speckitty.charter.packs.domain.MutabilityLevel;
+import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
@@ -20,6 +28,8 @@ import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.Tactic;
 import ai.speckitty.charter.packs.domain.TacticIdentifier;
 import ai.speckitty.charter.packs.domain.Template;
+import ai.speckitty.charter.packs.domain.WritePolicyGate;
+import ai.speckitty.charter.packs.domain.WritePolicyGate.Operation;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -640,6 +650,180 @@ class DomainRepositoryServiceTest {
                         .compositionFacts(new PackIdentifier("pack-descriptor-only"))
                         .defined())
                 .containsExactlyInAnyOrder("directive:D1", "procedure:release", "anti_pattern:big-ball-of-mud");
+    }
+
+    // ---- the pack's mutability policy file (ADR-0062, FR-022) ----------------------------------------------------
+
+    private static final String NAMES_POLICY = "mutability_policy: policy.yaml\n";
+
+    /** A pack whose descriptor names {@code policy.yaml} and ships it: the facts and the port hold its levels. */
+    @Test
+    void aNamedPolicyFileIsReadIntoTheCompositionFactsAndThePort(@TempDir Path host) throws IOException {
+        Path pack = PackFixtures.copyOf("pack-descriptor-only", host);
+        Files.writeString(pack.resolve("pack.yaml"), Files.readString(pack.resolve("pack.yaml")) + NAMES_POLICY);
+        Files.writeString(pack.resolve("policy.yaml"), """
+                schema_version: 1
+                kind_defaults: {tactic: extendable}
+                artifacts: {directive:D1: locked}
+                """);
+        DomainRepositoryService over = overOne("pack-descriptor-only", pack);
+        PackIdentifier id = new PackIdentifier("pack-descriptor-only");
+
+        MutabilityPolicySource policy = over.compositionFacts(id).policy();
+
+        assertThat(policy.levelOf(new Urn(NodeKind.DIRECTIVE, "D1"))).isEqualTo(MutabilityLevel.LOCKED);
+        assertThat(policy.levelOf(new Urn(NodeKind.TACTIC, "t"))).isEqualTo(MutabilityLevel.EXTENDABLE);
+        assertThat(policy.levelOf(new Urn(NodeKind.DIRECTIVE, "D2"))).isEqualTo(MutabilityLevel.OPEN);
+        assertThat(over.policyOf(id)).isEqualTo(policy);
+    }
+
+    /** A named file that is missing makes the pack unreadable, naming the key and the file. */
+    @Test
+    void aNamedPolicyFileThatIsMissingMakesThePackUnreadable(@TempDir Path host) throws IOException {
+        Path pack = PackFixtures.copyOf("pack-descriptor-only", host);
+        Files.writeString(pack.resolve("pack.yaml"), Files.readString(pack.resolve("pack.yaml")) + NAMES_POLICY);
+        DomainRepositoryService over = overOne("pack-descriptor-only", pack);
+        PackIdentifier id = new PackIdentifier("pack-descriptor-only");
+
+        assertThatThrownBy(() -> over.compositionFacts(id)).isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+            assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+            assertThat(refused.getMessage())
+                    .contains("pack-descriptor-only names mutability_policy policy.yaml, which")
+                    .contains("missing");
+        });
+        assertThatThrownBy(() -> over.policyOf(id))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refused -> assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+    }
+
+    /** A named file that breaks its schema makes the pack unreadable, naming the file and the breach. */
+    @Test
+    void aNamedPolicyFileThatBreaksItsSchemaMakesThePackUnreadable(@TempDir Path host) throws IOException {
+        Path pack = PackFixtures.copyOf("pack-descriptor-only", host);
+        Files.writeString(pack.resolve("pack.yaml"), Files.readString(pack.resolve("pack.yaml")) + NAMES_POLICY);
+        Files.writeString(pack.resolve("policy.yaml"), "schema_version: 1\npins: [directive:D1]\n");
+        DomainRepositoryService over = overOne("pack-descriptor-only", pack);
+
+        assertThatThrownBy(() -> over.compositionFacts(new PackIdentifier("pack-descriptor-only")))
+                .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+                    assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+                    assertThat(refused.getMessage())
+                            .contains("pack-descriptor-only names mutability_policy policy.yaml, which")
+                            .contains("pins");
+                });
+    }
+
+    /**
+     * The presets ride on the facts from the assembly the facts already load (WP04, FR-023): a governing preset is
+     * there with its must-have items; a pack without presets has none; a broken preset makes the pack unreadable.
+     */
+    @Test
+    void theCompositionFactsCarryThePacksPresetsFromTheSameAssembly(@TempDir Path host) throws IOException {
+        Path pack = PackFixtures.copyOf("pack-descriptor-only", host);
+        DomainRepositoryService over = overOne("pack-descriptor-only", pack);
+        PackIdentifier id = new PackIdentifier("pack-descriptor-only");
+        assertThat(over.compositionFacts(id).presets()).isEmpty();
+
+        Files.createDirectories(pack.resolve("presets"));
+        Files.writeString(pack.resolve("presets/governing.yaml"), """
+                schema_version: '1.0'
+                id: governing
+                description: The directive is required.
+                activated_directives:
+                  - id: D1
+                    must_have: true
+                  - id: D2
+                """);
+
+        assertThat(over.compositionFacts(id).presets()).singleElement().satisfies(preset -> {
+            assertThat(preset.id()).isEqualTo("governing");
+            assertThat(preset.governing()).isTrue();
+            assertThat(preset.required()).containsEntry(ArtifactKind.DIRECTIVE, List.of("D1"));
+        });
+
+        Files.writeString(pack.resolve("presets/broken.yaml"), """
+                schema_version: '1.0'
+                id: broken
+                description: '   '
+                """);
+        assertThatThrownBy(() -> over.compositionFacts(id))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refused -> assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+    }
+
+    /** No key: the pack has no policy, so every artifact of it is open, whatever lies at the pack root. */
+    @Test
+    void aPackWhoseDescriptorNamesNoPolicyHasTheEmptyPolicy(@TempDir Path host) throws IOException {
+        Path pack = PackFixtures.copyOf("pack-descriptor-only", host);
+        Files.writeString(pack.resolve("policy.yaml"), "schema_version: 1\nartifacts: {directive:D1: locked}\n");
+        DomainRepositoryService over = overOne("pack-descriptor-only", pack);
+        PackIdentifier id = new PackIdentifier("pack-descriptor-only");
+
+        assertThat(over.compositionFacts(id).policy()).isEqualTo(MutabilityPolicySource.empty());
+        assertThat(over.policyOf(id)).isEqualTo(MutabilityPolicySource.empty());
+    }
+
+    /**
+     * The real stack (ADR-0062 D3, D4): pack {@code p} depends on {@code q}, and {@code q}'s policy file locks
+     * {@code directive:X}. The production gate composes {@code p}'s closure through the offering and refuses the write,
+     * naming {@code q}, whether {@code p} is addressed by its configured name or its {@code pack_id}. With {@code q}'s
+     * named file gone, the offering and the gate both refuse {@code pack_unreadable} naming {@code q}.
+     */
+    @Test
+    void aDependencysLockRefusesARegistrationThroughTheRealComposeAndAMissingFileMakesTheOfferingUnreadable(
+            @TempDir Path host) throws IOException {
+        String qId = "01M5DEH8R0VNDTR1PF1XTVRE0Q";
+        String pId = "01M5DEH8R0VNDTR1PF1XTVRE0P";
+        Path q = Files.createDirectories(host.resolve("q"));
+        Files.writeString(q.resolve("pack.yaml"), """
+                pack_id: %s
+                pack_version: 1.0.0
+                name: q
+                pack_level: built-in
+                mutability_policy: policy.yaml
+                """.formatted(qId));
+        Files.writeString(q.resolve("policy.yaml"), "schema_version: 1\nartifacts: {directive:X: locked}\n");
+        Path p = Files.createDirectories(host.resolve("p"));
+        Files.writeString(p.resolve("pack.yaml"), """
+                pack_id: %s
+                pack_version: 1.0.0
+                name: p
+                pack_level: org
+                depends_on:
+                  - pack_id: %s
+                    range: '>=1.0'
+                """.formatted(pId, qId));
+        List<PackLocation> locations =
+                List.of(new PackLocation("q", PackLevel.BUILT_IN, q), new PackLocation("p", PackLevel.ORG, p));
+        DomainRepositoryService over = new DomainRepositoryService(() -> locations, new YamlSerializationStrategy());
+        OfferingReadService offerings = new OfferingReadService(
+                over, over, over, new ConsistentRead(new FileSystemPackSources(() -> locations)));
+        WritePolicyGate gate = new PackMutabilityPolicy(offerings, over, over, over);
+        Urn locked = new Urn(NodeKind.DIRECTIVE, "X");
+
+        for (PackIdentifier addressed : List.of(new PackIdentifier("p"), new PackIdentifier(pId))) {
+            Pack target = over.load(addressed);
+            assertThatThrownBy(() -> gate.authorize(target, Operation.REGISTER, locked))
+                    .as("addressed as %s", addressed.value())
+                    .isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+                        assertThat(refused.code()).isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
+                        assertThat(refused.getMessage()).contains(qId).contains("locked");
+                    });
+            assertThatCode(() -> gate.authorize(target, Operation.REGISTER, new Urn(NodeKind.DIRECTIVE, "Y")))
+                    .doesNotThrowAnyException();
+        }
+
+        Files.delete(q.resolve("policy.yaml"));
+        assertThatThrownBy(offerings::offering).isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+            assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+            assertThat(refused.getMessage()).contains("q names mutability_policy policy.yaml, which is missing");
+        });
+        assertThatThrownBy(() -> gate.authorize(over.load(new PackIdentifier("p")), Operation.REGISTER, locked))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refused -> assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
     }
 
     private static DomainRepositoryService overOne(String name, Path directory) {
