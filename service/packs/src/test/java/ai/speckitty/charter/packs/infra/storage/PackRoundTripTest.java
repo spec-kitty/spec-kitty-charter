@@ -41,6 +41,7 @@ class PackRoundTripTest {
             Optional.of(">=1.0"),
             Optional.of("org-charter.yaml"),
             Optional.of("drg/fragment.yaml"),
+            Optional.empty(),
             List.of(),
             List.of());
 
@@ -224,6 +225,7 @@ class PackRoundTripTest {
                 d.requiresCore(),
                 d.activeCharter(),
                 d.packDrg(),
+                d.mutabilityPolicy(),
                 d.dependencies(),
                 d.overrides());
 
@@ -250,6 +252,7 @@ class PackRoundTripTest {
                 d.requiresCore(),
                 d.activeCharter(),
                 d.packDrg(),
+                d.mutabilityPolicy(),
                 d.dependencies(),
                 List.of(new PackOverride("directive:DIRECTIVE_009", "01M4P01D5TWB5FKZGNNQG3943S")));
 
