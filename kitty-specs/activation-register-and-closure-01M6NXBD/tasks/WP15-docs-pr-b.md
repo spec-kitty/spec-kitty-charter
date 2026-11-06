@@ -22,11 +22,11 @@ history: []
 agent_profile: scribe-sally
 authoritative_surface: docs/
 create_intent:
-- docs/changelog/2026-11-05-activation-writes-and-cascade.md
+- docs/changelog/2026-11-06-activation-writes-and-cascade.md
 execution_mode: planning_artifact
 model: ''
 owned_files:
-- docs/changelog/2026-11-05-activation-writes-and-cascade.md
+- docs/changelog/2026-11-06-activation-writes-and-cascade.md
 role: implementer
 tags: []
 tracker_refs: []
@@ -146,7 +146,7 @@ before writing it down:
 ### Subtask T092: The docs changelog fragment
 
 **Steps:**
-1. Create `docs/changelog/2026-11-05-activation-writes-and-cascade.md` (date it the day you write it, and update the
+1. Create `docs/changelog/2026-11-06-activation-writes-and-cascade.md` (date it the day you write it, and update the
    path in this WP's `owned_files` only if the date changes) with the `okf_version` frontmatter, as WP10's fragment
    has.
 2. Body: the five writes are served; the cascade rules; `enhances` is not written at write time; presets replace each

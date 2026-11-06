@@ -3,7 +3,7 @@
 # one by one, the context-read and activation entries in a table). DivergenceRegisterTest fails
 # when an id is listed twice here or is on one of the two and not the other. The blocks are pack
 # schemas (DIV-001..099, ADR-0017), context read (DIV-101..110, ADR-0018), activation
-# (DIV-201..205, ADR-0020; DIV-201 and DIV-202 proposed), pack-level files (DIV-301..399, ADR-0042), procedures and
+# (DIV-201..207, ADR-0020; DIV-201 and DIV-202 proposed), pack-level files (DIV-301..399, ADR-0042), procedures and
 # toolguide guides (DIV-401..499, ADR-0043) and mission types (DIV-501..599, ADR-0044). Consumers: the
 # conformance gate (#72) and the pack doctor parity test (#115) read this file; a difference from
 # core that is not listed here with status `open` fails them, so a `proposed` entry is not yet
@@ -653,6 +653,53 @@
   evidence:
     - "charter: service/activations/src/main/java/ai/speckitty/charter/activations/domain/ClosureSnapshot.java"
     - "corpus case: floor-closure-scoped"
+
+- id: DIV-206
+  surface: The cascade of an activation write over a profile's specializes_from lineage
+  core: Does not follow specializes_from in its cascade; a profile's ancestor adds nothing to the walk.
+  service: >-
+    Passes through every specializes_from ancestor of a profile the walk reaches, up the whole chain,
+    following only requires and scope from each ancestor; their targets join the walk. An ancestor
+    passed through is neither put in force nor reported, and the cascade scope does not filter one.
+    A denied ancestor stops
+    the pass-through there and is reported in skippedDeactivated; what lies only behind it is in
+    unreachedBehindDeactivated.
+  rationale: >-
+    A specialized profile needs what its parent requires or scopes, but selecting the profile must
+    not put the parent in force beside it. Passing only requires and scope keeps the parent's
+    recommendations (suggests) and other edges out of the walk.
+  ruling: ADR-0059 D2.4 (as revised 2026-11-05)
+  status: open
+  since: 2026-11-06
+  evidence:
+    - "charter: service/packs/src/main/java/ai/speckitty/charter/packs/application/ReachRequest.java (Lineage.specializesFrom passes requires and scope)"
+    - "charter: contracts/charter/scenarios/activation-selections.feature (A cascade passes through a profile's ancestor without putting it in force; A denied ancestor stops the lineage and is reported, with what lies behind it)"
+    - "corpus case: cascade-lineage-pass-through"
+
+- id: DIV-207
+  surface: The enhances relation in an activation write
+  core: Does not follow enhances in its cascade.
+  service: >-
+    A write never adds an enhancer to selected: the enhances pull runs at read time. Two write-time
+    exceptions read enhances without writing to selected. A select with includeDeactivated clears
+    every deny entry the enhances pull reaches from what the walk selects, in both directions and
+    transitively over enhances. A cascading deactivate keeps a candidate an active enhancer
+    references and reports it in skippedShared, naming the enhancer in referencedBy.
+  rationale: >-
+    selected stays what the client chose, and an enhancer a pack upgrade adds joins on the next read.
+    Clearing the deny entries the pull would reach makes includeDeactivated take back what the read
+    would otherwise skip; counting an enhancer as a reference keeps a deactivate from removing what an
+    active enhancer still adds to.
+  ruling: ADR-0059 D2.2 (as revised 2026-11-05)
+  status: open
+  since: 2026-11-06
+  note: >-
+    The read-time enhances pull itself belongs to the effective reads, which still answer 501; this
+    entry covers only what the writes do with enhances.
+  evidence:
+    - "charter: service/activations/src/main/java/ai/speckitty/charter/activations/domain/CascadeRules.java"
+    - "charter: contracts/charter/scenarios/activation-selections.feature (includeDeactivated clears the walk's deny entries and the enhancer's, and selects no enhancer; A cascading deactivate keeps what a selected enhancer references)"
+    - "corpus case: cascade-enhances-clearing"
 
 # Pack-level files (DIV-301..399), mission pack-level-files-round-trip-01M60H1A (#195, ADR-0042).
 - id: DIV-301

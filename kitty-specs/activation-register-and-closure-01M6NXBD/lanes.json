@@ -572,7 +572,7 @@
         "docs/architecture/offering-and-activation.md",
         "docs/architecture/resolution-model.md",
         "docs/changelog/2026-11-05-activation-register-and-closure.md",
-        "docs/changelog/2026-11-05-activation-writes-and-cascade.md",
+        "docs/changelog/2026-11-06-activation-writes-and-cascade.md",
         "docs/conformance/divergence-register.md",
         "docs/conformance/divergences.yaml"
       ],

@@ -2,7 +2,7 @@
 title: Divergence register
 description: The single register of every deliberate difference between the charter service and core, each with a stable id, the ruling behind it and the case or evidence that pins it.
 doc_status: draft
-updated: 2026-11-05T00:00:00Z
+updated: 2026-11-06T00:00:00Z
 type: API
 kind: Reference
 related:
@@ -35,8 +35,9 @@ Entries are grouped by block, one block per mission, so that two missions never 
 - **Pack schemas (DIV-001..025, ADR-0017)** is below, after the context-read block. DIV-001 and
   DIV-002 are withdrawn: they described the same differences as DIV-101 and DIV-102 and are
   recorded there.
-- **Activation (DIV-201..205, ADR-0020)** is below. DIV-201 and DIV-202 are proposed, because the effective reads
-  they concern are not built yet; DIV-203 to DIV-205 are open, because the register and the closure read are built.
+- **Activation (DIV-201..207, ADR-0020)** is below. DIV-201 and DIV-202 are proposed, because the effective reads
+  they concern are not built yet; DIV-203 to DIV-207 are open, because the register, the closure read and the
+  per-artifact writes are built.
 - **Pack-level files (DIV-301..399, ADR-0042)** is after the activation block.
 - **Procedures and toolguide guides (DIV-401..499, ADR-0043)** is after the pack-level files block.
 - **Mission types (DIV-501..599, ADR-0044)** is last.
@@ -425,7 +426,7 @@ entry from the contract scenario that pins it. Add it to
 [`divergences.yaml`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/docs/conformance/divergences.yaml)
 too, with the same id and status.
 
-## Activation (DIV-201..205, ADR-0020)
+## Activation (DIV-201..207, ADR-0020)
 
 DIV-201 and DIV-202 were proposed with [ADR-0020](/adr/0020-offering-and-activations/) on #123, and agreed with
 core's activation ledger mission on 2026-10-20. Core's conformance-case table carries the same entries (core
@@ -440,6 +441,13 @@ DIV-203 to DIV-205 were added on 2026-11-05 by mission `activation-register-and-
 [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) D1 they tell core what changes when it
 switches; they do not gate the switch. No change to core's code is part of this mission.
 
+DIV-206 and DIV-207 were added on 2026-11-06 by the same mission's second pull request, which builds the five
+per-artifact writes (`selectActivationArtifact`, `unselectActivationArtifact`, `deactivateActivationArtifact`,
+`reactivateActivationArtifact` and `applyActivationPreset`). They record where the write cascade departs from core's
+under [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) D2.4 and D2.2 as revised on
+2026-11-05. They are `open`: `contracts/charter/scenarios/activation-selections.feature` pins them. The read-time
+`enhances` pull, which D2.2 also rules, belongs to the effective reads and has no entry yet.
+
 | Id | The charter answers | Core answers | Ruling | Corpus case |
 |---|---|---|---|---|
 | DIV-201 | A required or locked artifact is active on read, even under an explicit allow list that omits it (ADR-0020 D7) | Does not add it under such an allow list; doctor and list warn | ADR-0020 | `required-under-allow-list` |
@@ -447,10 +455,14 @@ switches; they do not gate the switch. No change to core's code is part of this 
 | DIV-203 | An absent `selected.<kind>`, `activatedKinds` or `missionTypes` means none, the same as `[]`. This holds for `skill` too, which loses its "only the required skills" default. An absent `packs` still means every configured pack | A per-kind default when the key is absent: every available artifact, or only the required skills for `skill` | ADR-0053 d10; decision `DM-01M6NXQJ61D2GSFJFK02XW6F9N`. Holds until core's named-packs split ([ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/)) | `absent-kind-means-none` |
 | DIV-204 | A write whose deny list names a required or locked artifact is refused `409` (`artifact_required`, `artifact_locked`), naming the pack, and nothing is stored | Accepts the entry and ignores it, or warns | ADR-0020 D9; ADR-0059 D4 | `deny-required-refused-at-write` |
 | DIV-205 | The required floor is the must-have items of every governing preset in the activation's closure | The org packs' `required_*` lists | Decision `DM-01M6PCWSA65497T9A7J80K6V56`: an assumed default, flagged to the operator as open review item 1 | `floor-closure-scoped` |
+| DIV-206 | A cascade passes through every `specializes_from` ancestor of a profile it reaches, up the whole chain, following only `requires` and `scope` from each ancestor. An ancestor passed through is neither put in force nor reported. A denied ancestor stops the pass-through and is reported in `skippedDeactivated`; what lies only behind it is in `unreachedBehindDeactivated` | Does not follow `specializes_from` in its cascade | ADR-0059 D2.4 | `cascade-lineage-pass-through` |
+| DIV-207 | A write never adds an enhancer to `selected`. With `includeDeactivated`, a select clears every deny entry the `enhances` pull reaches from what the walk selects, in both directions and transitively over `enhances`. A cascading deactivate keeps a candidate an active enhancer references and reports it in `skippedShared` | Does not follow `enhances` in its cascade | ADR-0059 D2.2 | `cascade-enhances-clearing` |
 
 Core's seam, to switch: read an absent list as none and write the default it means explicitly (DIV-203); clean a
 deny entry on a required or locked artifact out of a document before writing it (DIV-204); and take the required set
-from the closure's governing presets, not from `required_*` (DIV-205).
+from the closure's governing presets, not from `required_*` (DIV-205). A project with a profile whose parent
+`requires` or `scope`s more (DIV-206), or with an artifact that enhances another (DIV-207), sees a different write
+cascade after the switch; core's seam takes the service's answer, `applied`, `cleared` and `skipped`, as it is.
 
 `getActivation` and `listActivationPacks` declare no `Charter-Source-Fingerprint` on their `200`. The document read
 depends only on the stored document ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) D5),
