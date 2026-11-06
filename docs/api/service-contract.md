@@ -247,27 +247,27 @@ sequences, is in [Offering and activation](/architecture/offering-and-activation
 | `POST` | `/activations` | `createActivation`: create an activation; the service mints the id. **Built** | [#125](https://github.com/spec-kitty/spec-kitty-charter/issues/125) |
 | `PUT`, `GET`, `DELETE` | `/activations/{activationId}` | `replaceActivation`, `getActivation`, `deleteActivation`: register or replace, read, remove an activation. **Built** | [#125](https://github.com/spec-kitty/spec-kitty-charter/issues/125) |
 | `GET` | `/activations/{activationId}/packs` | `listActivationPacks`: the `depends_on` closure rooted at the document's packs. **Built** | [#360](https://github.com/spec-kitty/spec-kitty-charter/issues/360) |
-| `PUT`, `DELETE` | `…/{activationId}/selections/{kind}/{artifactId}`, `…/exclusions/{kind}/{artifactId}`; `PUT …/presets/{presetId}` | `selectActivationArtifact`, `unselectActivationArtifact`, `deactivateActivationArtifact`, `reactivateActivationArtifact`, `applyActivationPreset`: change one choice, with `If-Match`. **Declared, reserved (501)** | [#125](https://github.com/spec-kitty/spec-kitty-charter/issues/125) |
+| `PUT`, `DELETE` | `…/{activationId}/selections/{kind}/{artifactId}`, `…/exclusions/{kind}/{artifactId}`; `PUT …/presets/{presetId}` | `selectActivationArtifact`, `unselectActivationArtifact`, `deactivateActivationArtifact`, `reactivateActivationArtifact`, `applyActivationPreset`: change one choice, with `If-Match`. **Built** | [#125](https://github.com/spec-kitty/spec-kitty-charter/issues/125) declares them; [#291](https://github.com/spec-kitty/spec-kitty-charter/issues/291) builds them |
 | `GET` | `…/{activationId}/artifacts`, `skipped`, `graph`, `mission-types/…/context` | `listEffectiveArtifacts`, `getActivationSkippedReport`, `getEffectiveGraph`, `getEffectiveActionContext`: the effective reads (R9). **Declared, reserved (501)**; R9 gates cutover stage 3 | [#125](https://github.com/spec-kitty/spec-kitty-charter/issues/125) declares them; [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103) builds them |
 
 **The activation set is in the contract** (#125, inside `0.1.0-SNAPSHOT` by the operator's ruling of 2026-10-31):
 every activation operation is declared in full under the tag `Activation`. The register (`createActivation`,
-`replaceActivation`, `getActivation`, `deleteActivation`) and the closure read (`listActivationPacks`, #360) are
-built. The five per-artifact and preset writes and the four effective reads keep `x-reserved` and answer `501`
+`replaceActivation`, `getActivation`, `deleteActivation`), the closure read (`listActivationPacks`, #360) and the five
+per-artifact and preset writes (#291) are built. Only the four effective reads keep `x-reserved` and answer `501`
 until they are built. The set declares the `ActivationConfig` document (canonical as JSON Schema 2020-12 in
 `contracts/offering/schemas/`), `Activation`, `ActivationChange`, the skipped report and the effective-read schemas;
 `ETag`, `If-Match` and `If-None-Match`; the six activation refusal codes; and the shared `Problem`'s `requiredBy`
-and `violations`. The register raises four of the codes: `activation_not_found` (404), `activation_invalid` (422),
-`artifact_required` and `artifact_locked` (409). `artifact_not_found` and `preset_not_found` stay declared and not
-raised until the per-artifact and preset writes are built. The rulings are in ADR-0020's amendment of 2026-10-31.
+and `violations`. Every one of the six codes is raised: `activation_not_found` (404), `artifact_not_found` and
+`preset_not_found` (404, a per-artifact write or a preset application whose path names what the closure does not
+hold), `activation_invalid` (422), `artifact_required` and `artifact_locked` (409). The rulings are in ADR-0020's amendment of 2026-10-31.
 
 **Before 1.0.0, still to come:** the move of the action-context read and the hosted-first reshape of the security
 scheme, `Charter-Worktree`, `ServiceInfo.worktree` and the fingerprint inputs (ADR-0020 D12).
 
 ## Planned write surface (later)
 
-The activation register is built; its per-artifact and preset writes are declared and reserved (#125, #291) and are
-built before cutover stage 3 (ADR-0020). The other
+The activation writes are built: the register and its per-artifact and preset writes (#125, #291), ahead of cutover
+stage 3 (ADR-0020). The other
 writes come after the read stages, one at a time: charter document save and compile. See
 [Strangler transition](/architecture/strangler-transition/).
 
