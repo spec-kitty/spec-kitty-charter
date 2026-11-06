@@ -6,10 +6,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.transport.ReservedOperation;
 import ai.speckitty.charter.packs.domain.Diagnostic;
 import ai.speckitty.charter.packs.domain.PackFindingCode;
-import ai.speckitty.charter.packs.infra.api.ReservedOperation;
-import ai.speckitty.charter.packs.infra.api.ReservedOperationInterceptor;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
@@ -257,7 +256,9 @@ class HexagonalArchitectureTest {
     /**
      * A reserved controller (ADR-0020 D8, #125) declares operations and answers 501: it reads and stores nothing, so it
      * depends on no application, domain or storage type, nor on another class of its adapter: only on the generated
-     * transport types, its marker, the interceptor that answers for it, and the framework. When an operation is built, its controller leaves the annotation and this rule behind.
+     * transport types, its kernel marker and the framework (its own {@code ResponseStatusException}); the interceptor
+     * that answers for it lives in the composition root, which it never names. When an operation is built, its
+     * controller leaves the annotation and this rule behind.
      */
     private static final ArchRule RESERVED_CONTROLLER_READS_NOTHING = noClasses()
             .that()
@@ -265,8 +266,7 @@ class HexagonalArchitectureTest {
             .should()
             .dependOnClassesThat(DescribedPredicate.not(
                             JavaClass.Predicates.resideInAnyPackage(GENERATED_API, JAVA, JSPECIFY, FRAMEWORK))
-                    .and(DescribedPredicate.not(JavaClass.Predicates.belongToAnyOf(
-                            ReservedOperation.class, ReservedOperationInterceptor.class))));
+                    .and(DescribedPredicate.not(JavaClass.Predicates.belongToAnyOf(ReservedOperation.class))));
 
     @Test
     void aReservedControllerReadsAndStoresNothing() {
