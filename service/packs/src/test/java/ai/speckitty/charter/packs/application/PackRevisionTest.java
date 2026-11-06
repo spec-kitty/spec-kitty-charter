@@ -67,7 +67,7 @@ class PackRevisionTest {
     }
 
     @Test
-    @DisplayName("matches() is true only for the current revision's own token")
+    @DisplayName("matches() delegates to the shared strong comparison over the current revision's token")
     void matchesOnlyTheCurrentToken() {
         PackRevision current = PackRevision.compute(List.of("descriptor", "child-a"));
         PackRevision other = PackRevision.compute(List.of("descriptor", "child-b"));
@@ -75,6 +75,9 @@ class PackRevisionTest {
         assertThat(PackRevision.matches(current.token(), current)).isTrue();
         assertThat(PackRevision.matches(other.token(), current)).isFalse();
         assertThat(PackRevision.matches(null, current)).isFalse();
+        assertThat(PackRevision.matches("W/\"" + current.token() + "\"", current))
+                .as("weak never matches; the parser's cases are EntityTagsTest's")
+                .isFalse();
     }
 
     /**
