@@ -248,7 +248,10 @@ five operations declare that `400`. Every other answer comes from one flow (`Act
 3. One verified view of the closure for the whole request (NFR-007): every walk and the rules check read it.
 4. The path id against that closure: an id it does not hold is `404 artifact_not_found`, or
    `404 mission_type_not_found` for a mission type; a preset it does not hold is `404 preset_not_found`. A write
-   sees only the closure (FR-010): an artifact or preset held only by a pack outside it is not found.
+   sees only the closure (FR-010): an artifact or preset held only by a pack outside it is not found. An unselect
+   or a re-activate also proceeds for an id the closure no longer holds when the stored list it removes the id from
+   still names it (`selected`, or `missionTypes` for a mission type; `deactivated`): step 5 drops it as a stale id.
+   An id in neither place is still `404`.
 5. The computed document. A document equal to the stored one is a no-op: `200` with the same revision, an empty
    `applied` and `cleared`, and nothing stored. Any other is judged by the document's rules and stored by a
    compare-and-set at the loaded revision (`412` when another writer came in between). Every id is judged
@@ -261,8 +264,11 @@ five operations declare that `400`. Every other answer comes from one flow (`Act
    A stale id is dropped on write ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/#amendment-2026-11-06)
    R5). Before the write computes anything, it removes from the stored document every id the closure no longer
    holds (a pack upgrade removed it), in `selected`, `deactivated` and `missionTypes`, and reports them in
-   `dropped`. A dropped id is a change, so such a write is never a no-op and answers a new revision. A path id the
-   closure no longer holds is still `404 artifact_not_found` (step 4), and that write drops nothing. An unknown pack
+   `dropped`. A dropped id is a change, so such a write is never a no-op and answers a new revision. An unselect or a
+   re-activate whose path names a stale id the stored list still holds is such a write: `200`, the id in `dropped`
+   only, a new revision. A select or a deactivate of an id the closure no longer holds is still
+   `404 artifact_not_found` (step 4), as is an unselect or a re-activate of an id in neither the closure nor the
+   stored list, and those writes drop nothing. An unknown pack
    or a pinned version the closure does not hold is not dropped: every per-artifact and preset write stays
    `422 activation_invalid` (`unknown_pack`, `version_not_held`), and the client recovers with `replaceActivation`.
    `createActivation` and `replaceActivation` drop nothing: an unknown id in the body the client sends is `422`.
@@ -272,7 +278,9 @@ document points at the whole request (`""`), and keeps the codes and the details
 
 Each write answers an `ActivationChange` with the new revision as its `ETag`. `applied` lists every id the write
 added to or removed from `selected`, `deactivated` or `missionTypes`; `cleared` lists the deny entries it removed;
-`dropped`, present only when there is one, lists the stale ids it dropped first, which are in neither of the other two;
+`dropped`, present only when there is one, lists the stale ids it dropped first. `applied` and `cleared` are measured
+after that drop, against the stored document without the stale ids, so a dropped id appears only in `dropped`, even
+when the path of an unselect or a re-activate names it;
 `skipped` is the write-time report of the cascade, never what a read leaves out (the effective reads report that). A write's path has no `GET`, so the answer carries no `self`: its `up` link names the
 activation.
 

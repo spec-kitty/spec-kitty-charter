@@ -223,6 +223,7 @@ re-review of the fixes. Folded on lane-m (369063b..ac1faa9 and the re-review fol
    ADR-0059 carry the amendment.
 7. Ruled 2026-11-06 (R5): stale ids are dropped on write. Every per-artifact and preset write first removes the
    stored ids the closure no longer declares (`selected`, `deactivated`, `missionTypes`) and reports them in the new
-   `ActivationChange.dropped`; a write that only drops is not a no-op. A path id the closure no longer holds is still
-   `404`, and an unknown pack or a pinned version is still `422` until a full `replaceActivation`; `PUT` and create
+   `ActivationChange.dropped`; a write that only drops is not a no-op. A select or deactivate of a path id the closure no
+   longer holds is still `404`; an unselect or re-activate of one the stored list still names drops it (an id in
+   neither place is `404`). An unknown pack or a pinned version is still `422` until a full `replaceActivation`; `PUT` and create
    are unchanged. FR-017 and ADR-0059 carry the amendment (`StaleIds`, `ActivationWrites.current`).

@@ -229,8 +229,12 @@ this record stands.
   change: a write that only drops stale ids is not a no-op and gets a new revision. `PUT` and create are unchanged:
   an unknown id in a body the client sent is still `422`. An unknown pack or a pinned version in `packs` is not
   dropped either: such a document still makes every write `422` (`unknown_pack`, `version_not_held`), which only a
-  full `PUT` recovers. A path id the closure no longer holds is still `404 artifact_not_found` (FR-010), and that
-  write drops nothing. This answers the open review item on stale documents (research item 7).
+  full `PUT` recovers. `applied` and `cleared` are measured after the drop, so a dropped id appears only in
+  `dropped`. Any write removes the ids the packs no longer declare, so an unselect or a re-activate whose path names
+  a stale id still in the stored list it removes from (`selected` or `missionTypes`, `deactivated`) proceeds: the id
+  is dropped with the others, reported in `dropped`, and the write gets a new revision. A select or a deactivate of
+  an id the closure no longer holds, and an unselect or a re-activate of an id in neither the closure nor that stored
+  list, is still `404 artifact_not_found` or `mission_type_not_found` (FR-010) and drops nothing. This answers the open review item on stale documents (research item 7).
 - **R2. A cascading deactivate follows the lineage.** The target's own walk passes through every
   `specializes_from` ancestor exactly as a select's walk does (D2.4), so selecting a profile with a cascade and then
   deactivating it with a cascade round-trips: what the select reached through an ancestor leaves `selected` again.
