@@ -71,6 +71,16 @@ class PackEdgeAdapterTest {
         assertRefused(over(pack));
     }
 
+    @Test
+    @DisplayName("a tension edge is not a relationship: it is left out and does not refuse the read")
+    void aTensionEdgeIsLeftOut(@TempDir Path host) throws IOException {
+        Path pack = PackFixtures.copyOf(PACK, host);
+        Files.writeString(
+                pack.resolve("directive.graph.yaml"), shard("directive:D1", "directive:D2", "in_tension_with"));
+
+        assertThat(over(pack).edges(new PackIdentifier(PACK))).isEmpty();
+    }
+
     private static void assertRefused(DomainRepositoryService repository) {
         assertThatThrownBy(() -> repository.edges(new PackIdentifier(PACK)))
                 .isInstanceOfSatisfying(

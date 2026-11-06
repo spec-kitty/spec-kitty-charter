@@ -300,7 +300,8 @@ public final class DomainRepositoryService
 
     /**
      * The edges of the pack's graph documents, in {@link FilesystemPackStore#readGraphs} order: the root shards by
-     * file name, then the fragment, each in document order (ADR-0064).
+     * file name, then the fragment, each in document order (ADR-0064). An {@code in_tension_with} edge is a tension,
+     * not a relationship, and is left out.
      *
      * @param pack the pack
      * @return the edges
@@ -318,6 +319,10 @@ public final class DomainRepositoryService
         List<PackEdge> edges = new ArrayList<>();
         for (GraphDocument document : graphs.documents()) {
             for (GraphDocument.Edge edge : document.edges()) {
+                if (PackPolicy.TENSION.equals(edge.relation())) {
+                    // A tension is read as a tension, never answered as a relationship (Relation.yaml).
+                    continue;
+                }
                 RelationType relation = RelationType.fromToken(edge.relation())
                         .orElseThrow(() -> new CharterRefusal(
                                 RefusalCode.PACK_UNREADABLE,
