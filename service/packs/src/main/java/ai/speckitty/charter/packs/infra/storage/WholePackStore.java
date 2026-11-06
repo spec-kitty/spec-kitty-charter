@@ -70,13 +70,17 @@ public final class WholePackStore {
      * @param manifest the {@code pack-manifest.yaml} as read, its derived fields unchecked; empty when the pack has
      *     none, or it is unreadable or lists a preset entry that does not name {@code presets/<id>.yaml} (then a
      *     violation on the aggregate). This store is its only owner (ADR-0042).
+     * @param policy the text of the mutability policy file the descriptor names, as read and checked against the
+     *     {@code policy} schema (ADR-0062); empty when the descriptor names none, or the named file is missing or
+     *     invalid (then a violation on the aggregate)
      */
     public record LoadedPack(
             Pack pack,
             PackLayout layout,
             List<GraphDocument> graphs,
             List<String> unmodelled,
-            Optional<PackManifestDso> manifest) {
+            Optional<PackManifestDso> manifest,
+            Optional<String> policy) {
         /**
          * Checks the fields and copies the lists.
          *
@@ -85,6 +89,7 @@ public final class WholePackStore {
          * @param graphs the DRG documents
          * @param unmodelled the files nothing models
          * @param manifest the manifest, if the pack holds a readable one
+         * @param policy the named policy file's text, if the pack holds a valid one
          */
         public LoadedPack {
             Objects.requireNonNull(pack, "pack");
@@ -92,6 +97,25 @@ public final class WholePackStore {
             graphs = List.copyOf(graphs);
             unmodelled = List.copyOf(unmodelled);
             Objects.requireNonNull(manifest, "manifest");
+            Objects.requireNonNull(policy, "policy");
+        }
+
+        /**
+         * A loaded pack without a policy file.
+         *
+         * @param pack the aggregate
+         * @param layout the layout
+         * @param graphs the DRG documents
+         * @param unmodelled the files nothing models
+         * @param manifest the manifest, if the pack holds a readable one
+         */
+        public LoadedPack(
+                Pack pack,
+                PackLayout layout,
+                List<GraphDocument> graphs,
+                List<String> unmodelled,
+                Optional<PackManifestDso> manifest) {
+            this(pack, layout, graphs, unmodelled, manifest, Optional.empty());
         }
 
         /**
@@ -163,23 +187,9 @@ public final class WholePackStore {
                     RefusalCode.DRG_SCHEMA_ERROR, id.value() + "/" + first.file() + ": " + first.reason());
         }
         Path manifestFile = packDir.resolve(PackFileSet.MANIFEST);
-        Optional<PackManifestDso> manifest = Optional.empty();
-        if (Files.isRegularFile(manifestFile)) {
-            switch (readManifest(manifestFile)) {
-                case FileRead.Read<PackManifestDso> good -> {
-                    List<String> misplaced = misplacedPresetEntries(good.value());
-                    if (misplaced.isEmpty()) {
-                        manifest = Optional.of(good.value());
-                    } else {
-                        misplaced.forEach(reason ->
-                                builder.violation(new PackElementViolation(PackFileSet.MANIFEST, "schema", reason)));
-                    }
-                }
-                case FileRead.Unreadable<PackManifestDso> bad ->
-                    FilesystemPackStore.violationsOf(bad).forEach(builder::violation);
-                case FileRead.Absent<PackManifestDso> absent -> {}
-            }
-        }
+        Optional<PackManifestDso> manifest = manifest(manifestFile, builder);
+        Optional<String> namedPolicy = read.descriptor().mutabilityPolicy();
+        Optional<String> policy = namedPolicy.flatMap(named -> policy(packDir, named, builder));
         Pack pack;
         try {
             pack = builder.build();
@@ -198,8 +208,46 @@ public final class WholePackStore {
         if (Files.isRegularFile(manifestFile)) {
             modelled.add(PackFileSet.MANIFEST);
         }
+        namedPolicy.ifPresent(modelled::add);
         return new LoadedPack(
-                pack, new PackLayout(places), graphs.documents(), unmodelled(packDir, modelled, key), manifest);
+                pack, new PackLayout(places), graphs.documents(), unmodelled(packDir, modelled, key), manifest, policy);
+    }
+
+    /**
+     * The manifest, when the pack holds a readable one whose preset entries name their own files; otherwise empty, and
+     * an unreadable or misplaced manifest is a violation on the aggregate.
+     */
+    private Optional<PackManifestDso> manifest(Path manifestFile, Pack.Builder builder) {
+        if (!Files.isRegularFile(manifestFile)) {
+            return Optional.empty();
+        }
+        switch (readManifest(manifestFile)) {
+            case FileRead.Read<PackManifestDso> good -> {
+                List<String> misplaced = misplacedPresetEntries(good.value());
+                misplaced.forEach(
+                        reason -> builder.violation(new PackElementViolation(PackFileSet.MANIFEST, "schema", reason)));
+                return misplaced.isEmpty() ? Optional.of(good.value()) : Optional.empty();
+            }
+            case FileRead.Unreadable<PackManifestDso> bad ->
+                FilesystemPackStore.violationsOf(bad).forEach(builder::violation);
+            case FileRead.Absent<PackManifestDso> absent -> {}
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * The text of the policy file the descriptor names (ADR-0062), read and checked as the compose reads it; a named
+     * file that is missing or invalid is a violation on the aggregate, so the write refuses the pack instead of storing
+     * a descriptor that names a file it does not hold.
+     */
+    private static Optional<String> policy(Path packDir, String named, Pack.Builder builder) {
+        try {
+            return Optional.of(PolicyYaml.readNamed(packDir, named).text());
+        } catch (PolicyYaml.Unreadable invalid) {
+            builder.violation(new PackElementViolation(
+                    named, "unreadable", "named by mutability_policy, the file " + invalid.getMessage()));
+            return Optional.empty();
+        }
     }
 
     /**
@@ -315,44 +363,7 @@ public final class WholePackStore {
             Files.createDirectories(parent);
             reserved = reserve(destination, pack);
             staging = Files.createTempDirectory(parent, ".pack-write-");
-            Set<String> written = new HashSet<>();
-            put(
-                    staging,
-                    PackFileSet.PACK_YAML,
-                    utf8(strategy.writeDescriptor(PackDescriptorDso.of(pack.descriptor()))),
-                    written);
-            for (CharterArtifact artifact : pack.artifacts()) {
-                putArtifact(staging, loaded.layout().pathOf(artifact), artifact, written);
-            }
-            for (AssetFile file : pack.assetFiles()) {
-                putPayload(
-                        staging,
-                        PackFileSet.ASSETS + file.path(),
-                        file.payload().bytes(),
-                        PackFileKind.ASSET_PAYLOAD,
-                        written);
-            }
-            for (Preset preset : pack.presets()) {
-                put(
-                        staging,
-                        PresetFiles.pathOf(preset.id()),
-                        utf8(strategy.writePreset(PresetFiles.toDso(preset))),
-                        written);
-            }
-            for (GraphDocument graph : loaded.graphs()) {
-                put(staging, graph.file(), utf8(strategy.writeGraph(graph)), written);
-            }
-            if (pack.document().isPresent()) {
-                put(
-                        staging,
-                        PackDocumentMarkdown.FILE,
-                        utf8(PackDocumentMarkdown.toWritableText(
-                                pack.id(), pack.document().get())),
-                        written);
-            }
-            if (loaded.manifest().isPresent()) {
-                putManifest(staging, pack, loaded.manifest().get(), written);
-            }
+            putContents(staging, loaded);
             moveOver(staging, reserved);
             staging = null; // moved into place; nothing left to clean up
             reserved = null;
@@ -368,6 +379,68 @@ public final class WholePackStore {
                     "cannot write pack " + pack.id().value(),
                     failure);
         }
+    }
+
+    /** Puts every file of the loaded pack into the staging directory, each path once. */
+    private void putContents(Path staging, LoadedPack loaded) throws IOException {
+        Pack pack = loaded.pack();
+        Set<String> written = new HashSet<>();
+        putDescriptor(staging, loaded, written);
+        for (CharterArtifact artifact : pack.artifacts()) {
+            putArtifact(staging, loaded.layout().pathOf(artifact), artifact, written);
+        }
+        for (AssetFile file : pack.assetFiles()) {
+            putPayload(
+                    staging,
+                    PackFileSet.ASSETS + file.path(),
+                    file.payload().bytes(),
+                    PackFileKind.ASSET_PAYLOAD,
+                    written);
+        }
+        for (Preset preset : pack.presets()) {
+            put(
+                    staging,
+                    PresetFiles.pathOf(preset.id()),
+                    utf8(strategy.writePreset(PresetFiles.toDso(preset))),
+                    written);
+        }
+        for (GraphDocument graph : loaded.graphs()) {
+            put(staging, graph.file(), utf8(strategy.writeGraph(graph)), written);
+        }
+        if (pack.document().isPresent()) {
+            put(
+                    staging,
+                    PackDocumentMarkdown.FILE,
+                    utf8(PackDocumentMarkdown.toWritableText(
+                            pack.id(), pack.document().get())),
+                    written);
+        }
+        if (loaded.manifest().isPresent()) {
+            putManifest(staging, pack, loaded.manifest().get(), written);
+        }
+    }
+
+    /**
+     * Writes {@code pack.yaml} and, right after it, the policy file it names (ADR-0062), as it was read. A descriptor that
+     * names a policy file the loaded pack does not hold is refused: the stored pack would be unreadable.
+     */
+    private void putDescriptor(Path staging, LoadedPack loaded, Set<String> written) throws IOException {
+        Pack pack = loaded.pack();
+        put(
+                staging,
+                PackFileSet.PACK_YAML,
+                utf8(strategy.writeDescriptor(PackDescriptorDso.of(pack.descriptor()))),
+                written);
+        Optional<String> named = pack.descriptor().paths().mutabilityPolicy();
+        if (named.isEmpty()) {
+            return;
+        }
+        String text = loaded.policy()
+                .orElseThrow(() -> new CharterRefusal(
+                        RefusalCode.VALIDATION_FAILED,
+                        "pack " + pack.id().value() + " names mutability_policy " + named.get()
+                                + ", which the loaded pack does not hold; writing it would leave the pack unreadable"));
+        put(staging, named.get(), utf8(text), written);
     }
 
     /**

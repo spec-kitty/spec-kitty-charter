@@ -145,7 +145,7 @@ jobs:
       - name: Check the CPU-time budgets (report-only)
         id: timing
         continue-on-error: true
-        run: ./gradlew :packs:timingBudgets -PopenPacksDir="$GITHUB_WORKSPACE/.open-packs" -PrequireSymlinks=true
+        run: ./gradlew :packs:timingBudgets :activations:timingBudgets -PopenPacksDir="$GITHUB_WORKSPACE/.open-packs" -PrequireSymlinks=true
 
       - name: Report a CPU-time budget over its limit
         if: steps.timing.outcome == 'failure'

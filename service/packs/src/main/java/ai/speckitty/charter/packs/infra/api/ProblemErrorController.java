@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.infra.api;
 
+import ai.speckitty.charter.web.Problems;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

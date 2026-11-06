@@ -11,6 +11,8 @@ get:
   x-reserved:
     contractSet: activation
     issue: '#125'
+  parameters:
+  - $ref: ../parameters/IfNoneMatch.yaml
   responses:
     '200':
       description: The answer.
@@ -30,6 +32,8 @@ get:
           examples:
             nothing-skipped:
               $ref: ../examples/ActivationSkippedReport.nothing-skipped.yaml
+    '304':
+      $ref: ../responses/NotModified.yaml
     '401':
       $ref: ../responses/Unauthorized.yaml
     '403':

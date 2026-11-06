@@ -22,6 +22,11 @@ import java.util.IdentityHashMap
  * so `false` stays closed and `true` stays open; a real schema, `{}` included, is left as it is. The generator writes
  * the same class for both readings, so the copies are the only output that changes.
  *
+ * It also binds the enum schemas named in [BOUND_AS_STRING] as plain strings in the generated code only. The
+ * contract, and so the wire, keeps the enum; the service judges the token itself, after the request's preconditions,
+ * so a token outside the enum is a `422` with the service's own violation (the cascade's `unknown_kind` at
+ * `/cascade/<i>`) and never a refusal of the body read that would come before `428`, `404` and `412`.
+ *
  * The generator loads it by name, from `openapiNormalizer`'s `NORMALIZER_CLASS` in `charter.contract-api`.
  */
 class SingleModelPerSchemaNormalizer(openAPI: OpenAPI, rules: Map<String, String>) :
@@ -32,7 +37,15 @@ class SingleModelPerSchemaNormalizer(openAPI: OpenAPI, rules: Map<String, String
         super.normalize()
     }
 
-    /** Reads every boolean-schema `additionalProperties` as its boolean, wherever a schema sits in the document. */
+    private companion object {
+        /** The enum schemas, by title, that the generated code binds as plain strings (see the class comment). */
+        val BOUND_AS_STRING = setOf("CascadeKind")
+    }
+
+    /**
+     * Reads every boolean-schema `additionalProperties` as its boolean, and drops the enum of every schema in
+     * [BOUND_AS_STRING], wherever a schema sits in the document.
+     */
     private class BooleanSchemas {
         private val seen = IdentityHashMap<Any, Unit>()
 
@@ -91,6 +104,7 @@ class SingleModelPerSchemaNormalizer(openAPI: OpenAPI, rules: Map<String, String
 
         private fun schema(s: Schema<*>) {
             if (seen.put(s, Unit) != null) return
+            if (s.title in BOUND_AS_STRING) s.enum = null
             (s.additionalProperties as? Schema<*>)?.let { additional ->
                 val bool = additional.booleanSchemaValue
                 if (bool != null) s.additionalProperties = bool else schema(additional)

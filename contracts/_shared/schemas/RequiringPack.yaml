@@ -19,7 +19,8 @@ properties:
     type: array
     description: >-
       The extends chain the requirement or lock is inherited through, from the pack the activation names to
-      packId; empty when that pack declares it itself.
+      packId; empty when that pack declares it itself. It is empty as well for a pack reached over depends_on and
+      not over parent_pack, which is no extends chain.
     items:
       type: string
       pattern: '^[a-z0-9][a-z0-9_-]*$'

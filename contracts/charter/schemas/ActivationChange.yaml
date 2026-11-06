@@ -1,5 +1,8 @@
 title: ActivationChange
-description: 'The answer of one sub-resource write: the new revision and what the write changed (ADR-0020 D6).'
+description: >-
+  The answer of one sub-resource write: the new revision and what the write changed (ADR-0020 D6). skipped reports
+  what the write-time cascade walk left out; what the read-time enhances pull leaves out is reported by the
+  effective reads (getActivationSkippedReport), not here.
 type: object
 additionalProperties: false
 required:

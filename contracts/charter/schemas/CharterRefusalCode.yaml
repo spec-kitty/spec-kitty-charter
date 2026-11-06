@@ -24,9 +24,10 @@ description: >-
   pack_not_found or an artifact's not-found code whose inputs changed meanwhile is stale_input). The read may be retried. A change made
   after the second digest, or one reverted between the two, goes unseen.
 
-  mission_type_not_found and action_not_found are not raised: the action-context operation that
-  answered them is gone, and the reserved effective context of an activation (ADR-0020 D7) that will
-  answer them again answers 501 until it is built. pack_level_mismatch and drg_schema_error are no longer raised: no operation
+  mission_type_not_found is raised again, by the select and the unselect of an activation for kind
+  mission_type, when the path names a mission type the activation's closure does not hold. action_not_found
+  is not raised: the action-context operation that answered it is gone, and the reserved effective context of
+  an activation (ADR-0020 D7) that will answer it again answers 501 until it is built. pack_level_mismatch and drg_schema_error are no longer raised: no operation
   loads and judges a pack's graph any more (the whole-pack load that refuses a graph breaking its schema as
   drg_schema_error is not reached by any operation). All four values stay in the enum so that the contract
   keeps accepting them.
@@ -38,13 +39,14 @@ description: >-
   the mutability policy of an artifact it changes in the merged offering will be refused with it too,
   once the offering is merged (#10, #11).
 
-  Six codes are reserved for the activation set (ADR-0020 D9, D10, #125), declared before the operations
-  that raise them are built, which answer 501 until then (ADR-0020 D8): activation_not_found,
-  artifact_not_found and preset_not_found (404); artifact_required and artifact_locked (409), a
-  deactivation a pack requires or locks, whose refusal names every requiring pack in requiredBy;
-  activation_invalid (422), a document or body the service refuses, each refused part listed in violations.
-  No operation of this version raises them. Each scenario is a declaration pin, not behavior: it asserts
-  only what the x-refusal map below declares, and a unit test of the service fails when any main class
+  Six codes belong to the activation set (ADR-0020 D9, D10, #125), and every one is raised (#125, #291, #360):
+  activation_not_found (404), an activation no document is stored under; artifact_not_found (404), a per-artifact
+  write whose path names an artifact the activation's closure does not hold; preset_not_found (404), a preset
+  application whose path names a preset no pack of the activation's closure holds; activation_invalid (422), a
+  document or body the service refuses, each refused part listed in violations; artifact_required and
+  artifact_locked (409), a deactivation a pack requires or locks, whose refusal names every requiring pack in
+  requiredBy. Only the four effective reads of an activation stay reserved (ADR-0020 D8), and the one code they
+  will raise again, action_not_found, is not raised (above). A unit test of the service fails when any main class
   other than the enum and its mappings names a code the map marks not raised, outside the two classes no
   operation reaches (the whole-pack load and its findings).
 
@@ -125,7 +127,7 @@ x-refusal:
   mission_type_not_found:
     status: 404
     retryable: false
-    raised: false
+    raised: true
   action_not_found:
     status: 404
     retryable: false
@@ -198,27 +200,27 @@ x-refusal:
   activation_not_found:
     status: 404
     retryable: false
-    raised: false
+    raised: true
   artifact_not_found:
     status: 404
     retryable: false
-    raised: false
+    raised: true
   preset_not_found:
     status: 404
     retryable: false
-    raised: false
+    raised: true
   artifact_required:
     status: 409
     retryable: false
-    raised: false
+    raised: true
   artifact_locked:
     status: 409
     retryable: false
-    raised: false
+    raised: true
   activation_invalid:
     status: 422
     retryable: false
-    raised: false
+    raised: true
   pack_dependency_cycle:
     status: 500
     retryable: false

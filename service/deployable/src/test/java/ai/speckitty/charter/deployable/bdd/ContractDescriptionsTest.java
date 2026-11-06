@@ -42,10 +42,13 @@ class ContractDescriptionsTest {
     }
 
     @Test
-    void theRefusalCodeSaysTheActivationCodesAreReservedAndGivesEveryStatus() throws IOException {
+    void theRefusalCodeSaysWhichActivationCodesAreRaisedAndGivesEveryStatus() throws IOException {
         assertThat(description("contract/charter/schemas/CharterRefusalCode.yaml"))
-                .contains("Six codes are reserved for the activation set (ADR-0020 D9, D10, #125)")
-                .contains("No operation of this version raises them")
+                .contains("Six codes belong to the activation set (ADR-0020 D9, D10, #125), and every one is raised")
+                .contains("preset_not_found (404), a preset application whose path names a preset")
+                .contains("Only the four effective reads of an activation stay reserved")
+                .doesNotContain("One stays reserved")
+                .doesNotContain("No operation of this version raises that one")
                 .contains("artifact_required and artifact_locked are 409")
                 .contains("validation_failed and activation_invalid are 422")
                 .doesNotContain("are no longer raised: the action-context operation");

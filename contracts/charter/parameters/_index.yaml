@@ -11,6 +11,7 @@ files:
   - EffectiveKindQuery.yaml
   - EffectiveStateQuery.yaml
   - IfMatch.yaml
+  - IfNoneMatch.yaml
   - IfNoneMatchCreate.yaml
   - MissionTypePath.yaml
   - PresetId.yaml

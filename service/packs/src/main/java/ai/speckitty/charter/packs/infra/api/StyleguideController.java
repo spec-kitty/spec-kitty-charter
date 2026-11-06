@@ -15,6 +15,7 @@ import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.application.StyleguideRegistrationService;
 import ai.speckitty.charter.packs.domain.StyleguideIdentifier;
 import ai.speckitty.charter.packs.domain.StyleguideScope;
+import ai.speckitty.charter.web.RefusalHandler;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
