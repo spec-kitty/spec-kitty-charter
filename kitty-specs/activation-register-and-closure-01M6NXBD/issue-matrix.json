@@ -25,7 +25,7 @@
       "wp": null
     },
     "#140": {
-      "evidence_ref": "ArchUnit generalised per slice (WP05)",
+      "evidence_ref": "ArchUnit rules per slice (HexagonalArchitectureTest, WP05/WP16), verifyAll green at lane-m 7f6264b",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -33,7 +33,7 @@
       "scope": null,
       "source_file": null,
       "title": null,
-      "verdict": "in-mission",
+      "verdict": "fixed",
       "wp": "WP05"
     },
     "#195": {
