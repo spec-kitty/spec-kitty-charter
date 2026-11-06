@@ -46,8 +46,9 @@ class ReservedOperationCoverageTest {
     }
 
     @Test
-    void theActivationSetReservesNineOperations() {
-        assertThat(reservedOperations()).hasSize(9);
+    void theActivationSetReservesFiveOperations() {
+        // PR B built select, unselect, deactivate and re-activate: the preset write and the four effective reads stay.
+        assertThat(reservedOperations()).hasSize(5);
     }
 
     private Set<String> reservedOperations() {

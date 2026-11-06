@@ -8,17 +8,16 @@ put:
   description: >-
     Adds the artifact to deactivated and removes it from selected, as charter deactivate does. With cascade, removes
     the reached artifacts from selected, records a deny entry only for the named artifact, and keeps an artifact
-    another active one still references (skippedShared). An artifact a pack requires or locks is 409, naming every
-    requiring pack. Requires If-Match (ADR-0020 D6). Reserved: it answers 501 until it is built (ADR-0020 D8). A
+    another active one still reaches, or an active enhancer references (skippedShared). An artifact a pack requires
+    or locks is 409, naming every requiring pack, and nothing is stored. Requires If-Match (ADR-0020 D6). A
     cascading deactivate removes the reached artifacts from selected only where the kind holds a list; an absent
     kind selects none (absent means none), so there is nothing to remove, and the deny entry on the named artifact
-    excludes it. A path id the offering does not
-    have is 404 artifact_not_found.
+    excludes it. A write that changes nothing (the id is already denied and not selected) answers 200 with the same
+    revision and an empty applied and cleared. A path id the activation's closure does not hold is 404
+    artifact_not_found; a kind outside the path's enum, mission_type included, is 422 activation_invalid with a
+    violation at the path.
   tags:
   - Activation
-  x-reserved:
-    contractSet: activation
-    issue: '#125'
   parameters:
   - $ref: ../parameters/IfMatch.yaml
   requestBody:
@@ -49,7 +48,7 @@ put:
     '403':
       $ref: ../responses/Forbidden.yaml
     '404':
-      $ref: ../responses/ActivationNotFound.yaml
+      $ref: ../responses/ActivationArtifactNotFound.yaml
     '409':
       $ref: ../responses/ArtifactPolicyRefused.yaml
     '412':
@@ -62,22 +61,19 @@ put:
       $ref: ../responses/PreconditionRequired.yaml
     '500':
       $ref: ../responses/OfferingUnreadable.yaml
-    '501':
-      $ref: ../responses/NotImplemented.yaml
     default:
       $ref: ../../_shared/responses/Problem.yaml
 delete:
   operationId: reactivateActivationArtifact
   summary: Re-activate an artifact.
   description: >-
-    Removes the artifact from deactivated and changes nothing else. Requires If-Match (ADR-0020 D6). Reserved: it
-    answers 501 until it is built (ADR-0020 D8). A write that changes nothing (the id is not in the list) answers
-    200 with the same revision and an empty applied.
+    Removes the artifact from deactivated and changes nothing else; the key is left out when its list empties. The
+    id is in cleared and in applied (removed from deactivated). Requires If-Match (ADR-0020 D6). A write that
+    changes nothing (the id is not in the list) answers 200 with the same revision and an empty applied and
+    cleared. A path id the activation's closure does not hold is 404 artifact_not_found; a kind outside the path's
+    enum, mission_type included, is 422 activation_invalid with a violation at the path.
   tags:
   - Activation
-  x-reserved:
-    contractSet: activation
-    issue: '#125'
   parameters:
   - $ref: ../parameters/IfMatch.yaml
   responses:
@@ -99,7 +95,7 @@ delete:
     '403':
       $ref: ../responses/Forbidden.yaml
     '404':
-      $ref: ../responses/ActivationNotFound.yaml
+      $ref: ../responses/ActivationArtifactNotFound.yaml
     '412':
       $ref: ../responses/PreconditionFailed.yaml
     '422':
@@ -108,7 +104,5 @@ delete:
       $ref: ../responses/PreconditionRequired.yaml
     '500':
       $ref: ../responses/OfferingUnreadable.yaml
-    '501':
-      $ref: ../responses/NotImplemented.yaml
     default:
       $ref: ../../_shared/responses/Problem.yaml

@@ -2,23 +2,34 @@ package ai.speckitty.charter.activations.infra.packs;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ai.speckitty.charter.activations.application.PacksSession;
 import ai.speckitty.charter.activations.domain.ActivationDocument;
+import ai.speckitty.charter.activations.domain.ArtifactRef;
+import ai.speckitty.charter.activations.domain.CascadeRules;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.activations.domain.DocumentRules;
 import ai.speckitty.charter.activations.domain.PackRef;
+import ai.speckitty.charter.activations.domain.Reach;
+import ai.speckitty.charter.activations.domain.ReachPlan;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.ClosureQueries;
 import ai.speckitty.charter.packs.application.ClosureView;
 import ai.speckitty.charter.packs.application.OfferingReadService.OfferingEntry;
+import ai.speckitty.charter.packs.application.ReachRequest;
+import ai.speckitty.charter.packs.application.ReachResult;
 import ai.speckitty.charter.packs.application.UnknownRootException;
 import ai.speckitty.charter.packs.domain.MutabilityLevel;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
@@ -186,5 +197,84 @@ class PacksAvailabilityTest {
         when(closures.snapshot(Optional.empty())).thenThrow(missing);
 
         assertThatThrownBy(() -> adapter.snapshot(Optional.empty())).isSameAs(missing);
+    }
+
+    @Test
+    void aSessionReadsTheClosureOnceForItsSnapshotAndEveryWalk() {
+        when(closures.snapshot(Optional.of(List.of(new PackIdentifier("alpha")))))
+                .thenReturn(view());
+        ArtifactRef d1 = new ArtifactRef(ArtifactKind.DIRECTIVE, "D1");
+        ReachPlan plan = new ReachPlan(Set.of(d1), CascadeRules.CASCADE_RELATIONS, Set.of(), true);
+
+        PacksSession session = adapter.session(Optional.of(List.of("alpha")));
+        session.reach(plan);
+        session.reach(plan);
+        session.enhancesPull(Set.of(d1));
+        session.enhancersOf(Set.of(d1));
+
+        assertThat(session.snapshot().held(ArtifactKind.DIRECTIVE)).containsExactlyInAnyOrder("D1", "D2");
+        verify(closures, times(1)).snapshot(any());
+    }
+
+    @Test
+    void anUnresolvedSessionWalksNothing() {
+        when(closures.snapshot(Optional.of(List.of(new PackIdentifier("ghost")))))
+                .thenThrow(new UnknownRootException(List.of("ghost")));
+        ArtifactRef d1 = new ArtifactRef(ArtifactKind.DIRECTIVE, "D1");
+
+        PacksSession session = adapter.session(Optional.of(List.of("ghost")));
+
+        assertThat(session.snapshot().unknownPacks()).containsExactly("ghost");
+        assertThat(session.reach(new ReachPlan(Set.of(d1), CascadeRules.CASCADE_RELATIONS, Set.of(), true)))
+                .isEqualTo(Reach.empty());
+        assertThat(session.enhancesPull(Set.of(d1))).isEmpty();
+        assertThat(session.enhancersOf(Set.of(d1))).isEmpty();
+    }
+
+    @Test
+    void aPlanIsAskedAsAReachRequestWithTheLineageWhenItFollowsIt() {
+        ArtifactRef p = new ArtifactRef(ArtifactKind.AGENT_PROFILE, "p");
+        ArtifactRef q = new ArtifactRef(ArtifactKind.AGENT_PROFILE, "q");
+
+        ReachRequest lineage =
+                ClosureViewSession.requestOf(new ReachPlan(Set.of(p), CascadeRules.CASCADE_RELATIONS, Set.of(q), true));
+        ReachRequest plain =
+                ClosureViewSession.requestOf(new ReachPlan(Set.of(p), CascadeRules.CASCADE_RELATIONS, Set.of(), false));
+
+        assertThat(lineage.starts()).containsExactly(new Urn(NodeKind.AGENT_PROFILE, "p"));
+        assertThat(lineage.relations()).isEqualTo(CascadeRules.CASCADE_RELATIONS);
+        assertThat(lineage.stopAt().test(new Urn(NodeKind.AGENT_PROFILE, "q"))).isTrue();
+        assertThat(lineage.stopAt().test(new Urn(NodeKind.AGENT_PROFILE, "p"))).isFalse();
+        assertThat(lineage.lineage()).contains(ReachRequest.Lineage.specializesFrom());
+        assertThat(plain.lineage()).isEmpty();
+    }
+
+    @Test
+    void aWalksAnswerIsCopiedWithoutTheNodesThatAreNoArtifact() {
+        Urn p = new Urn(NodeKind.AGENT_PROFILE, "p");
+        Urn q = new Urn(NodeKind.AGENT_PROFILE, "q");
+        Urn r = new Urn(NodeKind.DIRECTIVE, "R");
+        Urn action = Urn.action("software-dev", "implement");
+        ArtifactRef pRef = new ArtifactRef(ArtifactKind.AGENT_PROFILE, "p");
+        ArtifactRef qRef = new ArtifactRef(ArtifactKind.AGENT_PROFILE, "q");
+        ArtifactRef rRef = new ArtifactRef(ArtifactKind.DIRECTIVE, "R");
+
+        Reach reach = ClosureViewSession.reachOf(new ReachResult(
+                Map.of(
+                        p, List.of(),
+                        r,
+                                List.of(
+                                        new ReachResult.Via(q, RelationType.REQUIRES),
+                                        new ReachResult.Via(action, RelationType.SCOPE)),
+                        action, List.of()),
+                Map.of(q, List.of(new ReachResult.Via(p, RelationType.SPECIALIZES_FROM))),
+                Set.of(r),
+                Set.of(q)));
+
+        assertThat(reach.reached()).containsOnlyKeys(pRef, rRef);
+        assertThat(reach.reached().get(rRef)).containsExactly(new Reach.Via(qRef, RelationType.REQUIRES));
+        assertThat(reach.stopped().get(qRef)).containsExactly(new Reach.Via(pRef, RelationType.SPECIALIZES_FROM));
+        assertThat(reach.behindStopped()).containsExactly(rRef);
+        assertThat(reach.ancestorsPassed()).containsExactly(qRef);
     }
 }

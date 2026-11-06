@@ -229,6 +229,24 @@ public final class ActivationDocument {
     }
 
     /**
+     * The document without one allow entry (unselect): the id leaves its kind's allow list, or {@code missionTypes}
+     * for {@code mission_type}. A list it empties stays, as {@code []}; an absent list stays absent.
+     *
+     * @param kind a kind of {@link #kinds()}, or {@code mission_type}
+     * @param id the artifact's declared id
+     * @return the new document
+     */
+    public ActivationDocument withoutSelected(ArtifactKind kind, String id) {
+        Builder builder = toBuilder();
+        if (kind == ArtifactKind.MISSION_TYPE) {
+            builder.missionTypes = builder.missionTypes.map(
+                    ids -> ids.stream().filter(held -> !held.equals(id)).toList());
+        }
+        Optional.ofNullable(builder.selected.get(kind)).ifPresent(ids -> ids.remove(id));
+        return new ActivationDocument(builder);
+    }
+
+    /**
      * The canonical form as a value tree for {@link Jcs}: members in the schema's order, absent members left out,
      * {@code []} kept, and an empty {@code selected} or {@code deactivated} object left out.
      *
