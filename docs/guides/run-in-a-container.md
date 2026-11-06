@@ -98,6 +98,9 @@ Among other checks, the service refuses to start, naming the property, file or d
   - health details, components or probe groups;
   - a moved `/actuator` path.
 - `spring.mvc.log-request-details` is on: it would log the token.
+- `logging.level` puts `org.apache.coyote` or the request logger beneath it at `TRACE`, directly or through `root`,
+  `org` or `org.apache`, or `server.tomcat.accesslog.pattern` holds `%{Authorization}i`: either would log the token.
+  `DEBUG` stays allowed.
 - the configuration root is unset or does not exist, or the port is 0.
 - `charter.insecure-no-token` or `charter.project-config-dir` is set.
 

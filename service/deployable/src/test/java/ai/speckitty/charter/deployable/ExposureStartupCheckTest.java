@@ -2,16 +2,18 @@ package ai.speckitty.charter.deployable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.LazyInitializationBeanFactoryPostProcessor;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.core.env.SystemEnvironmentPropertySource;
 
 /**
  * What the process may expose (ADR-0041 decisions 4 and 7, issues #231 and #232): the local bind is loopback, no
  * management server answers outside the guard, only health is exposed and it reveals no details, and a container
- * never logs request details.
+ * never logs request details, the token in a header included,.
  */
 class ExposureStartupCheckTest {
 
@@ -201,5 +203,79 @@ class ExposureStartupCheckTest {
                 CONTAINER,
                 ExposureStartupCheck.PROBES_PROPERTY + "=" + value);
         assertStarts(runner, CONTAINER, ExposureStartupCheck.PROBES_PROPERTY + "=false");
+    }
+
+    private static final String LEVEL = ExposureStartupCheck.LOGGING_LEVEL_PROPERTY;
+
+    /** Every logger from the root down to the one that writes the raw request, and an upper-case spelling. */
+    @ParameterizedTest
+    @ValueSource(
+            strings = {
+                "root",
+                "ROOT",
+                "org",
+                "org.apache",
+                "org.apache.coyote",
+                "org.apache.coyote.http11",
+                "org.apache.coyote.http11.Http11InputBuffer"
+            })
+    void underTheContainerProfileTraceOnTheRequestLoggerOrAParentFailsTheStart(String logger) {
+        assertRefused(runner, LEVEL, CONTAINER, LEVEL + "." + logger + "=TRACE");
+        assertRefused(runner, LEVEL, CONTAINER, LEVEL + ".[" + logger + "]=trace");
+        assertStarts(runner, LOOPBACK, LEVEL + "." + logger + "=TRACE");
+    }
+
+    @Test
+    void theEnvironmentVariableSpellingOfTheLevelIsJudgedToo() {
+        for (String variable :
+                new String[] {"LOGGING_LEVEL_ROOT", "LOGGING_LEVEL_ORG_APACHE", "LOGGING_LEVEL_ORG_APACHE_COYOTE"}) {
+            assertRefused(
+                    runner.withInitializer(context -> context.getEnvironment()
+                            .getPropertySources()
+                            .addFirst(new SystemEnvironmentPropertySource(
+                                    "systemEnvironment", Map.of(variable, "TRACE")))),
+                    LEVEL,
+                    CONTAINER);
+        }
+    }
+
+    @Test
+    void aLoggingGroupAtTraceThatHoldsTheCoyoteLoggerFailsTheStart() {
+        assertRefused(runner, LEVEL, CONTAINER, "logging.group.wire=org.apache.coyote,org.xnio", LEVEL + ".wire=TRACE");
+    }
+
+    @Test
+    void aNearerLoggerAboveTraceWinsOverATraceParent() {
+        assertStarts(
+                runner,
+                CONTAINER,
+                LEVEL + ".root=TRACE",
+                LEVEL + ".org.apache.coyote=DEBUG",
+                LEVEL + ".org.springframework.web=TRACE");
+        assertStarts(runner, CONTAINER, LEVEL + ".org.apache.coyote=TRACE", LEVEL + ".org.apache.coyote.http11=DEBUG");
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+            strings = {"org.apache.coyote.http11=DEBUG", "org.apache.coyote=DEBUG", "org.springframework.web=TRACE"})
+    void debugOnTheCoyoteLoggersAndTraceElsewhereStart(String setting) {
+        assertStarts(runner, CONTAINER, LEVEL + "." + setting);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"%{Authorization}i %r", "%{authorization}i", "%h %{AUTHORIZATION}i", "%{ Authorization }i"})
+    void underTheContainerProfileAnAccessLogPatternWithTheAuthorizationHeaderFailsTheStart(String pattern) {
+        assertRefused(
+                runner,
+                ExposureStartupCheck.ACCESS_LOG_PATTERN_PROPERTY,
+                CONTAINER,
+                "server.tomcat.accesslog.enabled=true",
+                ExposureStartupCheck.ACCESS_LOG_PATTERN_PROPERTY + "=" + pattern);
+        assertStarts(runner, LOOPBACK, ExposureStartupCheck.ACCESS_LOG_PATTERN_PROPERTY + "=" + pattern);
+    }
+
+    @Test
+    void underTheContainerProfileAnAccessLogPatternOfOtherHeadersStarts() {
+        assertStarts(runner, CONTAINER, ExposureStartupCheck.ACCESS_LOG_PATTERN_PROPERTY + "=%h %r %{User-Agent}i %s");
     }
 }
