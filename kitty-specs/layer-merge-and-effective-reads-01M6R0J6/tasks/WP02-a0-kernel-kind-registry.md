@@ -31,6 +31,7 @@ owned_files:
 - service/kernel/src/test/java/ai/speckitty/charter/kernel/domain/ArtifactKindTest.java
 - service/kernel/src/test/java/ai/speckitty/charter/kernel/domain/NodeKindTest.java
 - service/kernel/src/test/java/ai/speckitty/charter/kernel/domain/NodeKindPluralTest.java
+review_status: acknowledged
 role: implementer
 tags: []
 tracker_refs: []
