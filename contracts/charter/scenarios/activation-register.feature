@@ -250,6 +250,32 @@ Feature: The activation register and the packs an activation builds on
     Then the response status is 422
     And the problem code is "activation_invalid"
 
+  Scenario: A null item in a list is refused at its index
+    #125: null is never a value, at any depth; nothing is stored.
+    When I PUT "/activations/a-1" with the body:
+      """
+      {"schemaVersion": 1, "selected": {"directive": ["DIRECTIVE_001", null]}}
+      """
+    Then the response status is 422
+    And the problem code is "activation_invalid"
+    And the field at "/violations/0/pointer" is "/selected/directive/1"
+    And the field at "/violations/0/code" is "null_value"
+    When I GET "/activations/a-1"
+    Then the response status is 404
+
+  Scenario: A pack pinned to a version the service does not hold is refused at the pin
+    R2: alpha is held at 1.0.0.
+    When I PUT "/activations/a-1" with the body:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "alpha", "version": "2.0.0"}]}
+      """
+    Then the response status is 422
+    And the problem code is "activation_invalid"
+    And the field at "/violations/0/pointer" is "/packs/0/version"
+    And the field at "/violations/0/code" is "version_not_held"
+    When I GET "/activations/a-1"
+    Then the response status is 404
+
   Scenario: A document naming an unconfigured pack is refused at the pack's id
     R4.
     When I PUT "/activations/a-1" with the body:
@@ -310,6 +336,37 @@ Feature: The activation register and the packs an activation builds on
     Then the response status is 409
     And the problem code is "artifact_locked"
     And the field at "/requiredBy/0/packId" is "alpha"
+
+  Scenario: A deny entry on an id a pack now requires is kept on read, and denying it anew is refused
+    ADR-0059 D4: alpha's governing preset arrives after the document was stored.
+    Given the activation "a-1" holds:
+      """
+      {"schemaVersion": 1, "deactivated": {"directive": ["DIRECTIVE_001"]}}
+      """
+    And the org pack "alpha" with the file "presets/governing.yaml":
+      """
+      schema_version: '1.0'
+      id: governing
+      description: The first directive is required.
+      activated_directives:
+        - id: DIRECTIVE_001
+          must_have: true
+      """
+    When I GET "/activations/a-1"
+    Then the response status is 200
+    And the field at "/config/deactivated/directive/0" is "DIRECTIVE_001"
+    When I remember the ETag
+    And I remember the header "ETag"
+    And I PUT "/activations/a-1" with the remembered ETag and the body:
+      """
+      {"schemaVersion": 1, "deactivated": {"directive": ["DIRECTIVE_001"]}}
+      """
+    Then the response status is 409
+    And the problem code is "artifact_required"
+    And the field at "/requiredBy/0/packId" is "alpha"
+    When I GET "/activations/a-1"
+    Then the response status is 200
+    And the response header "ETag" is the remembered header
 
   # User Story 2: the packs an activation builds on.
 

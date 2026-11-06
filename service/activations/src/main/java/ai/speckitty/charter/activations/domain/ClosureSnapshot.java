@@ -17,11 +17,14 @@ import java.util.stream.Collectors;
  * @param packs the closure's packs, in dependency order
  * @param held the declared ids the closure holds, per kind
  * @param missionTypes the mission type ids the closure holds
- * @param requiredBy the required floor: URN text (for example {@code directive:D1}) to the descriptor {@code pack_id}s
- *     of the packs that require it
- * @param lockedBy URN text to the descriptor {@code pack_id} of the pack that locks it
+ * @param requiredBy the required floor: URN text (for example {@code directive:D1}) to the configured ids of the packs
+ *     that require it, as a {@code 409}'s {@code requiredBy} names them
+ * @param lockedBy URN text to the configured id of the pack that locks it
  * @param presets the presets the closure offers, by id
  * @param fingerprint the verified source fingerprint of the read
+ * @param unknownPacks the pack ids the request named that no pack is configured as (research R4). When it is not
+ *     empty the closure could not be composed, so the snapshot holds nothing else: {@link #resolved()} is
+ *     {@code false}, a write is refused naming these ids, and the closure read is refused as unreadable
  */
 public record ClosureSnapshot(
         List<PackEntry> packs,
@@ -30,7 +33,8 @@ public record ClosureSnapshot(
         Map<String, List<String>> requiredBy,
         Map<String, String> lockedBy,
         Map<String, PresetView> presets,
-        String fingerprint) {
+        String fingerprint,
+        Set<String> unknownPacks) {
 
     /**
      * Copies every collection.
@@ -42,6 +46,7 @@ public record ClosureSnapshot(
      * @param lockedBy the locks
      * @param presets the presets
      * @param fingerprint the fingerprint
+     * @param unknownPacks the ids no pack is configured as
      */
     public ClosureSnapshot {
         packs = List.copyOf(packs);
@@ -52,6 +57,52 @@ public record ClosureSnapshot(
         lockedBy = Map.copyOf(lockedBy);
         presets = Map.copyOf(presets);
         Objects.requireNonNull(fingerprint, "fingerprint");
+        unknownPacks = Set.copyOf(unknownPacks);
+    }
+
+    /**
+     * A composed closure: every pack the request named is configured.
+     *
+     * @param packs the packs
+     * @param held the held ids per kind
+     * @param missionTypes the mission types
+     * @param requiredBy the required floor
+     * @param lockedBy the locks
+     * @param presets the presets
+     * @param fingerprint the fingerprint
+     */
+    public ClosureSnapshot(
+            List<PackEntry> packs,
+            Map<ArtifactKind, Set<String>> held,
+            Set<String> missionTypes,
+            Map<String, List<String>> requiredBy,
+            Map<String, String> lockedBy,
+            Map<String, PresetView> presets,
+            String fingerprint) {
+        this(packs, held, missionTypes, requiredBy, lockedBy, presets, fingerprint, Set.of());
+    }
+
+    /**
+     * The answer for roots of which some name no configured pack: no closure, only the unknown ids.
+     *
+     * @param unknownPacks the ids no pack is configured as, not empty
+     * @return the unresolved snapshot
+     * @throws IllegalArgumentException when no id is given
+     */
+    public static ClosureSnapshot unresolved(Set<String> unknownPacks) {
+        if (unknownPacks.isEmpty()) {
+            throw new IllegalArgumentException("An unresolved closure names at least one unknown pack.");
+        }
+        return new ClosureSnapshot(List.of(), Map.of(), Set.of(), Map.of(), Map.of(), Map.of(), "", unknownPacks);
+    }
+
+    /**
+     * Whether the closure was composed: every pack the request named is configured.
+     *
+     * @return {@code false} when {@link #unknownPacks()} names an id
+     */
+    public boolean resolved() {
+        return unknownPacks.isEmpty();
     }
 
     /**
@@ -78,7 +129,7 @@ public record ClosureSnapshot(
      * The packs that require an artifact.
      *
      * @param urn the URN text, for example {@code directive:D1}
-     * @return the requiring descriptor {@code pack_id}s; empty when nothing requires it
+     * @return the configured ids of the requiring packs; empty when nothing requires it
      */
     public List<String> requiringPacks(String urn) {
         return requiredBy.getOrDefault(urn, List.of());
@@ -88,7 +139,7 @@ public record ClosureSnapshot(
      * The pack that locks an artifact.
      *
      * @param urn the URN text, for example {@code directive:D1}
-     * @return the locking descriptor {@code pack_id}; empty when nothing locks it
+     * @return the configured id of the locking pack; empty when nothing locks it
      */
     public Optional<String> lockingPack(String urn) {
         return Optional.ofNullable(lockedBy.get(urn));

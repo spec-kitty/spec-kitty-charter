@@ -12,10 +12,10 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * A test data builder of {@link ClosureSnapshot}, for the activation domain tests (WP06 to WP14): a snapshot holds only
+ * A test data builder of {@link ClosureSnapshot}, for the activation tests of every ring (WP06 to WP14): a snapshot holds only
  * what a test names, and every pack is at {@code org} with no dependency unless the test says otherwise.
  */
-final class ClosureSnapshots {
+public final class ClosureSnapshots {
 
     private final List<PackEntry> packs = new ArrayList<>();
     private final Map<ArtifactKind, Set<String>> held = new EnumMap<>(ArtifactKind.class);
@@ -28,54 +28,54 @@ final class ClosureSnapshots {
     private ClosureSnapshots() {}
 
     /** An empty snapshot to add to. */
-    static ClosureSnapshots snapshot() {
+    public static ClosureSnapshots snapshot() {
         return new ClosureSnapshots();
     }
 
     /** A configured pack at {@code org}, its descriptor id derived from its configured id. */
-    ClosureSnapshots pack(String packId, String version) {
+    public ClosureSnapshots pack(String packId, String version) {
         packs.add(new PackEntry(packId, "PID-" + packId, "org", packId + " pack", version, List.of()));
         return this;
     }
 
     /** Artifacts of one kind the closure holds. */
-    ClosureSnapshots held(ArtifactKind kind, String... ids) {
+    public ClosureSnapshots held(ArtifactKind kind, String... ids) {
         held.computeIfAbsent(kind, k -> new HashSet<>()).addAll(List.of(ids));
         return this;
     }
 
     /** Mission types the closure holds. */
-    ClosureSnapshots missionTypes(String... ids) {
+    public ClosureSnapshots missionTypes(String... ids) {
         missionTypes.addAll(List.of(ids));
         return this;
     }
 
     /** An artifact some packs require, by descriptor {@code pack_id}. */
-    ClosureSnapshots requiredBy(String urn, String... packIds) {
+    public ClosureSnapshots requiredBy(String urn, String... packIds) {
         requiredBy.put(urn, List.of(packIds));
         return this;
     }
 
     /** An artifact a pack locks. */
-    ClosureSnapshots lockedBy(String urn, String packId) {
+    public ClosureSnapshots lockedBy(String urn, String packId) {
         lockedBy.put(urn, packId);
         return this;
     }
 
     /** A preset the closure offers. */
-    ClosureSnapshots preset(PresetView preset) {
+    public ClosureSnapshots preset(PresetView preset) {
         presets.put(preset.id(), preset);
         return this;
     }
 
     /** The verified source fingerprint. */
-    ClosureSnapshots fingerprint(String value) {
+    public ClosureSnapshots fingerprint(String value) {
         fingerprint = value;
         return this;
     }
 
     /** The snapshot. */
-    ClosureSnapshot build() {
+    public ClosureSnapshot build() {
         return new ClosureSnapshot(packs, held, missionTypes, requiredBy, lockedBy, presets, fingerprint);
     }
 }

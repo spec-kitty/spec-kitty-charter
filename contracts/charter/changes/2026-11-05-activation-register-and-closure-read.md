@@ -21,3 +21,7 @@
   four activation refusal codes, `activation_not_found`, `activation_invalid`, `artifact_required` and
   `artifact_locked`, become raised by an operation in this change (their `raised` flags are set with the code that
   raises them).
+- `getActivation` and `listActivationPacks` declare no `Charter-Source-Fingerprint` on their `200` (the reserved
+  `getActivation` declared one): the document read depends only on the stored document (ADR-0059 D5), and the
+  closure read reports a change through its `ETag`, which covers the revision and the closure's digest; the two lint
+  rules on the fingerprint leave both paths out.

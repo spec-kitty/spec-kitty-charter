@@ -44,7 +44,10 @@ public class ActivationSteps {
         this.repository = repository;
     }
 
-    /** No activation leaks from one scenario into the next: the suite runs without a configuration root. */
+    /**
+     * No activation leaks from one scenario into the next: the suite's register is the in-memory one
+     * {@code CucumberSpringConfiguration} makes primary.
+     */
     @Before
     public void emptyRegister() {
         if (repository instanceof InMemoryActivationRepository inMemory) {
