@@ -493,7 +493,7 @@ type or more than 1 MiB is `422 activation_invalid`.
 distinct on the wire.
 An absent list puts nothing of its kind in force, `skill` included.
 *Source:* ADR-0053 d10; ADR-0013 d2 and ADR-0020 D6 (amended 2026-11-05); DIV-203; A7. **Built** for `sel`, `kinds`
-and `mts`; the single `sel` form is ruled (A7), planned (layer-merge; PR placement pending).
+and `mts`; the single `sel` form is ruled (A7), planned (layer-merge; PR A0).
 > ⚠ **Unclear:** `langs` does not follow W2 at read. Research R2 of the layer-merge mission has an absent `languages`
 > filter nothing and `[]` filter every tagged artifact, while ADR-0053 d10 says an absent activation key means none.
 
@@ -595,7 +595,7 @@ A preset replaces each kind list it names, any kind included; `force` clears onl
 preset no longer sets a kind gate or a separate mission-type list.
 *Source:* ADR-0059 D6; ADR-0020 D6; activation mission FR-016, open review item 4; `PresetRules.apply`; A7, decisions
 `DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY`, `DM-01M6RCY40CQQTHC130RWF43W0D`. **Built** with the kind gate (`kinds' = π.kinds` without `skill` and `glossary_pack`) and `mts' = π.mts`;
-the uniform form is ruled (A7), planned (layer-merge; PR placement pending).
+the uniform form is ruled (A7), planned (layer-merge; PR A0).
 
 **W18 A preset walks nothing and denies nothing.** The preset write's `skipped` is empty, and `Den(D') ⊆ Den(D₀)`.
 A preset member the closure does not hold is selected and then refused by W5 (`422 unknown_artifact`).
@@ -622,7 +622,7 @@ No other relation (`overrides`, `replaces`, `rejects`, `delegates_to`, `vocabula
 The cascade is the closure of the targets over the six relations, the lineage pass-through and a mission type's
 steps (crossed like `requires`), stopping at the stops.
 *Source:* ADR-0059 D2.1, D2.3, D2.4; activation mission FR-012, FR-014; `Reachability.reach`, `ReachRequest.Lineage`;
-A7 Q1, decision `DM-01M6RCXTS0SMDNTWZ8G7GJ2P5S`. **Built** without the step term; the step term is ruled (A7), planned (layer-merge; PR placement pending).
+A7 Q1, decision `DM-01M6RCXTS0SMDNTWZ8G7GJ2P5S`. **Built** without the step term; the step term is ruled (A7), planned (layer-merge; PR A0).
 
 **W21 Stops and scope.** Select: `Σ = Den(D₀) ∖ {t}`. Deactivate, own walk: `Σ = ∅` (A2). Deactivate, shared walk:
 `Σ = Den(D₀) ∪ {t}`. `Scope ⊆ Kₐ` or `all = Kₐ`, `mission_type` included; no `cascade` means `Reach = {t}`.
@@ -630,7 +630,7 @@ A select stops at deny entries, a deactivate's own walk stops nowhere, and the s
 deny entries.
 *Source:* ADR-0013 d4; ADR-0020 D6 and amendment ruling 6; ADR-0059 D2.4 and operator ruling A2; activation mission
 FR-012, finding F8; `CascadeRules.planSelect`, `planDeactivate`, `planShared`. **Built** with `mission_type ∉ Scope`;
-dropping that exclusion is ruled (A7), planned (layer-merge; PR placement pending).
+dropping that exclusion is ruled (A7), planned (layer-merge; PR A0).
 
 **W22 `includeDeactivated`.** `Σ = (Den(D₀) ∖ {t}) ∖ {u | kind(u) ∈ Scope}`; `Clr = (Reached ∪ Passed) ∩ Den(D₀) ∩
 {u | kind(u) ∈ Scope}`.
@@ -699,7 +699,7 @@ Only the user's explicit choice adds or removes a deny entry.
 **W32 Mission types in a write.** *Withdrawn* (A7). A mission type is selected, denied and cascaded like any kind
 (W13–W24); a select of `M` cascades to `steps(M)` (W20); a deny of `M` is refused only when `M ∈ Fl(C)` (W25).
 *Source:* A7, decisions `DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY`, `DM-01M6RCXTS0SMDNTWZ8G7GJ2P5S`, `DM-01M6RCXZ9HSHT4K3443YYZ8ZFC`. Formerly: ADR-0020 amendment 2026-10-31; activation mission US3 AS7, finding
-F8. **Built** as the withdrawn rule (`mts`, no cascade, no deny list); the withdrawal is ruled (A7), planned (layer-merge; PR placement pending).
+F8. **Built** as the withdrawn rule (`mts`, no cascade, no deny list); the withdrawal is ruled (A7), planned (layer-merge; PR A0).
 
 **W33 Write warnings.** The change report carries `warnings`, one per artifact of `Sel(D') ∖ Sel(D₀)` that `Eff(D', M)`
 leaves out, with the E9 reason that decides it (for example `enhanced_target_not_in_force`,
@@ -714,7 +714,7 @@ upgraded on read to `schemaVersion: 2`: its `missionTypes` move to `selected.mis
 along with the selections it gated off, and what is in force does not change (locks and the floor were never gated).
 Each stored document's `ETag` changes once.
 *Source:* A7 Q4, decision `DM-01M6RCY8MYNGNPJ247M2Y4880N`; research `a7-kind-model-2026-11-06.md` (proposed revision, items 2–3). **Ruled, not
-built** (PR placement pending).
+built** (PR A0).
 
 ## 5. Read rules
 
@@ -913,7 +913,7 @@ in force, unless it is an enhancer without a grounded target in force, which is 
 
 **I11 No enhancer stands alone; nothing outlives its mission type.** `E ∈ Eff ∧ ∃T. enhances(E, T) ⇒ ∃T ∈ Eff.
 enhances(E, T)`, and every `enhances` chain from `E` inside `Eff` ends at an artifact that enhances nothing;
-`u ∈ Eff ∧ bnd(u) ≠ ⊥ ⇒ bnd(u) ∈ Eff`. Floor membership is no exception to either. (E6, C36)
+`u ∈ Eff ∧ bnd(u) ≠ ⊥ ⇒ bnd(u) ∈ Eff`. Floor membership is no exception to either (decision `DM-01M6RFGFW3S0YJ222QMHD2W11B`). (E6, C36)
 
 **I12 No ancestor in force by lineage.** A cascade never adds a `specializes_from` ancestor it passed through to
 `Sel(D')`, and (once B5 is built) never clears its deny entry. (W20, W22)
@@ -1008,7 +1008,7 @@ activations it affects (G20), and every stored deny entry that the floor overrid
 | G20 Impact report | B4 | Ruled, planned (PR B) |
 | G21 Repair writes | ADR-0063 amendment 2026-11-06; #404 | Ruled, not built |
 | W1 Closed body | ADR-0020 D4, D9 | Built |
-| W2 Absent means none | ADR-0053 d10; DIV-203; A7 | Built; one `sel` form A7 ruled, planned (layer-merge; PR placement pending) |
+| W2 Absent means none | ADR-0053 d10; DIV-203; A7 | Built; one `sel` form A7 ruled, planned (layer-merge; PR A0) |
 | W3 Canonical form | ADR-0020 D4; operator 2026-11-06; `ArtifactSpellings` | Built (spellings normalized; DIV-208 withdrawn) |
 | W4 No empty deny list | ADR-0020 D4 | Built |
 | W5 Ids in the closure | ADR-0020 D9; `DocumentRules.check` | Built |
@@ -1023,11 +1023,11 @@ activations it affects (G20), and every stored deny entry that the floor overrid
 | W14 Unselect | ADR-0020 D6 | Built |
 | W15 Deactivate | ADR-0013 d3; ADR-0020 D6 | Built |
 | W16 Re-activate | ADR-0013 d3; ADR-0020 D6 | Built |
-| W17 Apply a preset | ADR-0059 D6; ADR-0020 D6; A7 | Built with the kind gate; A7 ruled, planned (layer-merge; PR placement pending) |
+| W17 Apply a preset | ADR-0059 D6; ADR-0020 D6; A7 | Built with the kind gate; A7 ruled, planned (layer-merge; PR A0) |
 | W18 A preset walks nothing | ADR-0013 d2 | Built |
 | W19 Cascade relations | ADR-0059 D2, A4; DIV-207 | Built |
-| W20 Reach as a least fixed point | ADR-0059 D2.1, D2.3, D2.4; DIV-206; A7 Q1 | Built; the step term A7 ruled, planned (layer-merge; PR placement pending) |
-| W21 Stops and scope | ADR-0013 d4; ADR-0059 A2; A7 | Built; `mission_type` in scope A7 ruled, planned (layer-merge; PR placement pending) |
+| W20 Reach as a least fixed point | ADR-0059 D2.1, D2.3, D2.4; DIV-206; A7 Q1 | Built; the step term A7 ruled, planned (layer-merge; PR A0) |
+| W21 Stops and scope | ADR-0013 d4; ADR-0059 A2; A7 | Built; `mission_type` in scope A7 ruled, planned (layer-merge; PR A0) |
 | W22 `includeDeactivated` | operator ruling A3; B5 | Built; B5 narrowing ruled, planned (#399 follow-up) |
 | W23 Deactivate candidates | ADR-0059 A2; finding F2 | Built |
 | W24 The shared-walk keep set | ADR-0059 A2, A4 | Built |
@@ -1038,9 +1038,9 @@ activations it affects (G20), and every stored deny entry that the floor overrid
 | W29 No-op | FR-011; A5 | Built |
 | W30 Compare-and-set | ADR-0020 D6, D9 | Built |
 | W31 Who changes a deny entry | ADR-0013 d2, d3 | Built |
-| W32 Mission types in a write | A7 | Withdrawn; still built, A7 ruled, planned (layer-merge; PR placement pending) |
+| W32 Mission types in a write | A7 | Withdrawn; still built, A7 ruled, planned (layer-merge; PR A0) |
 | W33 Write warnings | B6, B7 | Ruled, planned (PR C) |
-| W34 Withdrawn keys refused | A7 Q4 | Ruled, not built (PR placement pending) |
+| W34 Withdrawn keys refused | A7 Q4 | Ruled, not built (PR A0) |
 | E1 Stale ids | ADR-0059 D4; FR-017; B1 | Ruled, not built (the stored document is served: built) |
 | E2 Candidates | ADR-0020 D7; ADR-0053 d10; FR-013; A7 | Planned, not built |
 | E3 Base set | ADR-0012 d7; ADR-0020 D7; Q6 | Ruled, not built |

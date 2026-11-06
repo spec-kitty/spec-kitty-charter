@@ -18,8 +18,8 @@ operator ruled Q1 to Q9 on 2026-11-06. No question is open.
 The charter service gains three things: whole-pack registration with removal, the layer merge, and the four
 effective reads. Together they finish ADR-0055 steps 3 and 4.
 
-- **PR A, slice A0: changes to #399's built behaviour** that the ruleset rulings make (FR-026, FR-028, FR-031,
-  FR-033 to FR-035). Placement pending operator confirmation; see
+- **PR A0 (own PR, stacked on #399, before PR A): changes to #399's built behaviour** that the ruleset rulings make
+  (FR-026, FR-028, FR-031, FR-033 to FR-035) and the A7 kind model (IC-20). Ruled, decision `DM-01M6RFGB9NVD9MDWZ6AP0PBYH7`; see
   [Changes to built behaviour](#changes-to-built-behaviour-from-399).
 - **PR A, registration and removal.** Registration is asynchronous (`202` and a status URI, FR-024) and runs an
   impact check over every closure the pack joins (FR-025). The write generation and the read retry move here from
@@ -807,7 +807,7 @@ IC-03 to IC-09 above and into the concerns below.
 ### IC-19 (A0) — The ruling changes to #399's built behaviour
 
 - **Purpose:** apply the rulings that change behaviour #399 already ships, before PR A's new surface. See the table
-  below. Placement as the first slice of PR A is **pending operator confirmation**.
+  below. A0 ships as its own PR stacked on #399, before PR A (decision `DM-01M6RFGB9NVD9MDWZ6AP0PBYH7`).
 - **Contract.** One `### Changed` fragment per behaviour, and a `### Breaking` block where a `422` becomes a drop.
 - **Sequencing/depends-on:** #399.
 
@@ -826,8 +826,8 @@ IC-03 to IC-09 above and into the concerns below.
   replacement (`selected.mission_type`). There is no deprecation window. Neither is stored or answered.
 - **Storage.** `schemaVersion: 2`. A stored v1 document is upgraded on read: `missionTypes` move to
   `selected.mission_type`, and selections of a kind outside the v1 `activatedKinds` are dropped (they were never in
-  force; locks and the floor were never gated, so what is in force does not change). The upgrade is written back on
-  the next write. Every `ETag` changes once (one `412` per client holding an old tag).
+  force; locks and the floor were never gated, so what is in force does not change). Reads upgrade in memory only and never write;
+  the upgrade is stored on the next write (decision `DM-01M6RFGMDH859CJP3RHHF9YC3H`). Every `ETag` changes once (one `412` per client holding an old tag).
 - **The mission-type cascade and binding (Q1).** Selecting a mission type cascades to the steps it holds, as
   `requires` does. A step, and any artifact bound to mission type M (including `action:M/s`), is in force only while
   M is: the binding prunes in the same stratum and shape as an enhancer that needs its target (research R13
@@ -882,8 +882,8 @@ IC-03 to IC-09 above and into the concerns below.
 
 ### Changes to built behaviour (from #399)
 
-Code areas are in the #399 worktree (`.worktrees/fold-b`, head `1d37ccd9`), read only. Proposed placement: slice A0
-of PR A, **pending operator confirmation**, unless the row says otherwise.
+Code areas are in the #399 worktree (`.worktrees/fold-b`, head `1d37ccd9`), read only. Placement: PR A0, its
+own PR stacked on #399 before PR A (decision `DM-01M6RFGB9NVD9MDWZ6AP0PBYH7`), unless the row says otherwise.
 
 | Ruling | Change | Code area (#399) | Placement |
 |---|---|---|---|
@@ -906,7 +906,7 @@ of PR A, **pending operator confirmation**, unless the row says otherwise.
 - **PR B:** IC-07 (merge, presets, facts cache, merged cascade), IC-08, IC-09 (`InForceResolution` in `packs`),
   IC-17.
 - **PR C:** IC-10, IC-11, IC-13.
-- IC-20 (A7) is in slice A0, after IC-19 (pending operator confirmation).
+- IC-20 (A7) is in PR A0, after IC-19 (decision `DM-01M6RFGB9NVD9MDWZ6AP0PBYH7`).
 
 ### Contract findings folded (post-plan contract squad)
 

@@ -634,8 +634,8 @@ No question is open.
   host resolving to a refused address).
 - **Async status is in memory.** A restart forgets pending registrations (R14). Re-sending is idempotent by the
   version rule.
-- **Built behaviour changes (slice A0).** The rulings change #399 behaviour; placement as the first slice of PR A is
-  pending operator confirmation (plan, Changes to built behaviour).
+- **Built behaviour changes (slice A0).** The rulings change #399 behaviour; they ship as PR A0, its own PR
+  stacked on #399 before PR A (decision `DM-01M6RFGB9NVD9MDWZ6AP0PBYH7`; plan, Changes to built behaviour).
 - **The git size watch is polled.** A fast object stream can overshoot the bound between polls. The overshoot is
   bounded by the poll interval and the deadline, and each blob is checked exactly when it is written to staging.
 - **NFR-006 under load.** Three retries may not absorb eight writers hammering one pack. A `stale_input` refusal
