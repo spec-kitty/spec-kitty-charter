@@ -1,7 +1,7 @@
 {
-  "event_count": 51,
-  "last_event_id": "01M6RS2W4Y77J3G6JE1EAVTYZM",
-  "materialized_at": "2026-11-06T15:54:21.214417+00:00",
+  "event_count": 52,
+  "last_event_id": "01M6RS4NQ7F4ZQ1VR9ZS207VTS",
+  "materialized_at": "2026-11-06T15:55:20.167791+00:00",
   "mission_number": "",
   "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
   "mission_type": "",
@@ -12,9 +12,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 0,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 27
   },
   "work_packages": {
@@ -56,14 +56,14 @@
     },
     "WP02": {
       "actor": "claude",
-      "agent": "claude::java-jenny",
-      "agent_profile": "__resolved_profile_absent__",
-      "agent_profile_version": "__resolved_profile_version_absent__",
+      "agent": "claude",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
       "force_count": 2,
       "implementer_of_record": "claude",
-      "lane": "for_review",
-      "last_event_id": "01M6RS2W4Y77J3G6JE1EAVTYZM",
-      "last_transition_at": "2026-11-06T15:54:21.214417+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M6RS4NQ7F4ZQ1VR9ZS207VTS",
+      "last_transition_at": "2026-11-06T15:55:20.167791+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "Ready for review: ArtifactKind is the one kind registry. Deleted dead orgRequirable/selectionOverlayable/InForceWhenAbsent (no main readers; their test assertions removed from ArtifactKindTest); mission_type activatable and requirable (javadoc); NodeKind.plural routes mission_types to ArtifactKind; fromToken documented as the one exact parse, with every-token and case-only-refusal tests. Parity test in ArtifactKindTest pins the activatable set to every generated ActivatableKind copy (ArtifactReference/EffectiveArtifact/SharedSkip/SkippedDeactivated KindEnum, SelectedArtifacts members); shown failing when GUARD was flipped activatable. Red first: commit cb8bb5b1 (theRegistryHoldsOnlyTheFactsItsConsumersRead AssertionError naming the 3 dead facts), green 83d69e5c. Gates: ./gradlew --max-workers=1 -Dorg.gradle.internal.repository.max.retries=10 -PcontractBaseline=none :kernel:check exit 0; :deployable:test HexagonalArchitectureTest 59/59 pass (deployable CharterContractSuite has 109 pre-existing failures from WP01's contract removals, owned by WP03-WP06). out-of-map: service/kernel/build.gradle.kts - test-only :charter-api + Spring Boot BOM for the parity test. Divergence: none new (mission_type requirable note for docs WP).",
@@ -78,9 +78,9 @@
         "reviewer": "claude::reviewer-renata",
         "verdict": "changes_requested"
       },
-      "role": "implementer",
-      "shell_pid": null,
-      "shell_pid_created_at": null,
+      "role": "reviewer",
+      "shell_pid": 31213,
+      "shell_pid_created_at": "1793980513.45",
       "subtasks": {
         "T007": "done",
         "T008": "done",
