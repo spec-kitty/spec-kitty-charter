@@ -100,10 +100,10 @@ Implementation command:
 ## Context
 
 - **PR:** A. **Concern:** IC-06a. **Research:** R4. **Decision:** `DM-01M6P92QKYFZW9KDGGQGX9H9VS` (atomic move plus
-  in-process per-id lock; multi-process stays #349; one replica, ADR-0060 of PR #392).
+  in-process per-id lock; multi-process stays #349; one replica, ADR-0061 of PR #392).
 - **Requirements:** FR-019, FR-003 (compare-and-set backs `If-Match`), NFR-004, NFR-005, SC-003.
 - **Collisions:** PR #390 touches `FilesystemPackStore` (the seam being mirrored, not edited here); PR #392 adds
-  ADR-0060 (one replica). Neither edits these files.
+  ADR-0061 (one replica). Neither edits these files.
 - **Grounding:**
   - `FilesystemPackStore` has `interface Rename { void move(Path temp, Path target) throws IOException; }` with
     `ATOMIC = (t, g) -> Files.move(t, g, ATOMIC_MOVE)`, and `writeAtomically` (lines ~1225–1244) deletes the temp file
