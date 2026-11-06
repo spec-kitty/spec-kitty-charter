@@ -337,7 +337,7 @@ Feature: Applying a preset to an activation
 
   Scenario: Applying a preset that changes nothing answers the same revision
     The no-op: the document already holds what team sets, so the answer is 200 with the stored revision, an
-    empty applied and cleared, and nothing is stored.
+    empty applied and cleared, no dropped (the write dropped nothing), and nothing is stored.
     Given the activation "a-1" holds:
       """
       {"schemaVersion": 1, "packs": [{"packId": "main"}], "activatedKinds": ["directive"], "selected": {"directive": ["B", "C"]}}
@@ -350,6 +350,7 @@ Feature: Applying a preset to an activation
     And the response header "ETag" is the stored ETag
     And the field at "/applied" holds exactly 0 items
     And the field at "/cleared" holds exactly 0 items
+    And the response body has no field at "/dropped"
 
   Scenario: A preset no pack holds is 404 preset_not_found
     US5 AS3.
@@ -405,6 +406,47 @@ Feature: Applying a preset to an activation
     And the field at "/violations/0/code" is "unknown_artifact"
     When I GET "/activations/a-1"
     Then the response header "ETag" is the stored ETag
+
+  Scenario: A stale preset member the stored document already names is 422, never a no-op
+    ADR-0059 amendment R5: a pack upgrade removed GONE, which the stored selected.directive and the preset still
+    name. The write drops GONE from the stored document and the preset puts it back, so the computed document
+    equals the stored one. A write that dropped a stale id is never a no-op, so the document is judged, and GONE
+    is an unknown_artifact at the whole request. Nothing is stored.
+    Given the org pack "main" with the file "directives/GONE.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: GONE
+      title: Gone
+      intent: GONE
+      enforcement: required
+      """
+    And the org pack "main" with the file "presets/stale.yaml":
+      """
+      schema_version: '1.0'
+      id: stale
+      description: A member the pack no longer holds.
+      activated_directives:
+        - id: GONE
+      """
+    And the activation "a-1" holds:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "main"}], "selected": {"directive": ["GONE"]}}
+      """
+    And the file "directives/GONE.directive.yaml" of the pack "main" is deleted
+    When I PUT "/activations/a-1/presets/stale" with the stored ETag and the body:
+      """
+      {}
+      """
+    Then the response status is 422
+    And the problem code is "activation_invalid"
+    And the field at "/violations/0/pointer" is ""
+    And the field at "/violations/0/code" is "unknown_artifact"
+    When I GET "/activations/a-1"
+    Then the response header "ETag" is the stored ETag
+    And the field at "/config/selected/directive" holds exactly the ids:
+      """
+      GONE
+      """
 
   Scenario: A force of the wrong type is 422 at its pointer, never coerced
     PresetApplication.force is a boolean: a string or a number in its place is a fault of the body, judged after

@@ -41,6 +41,9 @@
   is a change: a write that only drops stale ids is not a no-op and answers a new revision. `applied` and `cleared`
   report the write's own change, measured after the drop, so a dropped id appears only in `dropped`. Before, such a
   document made every per-artifact and preset write `422 activation_invalid` until a full `replaceActivation`.
+- A preset whose stale member the stored document already names (`applyActivationPreset`) drops the member and puts
+  it back, so the computed document equals the stored one; a write that dropped an id is still not a no-op, so the
+  document is judged and the write is `422 activation_invalid` (`unknown_artifact`, pointer `""`), storing nothing.
 - An unselect (`unselectActivationArtifact`) or a re-activate (`reactivateActivationArtifact`) whose path id the
   closure no longer holds proceeds when the stored list it removes the id from still names it (`selected`, or
   `missionTypes` for kind `mission_type`; `deactivated`): the id is dropped with every other stale id, listed in
