@@ -104,22 +104,27 @@ class FileActivationRepositoryDurabilityTest {
     }
 
     @Test
-    void aForceThatFailsOnAWriteIsAStorageFailureAndNoTempFileStays() throws IOException {
+    void aForceThatFailsAfterTheMoveIsAStorageFailureThoughTheNewDocumentIsCommittedAndNoTempFileStays()
+            throws IOException {
         Path root = host.resolve("store");
+        new FileActivationRepository(root).create(ID, document(1));
         Recording disk = new Recording();
         disk.failing = true;
 
-        assertThatThrownBy(() -> new FileActivationRepository(root, disk).create(ID, document(1)))
+        assertThatThrownBy(() -> new FileActivationRepository(root, disk).replace(ID, Optional.empty(), document(2)))
                 .isInstanceOf(ActivationStorageException.class)
                 .hasMessageContaining(ID.value());
 
+        assertThat(disk.forced).as("only the force after the move ran").containsExactly(idDirectory(root));
+        assertThat(new FileActivationRepository(root).find(ID))
+                .hasValueSatisfying(stored -> assertThat(stored.document()).isEqualTo(document(2)));
         try (var listed = Files.list(idDirectory(root))) {
-            assertThat(listed).isEmpty();
+            assertThat(listed.map(path -> path.getFileName().toString())).noneMatch(name -> name.contains(".tmp-"));
         }
     }
 
     @Test
-    void aForceThatFailsOnADeleteIsAStorageFailure() {
+    void aForceThatFailsOnADeleteIsAStorageFailureThoughTheDocumentIsGone() {
         Path root = host.resolve("store");
         new FileActivationRepository(root).create(ID, document(1));
         Recording disk = new Recording();
@@ -128,6 +133,16 @@ class FileActivationRepositoryDurabilityTest {
         assertThatThrownBy(() -> new FileActivationRepository(root, disk).delete(ID, Optional.empty()))
                 .isInstanceOf(ActivationStorageException.class)
                 .hasMessageContaining(ID.value());
+
+        assertThat(new FileActivationRepository(root).find(ID)).isEmpty();
+    }
+
+    @Test
+    void aDirectoryThatCannotBeOpenedForAnotherReasonIsNotTolerated() throws IOException {
+        Path file = Files.writeString(host.resolve("a-file"), "not a directory");
+
+        assertThatThrownBy(() -> FileActivationRepository.DISK.forceDirectory(file.resolve("below")))
+                .isInstanceOf(IOException.class);
     }
 
     @Test
