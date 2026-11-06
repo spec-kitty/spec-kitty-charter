@@ -127,30 +127,32 @@ class DirectiveControllerTest {
                 .andExpect(status().is(expected));
     }
 
-    @Test
-    void aBodyRelationshipOfAnUnknownKindIsA422() throws Exception {
-        String bad =
-                "{\"id\":\"GUARD\",\"schemaVersion\":\"1.0\",\"title\":\"Guard\",\"intent\":\"guard\",\"enforcement\":\"required\","
-                        + "\"relationships\":[{\"from\":\"directive:GUARD\",\"to\":\"nonsense:x\",\"type\":\"requires\"}]}";
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"relationships", "references", "procedures"})
+    void aBodyStillSendingARemovedRelationshipFieldIsA422AndWritesNothing(String member) throws Exception {
+        // ADR-0063: the body is closed, so a client still asserting edges here is refused, never silently dropped.
+        String bad = body("GUARD")
+                .replace(
+                        "}",
+                        ",\"" + member
+                                + "\":[{\"from\":\"directive:GUARD\",\"to\":\"tactic:x\",\"type\":\"requires\"}]}");
         mvc.perform(post("/api/v1/packs/pack-a/artifacts/directive")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(bad))
                 .andExpect(status().is(422))
-                .andExpect(jsonPath("$.code").value("validation_failed"));
+                .andExpect(jsonPath("$.code").value("validation_failed"))
+                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString(member)));
+        assertThat(store.commits).as("a refused registration commits nothing").isZero();
+        mvc.perform(post("/api/v1/packs/pack-a/artifacts/directive")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("GUARD")))
+                .andExpect(status().isCreated());
     }
 
     // ---- #292: an explicit null list is refused; an absent one is empty ------------------------------------------
 
     @ParameterizedTest(name = "{0}")
-    @ValueSource(
-            strings = {
-                "procedures",
-                "integrityRules",
-                "validationCriteria",
-                "explicitAllowances",
-                "references",
-                "relationships"
-            })
+    @ValueSource(strings = {"integrityRules", "validationCriteria", "explicitAllowances"})
     void anExplicitNullListIsA422OnPostAndPut(String list) throws Exception {
         String bad = body("GUARD").replace("}", ",\"" + list + "\":null}");
         mvc.perform(post("/api/v1/packs/pack-a/artifacts/directive")
@@ -171,15 +173,7 @@ class DirectiveControllerTest {
     // ---- #309: a null item inside a list is refused, not a 500 --------------------------------------------------
 
     @ParameterizedTest(name = "{0}")
-    @ValueSource(
-            strings = {
-                "procedures",
-                "integrityRules",
-                "validationCriteria",
-                "explicitAllowances",
-                "references",
-                "relationships"
-            })
+    @ValueSource(strings = {"integrityRules", "validationCriteria", "explicitAllowances"})
     void aNullItemInAListIsA422OnPostAndPut(String list) throws Exception {
         String bad = body("GUARD").replace("}", ",\"" + list + "\":[null]}");
         mvc.perform(post("/api/v1/packs/pack-a/artifacts/directive")
@@ -208,8 +202,9 @@ class DirectiveControllerTest {
                         .content(body("GUARD").replace("}", ",\"scope\":null}")))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.directive.scope").doesNotExist())
-                .andExpect(jsonPath("$.directive.references").isArray())
-                .andExpect(jsonPath("$.directive.references", org.hamcrest.Matchers.hasSize(0)));
+                .andExpect(jsonPath("$.directive.integrityRules").isArray())
+                .andExpect(jsonPath("$.directive.integrityRules", org.hamcrest.Matchers.hasSize(0)))
+                .andExpect(jsonPath("$.directive.relationships").doesNotExist());
     }
 
     @Test
@@ -217,7 +212,7 @@ class DirectiveControllerTest {
         // The converter reads the body in its declared charset, so the check must too, or a Latin-1 byte steps past it.
         byte[] latin1 = body("GUARD")
                 .replace("\"title\":\"Title\"", "\"title\":\"Caf\u00e9\"")
-                .replace("}", ",\"references\":null}")
+                .replace("}", ",\"integrityRules\":null}")
                 .getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
         mvc.perform(post("/api/v1/packs/pack-a/artifacts/directive")
                         .contentType(
@@ -232,7 +227,7 @@ class DirectiveControllerTest {
     void aBodyThatIsNotJsonIsStillTheConvertersBadRequest() throws Exception {
         mvc.perform(post("/api/v1/packs/pack-a/artifacts/directive")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"id\":\"GUARD\",\"references\":nul"))
+                        .content("{\"id\":\"GUARD\",\"procedures\":nul"))
                 .andExpect(status().isBadRequest());
         assertThat(store.commits).isZero();
     }

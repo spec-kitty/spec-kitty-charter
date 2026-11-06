@@ -63,9 +63,8 @@ class ToolguideRegistrationServiceTest {
         assertThat(persisted.summary()).isEqualTo(submitted.summary());
         assertThat(persisted.commands()).isEqualTo(submitted.commands());
         assertThat(persisted.appliesToLanguages()).isEqualTo(submitted.appliesToLanguages());
-        assertThat(persisted.references()).isEqualTo(submitted.references());
         assertThat(persisted.lastUpdated()).contains("2026-02-02");
-        assertThat(persisted.relationships()).isEmpty();
+        assertThat(persisted.derivedRelationships()).isEmpty();
     }
 
     @Test
@@ -275,7 +274,6 @@ class ToolguideRegistrationServiceTest {
                 .command(id + " status")
                 .appliesToLanguage("java")
                 .lastUpdated(lastUpdated)
-                .reference("docs/" + id + ".md")
                 .build();
     }
 

@@ -231,14 +231,7 @@ class PackSchemasTest {
         "graph-shard,/$defs/DRGEdge/properties/source/pattern",
         "graph-shard,/$defs/DRGEdge/properties/target/pattern",
         "org-fragment,/$defs/_OrgDRGEdge/properties/source/pattern",
-        "org-fragment,/$defs/_OrgDRGEdge/properties/target/pattern",
-        "tactic,/$defs/TacticReference/properties/id/pattern",
-        "directive,/$defs/DirectiveReference/properties/id/pattern",
-        "paradigm,/$defs/ParadigmReference/properties/id/pattern",
-        "paradigm,/properties/directive_refs/items/pattern",
-        "directive,/properties/procedures/items/pattern",
-        "procedure,/$defs/Reference/properties/id/pattern",
-        "mission-type,/$defs/Reference/properties/id/pattern"
+        "org-fragment,/$defs/_OrgDRGEdge/properties/target/pattern"
     })
     void aReferencePatternQualifiesWithThePackNameGrammar(String kind, String pointer) throws IOException {
         String grammar = PackQualifiedReference.PACK_NAME_GRAMMAR;
@@ -247,21 +240,81 @@ class PackSchemasTest {
         assertThat(MAPPER.readTree(bundledText(kind)).at(pointer).asString()).startsWith("^" + qualifier);
     }
 
-    /** A qualifier with nothing after it names no artifact: the schema refuses it before any reader parses it. */
+    /**
+     * The artifact fields that minted, or carried, a relationship are gone (ADR-0063): each kind's minimal file is
+     * valid, and the same file with the field is refused for that one undeclared key, so a relationship can only be
+     * authored in the pack's graph documents.
+     */
     @ParameterizedTest
     @CsvSource(
             delimiter = '|',
             quoteCharacter = '"',
             value = {
-                "directive|D1|title: One\\nintent: one\\nenforcement: required\\nprocedures: ['ops::release', 'ops::']|procedures",
-                "paradigm|p1|name: One\\nsummary: one\\ndirective_refs: ['ops::D1', 'ops::']|directive_refs"
+                "directive|id: D1\\nschema_version: '1.0'\\ntitle: One\\nintent: one\\nenforcement: required|references|"
+                        + "references: [{type: tactic, id: t1}]",
+                "directive|id: D1\\nschema_version: '1.0'\\ntitle: One\\nintent: one\\nenforcement: required|procedures|"
+                        + "procedures: [Run the gate.]",
+                "paradigm|id: p1\\nschema_version: '1.0'\\nname: One\\nsummary: one|directive_refs|directive_refs: [D1]",
+                "paradigm|id: p1\\nschema_version: '1.0'\\nname: One\\nsummary: one|references|"
+                        + "references: [{type: tactic, id: t1}]",
+                "tactic|id: t1\\nschema_version: '1.0'\\nname: One\\nsteps: [{title: s}]|references|"
+                        + "references: [{type: directive, id: D1}]",
+                "procedure|id: p1\\nschema_version: '1.0'\\ntitle: One\\ndescription: one\\nentry_condition: e\\n"
+                        + "exit_condition: x\\nsteps: [{title: s}]|references|references: [{type: directive, id: D1}]",
+                "mission-type|id: m1\\nschema_version: '1.0'\\ntitle: One\\ndescription: one\\nsteps: [{id: s, title: S}]"
+                        + "|references|references: [{type: directive, id: D1}]",
+                "styleguide|id: s1\\nschema_version: '1.0'\\ntitle: One\\nscope: code\\nprinciples: [p]|references|"
+                        + "references: [packs/built-in/tactics/t1.tactic.yaml]",
+                "toolguide|id: g1\\nschema_version: '1.0'\\ntool: git\\ntitle: One\\nguide_path: g1.guide.md\\nsummary: one|"
+                        + "references|references: [https://example.org]"
             })
-    void aQualifiedBareReferenceNeedsAnArtifactAfterTheQualifier(String kind, String id, String fields, String field) {
-        Object tree = Yaml.load("id: " + id + "\nschema_version: '1.0'\n" + fields.replace("\\n", "\n") + "\n");
+    void aRemovedRelationshipFieldIsAnUndeclaredKey(String kind, String minimal, String field, String line) {
+        String base = minimal.replace("\\n", "\n") + "\n";
+        String file = "x." + kind + ".yaml";
+        assertThat(PackSchemas.bundled().validate(kind, file, Yaml.load(base)))
+                .as("the minimal %s is valid", kind)
+                .isEmpty();
 
-        assertThat(PackSchemas.bundled().validate(kind, id + "." + kind + ".yaml", tree))
+        assertThat(PackSchemas.bundled().validate(kind, file, Yaml.load(base + line + "\n")))
                 .singleElement()
-                .satisfies(violation -> assertThat(violation.pointer()).contains(field, "1"));
+                .satisfies(violation -> {
+                    assertThat(violation.keyword()).isEqualTo("additionalProperties");
+                    assertThat(violation.property()).contains(field);
+                });
+    }
+
+    /** A step's references went with its kind's (ADR-0063): a tactic step and a mission-type step refuse them. */
+    @ParameterizedTest
+    @CsvSource(
+            delimiter = '|',
+            value = {
+                "tactic|id: t1\\nschema_version: '1.0'\\nname: One\\nsteps: [{title: s, references: [{type: directive, id: D1}]}]",
+                "mission-type|id: m1\\nschema_version: '1.0'\\ntitle: One\\ndescription: one\\n"
+                        + "steps: [{id: s, title: S, references: [{type: directive, id: D1}]}]"
+            })
+    void aStepReferenceIsAnUndeclaredKey(String kind, String text) {
+        assertThat(PackSchemas.bundled()
+                        .validate(kind, "x." + kind + ".yaml", Yaml.load(text.replace("\\n", "\n") + "\n")))
+                .singleElement()
+                .satisfies(violation -> {
+                    assertThat(violation.keyword()).isEqualTo("additionalProperties");
+                    assertThat(violation.property()).contains("references");
+                });
+    }
+
+    /** An org fragment's edge holds a {@code when}, as a root shard's does, so a fragment loses nothing a field held. */
+    @Test
+    void anOrgFragmentEdgeAcceptsWhen() {
+        Object tree = Yaml.load("""
+                nodes: []
+                edges:
+                - source: tactic:t1
+                  target: directive:D1
+                  relation: suggests
+                  when: when the rule applies
+                """);
+        assertThat(PackSchemas.bundled().validate("org-fragment", "drg/fragment.yaml", tree))
+                .isEmpty();
     }
 
     /** The service contract's qualified-reference schema spells the qualifier as the Java grammar does. */

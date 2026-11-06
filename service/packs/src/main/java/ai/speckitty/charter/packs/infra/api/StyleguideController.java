@@ -36,9 +36,8 @@ import tools.jackson.databind.json.JsonMapper;
  * {@code Artifact} envelope. The writes delegate to {@link StyleguideRegistrationService}. A refusal the services throw is answered by {@link RefusalHandler}; so is a
  * stale {@code If-Match} precondition, as a plain {@code 412} problem (not a refusal code), per ADR-0020.
  *
- * <p>Bodies are the generated contract DTOs only; a storage DSO is never exposed (C-002). A styleguide mints no
- * relationships, so the response relationships array is always empty and the registration body carries none. The
- * tooling map is carried as ordered {@code {tool, configuration}} entries, and the
+ * <p>Bodies are the generated contract DTOs only; a storage DSO is never exposed (C-002). Neither the registration body
+ * nor the response carries a relationship: its edges are read through the references (ADR-0063). The tooling map is carried as ordered {@code {tool, configuration}} entries, and the
  * arbitrary structural-lint-config tree as its JSON text, because a closed response object admits neither an
  * open-keyed map nor a recursive tree.
  */
@@ -78,8 +77,7 @@ public class StyleguideController implements StyleguidesApi {
                 OptionalLists.orEmpty(body.getTooling()),
                 body.getQualityTest(),
                 body.getStructuralLintConfig(),
-                OptionalLists.orEmpty(body.getAppliesToLanguages()),
-                OptionalLists.orEmpty(body.getReferences()));
+                OptionalLists.orEmpty(body.getAppliesToLanguages()));
         StyleguideRegistrationService.Registered result =
                 registrations.registerStyleguide(pack, styleguide, false, null);
         Artifact written = ArtifactDtos.envelope(ArtifactKind.STYLEGUIDE, pack, id, links)
@@ -105,8 +103,7 @@ public class StyleguideController implements StyleguidesApi {
                 OptionalLists.orEmpty(body.getTooling()),
                 body.getQualityTest(),
                 body.getStructuralLintConfig(),
-                OptionalLists.orEmpty(body.getAppliesToLanguages()),
-                OptionalLists.orEmpty(body.getReferences()));
+                OptionalLists.orEmpty(body.getAppliesToLanguages()));
         StyleguideRegistrationService.Registered result =
                 registrations.registerStyleguide(pack, styleguide, true, ifMatch);
         return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)
@@ -137,8 +134,7 @@ public class StyleguideController implements StyleguidesApi {
             List<StyleguideToolEntry> tooling,
             @Nullable String qualityTest,
             @Nullable String structuralLintConfig,
-            List<String> appliesToLanguages,
-            List<String> references) {
+            List<String> appliesToLanguages) {
         try {
             var builder = ai.speckitty.charter.packs.domain.Styleguide.builder()
                     .id(new StyleguideIdentifier(id))
@@ -174,7 +170,6 @@ public class StyleguideController implements StyleguidesApi {
                 builder.structuralLintConfig(ConfigValue.of(parseConfig(structuralLintConfig)));
             }
             appliesToLanguages.forEach(builder::appliesToLanguage);
-            references.forEach(builder::reference);
             return builder.build();
         } catch (ConstraintBreachException | IllegalArgumentException invalid) {
             throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, String.valueOf(invalid.getMessage()), invalid);

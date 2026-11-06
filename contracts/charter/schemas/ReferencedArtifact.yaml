@@ -1,8 +1,9 @@
 title: ReferencedArtifact
 description: >-
-  One reference an artifact writes, resolved through the compose: the reference as written, the relation it was
-  written under when the artifact's relationships carry one, the pack that holds what it names, the bare URN it
-  resolves to and, when the target is an artifact the service serves, the link to read it. A bare reference is held
+  One reference an artifact writes, resolved through the compose: an edge of its pack's graph documents whose source
+  is the artifact, or a relation it derives (ADR-0063). It carries the target as written, the edge's relation, the
+  pack that holds what it names, the bare URN it resolves to and, when the target is an artifact the service serves,
+  the link to read it. A bare reference is held
   by the pack that writes it, which shadows a same-named artifact of another pack (FR-014); a pack-qualified one is
   held by the pack it names. A reference no pack of the compose holds, such as one to a kind the pack does not
   define, has no holdingPack and no artifact link.
@@ -10,16 +11,17 @@ type: object
 additionalProperties: false
 required:
   - reference
+  - relation
   - urn
   - _links
 properties:
   reference:
     allOf:
       - $ref: PackQualifiedReference.yaml
-    description: The reference as the artifact writes it, bare or <pack-name>::<kind>:<id>.
+    description: The edge's target as the graph document writes it, bare or <pack-name>::<kind>:<id>.
     x-source:
-      path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/CharterArtifact.java
-      symbol: CharterArtifact.writtenReferences
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackEdge.java
+      symbol: PackEdge.target
   relation:
     $ref: Relation.yaml
   holdingPack:

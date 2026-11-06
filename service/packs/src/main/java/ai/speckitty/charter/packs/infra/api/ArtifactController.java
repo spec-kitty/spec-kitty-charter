@@ -140,10 +140,10 @@ public class ArtifactController implements ArtifactsApi {
                                         kind.token(),
                                         reference.urn().id()))));
         ReferencedArtifact wire = new ReferencedArtifact(
-                reference.written().toString(), reference.urn().toString(), Hypermedia.wire(target));
-        reference
-                .relation()
-                .ifPresent(relation -> wire.setRelation(ReferencedArtifact.RelationEnum.fromValue(relation.token())));
+                reference.written().toString(),
+                ReferencedArtifact.RelationEnum.fromValue(reference.relation().token()),
+                reference.urn().toString(),
+                Hypermedia.wire(target));
         reference
                 .holder()
                 .ifPresent(holder -> wire.setHoldingPack(new HoldingPack(

@@ -29,8 +29,7 @@ class ToolguideEntityTest {
                 .guide(GUIDE)
                 .command("rg pattern")
                 .appliesToLanguage("java")
-                .lastUpdated("2026-10-25")
-                .reference("docs/context/search.md");
+                .lastUpdated("2026-10-25");
     }
 
     @Test
@@ -50,7 +49,6 @@ class ToolguideEntityTest {
         assertThat(toolguide.commands()).containsExactly("rg pattern");
         assertThat(toolguide.appliesToLanguages()).containsExactly("java");
         assertThat(toolguide.lastUpdated()).contains("2026-10-25");
-        assertThat(toolguide.references()).containsExactly("docs/context/search.md");
     }
 
     @Test
@@ -67,9 +65,9 @@ class ToolguideEntityTest {
     }
 
     @Test
-    @DisplayName("a toolguide mints no relationships: its references are bare citations")
+    @DisplayName("a toolguide derives no relationship: its relationships are graph edges (ADR-0063)")
     void relationshipsAreEmpty() {
-        assertThat(valid().build().relationships()).isEmpty();
+        assertThat(valid().build().derivedRelationships()).isEmpty();
     }
 
     @Test
@@ -88,7 +86,6 @@ class ToolguideEntityTest {
         assertThat(minimal.lastUpdated()).isEmpty();
         assertThat(minimal.commands()).isEmpty();
         assertThat(minimal.appliesToLanguages()).isEmpty();
-        assertThat(minimal.references()).isEmpty();
     }
 
     @Test

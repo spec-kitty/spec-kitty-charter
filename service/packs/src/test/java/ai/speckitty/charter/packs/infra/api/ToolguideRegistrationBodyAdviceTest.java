@@ -106,7 +106,7 @@ class ToolguideRegistrationBodyAdviceTest {
         assertThat(nullMember("{\"commands\":null,\"guide\":null,\"guideUri\":\"https://a\"}"))
                 .as("a null guide field is named before a null list, wherever it stands")
                 .contains("guide");
-        assertThat(nullMember("{\"guide\":\"g\",\"references\":[]}"))
+        assertThat(nullMember("{\"guide\":\"g\",\"commands\":[]}"))
                 .as("an empty list is a value")
                 .isEmpty();
     }

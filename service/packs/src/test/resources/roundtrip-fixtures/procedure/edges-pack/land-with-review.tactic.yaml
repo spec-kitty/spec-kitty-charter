@@ -3,8 +3,3 @@ schema_version: '1.0'
 name: Land with review
 steps:
   - title: Ask for review
-references:
-  - name: Review first
-    type: directive
-    id: REVIEW_FIRST
-    when: Before landing.

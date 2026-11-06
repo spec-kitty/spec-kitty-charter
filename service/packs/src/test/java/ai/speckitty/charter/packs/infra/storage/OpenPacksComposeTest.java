@@ -162,13 +162,13 @@ class OpenPacksComposeTest {
     }
 
     @Test
-    @DisplayName("a typed reference put back to bare is refused, naming the pack that wrote it")
-    void aBareTypedReferenceIsRefused() throws IOException {
+    @DisplayName("a directive's cross-pack edge put back to bare is refused, naming the pack that wrote it (ADR-0063)")
+    void aBareCrossPackEdgeOfADirectiveIsRefused() throws IOException {
         PackLocation bare = changed(
                 "event-driven",
-                "directives/evd-006-share-only-published-event-contracts.directive.yaml",
-                "id: built-in::anti-corruption-layer",
-                "id: anti-corruption-layer");
+                "drg/fragment.yaml",
+                "target: built-in::tactic:anti-corruption-layer",
+                "target: tactic:anti-corruption-layer");
 
         assertRefused(RefusalCode.PACK_REFERENCE_UNQUALIFIED, "event-driven", real("built-in"), bare);
     }

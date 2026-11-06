@@ -3,8 +3,6 @@ package ai.speckitty.charter.missions.domain;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
-import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
-import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import java.util.ArrayList;
@@ -17,8 +15,8 @@ import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A mission type of a pack (ADR-0044): its steps in order, the steps invoked on demand, the artifacts it expects and
- * the guidance it references. It is identified by its {@link MissionTypeIdentifier}; two mission types are equal when
+ * A mission type of a pack (ADR-0044): its steps in order, the steps invoked on demand and the artifacts it expects.
+ * The guidance it scopes is authored as graph edges (ADR-0063). It is identified by its {@link MissionTypeIdentifier}; two mission types are equal when
  * they have the same identity, whatever their other fields hold.
  *
  * <p>It owns its steps: the order of {@link #steps()} is the run order, and the order of {@link #onDemandSteps()} is
@@ -52,7 +50,6 @@ public final class MissionType implements CharterArtifact {
     private final boolean requiresSubstantiveSpec;
     private final Optional<PathConventions> pathConventions;
     private final List<ExpectedArtifact> expectedOutputArtifacts;
-    private final List<MissionReference> references;
     private final List<MissionStep> steps;
     private final List<MissionStep> onDemandSteps;
 
@@ -66,7 +63,6 @@ public final class MissionType implements CharterArtifact {
         this.requiresSubstantiveSpec = builder.requiresSubstantiveSpec;
         this.pathConventions = Optional.ofNullable(builder.pathConventions);
         this.expectedOutputArtifacts = List.copyOf(builder.expectedOutputArtifacts);
-        this.references = List.copyOf(builder.references);
         this.steps = List.copyOf(builder.steps);
         this.onDemandSteps = List.copyOf(builder.onDemandSteps);
         KEY_RULES.guard(expectedOutputArtifacts.stream()
@@ -134,32 +130,6 @@ public final class MissionType implements CharterArtifact {
     }
 
     /**
-     * A mission type mints no relationship: always empty, even when it or its steps carry references. The references
-     * are kept but not turned into edges until #189 rules on edge authority; the graph's {@code scope} edges carry
-     * their meaning meanwhile (ADR-0044 decision 3).
-     *
-     * @return an empty list
-     */
-    @Override
-    public List<Relationship> relationships() {
-        return List.of();
-    }
-
-    /**
-     * The references the mission type and its steps write: kept though no relationship is minted from them, so the
-     * compose's reference check still covers them.
-     *
-     * @return the references, bare or pack-qualified
-     */
-    @Override
-    public List<PackQualifiedReference> writtenReferences() {
-        return Stream.concat(references.stream(), steps.stream().flatMap(step -> step.references().stream()))
-                .map(ref -> PackQualifiedReference.typed(ref.type().token(), ref.id()))
-                .distinct()
-                .toList();
-    }
-
-    /**
      * The mission type's {@code title}.
      *
      * @return the title
@@ -202,15 +172,6 @@ public final class MissionType implements CharterArtifact {
      */
     public List<ExpectedArtifact> expectedOutputArtifacts() {
         return expectedOutputArtifacts;
-    }
-
-    /**
-     * The type's recipe ingredients: the guidance it references.
-     *
-     * @return the references, in authored order
-     */
-    public List<MissionReference> references() {
-        return references;
     }
 
     /**
@@ -306,7 +267,6 @@ public final class MissionType implements CharterArtifact {
         private boolean requiresSubstantiveSpec;
         private @Nullable PathConventions pathConventions;
         private final List<ExpectedArtifact> expectedOutputArtifacts = new ArrayList<>();
-        private final List<MissionReference> references = new ArrayList<>();
         private final List<MissionStep> steps = new ArrayList<>();
         private final List<MissionStep> onDemandSteps = new ArrayList<>();
 
@@ -408,17 +368,6 @@ public final class MissionType implements CharterArtifact {
          */
         public Builder expectedOutputArtifact(ExpectedArtifact value) {
             this.expectedOutputArtifacts.add(Objects.requireNonNull(value, "expectedOutputArtifact"));
-            return this;
-        }
-
-        /**
-         * Appends a type-level reference.
-         *
-         * @param value the reference
-         * @return this builder
-         */
-        public Builder reference(MissionReference value) {
-            this.references.add(Objects.requireNonNull(value, "reference"));
             return this;
         }
 

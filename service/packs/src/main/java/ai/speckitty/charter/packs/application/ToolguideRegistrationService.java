@@ -28,10 +28,8 @@ import org.springframework.stereotype.Service;
  * gate the write, and a refusal changes zero stored files (NFR-002, the {@link PackWriteStore}'s stage-and-swap
  * enforces it).
  *
- * <p>Unlike a directive, a toolguide originates no relationships ({@link Toolguide#relationships()} is empty), so the
- * registration body carries none: there is no body-relationship door and no dual-write ownership rule to enforce here.
- * The commit leaves the pack's standalone relationship shard untouched, so a toolguide write never erases a
- * cross-authored edge another door registered.
+ * <p>A registration body carries no relationship: an edge is written only through the relationship write
+ * (ADR-0063). The commit leaves the pack's relationship shard untouched, so a toolguide write never erases an edge.
  *
  * <p>The guide arrives as a {@link GuideSource}: its Markdown content, or a URI (FR-010). A URI is fetched through the
  * {@link GuideFetcher} port <em>before</em> the pack's write lock is taken, never while it is held (NFR-005), on every

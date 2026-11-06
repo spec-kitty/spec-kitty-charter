@@ -1,7 +1,7 @@
 title: Styleguide
 description: >-
-  One styleguide of a Charter Pack, as the pack declares it. A styleguide mints no relationships (its
-  references are bare citation strings), so relationships is always an empty array (FR-013). Every field is
+  One styleguide of a Charter Pack, as the pack declares it. Its relationships are graph edges, read through
+  listArtifactReferences (ADR-0063). Every field is
   a closed shape: the tooling map is projected onto an ordered array of closed entries, and the arbitrary
   structural-lint-config tree is carried as its canonical JSON text, because a closed response object admits
   neither an open-keyed map nor a recursive tree.
@@ -19,8 +19,6 @@ required:
   - qualityTest
   - structuralLintConfig
   - appliesToLanguages
-  - references
-  - relationships
 properties:
   id:
     type: string
@@ -103,24 +101,6 @@ properties:
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Styleguide.java
       symbol: Styleguide.appliesToLanguages
-  references:
-    type: array
-    description: The bare citation strings carried in the body, in authored order with duplicates kept.
-    items:
-      type: string
-    x-source:
-      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Styleguide.java
-      symbol: Styleguide.references
-  relationships:
-    type: array
-    description: >-
-      The relationships the styleguide is the effective origin of. Always empty: a styleguide mints no
-      relationships (FR-013). Shared shape, reused by reference across the regular-artifact slices.
-    items:
-      $ref: RelationshipRegistration.yaml
-    x-source:
-      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Styleguide.java
-      symbol: Styleguide.relationships
 x-source:
   path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Styleguide.java
   symbol: Styleguide

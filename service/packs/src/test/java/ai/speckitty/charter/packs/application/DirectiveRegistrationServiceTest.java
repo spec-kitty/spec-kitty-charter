@@ -5,13 +5,10 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
-import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
-import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.Enforcement;
@@ -38,75 +35,51 @@ class DirectiveRegistrationServiceTest {
     private final WritePolicyGate policy = new PermissiveWritePolicyGate();
     private final DirectiveRegistrationService service = new DirectiveRegistrationService(store, store, policy);
 
-    // ---- FR-007 / SC-001: register with relationships, read back value-equal ------------------------------------
+    // ---- FR-007 / SC-001: register, read back value-equal; the registration writes no edge (ADR-0063) ----------
 
     @Test
     void registersADirectiveWithItsFieldsAndReadsItBackValueEqual() {
-        Directive submitted = directive("GUARD", "Guard the gate", "proc-1");
-        Relationship bodyEdge =
-                Relationship.of(submitted.urn(), new Urn(NodeKind.PROCEDURE, "proc-1"), RelationType.REQUIRES);
+        Directive submitted = directive("GUARD", "Guard the gate", "The gate runs before the merge.");
 
-        DirectiveRegistrationService.Registered result =
-                service.registerDirective(PACK, submitted, List.of(bodyEdge), false, null);
+        DirectiveRegistrationService.Registered result = service.registerDirective(PACK, submitted, false, null);
 
         assertThat(result.created()).isTrue();
         assertThat(result.target()).isEqualTo(submitted.urn());
         Directive persisted = directiveIn(PACK, "GUARD");
         assertThat(persisted.title()).isEqualTo(submitted.title());
         assertThat(persisted.intent()).isEqualTo(submitted.intent());
-        assertThat(persisted.procedures()).isEqualTo(submitted.procedures());
-        assertThat(persisted.relationships()).isEqualTo(submitted.relationships());
-        assertThat(store.relationships(PACK)).contains(bodyEdge);
+        assertThat(persisted.integrityRules()).containsExactly("The gate runs before the merge.");
+        assertThat(store.relationshipChanges)
+                .as(
+                        "a directive registration never writes the relationship shard: putPackRelationship is the only edge write")
+                .isZero();
     }
 
     // ---- FR-008 control: duplicate-id POST refused, distinct id accepted on the same fixture --------------------
 
     @Test
     void aDuplicateIdPostIsAConflictWhileADistinctIdPostSucceedsOnTheSameFixture() {
-        service.registerDirective(PACK, directive("GUARD", "first", null), List.of(), false, null);
+        service.registerDirective(PACK, directive("GUARD", "first", null), false, null);
         int commitsAfterFirst = store.commits;
 
-        assertThatThrownBy(() ->
-                        service.registerDirective(PACK, directive("GUARD", "again", null), List.of(), false, null))
+        assertThatThrownBy(() -> service.registerDirective(PACK, directive("GUARD", "again", null), false, null))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.REGISTRATION_CONFLICT));
         assertThat(store.commits).as("the refused POST committed nothing").isEqualTo(commitsAfterFirst);
 
         // Same fixture, distinct id: accepted.
-        assertThatCode(() -> service.registerDirective(PACK, directive("CHECK", "ok", null), List.of(), false, null))
+        assertThatCode(() -> service.registerDirective(PACK, directive("CHECK", "ok", null), false, null))
                 .doesNotThrowAnyException();
         assertThat(store.commits).isEqualTo(commitsAfterFirst + 1);
     }
 
     @Test
     void aPutReplacesIdempotentlyRatherThanConflicting() {
-        service.registerDirective(PACK, directive("GUARD", "first", null), List.of(), true, null);
+        service.registerDirective(PACK, directive("GUARD", "first", null), true, null);
         DirectiveRegistrationService.Registered replaced =
-                service.registerDirective(PACK, directive("GUARD", "second", null), List.of(), true, null);
+                service.registerDirective(PACK, directive("GUARD", "second", null), true, null);
         assertThat(replaced.created()).isFalse();
         assertThat(directiveIn(PACK, "GUARD").title()).isEqualTo("second");
-    }
-
-    // ---- FR-010 / SC-003 control: dual-write violation refused (422), pack unchanged, well-formed succeeds ------
-
-    @Test
-    void aBodyRelationshipNotAuthoredFromTheDirectiveIsRefusedAndTheWellFormedOneSucceeds() {
-        Directive directive = directive("GUARD", "Guard", null);
-        Relationship foreign = Relationship.of(
-                new Urn(NodeKind.DIRECTIVE, "OTHER"), new Urn(NodeKind.PROCEDURE, "p"), RelationType.REQUIRES);
-        int before = store.commits;
-
-        assertThatThrownBy(() -> service.registerDirective(PACK, directive, List.of(foreign), true, null))
-                .isInstanceOfSatisfying(
-                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.VALIDATION_FAILED));
-        assertThat(store.commits)
-                .as("a refused registration commits nothing (NFR-002)")
-                .isEqualTo(before);
-
-        Relationship own = Relationship.of(directive.urn(), new Urn(NodeKind.PROCEDURE, "p"), RelationType.REQUIRES);
-        assertThatCode(() -> service.registerDirective(PACK, directive, List.of(own), true, null))
-                .doesNotThrowAnyException();
-        assertThat(store.commits).isEqualTo(before + 1);
     }
 
     // ---- FR-012: optimistic concurrency on an artifact write (the relationship door:
@@ -115,7 +88,7 @@ class DirectiveRegistrationServiceTest {
     @Test
     void aDirectiveWriteWithAStaleIfMatchIsRefused() {
         assertThatThrownBy(() -> service.registerDirective(
-                        PACK, directive("GUARD", "x", null), List.of(), true, "sha256:" + "0".repeat(64)))
+                        PACK, directive("GUARD", "x", null), true, "sha256:" + "0".repeat(64)))
                 .isInstanceOfSatisfying(
                         PreconditionException.class,
                         e -> assertThat(e.kind()).isEqualTo(PreconditionException.Kind.STALE));
@@ -124,7 +97,7 @@ class DirectiveRegistrationServiceTest {
     @Test
     void anUnknownPackIsANotFound() {
         assertThatThrownBy(() -> service.registerDirective(
-                        new PackIdentifier("ghost"), directive("GUARD", "x", null), List.of(), true, null))
+                        new PackIdentifier("ghost"), directive("GUARD", "x", null), true, null))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_NOT_FOUND));
     }
@@ -136,7 +109,7 @@ class DirectiveRegistrationServiceTest {
                 PACK.value(), "1.0.0", Optional.empty(), PACK.value(), Optional.empty(), Optional.empty());
     }
 
-    private static Directive directive(String id, String title, String procedure) {
+    private static Directive directive(String id, String title, String integrityRule) {
         Directive.Builder builder = Directive.builder()
                 .id(new DirectiveIdentifier(id))
                 .packId(PACK)
@@ -144,8 +117,8 @@ class DirectiveRegistrationServiceTest {
                 .title(title)
                 .intent("Intent of " + id)
                 .enforcement(Enforcement.REQUIRED);
-        if (procedure != null) {
-            builder.procedure(procedure);
+        if (integrityRule != null) {
+            builder.integrityRule(integrityRule);
         }
         return builder.build();
     }
@@ -163,6 +136,7 @@ class DirectiveRegistrationServiceTest {
                 Map.of(PACK, Pack.builder().id(PACK).descriptor(descriptor()).build()));
         private final Map<PackIdentifier, List<Relationship>> edges = new HashMap<>();
         private int commits;
+        private int relationshipChanges;
 
         @Override
         public Pack load(PackIdentifier pack) {
@@ -194,13 +168,12 @@ class DirectiveRegistrationServiceTest {
         @Override
         public PackRevision commit(PackIdentifier pack, String ifMatch, PackWriteStore.Change change) {
             packs.put(pack, change.revalidated());
-            change.relationships().ifPresent(persisted -> edges.put(pack, new ArrayList<>(persisted)));
+            change.relationships().ifPresent(persisted -> {
+                edges.put(pack, new ArrayList<>(persisted));
+                relationshipChanges++;
+            });
             commits++;
             return currentRevision(pack);
-        }
-
-        List<Relationship> relationships(PackIdentifier pack) {
-            return List.copyOf(edges.getOrDefault(pack, List.of()));
         }
     }
 }

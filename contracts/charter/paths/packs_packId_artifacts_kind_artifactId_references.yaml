@@ -3,10 +3,11 @@ get:
   summary: List the references one artifact of a Charter Pack writes, each resolved through the compose.
   description: >-
     A composed read (operator ruling of 2026-11-03): it resolves the compose of the configured packs once, inside
-    the read, and answers the references the artifact writes, in the order it writes them and without repeats.
-    Each item carries the reference as written (bare, or <pack-name>::<kind>:<id> for an artifact of another pack
-    the writer relies on), the relation it is written under when the artifact mints a relationship for it, the
-    pack that holds what it names (the configured packId, the pack_id of its pack.yaml and its name), the bare URN it
+    the read, and answers the references the artifact writes (ADR-0063): the edges of its pack's graph documents
+    whose source is the artifact, in document order, then the relations it derives (a guard's implemented_by). A
+    target is listed once per relation. Each item carries the target as written (bare, or
+    <pack-name>::<kind>:<id> for an artifact of another pack the writer relies on), the edge's relation, the pack
+    that holds what it names (the configured packId, the pack_id of its pack.yaml and its name), the bare URN it
     resolves to and, when the target is an artifact the service serves, an artifact link to the pack-scoped read of
     it. A bare reference is held by the pack that writes it, so it shadows an artifact of the same id in another
     pack (FR-014); a qualified one is held by the pack it names. A reference no pack holds has no holdingPack and no

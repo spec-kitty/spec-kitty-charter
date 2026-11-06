@@ -216,7 +216,7 @@ class ToolguideControllerTest {
     }
 
     @ParameterizedTest(name = "{0}")
-    @ValueSource(strings = {"commands", "appliesToLanguages", "references"})
+    @ValueSource(strings = {"commands", "appliesToLanguages"})
     void aListOfMoreThan256ItemsIsA422(String field) throws Exception {
         String items = "[" + String.join(",", java.util.Collections.nCopies(257, "\"x\"")) + "]";
         String within = "[" + String.join(",", java.util.Collections.nCopies(256, "\"x\"")) + "]";
@@ -235,7 +235,7 @@ class ToolguideControllerTest {
     // ---- #292: an explicit null list is refused; an absent one is empty ------------------------------------------
 
     @ParameterizedTest(name = "{0}")
-    @ValueSource(strings = {"commands", "appliesToLanguages", "references"})
+    @ValueSource(strings = {"commands", "appliesToLanguages"})
     void anExplicitNullListIsA422OnPostAndPut(String field) throws Exception {
         String bad = body("make", guideField(GUIDE) + ",\"" + field + "\":null");
         mvc.perform(post("/api/v1/packs/pack-a/artifacts/toolguide")
@@ -263,7 +263,7 @@ class ToolguideControllerTest {
     // ---- #309: a null item inside a list is refused, not a 500 --------------------------------------------------
 
     @ParameterizedTest(name = "{0}")
-    @ValueSource(strings = {"commands", "appliesToLanguages", "references"})
+    @ValueSource(strings = {"commands", "appliesToLanguages"})
     void aNullItemInAListIsA422OnPostAndPut(String field) throws Exception {
         String bad = body("make", guideField(GUIDE) + ",\"" + field + "\":[null]");
         mvc.perform(post("/api/v1/packs/pack-a/artifacts/toolguide")
@@ -282,6 +282,24 @@ class ToolguideControllerTest {
                 .andExpect(jsonPath("$.detail")
                         .value("Item 0 of the " + field + " list is null; a list holds no null item."));
         assertThat(store.commits).as("a refused registration commits nothing").isZero();
+    }
+
+    // ---- ADR-0063: the body is closed; a removed citation list is refused, the same body without it is created -----
+
+    @Test
+    void aBodyStillSendingReferencesIsA422AndWritesNothing() throws Exception {
+        mvc.perform(post("/api/v1/packs/pack-a/artifacts/toolguide")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("make", guideField(GUIDE) + ",\"references\":[\"docs/make.md\"]")))
+                .andExpect(status().is(422))
+                .andExpect(jsonPath("$.code").value("validation_failed"))
+                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("references")));
+        assertThat(store.commits).as("a refused registration commits nothing").isZero();
+        mvc.perform(post("/api/v1/packs/pack-a/artifacts/toolguide")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("make", guideField(GUIDE))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.toolguide.references").doesNotExist());
     }
 
     // ---- the toolguide id names a guide file the schema accepts ---------------------------------------------------

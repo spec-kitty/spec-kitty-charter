@@ -3,14 +3,12 @@ package ai.speckitty.charter.packs.application;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.WritePolicyGate;
-import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,20 +21,12 @@ import org.springframework.stereotype.Service;
  * {@link Pack} &rarr; commit atomically</em>, so the aggregate invariants (belongs-to-pack, no-duplicate-id) gate the
  * write, and a refusal changes zero stored files (NFR-002, the {@link PackWriteStore}'s stage-and-swap enforces it).
  *
- * <h2>Dual-write ownership (analysis finding I1 / plan IC-05)</h2>
+ * <h2>One write path for an edge (ADR-0063)</h2>
  *
- * A relationship can arrive two ways: inside an artifact-registration body ({@link #registerDirective}) or through the
- * standalone relationship endpoint ({@link RelationshipRegistrationService#registerRelationship}). The chosen ownership rule is:
- *
- * <blockquote><strong>An artifact body may assert only relationships whose {@code from} is that artifact.</strong> A
- * body relationship with any other {@code from} is refused {@link RefusalCode#VALIDATION_FAILED} (422). A
- * cross-authored edge — one whose {@code from} is a different component — must be registered through
- * {@link RelationshipRegistrationService#registerRelationship} ({@code PUT /packs/{id}/relationships}).</blockquote>
- *
- * Both doors upsert the <em>same</em> pack relationship shard, keyed by the unordered {@code {from, to}} pair,
- * last-write-wins, so they converge: re-registering a pair (in either orientation, via either door) replaces it. The
- * body door owns a component's own originating edges; the relationship door authors standalone or cross-authored
- * edges. The shared pure upsert lives once in the package-private {@code RelationshipMerge}.
+ * A registration body carries the directive's own fields only. A relationship is authored in the pack's graph documents
+ * and written through {@link RelationshipRegistrationService#registerRelationship} ({@code PUT
+ * /packs/{id}/relationships}), the only operation that writes one, so the registration never touches the relationship
+ * shard.
  */
 @Service
 public final class DirectiveRegistrationService {
@@ -70,11 +60,10 @@ public final class DirectiveRegistrationService {
     public record Registered(PackRevision revision, boolean created, Urn target) {}
 
     /**
-     * Registers a directive and its body-carried relationships into the pack (POST create or PUT create-or-replace).
+     * Registers a directive into the pack (POST create or PUT create-or-replace).
      *
      * @param pack the pack to register into
      * @param directive the assembled directive (already domain-valid)
-     * @param bodyRelationships the relationships carried in the body; each {@code from} must be the directive's URN
      * @param replace {@code true} for PUT (idempotent create-or-replace), {@code false} for POST (create; a duplicate
      *     id is a conflict)
      * @param ifMatch the {@code If-Match} precondition, or {@code null} when none was supplied (optional for an
@@ -82,20 +71,14 @@ public final class DirectiveRegistrationService {
      * @return the registration outcome
      * @throws CharterRefusal {@link RefusalCode#PACK_NOT_FOUND} (404) when the pack is unknown,
      *     {@link RefusalCode#REGISTRATION_CONFLICT} (409) when a POST names an existing id,
-     *     {@link RefusalCode#VALIDATION_FAILED} (422) when a body relationship breaks the ownership rule or the
-     *     mutated aggregate fails revalidation, or the policy's {@link RefusalCode#GOVERNANCE_POLICY_VIOLATION} (409)
+     *     {@link RefusalCode#VALIDATION_FAILED} (422) when the mutated aggregate fails revalidation, or the policy's {@link RefusalCode#GOVERNANCE_POLICY_VIOLATION} (409)
      * @throws PreconditionException {@link PreconditionException.Kind#STALE} (412) when {@code ifMatch} is stale
      */
     public Registered registerDirective(
-            PackIdentifier pack,
-            Directive directive,
-            List<Relationship> bodyRelationships,
-            boolean replace,
-            @Nullable String ifMatch) {
+            PackIdentifier pack, Directive directive, boolean replace, @Nullable String ifMatch) {
         Objects.requireNonNull(pack, "pack");
         Objects.requireNonNull(directive, "directive");
-        Objects.requireNonNull(bodyRelationships, "bodyRelationships");
-        // Held from load to swap, so the precondition, the merge over the current shard and the commit see one
+        // Held from load to swap, so the precondition and the commit see one
         // state: a concurrent writer cannot slip between them (a lost update).
         return writeStore.exclusively(pack, () -> {
             Pack current = packs.load(pack);
@@ -107,18 +90,12 @@ public final class DirectiveRegistrationService {
                         "Pack " + pack.value() + " already has a directive "
                                 + directive.id().value() + ".");
             }
-            RelationshipMerge.ownBodyRelationships("directive", directive.urn(), bodyRelationships);
             policy.authorize(
                     current,
                     exists ? WritePolicyGate.Operation.REPLACE : WritePolicyGate.Operation.REGISTER,
                     directive.urn());
             Pack mutated = revalidated(current, directive);
-            PackWriteStore.Change change = bodyRelationships.isEmpty()
-                    ? PackWriteStore.Change.artifact(mutated, directive) // no edge asserted: shard untouched
-                    : PackWriteStore.Change.artifact(
-                            mutated,
-                            directive,
-                            RelationshipMerge.mergeAll(writeStore.registeredRelationships(pack), bodyRelationships));
+            PackWriteStore.Change change = PackWriteStore.Change.artifact(mutated, directive);
             PackRevision revision = writeStore.commit(pack, ifMatch, change);
             return new Registered(revision, !exists, directive.urn());
         });

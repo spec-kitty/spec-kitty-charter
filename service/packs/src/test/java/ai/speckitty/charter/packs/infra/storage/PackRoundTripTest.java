@@ -52,27 +52,20 @@ class PackRoundTripTest {
                     new TacticDso.Step(
                             "First step",
                             Optional.of("Do the first thing."),
-                            List.of("first example", "second example"),
-                            List.of(new TacticDso.Reference(
-                                    "Nested reference", "directive", "nested-directive", "during the first step"))),
-                    new TacticDso.Step("Second step", Optional.empty(), List.of(), List.of())),
+                            List.of("first example", "second example")),
+                    new TacticDso.Step("Second step", Optional.empty(), List.of())),
             Optional.of("Prove that every field survives."),
             Optional.empty(),
             List.of("drifts silently", "drops a field"),
-            List.of(),
-            List.of(
-                    new TacticDso.Reference("Gamma", "tactic", "gamma-tactic", "always"),
-                    new TacticDso.Reference("Delta", "styleguide", "delta-style", "when styling"),
-                    new TacticDso.Reference("Gamma again", "tactic", "gamma-tactic", "on a second look")));
+            List.of());
 
     private static final TacticDso BETA = new TacticDso(
             BETA_ID,
             "1.0",
             "Beta tactic",
-            List.of(new TacticDso.Step("Only step", Optional.empty(), List.of(), List.of())),
+            List.of(new TacticDso.Step("Only step", Optional.empty(), List.of())),
             Optional.empty(),
             Optional.empty(),
-            List.of(),
             List.of(),
             List.of());
 
@@ -127,17 +120,13 @@ class PackRoundTripTest {
         assertThat(tactics(read)).containsExactly(ALPHA, BETA);
     }
 
-    /** The oracle bites: dropping one nested reference from the literal makes it differ from what was read. */
+    /** The oracle bites: dropping one nested example from the literal makes it differ from what was read. */
     @Test
-    void theLiteralOracleDistinguishesADroppedNestedReference(@TempDir Path host) throws IOException {
+    void theLiteralOracleDistinguishesADroppedNestedExample(@TempDir Path host) throws IOException {
         PackFixtures.copyOf("pack-a", host);
         TacticDso readAlpha = tactic(storeOver(host).read(PACK), ALPHA_ID);
         List<TacticDso.Step> withoutNested = List.of(
-                new TacticDso.Step(
-                        "First step",
-                        Optional.of("Do the first thing."),
-                        List.of("first example", "second example"),
-                        List.of()),
+                new TacticDso.Step("First step", Optional.of("Do the first thing."), List.of("first example")),
                 readAlpha.steps().get(1));
         TacticDso droppedField = new TacticDso(
                 readAlpha.id(),
@@ -147,8 +136,7 @@ class PackRoundTripTest {
                 readAlpha.purpose(),
                 readAlpha.notes(),
                 readAlpha.failureModes(),
-                readAlpha.appliesToLanguages(),
-                readAlpha.references());
+                readAlpha.appliesToLanguages());
 
         assertThat(droppedField).isNotEqualTo(readAlpha);
         assertThat(readAlpha).isEqualTo(ALPHA);
@@ -168,10 +156,9 @@ class PackRoundTripTest {
         // active_charter and pack_drg would be deleted by a from-scratch writer that did not model them.
         assertThat(refetched.descriptor().activeCharter()).contains("org-charter.yaml");
         assertThat(refetched.descriptor().packDrg()).contains("drg/fragment.yaml");
-        // The repeated reference id and the reference order of the alpha tactic.
-        assertThat(tactic(refetched, ALPHA_ID).references())
-                .extracting(TacticDso.Reference::name)
-                .containsExactly("Gamma", "Delta", "Gamma again");
+        // The order of a step's examples.
+        assertThat(tactic(refetched, ALPHA_ID).steps().get(0).examples())
+                .containsExactly("first example", "second example");
         // Present optionals stay present, absent ones stay absent.
         assertThat(tactic(refetched, ALPHA_ID).purpose()).contains("Prove that every field survives.");
         assertThat(tactic(refetched, ALPHA_ID).notes()).isEmpty();
@@ -192,8 +179,7 @@ class PackRoundTripTest {
                 alpha.purpose(),
                 alpha.notes(),
                 alpha.failureModes(),
-                alpha.appliesToLanguages(),
-                alpha.references());
+                alpha.appliesToLanguages());
         FilesystemPackStore.PackRead withMutation = withTactics(
                 original.descriptor(),
                 tactics(original).stream()

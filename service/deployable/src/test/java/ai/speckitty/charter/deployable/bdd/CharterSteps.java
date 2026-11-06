@@ -337,6 +337,13 @@ public class CharterSteps {
         assertThat(field.asString()).isEqualTo(value);
     }
 
+    @Then("the field at {string} is absent")
+    public void fieldAbsent(String pointer) throws Exception {
+        assertThat(JSON.readTree(http.body()).at(pointer).isMissingNode())
+                .as("%s is absent: %s", pointer, http.body())
+                .isTrue();
+    }
+
     @Then("the field at {string} is {int}")
     public void numberAt(String pointer, int value) throws Exception {
         JsonNode field = at(pointer);

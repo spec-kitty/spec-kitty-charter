@@ -7,7 +7,6 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
-import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import java.util.List;
 import java.util.Optional;
@@ -42,11 +41,6 @@ class PackKindMapTest {
         public Optional<String> description() {
             return Optional.empty();
         }
-
-        @Override
-        public List<Relationship> relationships() {
-            return List.of();
-        }
     }
 
     private static Tactic tactic(String id, String name) {
@@ -55,7 +49,7 @@ class PackKindMapTest {
                 .packId(ID)
                 .schemaVersion("1.0")
                 .name(name)
-                .step(new TacticStep("s", Optional.empty(), List.of(), List.of()))
+                .step(new TacticStep("s", Optional.empty(), List.of()))
                 .build();
     }
 

@@ -65,12 +65,12 @@ class BinaryPayloadRevisionTest {
                 .doesNotThrowAnyException();
 
         PackRevision registered = directives
-                .registerDirective(PACK, directive("BINARY_PROBE_ONE"), List.of(), false, current.token())
+                .registerDirective(PACK, directive("BINARY_PROBE_ONE"), false, current.token())
                 .revision();
         assertThat(registered).isNotEqualTo(current).isEqualTo(writeStore.currentRevision(PACK));
 
         PackRevision preEdit = directives
-                .registerDirective(PACK, directive("BINARY_PROBE_TWO"), List.of(), false, registered.token())
+                .registerDirective(PACK, directive("BINARY_PROBE_TWO"), false, registered.token())
                 .revision();
         assertThat(preEdit)
                 .as("If-Match with the reported revision passed")
@@ -81,8 +81,8 @@ class BinaryPayloadRevisionTest {
         edited[edited.length / 2] ^= 0x01;
         Files.write(logo, edited);
 
-        assertThatThrownBy(() -> directives.registerDirective(
-                        PACK, directive("BINARY_PROBE_THREE"), List.of(), false, preEdit.token()))
+        assertThatThrownBy(() ->
+                        directives.registerDirective(PACK, directive("BINARY_PROBE_THREE"), false, preEdit.token()))
                 .isInstanceOfSatisfying(
                         PreconditionException.class,
                         e -> assertThat(e.kind()).isEqualTo(PreconditionException.Kind.STALE));
@@ -92,8 +92,7 @@ class BinaryPayloadRevisionTest {
 
         PackRevision fresh = writeStore.currentRevision(PACK);
         assertThat(fresh).as("one payload byte moved the revision").isNotEqualTo(preEdit);
-        assertThatCode(() -> directives.registerDirective(
-                        PACK, directive("BINARY_PROBE_THREE"), List.of(), false, fresh.token()))
+        assertThatCode(() -> directives.registerDirective(PACK, directive("BINARY_PROBE_THREE"), false, fresh.token()))
                 .doesNotThrowAnyException();
         assertThat(Files.readAllBytes(logo))
                 .as("the commit kept the edited payload")

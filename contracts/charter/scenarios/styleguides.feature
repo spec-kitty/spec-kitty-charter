@@ -5,8 +5,9 @@ Feature: Styleguides are read and registered functionally
   answering the artifact in the envelope the item read answers, through functional registration
   (ADR-0026): the whole pack aggregate is revalidated and committed atomically, a refusal leaves the pack
   unchanged (NFR-002), and every write answers an ETag revision for optimistic concurrency (FR-012). A
-  styleguide mints no relationships (its references are bare citations), so the relationships array is
-  always empty (FR-013). There is no DELETE or PATCH.
+  styleguide carries no relationship field: its relationships are registered through PUT
+  /packs/{packId}/relationships and read through its references (ADR-0063), and a body that still sends
+  one is refused. There is no DELETE or PATCH.
 
   Background:
     Given the org pack "qa" with the file "pack.yaml":
@@ -21,7 +22,7 @@ Feature: Styleguides are read and registered functionally
       pack_drg: drg/fragment.yaml
       """
 
-  Scenario: A registered styleguide is read back value-equal with no relationships (FR-013, SC-001)
+  Scenario: A registered styleguide is read back value-equal, with no relationship field (FR-013, SC-001, ADR-0063)
     When I PUT "/packs/qa/artifacts/styleguide/java-style" with the body:
       """
       {"schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": ["Prefer immutability"]}
@@ -32,7 +33,8 @@ Feature: Styleguides are read and registered functionally
     And the field "id" of the response body is "java-style"
     And the field at "/styleguide/title" is "Java style"
     And the field at "/styleguide/scope" is "code"
-    And the artifact in the response body has 0 relationships
+    And the field at "/styleguide/references" is absent
+    And the field at "/styleguide/relationships" is absent
 
   Scenario: A duplicate id is a conflict on POST while a distinct id is created (FR-008)
     When I POST "/packs/qa/artifacts/styleguide" as JSON with the body:
@@ -48,7 +50,7 @@ Feature: Styleguides are read and registered functionally
         "kind": "styleguide",
         "id": "java-style",
         "packId": "qa",
-        "styleguide": {"id": "java-style", "schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": ["Prefer immutability"], "patterns": [], "antiPatterns": [], "tooling": [], "qualityTest": null, "structuralLintConfig": null, "appliesToLanguages": [], "references": [], "relationships": []},
+        "styleguide": {"id": "java-style", "schemaVersion": "1.0", "title": "Java style", "scope": "code", "principles": ["Prefer immutability"], "patterns": [], "antiPatterns": [], "tooling": [], "qualityTest": null, "structuralLintConfig": null, "appliesToLanguages": []},
         "_links": {
           "self": {"href": "/api/v1/packs/qa/artifacts/styleguide/java-style"},
           "collection": {"href": "/api/v1/packs/qa/artifacts?kind=styleguide"}
@@ -112,9 +114,10 @@ Feature: Styleguides are read and registered functionally
     Then the response status is 404
 
     Examples:
-      | case        | fields                                  | detail                                                                                                             |
-      | a null list | , "references": null                    | The references list is null; a list is sent as an array, [] when it is empty, and an optional one may be left out. |
-      | a null item | , "references": ["docs/style.md", null] | Item 1 of the references list is null; a list holds no null item.                                                  |
+      | case                 | fields                                | detail                                                                                                                     |
+      | a null list          | , "appliesToLanguages": null          | The appliesToLanguages list is null; a list is sent as an array, [] when it is empty, and an optional one may be left out. |
+      | a null item          | , "appliesToLanguages": ["java", null] | Item 1 of the appliesToLanguages list is null; a list holds no null item.                                                  |
+      | a removed references | , "references": ["docs/style.md"]     | A styleguide registration has no member references; a relationship is registered through PUT /packs/{packId}/relationships. |
 
   Scenario: A styleguide registration body over 1 MiB is refused before it is read (#310)
     When I PUT "/packs/qa/artifacts/styleguide/java-style" with the body, its "title" padded to 1048576 bytes:

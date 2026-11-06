@@ -22,6 +22,8 @@ import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackDocument;
+import ai.speckitty.charter.packs.domain.PackEdge;
+import ai.speckitty.charter.packs.domain.PackEdgeRepository;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRepository;
@@ -83,6 +85,7 @@ public final class DomainRepositoryService
                 PackDescriptorRepository,
                 PackCatalogRepository,
                 PackArtifactRepository,
+                PackEdgeRepository,
                 PackRepository {
 
     /** The seam that supplies the configured pack locations, read on every call so a reconfiguration is seen. */
@@ -289,6 +292,37 @@ public final class DomainRepositoryService
     }
 
     // ---- PackArtifactRepository -------------------------------------------------------------------------------
+
+    /**
+     * The edges of the pack's graph documents, in {@link FilesystemPackStore#readGraphs} order: the root shards by
+     * file name, then the fragment, each in document order (ADR-0063).
+     *
+     * @param pack the pack
+     * @return the edges
+     * @throws CharterRefusal {@code PACK_UNREADABLE} when a graph document cannot be read or an edge names an unknown
+     *     relation
+     */
+    @Override
+    public List<PackEdge> edges(PackIdentifier pack) {
+        Resolved resolved = resolve(pack);
+        FilesystemPackStore.GraphRead graphs = resolved.store.readGraphs(resolved.key);
+        if (!graphs.violations().isEmpty()) {
+            throw new CharterRefusal(
+                    RefusalCode.PACK_UNREADABLE, "a graph document of " + pack.value() + " cannot be read");
+        }
+        List<PackEdge> edges = new ArrayList<>();
+        for (GraphDocument document : graphs.documents()) {
+            for (GraphDocument.Edge edge : document.edges()) {
+                RelationType relation = RelationType.fromToken(edge.relation())
+                        .orElseThrow(() -> new CharterRefusal(
+                                RefusalCode.PACK_UNREADABLE,
+                                document.file() + " of " + pack.value() + ": unknown relation '" + edge.relation()
+                                        + "'"));
+                edges.add(new PackEdge(edge.source(), edge.target(), relation));
+            }
+        }
+        return List.copyOf(edges);
+    }
 
     /**
      * What the compose needs to know about the pack, from one assembly of it and one read of its graph documents:
@@ -532,12 +566,6 @@ public final class DomainRepositoryService
         for (FilesystemPackStore.Stored<D> stored : read.elements(kind)) {
             try {
                 E entity = kind.toEntity(pack, stored.dso());
-                Optional<String> unsound =
-                        PackPolicy.referenceProblem(read.descriptor().name(), entity);
-                if (unsound.isPresent()) {
-                    builder.violation(new PackElementViolation(stored.file(), "reference", unsound.get()));
-                    continue;
-                }
                 Optional<UnresolvedTemplate> unresolved = MissionTemplates.firstUnresolved(entity, namableTemplates);
                 if (unresolved.isPresent()) {
                     builder.violation(new PackElementViolation(

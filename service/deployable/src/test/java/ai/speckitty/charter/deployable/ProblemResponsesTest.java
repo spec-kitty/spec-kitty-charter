@@ -110,9 +110,7 @@ class ProblemResponsesTest {
             delimiter = '|',
             value = {
                 "directive | {\"id\":\"X\",\"schemaVersion\":\"1.0\",\"title\":\"t\",\"intent\":\"i\","
-                        + "\"enforcement\":\"required\",\"references\":null}",
-                "paradigm | {\"id\":\"x\",\"schemaVersion\":\"1.0\",\"name\":\"n\",\"summary\":\"s\","
-                        + "\"relationships\":null}",
+                        + "\"enforcement\":\"required\",\"integrityRules\":null}",
                 "styleguide | {\"id\":\"x\",\"schemaVersion\":\"1.0\",\"title\":\"t\",\"scope\":\"code\","
                         + "\"principles\":[\"p\"],\"patterns\":null}",
                 "styleguide | {\"id\":\"x\",\"schemaVersion\":\"1.0\",\"title\":\"t\",\"scope\":\"code\","
@@ -140,10 +138,8 @@ class ProblemResponsesTest {
     @CsvSource(
             delimiter = '|',
             value = {
-                "directive | references | 0 | {\"id\":\"X\",\"schemaVersion\":\"1.0\",\"title\":\"t\",\"intent\":\"i\","
-                        + "\"enforcement\":\"required\",\"references\":[null]}",
-                "paradigm | relationships | 0 | {\"id\":\"x\",\"schemaVersion\":\"1.0\",\"name\":\"n\","
-                        + "\"summary\":\"s\",\"relationships\":[null]}",
+                "directive | integrityRules | 0 | {\"id\":\"X\",\"schemaVersion\":\"1.0\",\"title\":\"t\",\"intent\":\"i\","
+                        + "\"enforcement\":\"required\",\"integrityRules\":[null]}",
                 "styleguide | principles | 1 | {\"id\":\"x\",\"schemaVersion\":\"1.0\",\"title\":\"t\","
                         + "\"scope\":\"code\",\"principles\":[\"p\",null]}",
                 "toolguide | commands | 0 | {\"id\":\"x\",\"schemaVersion\":\"1.0\",\"tool\":\"x\",\"title\":\"t\","
@@ -169,16 +165,50 @@ class ProblemResponsesTest {
      */
     @Test
     void aNullRequiredFieldInsideAListItemIsABadRequestProblemNotAServerError() throws Exception {
-        mvc.perform(post("/api/v1/packs/qa/artifacts/directive")
+        mvc.perform(post("/api/v1/packs/qa/artifacts/styleguide")
                         .header("Authorization", BEARER)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"id\":\"X\",\"schemaVersion\":\"1.0\",\"title\":\"t\",\"intent\":\"i\","
-                                + "\"enforcement\":\"required\",\"references\":[{\"type\":null,\"id\":\"a\","
-                                + "\"when\":null,\"reason\":null}]}"))
+                        .content("{\"id\":\"x\",\"schemaVersion\":\"1.0\",\"title\":\"t\",\"scope\":\"code\","
+                                + "\"principles\":[\"p\"],\"patterns\":[{\"name\":null,\"description\":\"d\"}]}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(result ->
                         assertThat(result.getResolvedException()).isInstanceOf(MethodArgumentNotValidException.class))
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON));
+    }
+
+    /**
+     * A registration that still sends a member its schema does not declare, a relationship field ADR-0063 removed among
+     * them, is a {@code 422 validation_failed} naming the member, for each kind, in the assembled application: the
+     * converter as Spring Boot configures it would skip the member and answer a success, so the body advice refuses it
+     * before the body is read. The per-member matrices are the controller tests'.
+     */
+    @ParameterizedTest(name = "{0} {1}")
+    @CsvSource(
+            delimiter = '|',
+            value = {
+                "directive | relationships | {\"id\":\"X\",\"schemaVersion\":\"1.0\",\"title\":\"t\",\"intent\":\"i\","
+                        + "\"enforcement\":\"required\",\"relationships\":[]}",
+                "directive | references | {\"id\":\"X\",\"schemaVersion\":\"1.0\",\"title\":\"t\",\"intent\":\"i\","
+                        + "\"enforcement\":\"required\",\"references\":[]}",
+                "paradigm | directiveRefs | {\"id\":\"x\",\"schemaVersion\":\"1.0\",\"name\":\"n\",\"summary\":\"s\","
+                        + "\"directiveRefs\":[\"D\"]}",
+                "styleguide | references | {\"id\":\"x\",\"schemaVersion\":\"1.0\",\"title\":\"t\",\"scope\":\"code\","
+                        + "\"principles\":[\"p\"],\"references\":[\"r\"]}",
+                "toolguide | references | {\"id\":\"x\",\"schemaVersion\":\"1.0\",\"tool\":\"x\",\"title\":\"t\","
+                        + "\"summary\":\"s\",\"guide\":\"## Overview\",\"references\":[\"r\"]}"
+            })
+    void aRegistrationStillSendingARemovedMemberIsAValidationFailedRefusal(String kind, String member, String body)
+            throws Exception {
+        mvc.perform(post("/api/v1/packs/qa/artifacts/" + kind)
+                        .header("Authorization", BEARER)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().is(422))
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.code").value("validation_failed"))
+                .andExpect(jsonPath("$.detail")
+                        .value("A " + kind + " registration has no member " + member
+                                + "; a relationship is registered through PUT /packs/{packId}/relationships."));
     }
 
     /**

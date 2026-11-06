@@ -12,7 +12,6 @@ import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.PackSources;
 import ai.speckitty.charter.packs.domain.Paradigm;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
-import ai.speckitty.charter.packs.domain.ParadigmReference;
 import ai.speckitty.charter.packs.domain.ParadigmRepository;
 import java.util.List;
 import java.util.Map;
@@ -73,20 +72,15 @@ class ParadigmReadServiceTest {
     }
 
     @Test
-    void everyReturnedParadigmCarriesItsDirectiveRelationshipsPopulated() {
-        // FR-014: the list read returns each paradigm with its originating relationships derived from its fields.
+    void aReturnedParadigmCarriesNoRelationship() {
+        // ADR-0063: a paradigm's relationships are graph edges, never derived from a field, listed or single.
         Paradigm read = service.paradigmsOf(PACK_A).value().stream()
                 .filter(p -> p.id().equals(CLEAN))
                 .findFirst()
                 .orElseThrow();
-        assertThat(read.relationships()).isNotEmpty();
-        assertThat(read.relationships()).isEqualTo(clean.relationships());
-        // The single read populates them the same way, with the requires-to-directive edge present.
-        Paradigm single = service.paradigm(PACK_A, CLEAN).value();
-        assertThat(single.relationships()).isEqualTo(clean.relationships());
-        assertThat(single.relationships())
-                .anySatisfy(
-                        relationship -> assertThat(relationship.to().toString()).isEqualTo("directive:ALPHA"));
+        assertThat(read.derivedRelationships()).isEmpty();
+        assertThat(service.paradigm(PACK_A, CLEAN).value().derivedRelationships())
+                .isEmpty();
     }
 
     @Test
@@ -174,8 +168,6 @@ class ParadigmReadServiceTest {
                 .schemaVersion("1.0")
                 .name(id)
                 .summary("Summary of " + id)
-                .directiveRef("ALPHA")
-                .reference(new ParadigmReference("tactic", "a-tactic"))
                 .build();
     }
 

@@ -17,12 +17,17 @@ import java.util.Set;
 
 /**
  * The lazy, repository-backed DRG walk driver (ADR-0025 Decision 4). It visits a component's effective-origin
- * {@link CharterArtifact#relationships() relationships}, resolving each neighbour on demand through the
+ * {@link CharterArtifact#derivedRelationships() derived relationships}, resolving each neighbour on demand through the
  * {@link ComponentResolver} port, with a visited-URN cycle guard. It never materialises the whole graph: it issues at
  * most one resolver call per distinct reachable component (NFR-001).
  *
  * <p>It lives in the application ring, where the ports exist (ADR-0006). It is plain orchestration over the resolver
  * and a {@link GraphWalker} visitor — no IO, no framework; the composition root constructs it.
+ *
+ * <p><strong>It does not walk authored edges.</strong> Since ADR-0063 a relationship is authored only in a pack's graph
+ * documents, read through {@link ai.speckitty.charter.packs.domain.PackEdgeRepository}; the derived relationships it
+ * follows are a guard's {@code implemented_by} alone. No read is wired through it, and a caller wired to it walks
+ * almost nothing: retire it or feed it from the edge port first (#397).
  */
 public final class GraphWalk {
 
@@ -103,7 +108,7 @@ public final class GraphWalk {
         if (nodeDescent == Descent.SKIP) {
             return true;
         }
-        for (Relationship relationship : component.relationships()) {
+        for (Relationship relationship : component.derivedRelationships()) {
             Descent relationshipDescent = visitor.onRelationship(relationship);
             if (relationshipDescent == Descent.STOP) {
                 return false;

@@ -1,9 +1,11 @@
 title: DirectiveRegistration
 description: >-
-  The registration body of a directive: its fields plus the relationships it originates. On POST to the
-  collection the id is optional (the server answers with Location); on PUT the id is taken from the path.
-  A relationship in this body may be authored only from the directive itself (dual-write ownership rule,
-  ADR-0026 / plan IC-05); a cross-authored edge is registered through PUT /packs/{packId}/relationships.
+  The registration body of a directive: its fields only. A directive carries no relationships: every relationship is
+  authored in the pack's graph documents and registered through PUT /packs/{packId}/relationships, the only
+  operation that writes one (ADR-0063). On POST to the collection the id is optional (the server answers with
+  Location); on PUT the id is taken from the path.
+  A member this schema does not declare is refused 422 validation_failed, naming the member, before the body is bound
+  and nothing is written (ADR-0063).
   A list in this body is never null and holds no null item: a list is sent as an array, [] where it may be empty, and
   an optional one may be left out. A null list, or a null item in one, is refused 422 validation_failed before the body
   is bound, whatever else the body breaks (the detail names the list and the item, counted from 0); a null field inside
@@ -53,14 +55,6 @@ properties:
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Directive.java
       symbol: Directive.scope
-  procedures:
-    type: array
-    description: The ids of the procedures the directive requires, in authored order.
-    items:
-      type: string
-    x-source:
-      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Directive.java
-      symbol: Directive.procedures
   integrityRules:
     type: array
     description: The directive's integrity rules, in authored order.
@@ -85,19 +79,3 @@ properties:
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Directive.java
       symbol: Directive.explicitAllowances
-  references:
-    type: array
-    description: The artifacts the directive points at, in authored order.
-    items:
-      $ref: DirectiveReference.yaml
-    x-source:
-      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Directive.java
-      symbol: Directive.references
-  relationships:
-    type: array
-    description: The relationships the body co-authors; each must be authored from this directive.
-    items:
-      $ref: RelationshipRegistration.yaml
-    x-source:
-      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Directive.java
-      symbol: Directive.relationships
