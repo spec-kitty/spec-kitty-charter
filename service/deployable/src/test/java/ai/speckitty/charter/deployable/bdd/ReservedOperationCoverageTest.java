@@ -21,7 +21,8 @@ import org.snakeyaml.engine.v2.api.LoadSettings;
  * The 501 pins of {@code activations.feature} and the operations the contract marks {@code x-reserved} are one to
  * one (ADR-0020 D8): every reserved operation is pinned by a scenario that calls it, and every pin calls a reserved
  * operation. A reserved operation without a pin, or a pin whose operation was built (its {@code x-reserved} removed)
- * but whose scenario was not, fails here.
+ * but whose scenario was not, fails here. Only the request lines of the {@code @reserved} scenarios count: a scenario
+ * of the file that is not a pin may call a built operation.
  */
 class ReservedOperationCoverageTest {
 
@@ -30,6 +31,8 @@ class ReservedOperationCoverageTest {
     private static final Pattern REQUEST =
             Pattern.compile("^\\s*(?:When|And) I (?:send )?(GET|PUT|POST|DELETE|PATCH) \"([^\"?]+)(?:\\?[^\"]*)?\"");
     private static final Pattern RESERVED_TAG = Pattern.compile("\n\\s*@reserved\\s*\n");
+    private static final Pattern NEXT_SCENARIO =
+            Pattern.compile("^\\s*(?:@|Scenario|Rule:|Example:|Background:)", Pattern.MULTILINE);
     private static final List<String> METHODS = List.of("get", "put", "post", "delete", "patch");
 
     private final ContractConformance contract = new ContractConformance();
@@ -43,8 +46,9 @@ class ReservedOperationCoverageTest {
     }
 
     @Test
-    void theActivationSetReservesThirteenOperations() {
-        assertThat(reservedOperations()).hasSize(13);
+    void theActivationSetReservesFiveOperations() {
+        // PR B built select, unselect, deactivate and re-activate: the preset write and the four effective reads stay.
+        assertThat(reservedOperations()).hasSize(5);
     }
 
     private Set<String> reservedOperations() {
@@ -64,26 +68,40 @@ class ReservedOperationCoverageTest {
 
     private Set<String> pinnedOperations() {
         Set<String> pinned = new TreeSet<>();
-        for (String scenario : RESERVED_TAG.splitAsStream(text(FEATURE)).toList()) {
-            if (scenario.contains("Scenario:")) {
-                assertThat(scenario)
-                        .as("every reserved scenario of %s ends in the 501 step", FEATURE)
-                        .contains("Then the operation is refused as not implemented");
-            }
-        }
-        for (String line : text(FEATURE).lines().toList()) {
-            Matcher request = REQUEST.matcher(line);
-            if (!request.find()) {
-                continue;
-            }
-            String method = request.group(1).toLowerCase(Locale.ROOT);
-            String path = request.group(2);
-            ContractConformance.DeclaredOperation operation = contract.operation(method, path)
-                    .orElseThrow(() -> new AssertionError(
-                            "the pin calls " + method + " " + path + ", which the contract does not declare"));
-            pinned.add(key(method, operation.pathTemplate()));
+        for (String scenario : reservedScenarios()) {
+            assertThat(scenario)
+                    .as("every reserved scenario of %s ends in the 501 step", FEATURE)
+                    .contains("Then the operation is refused as not implemented");
+            scenario.lines().map(REQUEST::matcher).filter(Matcher::find).forEach(request -> pinned.add(pin(request)));
         }
         return pinned;
+    }
+
+    /**
+     * Each scenario a {@code @reserved} tag marks: the text after the tag, from its {@code Scenario:} line up to the
+     * next tag or scenario, so an untagged scenario that follows a pin is not read as part of it.
+     */
+    private static List<String> reservedScenarios() {
+        List<String> blocks = RESERVED_TAG.splitAsStream(text(FEATURE)).toList();
+        return blocks.subList(1, blocks.size()).stream()
+                .filter(block -> block.contains("Scenario:"))
+                .map(ReservedOperationCoverageTest::firstScenario)
+                .toList();
+    }
+
+    private static String firstScenario(String block) {
+        String scenario = block.substring(block.indexOf("Scenario:"));
+        Matcher next = NEXT_SCENARIO.matcher(scenario);
+        return next.find(scenario.indexOf('\n') + 1) ? scenario.substring(0, next.start()) : scenario;
+    }
+
+    private String pin(Matcher request) {
+        String method = request.group(1).toLowerCase(Locale.ROOT);
+        String path = request.group(2);
+        ContractConformance.DeclaredOperation operation = contract.operation(method, path)
+                .orElseThrow(() -> new AssertionError(
+                        "the pin calls " + method + " " + path + ", which the contract does not declare"));
+        return key(method, operation.pathTemplate());
     }
 
     private static String key(String method, Object template) {

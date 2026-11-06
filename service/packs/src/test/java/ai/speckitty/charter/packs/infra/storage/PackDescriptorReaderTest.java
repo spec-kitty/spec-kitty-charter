@@ -55,6 +55,26 @@ class PackDescriptorReaderTest {
         assertThat(read(VALID).declaredLevel()).isEqualTo(Optional.empty());
     }
 
+    /** ADR-0062 decision 1: the descriptor names its policy file; without the key the pack has none. */
+    @Test
+    void aNamedMutabilityPolicyIsReportedAsThePathAndAnAbsentOneIsEmpty() {
+        assertThat(read(VALID + "mutability_policy: policy.yaml\n").paths().mutabilityPolicy())
+                .contains("policy.yaml");
+        assertThat(read(VALID).paths().mutabilityPolicy()).isEmpty();
+    }
+
+    /** The key survives the write back: a descriptor written and read again still names its policy file. */
+    @Test
+    void aNamedMutabilityPolicyRoundTripsThroughTheDescriptorWrite() {
+        YamlSerializationStrategy strategy = new YamlSerializationStrategy();
+        PackDescriptor named = read(VALID + "active_charter: org-charter.yaml\nmutability_policy: policy.yaml\n");
+
+        String written = strategy.writeDescriptor(PackDescriptorDso.of(named));
+
+        assertThat(written).endsWith("active_charter: org-charter.yaml\nmutability_policy: policy.yaml\n");
+        assertThat(read(written)).isEqualTo(named);
+    }
+
     @Test
     void anAbsentDependsOnIsEmptyNotDefaulted() {
         assertThat(read(VALID).dependencies()).isEmpty();
@@ -210,7 +230,8 @@ class PackDescriptorReaderTest {
                         "overrides",
                         "requires_core",
                         "active_charter",
-                        "pack_drg");
+                        "pack_drg",
+                        "mutability_policy");
     }
 
     // ---- a descriptor that is not YAML or breaks its schema ------------------------------------------

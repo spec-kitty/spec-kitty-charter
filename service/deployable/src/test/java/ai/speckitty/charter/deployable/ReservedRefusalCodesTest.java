@@ -60,7 +60,7 @@ class ReservedRefusalCodesTest {
     private static final String PACK_FINDING_CODE = PackFindingCode.class.getName();
 
     private static final String ENUM = pattern(RefusalCode.class.getName());
-    private static final String HANDLER_CLASS = "ai.speckitty.charter.packs.infra.api.RefusalHandler";
+    private static final String HANDLER_CLASS = "ai.speckitty.charter.web.RefusalHandler";
     private static final String HANDLER = pattern(HANDLER_CLASS);
 
     /** The methods of {@code RefusalHandler} that map every code to its status and title, raising none. */
@@ -192,6 +192,18 @@ class ReservedRefusalCodesTest {
         // raised; drg_schema_error is raised only off the wire (WholePackStore, PackFindingCode), so it is not.
         assertThat(raisedCodes()).contains("GOVERNANCE_POLICY_VIOLATION");
         assertThat(unraisedCodes()).contains("DRG_SCHEMA_ERROR");
+        // #125, #360: the activation register and its per-artifact writes raise five of the activation set's six
+        // codes, and the select of a mission type raises mission_type_not_found; the preset write is still reserved
+        // (ADR-0020 D8), so preset_not_found stays unraised, and so does the action-context code.
+        assertThat(raisedCodes())
+                .contains(
+                        "ACTIVATION_NOT_FOUND",
+                        "ACTIVATION_INVALID",
+                        "ARTIFACT_REQUIRED",
+                        "ARTIFACT_LOCKED",
+                        "ARTIFACT_NOT_FOUND",
+                        "MISSION_TYPE_NOT_FOUND");
+        assertThat(unraisedCodes()).contains("PRESET_NOT_FOUND", "ACTION_NOT_FOUND");
     }
 
     @ParameterizedTest
