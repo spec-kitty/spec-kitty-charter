@@ -93,7 +93,7 @@ class ActivationSelectionRaceTest {
             List<Callable<String>> writers = new ArrayList<>();
             for (String directive : ids) {
                 writers.add(() -> {
-                    service.select(id, "directive", directive, Optional.empty(), false, revision);
+                    service.select(id, "directive", directive, Optional.empty(), false, List.of(), revision);
                     return directive;
                 });
             }

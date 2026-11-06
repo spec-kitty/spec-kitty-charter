@@ -38,20 +38,6 @@ public class ActivationPresetService {
     }
 
     /**
-     * Applies one preset.
-     *
-     * @param id the activation's id
-     * @param presetId the path's preset id
-     * @param force whether the deny entries of the preset's members are cleared
-     * @param ifMatch the {@code If-Match} header, verbatim; null when absent
-     * @return the outcome
-     * @throws CharterRefusal with {@code preset_not_found} when the activation's closure holds no such preset
-     */
-    public ActivationWrites.Outcome apply(ActivationId id, String presetId, boolean force, @Nullable String ifMatch) {
-        return apply(id, presetId, force, List.of(), ifMatch);
-    }
-
-    /**
      * Applies one preset, whose request body may be malformed.
      *
      * @param id the activation's id

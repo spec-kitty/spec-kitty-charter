@@ -63,7 +63,7 @@ class ActivationPresetServiceTest {
     void aPresetReplacesTheKeysItListsAndStoresTheResultAfterOneRead() {
         StoredActivation before = stored(ActivationDocument.builder().selected(ArtifactKind.DIRECTIVE, List.of("A")));
 
-        ActivationWrites.Outcome outcome = service.apply(ID, "team", false, quoted(before));
+        ActivationWrites.Outcome outcome = service.apply(ID, "team", false, List.of(), quoted(before));
 
         assertThat(outcome.change().applied())
                 .containsExactly(
@@ -87,7 +87,7 @@ class ActivationPresetServiceTest {
         StoredActivation before =
                 stored(ActivationDocument.builder().deactivated(ArtifactKind.DIRECTIVE, List.of("B")));
 
-        ActivationWrites.Outcome outcome = service.apply(ID, "team", true, quoted(before));
+        ActivationWrites.Outcome outcome = service.apply(ID, "team", true, List.of(), quoted(before));
 
         assertThat(outcome.change().cleared()).containsExactly(new ArtifactRef(ArtifactKind.DIRECTIVE, "B"));
         assertThat(repository.find(ID).orElseThrow().document().deactivated()).isEmpty();
@@ -97,7 +97,7 @@ class ActivationPresetServiceTest {
     void aPresetTheClosureDoesNotHoldIs404PresetNotFoundAndNothingIsStored() {
         StoredActivation before = stored(ActivationDocument.builder());
 
-        assertThatThrownBy(() -> service.apply(ID, "no-such", false, quoted(before)))
+        assertThatThrownBy(() -> service.apply(ID, "no-such", false, List.of(), quoted(before)))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PRESET_NOT_FOUND));
@@ -108,7 +108,7 @@ class ActivationPresetServiceTest {
     void aPresetWhoseMemberTheClosureDoesNotHoldIs422() {
         StoredActivation before = stored(ActivationDocument.builder());
 
-        assertThatThrownBy(() -> service.apply(ID, "stale", false, quoted(before)))
+        assertThatThrownBy(() -> service.apply(ID, "stale", false, List.of(), quoted(before)))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_INVALID));
@@ -118,9 +118,9 @@ class ActivationPresetServiceTest {
     @Test
     void applyingTheSamePresetTwiceAnswersTheSameRevisionAndWritesOnce() {
         StoredActivation before = stored(ActivationDocument.builder());
-        ActivationWrites.Outcome first = service.apply(ID, "team", false, quoted(before));
+        ActivationWrites.Outcome first = service.apply(ID, "team", false, List.of(), quoted(before));
 
-        ActivationWrites.Outcome second = service.apply(ID, "team", false, quoted(first.stored()));
+        ActivationWrites.Outcome second = service.apply(ID, "team", false, List.of(), quoted(first.stored()));
 
         assertThat(second.stored().revision()).isEqualTo(first.stored().revision());
         assertThat(second.change().applied()).isEmpty();
@@ -131,15 +131,15 @@ class ActivationPresetServiceTest {
     void thePreconditionsComeBeforeThePacksAreRead() {
         StoredActivation before = stored(ActivationDocument.builder());
 
-        assertThatThrownBy(() -> service.apply(ID, "no-such", false, null))
+        assertThatThrownBy(() -> service.apply(ID, "no-such", false, List.of(), null))
                 .isInstanceOfSatisfying(
                         PreconditionException.class,
                         missing -> assertThat(missing.kind()).isEqualTo(PreconditionException.Kind.MISSING));
-        assertThatThrownBy(() -> service.apply(ID, "no-such", false, STALE))
+        assertThatThrownBy(() -> service.apply(ID, "no-such", false, List.of(), STALE))
                 .isInstanceOfSatisfying(
                         PreconditionException.class,
                         stale -> assertThat(stale.kind()).isEqualTo(PreconditionException.Kind.STALE));
-        assertThatThrownBy(() -> service.apply(new ActivationId("nope"), "team", false, quoted(before)))
+        assertThatThrownBy(() -> service.apply(new ActivationId("nope"), "team", false, List.of(), quoted(before)))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_NOT_FOUND));

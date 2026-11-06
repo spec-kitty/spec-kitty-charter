@@ -92,7 +92,7 @@ class ActivationSelectionServiceTest {
     void aCascadingSelectSelectsWhatTheWalkReachedReportsTheStopAndReadsThePacksOnce() {
         StoredActivation before = stored(ActivationDocument.builder().deactivated(ArtifactKind.TACTIC, List.of("x")));
 
-        ActivationWrites.Outcome outcome = service.select(ID, "directive", "D", ALL, false, quoted(before));
+        ActivationWrites.Outcome outcome = service.select(ID, "directive", "D", ALL, false, List.of(), quoted(before));
 
         assertThat(outcome.stored().revision()).isNotEqualTo(before.revision());
         assertThat(outcome.change().applied()).containsExactly(D, T);
@@ -112,7 +112,7 @@ class ActivationSelectionServiceTest {
                 .activatedKinds(List.of(ArtifactKind.TACTIC))
                 .deactivated(ArtifactKind.TACTIC, List.of("e", "x")));
 
-        ActivationWrites.Outcome outcome = service.select(ID, "directive", "D", ALL, true, quoted(before));
+        ActivationWrites.Outcome outcome = service.select(ID, "directive", "D", ALL, true, List.of(), quoted(before));
 
         assertThat(outcome.change().cleared()).containsExactly(E, X);
         assertThat(outcome.change().applied()).containsExactly(D, E, T, X);
@@ -129,7 +129,7 @@ class ActivationSelectionServiceTest {
                 .activatedKinds(List.of(ArtifactKind.DIRECTIVE))
                 .deactivated(ArtifactKind.TACTIC, List.of("e", "x")));
 
-        ActivationWrites.Outcome outcome = service.select(ID, "directive", "D", ALL, true, quoted(before));
+        ActivationWrites.Outcome outcome = service.select(ID, "directive", "D", ALL, true, List.of(), quoted(before));
 
         assertThat(outcome.change().cleared()).containsExactly(X);
         assertThat(now().deactivated(ArtifactKind.TACTIC)).containsExactly("e");
@@ -141,7 +141,7 @@ class ActivationSelectionServiceTest {
                 stored(ActivationDocument.builder().deactivated(ArtifactKind.DIRECTIVE, List.of("D")));
 
         ActivationWrites.Outcome outcome =
-                service.select(ID, "directive", "D", Optional.empty(), false, quoted(before));
+                service.select(ID, "directive", "D", Optional.empty(), false, List.of(), quoted(before));
 
         assertThat(packs.walked()).isEmpty();
         assertThat(outcome.change().applied()).containsExactly(D);
@@ -153,7 +153,8 @@ class ActivationSelectionServiceTest {
     void aMissionTypeJoinsMissionTypesAndNeverCascades() {
         StoredActivation before = stored(ActivationDocument.builder());
 
-        ActivationWrites.Outcome outcome = service.select(ID, "mission_type", "research", ALL, true, quoted(before));
+        ActivationWrites.Outcome outcome =
+                service.select(ID, "mission_type", "research", ALL, true, List.of(), quoted(before));
 
         assertThat(outcome.change().applied()).containsExactly(new ArtifactRef(ArtifactKind.MISSION_TYPE, "research"));
         assertThat(now().missionTypes().orElseThrow()).containsExactly("research");
@@ -165,7 +166,7 @@ class ActivationSelectionServiceTest {
         StoredActivation before = stored(ActivationDocument.builder().selected(ArtifactKind.DIRECTIVE, List.of("D")));
 
         ActivationWrites.Outcome outcome =
-                service.select(ID, "directive", "D", Optional.empty(), false, quoted(before));
+                service.select(ID, "directive", "D", Optional.empty(), false, List.of(), quoted(before));
 
         assertThat(outcome.stored()).isEqualTo(before);
         assertThat(outcome.change().applied()).isEmpty();
@@ -212,7 +213,7 @@ class ActivationSelectionServiceTest {
     void aMissingIfMatchIs428BeforeAnythingIsRead() {
         stored(ActivationDocument.builder());
 
-        assertThatThrownBy(() -> service.select(ID, "template", "NO_SUCH", ALL, false, null))
+        assertThatThrownBy(() -> service.select(ID, "template", "NO_SUCH", ALL, false, List.of(), null))
                 .isInstanceOfSatisfying(
                         PreconditionException.class,
                         refused -> assertThat(refused.kind()).isEqualTo(PreconditionException.Kind.MISSING));
@@ -225,8 +226,8 @@ class ActivationSelectionServiceTest {
     void aStaleIfMatchIs412BeforeThePathIsJudged() {
         stored(ActivationDocument.builder());
 
-        assertThatThrownBy(() ->
-                        service.select(ID, "template", "NO_SUCH", ALL, false, "\"sha256:" + "1f".repeat(32) + "\""))
+        assertThatThrownBy(() -> service.select(
+                        ID, "template", "NO_SUCH", ALL, false, List.of(), "\"sha256:" + "1f".repeat(32) + "\""))
                 .isInstanceOfSatisfying(
                         PreconditionException.class,
                         refused -> assertThat(refused.kind()).isEqualTo(PreconditionException.Kind.STALE));
@@ -235,7 +236,7 @@ class ActivationSelectionServiceTest {
 
     @Test
     void anActivationThatIsNotStoredIs404() {
-        assertThatThrownBy(() -> service.select(ID, "directive", "D", ALL, false, "*"))
+        assertThatThrownBy(() -> service.select(ID, "directive", "D", ALL, false, List.of(), "*"))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_NOT_FOUND));
@@ -245,7 +246,7 @@ class ActivationSelectionServiceTest {
     void aKindOutsideTheSelectableKindsIs422AtThePathBeforeThePacksAreRead() {
         StoredActivation before = stored(ActivationDocument.builder());
 
-        assertThatThrownBy(() -> service.select(ID, "template", "D", ALL, false, quoted(before)))
+        assertThatThrownBy(() -> service.select(ID, "template", "D", ALL, false, List.of(), quoted(before)))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_INVALID);
                     assertThat(refusal.violations())
@@ -261,7 +262,7 @@ class ActivationSelectionServiceTest {
         StoredActivation before = stored(ActivationDocument.builder());
 
         assertThatThrownBy(() -> service.select(
-                        ID, "directive", "D", Optional.of(List.of("all", "tactic")), false, quoted(before)))
+                        ID, "directive", "D", Optional.of(List.of("all", "tactic")), false, List.of(), quoted(before)))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.violations())
@@ -275,7 +276,7 @@ class ActivationSelectionServiceTest {
     void aPathIdTheClosureDoesNotHoldIs404ByItsKind() {
         StoredActivation before = stored(ActivationDocument.builder());
 
-        assertThatThrownBy(() -> service.select(ID, "directive", "NO_SUCH", ALL, false, quoted(before)))
+        assertThatThrownBy(() -> service.select(ID, "directive", "NO_SUCH", ALL, false, List.of(), quoted(before)))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_NOT_FOUND));
@@ -291,7 +292,7 @@ class ActivationSelectionServiceTest {
         StoredActivation before = stored(ActivationDocument.builder());
         packs.answer(ClosureSnapshot.unresolved(Set.of("main")));
 
-        assertThatThrownBy(() -> service.select(ID, "directive", "D", ALL, false, quoted(before)))
+        assertThatThrownBy(() -> service.select(ID, "directive", "D", ALL, false, List.of(), quoted(before)))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_INVALID);
                     assertThat(refusal.violations()).singleElement().satisfies(violation -> {
@@ -307,7 +308,8 @@ class ActivationSelectionServiceTest {
                 stored(ActivationDocument.builder().deactivated(ArtifactKind.DIRECTIVE, List.of("D2")));
         packs.answer(closure().requiredBy("directive:D2", "main").build());
 
-        ActivationWrites.Outcome selected = service.select(ID, "tactic", "t", Optional.empty(), false, quoted(before));
+        ActivationWrites.Outcome selected =
+                service.select(ID, "tactic", "t", Optional.empty(), false, List.of(), quoted(before));
         ActivationWrites.Outcome unselected = service.unselect(ID, "tactic", "t", quoted(selected.stored()));
 
         assertThat(selected.change().applied()).containsExactly(T);
@@ -322,7 +324,8 @@ class ActivationSelectionServiceTest {
         StoredActivation before = stored(ActivationDocument.builder());
         repository.loseNextWrite();
 
-        assertThatThrownBy(() -> service.select(ID, "directive", "D", Optional.empty(), false, quoted(before)))
+        assertThatThrownBy(
+                        () -> service.select(ID, "directive", "D", Optional.empty(), false, List.of(), quoted(before)))
                 .isInstanceOfSatisfying(
                         PreconditionException.class,
                         refused -> assertThat(refused.kind()).isEqualTo(PreconditionException.Kind.STALE));

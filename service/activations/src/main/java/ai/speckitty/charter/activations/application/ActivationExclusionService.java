@@ -52,23 +52,8 @@ public class ActivationExclusionService {
     }
 
     /**
-     * Deactivates one artifact, with an optional cascade: only the target gets a deny entry.
-     *
-     * @param id the activation's id
-     * @param kind the path's kind token
-     * @param artifactId the path's id
-     * @param cascade the body's {@code cascade} tokens; empty when absent
-     * @param ifMatch the {@code If-Match} header, verbatim; null when absent
-     * @return the outcome
-     * @throws CharterRefusal with {@code artifact_locked} or {@code artifact_required} for a target on the floor
-     */
-    public ActivationWrites.Outcome deactivate(
-            ActivationId id, String kind, String artifactId, Optional<List<String>> cascade, @Nullable String ifMatch) {
-        return deactivate(id, kind, artifactId, cascade, List.of(), ifMatch);
-    }
-
-    /**
-     * Deactivates one artifact, with an optional cascade, whose request body may be malformed.
+     * Deactivates one artifact, with an optional cascade, whose request body may be malformed: only the target gets a
+     * deny entry.
      *
      * @param id the activation's id
      * @param kind the path's kind token

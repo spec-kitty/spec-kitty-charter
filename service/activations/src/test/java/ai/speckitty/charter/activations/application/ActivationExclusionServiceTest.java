@@ -93,7 +93,7 @@ class ActivationExclusionServiceTest {
                 .selected(ArtifactKind.DIRECTIVE, List.of("D", "D2"))
                 .selected(ArtifactKind.TACTIC, List.of("t", "t2")));
 
-        ActivationWrites.Outcome outcome = service.deactivate(ID, "directive", "D", ALL, quoted(before));
+        ActivationWrites.Outcome outcome = service.deactivate(ID, "directive", "D", ALL, List.of(), quoted(before));
 
         assertThat(outcome.change().applied()).containsExactly(D, T);
         assertThat(outcome.change().cleared()).isEmpty();
@@ -113,7 +113,7 @@ class ActivationExclusionServiceTest {
                 .selected(ArtifactKind.DIRECTIVE, List.of("D"))
                 .selected(ArtifactKind.TACTIC, List.of("e2", "t3")));
 
-        ActivationWrites.Outcome outcome = service.deactivate(ID, "directive", "D", ALL, quoted(before));
+        ActivationWrites.Outcome outcome = service.deactivate(ID, "directive", "D", ALL, List.of(), quoted(before));
 
         assertThat(outcome.change().applied()).containsExactly(D);
         assertThat(outcome.change().skipped().skippedShared()).containsExactly(new SkippedReport.SharedSkip(T3, E2));
@@ -127,7 +127,8 @@ class ActivationExclusionServiceTest {
                 .selected(ArtifactKind.DIRECTIVE, List.of("D"))
                 .selected(ArtifactKind.TACTIC, List.of("t")));
 
-        ActivationWrites.Outcome outcome = service.deactivate(ID, "directive", "D", Optional.empty(), quoted(before));
+        ActivationWrites.Outcome outcome =
+                service.deactivate(ID, "directive", "D", Optional.empty(), List.of(), quoted(before));
 
         assertThat(outcome.change().applied()).containsExactly(D);
         assertThat(now().selected(ArtifactKind.TACTIC).orElseThrow()).containsExactly("t");
@@ -139,14 +140,14 @@ class ActivationExclusionServiceTest {
     void aLockedOrRequiredTargetIs409BeforeAnyWalkAndNothingIsStored() {
         StoredActivation before = stored(ActivationDocument.builder());
 
-        assertThatThrownBy(() -> service.deactivate(ID, "directive", "LK", ALL, quoted(before)))
+        assertThatThrownBy(() -> service.deactivate(ID, "directive", "LK", ALL, List.of(), quoted(before)))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_LOCKED);
                     assertThat(refusal.requiredBy())
                             .singleElement()
                             .satisfies(pack -> assertThat(pack.packId()).isEqualTo("main"));
                 });
-        assertThatThrownBy(() -> service.deactivate(ID, "directive", "RQ", ALL, quoted(before)))
+        assertThatThrownBy(() -> service.deactivate(ID, "directive", "RQ", ALL, List.of(), quoted(before)))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_REQUIRED));
@@ -159,7 +160,8 @@ class ActivationExclusionServiceTest {
     void deactivatingWhatIsDeniedAndNotSelectedIsANoOp() {
         StoredActivation before = stored(ActivationDocument.builder().deactivated(ArtifactKind.TACTIC, List.of("t")));
 
-        ActivationWrites.Outcome outcome = service.deactivate(ID, "tactic", "t", Optional.empty(), quoted(before));
+        ActivationWrites.Outcome outcome =
+                service.deactivate(ID, "tactic", "t", Optional.empty(), List.of(), quoted(before));
 
         assertThat(outcome.stored()).isEqualTo(before);
         assertThat(outcome.change().applied()).isEmpty();
@@ -170,7 +172,7 @@ class ActivationExclusionServiceTest {
     void aMissionTypeHasNoDenyListSoItsKindIs422AtThePath() {
         StoredActivation before = stored(ActivationDocument.builder());
 
-        assertThatThrownBy(() -> service.deactivate(ID, "mission_type", "research", ALL, quoted(before)))
+        assertThatThrownBy(() -> service.deactivate(ID, "mission_type", "research", ALL, List.of(), quoted(before)))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
                     assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_INVALID);
                     assertThat(refusal.violations())
@@ -201,7 +203,8 @@ class ActivationExclusionServiceTest {
         StoredActivation before =
                 stored(ActivationDocument.builder().deactivated(ArtifactKind.DIRECTIVE, List.of("RQ")));
 
-        ActivationWrites.Outcome denied = service.deactivate(ID, "tactic", "t", Optional.empty(), quoted(before));
+        ActivationWrites.Outcome denied =
+                service.deactivate(ID, "tactic", "t", Optional.empty(), List.of(), quoted(before));
         ActivationWrites.Outcome reactivated = service.reactivate(ID, "tactic", "t", quoted(denied.stored()));
 
         assertThat(denied.change().applied()).containsExactly(T);
@@ -228,7 +231,7 @@ class ActivationExclusionServiceTest {
                 .isInstanceOfSatisfying(
                         PreconditionException.class,
                         refused -> assertThat(refused.kind()).isEqualTo(PreconditionException.Kind.MISSING));
-        assertThatThrownBy(() -> service.deactivate(ID, "tactic", "no-such", ALL, quoted(before)))
+        assertThatThrownBy(() -> service.deactivate(ID, "tactic", "no-such", ALL, List.of(), quoted(before)))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_NOT_FOUND));
@@ -259,7 +262,7 @@ class ActivationExclusionServiceTest {
                 .selected(ArtifactKind.TACTIC, List.of("c", "c3", "c4", "c5"))
                 .selected(ArtifactKind.STYLEGUIDE, List.of("e2")));
 
-        ActivationWrites.Outcome outcome = chained.deactivate(ID, "directive", "D", ALL, quoted(before));
+        ActivationWrites.Outcome outcome = chained.deactivate(ID, "directive", "D", ALL, List.of(), quoted(before));
 
         assertThat(now().selected(ArtifactKind.TACTIC).orElseThrow()).containsExactly("c", "c3", "c4");
         assertThat(now().selected(ArtifactKind.DIRECTIVE).orElseThrow()).isEmpty();

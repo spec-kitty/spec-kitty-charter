@@ -82,7 +82,13 @@ class ActivationSelectionBudgetTest {
 
     private static ActivationWrites.Outcome selectOn(ActivationSelectionService service, StoredActivation stored) {
         return service.select(
-                stored.id(), "tactic", "t0", ALL, true, "\"" + stored.revision().token() + "\"");
+                stored.id(),
+                "tactic",
+                "t0",
+                ALL,
+                true,
+                List.of(),
+                "\"" + stored.revision().token() + "\"");
     }
 
     /** A fresh activation per run, with every seventh tactic denied, so the select clears as well as selects. */

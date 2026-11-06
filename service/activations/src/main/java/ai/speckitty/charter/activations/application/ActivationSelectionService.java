@@ -44,27 +44,6 @@ public class ActivationSelectionService {
     }
 
     /**
-     * Selects one artifact, or one mission type, with an optional cascade.
-     *
-     * @param id the activation's id
-     * @param kind the path's kind token
-     * @param artifactId the path's id
-     * @param cascade the body's {@code cascade} tokens; empty when absent
-     * @param includeDeactivated whether the cascade takes denied artifacts back, clearing their deny entries
-     * @param ifMatch the {@code If-Match} header, verbatim; null when absent
-     * @return the outcome
-     */
-    public ActivationWrites.Outcome select(
-            ActivationId id,
-            String kind,
-            String artifactId,
-            Optional<List<String>> cascade,
-            boolean includeDeactivated,
-            @Nullable String ifMatch) {
-        return select(id, kind, artifactId, cascade, includeDeactivated, List.of(), ifMatch);
-    }
-
-    /**
      * Selects one artifact, or one mission type, whose request body may be malformed.
      *
      * @param id the activation's id
