@@ -35,8 +35,9 @@ Entries are grouped by block, one block per mission, so that two missions never 
 - **Pack schemas (DIV-001..025, ADR-0017)** is below, after the context-read block. DIV-001 and
   DIV-002 are withdrawn: they described the same differences as DIV-101 and DIV-102 and are
   recorded there.
-- **Activation (DIV-201..205, ADR-0020)** is below. DIV-201 and DIV-202 are proposed, because the effective reads
-  they concern are not built yet; DIV-203 to DIV-205 are open, because the register and the closure read are built.
+- **Activation (DIV-201..208, ADR-0020)** is below. DIV-201 and DIV-202 are proposed, because the effective reads
+  they concern are not built yet; DIV-203 to DIV-205 and DIV-208 are open, because the register and the closure read
+  are built.
 - **Pack-level files (DIV-301..399, ADR-0042)** is after the activation block.
 - **Procedures and toolguide guides (DIV-401..499, ADR-0043)** is after the pack-level files block.
 - **Mission types (DIV-501..599, ADR-0044)** is last.
@@ -425,7 +426,7 @@ entry from the contract scenario that pins it. Add it to
 [`divergences.yaml`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/docs/conformance/divergences.yaml)
 too, with the same id and status.
 
-## Activation (DIV-201..205, ADR-0020)
+## Activation (DIV-201..208, ADR-0020)
 
 DIV-201 and DIV-202 were proposed with [ADR-0020](/adr/0020-offering-and-activations/) on #123, and agreed with
 core's activation ledger mission on 2026-10-20. Core's conformance-case table carries the same entries (core
@@ -447,10 +448,15 @@ switches; they do not gate the switch. No change to core's code is part of this 
 | DIV-203 | An absent `selected.<kind>`, `activatedKinds` or `missionTypes` means none, the same as `[]`. This holds for `skill` too, which loses its "only the required skills" default. An absent `packs` still means every configured pack | A per-kind default when the key is absent: every available artifact, or only the required skills for `skill` | ADR-0053 d10; decision `DM-01M6NXQJ61D2GSFJFK02XW6F9N`. Holds until core's named-packs split ([ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/)) | `absent-kind-means-none` |
 | DIV-204 | A write whose deny list names a required or locked artifact is refused `409` (`artifact_required`, `artifact_locked`), naming the pack, and nothing is stored | Accepts the entry and ignores it, or warns | ADR-0020 D9; ADR-0059 D4 | `deny-required-refused-at-write` |
 | DIV-205 | The required floor is the must-have items of every governing preset in the activation's closure | The org packs' `required_*` lists | Decision `DM-01M6PCWSA65497T9A7J80K6V56`: an assumed default, flagged to the operator as open review item 1 | `floor-closure-scoped` |
+| DIV-208 | An artifact id is matched exactly as declared; another spelling of it is an unknown id (`422 activation_invalid`). The normalization ADR-0020 D4 rules is not built | Accepts another known spelling, and the allow list can mix spellings | ADR-0020 D4 | `id-matched-as-declared` |
 
 Core's seam, to switch: read an absent list as none and write the default it means explicitly (DIV-203); clean a
 deny entry on a required or locked artifact out of a document before writing it (DIV-204); and take the required set
 from the closure's governing presets, not from `required_*` (DIV-205).
+
+DIV-208 was added on 2026-11-06: ADR-0020 D4 rules that a write may spell an id another known way and is normalized
+to the declared id, and the register matches ids exactly as declared instead. Core's seam already sends declared ids,
+so it needs no change; the divergence closes when the normalization is built or the ruling is withdrawn.
 
 `getActivation` and `listActivationPacks` declare no `Charter-Source-Fingerprint` on their `200`. The document read
 depends only on the stored document ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) D5),

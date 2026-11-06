@@ -5,3 +5,6 @@
   pack excluded. It stays `[]` when the named pack declares the item itself, and for a pack reached over
   `depends_on` only. An activation write also evaluates its preconditions first: a stale `If-Match`, or
   `If-None-Match: *` on a stored id, is a `412` whatever the document holds (RFC 9110 §13.2.2).
+- `ArtifactId`, the `artifactId` path parameter and `ActivationConfig` say that an id is matched exactly as declared.
+  They promised that another known spelling is accepted and normalized to the declared id (ADR-0020 D4); that
+  normalization is not built, and another spelling is an unknown id (DIV-208). No behavior changes.
