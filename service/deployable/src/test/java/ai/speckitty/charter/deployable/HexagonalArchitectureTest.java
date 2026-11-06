@@ -365,11 +365,10 @@ class HexagonalArchitectureTest {
             .should(new ArchCondition<JavaClass>("implement a repository or gateway port of the domain") {
                 @Override
                 public void check(JavaClass item, ConditionEvents events) {
+                    // Pinned to the packs slice's ports; every slice, packs included, is held to the same rule by
+                    // portImplementationsResideInStorage(slice).
                     item.getAllRawInterfaces().stream()
-                            .filter(i -> i.getPackageName().startsWith(ROOT)
-                                    && i.getPackageName().contains(".domain")
-                                    && (i.getSimpleName().endsWith("Repository")
-                                            || i.getSimpleName().endsWith("Gateway")))
+                            .filter(i -> isPortOf("packs", i))
                             .forEach(i -> events.add(SimpleConditionEvent.satisfied(
                                     item, item.getName() + " implements the port " + i.getName())));
                 }
@@ -927,21 +926,54 @@ class HexagonalArchitectureTest {
     // ---- Code-ownership supplements (kept from the incremental rules) ---------------------------------------
 
     /**
-     * The port signatures of the domain name only domain, kernel, {@code java} and JSpecify types (belt and braces
-     * atop DOMAIN_IS_PURE). The known-bad sits in the packs domain itself, so the unchanged rule bites on it.
+     * The port signatures of the kernel and the packs domain name only kernel, packs domain, {@code java} and
+     * JSpecify types (belt and braces atop DOMAIN_IS_PURE). The known-bad sits in the packs domain itself, so the
+     * unchanged rule bites on it. Every slice's domain is held to the same rule over its own types by
+     * {@link #portSignaturesNameOnlyDomainTypes(String)}.
      */
     private static final ArchRule PORT_SIGNATURES_NAME_ONLY_DOMAIN_TYPES = classes()
             .that()
             .areInterfaces()
             .and()
-            .resideInAnyPackage(DOMAIN_RINGS)
+            .resideInAnyPackage(KERNEL, PACKS_DOMAIN)
             .should()
             .onlyDependOnClassesThat()
             .resideInAnyPackage(KERNEL, PACKS_DOMAIN, JAVA, JSPECIFY);
 
+    /**
+     * PORT_SIGNATURES_NAME_ONLY_DOMAIN_TYPES per slice: an interface of a slice's domain names only its own domain's
+     * types, the kernel's, {@code java} and JSpecify; never another slice's domain, an adapter or a library.
+     */
+    private static ArchRule portSignaturesNameOnlyDomainTypes(String slice) {
+        return classes()
+                .that()
+                .areInterfaces()
+                .and()
+                .resideInAPackage(ring(slice, "domain"))
+                .should()
+                .onlyDependOnClassesThat()
+                .resideInAnyPackage(ring(slice, "domain"), KERNEL, JAVA, JSPECIFY)
+                .allowEmptyShould(true);
+    }
+
     @Test
     void portSignaturesNameOnlyDomainTypes() {
         PORT_SIGNATURES_NAME_ONLY_DOMAIN_TYPES.check(classes);
+        SLICES.forEach(slice -> portSignaturesNameOnlyDomainTypes(slice).check(classes));
+    }
+
+    @Test
+    void thePerSlicePortSignatureRuleFailsOnAnActivationsPortThatNamesAnotherSlice() {
+        assertBites(
+                portSignaturesNameOnlyDomainTypes("activations"),
+                ROOT + ".activations.domain.badfixture",
+                "ActivationPortNamesPacks",
+                "ai.speckitty.charter.packs.domain.Pack");
+        assertBites(
+                portSignaturesNameOnlyDomainTypes("packs"),
+                ROOT + ".packs.domain.badfixture",
+                "DomainWithInfraImport",
+                "DomainRepositoryService");
     }
 
     @Test
