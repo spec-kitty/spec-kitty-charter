@@ -148,10 +148,10 @@
       "criterion_id": "FR-015",
       "description": "Verify FR-015 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "activation-selections.feature: 'A cascading deactivate unselects what only the target kept and keeps what another selected one reaches' (skippedShared, only D denied, applied D and T not T2), 'A cascading deactivate keeps what a selected enhancer references', 'A candidate kept by an enhancer keeps the candidate it enhances, on a second shared step', 'Deactivating without a cascade denies and unselects the target alone', 'Re-activating a denied artifact clears its deny entry and omits the emptied list', 'Re-activating an artifact that is not denied changes nothing', 'Deactivating what is already denied and not selected changes nothing'; CascadeRulesDeactivateTest, ActivationExclusionServiceTest. Open review item 5 / F9: deactivate's own walk does not follow lineage (FR-015 read literally as five relations) - operator question, spec text met. lane-m HEAD 7f6264b: ./gradlew verifyAll --rerun-tasks --max-workers=1 -PcontractBaseline=none BUILD SUCCESSFUL (127/127 tasks executed; 7200 tests, 0 failures, 0 errors, 4 pre-existing env skips in packs; 341 BDD scenarios incl. activation-register 35/35, activation-selections 41/41, activation-presets 14/14, activation-register-guards 5/5, activations 4/4)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:qa-test-executor-elena",
+      "verified_at": "2026-11-06T02:56:13.170640+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
