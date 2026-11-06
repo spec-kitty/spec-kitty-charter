@@ -73,7 +73,7 @@
       "wp": null
     },
     "#323": {
-      "evidence_ref": "1 MiB / null-list body guard on activation bodies (WP01/WP09)",
+      "evidence_ref": "1 MiB / null-list / strict body guard on activation bodies (WP01/WP09, R1 strict reader); activation-register-guards.feature",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -81,7 +81,7 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "in-mission",
+      "verdict": "fixed",
       "wp": "WP09"
     },
     "#349": {
