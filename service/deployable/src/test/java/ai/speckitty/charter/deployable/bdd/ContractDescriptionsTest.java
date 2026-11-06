@@ -37,7 +37,9 @@ class ContractDescriptionsTest {
                         + " computed, so the answer and the Charter-Source-Fingerprint it would report might disagree")
                 .contains("The read may be retried")
                 .contains("governance_policy_violation (409) is raised by the registration writes")
-                .contains("this version reads no policy file yet, so until it does every target is open")
+                .contains("Each pack's policy.yaml is read, per pack along the composition closure of the pack written"
+                        + " (ADR-0062); no open pack ships one yet")
+                .doesNotContain("reads no policy file")
                 .doesNotContain("No operation of this version raises it");
     }
 

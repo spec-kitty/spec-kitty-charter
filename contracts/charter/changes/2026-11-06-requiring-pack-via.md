@@ -8,3 +8,5 @@
 - `ArtifactId`, the `artifactId` path parameter and `ActivationConfig` say that an id is matched exactly as declared.
   They promised that another known spelling is accepted and normalized to the declared id (ADR-0020 D4); that
   normalization is not built, and another spelling is an unknown id (DIV-208). No behavior changes.
+- The `governance_policy_violation` text of `CharterRefusalCode` and its `errors.feature` scenario say that each
+  pack's `policy.yaml` is read (ADR-0062) and that no open pack ships one yet; they said that no policy file is read.
