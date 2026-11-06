@@ -1,7 +1,7 @@
 {
-  "event_count": 41,
-  "last_event_id": "01M6RQZ7QATFT15ZKSJWMHMW1B",
-  "materialized_at": "2026-11-06T15:34:53.412379+00:00",
+  "event_count": 45,
+  "last_event_id": "01M6RRH1KF73Q2S1YV2KP3KY5J",
+  "materialized_at": "2026-11-06T15:44:36.960902+00:00",
   "mission_number": "",
   "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
   "mission_type": "software-dev",
@@ -56,19 +56,34 @@
     },
     "WP02": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": null,
       "agent_profile": "java-jenny",
       "agent_profile_version": "1.0",
-      "force_count": 0,
+      "force_count": 1,
       "implementer_of_record": "claude",
       "lane": "in_progress",
-      "last_event_id": "01M6RQZ7QATFT15ZKSJWMHMW1B",
-      "last_transition_at": "2026-11-06T15:34:53.412379+00:00",
+      "last_event_id": "01M6RRH1KF73Q2S1YV2KP3KY5J",
+      "last_transition_at": "2026-11-06T15:44:36.960902+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review: ArtifactKind is the one kind registry. Deleted dead orgRequirable/selectionOverlayable/InForceWhenAbsent (no main readers; their test assertions removed from ArtifactKindTest); mission_type activatable and requirable (javadoc); NodeKind.plural routes mission_types to ArtifactKind; fromToken documented as the one exact parse, with every-token and case-only-refusal tests. Parity test in ArtifactKindTest pins the activatable set to every generated ActivatableKind copy (ArtifactReference/EffectiveArtifact/SharedSkip/SkippedDeactivated KindEnum, SelectedArtifacts members); shown failing when GUARD was flipped activatable. Red first: commit cb8bb5b1 (theRegistryHoldsOnlyTheFactsItsConsumersRead AssertionError naming the 3 dead facts), green 83d69e5c. Gates: ./gradlew --max-workers=1 -Dorg.gradle.internal.repository.max.retries=10 -PcontractBaseline=none :kernel:check exit 0; :deployable:test HexagonalArchitectureTest 59/59 pass (deployable CharterContractSuite has 109 pre-existing failures from WP01's contract removals, owned by WP03-WP06). out-of-map: service/kernel/build.gradle.kts - test-only :charter-api + Spring Boot BOM for the parity test. Divergence: none new (mission_type requirable note for docs WP)."
+      ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/layer-merge-and-effective-reads-01M6R0J6-coord/kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP02-a0-kernel-kind-registry/review-cycle-1.md",
+        "reference": "review-cycle://layer-merge-and-effective-reads-01M6R0J6/WP02-a0-kernel-kind-registry/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "changes_requested"
+      },
       "role": "implementer",
-      "shell_pid": 21767,
-      "shell_pid_created_at": "1793979287.76"
+      "shell_pid": null,
+      "shell_pid_created_at": null,
+      "subtasks": {
+        "T007": "planned",
+        "T008": "planned",
+        "T009": "planned"
+      }
     },
     "WP03": {
       "actor": "finalize-tasks",
