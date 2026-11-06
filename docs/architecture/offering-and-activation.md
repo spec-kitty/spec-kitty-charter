@@ -339,8 +339,10 @@ With a cascade:
    artifact active after the write back along the shared walk's ways, or else the active enhancer that references
    it. Every other candidate leaves `selected`; none gets a deny entry.
 4. A selected floor artifact the target's walk reached stays a start of the shared walk, so it and what only it
-   reaches stay selected. It is reported in `skippedShared` too, with `referencedBy` the nearest active artifact
-   that reaches it, or itself when none does (the floor keeps it).
+   reaches stay selected. It is reported in `skippedShared` only when another active artifact reaches it, with
+   `referencedBy` the nearest such artifact. One that no other active artifact reaches is not reported: it was never
+   a candidate, and no artifact is named as what keeps itself. The shared walk runs whenever the target's walk
+   reached a selected artifact in scope, so it runs for a floor artifact even with no candidate.
 
 A deactivate's `skippedByScope` lists only the out-of-scope artifacts the target reached that are selected; one that
 is not selected is left alone and not reported.
