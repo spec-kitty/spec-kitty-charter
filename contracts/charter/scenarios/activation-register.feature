@@ -349,6 +349,17 @@ Feature: The activation register and the packs an activation builds on
     When I GET "/activations/a-1"
     Then the response status is 404
 
+  Scenario: A pack pinned to a blank version is refused at the pin
+    A version of only blanks is no version: the contract's pattern refuses it, and so does the service, 422.
+    When I PUT "/activations/a-1" with the body:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "alpha", "version": "  "}]}
+      """
+    Then the response status is 422
+    And the problem code is "activation_invalid"
+    And the field at "/violations/0/pointer" is "/packs/0/version"
+    And the field at "/violations/0/code" is "invalid_value"
+
   Scenario: A document naming an unconfigured pack is refused at the pack's id
     R4.
     When I PUT "/activations/a-1" with the body:
