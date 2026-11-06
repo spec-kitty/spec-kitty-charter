@@ -33,3 +33,6 @@ core included, adapt. A refresh from core never overwrites a change listed below
   schema of the bundle, and `ArtifactPage.page` and the effective artifact listing bring `PageInfo`
   into it. The shape is unchanged. The generator types `nextPageCursor`'s `oneOf [PageCursor, null]`
   as a nullable `String`, so it is not narrowed (C-009).
+- `schemas/Problem.yaml` caps `violations` at `maxItems: 100`. A 1 MiB body of nulls or unknown ids holds about
+  200,000 refused parts, and listing every one would answer tens of megabytes; the service lists the first 100 and
+  ends `detail` with the count of those left out.

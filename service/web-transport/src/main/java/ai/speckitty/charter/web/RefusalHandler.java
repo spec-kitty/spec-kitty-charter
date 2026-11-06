@@ -48,6 +48,13 @@ public class RefusalHandler {
                     RefusalCode.PACK_REFERENCE_UNQUALIFIED, HttpStatus.UNPROCESSABLE_CONTENT,
                     RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING, HttpStatus.UNPROCESSABLE_CONTENT));
 
+    /**
+     * The most violations a problem body lists (the contract's {@code maxItems}). A 1 MiB body of nulls or unknown ids
+     * holds about 200,000 refused parts, and listing every one would answer tens of megabytes; the detail counts the
+     * ones left out instead.
+     */
+    static final int MAX_VIOLATIONS = 100;
+
     private static final String INTERNAL_ERROR_DETAIL =
             "The charter service failed unexpectedly; the failure is logged.";
 
@@ -153,6 +160,12 @@ public class RefusalHandler {
                         .collect(java.util.stream.Collectors.joining(", ", " [packs: ", "]"));
     }
 
+    /** The sentence the detail gains when violations are left out of the body; nothing when every one is listed. */
+    private static String leftOut(int violations) {
+        int more = violations - MAX_VIOLATIONS;
+        return more > 0 ? " " + more + " more violations are not listed." : "";
+    }
+
     private static ResponseEntity<CharterRefusal> respond(
             ai.speckitty.charter.kernel.domain.CharterRefusal refusal, @Nullable String operation) {
         HttpStatus status = statusOf(refusal.code(), operation);
@@ -160,7 +173,7 @@ public class RefusalHandler {
                 title(refusal.code()),
                 status.value(),
                 CharterRefusal.CodeEnum.fromValue(refusal.code().token()));
-        body.setDetail(refusal.getMessage());
+        body.setDetail(refusal.getMessage() + leftOut(refusal.violations().size()));
         if (!refusal.packs().isEmpty()) {
             body.setPacks(refusal.packs().stream()
                     .map(pack -> new RefusalPack(pack.descriptorPackId(), pack.packId(), pack.name()))
@@ -168,6 +181,7 @@ public class RefusalHandler {
         }
         if (!refusal.violations().isEmpty()) {
             body.setViolations(refusal.violations().stream()
+                    .limit(MAX_VIOLATIONS)
                     .map(violation -> new RefusalViolation(violation.pointer(), violation.code(), violation.detail()))
                     .toList());
         }
