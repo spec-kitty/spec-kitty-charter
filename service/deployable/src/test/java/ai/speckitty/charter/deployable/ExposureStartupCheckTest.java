@@ -13,7 +13,7 @@ import org.springframework.core.env.SystemEnvironmentPropertySource;
 /**
  * What the process may expose (ADR-0041 decisions 4 and 7, issues #231 and #232): the local bind is loopback, no
  * management server answers outside the guard, only health is exposed and it reveals no details, and a container
- * never logs request details, the token in a header included,.
+ * never logs request details, the token in a header included, and keeps forwarded headers off.
  */
 class ExposureStartupCheckTest {
 
@@ -277,6 +277,18 @@ class ExposureStartupCheckTest {
     @Test
     void underTheContainerProfileAnAccessLogPatternOfOtherHeadersStarts() {
         assertStarts(runner, CONTAINER, ExposureStartupCheck.ACCESS_LOG_PATTERN_PROPERTY + "=%h %r %{User-Agent}i %s");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"native", "NATIVE", "framework", " framework "})
+    void underTheContainerProfileForwardedHeadersSwitchedOnFailTheStart(String strategy) {
+        assertRefused(
+                runner,
+                ExposureStartupCheck.FORWARD_HEADERS_PROPERTY,
+                CONTAINER,
+                ExposureStartupCheck.FORWARD_HEADERS_PROPERTY + "=" + strategy);
+        assertStarts(runner, LOOPBACK, ExposureStartupCheck.FORWARD_HEADERS_PROPERTY + "=" + strategy);
+        assertStarts(runner, CONTAINER, ExposureStartupCheck.FORWARD_HEADERS_PROPERTY + "=none");
     }
 
     @Test
