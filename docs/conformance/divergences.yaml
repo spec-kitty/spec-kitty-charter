@@ -715,7 +715,8 @@
     artifact.
   service: >-
     Matches an id exactly as declared (the tail of the artifact's URN). Another spelling of the same
-    artifact is an unknown id: 422 activation_invalid in a document. The normalization of another
+    artifact is an unknown id: 422 activation_invalid in a document, 404 artifact_not_found in the
+    path of a per-artifact write. The normalization of another
     known spelling to the declared id that ADR-0020 D4 rules is not built.
   rationale: >-
     The register is built with exact lookups; normalizing needs the set of known spellings of each
