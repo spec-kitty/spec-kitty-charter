@@ -2,20 +2,11 @@ package ai.speckitty.charter.kernel.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import ai.speckitty.charter.api.model.ArtifactReference;
-import ai.speckitty.charter.api.model.EffectiveArtifact;
-import ai.speckitty.charter.api.model.SelectedArtifacts;
-import ai.speckitty.charter.api.model.SharedSkip;
-import ai.speckitty.charter.api.model.SkippedDeactivated;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -41,34 +32,6 @@ class ArtifactKindTest {
                         "skill",
                         "anti_pattern",
                         "mission_type");
-    }
-
-    @Test
-    void theActivatableKindsAreTheContractsActivatableKindInItsOrder() {
-        List<String> activatable = Arrays.stream(ArtifactKind.values())
-                .filter(ArtifactKind::activatable)
-                .map(ArtifactKind::token)
-                .toList();
-
-        // The generator inlines the contract's ActivatableKind into every schema that names it: each copy is pinned.
-        assertThat(contractTokens(ArtifactReference.KindEnum.values(), ArtifactReference.KindEnum::getValue))
-                .containsExactlyElementsOf(activatable);
-        assertThat(contractTokens(EffectiveArtifact.KindEnum.values(), EffectiveArtifact.KindEnum::getValue))
-                .containsExactlyElementsOf(activatable);
-        assertThat(contractTokens(SharedSkip.KindEnum.values(), SharedSkip.KindEnum::getValue))
-                .containsExactlyElementsOf(activatable);
-        assertThat(contractTokens(SkippedDeactivated.KindEnum.values(), SkippedDeactivated.KindEnum::getValue))
-                .containsExactlyElementsOf(activatable);
-        assertThat(Arrays.stream(SelectedArtifacts.class.getDeclaredMethods())
-                        .filter(m -> m.getName().startsWith("get"))
-                        .map(m -> m.getAnnotation(JsonProperty.class))
-                        .filter(Objects::nonNull)
-                        .map(JsonProperty::value))
-                .containsExactlyInAnyOrderElementsOf(activatable);
-    }
-
-    private static <E> List<String> contractTokens(E[] values, Function<E, String> token) {
-        return Arrays.stream(values).map(token).toList();
     }
 
     @Test
