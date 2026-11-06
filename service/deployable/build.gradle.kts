@@ -8,6 +8,8 @@ plugins {
 dependencies {
     implementation(project(":kernel"))
     implementation(project(":packs"))
+    implementation(project(":activations"))
+    implementation(project(":web-transport"))
     implementation(catalog.lib("spring-boot-starter-webmvc"))
     implementation(catalog.lib("spring-boot-starter-validation"))
     // Health only, over HTTP; everything else stays unexposed (ADR-0041 decision 7).

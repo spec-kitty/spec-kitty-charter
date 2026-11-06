@@ -62,14 +62,18 @@ class LinkChecksTest {
         assertThat(get(ITEM, null, """
                         {"_links": {
                           "self": {"href": "/api/v1/packs/qa/artifacts/tactic/rehearse"},
-                          "activations": {"href": "/api/v1/activations", "method": "POST"},
+                          "effective-context": {
+                            "href": "/api/v1/activations/a-1/mission-types/software-dev/actions/implement/context"
+                          },
                           "skipped": {"href": "/api/v1/activations/a-1/skipped"}
                         }}"""))
                 .as("ADR-0020 D8: a reserved operation answers 501, so no link may point to it")
                 .hasSize(2)
                 .allSatisfy(
                         violation -> assertThat(violation).contains("reserved").contains("unbuilt operation"))
-                .anySatisfy(violation -> assertThat(violation).contains("POST /activations,"))
+                .anySatisfy(violation -> assertThat(violation)
+                        .contains(
+                                "GET /activations/{activationId}/mission-types/{missionType}/actions/{action}/context"))
                 .anySatisfy(violation -> assertThat(violation).contains("GET /activations/{activationId}/skipped"));
     }
 

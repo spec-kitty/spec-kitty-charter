@@ -1,7 +1,7 @@
 package ai.speckitty.charter.packs.infra.api.badfixture;
 
+import ai.speckitty.charter.kernel.transport.ReservedOperation;
 import ai.speckitty.charter.packs.application.DirectiveReadService;
-import ai.speckitty.charter.packs.infra.api.ReservedOperation;
 import org.jspecify.annotations.Nullable;
 
 /** A reserved controller that names a use case: the known-bad of the rule that a reserved controller reads nothing. */
