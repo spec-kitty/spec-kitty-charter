@@ -1,7 +1,7 @@
 {
-  "event_count": 88,
-  "last_event_id": "01M6RX7MV8QYPG05VKM84ERP63",
-  "materialized_at": "2026-11-06T17:06:51.866886+00:00",
+  "event_count": 89,
+  "last_event_id": "01M6RX81ZBNF3ZM4VRM5TCPKF9",
+  "materialized_at": "2026-11-06T17:07:05.323118+00:00",
   "mission_number": "",
   "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
   "mission_type": "",
@@ -12,8 +12,8 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
-    "in_progress": 1,
+    "for_review": 2,
+    "in_progress": 0,
     "in_review": 1,
     "planned": 22
   },
@@ -224,9 +224,9 @@
       "agent_profile_version": "1.0",
       "force_count": 1,
       "implementer_of_record": "claude",
-      "lane": "in_progress",
-      "last_event_id": "01M6RX7MV8QYPG05VKM84ERP63",
-      "last_transition_at": "2026-11-06T17:06:51.866886+00:00",
+      "lane": "for_review",
+      "last_event_id": "01M6RX81ZBNF3ZM4VRM5TCPKF9",
+      "last_transition_at": "2026-11-06T17:07:05.323118+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "A15 scoped locks (PackMutabilityPolicy.scopedPolicies, used by write gate and ClosureQueries), B8 own policy excluded from the write gate, A10 RequiredFloor.of(presets, held) + unheld() report, A14 enhances no longer a change (DomainRepositoryService.refines), exactly-one-winner pinned. Red first: 9 assertion failures with stubs (commit 2c166382 msg). Merged lane-f (WP06) and aligned PresetTest. Gates: ./gradlew --max-workers=1 -Dorg.gradle.internal.repository.max.retries=10 -PcontractBaseline=none :packs:check exit 0; :activations:test exit 1 (5 known WP08 failures: ActivationBodyAdviceTest x4, ActivationJsonTest x1); :deployable:test --tests '*HexagonalArchitectureTest' 59/59 pass; CharterContractSuite 109 failures (known WP08 count; composition.feature sibling scenarios moved to overrides edges, A14). Hand-off to WP08 fragment: A15 narrows locks (unrelated pack's lock no longer applies), B8 own-policy writes no longer 409, A10 unheld must-haves leave the floor, A14 sibling enhancers compose."
@@ -243,11 +243,11 @@
       "shell_pid": null,
       "shell_pid_created_at": null,
       "subtasks": {
-        "T029": "planned",
-        "T030": "planned",
-        "T031": "planned",
-        "T032": "planned",
-        "T033": "planned"
+        "T029": "done",
+        "T030": "done",
+        "T031": "done",
+        "T032": "done",
+        "T033": "done"
       }
     },
     "WP08": {
