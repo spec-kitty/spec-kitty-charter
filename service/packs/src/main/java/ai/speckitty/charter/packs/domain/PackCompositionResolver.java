@@ -18,6 +18,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -693,6 +694,49 @@ public final class PackCompositionResolver {
                                         + held.getKey() + "`, and neither extends the other by parent_pack");
                     }
                 }
+            }
+        }
+    }
+
+    /**
+     * Refuses a preset item or a policy lock that names an artifact of the closure only by case (the operator ruling of
+     * 2026-11-06): {@code directive_001} where the closure holds {@code DIRECTIVE_001}. Ids are matched exactly, so
+     * such a mention would silently govern nothing, and a deny entry the author meant to be refused would pass. A
+     * mention of an id no pack of the closure holds is no mistake this check can tell from a pack not yet configured:
+     * it is left alone, and a lock on it changes no write. The refusal is {@link Failure#REFERENCE_ARTIFACT_MISSING}:
+     * the nearest existing code, a pack's reference to an artifact that the closure does not hold as written.
+     *
+     * @param ordered the packs of one compose
+     * @param mentionsOf the URNs, as written, that a pack's presets and policy file name
+     * @throws Refusal naming the mentioning pack first, then the pack that holds the id
+     */
+    public static void refuseCaseOnlyMatches(
+            List<PackUnderResolution> ordered, Function<PackUnderResolution, Collection<String>> mentionsOf) {
+        Objects.requireNonNull(ordered, "ordered");
+        Objects.requireNonNull(mentionsOf, "mentionsOf");
+        Set<String> held = new HashSet<>();
+        Map<String, PackUnderResolution> holderByFolded = new LinkedHashMap<>();
+        for (PackUnderResolution pack : ordered) {
+            for (String urn : pack.definedArtifacts()) {
+                held.add(urn);
+                holderByFolded.putIfAbsent(urn.toLowerCase(java.util.Locale.ROOT), pack);
+            }
+        }
+        for (PackUnderResolution pack : ordered) {
+            for (String mentioned : mentionsOf.apply(pack)) {
+                PackUnderResolution holder = holderByFolded.get(mentioned.toLowerCase(java.util.Locale.ROOT));
+                if (holder == null || held.contains(mentioned)) {
+                    continue;
+                }
+                String declared = holder.definedArtifacts().stream()
+                        .filter(urn -> urn.equalsIgnoreCase(mentioned))
+                        .findFirst()
+                        .orElse(mentioned);
+                throw new Refusal(
+                        Failure.REFERENCE_ARTIFACT_MISSING,
+                        named(pack, holder),
+                        label(pack) + " names `" + mentioned + "`, but " + label(holder) + " holds `" + declared
+                                + "`: ids differ only by case and are matched exactly");
             }
         }
     }

@@ -272,6 +272,73 @@ Feature: The activation register and the packs an activation builds on
     And the field at "/packs/0/packId" is "zzz-parent"
     And the field at "/packs/1/packId" is "aaa-child"
 
+  Scenario: A preset item that names a held id only by case refuses the closure
+    The operator ruling of 2026-11-06: ids are matched exactly, so a must-have item "directive_001" would govern
+    nothing and a deny entry on DIRECTIVE_001 would pass. The compose is refused instead, as pack_reference_artifact_missing.
+    Given the org pack "alpha" with the file "presets/governing.yaml":
+      """
+      schema_version: '1.0'
+      id: governing
+      description: The first directive is required, misspelled.
+      activated_directives:
+        - id: directive_001
+          must_have: true
+      """
+    When I PUT "/activations/a-1" with the body:
+      """
+      {"schemaVersion": 1, "deactivated": {"directive": ["DIRECTIVE_001"]}}
+      """
+    Then the response status is 500
+    And the problem code is "pack_reference_artifact_missing"
+    And the field at "/packs/0/packId" is "alpha"
+    When I GET "/activations/a-1"
+    Then the response status is 404
+
+  Scenario: A policy lock that names a held id only by case refuses the closure
+    Given the org pack "alpha" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: alpha-pack
+      pack_level: org
+      mutability_policy: policy.yaml
+      """
+    And the org pack "alpha" with the file "policy.yaml":
+      """
+      schema_version: 1
+      artifacts:
+        directive:directive_001: locked
+      """
+    When I PUT "/activations/a-1" with the body:
+      """
+      {"schemaVersion": 1, "deactivated": {"directive": ["DIRECTIVE_001"]}}
+      """
+    Then the response status is 500
+    And the problem code is "pack_reference_artifact_missing"
+
+  Scenario: A policy lock on an id no pack of the closure holds changes no write
+    Given the org pack "alpha" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: alpha-pack
+      pack_level: org
+      mutability_policy: policy.yaml
+      """
+    And the org pack "alpha" with the file "policy.yaml":
+      """
+      schema_version: 1
+      artifacts:
+        directive:NOT_HELD: locked
+      """
+    When I PUT "/activations/a-1" with the body:
+      """
+      {"schemaVersion": 1, "deactivated": {"directive": ["DIRECTIVE_001"]}}
+      """
+    Then the response status is 201
+
   Scenario: An empty deny list is refused, never stored
     US1 AS7.
     When I PUT "/activations/a-1" with the body:

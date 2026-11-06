@@ -289,6 +289,51 @@ class ClosureQueriesTest {
     }
 
     @Test
+    void aPresetItemThatNamesAHeldIdOnlyByCaseRefusesTheClosure() {
+        Preset preset = new Preset(
+                "governing",
+                "governs",
+                List.of(),
+                Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("directive_001"))),
+                List.of());
+        pack(
+                "org",
+                PackLevel.ORG,
+                descriptor("org", "1.0.0"),
+                holding(List.of("directive:DIRECTIVE_001"), MutabilityPolicySource.empty(), preset));
+
+        assertThatThrownBy(() -> queries().allConfigured()).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+            assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING);
+            assertThat(refusal.getMessage()).contains("directive:directive_001", "directive:DIRECTIVE_001");
+        });
+    }
+
+    @Test
+    void aPolicyLockThatNamesAHeldIdOnlyByCaseRefusesTheClosureButOneOnAnUnheldIdChangesNothing() {
+        MutabilityPolicySource caseOnly = MutabilityPolicySource.builder()
+                .entry(new Urn(NodeKind.DIRECTIVE, "directive_001"), MutabilityLevel.LOCKED)
+                .build();
+        pack("org", PackLevel.ORG, descriptor("org", "1.0.0"), holding(List.of("directive:DIRECTIVE_001"), caseOnly));
+
+        assertThatThrownBy(() -> queries().allConfigured())
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING));
+    }
+
+    @Test
+    void aPolicyLockOnAnIdTheClosureDoesNotHoldIsServedAndLocksNothing() {
+        MutabilityPolicySource unheld = MutabilityPolicySource.builder()
+                .entry(new Urn(NodeKind.DIRECTIVE, "GONE"), MutabilityLevel.LOCKED)
+                .build();
+        pack("org", PackLevel.ORG, descriptor("org", "1.0.0"), holding(List.of("directive:DIRECTIVE_001"), unheld));
+
+        ClosureView view = queries().allConfigured();
+
+        assertThat(view.isLocked(new Urn(NodeKind.DIRECTIVE, "DIRECTIVE_001"))).isFalse();
+    }
+
+    @Test
     void absentRootsOfAServiceWithNoConfiguredPackGiveAnEmptyClosure() {
         ClosureView view = queries().allConfigured();
 

@@ -73,7 +73,7 @@ description: >-
   exception is the registration of a relationship (putPackRelationship), which judges the request's own to
   against the compose of the pack it registers into: pack_reference_pack_missing (a qualified to naming a pack
   outside the source pack's depends_on closure), pack_reference_unqualified (a bare to that only another pack
-  holds) and pack_reference_artifact_missing (a qualified to naming an artifact the named pack does not hold)
+  holds) and pack_reference_artifact_missing (a qualified to naming an artifact the named pack does not hold, or a preset item or policy lock naming a held artifact only by case)
   answer 422 there, because the request is what is wrong, and are refused before any file is written.
   They are pack_dependency_cycle, pack_dependency_unknown, pack_dependency_out_of_range,
   pack_parent_unresolved, pack_level_violation, pack_name_conflict, pack_duplicate_id,
