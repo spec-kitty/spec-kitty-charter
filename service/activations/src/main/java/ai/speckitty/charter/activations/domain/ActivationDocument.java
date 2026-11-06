@@ -229,6 +229,24 @@ public final class ActivationDocument {
     }
 
     /**
+     * The document without one allow entry (unselect): the id leaves its kind's allow list, or {@code missionTypes}
+     * for {@code mission_type}. A list it empties stays, as {@code []}; an absent list stays absent.
+     *
+     * @param kind a kind of {@link #kinds()}, or {@code mission_type}
+     * @param id the artifact's declared id
+     * @return the new document
+     */
+    public ActivationDocument withoutSelected(ArtifactKind kind, String id) {
+        Builder builder = toBuilder();
+        if (kind == ArtifactKind.MISSION_TYPE) {
+            builder.missionTypes = builder.missionTypes.map(
+                    ids -> ids.stream().filter(held -> !held.equals(id)).toList());
+        }
+        Optional.ofNullable(builder.selected.get(kind)).ifPresent(ids -> ids.remove(id));
+        return new ActivationDocument(builder);
+    }
+
+    /**
      * The document with its allow and deny lists replaced, each id as given; used to store every spelling of an id as
      * the declared one ({@link DocumentRules#normalize}).
      *

@@ -12,6 +12,8 @@ import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.OfferingReadService;
@@ -22,6 +24,7 @@ import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.MutabilityLevel;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.Pack;
+import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.Payload;
@@ -653,6 +656,146 @@ class DomainRepositoryServiceTest {
                         .compositionFacts(new PackIdentifier("pack-descriptor-only"))
                         .defined())
                 .containsExactlyInAnyOrder("directive:D1", "procedure:release", "anti_pattern:big-ball-of-mud");
+    }
+
+    // ---- the typed edges -----------------------------------------------------------------------------
+
+    private static List<String> typed(PackCompositionFacts facts) {
+        return facts.edges().stream()
+                .map(edge -> edge.fromReference() + " " + edge.type().token() + " " + edge.toReference())
+                .toList();
+    }
+
+    /** A graph document's edges are held as written: the relation type and any {@code <pack>::} qualifier. */
+    @Test
+    void theEdgesHoldEveryGraphDocumentEdgeWithItsRelationAndQualifiers(@TempDir Path host) throws IOException {
+        Path pack = PackFixtures.copyOf("pack-descriptor-only", host);
+        Files.writeString(pack.resolve("edges.graph.yaml"), """
+                schema_version: '1.0'
+                generated_at: STATIC
+                nodes: []
+                edges:
+                - {source: directive:D, target: tactic:T, relation: requires}
+                - {source: tactic:E, target: tactic:T, relation: enhances}
+                - {source: agent_profile:P, target: 'other::agent_profile:Q', relation: specializes_from}
+                """);
+
+        assertThat(typed(overOne("pack-descriptor-only", pack)
+                        .compositionFacts(new PackIdentifier("pack-descriptor-only"))))
+                .containsExactly(
+                        "directive:D requires tactic:T",
+                        "tactic:E enhances tactic:T",
+                        "agent_profile:P specializes_from other::agent_profile:Q");
+    }
+
+    /**
+     * The edges come from every source in a stable order: graph documents in file order, then each component's
+     * relationships (its typed references, {@code ArtifactEdges.build}), then the registered relationship shard; a
+     * repeat of one (from, relation, to, qualifiers) is kept once, where it was first seen.
+     */
+    @Test
+    void theEdgesHoldComponentAndRegisteredShardEdgesInOrderWithoutRepeats(@TempDir Path host) throws IOException {
+        Path pack = PackFixtures.copyOf("pack-descriptor-only", host);
+        Files.writeString(pack.resolve("t1.tactic.yaml"), """
+                id: t1
+                schema_version: '1.0'
+                name: One
+                steps: [{title: s, description: d}]
+                references: [{name: n, type: styleguide, id: s1, when: w}]
+                """);
+        Files.writeString(pack.resolve("edges.graph.yaml"), """
+                schema_version: '1.0'
+                generated_at: STATIC
+                nodes: []
+                edges:
+                - {source: directive:D, target: tactic:t1, relation: requires}
+                - {source: tactic:t1, target: styleguide:s1, relation: suggests}
+                """);
+        Files.writeString(
+                pack.resolve(RelationshipShard.SHARD_PATH),
+                RelationshipShard.write(List.of(
+                        Relationship.of(
+                                new Urn(NodeKind.DIRECTIVE, "D9"), new Urn(NodeKind.TACTIC, "t1"), RelationType.SCOPE),
+                        Relationship.of(
+                                new Urn(NodeKind.DIRECTIVE, "D"),
+                                new Urn(NodeKind.TACTIC, "t1"),
+                                RelationType.REQUIRES))));
+
+        assertThat(typed(overOne("pack-descriptor-only", pack)
+                        .compositionFacts(new PackIdentifier("pack-descriptor-only"))))
+                .containsExactly(
+                        "directive:D requires tactic:t1",
+                        "tactic:t1 suggests styleguide:s1",
+                        "directive:D9 scope tactic:t1");
+    }
+
+    /**
+     * The dedup key is (from, relation, to, qualifiers), not the kernel {@link Relationship#equals}, which ignores the
+     * relation and the qualifiers: one (from, to) written with two relations, or once bare and once {@code <pack>::}
+     * qualified, is two edges; only a true repeat is dropped.
+     */
+    @Test
+    void edgesThatDifferOnlyInTheirRelationOrAQualifierAreAllKept(@TempDir Path host) throws IOException {
+        Path pack = PackFixtures.copyOf("pack-descriptor-only", host);
+        Files.writeString(pack.resolve("edges.graph.yaml"), """
+                schema_version: '1.0'
+                generated_at: STATIC
+                nodes: []
+                edges:
+                - {source: directive:D, target: tactic:t1, relation: requires}
+                - {source: directive:D, target: tactic:t1, relation: suggests}
+                - {source: directive:D, target: 'other::tactic:t1', relation: requires}
+                - {source: 'other::directive:D', target: tactic:t1, relation: requires}
+                """);
+        Files.writeString(
+                pack.resolve(RelationshipShard.SHARD_PATH),
+                RelationshipShard.write(List.of(
+                        Relationship.of(
+                                new Urn(NodeKind.DIRECTIVE, "D"), new Urn(NodeKind.TACTIC, "t1"), RelationType.SCOPE),
+                        Relationship.of(
+                                new Urn(NodeKind.DIRECTIVE, "D"),
+                                new Urn(NodeKind.TACTIC, "t1"),
+                                RelationType.SUGGESTS))));
+
+        assertThat(typed(overOne("pack-descriptor-only", pack)
+                        .compositionFacts(new PackIdentifier("pack-descriptor-only"))))
+                .containsExactly(
+                        "directive:D requires tactic:t1",
+                        "directive:D suggests tactic:t1",
+                        "directive:D requires other::tactic:t1",
+                        "other::directive:D requires tactic:t1",
+                        "directive:D scope tactic:t1");
+    }
+
+    /** A typed reference with no graph edge beside it is still an edge of the facts. */
+    @Test
+    void aComponentsTypedReferenceIsAnEdgeOnItsOwn(@TempDir Path host) throws IOException {
+        Path pack = PackFixtures.copyOf("pack-descriptor-only", host);
+        Files.writeString(pack.resolve("t1.tactic.yaml"), """
+                id: t1
+                schema_version: '1.0'
+                name: One
+                steps: [{title: s, description: d}]
+                references: [{name: n, type: styleguide, id: 'other::s1', when: w}]
+                """);
+
+        assertThat(typed(overOne("pack-descriptor-only", pack)
+                        .compositionFacts(new PackIdentifier("pack-descriptor-only"))))
+                .containsExactly("tactic:t1 suggests other::styleguide:s1");
+    }
+
+    /** A registered relationship shard alone gives its edges. */
+    @Test
+    void aRegisteredRelationshipShardIsAnEdgeSource(@TempDir Path host) throws IOException {
+        Path pack = PackFixtures.copyOf("pack-descriptor-only", host);
+        Files.writeString(
+                pack.resolve(RelationshipShard.SHARD_PATH),
+                RelationshipShard.write(List.of(Relationship.of(
+                        new Urn(NodeKind.DIRECTIVE, "D1"), new Urn(NodeKind.TACTIC, "t9"), RelationType.REQUIRES))));
+
+        assertThat(typed(overOne("pack-descriptor-only", pack)
+                        .compositionFacts(new PackIdentifier("pack-descriptor-only"))))
+                .containsExactly("directive:D1 requires tactic:t9");
     }
 
     // ---- the pack's mutability policy file (ADR-0063, FR-022) ----------------------------------------------------

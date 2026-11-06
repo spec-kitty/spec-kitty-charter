@@ -26,6 +26,28 @@ dependencies {
     testImplementation(catalog.lib("archunit"))
 }
 
+// The CPU-time budgets (tests tagged `timing`, #316, ADR-0057), report-only and never part of `test` or `check`, as in
+// :packs: ActivationSelectionBudgetTest prints the p95 of a cascading select over five hundred artifacts (NFR-006).
+// Run it in an invocation of its own:
+//
+//   ./gradlew :activations:timingBudgets
+tasks.test {
+    useJUnitPlatform { excludeTags("timing") }
+}
+
+tasks.register<Test>("timingBudgets") {
+    group = "verification"
+    description = "The CPU-time budgets (tests tagged timing), run alone and report-only; not part of check (#316)."
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform { includeTags("timing") }
+    maxParallelForks = 1
+    setForkEvery(1)
+    mustRunAfter(tasks.test)
+    doNotTrackState("a budget measured on another run says nothing about this one (#316)")
+    testLogging { showStandardStreams = true }
+}
+
 // The nightly mutation floor (#239): one group for the whole module, ruled at 85 by the operator on 2026-11-06
 // (a trial run scored 91.4 %); raised by PR once the score clears it by 5.
 mutationFloors {
@@ -33,4 +55,9 @@ mutationFloors {
         packages.add("ai.speckitty.charter.activations")
         floor = 85
     }
+}
+
+// PIT runs the unit tests as `test` does: the timing budgets above stay out of it.
+pitest {
+    excludedGroups = setOf("timing")
 }

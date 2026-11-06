@@ -2,13 +2,19 @@ package ai.speckitty.charter.activations.infra.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.api.model.ActivationChange;
 import ai.speckitty.charter.api.model.ActivationConfig;
+import ai.speckitty.charter.api.model.ArtifactReference;
 import ai.speckitty.charter.api.model.DeactivatedArtifacts;
 import ai.speckitty.charter.api.model.ExclusionRequest;
+import ai.speckitty.charter.api.model.Link;
 import ai.speckitty.charter.api.model.PackPin;
 import ai.speckitty.charter.api.model.PresetApplication;
 import ai.speckitty.charter.api.model.SelectedArtifacts;
 import ai.speckitty.charter.api.model.SelectionRequest;
+import ai.speckitty.charter.api.model.SharedSkip;
+import ai.speckitty.charter.api.model.SkippedDeactivated;
+import ai.speckitty.charter.api.model.SkippedReport;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -32,6 +38,15 @@ class ActivationRuntimeHintsTest {
             SelectionRequest.class,
             ExclusionRequest.class,
             PresetApplication.class);
+
+    /** The per-artifact and preset writes' answer, and every type it reaches, which the native executable writes. */
+    static final List<Class<?>> ANSWERED = List.of(
+            ActivationChange.class,
+            SkippedReport.class,
+            SkippedDeactivated.class,
+            SharedSkip.class,
+            ArtifactReference.class,
+            Link.class);
 
     private final RuntimeHints hints = registered();
 
@@ -59,6 +74,28 @@ class ActivationRuntimeHintsTest {
     @FieldSource("MIXED_IN")
     void eachMixedInDtoBindsWithItsAccessors(Class<?> dto) {
         assertThat(RuntimeHintsPredicates.reflection().onType(dto)).accepts(hints);
+    }
+
+    @ParameterizedTest
+    @FieldSource("ANSWERED")
+    void eachTypeOfTheWritesAnswerBindsWithItsAccessors(Class<?> dto) {
+        assertThat(RuntimeHintsPredicates.reflection().onType(dto)).accepts(hints);
+    }
+
+    @Test
+    void theAccessorsOfTheWritesAnswerAreRegistered() {
+        assertThat(RuntimeHintsPredicates.reflection().onMethodInvocation(ActivationChange.class, "getSkipped"))
+                .accepts(hints);
+        assertThat(RuntimeHintsPredicates.reflection().onMethodInvocation(SharedSkip.class, "getReferencedBy"))
+                .accepts(hints);
+        assertThat(RuntimeHintsPredicates.reflection().onMethodInvocation(SkippedDeactivated.class, "getRequiredBy"))
+                .accepts(hints);
+        assertThat(RuntimeHintsPredicates.reflection().onMethodInvocation(ArtifactReference.class, "getArtifactId"))
+                .accepts(hints);
+        assertThat(RuntimeHintsPredicates.reflection().onMethodInvocation(ArtifactReference.KindEnum.class, "getValue"))
+                .accepts(hints);
+        assertThat(RuntimeHintsPredicates.reflection().onMethodInvocation(Link.class, "getHref"))
+                .accepts(hints);
     }
 
     @Test

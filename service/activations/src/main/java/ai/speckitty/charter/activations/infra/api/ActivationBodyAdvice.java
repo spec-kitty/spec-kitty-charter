@@ -10,18 +10,24 @@ import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.transport.BodyLimit;
 import ai.speckitty.charter.web.JsonBodyGuard;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validator;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpInputMessage;
@@ -45,8 +51,8 @@ import tools.jackson.databind.type.LogicalType;
 /**
  * Guards the body of every activation write before the message converter reads it (#125 build notes, #323): the
  * activation document of {@code createActivation} and {@code replaceActivation}, and the bodies of the sub-resource
- * writes ({@code SelectionRequest}, {@code ExclusionRequest}, {@code PresetApplication}), so the writes still reserved
- * need nothing here once built. Each fault is {@code 422 activation_invalid} with a violation:
+ * writes ({@code SelectionRequest}, {@code ExclusionRequest}, {@code PresetApplication}), so every activation write
+ * reads its body through the same guard. Each fault is {@code 422 activation_invalid} with a violation:
  *
  * <ul>
  *   <li>a member repeated in one object (the last would win, silently): the pointer of the member, code
@@ -69,12 +75,25 @@ import tools.jackson.databind.type.LogicalType;
  *
  * <p>A body that is not JSON, or that the strict read refuses for any other reason, is handed on unchanged: the
  * converter refuses it, and {@link ActivationProblems} answers that refusal. The body is handed on as it came.
+ *
+ * <p>The document of {@code createActivation} and {@code replaceActivation} is refused here, as above. The body of a
+ * sub-resource write is not: its preconditions come first ({@code 428}, {@code 404 activation_not_found},
+ * {@code 412}; FR-010), so every fault of it is recorded ({@link DeferredBody}) and refused by the use case at its
+ * {@code 422} step. Besides the faults above, that covers a body that is missing, not JSON or of the wrong shape
+ * ({@code unreadable_body}, at the value Jackson names), and one that breaks a constraint of its schema
+ * ({@code invalid_value}, as bean validation finds it when a validator is at hand). The converter then reads
+ * {@code {}} in its place, so nothing refuses the request before its preconditions are judged. The {@code cascade}
+ * tokens bind as strings ({@code SingleModelPerSchemaNormalizer}), so a token outside the cascade's kinds is the use
+ * case's {@code unknown_kind}, not a fault of the body.
  */
 @ControllerAdvice
 public class ActivationBodyAdvice extends RequestBodyAdviceAdapter {
 
     private static final Set<Type> GUARDED =
             Set.of(ActivationConfig.class, SelectionRequest.class, ExclusionRequest.class, PresetApplication.class);
+    private static final Set<Type> DEFERRED =
+            Set.of(SelectionRequest.class, ExclusionRequest.class, PresetApplication.class);
+    private static final byte[] NO_MEMBERS = "{}".getBytes(StandardCharsets.UTF_8);
 
     /** Reads the body as a tree, and refuses a member repeated in one object instead of keeping the last. */
     private static final JsonMapper TREE = JsonMapper.builder()
@@ -97,8 +116,31 @@ public class ActivationBodyAdvice extends RequestBodyAdviceAdapter {
                             .setCoercion(CoercionInputShape.Boolean, CoercionAction.Fail))
             .build();
 
-    /** For Spring, which finds the advice by component scan; a test constructs it directly. */
-    public ActivationBodyAdvice() {}
+    private final @Nullable Validator validator;
+
+    /** An advice without a validator: a sub-resource body's constraints are then left to method validation. */
+    public ActivationBodyAdvice() {
+        this((Validator) null);
+    }
+
+    /**
+     * For Spring, which finds the advice by component scan, with the application's validator when it has one.
+     *
+     * @param validator the bean validator
+     */
+    @Autowired
+    public ActivationBodyAdvice(ObjectProvider<Validator> validator) {
+        this(validator.getIfAvailable());
+    }
+
+    /**
+     * An advice over a validator.
+     *
+     * @param validator the bean validator a sub-resource body's constraints are judged by; null for none
+     */
+    public ActivationBodyAdvice(@Nullable Validator validator) {
+        this.validator = validator;
+    }
 
     @Override
     public boolean supports(
@@ -113,17 +155,95 @@ public class ActivationBodyAdvice extends RequestBodyAdviceAdapter {
             Type targetType,
             Class<? extends HttpMessageConverter<?>> converterType)
             throws IOException {
+        if (DEFERRED.contains(targetType)) {
+            return deferred(inputMessage, (Class<?>) targetType);
+        }
         HttpHeaders headers = inputMessage.getHeaders();
-        byte[] body = JsonBodyGuard.readBounded(
-                inputMessage,
-                BodyLimit.MAX_BYTES,
-                fault -> refused(List.of(new RefusalViolation(
-                        "", "body_too_large", "The body is larger than " + BodyLimit.MAX_BYTES + " bytes."))));
+        byte[] body =
+                JsonBodyGuard.readBounded(inputMessage, BodyLimit.MAX_BYTES, fault -> refused(List.of(tooLarge())));
         List<RefusalViolation> violations = violations(body, headers.getContentType(), (Class<?>) targetType);
         if (!violations.isEmpty()) {
             throw refused(violations);
         }
         return JsonBodyGuard.replay(headers, body);
+    }
+
+    /** A sub-resource body without one: recorded as unreadable, and read as {@code {}}. */
+    @Override
+    public @Nullable Object handleEmptyBody(
+            @Nullable Object body,
+            HttpInputMessage inputMessage,
+            MethodParameter parameter,
+            Type targetType,
+            Class<? extends HttpMessageConverter<?>> converterType) {
+        if (body != null || !DEFERRED.contains(targetType)) {
+            return body;
+        }
+        DeferredBody.record(List.of(ActivationProblems.unreadableAt("")));
+        return STRICT.readValue(NO_MEMBERS, (Class<?>) targetType);
+    }
+
+    /** A sub-resource body: its faults are recorded for the write's 422 step, and the converter reads {}. */
+    private HttpInputMessage deferred(HttpInputMessage inputMessage, Class<?> target) throws IOException {
+        HttpHeaders headers = inputMessage.getHeaders();
+        byte[] body;
+        try {
+            body = JsonBodyGuard.readBounded(inputMessage, BodyLimit.MAX_BYTES, fault -> refused(List.of(tooLarge())));
+        } catch (CharterRefusal tooLarge) {
+            return deferring(headers, tooLarge.violations());
+        }
+        List<RefusalViolation> violations = deferredViolations(body, headers.getContentType(), target, validator);
+        return violations.isEmpty() ? JsonBodyGuard.replay(headers, body) : deferring(headers, violations);
+    }
+
+    private static HttpInputMessage deferring(HttpHeaders headers, List<RefusalViolation> violations) {
+        DeferredBody.record(violations);
+        HttpHeaders replayed = new HttpHeaders();
+        replayed.putAll(headers);
+        replayed.setContentLength(NO_MEMBERS.length);
+        return JsonBodyGuard.replay(replayed, NO_MEMBERS);
+    }
+
+    /**
+     * Every fault of a sub-resource body, judged in turn: each fault {@link #violations} finds (a member repeated, each
+     * {@code null}, each unknown member, a scalar of another type); else a body that is not JSON or that the strict
+     * read cannot bind, which a document's write leaves to the converter; else each broken constraint.
+     *
+     * @param body the body
+     * @param contentType the request's content type; null when it has none
+     * @param target the DTO the body binds to
+     * @param validator the bean validator; null to leave the constraints to method validation
+     * @return the violations; empty when the body is well formed
+     */
+    static List<RefusalViolation> deferredViolations(
+            byte[] body, @Nullable MediaType contentType, Class<?> target, @Nullable Validator validator) {
+        List<RefusalViolation> violations = violations(body, contentType, target);
+        if (!violations.isEmpty()) {
+            return violations;
+        }
+        Object bound;
+        try {
+            bound = STRICT.treeToValue(read(body, contentType), target);
+        } catch (JacksonException unbindable) {
+            return List.of(ActivationProblems.unreadableAt(ActivationProblems.pointerOf(unbindable.getPath())));
+        }
+        return validator == null || bound == null ? List.of() : constraintViolations(validator.validate(bound));
+    }
+
+    private static List<RefusalViolation> constraintViolations(Set<ConstraintViolation<Object>> broken) {
+        return broken.stream()
+                .map(violation -> {
+                    String pointer = ActivationProblems.pointerOfProperty(
+                            violation.getPropertyPath().toString());
+                    return new RefusalViolation(
+                            pointer, "invalid_value", "The value at '" + pointer + "' " + violation.getMessage() + ".");
+                })
+                .sorted(Comparator.comparing(RefusalViolation::pointer))
+                .toList();
+    }
+
+    private static RefusalViolation tooLarge() {
+        return new RefusalViolation("", "body_too_large", "The body is larger than " + BodyLimit.MAX_BYTES + " bytes.");
     }
 
     /**

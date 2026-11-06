@@ -1,5 +1,8 @@
 title: ActivationChange
-description: 'The answer of one sub-resource write: the new revision and what the write changed (ADR-0020 D6).'
+description: >-
+  The answer of one sub-resource write: the new revision and what the write changed (ADR-0020 D6). skipped reports
+  what the write-time cascade walk left out; what a read leaves out is reported by the effective reads
+  (getActivationSkippedReport), not here.
 type: object
 additionalProperties: false
 required:
@@ -21,21 +24,42 @@ properties:
     type: array
     items:
       $ref: ArtifactReference.yaml
-    description: The artifacts and mission types whose state the write changed.
+    description: >-
+      The artifacts and mission types whose state the write changed. Measured after the stale ids are dropped, against
+      the stored document without them, so a dropped id appears only in dropped, never here.
     x-derived:
-      rule: The ids the write added to or removed from selected, deactivated or missionTypes.
+      rule: >-
+        The ids the write added to or removed from selected, deactivated or missionTypes, measured against the stored
+        document less the ids in dropped.
       inputs:
       - schemas/ActivationConfig.yaml
   cleared:
     type: array
     items:
       $ref: ArtifactReference.yaml
-    description: 'The exclusions the write cleared: by a select, by includeDeactivated or by a forced preset.'
+    description: >-
+      The exclusions the write cleared: by a select, by includeDeactivated, by a forced preset or by a re-activate.
+      Measured after the stale ids are dropped, so a stale deny entry the write dropped appears only in dropped, never
+      here.
     x-derived:
-      rule: The ids removed from deactivated.
+      rule: The ids removed from deactivated, measured against the stored document less the ids in dropped.
       inputs:
       - schemas/ActivationConfig.yaml
   skipped:
     $ref: SkippedReport.yaml
+  dropped:
+    type: array
+    items:
+      $ref: ArtifactReference.yaml
+    description: >-
+      The ids the write dropped from the stored document before it applied anything, because the activation's closure
+      no longer declares them (a pack upgrade removed them): from selected, deactivated and missionTypes (ADR-0059
+      amendment of 2026-11-06). Present only when the write dropped one; such a write is never a no-op. applied and
+      cleared are measured after the drop, so a dropped id is never in them, even when the path of an unselect or a
+      re-activate names it.
+    x-derived:
+      rule: The ids of the stored selected, deactivated and missionTypes the activation's closure does not hold.
+      inputs:
+      - schemas/ActivationConfig.yaml
   _links:
     $ref: Links.yaml

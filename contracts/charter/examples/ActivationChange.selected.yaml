@@ -1,6 +1,6 @@
 summary: >-
-  One directive selected into the activation, as the operation answers once it is built (reserved until then,
-  ADR-0020 D8). self is the activation the change was applied to.
+  One directive selected into the activation. The write's path has no GET, so the answer has no self; up is the
+  activation the change was applied to.
 value:
   revision: sha256:3f1b2c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809
   applied:
@@ -13,5 +13,5 @@ value:
     unreachedBehindDeactivated: []
     skippedShared: []
   _links:
-    self:
+    up:
       href: /api/v1/activations/a-1

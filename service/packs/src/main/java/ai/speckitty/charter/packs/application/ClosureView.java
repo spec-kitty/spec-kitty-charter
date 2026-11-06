@@ -35,6 +35,8 @@ import java.util.Set;
  *     a view by id over this list
  * @param parents each closure pack's {@code parent_pack}, by descriptor {@code pack_id}; a pack without one is absent
  * @param fingerprint the verified digest of the inputs every field was read from
+ * @param edges the typed edges of the closure's packs, indexed from the facts the same read holds; the reach answers
+ *     from it with no further read
  */
 public record ClosureView(
         List<OfferingReadService.OfferingEntry> packs,
@@ -46,7 +48,8 @@ public record ClosureView(
         List<String> closurePackIds,
         List<HeldPreset> heldPresets,
         Map<String, String> parents,
-        String fingerprint) {
+        String fingerprint,
+        EdgeIndex edges) {
 
     /**
      * A preset of the closure with the pack that holds it.
@@ -81,6 +84,7 @@ public record ClosureView(
      * @param heldPresets the presets, each id once
      * @param parents the parent of each pack that has one
      * @param fingerprint the verified digest
+     * @param edges the closure's typed edges
      */
     public ClosureView {
         packs = List.copyOf(Objects.requireNonNull(packs, "packs"));
@@ -93,6 +97,56 @@ public record ClosureView(
         heldPresets = List.copyOf(Objects.requireNonNull(heldPresets, "heldPresets"));
         parents = Map.copyOf(Objects.requireNonNull(parents, "parents"));
         Objects.requireNonNull(fingerprint, "fingerprint");
+        Objects.requireNonNull(edges, "edges");
+    }
+
+    /**
+     * A view whose closure writes no typed edge.
+     *
+     * @param packs the closure's packs
+     * @param heldIds the held ids per kind
+     * @param holderOf the holder of each held URN
+     * @param missionTypes the held mission types
+     * @param floor the required floor
+     * @param policy the per-pack policies
+     * @param closurePackIds the closure's {@code pack_id}s
+     * @param heldPresets the presets, each id once
+     * @param parents the parent of each pack that has one
+     * @param fingerprint the verified digest
+     */
+    public ClosureView(
+            List<OfferingReadService.OfferingEntry> packs,
+            Map<ArtifactKind, Set<String>> heldIds,
+            Map<Urn, String> holderOf,
+            Set<String> missionTypes,
+            RequiredFloor floor,
+            PerPackPolicy policy,
+            List<String> closurePackIds,
+            List<HeldPreset> heldPresets,
+            Map<String, String> parents,
+            String fingerprint) {
+        this(
+                packs,
+                heldIds,
+                holderOf,
+                missionTypes,
+                floor,
+                policy,
+                closurePackIds,
+                heldPresets,
+                parents,
+                fingerprint,
+                EdgeIndex.empty());
+    }
+
+    /**
+     * The forward reach over the closure's edges ({@link Reachability#reach}).
+     *
+     * @param request what to walk
+     * @return what the walk reached, stopped at, left behind a stop and passed through
+     */
+    public ReachResult reach(ReachRequest request) {
+        return Reachability.reach(edges, request);
     }
 
     /**
