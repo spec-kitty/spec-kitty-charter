@@ -264,53 +264,33 @@ public record ClosureSnapshot(
     }
 
     /**
-     * A preset the closure offers (ADR-0031, ADR-0042), as the preset write needs it.
+     * A preset the closure offers (ADR-0031, ADR-0042), as the preset write needs it. Its must-have items are not
+     * here: the closure's {@code requiredBy} already holds the floor every governing preset sets.
      *
      * @param id the preset's id
-     * @param holdingPack the descriptor {@code pack_id} of the pack that holds it
      * @param activatedKinds the kinds the preset activates; empty when it gates none
      * @param members the declared ids it selects, per kind, must-have items included
-     * @param mustHave the must-have ids per kind: its share of the required floor
      * @param missionTypes the mission types it selects, must-have ones included
-     * @param mustHaveMissionTypes the must-have mission types
      */
     public record PresetView(
             String id,
-            String holdingPack,
             Set<ArtifactKind> activatedKinds,
             Map<ArtifactKind, Set<String>> members,
-            Map<ArtifactKind, Set<String>> mustHave,
-            Set<String> missionTypes,
-            Set<String> mustHaveMissionTypes) {
+            Set<String> missionTypes) {
 
         /**
          * Copies every collection.
          *
          * @param id the id
-         * @param holdingPack the holding pack
          * @param activatedKinds the kind gate
          * @param members the members per kind
-         * @param mustHave the must-have members per kind
          * @param missionTypes the mission types
-         * @param mustHaveMissionTypes the must-have mission types
          */
         public PresetView {
             Objects.requireNonNull(id, "id");
-            Objects.requireNonNull(holdingPack, "holdingPack");
             activatedKinds = Set.copyOf(activatedKinds);
             members = copyOfSets(members);
-            mustHave = copyOfSets(mustHave);
             missionTypes = Set.copyOf(missionTypes);
-            mustHaveMissionTypes = Set.copyOf(mustHaveMissionTypes);
-        }
-
-        /**
-         * Whether the preset binds: it has a must-have item (ADR-0031).
-         *
-         * @return {@code true} for a governing preset, {@code false} for a convenience one
-         */
-        public boolean governing() {
-            return !mustHaveMissionTypes.isEmpty() || mustHave.values().stream().anyMatch(s -> !s.isEmpty());
         }
     }
 }

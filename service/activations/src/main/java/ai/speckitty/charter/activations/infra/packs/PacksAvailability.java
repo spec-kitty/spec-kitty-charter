@@ -139,23 +139,15 @@ public class PacksAvailability implements AvailablePacks {
 
     private static Map<String, ClosureSnapshot.PresetView> presets(ClosureView view) {
         Map<String, ClosureSnapshot.PresetView> presets = new LinkedHashMap<>();
-        view.presets().forEach((id, held) -> presets.put(id, presetOf(held.preset(), held.descriptorPackId())));
+        view.presets().forEach((id, held) -> presets.put(id, presetOf(held.preset())));
         return presets;
     }
 
-    private static ClosureSnapshot.PresetView presetOf(Preset preset, String holdingPack) {
+    private static ClosureSnapshot.PresetView presetOf(Preset preset) {
         Map<ArtifactKind, Set<String>> members = new EnumMap<>(ArtifactKind.class);
         preset.artifacts().forEach((kind, items) -> members.put(kind, ids(items)));
-        Map<ArtifactKind, Set<String>> mustHave = new EnumMap<>(ArtifactKind.class);
-        preset.required().forEach((kind, ids) -> mustHave.put(kind, Set.copyOf(ids)));
         return new ClosureSnapshot.PresetView(
-                preset.id(),
-                holdingPack,
-                Set.copyOf(preset.activatedKinds()),
-                members,
-                mustHave,
-                ids(preset.missionTypes()),
-                Set.copyOf(preset.requiredMissionTypes()));
+                preset.id(), Set.copyOf(preset.activatedKinds()), members, ids(preset.missionTypes()));
     }
 
     private static Set<String> ids(List<PresetItem> items) {

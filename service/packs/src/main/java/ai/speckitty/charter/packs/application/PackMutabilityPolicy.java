@@ -57,7 +57,7 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
      * @param configured the configured identifier, the one its policy is read by
      * @param descriptorPackId the descriptor's {@code pack_id}, the key of {@link PerPackPolicy}
      */
-    public record Member(PackIdentifier configured, String descriptorPackId) {
+    record Member(PackIdentifier configured, String descriptorPackId) {
 
         /**
          * Checks the fields.
@@ -65,7 +65,7 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
          * @param configured the configured identifier
          * @param descriptorPackId the descriptor's {@code pack_id}
          */
-        public Member {
+        Member {
             Objects.requireNonNull(configured, "configured");
             Objects.requireNonNull(descriptorPackId, "descriptorPackId");
         }
@@ -73,7 +73,7 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
 
     /** The composition closure of the pack being written, dependencies first. */
     @FunctionalInterface
-    public interface Closure {
+    interface Closure {
         /**
          * The closure of a pack.
          *
@@ -121,7 +121,7 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
      * @param policies the port that reads each member's policy
      * @param closure the closure of the pack being written
      */
-    public PackMutabilityPolicy(MutabilityPolicyRepository policies, Closure closure) {
+    PackMutabilityPolicy(MutabilityPolicyRepository policies, Closure closure) {
         this(policiesOver(Objects.requireNonNull(policies, "policies"), Objects.requireNonNull(closure, "closure")));
     }
 

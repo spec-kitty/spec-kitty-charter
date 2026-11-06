@@ -134,19 +134,16 @@ class PacksAvailabilityTest {
     }
 
     @Test
-    void thePresetsAreCopiedWithTheirMustHaveItems() {
+    void thePresetsAreCopiedWithTheirMustHaveItemsAmongTheMembers() {
         when(closures.snapshot(Optional.empty())).thenReturn(view());
 
         ClosureSnapshot.PresetView preset =
                 adapter.snapshot(Optional.empty()).presets().get("governing");
 
-        assertThat(preset.holdingPack()).isEqualTo(ALPHA);
+        assertThat(preset.id()).isEqualTo("governing");
         assertThat(preset.activatedKinds()).containsExactly(ArtifactKind.DIRECTIVE);
         assertThat(preset.members().get(ArtifactKind.DIRECTIVE)).containsExactlyInAnyOrder("D1", "D2");
-        assertThat(preset.mustHave().get(ArtifactKind.DIRECTIVE)).containsExactly("D2");
         assertThat(preset.missionTypes()).containsExactly("software-dev");
-        assertThat(preset.mustHaveMissionTypes()).isEmpty();
-        assertThat(preset.governing()).isTrue();
     }
 
     @Test
