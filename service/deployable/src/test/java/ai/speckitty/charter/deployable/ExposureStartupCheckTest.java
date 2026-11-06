@@ -278,4 +278,33 @@ class ExposureStartupCheckTest {
     void underTheContainerProfileAnAccessLogPatternOfOtherHeadersStarts() {
         assertStarts(runner, CONTAINER, ExposureStartupCheck.ACCESS_LOG_PATTERN_PROPERTY + "=%h %r %{User-Agent}i %s");
     }
+
+    @Test
+    void theManagementDiscoveryPageSwitchedOnFailsTheStart() {
+        assertRefused(
+                runner,
+                ExposureStartupCheck.DISCOVERY_PROPERTY,
+                CONTAINER,
+                ExposureStartupCheck.DISCOVERY_PROPERTY + "=true");
+        assertRefused(
+                runner,
+                ExposureStartupCheck.DISCOVERY_PROPERTY,
+                LOOPBACK,
+                ExposureStartupCheck.DISCOVERY_PROPERTY + "=on");
+        assertStarts(runner, CONTAINER, ExposureStartupCheck.DISCOVERY_PROPERTY + "=false");
+    }
+
+    @Test
+    void anEndpointMappedToAnotherPathFailsTheStart() {
+        assertRefused(
+                runner,
+                ExposureStartupCheck.PATH_MAPPING_PROPERTY,
+                CONTAINER,
+                ExposureStartupCheck.PATH_MAPPING_PROPERTY + ".health=status");
+        assertRefused(
+                runner,
+                ExposureStartupCheck.PATH_MAPPING_PROPERTY,
+                LOOPBACK,
+                ExposureStartupCheck.PATH_MAPPING_PROPERTY + ".health=health");
+    }
 }
