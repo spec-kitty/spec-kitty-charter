@@ -49,8 +49,8 @@ import tools.jackson.databind.json.JsonMapper;
 /**
  * Guards the body of every activation write before the message converter reads it (#125 build notes, #323): the
  * activation document of {@code createActivation} and {@code replaceActivation}, and the bodies of the sub-resource
- * writes ({@code SelectionRequest}, {@code ExclusionRequest}, {@code PresetApplication}), so the writes still reserved
- * need nothing here once built. Each fault is {@code 422 activation_invalid} with a violation:
+ * writes ({@code SelectionRequest}, {@code ExclusionRequest}, {@code PresetApplication}), so every activation write
+ * reads its body through the same guard. Each fault is {@code 422 activation_invalid} with a violation:
  *
  * <ul>
  *   <li>a body over {@link BodyLimit#MAX_BYTES}: pointer {@code ""}, code {@code body_too_large}, judged by
