@@ -208,15 +208,13 @@ re-review of the fixes. Folded on lane-m (369063b..ac1faa9 and the re-review fol
 
 ## Open review items (logged, not silent)
 
-1. The required floor is closure-scoped (R5), an assumed default flagged to the operator on 2026-11-05.
-2. A version pin that differs from the held version is refused rather than served side by side (R2).
-3. ADR-0059 open questions 1 and 4 (do reserved `501` pins count toward the gate; edges of an overridden artifact)
-   remain unruled. This mission's NFR-002 keeps every built operation on a behavioural scenario, and no layer merge is
-   built here.
-4. A preset "lists" a key when its file holds at least one member for it; a key with an empty list counts as not
+1. The required floor is closure-scoped (R5). Ruled by the operator on 2026-11-06 (DIV-205); it was an assumed default.
+2. A version pin that differs from the held version is refused rather than served side by side (R2). Ruled by the
+   operator on 2026-11-06.
+3. A preset "lists" a key when its file holds at least one member for it; a key with an empty list counts as not
    listed (the packs `Preset` record cannot tell an absent key from an empty one). Assumed default, applied in FR-016
    and WP14.
-5. A deactivate's own cascade does not follow lineage (F9), while a select's does: FR-015 read literally. Awaiting
+4. A deactivate's own cascade does not follow lineage (F9), while a select's does: FR-015 read literally. Awaiting
    the operator.
-6. `includeDeactivated` clears out-of-scope deny entries it walks through (F4), and the write-time pull is bounded by
+5. `includeDeactivated` clears out-of-scope deny entries it walks through (F4), and the write-time pull is bounded by
    `activatedKinds` (F5). Both follow the contract text; neither is spelled out in ADR-0059. Awaiting confirmation.
