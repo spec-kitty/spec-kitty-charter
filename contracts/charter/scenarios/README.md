@@ -190,7 +190,15 @@ that calls it. A run that selects only some scenarios reports the others' operat
   defines, a `Problem` without a code, with no alias (FR-006); a `GET` on a write path and a `PUT` on the item of a
   kind without a write (a tactic) are a 405 `Problem` without a code. A write to a kind that cannot be written is
   not `kind_not_found`: the path names a served kind, and the method is what the path does not define.
-- `activations.feature`: the activation set (ADR-0020), declared in full and reserved: one 501 pin per operation.
+- `activation-register.feature`: the activation register (ADR-0020 D3-D6, ADR-0059 D4-D5, #125, #360): create,
+  register, read and remove an activation document in canonical form under its revision, its `ETag`, `If-Match` and
+  `If-None-Match`, its refusals (`activation_invalid` with `violations`, `artifact_required` and `artifact_locked`
+  with `requiredBy`, `activation_not_found`), and the closure read `GET /activations/{activationId}/packs`.
+- `activation-register-guards.feature`: the guards of the register: the worktree token (401), a browser request
+  (403), and the preconditions judged before the document (412 on a stale `If-Match`, on `If-None-Match: *` over a
+  stored id and on an `If-Match` over an id nothing is stored under).
+- `activations.feature`: the activation operations still reserved (ADR-0020 D8), the five per-artifact and preset
+  writes and the four effective reads: one 501 pin per operation, each removed when its operation is built.
 - `relationships.feature`: a registered relationship from a mission type the pack holds, and the refusal of one it
   does not hold (#194, ADR-0044).
 - `composition.feature`: the compose of the configured packs' `depends_on` closure on `GET /offering`, in the
