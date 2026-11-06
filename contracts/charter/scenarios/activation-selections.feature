@@ -715,6 +715,106 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       t3
       """
 
+  Scenario: A candidate kept by an enhancer keeps the candidate it enhances, on a second shared step
+    US4 AS2, FR-015: K requires c, c3 and c5, and c3 requires c4; the selected e2 enhances c, and c enhances c3.
+    e2 keeps c; only once c is kept does it keep c3, and c3 keeps c4. c5 leaves selected.
+    Given the org pack "main" with the file "directives/K.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: K
+      title: K
+      intent: K
+      enforcement: required
+      """
+    And the org pack "main" with the file "tactics/c.tactic.yaml":
+      """
+      schema_version: '1.0'
+      id: c
+      name: c
+      steps:
+        - title: Only step
+      """
+    And the org pack "main" with the file "tactics/c3.tactic.yaml":
+      """
+      schema_version: '1.0'
+      id: c3
+      name: c3
+      steps:
+        - title: Only step
+      """
+    And the org pack "main" with the file "tactics/c4.tactic.yaml":
+      """
+      schema_version: '1.0'
+      id: c4
+      name: c4
+      steps:
+        - title: Only step
+      """
+    And the org pack "main" with the file "tactics/c5.tactic.yaml":
+      """
+      schema_version: '1.0'
+      id: c5
+      name: c5
+      steps:
+        - title: Only step
+      """
+    And the org pack "main" with the file "chain.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: directive:K
+        target: tactic:c
+        relation: requires
+      - source: directive:K
+        target: tactic:c3
+        relation: requires
+      - source: directive:K
+        target: tactic:c5
+        relation: requires
+      - source: tactic:c3
+        target: tactic:c4
+        relation: requires
+      - source: tactic:e2
+        target: tactic:c
+        relation: enhances
+      - source: tactic:c
+        target: tactic:c3
+        relation: enhances
+      """
+    And the activation "a-1" holds:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "main"}], "selected": {"directive": ["K"], "tactic": ["c", "c3", "c4", "c5", "e2"]}}
+      """
+    When I PUT "/activations/a-1/exclusions/directive/K" with the stored ETag and the body:
+      """
+      {"cascade": ["all"]}
+      """
+    Then the response status is 200
+    And the field at "/applied" holds exactly the ids:
+      """
+      directive:K
+      tactic:c5
+      """
+    And the field at "/skipped/skippedShared" holds exactly the ids:
+      """
+      tactic:c
+      tactic:c3
+      tactic:c4
+      """
+    And the field at "/skipped/skippedShared/0/referencedBy/artifactId" is "e2"
+    And the field at "/skipped/skippedShared/1/referencedBy/artifactId" is "c"
+    And the field at "/skipped/skippedShared/2/referencedBy/artifactId" is "c3"
+    When I GET "/activations/a-1"
+    Then the field at "/config/selected/tactic" holds exactly the ids:
+      """
+      c
+      c3
+      c4
+      e2
+      """
+
   Scenario: Deactivating without a cascade denies and unselects the target alone
     Given the activation "a-1" holds:
       """

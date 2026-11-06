@@ -17,6 +17,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
+import java.util.ArrayDeque;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -217,5 +218,69 @@ class ActivationExclusionServiceTest {
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_NOT_FOUND));
+    }
+
+    @Test
+    void aKeptCandidateThatEnhancesAnotherCandidateKeepsItOnTheSecondSharedStep() {
+        // D requires c, c3 and c5; c3 requires c4. The selected styleguide e2 enhances c, and c enhances c3. The first
+        // shared step keeps c (its enhancer e2 is active); only the second, from c, keeps c3 and what c3 reaches.
+        ArtifactRef c = new ArtifactRef(ArtifactKind.TACTIC, "c");
+        ArtifactRef c3 = new ArtifactRef(ArtifactKind.TACTIC, "c3");
+        ArtifactRef c4 = new ArtifactRef(ArtifactKind.TACTIC, "c4");
+        ArtifactRef c5 = new ArtifactRef(ArtifactKind.TACTIC, "c5");
+        ArtifactRef e2 = new ArtifactRef(ArtifactKind.STYLEGUIDE, "e2");
+        Map<ArtifactRef, List<ArtifactRef>> requires = Map.of(D, List.of(c, c3, c5), c3, List.of(c4));
+        FakeAvailablePacks chain = new FakeAvailablePacks(ClosureSnapshots.snapshot()
+                .pack("main", "1.0.0")
+                .held(ArtifactKind.DIRECTIVE, "D")
+                .held(ArtifactKind.TACTIC, "c", "c3", "c4", "c5")
+                .held(ArtifactKind.STYLEGUIDE, "e2")
+                .build());
+        chain.walks(plan -> requiresWalk(plan, requires));
+        chain.enhances(e2, c);
+        chain.enhances(c, c3);
+        ActivationExclusionService chained = new ActivationExclusionService(new ActivationWrites(repository, chain));
+        StoredActivation before = stored(ActivationDocument.builder()
+                .selected(ArtifactKind.DIRECTIVE, List.of("D"))
+                .selected(ArtifactKind.TACTIC, List.of("c", "c3", "c4", "c5"))
+                .selected(ArtifactKind.STYLEGUIDE, List.of("e2")));
+
+        ActivationWrites.Outcome outcome = chained.deactivate(ID, "directive", "D", ALL, quoted(before));
+
+        assertThat(now().selected(ArtifactKind.TACTIC).orElseThrow()).containsExactly("c", "c3", "c4");
+        assertThat(now().selected(ArtifactKind.DIRECTIVE).orElseThrow()).isEmpty();
+        assertThat(now().deactivated(ArtifactKind.DIRECTIVE)).containsExactly("D");
+        assertThat(outcome.change().applied()).containsExactly(D, c5);
+        assertThat(outcome.change().skipped().skippedShared())
+                .containsExactly(
+                        new SkippedReport.SharedSkip(c, e2),
+                        new SkippedReport.SharedSkip(c3, c),
+                        new SkippedReport.SharedSkip(c4, c3));
+        assertThat(chain.calls())
+                .as("one read of the packs for the whole request")
+                .isEqualTo(1);
+        assertThat(chain.walked())
+                .as("the target's own walk and two shared steps")
+                .hasSize(1 + 2);
+    }
+
+    /** A forward walk over requires from the plan's starts, stopping at (and not passing) the plan's stops. */
+    private static Reach requiresWalk(ReachPlan plan, Map<ArtifactRef, List<ArtifactRef>> requires) {
+        Map<ArtifactRef, List<Reach.Via>> reached = new LinkedHashMap<>();
+        Map<ArtifactRef, List<Reach.Via>> stopped = new LinkedHashMap<>();
+        ArrayDeque<ArtifactRef> frontier = new ArrayDeque<>(plan.starts());
+        plan.starts().forEach(start -> reached.put(start, List.of()));
+        while (!frontier.isEmpty()) {
+            ArtifactRef from = frontier.removeFirst();
+            for (ArtifactRef to : requires.getOrDefault(from, List.of())) {
+                Reach.Via via = new Reach.Via(from, RelationType.REQUIRES);
+                if (plan.stopAt().contains(to)) {
+                    stopped.put(to, List.of(via));
+                } else if (reached.putIfAbsent(to, List.of(via)) == null) {
+                    frontier.addLast(to);
+                }
+            }
+        }
+        return new Reach(reached, stopped, Set.of(), Set.of());
     }
 }
