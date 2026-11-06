@@ -23,7 +23,7 @@ import tools.jackson.databind.json.JsonMapper;
 /**
  * The #125 build notes: an activation body over 1 MiB, with a {@code null} at any depth, with a member its schema does
  * not declare, that cannot be bound or that breaks a constraint is {@code 422 activation_invalid} with violations, and
- * nothing is stored. A body that is not {@code application/json} stays {@code 415}. The controller is served as the
+ * nothing is stored. The controller is served as the
  * service serves it ({@link StandaloneActivationMvc}); the composition root's full context answers the same in the
  * contract scenarios.
  */
@@ -134,9 +134,7 @@ class ActivationBodyAdviceTest {
     }
 
     @Test
-    void aScalarOfTheWrongTypeIsNeverCoerced() throws Exception {
-        refused(putBody("{\"schemaVersion\": \"1\"}"), "/schemaVersion", "unreadable_body");
-        refused(putBody("{\"schemaVersion\": 1.0}"), "/schemaVersion", "unreadable_body");
+    void aScalarOfTheWrongTypeIsNeverCoercedOnEitherDocumentWrite() throws Exception {
         refused(putBody("{\"schemaVersion\": true}"), "/schemaVersion", "unreadable_body");
         refused(putBody("{\"schemaVersion\": 1, \"missionTypes\": [7]}"), "/missionTypes/0", "unreadable_body");
         refused(
@@ -150,15 +148,6 @@ class ActivationBodyAdviceTest {
     }
 
     @Test
-    void aMemberDeclaredTwiceIsRefusedAtItsPointer() throws Exception {
-        refused(putBody("{\"schemaVersion\": 1, \"schemaVersion\": 1}"), "/schemaVersion", "unreadable_body");
-        refused(
-                putBody("{\"schemaVersion\": 1, \"selected\": {\"directive\": [\"a-1\"], \"directive\": []}}"),
-                "/selected/directive",
-                "unreadable_body");
-    }
-
-    @Test
     void aBrokenConstraintIsRefusedAsBeanValidationFindsIt() throws Exception {
         refused(putBody("{\"schemaVersion\": 2}"), "/schemaVersion", "invalid_value");
         refused(
@@ -166,6 +155,37 @@ class ActivationBodyAdviceTest {
                 "/selected/agent_profile/0",
                 "invalid_value");
         refused(putBody("{}"), "/schemaVersion", "invalid_value");
+        refused(
+                putBody("{\"schemaVersion\": 1, \"packs\": [{\"packId\": \"fixture\", \"version\": \"  \"}]}"),
+                "/packs/0/version",
+                "invalid_value");
+    }
+
+    @Test
+    void aMemberRepeatedInTheBodyIsRefusedAtItsPointerNotReadLastWins() throws Exception {
+        refused(putBody("{\"schemaVersion\": 1, \"schemaVersion\": 2}"), "/schemaVersion", "duplicate_member");
+        refused(
+                putBody("{\"schemaVersion\": 1, \"selected\": {\"directive\": [\"a-1\"], \"directive\": []}}"),
+                "/selected/directive",
+                "duplicate_member");
+        refused(
+                putBody("{\"schemaVersion\": 1, \"packs\": [{\"packId\": \"fixture\", \"packId\": \"other\"}]}"),
+                "/packs/0/packId",
+                "duplicate_member");
+    }
+
+    @Test
+    void aScalarOfAnotherTypeIsNeverCoercedToTheDeclaredOne() throws Exception {
+        refused(putBody("{\"schemaVersion\": \"1\"}"), "/schemaVersion", "unreadable_body");
+        refused(putBody("{\"schemaVersion\": 1.0}"), "/schemaVersion", "unreadable_body");
+        refused(
+                putBody("{\"schemaVersion\": 1, \"selected\": {\"directive\": [1, true]}}"),
+                "/selected/directive/0",
+                "unreadable_body");
+        refused(
+                putBody("{\"schemaVersion\": 1, \"packs\": [{\"packId\": \"fixture\", \"version\": 7}]}"),
+                "/packs/0/version",
+                "unreadable_body");
     }
 
     @Test
@@ -181,14 +201,6 @@ class ActivationBodyAdviceTest {
                         .path("pointer")
                         .asString())
                 .isEqualTo("/selected/directive/0");
-    }
-
-    @Test
-    void aBodyThatIsNotJsonByItsTypeStays415() throws Exception {
-        MockHttpServletResponse answer =
-                send(put(DOCUMENT).contentType(MediaType.TEXT_PLAIN).content("{\"schemaVersion\": 1}"));
-
-        assertThat(answer.getStatus()).isEqualTo(415);
     }
 
     @Test

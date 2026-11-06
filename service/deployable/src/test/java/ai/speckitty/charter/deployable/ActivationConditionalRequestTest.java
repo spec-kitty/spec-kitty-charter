@@ -167,6 +167,8 @@ class ActivationConditionalRequestTest {
 
         assertThat(answer.getStatus()).isEqualTo(400);
         assertThat(JSON.readTree(answer.getContentAsString()).has("code")).isFalse();
+        assertThat(JSON.readTree(answer.getContentAsString()).path("detail").asString())
+                .isEqualTo("A write carries If-Match or If-None-Match, not both.");
         assertThat(packs.reads()).isEqualTo(reads);
         assertThat(send(get(DOCUMENT)).getHeader(HttpHeaders.ETAG)).isEqualTo("\"" + revision + "\"");
     }

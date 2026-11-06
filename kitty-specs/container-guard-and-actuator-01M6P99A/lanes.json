@@ -1,0 +1,149 @@
+{
+  "version": 1,
+  "mission_slug": "container-guard-and-actuator-01M6P99A",
+  "mission_id": "01M6P99AFK62B7JKDBYNJQMKCD",
+  "mission_branch": "kitty/mission-container-guard-and-actuator-01M6P99A",
+  "target_branch": "feat/container-guard-and-actuator",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/GuardPolicy.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/WorktreeGuard.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/GuardPolicyTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/WorktreeGuardTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "service/deployable/src/main/java/ai/speckitty/charter/deployable/ExposureStartupCheck.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/ExposureStartupCheckTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/ProfileDefaultsTest.java"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-e",
+      "wp_ids": [
+        "WP06"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/ArtifactController.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/ProblemHandler.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/ArtifactControllerTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/ProblemHandlerTest.java"
+      ],
+      "predicted_surfaces": [
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-planning",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "docs/adr/0060-one-replica-per-deployment.md",
+        "docs/changelog/2026-11-05-one-replica-per-deployment.md",
+        "docs/guides/run-in-a-container.md"
+      ],
+      "predicted_surfaces": [
+        "planning"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "contracts/charter/changes/2026-11-05-forbidden-configured-hosts.md",
+        "contracts/charter/openapi.yaml",
+        "contracts/charter/responses/Forbidden.yaml",
+        "service/deployable/src/main/java/ai/speckitty/charter/deployable/ContainerProperties.java",
+        "service/deployable/src/main/java/ai/speckitty/charter/deployable/GuardWiring.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/ContainerPropertiesTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/GuardWiringTest.java"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP05"
+      ],
+      "write_scope": [
+        "gradle/libs.versions.toml",
+        "gradle/verification-metadata.xml",
+        "service/deployable/build.gradle.kts",
+        "service/deployable/src/main/resources/application-container.yaml",
+        "service/deployable/src/main/resources/application.yaml",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/ContainerHealthTest.java",
+        "service/deployable/src/test/java/ai/speckitty/charter/deployable/ContainerSecretsTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-b",
+        "lane-c"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-f",
+      "wp_ids": [
+        "WP07"
+      ],
+      "write_scope": [
+        "deploy/compose/.env.example",
+        "deploy/compose/compose.yaml",
+        "docs/changelog/2026-11-05-container-guard-and-actuator-health.md"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [
+        "lane-d",
+        "lane-planning"
+      ],
+      "parallel_group": 3
+    }
+  ],
+  "computed_at": "2026-11-05T16:48:03.980644+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [
+    "WP01"
+  ],
+  "planning_commit_sha": "06b6409508b2918017ed63d68df49fc788830189"
+}

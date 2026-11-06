@@ -67,6 +67,63 @@ class DocumentRulesTest {
     }
 
     @Test
+    void aUrnAndACaseVariantNormalizeToTheDeclaredIdAndGiveOneDocument() {
+        ClosureSnapshot closure =
+                snapshot().held(DIRECTIVE, "D1", "D3").held(TACTIC, "T1").build();
+        ActivationDocument.Built spelled = ActivationDocument.builder()
+                .selected(DIRECTIVE, List.of("directive:D1", "d3"))
+                .deactivated(TACTIC, List.of("t1", "tactic:T1"))
+                .build();
+        ActivationDocument declared = ActivationDocument.builder()
+                .selected(DIRECTIVE, List.of("D1", "D3"))
+                .deactivated(TACTIC, List.of("T1"))
+                .build()
+                .document();
+
+        ActivationDocument.Built normalized = DocumentRules.normalize(spelled, closure);
+
+        assertThat(DocumentRules.check(normalized, closure)).isEmpty();
+        assertThat(normalized.document()).isEqualTo(declared);
+        assertThat(normalized.document().revision()).isEqualTo(declared.revision());
+        assertThat(normalized.written().selected().get(DIRECTIVE)).containsExactly("D1", "D3");
+    }
+
+    @Test
+    void anAmbiguousSpellingIsRefusedAtItsPositionAndAnUnknownOneStaysUnknown() {
+        ClosureSnapshot closure =
+                snapshot().held(DIRECTIVE, "Twin", "TWIN", "D1").build();
+        ActivationDocument.Built spelled = ActivationDocument.builder()
+                .selected(DIRECTIVE, List.of("D1", "twin", "tactic:D1", "NOPE"))
+                .build();
+
+        Optional<CharterRefusal> refusal = DocumentRules.check(DocumentRules.normalize(spelled, closure), closure);
+
+        assertThat(refusal).hasValueSatisfying(found -> {
+            assertThat(found.code()).isEqualTo(RefusalCode.ACTIVATION_INVALID);
+            assertThat(found.violations())
+                    .extracting(RefusalViolation::pointer, RefusalViolation::code)
+                    .containsExactly(
+                            tuple("/selected/directive/1", "ambiguous_artifact"),
+                            tuple("/selected/directive/2", "unknown_artifact"),
+                            tuple("/selected/directive/3", "unknown_artifact"));
+            assertThat(found.violations().getFirst().detail()).contains("Twin", "TWIN");
+        });
+    }
+
+    @Test
+    void aDenyEntryWrittenAsAUrnIsStillRefusedWhenThePackRequiresTheArtifact() {
+        ActivationDocument.Built spelled = ActivationDocument.builder()
+                .deactivated(DIRECTIVE, List.of("directive:d1"))
+                .build();
+
+        CharterRefusal refusal = DocumentRules.check(DocumentRules.normalize(spelled, CLOSURE), CLOSURE)
+                .orElseThrow();
+
+        assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_REQUIRED);
+        assertThat(refusal.getMessage()).contains("directive:D1");
+    }
+
+    @Test
     void anUnknownDeniedIdIsNamed() {
         assertThat(violations(ActivationDocument.builder().deactivated(TACTIC, List.of("X"))))
                 .extracting(RefusalViolation::pointer, RefusalViolation::code)
@@ -91,6 +148,17 @@ class DocumentRulesTest {
         assertThat(violations(ActivationDocument.builder().packs(List.of(PackRef.pinned("org-a", "2.0.0")))))
                 .extracting(RefusalViolation::pointer, RefusalViolation::code)
                 .containsExactly(tuple("/packs/0/version", "version_not_held"));
+    }
+
+    @Test
+    void aVersionPinOtherThanTheHeldOneIsAnInvalidDocumentTellingTheHeldAndThePinnedVersion() {
+        CharterRefusal refusal = refusal(ActivationDocument.builder().packs(List.of(PackRef.pinned("org-a", "2.0.0"))));
+
+        assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_INVALID);
+        assertThat(refusal.violations())
+                .singleElement()
+                .satisfies(violation ->
+                        assertThat(violation.detail()).isEqualTo("The pack 'org-a' is held at 2.1.0, not 2.0.0."));
     }
 
     @Test

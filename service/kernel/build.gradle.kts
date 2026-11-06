@@ -10,6 +10,6 @@ plugins {
 mutationFloors {
     group("kernel") {
         packages.add("ai.speckitty.charter.kernel")
-        floor = 65
+        floor = 75
     }
 }
