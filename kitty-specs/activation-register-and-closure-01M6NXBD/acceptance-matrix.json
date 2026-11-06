@@ -218,10 +218,10 @@
       "criterion_id": "FR-022",
       "description": "Verify FR-022 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "activation-register.feature: 'A directive an org pack's policy file locks cannot be deactivated' (409 artifact_locked), 'A lock along the closure wins over a pack nearer built-in that leaves the directive open', 'A pack naming a policy file that is missing / fails its schema is unreadable on the offering and on the closure read'; PackMutabilityPolicyTest, PerPackPolicyTest, PackPolicyOrderTest, PackPolicyRulesTest, PolicySchemaTest, PolicyYamlTest, PolicyRoundTripTest. Note: spec FR-022 cites ADR-0061 but the decision is recorded as ADR-0062-pack-mutability-policy-file (renumbered; spec text drift only; root docs link to /adr/0062/ which exists only in lane-m). lane-m HEAD 7f6264b: ./gradlew verifyAll --rerun-tasks --max-workers=1 -PcontractBaseline=none BUILD SUCCESSFUL (127/127 tasks executed; 7200 tests, 0 failures, 0 errors, 4 pre-existing env skips in packs; 341 BDD scenarios incl. activation-register 35/35, activation-selections 41/41, activation-presets 14/14, activation-register-guards 5/5, activations 4/4)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:qa-test-executor-elena",
+      "verified_at": "2026-11-06T02:56:45.256727+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
