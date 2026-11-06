@@ -32,3 +32,10 @@ The change is breaking by `severity-levels.txt`, but allowed: there is no `contr
 Side finding (an existing hazard, not A7): the generated client `ActivationConfig.java:63-73` turns an absent list into `[]`, so a GET then PUT changes the revision. No test covers this.
 
 Lens reports: see a7-architecture.md, a7-contract.md, a7-codeshape.md (copied alongside).
+
+## Operator rulings (2026-11-06)
+
+- Q1: selecting a mission type cascades to its steps, and the steps stay bound to it. W32 is withdrawn.
+- Q2: mission types can be denied the same way as any kind, except when required or locked.
+- Q3: the preset kind exclusion is dropped, so there is one kind registry everywhere.
+- Q4: **refuse now.** `activatedKinds` and `missionTypes` on writes answer 422, and there is no deprecation window (this replaces item 2's accept-and-ignore proposal). Core must regenerate first. Stored v1 documents still upgrade on read to schemaVersion 2.
