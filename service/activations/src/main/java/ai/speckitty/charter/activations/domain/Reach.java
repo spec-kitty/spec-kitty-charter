@@ -69,23 +69,6 @@ public record Reach(
     }
 
     /**
-     * A reach whose ancestors are passed with no recorded way: a pass-through {@link Via} then leads back no further
-     * than its ancestor.
-     *
-     * @param reached the reached artifacts
-     * @param stopped the stopped artifacts
-     * @param behindStopped the artifacts behind a stop
-     * @param ancestorsPassed the ancestors passed through
-     */
-    public Reach(
-            Map<ArtifactRef, List<Via>> reached,
-            Map<ArtifactRef, List<Via>> stopped,
-            Set<ArtifactRef> behindStopped,
-            Set<ArtifactRef> ancestorsPassed) {
-        this(reached, stopped, behindStopped, ancestorsPassed, Map.of());
-    }
-
-    /**
      * The answer of a walk that was not made: nothing reached.
      *
      * @return the empty reach

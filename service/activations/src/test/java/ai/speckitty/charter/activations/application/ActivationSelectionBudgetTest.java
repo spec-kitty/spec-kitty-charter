@@ -141,7 +141,7 @@ class ActivationSelectionBudgetTest {
                         .add(via);
             }
         }
-        return new Reach(reached, stopped, Set.of(), Set.of());
+        return new Reach(reached, stopped, Set.of(), Set.of(), Map.of());
     }
 
     private static ArtifactRef tactic(int i) {

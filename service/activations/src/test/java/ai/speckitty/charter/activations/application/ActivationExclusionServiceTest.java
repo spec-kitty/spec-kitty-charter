@@ -70,7 +70,7 @@ class ActivationExclusionServiceTest {
         if (plan.starts().contains(D2)) {
             reached.put(T2, List.of(new Reach.Via(D2, RelationType.REQUIRES)));
         }
-        return new Reach(reached, Map.of(), Set.of(), Set.of());
+        return new Reach(reached, Map.of(), Set.of(), Set.of(), Map.of());
     }
 
     private StoredActivation stored(ActivationDocument.Builder builder) {
@@ -295,6 +295,6 @@ class ActivationExclusionServiceTest {
                 }
             }
         }
-        return new Reach(reached, stopped, Set.of(), Set.of());
+        return new Reach(reached, stopped, Set.of(), Set.of(), Map.of());
     }
 }

@@ -63,7 +63,7 @@ class ActivationSelectionServiceTest {
         reached.put(T, byD);
         Map<ArtifactRef, List<Reach.Via>> stopped = new LinkedHashMap<>();
         (plan.stopAt().contains(X) ? stopped : reached).put(X, byD);
-        return new Reach(reached, stopped, Set.of(), Set.of());
+        return new Reach(reached, stopped, Set.of(), Set.of(), Map.of());
     }
 
     private static ClosureSnapshots closure() {

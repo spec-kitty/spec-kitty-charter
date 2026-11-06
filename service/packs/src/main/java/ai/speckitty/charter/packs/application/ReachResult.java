@@ -95,22 +95,6 @@ public record ReachResult(
         ancestry = copyOf(Objects.requireNonNull(ancestry, "ancestry"));
     }
 
-    /**
-     * A result whose ancestors are passed with no recorded way.
-     *
-     * @param reached the reached nodes
-     * @param stopped the stopped nodes
-     * @param behindStopped the nodes behind a stop
-     * @param ancestorsPassed the ancestors passed through
-     */
-    public ReachResult(
-            Map<Urn, List<Via>> reached,
-            Map<Urn, List<Via>> stopped,
-            Set<Urn> behindStopped,
-            Set<Urn> ancestorsPassed) {
-        this(reached, stopped, behindStopped, ancestorsPassed, Map.of());
-    }
-
     private static Map<Urn, List<Via>> copyOf(Map<Urn, List<Via>> vias) {
         Map<Urn, List<Via>> copy = new LinkedHashMap<>();
         vias.forEach((urn, list) -> copy.put(urn, List.copyOf(list)));

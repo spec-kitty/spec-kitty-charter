@@ -270,7 +270,8 @@ class PacksAvailabilityTest {
                         action, List.of()),
                 Map.of(q, List.of(new ReachResult.Via(p, RelationType.SPECIALIZES_FROM))),
                 Set.of(r),
-                Set.of(q)));
+                Set.of(q),
+                Map.of()));
 
         assertThat(reach.reached()).containsOnlyKeys(pRef, rRef);
         assertThat(reach.reached().get(rRef)).containsExactly(new Reach.Via(qRef, RelationType.REQUIRES));
