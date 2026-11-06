@@ -23,3 +23,25 @@ dependencies {
     testImplementation(catalog.lib("spring-boot-starter-validation"))
     testImplementation(catalog.lib("archunit"))
 }
+
+// The CPU-time budgets (tests tagged `timing`, #316, ADR-0057), report-only and never part of `test` or `check`, as in
+// :packs: ActivationSelectionBudgetTest prints the p95 of a cascading select over five hundred artifacts (NFR-006).
+// Run it in an invocation of its own:
+//
+//   ./gradlew :activations:timingBudgets
+tasks.test {
+    useJUnitPlatform { excludeTags("timing") }
+}
+
+tasks.register<Test>("timingBudgets") {
+    group = "verification"
+    description = "The CPU-time budgets (tests tagged timing), run alone and report-only; not part of check (#316)."
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform { includeTags("timing") }
+    maxParallelForks = 1
+    setForkEvery(1)
+    mustRunAfter(tasks.test)
+    doNotTrackState("a budget measured on another run says nothing about this one (#316)")
+    testLogging { showStandardStreams = true }
+}
