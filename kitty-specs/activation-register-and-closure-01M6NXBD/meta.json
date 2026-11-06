@@ -1,4 +1,16 @@
 {
+  "acceptance_history": [
+    {
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-11-06T03:00:40.670762+00:00",
+      "accepted_by": "claude:claude-opus-5-5:orchestrator",
+      "accepted_from_commit": "9e59e223beea6940c2ab732d826909599b877e78"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-11-06T03:00:40.670762+00:00",
+  "accepted_by": "claude:claude-opus-5-5:orchestrator",
+  "accepted_from_commit": "9e59e223beea6940c2ab732d826909599b877e78",
   "coordination_branch": "kitty/mission-activation-register-and-closure-01M6NXBD",
   "created_at": "2026-11-05T13:11:12.737640+00:00",
   "flattened": false,
