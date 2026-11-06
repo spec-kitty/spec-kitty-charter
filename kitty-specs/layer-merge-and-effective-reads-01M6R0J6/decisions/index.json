@@ -1050,6 +1050,26 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-06T14:35:31.635650Z",
+      "decision_id": "01M6RMJHDKNTXAM055Q8WR6SDN",
+      "final_answer": "Keep every selection; drop the gate. The gate had no observable effect (reads 501, writes ignored it), so the upgrade changes nothing the user saw.",
+      "input_key": "v1_upgrade_selections",
+      "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",
+      "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
+      "opened_by": "cli",
+      "options": [],
+      "origin_flow": "plan",
+      "other_answer": true,
+      "question": "v1 to v2 upgrade: selections outside the never-enforced activatedKinds gate",
+      "rationale": null,
+      "resolved_at": "2026-11-06T14:35:34.085558Z",
+      "resolved_by": null,
+      "slot_key": "plan.ruleset.v1-upgrade-selections",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",

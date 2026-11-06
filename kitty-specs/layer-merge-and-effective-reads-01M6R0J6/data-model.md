@@ -288,7 +288,7 @@ changes nothing. The write generation is odd during the swap (research R-lock).
 
 - **ActivationDocument v2:** `schemaVersion: 2`; `selected` and `deactivated` hold every kind, `mission_type`
   included; `activatedKinds` and `missionTypes` are gone (`422` on write). A v1 document is upgraded on read:
-  `missionTypes` → `selected.mission_type`, selections of a kind outside v1 `activatedKinds` dropped.
+  `missionTypes` → `selected.mission_type`, every selection kept, `activatedKinds` discarded (decision `DM-01M6RMJHDKNTXAM055Q8WR6SDN`).
 - **Kind:** one enum and one kernel registry (`ActivatableKind` and `SelectableKind` merged); `MISSION_TYPE` is
   requirable; presets name any kind.
 - **Binding:** an artifact bound to mission type M (its steps `action:M/s` included) is in force only while M is;

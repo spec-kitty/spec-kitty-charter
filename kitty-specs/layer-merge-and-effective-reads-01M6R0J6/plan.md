@@ -825,8 +825,8 @@ IC-03 to IC-09 above and into the concerns below.
   per-artifact writes, apply-preset) answer `422 validation_failed`, with a violation per member naming its
   replacement (`selected.mission_type`). There is no deprecation window. Neither is stored or answered.
 - **Storage.** `schemaVersion: 2`. A stored v1 document is upgraded on read: `missionTypes` move to
-  `selected.mission_type`, and selections of a kind outside the v1 `activatedKinds` are dropped (they were never in
-  force; locks and the floor were never gated, so what is in force does not change). Reads upgrade in memory only and never write;
+  `selected.mission_type`, every selection is kept and `activatedKinds` is discarded (decision `DM-01M6RMJHDKNTXAM055Q8WR6SDN`; the gate was never enforced, and
+  locks and the floor were never gated, so nothing observable changes). Reads upgrade in memory only and never write;
   the upgrade is stored on the next write (decision `DM-01M6RFGMDH859CJP3RHHF9YC3H`). Every `ETag` changes once (one `412` per client holding an old tag).
 - **The mission-type cascade and binding (Q1).** Selecting a mission type cascades to the steps it holds, as
   `requires` does. A step, and any artifact bound to mission type M (including `action:M/s`), is in force only while

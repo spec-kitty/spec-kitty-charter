@@ -129,13 +129,11 @@ These files are owned by another WP (the no-overlap rule) but this WP must make 
 ### T012: Codec: write v2, read v1 and v2
 
 - `ActivationFileCodec` writes `schemaVersion: 2` in the canonical form; it reads v2, and reads v1 by upgrading:
-  `missionTypes` → `selected.mission_type`; selections of a kind outside v1 `activatedKinds` are dropped (they were
-  never in force); `activatedKinds` is discarded. The in-force set is unchanged because locks and the floor were
-  never gated.
+  `missionTypes` → `selected.mission_type`; every selection is kept and `activatedKinds` is discarded (decision `DM-01M6RMJHDKNTXAM055Q8WR6SDN`; the gate was never
+  enforced). Locks and the floor were never gated, so nothing observable changes.
 - A v1 document with any other unknown member is still refused, as today.
-- `ActivationDocumentUpgradeTest`: table-driven v1 → v2 cases, including an absent `activatedKinds` (meant none in
-  the charter schema: every selection is dropped — confirm against `research/a7-contract.md` item 4 and record what
-  you find in the test name) and the corpus files from WP01.
+- `ActivationDocumentUpgradeTest`: table-driven v1 → v2 cases, including an absent, an empty and a narrowing `activatedKinds` (every
+  selection is kept in all three, decision `DM-01M6RMJHDKNTXAM055Q8WR6SDN`) and the corpus files from WP01.
 
 ### T013: Repositories: upgrade on read, store on write
 

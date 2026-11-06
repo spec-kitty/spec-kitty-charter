@@ -711,7 +711,7 @@ with W26).
 **W34 Withdrawn keys refused.** A create, replace or preset body carrying `activatedKinds` or `missionTypes` is
 `422 activation_invalid`, with no deprecation window; core regenerates its DTOs first. A stored version-1 document is
 upgraded on read to `schemaVersion: 2`: its `missionTypes` move to `selected.mission_type`, its kind gate is dropped
-along with the selections it gated off, and what is in force does not change (locks and the floor were never gated).
+and every selection is kept (decision `DM-01M6RMJHDKNTXAM055Q8WR6SDN`; the gate was never enforced), and nothing observable changes (locks and the floor were never gated).
 Each stored document's `ETag` changes once.
 *Source:* A7 Q4, decision `DM-01M6RCY8MYNGNPJ247M2Y4880N`; research `a7-kind-model-2026-11-06.md` (proposed revision, items 2–3). **Ruled, not
 built** (PR A0).
