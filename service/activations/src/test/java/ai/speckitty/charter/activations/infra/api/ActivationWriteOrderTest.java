@@ -176,7 +176,8 @@ class ActivationWriteOrderTest {
     void aCascadeTokenOutsideTheKindsIsTheServicesUnknownKindAtItsIndex() throws Exception {
         assertThat(violations(putBody(SELECT, "{\"cascade\": [\"directive\", \"bogus\"]}", etag)))
                 .containsExactly("/cascade/1", "unknown_kind");
-        assertThat(violations(putBody(DEACTIVATE, "{\"cascade\": [\"mission_type\"]}", etag)))
+        // Rule W21 (A7): mission_type is a cascade kind now; a kind that is not activatable is still unknown.
+        assertThat(violations(putBody(DEACTIVATE, "{\"cascade\": [\"template\"]}", etag)))
                 .containsExactly("/cascade/0", "unknown_kind");
     }
 

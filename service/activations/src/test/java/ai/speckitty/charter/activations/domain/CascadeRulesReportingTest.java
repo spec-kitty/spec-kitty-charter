@@ -8,6 +8,7 @@ import static ai.speckitty.charter.kernel.domain.RelationType.INSTANTIATES;
 import static ai.speckitty.charter.kernel.domain.RelationType.REQUIRES;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -134,5 +135,41 @@ class CascadeRulesReportingTest {
 
         assertThat(shared(selecting("directive:D", "directive:B", "directive:Z", "tactic:T2"), others))
                 .containsExactly(new SkippedReport.SharedSkip(T2, ref("directive:B")));
+    }
+
+    @Test
+    void aStopBehindAMissionTypeSelectIsRequiredByTheMissionType() {
+        // A7 Q1: a mission type selected with a cascade walks like any target; a stop it requires names it.
+        ArtifactRef m = ref("mission_type:m");
+        Reach reach = reach().start("mission_type:m")
+                .stopped("tactic:X", "mission_type:m", REQUIRES)
+                .build();
+
+        ActivationChange change = CascadeRules.applySelect(X_DENIED, m, CascadeScope.all(), false, reach);
+
+        assertThat(change.skipped().skippedDeactivated())
+                .containsExactly(new SkippedReport.SkippedDeactivated(X, true, List.of(m)));
+        assertThat(change.applied()).containsExactly(m);
+    }
+
+    @Test
+    void aCandidateOfADeactivatedMissionTypeKeptByAnotherArtifactIsReferencedByIt() {
+        // A7 Q1, Q2: the mission type is denied like any kind; what another active artifact reaches stays.
+        ArtifactRef m = ref("mission_type:m");
+        ActivationDocument document = selecting("mission_type:m", "directive:D2", "tactic:T2");
+        Reach own = reach().start("mission_type:m")
+                .reached("tactic:T2", "mission_type:m", REQUIRES)
+                .build();
+        Reach others = reach().start("directive:D2")
+                .reached("tactic:T2", "directive:D2", REQUIRES)
+                .build();
+
+        ActivationChange change =
+                CascadeRules.applyDeactivate(document, m, CascadeScope.all(), own, others, Set.of());
+
+        assertThat(change.skipped().skippedShared())
+                .containsExactly(new SkippedReport.SharedSkip(T2, ref("directive:D2")));
+        assertThat(change.applied()).containsExactly(m);
+        assertThat(change.after().deactivated(ArtifactKind.MISSION_TYPE)).containsExactly("m");
     }
 }

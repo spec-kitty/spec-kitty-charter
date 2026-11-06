@@ -181,11 +181,26 @@ class CascadeRulesDeactivateTest {
     }
 
     @Test
-    void aMissionTypeCannotBeDenied() {
+    void aMissionTypeIsDeniedLikeAnyKind() {
+        // A7 Q2: a mission type has a deny list; the floor refusal is DocumentRules', before any plan.
         ArtifactRef missionType = new ArtifactRef(MISSION_TYPE, "software-dev");
+        ActivationDocument document =
+                ActivationDocument.builder().selected(MISSION_TYPE, List.of("software-dev")).build().document();
 
+        ReachPlan plan = CascadeRules.planDeactivate(document, missionType, CascadeScope.none());
+        ActivationChange change = CascadeRules.applyDeactivate(
+                document, missionType, CascadeScope.none(), Reach.empty(), Reach.empty(), Set.of());
+
+        assertThat(plan.walks()).isFalse();
+        assertThat(change.applied()).containsExactly(missionType);
+        assertThat(change.after().selected(MISSION_TYPE)).isEmpty();
+        assertThat(change.after().deactivated(MISSION_TYPE)).containsExactly("software-dev");
+    }
+
+    @Test
+    void aKindWithoutADenyListIsStillRefused() {
         assertThatIllegalArgumentException()
-                .isThrownBy(() -> CascadeRules.planDeactivate(US4, missionType, CascadeScope.none()));
+                .isThrownBy(() -> CascadeRules.planDeactivate(US4, ref("template:t"), CascadeScope.none()));
     }
 
     // One shared walk: it goes on through a kept candidate, so what that candidate reaches stays too (FR-015).
@@ -284,7 +299,8 @@ class CascadeRulesDeactivateTest {
     }
 
     @Test
-    void aSelectedMissionTypeTheTargetReachesIsOutsideEveryScopeAndStaysSelected() {
+    void aSelectedMissionTypeOnlyTheTargetReachesIsACandidateAndLeaves() {
+        // Rule W21/W23 (A7): mission_type is in the all scope, so a selected one only the target reaches leaves.
         ArtifactRef m = ref("mission_type:m");
         Reach own = reach().start("directive:D")
                 .reached("mission_type:m", "directive:D", REQUIRES)
@@ -298,9 +314,30 @@ class CascadeRulesDeactivateTest {
         ActivationChange change =
                 CascadeRules.applyDeactivate(document, D, CascadeScope.all(), own, Reach.empty(), Set.of());
 
-        assertThat(change.applied()).containsExactly(D);
-        assertThat(change.after().selected(MISSION_TYPE).orElseThrow()).containsExactly("m");
-        assertThat(change.skipped().skippedByScope()).containsExactly(m);
+        assertThat(change.applied()).containsExactly(D, m);
+        assertThat(change.after().selected(MISSION_TYPE)).isEmpty();
+        assertThat(change.after().deactivated(MISSION_TYPE)).isEmpty();
+        assertThat(change.skipped().skippedByScope()).isEmpty();
+    }
+
+    @Test
+    void aCascadingDeactivateOfAMissionTypeUnselectsWhatOnlyItsStepsKept() {
+        ArtifactRef m = ref("mission_type:m");
+        Reach own = reach().start("mission_type:m")
+                .reached("directive:S", "mission_type:m", REQUIRES)
+                .build();
+        ActivationDocument document = ActivationDocument.builder()
+                .selected(MISSION_TYPE, List.of("m"))
+                .selected(DIRECTIVE, List.of("S"))
+                .build()
+                .document();
+
+        ActivationChange change =
+                CascadeRules.applyDeactivate(document, m, CascadeScope.all(), own, Reach.empty(), Set.of());
+
+        assertThat(change.applied()).containsExactly(ref("directive:S"), m);
+        assertThat(change.after().selected()).isEmpty();
+        assertThat(change.after().deactivated(MISSION_TYPE)).containsExactly("m");
     }
 
     @Test
