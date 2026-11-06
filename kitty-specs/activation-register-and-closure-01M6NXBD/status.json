@@ -444,7 +444,7 @@
     },
     "WP13": {
       "actor": "claude",
-      "agent": "claude:claude-opus-5-5:reviewer-renata",
+      "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -457,6 +457,7 @@
         "Red first (06d0be2): 32 scenarios of activation-selections.feature all answered 501. Green (8a53b3f): 32/32, deployable 774 tests 0 failures; activations, packs (-x openPacksRoundTrip), web-transport, contracts (baseline none) checks green. Reserved ops 9->5 (ReservedOperationCoverageTest hasSize(5)), @reserved 11->6, binding pin on applyActivationPreset. One ClosureQueries.snapshot per session (PacksAvailabilityTest). Divergences: ActivationChange carries an up link, no self (LinkChecks forbids self on a GET-less path; Links.yaml and example updated); missing activation with If-Match answers 404 activation_not_found; new ActivationArtifactNotFound response (ActivationNotFound names unraised codes); ContractDescriptionsTest, OperationCoverageTest, ReservedActivationOperationTest, errors.feature updated."
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/activation-register-and-closure-01M6NXBD-coord/kitty-specs/activation-register-and-closure-01M6NXBD/tasks/WP13-select-and-deactivate-writes/review-cycle-1.md",
         "reference": "review-cycle://activation-register-and-closure-01M6NXBD/WP13-select-and-deactivate-writes/review-cycle-1.md",
@@ -464,18 +465,18 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 13818,
-      "shell_pid_created_at": "1793925102.15",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T075": "done",
-        "T076": "done",
-        "T077": "done",
-        "T078": "done",
-        "T079": "done",
-        "T080": "done",
-        "T081": "done",
-        "T082": "done",
-        "T083": "done"
+        "T075": "planned",
+        "T076": "planned",
+        "T077": "planned",
+        "T078": "planned",
+        "T079": "planned",
+        "T080": "planned",
+        "T081": "planned",
+        "T082": "planned",
+        "T083": "planned"
       }
     },
     "WP14": {
