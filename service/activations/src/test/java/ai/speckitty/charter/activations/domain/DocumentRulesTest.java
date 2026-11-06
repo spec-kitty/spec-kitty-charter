@@ -23,7 +23,7 @@ class DocumentRulesTest {
             .pack("org-a", "2.1.0")
             .held(DIRECTIVE, "D1", "D2", "D3")
             .held(TACTIC, "T1", "T2")
-            .missionTypes("software-dev")
+            .held(ArtifactKind.MISSION_TYPE, "software-dev")
             .requiredBy("directive:D1", "PID-org-a", "PID-built-in")
             .requiredBy("directive:D2", "PID-org-a")
             .lockedBy("directive:D2", "PID-built-in")
@@ -47,8 +47,7 @@ class DocumentRulesTest {
                 .packs(List.of(PackRef.pinned("org-a", "2.1.0"), PackRef.of("built-in")))
                 .selected(DIRECTIVE, List.of("D1", "D3"))
                 .deactivated(TACTIC, List.of("T1"))
-                .missionTypes(List.of("software-dev"))
-                .activatedKinds(List.of(DIRECTIVE, TACTIC))
+                .selected(ArtifactKind.MISSION_TYPE, List.of("software-dev"))
                 .build()
                 .document();
 
@@ -131,10 +130,10 @@ class DocumentRulesTest {
     }
 
     @Test
-    void anUnknownMissionTypeIsNamed() {
-        assertThat(violations(ActivationDocument.builder().missionTypes(List.of("ghost"))))
+    void anUnknownMissionTypeIsNamedAsAnyUnknownArtifactIs() {
+        assertThat(violations(ActivationDocument.builder().selected(ArtifactKind.MISSION_TYPE, List.of("ghost"))))
                 .extracting(RefusalViolation::pointer, RefusalViolation::code)
-                .containsExactly(tuple("/missionTypes/0", "unknown_mission_type"));
+                .containsExactly(tuple("/selected/mission_type/0", "unknown_artifact"));
     }
 
     @Test
@@ -170,9 +169,9 @@ class DocumentRulesTest {
 
     @Test
     void aKindOutsideTheActivatableKindsIsInvalid() {
-        assertThat(violations(ActivationDocument.builder().activatedKinds(List.of(ArtifactKind.ASSET))))
+        assertThat(violations(ActivationDocument.builder().selected(ArtifactKind.ASSET, List.of("A1"))))
                 .extracting(RefusalViolation::pointer, RefusalViolation::code)
-                .containsExactly(tuple("/activatedKinds/0", "unknown_kind"));
+                .containsExactly(tuple("/selected/asset", "unknown_kind"));
     }
 
     /** Every index points into the body as written. */
@@ -180,7 +179,7 @@ class DocumentRulesTest {
     void everyViolationIsCollectedInJsonPointerOrder() {
         ActivationDocument.Builder builder = ActivationDocument.builder()
                 .selected(DIRECTIVE, List.of("Z", "A", "D1"))
-                .missionTypes(List.of("ghost"))
+                .selected(ArtifactKind.MISSION_TYPE, List.of("ghost"))
                 .deactivated(DIRECTIVE, List.of("D1"))
                 .deactivated(TACTIC, List.of())
                 .packs(List.of(
@@ -195,14 +194,12 @@ class DocumentRulesTest {
                         PackRef.of("p10"),
                         PackRef.of("p11"),
                         PackRef.of("p2")))
-                .activatedKinds(List.of(ArtifactKind.TEMPLATE));
+                .selected(ArtifactKind.TEMPLATE, List.of("T"));
 
         assertThat(violations(builder))
                 .extracting(RefusalViolation::pointer)
                 .containsExactly(
-                        "/activatedKinds/0",
                         "/deactivated/tactic",
-                        "/missionTypes/0",
                         "/packs/0/packId",
                         "/packs/1/packId",
                         "/packs/2/packId",
@@ -215,7 +212,9 @@ class DocumentRulesTest {
                         "/packs/9/packId",
                         "/packs/10/packId",
                         "/selected/directive/0",
-                        "/selected/directive/1");
+                        "/selected/directive/1",
+                        "/selected/mission_type/0",
+                        "/selected/template");
     }
 
     @Test
@@ -233,9 +232,9 @@ class DocumentRulesTest {
     void aRepeatedUnknownIdIsNamedAtEveryWrittenPosition() {
         assertThat(violations(ActivationDocument.builder()
                         .deactivated(TACTIC, List.of("X", "T1", "X"))
-                        .missionTypes(List.of("software-dev", "ghost"))))
+                        .selected(ArtifactKind.MISSION_TYPE, List.of("software-dev", "ghost"))))
                 .extracting(RefusalViolation::pointer)
-                .containsExactly("/deactivated/tactic/0", "/deactivated/tactic/2", "/missionTypes/1");
+                .containsExactly("/deactivated/tactic/0", "/deactivated/tactic/2", "/selected/mission_type/1");
     }
 
     @Test
@@ -264,11 +263,11 @@ class DocumentRulesTest {
                         .selected(TACTIC, List.of("T2", "NOPE", "T1"))
                         .selected(DIRECTIVE, List.of("D3", "D2", "Q"))
                         .deactivated(DIRECTIVE, List.of("D3", "GONE"))
-                        .activatedKinds(List.of(DIRECTIVE, ArtifactKind.ASSET))))
+                        .selected(ArtifactKind.ASSET, List.of("A1"))))
                 .extracting(RefusalViolation::pointer, RefusalViolation::code)
                 .containsExactly(
-                        tuple("/activatedKinds/1", "unknown_kind"),
                         tuple("/deactivated/directive/1", "unknown_artifact"),
+                        tuple("/selected/asset", "unknown_kind"),
                         tuple("/selected/directive/2", "unknown_artifact"),
                         tuple("/selected/tactic/1", "unknown_artifact"));
     }

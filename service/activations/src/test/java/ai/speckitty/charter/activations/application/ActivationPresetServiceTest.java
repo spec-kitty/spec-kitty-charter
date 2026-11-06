@@ -39,12 +39,8 @@ class ActivationPresetServiceTest {
         packs = new FakeAvailablePacks(ClosureSnapshots.snapshot()
                 .pack("main", "1.0.0")
                 .held(ArtifactKind.DIRECTIVE, "A", "B", "C", "M")
-                .preset(new PresetView(
-                        "team",
-                        Set.of(ArtifactKind.DIRECTIVE),
-                        Map.of(ArtifactKind.DIRECTIVE, Set.of("B", "C")),
-                        Set.of()))
-                .preset(new PresetView("stale", Set.of(), Map.of(ArtifactKind.DIRECTIVE, Set.of("GONE")), Set.of()))
+                .preset(new PresetView("team", Map.of(ArtifactKind.DIRECTIVE, Set.of("B", "C"))))
+                .preset(new PresetView("stale", Map.of(ArtifactKind.DIRECTIVE, Set.of("GONE"))))
                 .build());
         service = new ActivationPresetService(new ActivationWrites(repository, packs));
     }
