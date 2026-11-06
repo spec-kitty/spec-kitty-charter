@@ -448,8 +448,8 @@ removal ([ADR-0030](/adr/0030-removal-is-distinct-from-deactivation/)).
   governing preset; a preset carries no `required_*` key, and migrating `org-charter.yaml`'s lists
   is [#206](https://github.com/spec-kitty/spec-kitty-charter/issues/206). The service's activation
   writes enforce the required set (below); core's activation does not yet.
-- **The service's activation document** (built: the register and the closure read, #291 and
-  #360; [Offering and activation](/architecture/offering-and-activation/)). One stored
+- **The service's activation document** (built: the register and the per-artifact and preset
+  writes, #291, and the closure read, #360; [Offering and activation](/architecture/offering-and-activation/)). One stored
   `ActivationConfig` per opaque `activationId`, under a `revision`, the `sha256:` of its RFC 8785
   canonical bytes, which is also its `ETag`. Each list (`selected.<kind>`, `deactivated.<kind>`,
   `activatedKinds`, `missionTypes`) has three states, absent, `[]` and a list of ids; absent and
@@ -457,10 +457,11 @@ removal ([ADR-0030](/adr/0030-removal-is-distinct-from-deactivation/)).
   ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) d10). An absent
   `packs` means every configured pack. The `depends_on` closure of `packs` holds the only packs
   the document can name: an id outside it is refused. The required floor is the must-have items
-  of every governing preset in that closure, and a deny entry on a required or locked artifact is
-  refused at write ([DIV-204](/conformance/divergence-register/),
-  [DIV-205](/conformance/divergence-register/)). The per-artifact writes and the effective reads
-  are not built yet.
+  of every governing preset in that closure. A create or replace whose deny list names a required
+  or locked artifact is refused `409`; a per-artifact or preset write tolerates such an entry
+  already stored and refuses `409` only a deny entry it adds
+  ([DIV-204](/conformance/divergence-register/), [DIV-205](/conformance/divergence-register/)).
+  The effective reads are not built yet.
 - **Plan, then commit.** `plan_activation()` validates without writing; `commit_plan()`
   writes only after a successful plan. A failed plan never mutates configuration.
 - **Cascade.** Activating with `--cascade` follows `requires` and `suggests` edges, skips
