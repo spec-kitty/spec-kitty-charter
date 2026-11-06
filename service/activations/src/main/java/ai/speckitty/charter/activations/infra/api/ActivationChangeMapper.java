@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 /**
  * The wire form of a per-artifact write's answer (the contract's {@code ActivationChange}, ADR-0020 D6): the revision
  * as stored after the write, {@code applied} and {@code cleared} as {@code ArtifactReference} items, the four skipped
- * lists, each sorted, and the links. The write's path has no {@code GET}, so the answer has no {@code self}; its
+ * lists, each sorted, {@code dropped} only when the write dropped a stale id (ADR-0059 amendment R5), and the links. The write's path has no {@code GET}, so the answer has no {@code self}; its
  * {@code up} is the activation the write applied to.
  */
 @Component
@@ -43,12 +43,16 @@ public class ActivationChangeMapper {
      */
     public ai.speckitty.charter.api.model.ActivationChange toChange(ActivationWrites.Outcome outcome) {
         ActivationChange change = outcome.change();
-        return new ai.speckitty.charter.api.model.ActivationChange(
+        ai.speckitty.charter.api.model.ActivationChange answer = new ai.speckitty.charter.api.model.ActivationChange(
                 outcome.stored().revision().token(),
                 references(change.applied()),
                 references(change.cleared()),
                 skipped(change.skipped()),
                 Map.of("up", new Link(activations.self(outcome.stored().id().value()))));
+        if (!change.dropped().isEmpty()) {
+            answer.setDropped(references(change.dropped()));
+        }
+        return answer;
     }
 
     private static ai.speckitty.charter.api.model.SkippedReport skipped(SkippedReport report) {

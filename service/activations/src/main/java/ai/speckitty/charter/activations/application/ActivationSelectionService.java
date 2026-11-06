@@ -69,7 +69,7 @@ public class ActivationSelectionService {
         CascadeScope scope = target.kind() == ArtifactKind.MISSION_TYPE ? CascadeScope.none() : written;
         PacksSession session = writes.session(loaded);
         ActivationWrites.requireHeld(session.snapshot(), target);
-        ActivationDocument before = loaded.document();
+        ActivationDocument before = ActivationWrites.current(loaded, session.snapshot());
         Reach reach =
                 ActivationWrites.walk(session, CascadeRules.planSelect(before, target, scope, includeDeactivated));
         ActivationChange change = CascadeRules.applySelect(before, target, scope, includeDeactivated, reach);
@@ -92,7 +92,7 @@ public class ActivationSelectionService {
         ArtifactRef target = ActivationWrites.selectable(kind, artifactId);
         PacksSession session = writes.session(loaded);
         ActivationWrites.requireHeld(session.snapshot(), target);
-        ActivationDocument before = loaded.document();
+        ActivationDocument before = ActivationWrites.current(loaded, session.snapshot());
         ActivationDocument after = before.withoutSelected(target.kind(), target.id());
         return writes.commit(loaded, ActivationChange.of(before, after, SkippedReport.empty()), session.snapshot());
     }

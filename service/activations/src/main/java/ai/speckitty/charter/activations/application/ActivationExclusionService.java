@@ -76,7 +76,7 @@ public class ActivationExclusionService {
         PacksSession session = writes.session(loaded);
         ClosureSnapshot snapshot = session.snapshot();
         ActivationWrites.requireHeld(snapshot, target);
-        ActivationDocument before = loaded.document();
+        ActivationDocument before = ActivationWrites.current(loaded, snapshot);
         refuseFloor(before, target, snapshot);
         Reach own = ActivationWrites.walk(session, CascadeRules.planDeactivate(before, target, scope));
         Set<ArtifactRef> floor = floorOf(snapshot);
@@ -101,7 +101,7 @@ public class ActivationExclusionService {
         ArtifactRef target = ActivationWrites.deniable(kind, artifactId);
         PacksSession session = writes.session(loaded);
         ActivationWrites.requireHeld(session.snapshot(), target);
-        ActivationDocument before = loaded.document();
+        ActivationDocument before = ActivationWrites.current(loaded, session.snapshot());
         ActivationDocument after = before.withoutDeny(target.kind(), target.id());
         return writes.commit(loaded, ActivationChange.of(before, after, SkippedReport.empty()), session.snapshot());
     }

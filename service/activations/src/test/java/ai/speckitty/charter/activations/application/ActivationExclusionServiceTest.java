@@ -320,4 +320,34 @@ class ActivationExclusionServiceTest {
         }
         return new Reach(reached, stopped, Set.of(), Set.of(), Map.of());
     }
+
+    @Test
+    void aReactivateDropsTheStoredIdsTheClosureNoLongerDeclares() {
+        // ADR-0059 amendment R5: GONE and old are stale; the write drops them and names them.
+        StoredActivation before = stored(ActivationDocument.builder()
+                .selected(ArtifactKind.DIRECTIVE, List.of("GONE"))
+                .deactivated(ArtifactKind.TACTIC, List.of("old", "t")));
+
+        ActivationWrites.Outcome outcome = service.reactivate(ID, "tactic", "t", quoted(before));
+
+        assertThat(outcome.change().dropped())
+                .containsExactly(
+                        new ArtifactRef(ArtifactKind.DIRECTIVE, "GONE"), new ArtifactRef(ArtifactKind.TACTIC, "old"));
+        assertThat(outcome.change().cleared()).containsExactly(T);
+        assertThat(outcome.change().applied()).containsExactly(T);
+        assertThat(now().deactivated()).isEmpty();
+        assertThat(now().selected(ArtifactKind.DIRECTIVE).orElseThrow()).isEmpty();
+    }
+
+    @Test
+    void aDeactivateDropsTheStoredIdsTheClosureNoLongerDeclares() {
+        StoredActivation before = stored(ActivationDocument.builder().deactivated(ArtifactKind.TACTIC, List.of("old")));
+
+        ActivationWrites.Outcome outcome =
+                service.deactivate(ID, "tactic", "t", Optional.empty(), List.of(), quoted(before));
+
+        assertThat(outcome.change().dropped()).containsExactly(new ArtifactRef(ArtifactKind.TACTIC, "old"));
+        assertThat(outcome.change().applied()).containsExactly(T);
+        assertThat(now().deactivated(ArtifactKind.TACTIC)).containsExactly("t");
+    }
 }

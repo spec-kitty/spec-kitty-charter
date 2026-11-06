@@ -1226,6 +1226,111 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       D2
       """
 
+  # Stale ids are dropped on write (ADR-0059 amendment R5, operator ruling of 2026-11-06).
+
+  Scenario: A write drops the ids the closure no longer declares and reports them in dropped
+    ADR-0059 amendment R5: a pack upgrade removed directive OLD, tactic old and mission type research, which the
+    stored document still names. Selecting D2 first drops them from selected, deactivated and missionTypes, then
+    selects D2; dropped names them, and applied and cleared report only the select.
+    Given the org pack "main" with the file "directives/OLD.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: OLD
+      title: Old
+      intent: OLD
+      enforcement: required
+      """
+    And the org pack "main" with the file "tactics/old.tactic.yaml":
+      """
+      schema_version: '1.0'
+      id: old
+      name: old
+      steps:
+        - title: Only step
+      """
+    And the activation "a-1" holds:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "main"}], "missionTypes": ["research"], "selected": {"directive": ["OLD"]}, "deactivated": {"tactic": ["old"]}}
+      """
+    And the file "directives/OLD.directive.yaml" of the pack "main" is deleted
+    And the file "tactics/old.tactic.yaml" of the pack "main" is deleted
+    And the file "missions/research/research.mission-type.yaml" of the pack "main" is deleted
+    When I PUT "/activations/a-1/selections/directive/D2" with the stored ETag and the body:
+      """
+      {}
+      """
+    Then the response status is 200
+    And the response header "ETag" differs from the stored ETag
+    And the field at "/applied" holds exactly the ids:
+      """
+      directive:D2
+      """
+    And the field at "/cleared" holds exactly 0 items
+    And the field at "/dropped" holds exactly the ids:
+      """
+      directive:OLD
+      mission_type:research
+      tactic:old
+      """
+    When I GET "/activations/a-1"
+    Then the field at "/config/selected/directive" holds exactly the ids:
+      """
+      D2
+      """
+    And the field at "/config/missionTypes" holds exactly 0 items
+    And the response body has no field at "/config/deactivated"
+
+  Scenario: A write that only drops stale ids is not a no-op and stores a new revision
+    ADR-0059 amendment R5: D2 is already selected, so the select changes nothing but the drop of OLD; the dropped id
+    counts as a change.
+    Given the org pack "main" with the file "directives/OLD.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: OLD
+      title: Old
+      intent: OLD
+      enforcement: required
+      """
+    And the activation "a-1" holds:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "main"}], "selected": {"directive": ["D2", "OLD"]}}
+      """
+    And the file "directives/OLD.directive.yaml" of the pack "main" is deleted
+    When I PUT "/activations/a-1/selections/directive/D2" with the stored ETag and the body:
+      """
+      {}
+      """
+    Then the response status is 200
+    And the response header "ETag" differs from the stored ETag
+    And the response header "ETag" is the quoted field "/revision"
+    And the field at "/applied" holds exactly 0 items
+    And the field at "/dropped" holds exactly the ids:
+      """
+      directive:OLD
+      """
+
+  Scenario: An unselect that names a stale id is 404 and drops nothing
+    FR-010, ADR-0059 amendment R5: the path id is judged against the closure before any drop, so naming the removed
+    OLD is artifact_not_found and nothing is stored; any other write of the activation drops OLD.
+    Given the org pack "main" with the file "directives/OLD.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: OLD
+      title: Old
+      intent: OLD
+      enforcement: required
+      """
+    And the activation "a-1" holds:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "main"}], "selected": {"directive": ["OLD"]}}
+      """
+    And the file "directives/OLD.directive.yaml" of the pack "main" is deleted
+    When I DELETE "/activations/a-1/selections/directive/OLD" with the stored ETag
+    Then the response status is 404
+    And the problem code is "artifact_not_found"
+    When I GET "/activations/a-1"
+    Then the response header "ETag" is the stored ETag
+
   Scenario: Re-activating a denied artifact clears its deny entry and omits the emptied list
     US4 AS4.
     Given the activation "a-1" holds:

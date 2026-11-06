@@ -19,15 +19,24 @@ import java.util.TreeSet;
  *   <li>{@code cleared}: every id the write removed from {@code deactivated}.
  * </ul>
  *
- * <p>A no-op has both empty, and its document keeps its revision.
+ * <p>{@code dropped} is apart from both: the ids the write removed from the stored document before it computed anything,
+ * because the activation's closure no longer declares them (ADR-0059 amendment R5, {@link StaleIds}). They are
+ * measured against the stored document, {@code applied} and {@code cleared} against the document without them.
+ *
+ * <p>A no-op has all three empty, and its document keeps its revision.
  *
  * @param after the document after the write
  * @param applied the ids whose state the write changed, sorted
  * @param cleared the deny entries the write removed, sorted
  * @param skipped what the cascade left out
+ * @param dropped the stale ids the write dropped from the stored document, sorted
  */
 public record ActivationChange(
-        ActivationDocument after, List<ArtifactRef> applied, List<ArtifactRef> cleared, SkippedReport skipped) {
+        ActivationDocument after,
+        List<ArtifactRef> applied,
+        List<ArtifactRef> cleared,
+        SkippedReport skipped,
+        List<ArtifactRef> dropped) {
 
     /**
      * Checks the fields and sorts the lists.
@@ -36,12 +45,37 @@ public record ActivationChange(
      * @param applied the changed ids
      * @param cleared the cleared deny entries
      * @param skipped the skipped report
+     * @param dropped the dropped stale ids
      */
     public ActivationChange {
         Objects.requireNonNull(after, "after");
         applied = List.copyOf(new TreeSet<>(applied));
         cleared = List.copyOf(new TreeSet<>(cleared));
         Objects.requireNonNull(skipped, "skipped");
+        dropped = List.copyOf(new TreeSet<>(dropped));
+    }
+
+    /**
+     * A change that dropped nothing.
+     *
+     * @param after the document after the write
+     * @param applied the changed ids
+     * @param cleared the cleared deny entries
+     * @param skipped the skipped report
+     */
+    public ActivationChange(
+            ActivationDocument after, List<ArtifactRef> applied, List<ArtifactRef> cleared, SkippedReport skipped) {
+        this(after, applied, cleared, skipped, List.of());
+    }
+
+    /**
+     * The same change, reporting the stale ids the write dropped before it computed it.
+     *
+     * @param stale the dropped ids
+     * @return the change
+     */
+    public ActivationChange withDropped(List<ArtifactRef> stale) {
+        return new ActivationChange(after, applied, cleared, skipped, stale);
     }
 
     /**

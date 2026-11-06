@@ -34,6 +34,15 @@
   artifact an `ArtifactReference` can name: a template, an asset, an unselected intermediate or a lineage ancestor on
   the way leads back to the artifact that put it in the walk (for an ancestor, its descendant), as
   `ArtifactReference`'s description and ADR-0059 D2.4 say; among the nearest, the first in code-point order.
-- The five per-artifact and preset write descriptions say how a document a pack upgrade made stale recovers: while it
-  stores an id the closure no longer holds, every such write is `422 activation_invalid`, and an unselect or
-  re-activate of that id is `404 artifact_not_found`; a `replaceActivation` without the stale ids recovers it.
+- Stale ids are dropped on write (operator ruling of 2026-11-06, ADR-0059 amendment R5). Every per-artifact and preset
+  write first removes from the stored document each id the activation's closure no longer declares (a pack upgrade
+  removed it), in `selected`, `deactivated` and `missionTypes`, and reports them in the new optional
+  `ActivationChange.dropped`, an array of `ArtifactReference`, present only when the write dropped one. A dropped id
+  is a change: a write that only drops stale ids is not a no-op and answers a new revision. `applied` and `cleared`
+  report the write's own change and never a dropped id. Before, such a document made every per-artifact and preset
+  write `422 activation_invalid` until a full `replaceActivation`. Unchanged: a path id the closure no longer holds is
+  `404 artifact_not_found` and drops nothing; an unknown pack or a pinned version the closure does not hold is still
+  `422 activation_invalid` (`unknown_pack`, `version_not_held`), which only a `replaceActivation` recovers; and
+  `createActivation` and `replaceActivation` still refuse an unknown id in the body they are sent with `422`. No
+  refusal code changes, so `CharterRefusalCode` and its `x-refusal` map are unchanged; three scenarios of
+  `activation-selections.feature` pin the drop.

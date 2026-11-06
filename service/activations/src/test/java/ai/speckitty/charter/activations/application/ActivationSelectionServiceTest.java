@@ -318,4 +318,87 @@ class ActivationSelectionServiceTest {
                         PreconditionException.class,
                         refused -> assertThat(refused.kind()).isEqualTo(PreconditionException.Kind.STALE));
     }
+
+    // Stale ids are dropped on write (ADR-0059 amendment R5, operator ruling of 2026-11-06).
+
+    @Test
+    void aSelectDropsTheStoredIdsTheClosureNoLongerDeclaresAndReportsThem() {
+        StoredActivation before = stored(ActivationDocument.builder()
+                .missionTypes(List.of("gone-type"))
+                .selected(ArtifactKind.DIRECTIVE, List.of("GONE"))
+                .deactivated(ArtifactKind.TACTIC, List.of("old")));
+
+        ActivationWrites.Outcome outcome =
+                service.select(ID, "directive", "D2", Optional.empty(), false, List.of(), quoted(before));
+
+        assertThat(outcome.change().dropped())
+                .containsExactly(
+                        new ArtifactRef(ArtifactKind.DIRECTIVE, "GONE"),
+                        new ArtifactRef(ArtifactKind.MISSION_TYPE, "gone-type"),
+                        new ArtifactRef(ArtifactKind.TACTIC, "old"));
+        assertThat(outcome.change().applied()).containsExactly(new ArtifactRef(ArtifactKind.DIRECTIVE, "D2"));
+        assertThat(outcome.change().cleared()).isEmpty();
+        assertThat(now().selected(ArtifactKind.DIRECTIVE).orElseThrow()).containsExactly("D2");
+        assertThat(now().missionTypes().orElseThrow()).isEmpty();
+        assertThat(now().deactivated()).isEmpty();
+        assertThat(packs.calls()).isEqualTo(1);
+    }
+
+    @Test
+    void aWriteThatOnlyDropsStaleIdsIsNotANoOpAndStoresANewRevision() {
+        StoredActivation before =
+                stored(ActivationDocument.builder().selected(ArtifactKind.DIRECTIVE, List.of("D", "GONE")));
+
+        ActivationWrites.Outcome outcome =
+                service.select(ID, "directive", "D", Optional.empty(), false, List.of(), quoted(before));
+
+        assertThat(outcome.change().applied()).isEmpty();
+        assertThat(outcome.change().dropped()).containsExactly(new ArtifactRef(ArtifactKind.DIRECTIVE, "GONE"));
+        assertThat(outcome.stored().revision()).isNotEqualTo(before.revision());
+        assertThat(repository.replaces()).isEqualTo(1);
+    }
+
+    @Test
+    void aWriteThatDropsNothingReportsNothingDropped() {
+        StoredActivation before = stored(ActivationDocument.builder());
+
+        ActivationWrites.Outcome outcome =
+                service.select(ID, "directive", "D", Optional.empty(), false, List.of(), quoted(before));
+
+        assertThat(outcome.change().dropped()).isEmpty();
+    }
+
+    @Test
+    void anUnselectOfAStaleIdIs404AndDropsNothing() {
+        StoredActivation before =
+                stored(ActivationDocument.builder().selected(ArtifactKind.DIRECTIVE, List.of("GONE")));
+
+        assertThatThrownBy(() -> service.unselect(ID, "directive", "GONE", quoted(before)))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_NOT_FOUND));
+        assertThat(repository.replaces()).isZero();
+    }
+
+    @Test
+    void aPinnedVersionTheClosureDoesNotHoldIsStill422AndNotDropped() {
+        StoredActivation before = repository
+                .create(
+                        ID,
+                        ActivationDocument.builder()
+                                .packs(List.of(PackRef.pinned("main", "9.9.9")))
+                                .build()
+                                .document())
+                .orElseThrow();
+
+        assertThatThrownBy(
+                        () -> service.select(ID, "directive", "D", Optional.empty(), false, List.of(), quoted(before)))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_INVALID);
+                    assertThat(refusal.violations())
+                            .singleElement()
+                            .satisfies(violation -> assertThat(violation.code()).isEqualTo("version_not_held"));
+                });
+        assertThat(repository.replaces()).isZero();
+    }
 }

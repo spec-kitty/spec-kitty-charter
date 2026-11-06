@@ -61,6 +61,7 @@ public class ActivationPresetService {
         PresetView preset = Optional.ofNullable(snapshot.presets().get(presetId))
                 .orElseThrow(() -> new CharterRefusal(
                         RefusalCode.PRESET_NOT_FOUND, "The activation's packs hold no preset '" + presetId + "'."));
-        return writes.commit(loaded, PresetRules.apply(loaded.document(), preset, force), snapshot);
+        return writes.commit(
+                loaded, PresetRules.apply(ActivationWrites.current(loaded, snapshot), preset, force), snapshot);
     }
 }

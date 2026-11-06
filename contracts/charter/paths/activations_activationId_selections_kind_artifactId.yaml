@@ -23,9 +23,12 @@ put:
     else is judged. Then the preconditions, in this order: 428 without If-Match, 404 activation_not_found, 412 when
     stale; each comes before any 422, a fault of the body included (a member the
     schema does not declare, a null, a cascade token outside its kinds). A stored deny entry a pack upgrade put on the required or locked floor is tolerated (ADR-0059 D4): it
-    never refuses the write, so the write answers no 409. A document a pack upgrade made stale has one way out: while it stores an id the closure no longer holds, every
-    per-artifact and preset write of the activation is 422 activation_invalid, and an unselect or re-activate of
-    that id is 404 artifact_not_found; a replaceActivation without the stale ids recovers it.
+    never refuses the write, so the write answers no 409. Stale ids are dropped on write (ADR-0059 amendment of 2026-11-06): the write first removes from the
+    stored document every id the activation's closure no longer declares (a pack upgrade removed it), in selected,
+    deactivated and missionTypes, and lists them in dropped; such a write is never a no-op, so it answers a new
+    revision. A path id the closure no longer holds is still 404 artifact_not_found and nothing is dropped. An
+    unknown pack or a pinned version the closure does not hold is not dropped: the write is still 422
+    activation_invalid (unknown_pack, version_not_held), and only a replaceActivation recovers the document.
   tags:
   - Activation
   parameters:
@@ -85,9 +88,12 @@ delete:
     kind mission_type); a kind outside the path's enum is 422 activation_invalid with a violation at the path.
     An If-Match that is neither * nor one quoted revision breaks its pattern and is 400 before anything
     else is judged. Then the preconditions, in this order: 428 without If-Match, 404 activation_not_found, 412 when
-    stale; each comes before any 422, the path's kind included. A document a pack upgrade made stale has one way out: while it stores an id the closure no longer holds, every
-    per-artifact and preset write of the activation is 422 activation_invalid, and an unselect or re-activate of
-    that id is 404 artifact_not_found; a replaceActivation without the stale ids recovers it.
+    stale; each comes before any 422, the path's kind included. Stale ids are dropped on write (ADR-0059 amendment of 2026-11-06): the write first removes from the
+    stored document every id the activation's closure no longer declares (a pack upgrade removed it), in selected,
+    deactivated and missionTypes, and lists them in dropped; such a write is never a no-op, so it answers a new
+    revision. A path id the closure no longer holds is still 404 artifact_not_found and nothing is dropped. An
+    unknown pack or a pinned version the closure does not hold is not dropped: the write is still 422
+    activation_invalid (unknown_pack, version_not_held), and only a replaceActivation recovers the document.
   tags:
   - Activation
   parameters:

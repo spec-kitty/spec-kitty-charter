@@ -40,5 +40,18 @@ properties:
       - schemas/ActivationConfig.yaml
   skipped:
     $ref: SkippedReport.yaml
+  dropped:
+    type: array
+    items:
+      $ref: ArtifactReference.yaml
+    description: >-
+      The ids the write dropped from the stored document before it applied anything, because the activation's closure
+      no longer declares them (a pack upgrade removed them): from selected, deactivated and missionTypes (ADR-0059
+      amendment of 2026-11-06). Present only when the write dropped one; such a write is never a no-op. A dropped id is
+      not in applied or cleared, which report the write's own change.
+    x-derived:
+      rule: The ids of the stored selected, deactivated and missionTypes the activation's closure does not hold.
+      inputs:
+      - schemas/ActivationConfig.yaml
   _links:
     $ref: Links.yaml

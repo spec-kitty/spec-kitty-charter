@@ -145,4 +145,27 @@ class ActivationPresetServiceTest {
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_NOT_FOUND));
         assertThat(packs.calls()).isZero();
     }
+
+    @Test
+    void aPresetDropsTheStoredIdsTheClosureNoLongerDeclaresAndReportsThem() {
+        // ADR-0059 amendment R5: GONE was selected before a pack upgrade removed it.
+        StoredActivation before =
+                stored(ActivationDocument.builder().selected(ArtifactKind.DIRECTIVE, List.of("A", "GONE")));
+
+        ActivationWrites.Outcome outcome = service.apply(ID, "team", false, List.of(), quoted(before));
+
+        assertThat(outcome.change().dropped()).containsExactly(new ArtifactRef(ArtifactKind.DIRECTIVE, "GONE"));
+        assertThat(outcome.change().applied())
+                .containsExactly(
+                        new ArtifactRef(ArtifactKind.DIRECTIVE, "A"),
+                        new ArtifactRef(ArtifactKind.DIRECTIVE, "B"),
+                        new ArtifactRef(ArtifactKind.DIRECTIVE, "C"));
+        assertThat(repository
+                        .find(ID)
+                        .orElseThrow()
+                        .document()
+                        .selected(ArtifactKind.DIRECTIVE)
+                        .orElseThrow())
+                .containsExactly("B", "C");
+    }
 }

@@ -12,6 +12,7 @@ import ai.speckitty.charter.activations.domain.DocumentRules;
 import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
+import ai.speckitty.charter.activations.domain.StaleIds;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
@@ -39,11 +40,15 @@ import org.springframework.stereotype.Component;
  *   <li>one {@link PacksSession} (NFR-007), refused {@code 422} when a pack the document names is configured as none
  *       any more;
  *   <li>the path id against that closure ({@code 404 artifact_not_found}, or {@code mission_type_not_found});
+ *   <li>the stored document without the ids the closure no longer declares ({@link #current}, {@link StaleIds}): the use
+ *       case computes its change from it, and the ids dropped are reported in {@code dropped} (ADR-0059 amendment R5);
  *   <li>after the use case computed its {@link ActivationChange}: a document equal to the stored one is a no-op, which
- *       answers the stored revision and writes nothing; any other is judged by {@link DocumentRules#checkWrite} and
- *       written by a compare-and-set at the loaded revision ({@code 412} when another writer came in between). Every id
- *       is judged (FR-017), but the floor only on the deny entries the write adds: a stored deny entry a pack upgrade
- *       put on the floor is tolerated, so it never makes a write of another id {@code 409}.
+ *       answers the stored revision and writes nothing, so a write that dropped a stale id is never one; any other is
+ *       judged by {@link DocumentRules#checkWrite} and written by a compare-and-set at the loaded revision
+ *       ({@code 412} when another writer came in between). Every id is judged (FR-017), but the floor only on the deny
+ *       entries the write adds: a stored deny entry a pack upgrade put on the floor is tolerated, so it never makes a
+ *       write of another id {@code 409}. An unknown pack and a pinned version the closure does not hold are not
+ *       dropped: they are still refused {@code 422}.
  * </ol>
  *
  * <p>A per-artifact write has no body list for a pointer to index, so a {@code 422} that {@link DocumentRules} raises on
@@ -230,6 +235,18 @@ public class ActivationWrites {
     }
 
     /**
+     * The document a write computes its change from: the stored one without the ids its closure no longer declares
+     * (ADR-0059 amendment R5). {@link #commit} reports those ids in {@code dropped}.
+     *
+     * @param loaded the activation as loaded
+     * @param snapshot the closure the document names, resolved
+     * @return the stored document less its stale ids
+     */
+    static ActivationDocument current(StoredActivation loaded, ClosureSnapshot snapshot) {
+        return StaleIds.drop(loaded.document(), snapshot).document();
+    }
+
+    /**
      * Walks a plan, or skips the call when it asks for no walk.
      *
      * @param session the request's session
@@ -241,17 +258,20 @@ public class ActivationWrites {
     }
 
     /**
-     * Stores what a write computed: nothing for a no-op, otherwise the computed document after the rules, by a
-     * compare-and-set at the loaded revision.
+     * Stores what a write computed from {@link #current}: nothing for a no-op, otherwise the computed document after the
+     * rules, by a compare-and-set at the loaded revision. The change reports the stale ids dropped from the stored
+     * document.
      *
      * @param loaded the activation as loaded
-     * @param change what the write computed
+     * @param computed what the write computed from {@link #current}
      * @param snapshot the closure the rules judge the document against
      * @return the outcome
      * @throws CharterRefusal when the computed document breaks its closure
      * @throws PreconditionException ({@code STALE}) when another writer came in between
      */
-    Outcome commit(StoredActivation loaded, ActivationChange change, ClosureSnapshot snapshot) {
+    Outcome commit(StoredActivation loaded, ActivationChange computed, ClosureSnapshot snapshot) {
+        ActivationChange change =
+                computed.withDropped(StaleIds.drop(loaded.document(), snapshot).dropped());
         ActivationDocument after = change.after();
         if (after.equals(loaded.document())) {
             return new Outcome(loaded, change);

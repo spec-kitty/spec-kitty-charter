@@ -78,6 +78,24 @@ class ActivationChangeMapperTest {
     }
 
     @Test
+    void droppedIsMappedWhenTheWriteDroppedAStaleIdAndLeftOutOtherwise() {
+        ActivationDocument after = ActivationDocument.builder().build().document();
+        StoredActivation stored = StoredActivation.of(new ActivationId("a-1"), after);
+        ActivationChange change = new ActivationChange(after, List.of(), List.of(), SkippedReport.empty());
+
+        ai.speckitty.charter.api.model.ActivationChange none =
+                mapper.toChange(new ActivationWrites.Outcome(stored, change));
+        ai.speckitty.charter.api.model.ActivationChange some =
+                mapper.toChange(new ActivationWrites.Outcome(stored, change.withDropped(List.of(T, D))));
+
+        assertThat(none.getDropped()).isNull();
+        assertThat(some.getDropped())
+                .containsExactly(
+                        reference(ArtifactReference.KindEnum.DIRECTIVE, "D"),
+                        reference(ArtifactReference.KindEnum.TACTIC, "t"));
+    }
+
+    @Test
     void aNoOpAnswersTheStoredRevisionWithEmptyLists() {
         ActivationDocument document = ActivationDocument.builder().build().document();
         StoredActivation stored = StoredActivation.of(new ActivationId("a-1"), document);
