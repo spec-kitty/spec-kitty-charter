@@ -192,11 +192,6 @@ public final class FileActivationRepository implements ActivationRepository {
         return Math.floorMod(ActivationDirectoryName.encode(id).hashCode(), LOCK_STRIPES);
     }
 
-    /** How many locks the store holds, whatever the ids written: the stripe count. */
-    int lockCount() {
-        return locks.length;
-    }
-
     private <T> T underLock(ActivationId id, Supplier<T> action) {
         ReentrantLock lock = locks[stripeOf(id)];
         lock.lock();

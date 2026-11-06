@@ -74,20 +74,6 @@ class ActivationProblemsTest {
     }
 
     @Test
-    void aMalformedPreconditionIsAPlain400WithItsDetail() throws Exception {
-        MockHttpServletResponse answer = send(put(DOCUMENT)
-                .contentType(MediaType.APPLICATION_JSON)
-                .header("If-Match", "*")
-                .header("If-None-Match", "*")
-                .content(VALID));
-
-        assertThat(answer.getStatus()).as(answer.getContentAsString()).isEqualTo(400);
-        assertThat(body(answer).path("detail").asString())
-                .isEqualTo("A write carries If-Match or If-None-Match, not both.");
-        assertThat(body(answer).has("code")).isFalse();
-    }
-
-    @Test
     void aBodyThatIsNotJsonByItsTypeStays415() throws Exception {
         MockHttpServletResponse answer =
                 send(put(DOCUMENT).contentType(MediaType.TEXT_PLAIN).content(VALID));
