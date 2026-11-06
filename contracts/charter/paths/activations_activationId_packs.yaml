@@ -10,7 +10,8 @@ get:
     are read here (#359). Only the packs of the closure are read and judged: a configured pack outside it, readable
     or not, changes nothing in the answer. An unknown activation is 404 activation_not_found. A closure that cannot
     be read or does not compose is refused whole with a 500, as the offering refuses it: pack_unreadable (a pack of
-    the closure whose directory, pack.yaml or named policy file is missing or invalid), one of the composition codes
+    the closure whose directory, pack.yaml or named policy file is missing or invalid, or a pack the stored document
+    names that is no longer configured, since the request names only the activation), one of the composition codes
     (pack_dependency_out_of_range, pack_reference_pack_missing among them) or stale_input. The ETag covers the
     activation's revision and the closure's packs; a request whose If-None-Match matches it is answered 304 without
     a body. Like every operation it needs the worktree token.

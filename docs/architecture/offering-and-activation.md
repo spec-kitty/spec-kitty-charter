@@ -127,9 +127,12 @@ duplicates. An empty deny list is refused, never stored. `revision` is the `sha2
 serialization of the canonical `config`. A `PUT` of a fetched `config` answers `200` with the same
 `ETag`, for a document the offering has not made stale (ADR-0059 D4): a stale document is served as stored, and
 writing it back is refused until the client removes the ids the offering no longer has (`422`) and the deny entries
-on artifacts now required or locked (`409`). A write evaluates its preconditions first (RFC 9110 §13.2.2): a stale
-`If-Match`, or `If-None-Match: *` on a stored id, answers `412` whatever the document holds, and takes no closure
-snapshot. The document is judged against its closure only after that.
+on artifacts now required or locked (`409`). A write evaluates its preconditions before it judges the document
+(RFC 9110 §13.2.2): a stale `If-Match`, or `If-None-Match: *` on a stored id, answers `412` whatever the document
+names, and takes no closure snapshot. The body is read first, though, and the strict reader refuses a body it cannot
+bind as it reads it: a create or a replace whose body has an unknown member, a `null`, a duplicate key or more than
+1 MiB is `422 activation_invalid` even when its precondition would fail. The document is judged against its closure
+only after the precondition holds.
 
 **Absent means none** ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) d10). Each list
 has three states: absent, `[]` and a list of ids. An absent `selected.<kind>`, `activatedKinds` or `missionTypes`
