@@ -265,7 +265,7 @@
     },
     "WP08": {
       "actor": "claude",
-      "agent": "claude::java-jenny",
+      "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -278,6 +278,7 @@
         "Ready for review: remnant 422 validation_failed; droppedPins mapped; replace answers dropped/droppedPins; kind-model un-WIP; ruling-changes.feature (7/8 red on #399 head 8188c996, A10 not observable in A0); client containerDefaultToNull with ActivationRoundTripTest; UndefinedStepGuard. Gate: ./gradlew --max-workers=1 -Dorg.gradle.internal.repository.max.retries=10 -PcontractBaseline=none :kernel:check :packs:check :activations:check :deployable:check :client-java:check :contracts:check -> exit 0 (BUILD SUCCESSFUL). CharterContractSuite 403/403 green; guard probe with an undefined step fails the run (exit 1)."
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/layer-merge-and-effective-reads-01M6R0J6-coord/kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP08-a0-api-glue-client-roundtrip/review-cycle-1.md",
         "reference": "review-cycle://layer-merge-and-effective-reads-01M6R0J6/WP08-a0-api-glue-client-roundtrip/review-cycle-1.md",
@@ -285,17 +286,17 @@
         "verdict": "changes_requested"
       },
       "role": "implementer",
-      "shell_pid": 15882,
-      "shell_pid_created_at": "1793986850.53",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T034": "done",
-        "T035": "done",
-        "T036": "done",
-        "T037": "done",
-        "T038": "done",
-        "T039": "done",
-        "T147": "done",
-        "T148": "done"
+        "T034": "planned",
+        "T035": "planned",
+        "T036": "planned",
+        "T037": "planned",
+        "T038": "planned",
+        "T039": "planned",
+        "T147": "planned",
+        "T148": "planned"
       }
     },
     "WP09": {
