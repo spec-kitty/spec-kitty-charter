@@ -1,7 +1,8 @@
 ---
 work_package_id: WP17
 title: 'A · Sources: guarded HTTPS archive and local path'
-dependencies: [WP16]
+dependencies:
+- WP16
 requirement_refs:
 - FR-004
 - NFR-004
@@ -9,7 +10,7 @@ requirement_refs:
 - NFR-012
 planning_base_branch: issue-10-layer-merge-effective-reads
 merge_target_branch: issue-10-layer-merge-effective-reads
-branch_strategy: Planning artifacts were generated on issue-10-layer-merge-effective-reads; execution worktrees come from lanes.json and completed changes merge back into issue-10-layer-merge-effective-reads. The four PRs (A0, A, B, C) are cut from it at closeout.
+branch_strategy: Planning artifacts for this mission were generated on issue-10-layer-merge-effective-reads. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-10-layer-merge-effective-reads unless the human explicitly redirects the landing branch.
 subtasks:
 - T083
 - T084
@@ -17,9 +18,6 @@ subtasks:
 - T086
 - T087
 phase: PR A
-assignee: ''
-agent: claude
-shell_pid: ''
 history:
 - timestamp: '2026-11-06T00:00:00Z'
   agent: system
@@ -52,6 +50,8 @@ owned_files:
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/fetch/LocalSourceReaderTest.java
 - service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/StubArchiveExchange.java
 role: implementer
+tags: []
+tracker_refs: []
 ---
 # WP17: A · Sources: guarded HTTPS archive and local path
 

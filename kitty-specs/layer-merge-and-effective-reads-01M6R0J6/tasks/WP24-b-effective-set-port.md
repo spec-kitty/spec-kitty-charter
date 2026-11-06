@@ -1,7 +1,9 @@
 ---
 work_package_id: WP24
 title: 'B · activations: effective set, snapshot values and the port'
-dependencies: [WP22, WP23]
+dependencies:
+- WP22
+- WP23
 requirement_refs:
 - FR-013
 - FR-017
@@ -10,7 +12,7 @@ requirement_refs:
 - C-002
 planning_base_branch: issue-10-layer-merge-effective-reads
 merge_target_branch: issue-10-layer-merge-effective-reads
-branch_strategy: Planning artifacts were generated on issue-10-layer-merge-effective-reads; execution worktrees come from lanes.json and completed changes merge back into issue-10-layer-merge-effective-reads. The four PRs (A0, A, B, C) are cut from it at closeout.
+branch_strategy: Planning artifacts for this mission were generated on issue-10-layer-merge-effective-reads. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-10-layer-merge-effective-reads unless the human explicitly redirects the landing branch.
 subtasks:
 - T120
 - T121
@@ -18,9 +20,6 @@ subtasks:
 - T123
 - T124
 phase: PR B
-assignee: ''
-agent: claude
-shell_pid: ''
 history:
 - timestamp: '2026-11-06T00:00:00Z'
   agent: system
@@ -51,6 +50,8 @@ owned_files:
 - service/activations/src/test/java/ai/speckitty/charter/activations/application/FakeAvailablePacks.java
 - service/activations/src/test/java/ai/speckitty/charter/activations/infra/packs/PacksAvailabilityTest.java
 role: implementer
+tags: []
+tracker_refs: []
 ---
 # WP24: B · activations: effective set, snapshot values and the port
 

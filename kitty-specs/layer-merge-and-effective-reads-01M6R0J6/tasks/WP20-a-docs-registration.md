@@ -1,23 +1,22 @@
 ---
 work_package_id: WP20
 title: 'A · Docs for PR A: host requirement, guides, status codes'
-dependencies: [WP18, WP19]
+dependencies:
+- WP18
+- WP19
 requirement_refs:
 - FR-008
 - C-008
 - NFR-011
 planning_base_branch: issue-10-layer-merge-effective-reads
 merge_target_branch: issue-10-layer-merge-effective-reads
-branch_strategy: Planning artifacts were generated on issue-10-layer-merge-effective-reads; execution worktrees come from lanes.json and completed changes merge back into issue-10-layer-merge-effective-reads. The four PRs (A0, A, B, C) are cut from it at closeout.
+branch_strategy: Planning artifacts for this mission were generated on issue-10-layer-merge-effective-reads. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-10-layer-merge-effective-reads unless the human explicitly redirects the landing branch.
 subtasks:
 - T099
 - T100
 - T101
 - T102
 phase: PR A
-assignee: ''
-agent: claude
-shell_pid: ''
 history:
 - timestamp: '2026-11-06T00:00:00Z'
   agent: system
@@ -37,6 +36,8 @@ owned_files:
 - docs/changelog/2026-11-07-a-pack-registration.md
 - cspell.json
 role: documentarian
+tags: []
+tracker_refs: []
 ---
 # WP20: A · Docs for PR A: host requirement, guides, status codes
 

@@ -1,13 +1,14 @@
 ---
 work_package_id: WP05
 title: 'A0 · Cascade and selection: mission types and the includeDeactivated scope'
-dependencies: [WP03]
+dependencies:
+- WP03
 requirement_refs:
 - FR-034
 - FR-040
 planning_base_branch: issue-10-layer-merge-effective-reads
 merge_target_branch: issue-10-layer-merge-effective-reads
-branch_strategy: Planning artifacts were generated on issue-10-layer-merge-effective-reads; execution worktrees come from lanes.json and completed changes merge back into issue-10-layer-merge-effective-reads. The four PRs (A0, A, B, C) are cut from it at closeout.
+branch_strategy: Planning artifacts for this mission were generated on issue-10-layer-merge-effective-reads. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-10-layer-merge-effective-reads unless the human explicitly redirects the landing branch.
 subtasks:
 - T020
 - T021
@@ -15,9 +16,6 @@ subtasks:
 - T023
 - T024
 phase: PR A0
-assignee: ''
-agent: claude
-shell_pid: ''
 history:
 - timestamp: '2026-11-06T00:00:00Z'
   agent: system
@@ -49,6 +47,8 @@ owned_files:
 - service/activations/src/test/java/ai/speckitty/charter/activations/application/ActivationExclusionServiceTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/application/ReachabilityTest.java
 role: implementer
+tags: []
+tracker_refs: []
 ---
 # WP05: A0 · Cascade and selection: mission types and the includeDeactivated scope
 

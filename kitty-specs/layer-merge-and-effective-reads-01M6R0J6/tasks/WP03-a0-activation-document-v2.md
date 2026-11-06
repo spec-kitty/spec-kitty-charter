@@ -1,13 +1,15 @@
 ---
 work_package_id: WP03
 title: A0 · Activation document v2 and the storage upgrade
-dependencies: [WP01, WP02]
+dependencies:
+- WP01
+- WP02
 requirement_refs:
 - FR-040
 - FR-041
 planning_base_branch: issue-10-layer-merge-effective-reads
 merge_target_branch: issue-10-layer-merge-effective-reads
-branch_strategy: Planning artifacts were generated on issue-10-layer-merge-effective-reads; execution worktrees come from lanes.json and completed changes merge back into issue-10-layer-merge-effective-reads. The four PRs (A0, A, B, C) are cut from it at closeout.
+branch_strategy: Planning artifacts for this mission were generated on issue-10-layer-merge-effective-reads. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-10-layer-merge-effective-reads unless the human explicitly redirects the landing branch.
 subtasks:
 - T010
 - T011
@@ -15,9 +17,6 @@ subtasks:
 - T013
 - T014
 phase: PR A0
-assignee: ''
-agent: claude
-shell_pid: ''
 history:
 - timestamp: '2026-11-06T00:00:00Z'
   agent: system
@@ -42,6 +41,8 @@ owned_files:
 - service/activations/src/test/java/ai/speckitty/charter/activations/infra/storage/ActivationRepositoryContract.java
 - service/activations/src/test/java/ai/speckitty/charter/activations/infra/storage/ActivationDocumentUpgradeTest.java
 role: implementer
+tags: []
+tracker_refs: []
 ---
 # WP03: A0 · Activation document v2 and the storage upgrade
 

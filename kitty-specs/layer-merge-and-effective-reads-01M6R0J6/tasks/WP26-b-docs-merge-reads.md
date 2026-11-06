@@ -1,21 +1,19 @@
 ---
 work_package_id: WP26
 title: 'B · Docs for PR B: resolution model, offering page, divergences'
-dependencies: [WP25]
+dependencies:
+- WP25
 requirement_refs:
 - FR-014
 - C-007
 planning_base_branch: issue-10-layer-merge-effective-reads
 merge_target_branch: issue-10-layer-merge-effective-reads
-branch_strategy: Planning artifacts were generated on issue-10-layer-merge-effective-reads; execution worktrees come from lanes.json and completed changes merge back into issue-10-layer-merge-effective-reads. The four PRs (A0, A, B, C) are cut from it at closeout.
+branch_strategy: Planning artifacts for this mission were generated on issue-10-layer-merge-effective-reads. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-10-layer-merge-effective-reads unless the human explicitly redirects the landing branch.
 subtasks:
 - T131
 - T132
 - T133
 phase: PR B
-assignee: ''
-agent: claude
-shell_pid: ''
 history:
 - timestamp: '2026-11-06T00:00:00Z'
   agent: system
@@ -24,7 +22,7 @@ agent_profile: scribe-sally
 authoritative_surface: docs/architecture/
 create_intent:
 - docs/changelog/2026-11-07-b-effective-reads.md
-execution_mode: planning_artifact
+execution_mode: code_change
 model: ''
 owned_files:
 - docs/architecture/resolution-model.md
@@ -32,6 +30,8 @@ owned_files:
 - docs/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions.md
 - docs/changelog/2026-11-07-b-effective-reads.md
 role: documentarian
+tags: []
+tracker_refs: []
 ---
 # WP26: B · Docs for PR B: resolution model, offering page, divergences
 

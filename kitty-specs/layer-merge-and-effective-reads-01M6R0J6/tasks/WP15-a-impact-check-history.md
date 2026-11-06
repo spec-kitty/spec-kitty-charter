@@ -1,7 +1,8 @@
 ---
 work_package_id: WP15
 title: A · Registration impact check, refusals and version history
-dependencies: [WP14]
+dependencies:
+- WP14
 requirement_refs:
 - FR-002
 - FR-025
@@ -9,7 +10,7 @@ requirement_refs:
 - FR-027
 planning_base_branch: issue-10-layer-merge-effective-reads
 merge_target_branch: issue-10-layer-merge-effective-reads
-branch_strategy: Planning artifacts were generated on issue-10-layer-merge-effective-reads; execution worktrees come from lanes.json and completed changes merge back into issue-10-layer-merge-effective-reads. The four PRs (A0, A, B, C) are cut from it at closeout.
+branch_strategy: Planning artifacts for this mission were generated on issue-10-layer-merge-effective-reads. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-10-layer-merge-effective-reads unless the human explicitly redirects the landing branch.
 subtasks:
 - T070
 - T071
@@ -18,9 +19,6 @@ subtasks:
 - T074
 - T075
 phase: PR A
-assignee: ''
-agent: claude
-shell_pid: ''
 history:
 - timestamp: '2026-11-06T00:00:00Z'
   agent: system
@@ -46,6 +44,8 @@ owned_files:
 - service/packs/src/test/java/ai/speckitty/charter/packs/application/PackVersionHistoryTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/VersionHistoryStoreTest.java
 role: implementer
+tags: []
+tracker_refs: []
 ---
 # WP15: A · Registration impact check, refusals and version history
 

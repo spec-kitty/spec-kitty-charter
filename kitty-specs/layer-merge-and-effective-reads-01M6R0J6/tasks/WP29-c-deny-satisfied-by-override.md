@@ -1,7 +1,8 @@
 ---
 work_package_id: WP29
 title: C · Deny on a required artifact satisfied by an override, and PR C docs
-dependencies: [WP28]
+dependencies:
+- WP28
 requirement_refs:
 - FR-013
 - FR-014
@@ -10,22 +11,19 @@ requirement_refs:
 - C-007
 planning_base_branch: issue-10-layer-merge-effective-reads
 merge_target_branch: issue-10-layer-merge-effective-reads
-branch_strategy: Planning artifacts were generated on issue-10-layer-merge-effective-reads; execution worktrees come from lanes.json and completed changes merge back into issue-10-layer-merge-effective-reads. The four PRs (A0, A, B, C) are cut from it at closeout.
+branch_strategy: Planning artifacts for this mission were generated on issue-10-layer-merge-effective-reads. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-10-layer-merge-effective-reads unless the human explicitly redirects the landing branch.
 subtasks:
 - T143
 - T144
 - T145
 - T146
 phase: PR C
-assignee: ''
-agent: claude
-shell_pid: ''
 history:
 - timestamp: '2026-11-06T00:00:00Z'
   agent: system
   action: Prompt generated via /spec-kitty.tasks
 agent_profile: java-jenny
-authoritative_surface: service/activations/src/main/java/ai/speckitty/charter/activations/domain/DocumentRules.java
+authoritative_surface: contracts/charter/scenarios/activation-deny-satisfied.feature
 create_intent:
 - contracts/charter/changes/2026-11-07-c-deny-satisfied-by-override.md
 - contracts/charter/scenarios/activation-deny-satisfied.feature
@@ -41,6 +39,8 @@ owned_files:
 - docs/architecture/logical-model.md
 - docs/changelog/2026-11-07-c-graph-and-context.md
 role: implementer
+tags: []
+tracker_refs: []
 ---
 # WP29: C · Deny on a required artifact satisfied by an override, and PR C docs
 

@@ -1,7 +1,9 @@
 ---
 work_package_id: WP28
 title: C · Contract C and the last two reads served
-dependencies: [WP27, WP25]
+dependencies:
+- WP27
+- WP25
 requirement_refs:
 - FR-018
 - FR-019
@@ -12,7 +14,7 @@ requirement_refs:
 - SC-002
 planning_base_branch: issue-10-layer-merge-effective-reads
 merge_target_branch: issue-10-layer-merge-effective-reads
-branch_strategy: Planning artifacts were generated on issue-10-layer-merge-effective-reads; execution worktrees come from lanes.json and completed changes merge back into issue-10-layer-merge-effective-reads. The four PRs (A0, A, B, C) are cut from it at closeout.
+branch_strategy: Planning artifacts for this mission were generated on issue-10-layer-merge-effective-reads. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-10-layer-merge-effective-reads unless the human explicitly redirects the landing branch.
 subtasks:
 - T138
 - T139
@@ -20,9 +22,6 @@ subtasks:
 - T141
 - T142
 phase: PR C
-assignee: ''
-agent: claude
-shell_pid: ''
 history:
 - timestamp: '2026-11-06T00:00:00Z'
   agent: system
@@ -48,6 +47,8 @@ owned_files:
 - contracts/charter/scenarios/effective-graph-and-context.feature
 - service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/EffectiveGraphSteps.java
 role: implementer
+tags: []
+tracker_refs: []
 ---
 # WP28: C · Contract C and the last two reads served
 

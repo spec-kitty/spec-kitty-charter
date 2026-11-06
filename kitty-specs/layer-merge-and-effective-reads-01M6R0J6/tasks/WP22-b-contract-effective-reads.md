@@ -1,7 +1,8 @@
 ---
 work_package_id: WP22
 title: 'B · Contract B: effective list and skipped report, red first'
-dependencies: [WP21]
+dependencies:
+- WP21
 requirement_refs:
 - FR-013
 - FR-014
@@ -20,7 +21,7 @@ requirement_refs:
 - SC-005
 planning_base_branch: issue-10-layer-merge-effective-reads
 merge_target_branch: issue-10-layer-merge-effective-reads
-branch_strategy: Planning artifacts were generated on issue-10-layer-merge-effective-reads; execution worktrees come from lanes.json and completed changes merge back into issue-10-layer-merge-effective-reads. The four PRs (A0, A, B, C) are cut from it at closeout.
+branch_strategy: Planning artifacts for this mission were generated on issue-10-layer-merge-effective-reads. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-10-layer-merge-effective-reads unless the human explicitly redirects the landing branch.
 subtasks:
 - T109
 - T110
@@ -28,9 +29,6 @@ subtasks:
 - T112
 - T113
 phase: PR B
-assignee: ''
-agent: claude
-shell_pid: ''
 history:
 - timestamp: '2026-11-06T00:00:00Z'
   agent: system
@@ -59,6 +57,8 @@ owned_files:
 - contracts/charter/scenarios/activations.feature
 - service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/ReservedOperationCoverageTest.java
 role: implementer
+tags: []
+tracker_refs: []
 ---
 # WP22: B · Contract B: effective list and skipped report, red first
 

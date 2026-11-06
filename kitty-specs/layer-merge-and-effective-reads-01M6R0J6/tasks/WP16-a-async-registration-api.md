@@ -1,7 +1,8 @@
 ---
 work_package_id: WP16
 title: A · Asynchronous registration API, access, flags and audit
-dependencies: [WP15]
+dependencies:
+- WP15
 requirement_refs:
 - FR-001
 - FR-004
@@ -14,7 +15,7 @@ requirement_refs:
 - NFR-010
 planning_base_branch: issue-10-layer-merge-effective-reads
 merge_target_branch: issue-10-layer-merge-effective-reads
-branch_strategy: Planning artifacts were generated on issue-10-layer-merge-effective-reads; execution worktrees come from lanes.json and completed changes merge back into issue-10-layer-merge-effective-reads. The four PRs (A0, A, B, C) are cut from it at closeout.
+branch_strategy: Planning artifacts for this mission were generated on issue-10-layer-merge-effective-reads. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-10-layer-merge-effective-reads unless the human explicitly redirects the landing branch.
 subtasks:
 - T076
 - T077
@@ -24,9 +25,6 @@ subtasks:
 - T081
 - T082
 phase: PR A
-assignee: ''
-agent: claude
-shell_pid: ''
 history:
 - timestamp: '2026-11-06T00:00:00Z'
   agent: system
@@ -60,6 +58,8 @@ owned_files:
 - service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/PackRegistrationSteps.java
 - service/deployable/src/main/java/ai/speckitty/charter/deployable/RegistrationWiring.java
 role: implementer
+tags: []
+tracker_refs: []
 ---
 # WP16: A · Asynchronous registration API, access, flags and audit
 

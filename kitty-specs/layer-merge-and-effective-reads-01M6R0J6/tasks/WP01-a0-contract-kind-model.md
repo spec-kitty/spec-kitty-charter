@@ -10,7 +10,7 @@ requirement_refs:
 - NFR-002
 planning_base_branch: issue-10-layer-merge-effective-reads
 merge_target_branch: issue-10-layer-merge-effective-reads
-branch_strategy: Planning artifacts were generated on issue-10-layer-merge-effective-reads; execution worktrees come from lanes.json and completed changes merge back into issue-10-layer-merge-effective-reads. The four PRs (A0, A, B, C) are cut from it at closeout.
+branch_strategy: Planning artifacts for this mission were generated on issue-10-layer-merge-effective-reads. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-10-layer-merge-effective-reads unless the human explicitly redirects the landing branch.
 subtasks:
 - T001
 - T002
@@ -19,9 +19,6 @@ subtasks:
 - T005
 - T006
 phase: PR A0
-assignee: ''
-agent: claude
-shell_pid: ''
 history:
 - timestamp: '2026-11-06T00:00:00Z'
   agent: system
@@ -52,6 +49,8 @@ owned_files:
 - contracts/charter/changes/2026-11-07-a0-one-kind-model.md
 - contracts/charter/scenarios/activation-kind-model.feature
 role: implementer
+tags: []
+tracker_refs: []
 ---
 # WP01: A0 · Contract: one kind model on the activation document
 

@@ -1,7 +1,8 @@
 ---
 work_package_id: WP11
 title: 'A · Contract A: registration, status, removal and their red scenarios'
-dependencies: [WP10]
+dependencies:
+- WP10
 requirement_refs:
 - FR-001
 - FR-002
@@ -19,7 +20,7 @@ requirement_refs:
 - SC-005
 planning_base_branch: issue-10-layer-merge-effective-reads
 merge_target_branch: issue-10-layer-merge-effective-reads
-branch_strategy: Planning artifacts were generated on issue-10-layer-merge-effective-reads; execution worktrees come from lanes.json and completed changes merge back into issue-10-layer-merge-effective-reads. The four PRs (A0, A, B, C) are cut from it at closeout.
+branch_strategy: Planning artifacts for this mission were generated on issue-10-layer-merge-effective-reads. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-10-layer-merge-effective-reads unless the human explicitly redirects the landing branch.
 subtasks:
 - T047
 - T048
@@ -28,9 +29,6 @@ subtasks:
 - T051
 - T052
 phase: PR A
-assignee: ''
-agent: claude
-shell_pid: ''
 history:
 - timestamp: '2026-11-06T00:00:00Z'
   agent: system
@@ -71,6 +69,8 @@ owned_files:
 - service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RefusalCode.java
 - service/deployable/src/test/java/ai/speckitty/charter/deployable/ReservedRefusalCodesTest.java
 role: implementer
+tags: []
+tracker_refs: []
 ---
 # WP11: A · Contract A: registration, status, removal and their red scenarios
 
