@@ -184,8 +184,10 @@ class CascadeRulesDeactivateTest {
     void aMissionTypeIsDeniedLikeAnyKind() {
         // A7 Q2: a mission type has a deny list; the floor refusal is DocumentRules', before any plan.
         ArtifactRef missionType = new ArtifactRef(MISSION_TYPE, "software-dev");
-        ActivationDocument document =
-                ActivationDocument.builder().selected(MISSION_TYPE, List.of("software-dev")).build().document();
+        ActivationDocument document = ActivationDocument.builder()
+                .selected(MISSION_TYPE, List.of("software-dev"))
+                .build()
+                .document();
 
         ReachPlan plan = CascadeRules.planDeactivate(document, missionType, CascadeScope.none());
         ActivationChange change = CascadeRules.applyDeactivate(

@@ -164,8 +164,7 @@ class CascadeRulesReportingTest {
                 .reached("tactic:T2", "directive:D2", REQUIRES)
                 .build();
 
-        ActivationChange change =
-                CascadeRules.applyDeactivate(document, m, CascadeScope.all(), own, others, Set.of());
+        ActivationChange change = CascadeRules.applyDeactivate(document, m, CascadeScope.all(), own, others, Set.of());
 
         assertThat(change.skipped().skippedShared())
                 .containsExactly(new SkippedReport.SharedSkip(T2, ref("directive:D2")));

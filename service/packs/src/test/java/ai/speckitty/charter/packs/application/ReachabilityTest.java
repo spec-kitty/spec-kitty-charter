@@ -333,8 +333,14 @@ class ReachabilityTest {
      */
     private static EdgeIndex missionTypeIndex(boolean requirer) {
         List<String> held = List.of(
-                "mission_type:m", "action:m/plan", "action:m/review", "action:other/plan", "directive:D", "directive:R");
-        List<Relationship> edges = new ArrayList<>(List.of(edge("action:m/plan", RelationType.REQUIRES, "directive:D")));
+                "mission_type:m",
+                "action:m/plan",
+                "action:m/review",
+                "action:other/plan",
+                "directive:D",
+                "directive:R");
+        List<Relationship> edges =
+                new ArrayList<>(List.of(edge("action:m/plan", RelationType.REQUIRES, "directive:D")));
         if (requirer) {
             edges.add(edge("directive:R", RelationType.REQUIRES, "mission_type:m"));
         }

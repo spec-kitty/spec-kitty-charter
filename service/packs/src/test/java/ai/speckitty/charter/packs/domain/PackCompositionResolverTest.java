@@ -531,6 +531,52 @@ class PackCompositionResolverTest {
     }
 
     @Test
+    void siblingsDefiningOneMissionTypeAndItsStepConflictOnTheMissionTypeAsBefore() {
+        // A7 Q1: a pack holds the steps its graphs declare; two siblings defining mission type m are refused on m
+        // alone, exactly as before the steps were held.
+        PackUnderResolution left = defining("01LEFT", "left", PackLevel.ORG, "mission_type:m", "action:m/implement");
+        PackUnderResolution right = defining("01RIGHT", "right", PackLevel.ORG, "mission_type:m", "action:m/implement");
+
+        assertThatThrownBy(() -> PackCompositionResolver.resolve(List.of(right, left)))
+                .isInstanceOfSatisfying(PackCompositionResolver.Refusal.class, refusal -> {
+                    assertThat(refusal.failure()).isEqualTo(Failure.SIBLING_CONFLICT);
+                    assertThat(refusal.detail())
+                            .contains("both define the artifact `mission_type:m`")
+                            .doesNotContain("action:");
+                });
+    }
+
+    @Test
+    void anOverridesEdgeSettlingAMissionTypeAlsoSettlesItsSharedSteps() {
+        // A step is part of its mission type: the edge that settles m leaves no contest over m's steps.
+        PackUnderResolution left = new PackUnderResolution(
+                new ConfiguredPack(new PackIdentifier("01LEFT"), PackLevel.ORG),
+                new PackDescriptor(
+                        "01LEFT",
+                        "1.0.4",
+                        Optional.empty(),
+                        "left",
+                        Optional.of(PackLevel.ORG),
+                        Optional.empty(),
+                        PackPaths.none(),
+                        List.of(),
+                        List.of(new PackOverride("mission_type:m", "01RIGHT"))),
+                List.of(),
+                List.of("mission_type:m", "action:m/implement"));
+        PackUnderResolution right = defining("01RIGHT", "right", PackLevel.ORG, "mission_type:m", "action:m/implement");
+
+        assertThat(ids(PackCompositionResolver.resolve(List.of(right, left)))).containsExactly("01LEFT", "01RIGHT");
+    }
+
+    @Test
+    void siblingsDeclaringOneStepNodeWithoutItsMissionTypeCompose() {
+        PackUnderResolution left = defining("01LEFT", "left", PackLevel.ORG, "action:m/implement");
+        PackUnderResolution right = defining("01RIGHT", "right", PackLevel.ORG, "action:m/implement");
+
+        assertThat(ids(PackCompositionResolver.resolve(List.of(right, left)))).containsExactly("01LEFT", "01RIGHT");
+    }
+
+    @Test
     void packsAtDifferentLevelsDefiningOneArtifactComposeAsALayerOverride() {
         PackUnderResolution org = defining("01ORGP", "org-pack", PackLevel.ORG, "directive:DIRECTIVE_009");
         PackUnderResolution project = defining("01PROJ", "project-pack", PackLevel.PROJECT, "directive:DIRECTIVE_009");

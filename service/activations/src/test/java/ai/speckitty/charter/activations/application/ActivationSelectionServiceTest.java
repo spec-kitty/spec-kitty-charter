@@ -158,7 +158,9 @@ class ActivationSelectionServiceTest {
         assertThat(outcome.change().applied()).containsExactly(D2, RESEARCH);
         assertThat(now().selected(ArtifactKind.MISSION_TYPE).orElseThrow()).containsExactly("research");
         assertThat(now().selected(ArtifactKind.DIRECTIVE).orElseThrow()).containsExactly("D2");
-        assertThat(packs.walked()).singleElement().satisfies(plan -> assertThat(plan.starts()).containsExactly(RESEARCH));
+        assertThat(packs.walked())
+                .singleElement()
+                .satisfies(plan -> assertThat(plan.starts()).containsExactly(RESEARCH));
     }
 
     @Test

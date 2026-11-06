@@ -175,7 +175,8 @@ class CascadeRulesSelectTest {
         Reach reach = reach().start("directive:D")
                 .reached("mission_type:m", "directive:D", REQUIRES)
                 .build();
-        CascadeScope directives = CascadeScope.parse(Optional.of(List.of("directive"))).scope();
+        CascadeScope directives =
+                CascadeScope.parse(Optional.of(List.of("directive"))).scope();
 
         ActivationChange change = select(X_DENIED, directives, reach);
 
@@ -188,7 +189,9 @@ class CascadeRulesSelectTest {
         // A7 Q1, rule W20: the packs walk crosses from m to its steps like requires; a step is an action, which no
         // reference names, so the activation sees what the steps reach.
         ArtifactRef m = new ArtifactRef(MISSION_TYPE, "m");
-        Reach reach = reach().start("mission_type:m").reached("directive:S", "mission_type:m", REQUIRES).build();
+        Reach reach = reach().start("mission_type:m")
+                .reached("directive:S", "mission_type:m", REQUIRES)
+                .build();
 
         ReachPlan plan = CascadeRules.planSelect(X_DENIED, m, CascadeScope.all(), false);
         ActivationChange change = CascadeRules.applySelect(X_DENIED, m, CascadeScope.all(), false, reach);

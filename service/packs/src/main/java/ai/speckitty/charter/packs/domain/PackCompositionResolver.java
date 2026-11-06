@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.domain;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
@@ -592,7 +593,20 @@ public final class PackCompositionResolver {
      */
     private static void refuseSiblingContests(List<PackUnderResolution> ordered) {
         refuseContests(ordered, PackUnderResolution::changedArtifacts, "change");
-        refuseContests(ordered, PackUnderResolution::definedArtifacts, "define");
+        refuseContests(ordered, PackCompositionResolver::contestableDefinitions, "define");
+    }
+
+    /**
+     * What a pack defines that two siblings can contest: everything but a mission type's steps. A step
+     * {@code action:<M>/<step>} is part of its mission type {@code M}, so siblings that define one step define {@code M}
+     * too, and that contest (or the {@code overrides} edge settling it) decides; a step adds no contest of its own.
+     */
+    private static List<String> contestableDefinitions(PackUnderResolution pack) {
+        return pack.definedArtifacts().stream()
+                .filter(urn -> Urn.parse(bare(urn))
+                        .filter(parsed -> parsed.kind() == NodeKind.ACTION)
+                        .isEmpty())
+                .toList();
     }
 
     private static void refuseContests(
