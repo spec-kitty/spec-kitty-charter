@@ -5,16 +5,23 @@ put:
   operationId: applyActivationPreset
   summary: Apply a preset.
   description: >-
-    Expands the preset into selected, so writing the document back never applies it twice. Without force it never
-    removes a deny entry; with force true it clears the exclusions of the ids the preset lists and reports them
-    as cleared. Requires If-Match (ADR-0020 D6). Reserved: it answers 501 until it is built (ADR-0020 D8). Which
-    members a preset sets, and whether it replaces or unites them, is open before the operation is built (ADR-0020,
-    amendment of 2026-10-31, open question 6).
+    Applies one preset the activation's closure holds (ADR-0059 D6). Each key the preset lists replaces that key of
+    the document: each selected.<kind> it lists becomes exactly its members, and activatedKinds and missionTypes are
+    replaced when it lists them; a key it does not list is left as it is. A preset lists a key when it holds at least
+    one member for it, so an empty list counts as not listed. The preset is expanded into the document, so writing
+    the document back never applies it twice. Without force a member the document denies is not selected and its
+    deny entry stays; with force true the deny entries of the preset's members are cleared and reported as cleared
+    (ADR-0020 D6). applied lists every id the write added to or removed from selected, deactivated or missionTypes;
+    a kind is never an entry. A preset no pack of the activation's closure holds is 404 preset_not_found; when two
+    packs of the closure hold one preset id, the last in merge order wins. A preset member the closure does not hold
+    (a preset a pack upgrade left stale) is 422 activation_invalid with an unknown_artifact violation at the whole
+    request (pointer ""), since the write has no body list to point into; nothing is stored. Requires If-Match
+    (ADR-0020 D6): 428 without it, 412 when stale, and 400 when it is not one quoted revision, each before the body or
+    the preset is judged; a fault of the body is 422 only after them. One write, one new revision; answers the
+    ActivationChange and the new ETag. A write that changes nothing answers 200 with the same revision and an empty
+    applied and cleared.
   tags:
   - Activation
-  x-reserved:
-    contractSet: activation
-    issue: '#125'
   parameters:
   - $ref: ../parameters/IfMatch.yaml
   requestBody:
@@ -40,12 +47,14 @@ put:
           examples:
             selected:
               $ref: ../examples/ActivationChange.selected.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
     '401':
       $ref: ../responses/Unauthorized.yaml
     '403':
       $ref: ../responses/Forbidden.yaml
     '404':
-      $ref: ../responses/ActivationNotFound.yaml
+      $ref: ../responses/ActivationPresetNotFound.yaml
     '412':
       $ref: ../responses/PreconditionFailed.yaml
     '415':
@@ -56,7 +65,5 @@ put:
       $ref: ../responses/PreconditionRequired.yaml
     '500':
       $ref: ../responses/OfferingUnreadable.yaml
-    '501':
-      $ref: ../responses/NotImplemented.yaml
     default:
       $ref: ../../_shared/responses/Problem.yaml
