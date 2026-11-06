@@ -1,4 +1,4 @@
-package ai.speckitty.charter.packs.infra.api;
+package ai.speckitty.charter.activations.infra.api;
 
 import ai.speckitty.charter.api.ActivationApi;
 import ai.speckitty.charter.api.model.Activation;
@@ -21,31 +21,34 @@ import org.springframework.web.server.ResponseStatusException;
 
 /**
  * The activation set (ADR-0020), declared in full and reserved (ADR-0020 D8, #125): every operation answers
- * {@code 501 Not Implemented}. The composition root's {@code ReservedOperationInterceptor} answers before the request
- * is bound, so these methods are never reached; each throws the same answer in case one is. The controller depends on
- * nothing: no activation is stored or read until the operations are built. It lives in {@code packs.infra.api}, the
- * one adapter allowed to name the generated transport types; the built activation set becomes a slice of its own.
+ * {@code 501 Not Implemented}. Each operation carries its own {@link ReservedOperation} mark, so an operation is built
+ * by removing its mark alone, while the others stay reserved. The composition root's
+ * {@code ReservedOperationInterceptor} answers before the request is bound, so a marked method is never reached; each
+ * throws the same answer in case one is. A marked method reads and stores nothing ({@code HexagonalArchitectureTest}).
+ * It lives in {@code activations.infra.api}: the activation set is a slice of its own, over the packs slice.
  */
 @RestController
 @RequestMapping("${charter.api.base-path:/api/v1}")
-@ReservedOperation
 public class ActivationController implements ActivationApi {
 
     /** For Spring, which finds the controller by component scan. */
     public ActivationController() {}
 
     @Override
+    @ReservedOperation
     public ResponseEntity<ActivationChange> applyActivationPreset(
             String activationId, String presetId, PresetApplication presetApplication, @Nullable String ifMatch) {
         throw notBuilt();
     }
 
     @Override
+    @ReservedOperation
     public ResponseEntity<Activation> createActivation(ActivationConfig activationConfig) {
         throw notBuilt();
     }
 
     @Override
+    @ReservedOperation
     public ResponseEntity<ActivationChange> deactivateActivationArtifact(
             String activationId,
             String kind,
@@ -56,32 +59,38 @@ public class ActivationController implements ActivationApi {
     }
 
     @Override
+    @ReservedOperation
     public ResponseEntity<Void> deleteActivation(String activationId, @Nullable String ifMatch) {
         throw notBuilt();
     }
 
     @Override
+    @ReservedOperation
     public ResponseEntity<Activation> getActivation(String activationId) {
         throw notBuilt();
     }
 
     @Override
+    @ReservedOperation
     public ResponseEntity<ActivationSkippedReport> getActivationSkippedReport(String activationId) {
         throw notBuilt();
     }
 
     @Override
+    @ReservedOperation
     public ResponseEntity<EffectiveActionContext> getEffectiveActionContext(
             String activationId, String missionType, String action, Integer depth) {
         throw notBuilt();
     }
 
     @Override
+    @ReservedOperation
     public ResponseEntity<EffectiveGraph> getEffectiveGraph(String activationId) {
         throw notBuilt();
     }
 
     @Override
+    @ReservedOperation
     public ResponseEntity<EffectiveArtifactList> listEffectiveArtifacts(
             String activationId,
             @Nullable String kind,
@@ -92,12 +101,14 @@ public class ActivationController implements ActivationApi {
     }
 
     @Override
+    @ReservedOperation
     public ResponseEntity<ActivationChange> reactivateActivationArtifact(
             String activationId, String kind, String artifactId, @Nullable String ifMatch) {
         throw notBuilt();
     }
 
     @Override
+    @ReservedOperation
     public ResponseEntity<Activation> replaceActivation(
             String activationId,
             ActivationConfig activationConfig,
@@ -107,6 +118,7 @@ public class ActivationController implements ActivationApi {
     }
 
     @Override
+    @ReservedOperation
     public ResponseEntity<ActivationChange> selectActivationArtifact(
             String activationId,
             String kind,
@@ -117,6 +129,7 @@ public class ActivationController implements ActivationApi {
     }
 
     @Override
+    @ReservedOperation
     public ResponseEntity<ActivationChange> unselectActivationArtifact(
             String activationId, String kind, String artifactId, @Nullable String ifMatch) {
         throw notBuilt();
