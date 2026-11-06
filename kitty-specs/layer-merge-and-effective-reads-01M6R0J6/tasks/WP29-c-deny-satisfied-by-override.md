@@ -155,7 +155,7 @@ assertion failure against the PR B head).
 
 - Every subtask above is done, and recorded with `spec-kitty agent tasks mark-status <Txxx> --status done`.
 - The tests and scenarios named above were seen failing first (an assertion failure with every step bound, decision `DM-01M6RN6GC7PJS8BGHMAYM4JSSW`) and now pass.
-- **Exit check:** `:activations:test` and the contract suite pass; `activation-deny-satisfied.feature` green with red recorded for the three `200` cases; every row of the ruleset trace names an existing scenario.
+- **Exit check:** `:activations:test` and the contract suite pass; `activation-deny-satisfied.feature` green with red recorded for the three `200` cases; every row of the ruleset trace names an existing scenario; the docs gates pass on the pages this WP edits (`python scripts/docs/check_docs.py <check>` for frontmatter, related, freshness, links, terms, adr, changelog and orphans, plus the markdownlint and cspell steps, as `.github/workflows/docs-cleanliness.yml` runs them).
 - No disabled test, no new suppression, `HexagonalArchitectureTest` green, Checkstyle limits met.
 - Changes stay inside `owned_files`, plus the shared-file edits listed above with their rationale.
 

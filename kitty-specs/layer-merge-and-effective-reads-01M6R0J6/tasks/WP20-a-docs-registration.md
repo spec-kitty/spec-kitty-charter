@@ -111,7 +111,7 @@ These files are owned by another WP (the no-overlap rule) but this WP must make 
 
 ### T099: Host requirement
 
-README.md (requirements section) and `run-in-a-container.md`: git ≥ 2.50.1 on `PATH` or `charter.pack-sources.git.executable` (contributors: the `git-host` tests run only with it, in the `git-source` CI job; `check` uses a shim); without it the git source answers `503 pack_source_unavailable`; the container image must carry it; registration is off by default (`charter.registration.enabled`).
+README.md (requirements section) and `run-in-a-container.md`: git ≥ 2.50.1 on `PATH` or `charter.pack-sources.git.executable` (contributors: the `git-host` tests run only with it, in the `git-source` CI job; `check` uses a shim); without it the git source answers `503 pack_source_unavailable`; the container image must carry it (no image is published yet, issue [#234](https://github.com/spec-kitty/spec-kitty-charter/issues/234), so the guide states the requirement for whoever builds one and names the `503` fallback; adding git to a published image is #234's scope); registration is off by default (`charter.registration.enabled`).
 
 ### T100: Guides
 
