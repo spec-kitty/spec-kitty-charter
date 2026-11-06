@@ -39,10 +39,17 @@
   removed it), in `selected`, `deactivated` and `missionTypes`, and reports them in the new optional
   `ActivationChange.dropped`, an array of `ArtifactReference`, present only when the write dropped one. A dropped id
   is a change: a write that only drops stale ids is not a no-op and answers a new revision. `applied` and `cleared`
-  report the write's own change and never a dropped id. Before, such a document made every per-artifact and preset
-  write `422 activation_invalid` until a full `replaceActivation`. Unchanged: a path id the closure no longer holds is
-  `404 artifact_not_found` and drops nothing; an unknown pack or a pinned version the closure does not hold is still
-  `422 activation_invalid` (`unknown_pack`, `version_not_held`), which only a `replaceActivation` recovers; and
-  `createActivation` and `replaceActivation` still refuse an unknown id in the body they are sent with `422`. No
-  refusal code changes, so `CharterRefusalCode` and its `x-refusal` map are unchanged; three scenarios of
-  `activation-selections.feature` pin the drop.
+  report the write's own change, measured after the drop, so a dropped id appears only in `dropped`. Before, such a
+  document made every per-artifact and preset write `422 activation_invalid` until a full `replaceActivation`.
+- An unselect (`unselectActivationArtifact`) or a re-activate (`reactivateActivationArtifact`) whose path id the
+  closure no longer holds proceeds when the stored list it removes the id from still names it (`selected`, or
+  `missionTypes` for kind `mission_type`; `deactivated`): the id is dropped with every other stale id, listed in
+  `dropped` only, and the write answers `200` with a new revision. Before, it was `404 artifact_not_found`. An id
+  in neither the closure nor that stored list is still `404 artifact_not_found` (`mission_type_not_found`) and drops
+  nothing, judged after the preconditions and every `422` as before; a select or a deactivate of an id the closure
+  no longer holds is still `404` too.
+- Unchanged: an unknown pack or a pinned version the closure does not hold is still `422 activation_invalid`
+  (`unknown_pack`, `version_not_held`), which only a `replaceActivation` recovers; and `createActivation` and
+  `replaceActivation` still refuse an unknown id in the body they are sent with `422`. No refusal code changes, so
+  `CharterRefusalCode` and its `x-refusal` map are unchanged; five scenarios of `activation-selections.feature` pin
+  the drop.
