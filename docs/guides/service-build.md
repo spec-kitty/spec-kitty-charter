@@ -128,9 +128,9 @@ versions, the HTML and XML reports and PIT's default mutators:
 
 | Module | Floor group | Mutated | Floor |
 |---|---|---|--:|
-| kernel | `kernel` | the whole module | 65 % |
+| kernel | `kernel` | the whole module | 75 % |
 | missions | `missions` | the whole module | 70 % |
-| profiles | `profiles` | the whole module | 50 % |
+| profiles | `profiles` | the whole module | 90 % |
 | packs | `domain+application` | `packs.domain`, `packs.application`, without `application.config` | 85 % |
 | packs | `infra.storage` | `packs.infra.storage`, `infra.storage.config` included | 85 % |
 | packs | `infra.fetch` | `packs.infra.fetch`, without `infra.fetch.config` | 70 % |
@@ -154,7 +154,7 @@ detected over covered mutants, is reported and never gated. A group passes when 
 floor; printed figures are truncated to one decimal, never rounded up. A group below its floor fails the task:
 
 ```text
-:kernel kernel: mutation score 64.9 % is below its floor 65 % (#239, ADR-0062)
+:kernel kernel: mutation score 74.9 % is below its floor 75 % (#239, ADR-0062)
 ```
 
 A group with no mutants, a missing `mutations.xml` and `<mutation>` elements without a status or a mutated class each
