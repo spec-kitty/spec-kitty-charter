@@ -92,7 +92,7 @@
         "contracts/packs/file-kinds.yaml",
         "contracts/packs/schemas/pack-descriptor.schema.json",
         "contracts/packs/schemas/policy.schema.json",
-        "docs/adr/0061-pack-mutability-policy-file.md",
+        "docs/adr/0062-pack-mutability-policy-file.md",
         "service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/PackPaths.java",
         "service/packs/src/main/java/ai/speckitty/charter/packs/application/PackMutabilityPolicy.java",
         "service/packs/src/main/java/ai/speckitty/charter/packs/domain/MutabilityPolicyRepository.java",

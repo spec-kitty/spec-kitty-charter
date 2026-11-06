@@ -64,7 +64,7 @@ Make the docs say what PR A ships, and record every deliberate difference from c
   - absent means none, skill included;
   - a deny entry on a required or locked artifact is refused at write;
   - the required floor is closure-scoped;
-- amendment notes on ADR-0020 D6, ADR-0013 D2 and ADR-0012 D2 (pointing to ADR-0061);
+- amendment notes on ADR-0020 D6, ADR-0013 D2 and ADR-0012 D2 (pointing to ADR-0062);
 - `docs/architecture/offering-and-activation.md`, which no longer says the CRUD "answers 501", plus `logical-model.md`
   and `resolution-model.md` where they describe the activation or the compose roots;
 - a docs changelog fragment for PR A, including the #360 acceptance re-point.
@@ -78,9 +78,9 @@ Implementation command:
 
 - **PR:** A (its last WP). **Concern:** IC-10 (A half). **Research:** "Open review items"; squad B3, B8, B9.
 - **Rulings:** ADR-0020 (D4, D6, D7, D9), ADR-0013 D2, ADR-0012 D2 and D7, ADR-0053 d10, ADR-0059 D1 (the register
-  informs and does not gate), D4 and D5, and ADR-0061 (written in WP03).
+  informs and does not gate), D4 and D5, and ADR-0062 (written in WP03).
 - **Collisions:** PR #390 touches `docs/architecture/hexagonal-service.md` (not this WP). ADR-0059 is on `main` (PR #376 merged),
-  so link it as `/adr/0059-switch-gate-cascade-edges-and-activation-rulings/`. Rebase over #379, #384, #392 (ADR-0060)
+  so link it as `/adr/0059-switch-gate-cascade-edges-and-activation-rulings/`. Rebase over #379, #384, #392 (ADR-0061)
   and #394 as they land.
 - **C-003 (no core changes):** the docs say what core's seam must change to switch, and name no change to core's code
   as part of this mission.
@@ -135,7 +135,7 @@ existing amendment style (look for earlier "Amendment" headings in `0020-offerin
    DIV-203). The round trip holds for a document the offering has not made stale (ADR-0059 D4).
 2. **ADR-0013 D2:** "absent means all" becomes "absent means none". The `force` interplay: a forced preset clears
    only the deny entries that match its members (ADR-0059 D6).
-3. **ADR-0012 D2:** the per-pack policy file is now specified by ADR-0061 (`mutability_policy`, `policy.yaml`, the
+3. **ADR-0012 D2:** the per-pack policy file is now specified by ADR-0062 (`mutability_policy`, `policy.yaml`, the
    highest level along the closure). D5's built-in file and migration remain follow-ups.
 4. Bump each file's `updated:`; do not change `decision_status`.
 
@@ -162,9 +162,9 @@ existing amendment style (look for earlier "Amendment" headings in `0020-offerin
 **Steps:**
 1. Create `docs/changelog/2026-11-05-activation-register-and-closure.md` with the `okf_version` frontmatter: `title`,
    `description`, `doc_status: active`, `updated`, `type: Changelog`, `kind: Changelog`, `related` (ADR-0020,
-   ADR-0059, ADR-0061, `architecture/offering-and-activation`) and `audience`.
+   ADR-0059, ADR-0062, `architecture/offering-and-activation`) and `audience`.
 2. Body: what core can now do (store, read, replace and delete an activation; read its closure), what is still `501`,
-   the policy file (ADR-0061) with the open-packs note that no pack is required to ship one, and the divergences
+   the policy file (ADR-0062) with the open-packs note that no pack is required to ship one, and the divergences
    DIV-203 to DIV-205.
 3. **#360 acceptance re-point** (a paragraph): #360's "absent from the offering" acceptance is met by the closure
    read, not by `/offering`, which stays the catalog (decision `DM-01M6NXNBA1J808JV4SHT743SCF`). The same paragraph is
@@ -195,7 +195,7 @@ A new word that fails spelling: reword, or record a `cspell.json` addition as an
 
 - **Overclaiming.** The effective reads, the enhances pull and the layer merge are not built. Every sentence about
   them says "next mission".
-- **Links:** ADR-0059 is on `main`; ADR-0061 is added by WP03 in the same PR. Run the link check after rebasing.
+- **Links:** ADR-0059 is on `main`; ADR-0062 is added by WP03 in the same PR. Run the link check after rebasing.
 
 ## Reviewer guidance (reviewer-renata)
 

@@ -138,7 +138,7 @@ Implementation command:
   refusal-code tests. **Gate (P3):** start this WP only after #377 merges, or after rebasing over #377's head. Edits
   to `packs` files in this WP are limited to imports and call-site changes (the `PackRevision.matches` delegation
   and the `RefusalHandler` rendering are the only body changes). Other open PRs to rebase over: #379, #384, #390,
-  #391, #392 (ADR-0060), #393 (draft) and #394 (draft, mutation floors per module).
+  #391, #392 (ADR-0061), #393 (draft) and #394 (draft, mutation floors per module).
 - **Grounding (read before coding):**
   - `service/packs/src/main/java/ai/speckitty/charter/packs/infra/api/ReservedOperation.java` is `@Target(TYPE)`.
   - `ReservedOperationInterceptor.preHandle` checks `method.getBeanType().isAnnotationPresent(...)` only.
