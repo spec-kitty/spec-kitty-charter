@@ -185,6 +185,27 @@ Every finding has exactly one disposition:
 | A10–12 | notes (offering unchanged, wiring feasible, PR split coherent) | accepted (no change) | — |
 | B1b | The 13:15 discovery decisions (`DM-01M6NXERTNKMWK4MTDTX48358B` write-time `enhances`, `DM-01M6NXKAHRQNR4RK14FFJN2TVM` lineage over every relation) are superseded by ADR-0059 D2.2/D2.4 as revised 2026-11-05 | changed (decision records kept as history; the spec, plan and WPs follow ADR-0059) | spec Context; tasks.md header; WP12 Risks |
 
+## Squad dispositions (post-PR B, 2026-11-06)
+
+Two lenses (correctness against the rulings; tests, contract and architecture) on WP11–WP14, then an independent
+re-review of the fixes. Folded on lane-m (369063b..ac1faa9 and the re-review follow-ups) and in the docs.
+
+| # | Finding | Disposition | Where |
+|---|---|---|---|
+| F1 | A stale deny entry on a now-required artifact made every later write `409` | changed: per-artifact and preset writes judge the floor only on the deny entries they add; create and replace judge the whole document | `DocumentRules.checkWrite`; DIV-204 |
+| F2 | A floor artifact became a cascading-deactivate candidate | changed: the floor is never a candidate | `CascadeRules` |
+| F3 | A template or asset predecessor answered `500`; `referencedBy` could name an ancestor or an inactive intermediate | changed: back-walk to the nearest nameable or active artifact, code-point tie-break | `Predecessors` |
+| F4 | `includeDeactivated` left out-of-scope deny entries it walked through | changed: it clears what the walk went through, whatever the scope; an out-of-scope artifact is cleared, not selected. **Fixers' reading of the contract text, not stated in FR-013 or ADR-0059: operator to confirm** | contract `SelectionRequest`; DIV-207 |
+| F5 | The write-time `enhances` pull ignored `activatedKinds` | changed: bounded by `activatedKinds` (absent means none). Spec US3 AS3 does not state that precondition | `CascadeRules.pullKinds`; DIV-207 |
+| F6 | A bad body answered `422` before `428`/`404`/`412` | changed: body faults deferred to the `422` step on the five writes; `415` still comes first | `DeferredBody` |
+| F7 | `400`, `409` and the stale-preset `422` undeclared | changed: `400` on five operations, `409` on deactivate only, the `422` documented | contract paths |
+| F8 | A mission type is never in a cascade's scope | kept: javadoc and docs corrected, pinned by a test | `CascadeRules` |
+| F9 | A deactivate's own walk does not follow lineage, a select's does | kept per FR-015's literal "five relations": **open question for the operator** | `CascadeRules.planDeactivate` |
+| F10 | Test gaps: lineage-blind fake graph, NFR-006 timing, NFR-004 select race, native hints for response types | changed: all four added; CI runs `:activations:timingBudgets` report-only | tests; `service.yml` |
+| R1 | Scalar coercion and duplicate members let wrong bodies commit | changed (re-review follow-up) | `ActivationBodyAdvice` |
+| R2 | A floor member with no active referrer named itself in `referencedBy` | changed: left out of `skippedShared` | `CascadeRules` |
+| R3 | Constructors without ancestry could yield an empty `requiredBy` | changed: removed | `Reach`, `ReachResult` |
+
 ## Open review items (logged, not silent)
 
 1. The required floor is closure-scoped (R5), an assumed default flagged to the operator on 2026-11-05.
@@ -195,3 +216,7 @@ Every finding has exactly one disposition:
 4. A preset "lists" a key when its file holds at least one member for it; a key with an empty list counts as not
    listed (the packs `Preset` record cannot tell an absent key from an empty one). Assumed default, applied in FR-016
    and WP14.
+5. A deactivate's own cascade does not follow lineage (F9), while a select's does: FR-015 read literally. Awaiting
+   the operator.
+6. `includeDeactivated` clears out-of-scope deny entries it walks through (F4), and the write-time pull is bounded by
+   `activatedKinds` (F5). Both follow the contract text; neither is spelled out in ADR-0059. Awaiting confirmation.
