@@ -5,7 +5,7 @@
   "friendly_name": "Activation register and activated-pack closure",
   "mid8": "01M6NXBD",
   "mission_id": "01M6NXBD9RVJS9WD7KYM31W5GG",
-  "mission_number": null,
+  "mission_number": 18,
   "mission_slug": "activation-register-and-closure-01M6NXBD",
   "mission_type": "software-dev",
   "pr_bound": true,
