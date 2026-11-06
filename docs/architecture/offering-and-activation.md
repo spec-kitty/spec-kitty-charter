@@ -129,16 +129,21 @@ duplicates. An empty deny list is refused, never stored. `revision` is the `sha2
 serialization of the canonical `config`. A `PUT` of a fetched `config` answers `200` with the same
 `ETag`, for a document the offering has not made stale (ADR-0059 D4): a stale document is served as stored, and
 writing it back is refused until the client removes the ids the offering no longer has (`422`) and the deny entries
-on artifacts now required or locked (`409`).
+on artifacts now required or locked (`409`). A write evaluates its preconditions first (RFC 9110 §13.2.2): a stale
+`If-Match`, or `If-None-Match: *` on a stored id, answers `412` whatever the document holds, and takes no closure
+snapshot. The document is judged against its closure only after that.
 
 **Absent means none** ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) d10). Each list
 has three states: absent, `[]` and a list of ids. An absent `selected.<kind>`, `activatedKinds` or `missionTypes`
 puts nothing in force, the same as `[]`, `skill` included; the two stay distinct on the wire. An absent `packs` means
 every configured pack. Core's per-kind default differs ([DIV-203](/conformance/divergence-register/)).
 
-**Storage.** The file adapter keeps each document at `<config-root>/activations/<activationId>/activation.json`,
-holding exactly the canonical bytes. A write goes to a temporary file beside it, forced to the device, and an atomic
-move replaces the target; a per-id lock in the process serializes each id's read-compare-write. This is safe
+**Storage.** The file adapter keeps each document at `<config-root>/activations/<encoded id>/activation.json`,
+holding exactly the canonical bytes. The encoded id is the id in lower case, a `-`, then a hexadecimal bitmap of
+its upper-case letters (`aBc` is `abc-2`), so ids that differ only in case never share a directory on a
+case-insensitive file system, and the name decodes back to the id. A write goes to a temporary file beside it, forced to the device, and an atomic
+move replaces the target; a lock in the process, striped over a fixed number of locks by the encoded id, serializes each id's
+read-compare-write. This is safe
 for one process; several processes over one root are out of scope
 ([#349](https://github.com/spec-kitty/spec-kitty-charter/issues/349)).
 
@@ -177,10 +182,13 @@ sequenceDiagram
   Core->>Core: map Activation.config onto its own files
 ```
 
-Refusals: `422 activation_invalid` (unknown pack, kind or artifact, with `violations`),
-`409 artifact_required` or `artifact_locked` (the document deactivates what a pack requires or
-locks; nothing is stored), `412` if the client sent a stale `If-Match`, `400` for an `If-None-Match` other than `*`.
-Mode 1 is built.
+Refusals, in the order they are judged: first the preconditions, `400` for malformed validators (an `If-None-Match`
+other than `*`, or both headers), and `412` for a stale `If-Match` or `If-None-Match: *` on a stored id; then the
+document, `422 activation_invalid` (unknown pack, kind or artifact, with `violations`), and `409 artifact_required`
+or `artifact_locked` (the document deactivates what a pack requires or locks; `requiredBy` names each pack with the
+`parent_pack` chain it is inherited through). A refused precondition takes no closure snapshot, and nothing is stored
+on any refusal. A body that does not parse as `ActivationConfig` at all is refused `422` as it arrives, before the
+service sees it. Mode 1 is built.
 
 ## Mode 2: build, then fetch
 
@@ -402,14 +410,20 @@ sequenceDiagram
 | `/activations`, `/activations/{id}` and `…/packs` (built) | activation services | the activation document and its write rules; `ActivationRepository` and `AvailablePacks` ports |
 | `/activations/{id}/…` writes (built) | `ActivationSelectionService`, `ActivationExclusionService`, `ActivationPresetService` over `ActivationWrites` | `CascadeRules`, `PresetRules`; walks through the `PacksSession` an `AvailablePacks` adapter opens on one `ClosureView` |
 | `/activations/{id}/…` effective reads (not built) | effective-set queries | the effective-set algebra over the closure and the document |
+| Every resource's problem and refusal bodies, and the JSON body guard | module `web-transport`, package `ai.speckitty.charter.web` (`RefusalHandler`, `ProblemHandler`, `Problems`, `JsonBodyGuard`, `ProblemJson`) | none: a transport ring shared by `packs.infra.api` and `activations.infra.api`, naming no slice |
 
 `activations` is a top-level slice that depends on `packs`. It owns the activation document, its storage, its write
 rules and its HTTP adapter; every question about pack content goes through one port, `AvailablePacks`, whose
-adapter calls the public application services of `packs`. Links are built in the REST adapter, as for packs.
+adapter calls the public application services of `packs`. Links are built in the REST adapter, as for packs. The
+adapter also holds the activation set's request-body advice (`ActivationBodyAdvice`) and its problem mapping
+(`ActivationProblems`); both render through the shared `web-transport` module, which both slices' inbound adapters
+depend on, so the composition root (`deployable`) holds no activation transport.
 
 ```mermaid
 flowchart LR
-  API[activations.infra.api<br/>ActivationController] --> APP[activations.application<br/>services]
+  API[activations.infra.api<br/>ActivationController,<br/>body advice, problem mapping] --> APP[activations.application<br/>services]
+  API --> WEB[web-transport<br/>ai.speckitty.charter.web<br/>problems, refusals, body guard]
+  PAPI[packs.infra.api<br/>controllers] --> WEB
   APP --> DOM[activations.domain<br/>document, rules]
   APP --> REPO[(ActivationRepository port)]
   APP --> AV[AvailablePacks port]
