@@ -58,10 +58,10 @@
       "criterion_id": "FR-006",
       "description": "Verify FR-006 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "activation-register.feature: 'An id no pack of the closure holds is refused, naming the id, and nothing is stored', 'An empty deny list is refused, never stored', 'A body over 1 MiB is refused as too large', 'A member the document does not declare is refused', 'A null list is refused', 'A null item in a list is refused at its index', 'A pack pinned to a version the service does not hold is refused at the pin', 'A document naming an unconfigured pack is refused at the pack's id'; DocumentRulesTest, ActivationBodyAdviceTest (strict, no coercion/duplicates, R1). Version-pin refusal is open review item 2 (refused rather than side by side), spec text met. lane-m HEAD 7f6264b: ./gradlew verifyAll --rerun-tasks --max-workers=1 -PcontractBaseline=none BUILD SUCCESSFUL (127/127 tasks executed; 7200 tests, 0 failures, 0 errors, 4 pre-existing env skips in packs; 341 BDD scenarios incl. activation-register 35/35, activation-selections 41/41, activation-presets 14/14, activation-register-guards 5/5, activations 4/4)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:qa-test-executor-elena",
+      "verified_at": "2026-11-06T02:55:28.069455+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
