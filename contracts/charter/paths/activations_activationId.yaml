@@ -2,15 +2,16 @@ get:
   operationId: getActivation
   summary: Read an activation.
   description: >-
-    The stored document, its revision as the ETag, and the summary derived for the offering (ADR-0020 D4). Reserved:
-    it answers 501 until it is built (ADR-0020 D8).
+    The stored document, as stored, with its quoted revision as the ETag (ADR-0020 D4, ADR-0059 D5): the answer
+    depends only on the document, never on the offering, so a document an offering change made stale (an id the
+    offering no longer has, a deny entry on an id now required or locked) is served unchanged (ADR-0059 D4). A
+    request whose If-None-Match matches the ETag is answered 304 without a body. An unknown id is 404
+    activation_not_found.
   tags:
   - Activation
-  x-reserved:
-    contractSet: activation
-    issue: '#125'
   parameters:
   - $ref: ../parameters/ActivationId.yaml
+  - $ref: ../parameters/IfNoneMatch.yaml
   responses:
     '200':
       description: The activation.
@@ -19,8 +20,6 @@ get:
           $ref: ../headers/CharterContractVersion.yaml
         Charter-Worktree: &id002
           $ref: ../headers/CharterWorktree.yaml
-        Charter-Source-Fingerprint: &id003
-          $ref: ../headers/CharterSourceFingerprint.yaml
         ETag: &id004
           $ref: ../headers/ActivationETag.yaml
       content:
@@ -30,16 +29,16 @@ get:
           examples:
             minimal:
               $ref: ../examples/Activation.minimal.yaml
+    '304':
+      $ref: ../responses/NotModified.yaml
     '401':
       $ref: ../responses/Unauthorized.yaml
     '403':
       $ref: ../responses/Forbidden.yaml
     '404':
-      $ref: ../responses/ActivationNotFound.yaml
+      $ref: ../responses/UnknownActivation.yaml
     '500':
       $ref: ../responses/OfferingUnreadable.yaml
-    '501':
-      $ref: ../responses/NotImplemented.yaml
     default:
       $ref: ../../_shared/responses/Problem.yaml
 put:
@@ -50,14 +49,13 @@ put:
     the activation, 200 when it replaced one; a PUT of a fetched config answers 200 with the same ETag. If-None-Match:
     * creates only; If-Match makes the write conditional, and without it the write is last-writer-wins. A document
     that deactivates a required or locked artifact is 409 and nothing is stored; an unknown pack, kind or artifact
-    is 422 with violations. Reserved: it answers 501 until it is built (ADR-0020 D8). Both If-Match and If-None-Match
-    on one request is 400. A stored document an offering change made stale (an id the offering no longer has, a
-    deny entry on an id now required) is open before the operation is built (amendment, open question 5).
+    is 422 with violations. Both If-Match and If-None-Match on one request is 400, and so is an If-None-Match other
+    than * (a malformed precondition). A body over 1 MiB, an unknown member or a null is 422 activation_invalid. A
+    stored document an offering change made stale is served on read and refused on write (ADR-0059 D4): a write
+    that still names an id the closure no longer holds is 422, and one that denies an id now required or locked is
+    409, whatever the stored document held.
   tags:
   - Activation
-  x-reserved:
-    contractSet: activation
-    issue: '#125'
   parameters:
   - $ref: ../parameters/ActivationId.yaml
   - $ref: ../parameters/IfMatch.yaml
@@ -111,21 +109,15 @@ put:
       $ref: ../responses/ActivationInvalid.yaml
     '500':
       $ref: ../responses/OfferingUnreadable.yaml
-    '501':
-      $ref: ../responses/NotImplemented.yaml
     default:
       $ref: ../../_shared/responses/Problem.yaml
 delete:
   operationId: deleteActivation
   summary: Remove an activation.
   description: >-
-    Removes the document: 204, honouring If-Match. A second DELETE is 404 activation_not_found (ADR-0020 D6). Reserved:
-    it answers 501 until it is built (ADR-0020 D8).
+    Removes the document: 204, honouring If-Match. A second DELETE is 404 activation_not_found (ADR-0020 D6).
   tags:
   - Activation
-  x-reserved:
-    contractSet: activation
-    issue: '#125'
   parameters:
   - $ref: ../parameters/ActivationId.yaml
   - $ref: ../parameters/IfMatch.yaml
@@ -140,12 +132,10 @@ delete:
     '403':
       $ref: ../responses/Forbidden.yaml
     '404':
-      $ref: ../responses/ActivationNotFound.yaml
+      $ref: ../responses/UnknownActivation.yaml
     '412':
       $ref: ../responses/PreconditionFailed.yaml
     '500':
       $ref: ../responses/OfferingUnreadable.yaml
-    '501':
-      $ref: ../responses/NotImplemented.yaml
     default:
       $ref: ../../_shared/responses/Problem.yaml

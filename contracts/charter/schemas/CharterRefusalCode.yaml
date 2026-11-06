@@ -38,15 +38,16 @@ description: >-
   the mutability policy of an artifact it changes in the merged offering will be refused with it too,
   once the offering is merged (#10, #11).
 
-  Six codes are reserved for the activation set (ADR-0020 D9, D10, #125), declared before the operations
-  that raise them are built, which answer 501 until then (ADR-0020 D8): activation_not_found,
-  artifact_not_found and preset_not_found (404); artifact_required and artifact_locked (409), a
-  deactivation a pack requires or locks, whose refusal names every requiring pack in requiredBy;
-  activation_invalid (422), a document or body the service refuses, each refused part listed in violations.
-  No operation of this version raises them. Each scenario is a declaration pin, not behavior: it asserts
-  only what the x-refusal map below declares, and a unit test of the service fails when any main class
-  other than the enum and its mappings names a code the map marks not raised, outside the two classes no
-  operation reaches (the whole-pack load and its findings).
+  Six codes belong to the activation set (ADR-0020 D9, D10, #125). The activation register raises four
+  (#125, #360): activation_not_found (404), an activation no document is stored under; activation_invalid
+  (422), a document or body the service refuses, each refused part listed in violations; artifact_required
+  and artifact_locked (409), a deactivation a pack requires or locks, whose refusal names every requiring pack
+  in requiredBy. Two stay reserved, declared before the operations that raise them are built, which answer
+  501 until then (ADR-0020 D8): artifact_not_found and preset_not_found (404). No operation of this version
+  raises those two. Each of their scenarios is a declaration pin, not behavior: it asserts only what the
+  x-refusal map below declares, and a unit test of the service fails when any main class other than the enum
+  and its mappings names a code the map marks not raised, outside the two classes no operation reaches (the
+  whole-pack load and its findings).
 
   x-refusal declares, for every code, the HTTP status it is answered with, whether the read may be retried,
   and whether an operation of this version raises it (raised). A code has one status, except where its entry
@@ -198,7 +199,7 @@ x-refusal:
   activation_not_found:
     status: 404
     retryable: false
-    raised: false
+    raised: true
   artifact_not_found:
     status: 404
     retryable: false
@@ -210,15 +211,15 @@ x-refusal:
   artifact_required:
     status: 409
     retryable: false
-    raised: false
+    raised: true
   artifact_locked:
     status: 409
     retryable: false
-    raised: false
+    raised: true
   activation_invalid:
     status: 422
     retryable: false
-    raised: false
+    raised: true
   pack_dependency_cycle:
     status: 500
     retryable: false
