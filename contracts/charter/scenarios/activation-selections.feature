@@ -952,6 +952,81 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       e2
       """
 
+  Scenario: A cascading deactivate follows the lineage, so it undoes a cascading select
+    FR-015, ADR-0059 D2 (operator ruling of 2026-11-06): selecting p with a cascade selects R through its ancestor
+    q; deactivating p with a cascade walks the same lineage, so R leaves selected again and only p is denied.
+    Given the activation "a-1" holds:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      """
+    When I PUT "/activations/a-1/selections/agent_profile/p" with the stored ETag and the body:
+      """
+      {"cascade": ["all"]}
+      """
+    Then the response status is 200
+    And the field at "/applied" holds exactly the ids:
+      """
+      agent_profile:p
+      directive:R
+      """
+    When I remember the ETag
+    And I PUT "/activations/a-1/exclusions/agent_profile/p" with the remembered ETag and the body:
+      """
+      {"cascade": ["all"]}
+      """
+    Then the response status is 200
+    And the field at "/applied" holds exactly the ids:
+      """
+      agent_profile:p
+      directive:R
+      """
+    And the field at "/skipped/skippedShared" holds exactly 0 items
+    When I GET "/activations/a-1"
+    Then the field at "/config/selected/agent_profile" holds exactly 0 items
+    And the field at "/config/selected/directive" holds exactly 0 items
+    And the field at "/config/deactivated/agent_profile" holds exactly the ids:
+      """
+      p
+      """
+
+  Scenario: A cascading deactivate keeps what the lineage reached when another active artifact needs it
+    FR-015, ADR-0059 D2 (operator ruling of 2026-11-06): q is selected on its own and requires R, so deactivating p
+    with a cascade keeps R and names q in skippedShared.
+    Given the activation "a-1" holds:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "main"}], "selected": {"agent_profile": ["q"]}}
+      """
+    When I PUT "/activations/a-1/selections/agent_profile/p" with the stored ETag and the body:
+      """
+      {"cascade": ["all"]}
+      """
+    Then the response status is 200
+    When I remember the ETag
+    And I PUT "/activations/a-1/exclusions/agent_profile/p" with the remembered ETag and the body:
+      """
+      {"cascade": ["all"]}
+      """
+    Then the response status is 200
+    And the field at "/applied" holds exactly the ids:
+      """
+      agent_profile:p
+      """
+    And the field at "/skipped/skippedShared" holds exactly the ids:
+      """
+      directive:R
+      """
+    And the field at "/skipped/skippedShared/0/referencedBy/kind" is "agent_profile"
+    And the field at "/skipped/skippedShared/0/referencedBy/artifactId" is "q"
+    When I GET "/activations/a-1"
+    Then the field at "/config/selected/agent_profile" holds exactly the ids:
+      """
+      q
+      """
+    And the field at "/config/selected/directive" holds exactly the ids:
+      """
+      R
+      """
+
   Scenario: Deactivating without a cascade denies and unselects the target alone
     Given the activation "a-1" holds:
       """

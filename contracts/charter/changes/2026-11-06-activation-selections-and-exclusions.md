@@ -19,3 +19,8 @@
   (`getActivationSkippedReport`, a later change), as the schema's description now says. The write's path has no
   `GET`, so an `ActivationChange` carries no `self`: its `up` link names the activation (`Links` and the example say
   so).
+- A cascading deactivate walks the `specializes_from` lineage exactly as a cascading select does (operator ruling of
+  2026-11-06, ADR-0059 amendment R2): what a select reached through a profile's ancestor is a candidate of the
+  deactivate of that profile, so a cascading select and a cascading deactivate round-trip. An artifact another active
+  artifact needs is still kept and reported in `skippedShared`. `ExclusionRequest.cascade` and
+  `deactivateActivationArtifact` say so; two scenarios of `activation-selections.feature` pin it.

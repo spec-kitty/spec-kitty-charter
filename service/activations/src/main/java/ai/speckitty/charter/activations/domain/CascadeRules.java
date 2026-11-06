@@ -141,11 +141,9 @@ public final class CascadeRules {
     }
 
     /**
-     * The target's own walk for a deactivate: the five relations, stopping nowhere.
-     *
-     * <p>This walk does not follow the lineage, while the select walk and the shared walk do. The asymmetry is
-     * deliberate: FR-015 names exactly "the five relations", so what only an ancestor of a reached profile requires is
-     * not a candidate. It stands as FR-015 reads literally until an operator rules on it.
+     * The target's own walk for a deactivate: the relations a select walks, with the lineage, stopping nowhere. It
+     * follows the lineage exactly as the select walk does (ADR-0059 D2, operator ruling of 2026-11-06), so a cascading
+     * deactivate undoes a cascading select: what the target reached through an ancestor is a candidate too.
      *
      * @param document the document before the write
      * @param target the artifact deactivated, of a kind of {@link ActivationDocument#kinds()}
@@ -157,7 +155,7 @@ public final class CascadeRules {
         Objects.requireNonNull(document, "document");
         requireDeniable(target);
         return scope.cascades()
-                ? new ReachPlan(Set.of(target), CASCADE_RELATIONS, Set.of(), false)
+                ? new ReachPlan(Set.of(target), CASCADE_RELATIONS, Set.of(), true)
                 : ReachPlan.none(target);
     }
 

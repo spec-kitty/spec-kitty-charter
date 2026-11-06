@@ -376,9 +376,9 @@ class CascadeRulesDeactivateTest {
     }
 
     @Test
-    void theOwnWalkFollowsNoLineageWhileTheSelectAndSharedWalksDo() {
-        // Deliberate (FR-015 names five relations, literally): the target's own walk does not pass through ancestors,
-        // so what only an ancestor of a reached profile requires is not a candidate. Awaiting an operator ruling.
+    void theOwnWalkFollowsTheLineageAsTheSelectAndSharedWalksDo() {
+        // Operator ruling of 2026-11-06 (ADR-0059 D2 amendment, FR-015): the deactivate walks the lineage exactly as
+        // the select does, so a cascading deactivate undoes a cascading select.
         ArtifactRef p = ref("agent_profile:P");
         ActivationDocument document = selecting("agent_profile:P", "tactic:T2");
 
@@ -386,12 +386,46 @@ class CascadeRulesDeactivateTest {
                         .lineage())
                 .isTrue();
         assertThat(CascadeRules.planDeactivate(document, p, CascadeScope.all()).lineage())
-                .isFalse();
+                .isTrue();
         Reach own = reach().start("agent_profile:P")
                 .reached("tactic:T2", "agent_profile:P", REQUIRES)
                 .build();
         assertThat(CascadeRules.planShared(document, p, CascadeScope.all(), own, Map.of(), Set.of(), Reach.empty())
                         .lineage())
                 .isTrue();
+    }
+
+    @Test
+    void aCascadingDeactivateUnselectsWhatTheTargetReachedThroughItsAncestor() {
+        // P specializes from Q, and Q requires R: selecting P with a cascade selected R, so deactivating it unselects R.
+        ActivationChange change = deactivateProfile(selecting("agent_profile:P", "directive:R"));
+
+        assertThat(change.applied()).containsExactly(ref("agent_profile:P"), ref("directive:R"));
+        assertThat(change.after().selected(DIRECTIVE).orElseThrow()).isEmpty();
+        assertThat(change.skipped().skippedShared()).isEmpty();
+    }
+
+    @Test
+    void whatTheAncestorReachesIsKeptWhenAnotherActiveArtifactNeedsIt() {
+        // Q is selected on its own and requires R, so R stays, named by Q.
+        ActivationChange change =
+                deactivateProfile(selecting("agent_profile:P", "agent_profile:Q", "directive:R"));
+
+        assertThat(change.applied()).containsExactly(ref("agent_profile:P"));
+        assertThat(change.after().selected(DIRECTIVE).orElseThrow()).containsExactly("R");
+        assertThat(change.skipped().skippedShared())
+                .containsExactly(new SkippedReport.SharedSkip(ref("directive:R"), ref("agent_profile:Q")));
+    }
+
+    /** Deactivates P with a cascade over a closure where P specializes from Q and Q requires R. */
+    private static ActivationChange deactivateProfile(ActivationDocument document) {
+        ArtifactRef p = ref("agent_profile:P");
+        Reaches.Graph graph = new Reaches.Graph()
+                .edge("agent_profile:P", SPECIALIZES_FROM, "agent_profile:Q")
+                .edge("agent_profile:Q", REQUIRES, "directive:R");
+        Reach own = graph.apply(CascadeRules.planDeactivate(document, p, CascadeScope.all()));
+        Reach others = graph.apply(
+                CascadeRules.planShared(document, p, CascadeScope.all(), own, Map.of(), Set.of(), Reach.empty()));
+        return CascadeRules.applyDeactivate(document, p, CascadeScope.all(), own, others, Map.of(), Set.of());
     }
 }
