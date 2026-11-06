@@ -7,7 +7,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ai.speckitty.charter.activations.application.ActivationExclusionService;
+import ai.speckitty.charter.activations.application.ActivationSelectionService;
 import ai.speckitty.charter.activations.application.ActivationService;
+import ai.speckitty.charter.activations.infra.api.ActivationChangeMapper;
 import ai.speckitty.charter.activations.infra.api.ActivationController;
 import ai.speckitty.charter.activations.infra.api.ActivationMapper;
 import ai.speckitty.charter.api.ActivationApi;
@@ -30,11 +33,18 @@ import org.springframework.web.server.ResponseStatusException;
  */
 class ReservedActivationOperationTest {
 
-    private static final String SELECTION = "/api/v1/activations/a1/selections/directive/D1";
+    /** The preset write, the last reserved operation that takes a body. */
+    private static final String PRESET = "/api/v1/activations/a1/presets/event-driven";
 
     /** A controller whose use cases a reserved operation never reaches. */
     private static ActivationController controller() {
-        return new ActivationController(mock(ActivationService.class), new ActivationMapper("/api/v1"));
+        ActivationMapper mapper = new ActivationMapper("/api/v1");
+        return new ActivationController(
+                mock(ActivationService.class),
+                mock(ActivationSelectionService.class),
+                mock(ActivationExclusionService.class),
+                mapper,
+                new ActivationChangeMapper(mapper));
     }
 
     private final MockMvc mvc = MockMvcBuilders.standaloneSetup(controller())
@@ -70,7 +80,7 @@ class ReservedActivationOperationTest {
 
     @Test
     void aReservedActivationOperationAnswers501BeforeItsBodyIsRead() throws Exception {
-        mvc.perform(put(SELECTION)
+        mvc.perform(put(PRESET)
                         .header("If-Match", "*")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{ not json"))
@@ -87,7 +97,7 @@ class ReservedActivationOperationTest {
     void withoutTheInterceptorTheSameBodyIsRefusedWhenItIsBound() throws Exception {
         MockMvcBuilders.standaloneSetup(controller())
                 .build()
-                .perform(put(SELECTION)
+                .perform(put(PRESET)
                         .header("If-Match", "*")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{ not json"))

@@ -45,9 +45,9 @@ class ContractDescriptionsTest {
     void theRefusalCodeSaysWhichActivationCodesAreRaisedAndGivesEveryStatus() throws IOException {
         assertThat(description("contract/charter/schemas/CharterRefusalCode.yaml"))
                 .contains("Six codes belong to the activation set (ADR-0020 D9, D10, #125). The activation register"
-                        + " raises four")
-                .contains("Two stay reserved")
-                .contains("No operation of this version raises those two")
+                        + " and its per-artifact writes raise five")
+                .contains("One stays reserved")
+                .contains("No operation of this version raises that one")
                 .doesNotContain("No operation of this version raises them")
                 .contains("artifact_required and artifact_locked are 409")
                 .contains("validation_failed and activation_invalid are 422")

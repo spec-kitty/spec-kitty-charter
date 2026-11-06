@@ -125,11 +125,15 @@ public class ActivationSteps {
                 .isTrue();
         List<String> held = new ArrayList<>();
         for (JsonNode item : list) {
-            held.add(item.isString()
-                    ? item.asString()
-                    : item.path("kind").asString() + ":" + item.path("artifactId").asString());
+            held.add(
+                    item.isString()
+                            ? item.asString()
+                            : item.path("kind").asString() + ":"
+                                    + item.path("artifactId").asString());
         }
-        assertThat(held).as("the ids of %s", pointer).isEqualTo(ids.lines().map(String::strip).toList());
+        assertThat(held)
+                .as("the ids of %s", pointer)
+                .isEqualTo(ids.lines().map(String::strip).toList());
     }
 
     @Then("the response body has no field at {string}")

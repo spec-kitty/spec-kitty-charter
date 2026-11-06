@@ -46,7 +46,7 @@ description: >-
   violations; artifact_required and artifact_locked (409), a deactivation a pack requires or locks, whose
   refusal names every requiring pack in requiredBy. One stays reserved, declared before the operation that
   raises it is built, which answers 501 until then (ADR-0020 D8): preset_not_found (404). No operation of this
-  version raises it. Its scenario is a declaration pin, not behavior: it asserts only what the x-refusal map
+  version raises that one. Its scenario is a declaration pin, not behavior: it asserts only what the x-refusal map
   below declares, and a unit test of the service fails when any main class other than the enum and its
   mappings names a code the map marks not raised, outside the two classes no operation reaches (the
   whole-pack load and its findings).
