@@ -406,6 +406,24 @@ Feature: Applying a preset to an activation
     When I GET "/activations/a-1"
     Then the response header "ETag" is the stored ETag
 
+  Scenario: A force of the wrong type is 422 at its pointer, never coerced
+    PresetApplication.force is a boolean: a string or a number in its place is a fault of the body, judged after
+    the preconditions (FR-010), and never read as true. Nothing is stored.
+    Given the activation "a-1" holds:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      """
+    When I PUT "/activations/a-1/presets/team" with the stored ETag and the body:
+      """
+      {"force": "true"}
+      """
+    Then the response status is 422
+    And the problem code is "activation_invalid"
+    And the field at "/violations/0/pointer" is "/force"
+    And the field at "/violations/0/code" is "unreadable_body"
+    When I GET "/activations/a-1"
+    Then the response header "ETag" is the stored ETag
+
   # The preconditions are judged before the content (FR-010).
 
   Scenario: Applying a preset without If-Match is 428

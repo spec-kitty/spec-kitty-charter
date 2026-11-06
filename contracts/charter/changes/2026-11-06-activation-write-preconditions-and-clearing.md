@@ -7,6 +7,13 @@
   declare, a `null`, a value of the wrong type, a `cascade` token outside `CascadeKind`, an empty `cascade`, a body
   that is not JSON or is missing) is `422 activation_invalid` after the preconditions, never before them; a `cascade`
   token outside the kinds is the violation `unknown_kind` at `/cascade/<i>`. The wire shapes are unchanged.
+- No scalar of an activation body is coerced into another: `1`, `0`, `"true"` or `""` where a boolean is declared
+  (`includeDeactivated`, `force`), `"1"`, `1.0` or `true` where an integer is (`schemaVersion`), and a number or a
+  boolean where a string is (a `cascade` token, an id, a pack pin) are a value of the wrong type,
+  `422 activation_invalid` with the violation `unreadable_body` at the value. A member declared twice in one object
+  is the same violation at that member, never the last one winning. This holds for every activation write: after the
+  preconditions for the per-artifact and preset writes, and for `createActivation` and `replaceActivation`, whose
+  document such a value was read into before.
 - `409 ArtifactPolicyRefused` stays declared on `deactivateActivationArtifact` alone, the one write that can add a deny
   entry. A deny entry stored before a pack upgrade put its artifact on the required or locked floor is tolerated
   (ADR-0059 D4, "a stored one is tolerated but not applied"): a select, unselect, re-activate or preset of another id

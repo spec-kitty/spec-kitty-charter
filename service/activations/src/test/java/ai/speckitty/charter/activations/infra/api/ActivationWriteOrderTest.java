@@ -22,9 +22,10 @@ import tools.jackson.databind.json.JsonMapper;
 /**
  * The precondition order of the per-artifact and preset writes (FR-010, ADR-0020 D6): {@code 428}, then
  * {@code 404 activation_not_found}, then {@code 412}, and only then a {@code 422}, of the path or of the body. A body
- * fault (a member the schema does not declare, a {@code null}, a value of the wrong type, a token outside the cascade's
- * kinds, an empty cascade, a body that is not JSON or is missing) is judged at the {@code 422} step, never at the body
- * read; a malformed {@code If-Match} is a {@code 400} before all of them.
+ * fault (a member the schema does not declare, a {@code null}, a value of the wrong type, which is never coerced, a
+ * member declared twice, a token outside the cascade's kinds, an empty cascade, a body that is not JSON or is missing)
+ * is judged at the {@code 422} step, never at the body read; a malformed {@code If-Match} is a {@code 400} before all
+ * of them.
  */
 class ActivationWriteOrderTest {
 
@@ -132,6 +133,42 @@ class ActivationWriteOrderTest {
         assertThat(violations(
                         send(put(SELECT).contentType(MediaType.APPLICATION_JSON).header("If-Match", etag))))
                 .containsExactly("", "unreadable_body");
+        assertThat(send(get("/api/v1/activations/a-1")).getHeader("ETag")).isEqualTo(etag);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"1", "\"true\"", "0", "\"false\"", "1.0", "\"\""})
+    void aScalarOfTheWrongTypeIsNeverCoercedButIs422AfterThePreconditions(String value) throws Exception {
+        String select = "{\"cascade\": [\"directive\"], \"includeDeactivated\": " + value + "}";
+        String preset = "{\"force\": " + value + "}";
+
+        assertThat(putBody(SELECT, select).getStatus()).isEqualTo(428);
+        assertThat(putBody(PRESET, preset).getStatus()).isEqualTo(428);
+        assertThat(putBody(SELECT, select, STALE).getStatus()).isEqualTo(412);
+        assertThat(putBody(PRESET, preset, STALE).getStatus()).isEqualTo(412);
+        assertThat(violations(putBody(SELECT, select, etag))).containsExactly("/includeDeactivated", "unreadable_body");
+        assertThat(violations(putBody(PRESET, preset, etag))).containsExactly("/force", "unreadable_body");
+        assertThat(send(get("/api/v1/activations/a-1")).getHeader("ETag")).isEqualTo(etag);
+    }
+
+    @Test
+    void aCascadeTokenOfTheWrongTypeIsNeverCoercedToAString() throws Exception {
+        assertThat(violations(putBody(SELECT, "{\"cascade\": [1]}", etag)))
+                .containsExactly("/cascade/0", "unreadable_body");
+        assertThat(violations(putBody(DEACTIVATE, "{\"cascade\": [true]}", etag)))
+                .containsExactly("/cascade/0", "unreadable_body");
+    }
+
+    @Test
+    void aMemberDeclaredTwiceIs422AtItsPointerAfterThePreconditions() throws Exception {
+        String twice = "{\"cascade\": [\"all\"], \"cascade\": [\"all\"]}";
+
+        assertThat(putBody(SELECT, twice).getStatus()).isEqualTo(428);
+        assertThat(putBody(SELECT, twice, STALE).getStatus()).isEqualTo(412);
+        assertThat(violations(putBody(SELECT, twice, etag))).containsExactly("/cascade", "unreadable_body");
+        assertThat(violations(putBody(DEACTIVATE, twice, etag))).containsExactly("/cascade", "unreadable_body");
+        assertThat(violations(putBody(PRESET, "{\"force\": true, \"force\": false}", etag)))
+                .containsExactly("/force", "unreadable_body");
         assertThat(send(get("/api/v1/activations/a-1")).getHeader("ETag")).isEqualTo(etag);
     }
 
