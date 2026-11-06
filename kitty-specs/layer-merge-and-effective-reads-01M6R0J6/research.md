@@ -509,6 +509,75 @@ They are recorded here as decided. This document does not reopen them; it settle
   - Refusing a later unselect of the override: rejected. It reverses F1, under which per-artifact writes judge only
     what they add.
 
+## R13. The in-force resolution is a stratified fixed point (A2, A3, A8; post-plan architecture squad)
+
+- **Decision.** In force is computed in four strata, each a fixed point over the one below: (1) the candidate set
+  (selected, within scope, minus deny entries, plus locked); (2) overrides, composed transitively top to bottom: in
+  `F → E → T` only `F` stays, and `F` satisfies a requirement on `E` and `T`; a locked target stays and the
+  override is reported; (3) the floor, iterated until no required artifact is unsatisfied on the final set; (4)
+  enhancers, a least fixed point: an enhancer is in force only when its support chain reaches a non-enhancer in
+  force. The resolution lives in `packs` (`InForceResolution`), since every stratum walks edges (C-002).
+- **Rationale.** A single pass lets a later step undo an earlier judgement (review A2: `{U}` with `T` neither in
+  force nor overridden). A greatest fixed point lets an enhancer ring hold itself up (A8).
+- **Alternatives.** One pass with a re-run (the earlier R11 step 5): replaced; a cycle among required artifacts is
+  now reported at read and refused at registration.
+
+## R14. Registration is asynchronous and judged against its impact (A5)
+
+- **Decision.** Registration answers `202` with a status URI and runs as a bounded job (IC-14). Before committing,
+  it composes every closure that contains the staged pack, found by the reverse `depends_on` index, and refuses
+  with the violation naming the packs (IC-15). The client learns completion by polling the status URI.
+- **Rationale.** The impact check and a source fetch can take seconds to a minute; holding the request open ties a
+  servlet thread and the client to the lock. A failure found at registration costs one author a `422`; found at read,
+  it costs every activation that composes the pack a `500`.
+- **Alternatives.** A push callback (webhook) to a client URL: rejected, a new outbound SSRF surface. One global
+  compose (ruleset G8): rejected, it blocks an author over packs they cannot see.
+
+## R15. Requirements only tighten, and only over held ids (A1, A10)
+
+- **Decision.** The requirement of a preset id is the union of the must-have items of every governing copy across
+  levels. A must-have item no pack in the closure holds is dropped from the floor and reported. Another pack's preset
+  item naming an artifact counts as an inbound reference to it, so `DELETE` answers `409`.
+- **Rationale.** Locks only tighten; requirements now match. An unheld URN in the floor produced a stale selection
+  that the writes then treated as active.
+
+## R16. Override and enhancement edges are judged at registration (A6, A8, A11, A12, A14, A15, B8)
+
+- **Decision.**
+  - Only an `open` artifact can be overridden, by a layer override or by an `overrides` edge alike (A6).
+  - `enhances` cycles are refused, and an enhancer always links to a real (non-enhancer) artifact (A8).
+  - An artifact that both enhances and overrides one target, and an `overrides` edge that resolves to its own source
+    after re-pointing, are refused (A11, A12).
+  - `enhances` is not a sibling conflict; a settlement names exactly one winner (A14).
+  - A pack's policy locks artifacts of itself and the packs it builds on (`depends_on`, lineage), not unrelated packs
+    in the same closure (A15); it never binds the pack itself (B8).
+- **Rationale.** Each shape either had no stable answer at read or let one pack govern packs it does not build on.
+
+## R17. Writes stay total; reads explain (A4, B1, B2, B3, B5, B6/B7)
+
+- **Decision.**
+  - A replace judges the floor only on the deny entries it adds and drops stale ids (A4).
+  - A write drops an unsatisfiable version pin, reported in `dropped`; a per-pack `(version, revision)` history
+    forbids reusing a version with other content; a read reports an unheld pin (B1).
+  - Stale ids keep dropping on any write, reported (B2).
+  - A removal judges references against the tree after the change and lists the referrers (B3).
+  - `includeDeactivated` clears deny entries only on what the walk reaches and selects (B5).
+  - `ActivationChange.warnings` predicts what the read will not put in force (B6/B7).
+- **Rationale.** A GET then PUT of the same body must never fail without a pack change (invariant I5), and a pack
+  upgrade must never wedge every per-artifact write.
+
+## R18. Mission types, steps and agent profiles are artifacts like any other (A7)
+
+- **Decision (direction).** They follow the same activation, override and enhancement rules as any artifact.
+  `activatedKinds` is a remnant of core, not a domain rule of the charter service; the API and representation are
+  revised if they fall short.
+- **Rulings (2026-11-06; research/a7-kind-model-2026-11-06.md).** Q1 `DM-01M6RCXTS0SMDNTWZ8G7GJ2P5S`: selecting a mission type cascades to
+  its steps, which stay bound to it; W32 withdrawn. Q2 `DM-01M6RCXZ9HSHT4K3443YYZ8ZFC`: mission types are deniable unless required or locked.
+  Q3 `DM-01M6RCY40CQQTHC130RWF43W0D`: presets name any kind; one kind registry. Q4 `DM-01M6RCY8MYNGNPJ247M2Y4880N`: `activatedKinds` and `missionTypes` on writes are
+  refused `422` now; stored documents upgrade to `schemaVersion: 2` on read. Built as IC-20.
+- **Side finding.** The generated client turns an absent list into `[]`, so a GET then PUT changes the revision; a
+  test pins it (FR-042).
+
 ## Operator rulings on Q1 to Q7 (2026-11-06)
 
 1. **Q1: the scope of `listEffectiveArtifacts`.** ADR-0020 D7's shape is kept: every closure artifact with a
@@ -544,8 +613,8 @@ No question is open.
 2. **No `GET /packs/{packId}`.** `PUT` and `POST` answer `Location: /api/v1/packs/{packId}`, the resource `PUT`
    replaces. The `_links` carry `edit` (the `PUT`) and `artifacts`, so no link points at an undeclared read
    (ADR-0019 D3).
-3. **The write cascade walks the unmerged edges.** A cascade from `D` may still follow an edge of an overridden `D`.
-   What it selects stays selected, and the reads judge it. Following merged edges at write time is not ruled.
+3. **Closed (`DM-01M6R4W1H9P3451V89KHP97XKM`).** The write cascade walks the merged edges once the merge exists
+   (FR-038).
 4. **FR-019 "names".** The effective context is what ADR-0018's walk reaches from the action node over the in-force
    merged graph, `depth` counting `suggests` hops, plus active enhancers. The plan reads "the step contract names"
    that way because the reserved contract's `depth` parameter assumes the walk.
@@ -554,19 +623,21 @@ No question is open.
 6. **Relationship `DELETE` of a body-borne edge.** An edge written as a field of an artifact's own body answers
    `409 registration_conflict`, because removing it means re-registering the artifact.
 
-7. **An artifact that both enhances and overrides.** If pruning it (R11 step 4) withdraws an override that un-hides
-   another such artifact, the read refuses with `pack_unreadable` instead of iterating. No pack in the census
-   declares both on one artifact today. The scenario fixture pins the refusal.
+7. **Closed (A11).** An artifact that both enhances and overrides one target is refused at registration (R16).
 
 ## Open risks
 
 - **Extracting the guarded exchange** touches the most security-sensitive class in `packs`. Its existing tests must
   pass unchanged, and a security lens reviews the extraction on its own.
-- **git version drift.** `http.curloptResolve` needs git 2.37. An older or patched git that ignores it would reopen
-  rebinding. Mitigation: a version check at first use, and a test that the pin is honoured (a fixture host resolving
-  to a refused address).
+- **git version drift.** The floor is git 2.50.1 (C-008). An older or patched git that ignores `http.curloptResolve`
+  would reopen rebinding. Mitigation: a version check at startup, and a test that the pin is honoured (a fixture
+  host resolving to a refused address).
+- **Async status is in memory.** A restart forgets pending registrations (R14). Re-sending is idempotent by the
+  version rule.
+- **Built behaviour changes (slice A0).** The rulings change #399 behaviour; placement as the first slice of PR A is
+  pending operator confirmation (plan, Changes to built behaviour).
 - **The git size watch is polled.** A fast object stream can overshoot the bound between polls. The overshoot is
-  bounded by the poll interval and the deadline, and the work tree itself is checked exactly when it is copied.
+  bounded by the poll interval and the deadline, and each blob is checked exactly when it is written to staging.
 - **NFR-006 under load.** Three retries may not absorb eight writers hammering one pack. A `stale_input` refusal
   is acceptable (Q7), and the mixed-reads test reports the refusal rate.
 - **One replica.** `RegistryWriteLock` and the write generation are in-JVM (R-lock). A second replica or a second

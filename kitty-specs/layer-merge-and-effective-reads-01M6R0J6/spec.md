@@ -55,18 +55,29 @@ service.
 **Acceptance Scenarios**:
 
 1. **Given** no pack `p` is known, **When** core sends `PUT /packs/p` with an archive of the pack directory, **Then**
-   the service answers `201`, and every artifact, edge and preset of the archive is readable.
+   the service answers `202` with a status URI; polling it ends `succeeded` with outcome `created`, and every
+   artifact, edge and preset of the archive is then readable (A5: registration is asynchronous by design).
 2. **Given** `p` 1.0.0 holds directives `A` and `B`, **When** core sends `PUT /packs/p` with 1.1.0 holding only `A`,
-   **Then** the service answers `200`, `B` is no longer readable, and no edge from `B` remains.
-3. **Given** `p` 1.0.0 is stored, **When** core sends 1.0.0 again with different content, **Then** the service answers
-   `409` and the stored pack is unchanged.
-4. **Given** `p` 1.0.0 is stored, **When** core sends the identical 1.0.0 archive, **Then** the service answers `200`
-   and nothing changes.
+   **Then** the registration ends `succeeded` (`replaced`), `B` is no longer readable, and no edge from `B` remains.
+3. **Given** `p` 1.0.0 was ever stored (the version→digest history, B1), **When** core sends 1.0.0 again with
+   different content, **Then** the registration ends `refused` with `409 pack_version_conflict` and the stored pack
+   is unchanged.
+4. **Given** `p` 1.0.0 is stored, **When** core sends the identical 1.0.0 archive, **Then** the registration ends `succeeded`
+   with outcome `unchanged` and nothing changes.
 5. **Given** an archive with a file the pack model does not know, a path that leaves the pack, or an invalid
-   artifact, **When** core sends it, **Then** the service answers `422` with the violations, and nothing is stored.
-6. **Given** a stale `If-Match` for `p`, **When** core sends `PUT /packs/p`, **Then** the service answers `412`.
-7. **Given** a source the service can fetch, **When** core sends `POST /packs` naming it, **Then** the service fetches
-   the pack, applies the same validation and full replacement, and answers `201` or `200` with the pack's location.
+   artifact, **When** core sends it, **Then** the registration ends `refused` with
+   `422` and the violations, and nothing is stored.
+6. **Given** a stale `If-Match` for `p`, **When** core sends `PUT /packs/p`, **Then** the service answers `412`
+   synchronously, before accepting; a revision that moves after acceptance ends the registration `refused` with
+   `412`.
+7. **Given** a source the service can fetch, **When** core sends `POST /packs` naming it, **Then** the service answers
+   `202` with a status URI, fetches the pack, applies the same validation and full replacement, and the status names
+   the pack's location when it ends `succeeded`.
+8. **Given** a pack `q` that registers `directive:x`, which a built-in pack locks, **When** core registers `q`, **Then**
+   the registration ends `refused` with the impact violation naming both packs, instead of every activation that
+   composes both answering `500` later (A5).
+9. **Given** a registration that adds a must-have item or a lock, **When** it succeeds, **Then** its status lists the
+   floor and lock changes and the activations whose in-force set changes (B4).
 
 ---
 
@@ -108,8 +119,8 @@ Core asks which artifacts an activation puts in force, after the layer merge.
    lists, **Then** `D` is in force with reason `required`, and the deny entry is reported as not applied.
 3. **Given** the activation selects `X`, which no pack in the closure holds any longer, **When** core lists, **Then**
    `X` is absent and the skipped report lists it as stale.
-4. **Given** `activatedKinds` omits `tactic`, **When** core lists, **Then** no tactic is in force except one the floor
-   requires.
+4. **Given** a mission type `M` selected and one of its steps' mission type denied, **When** core lists, **Then** `M`'s
+   steps are in force only while `M` is, and `activatedKinds` no longer exists (FR-040, FR-041).
 5. **Given** active `E enhances T` and `T` in force, **When** core lists, **Then** both are in force; **given** `E` is
    not active, **Then** `E` is absent (no pull).
 6. **Given** active `E overrides T`, **When** core lists, **Then** `T` is absent with reason `overridden` in the skipped
@@ -180,6 +191,16 @@ A distribution pack settles two packs at one level that define the same artifact
 - A cycle of `overrides` relations (`E overrides T`, `T overrides E`), both active: refused at compose with
   `pack_unreadable`, never an arbitrary pick.
 - A concurrent whole-pack upload and a read: the read sees the old or the new pack, never a mix.
+- An `enhances` cycle, an artifact that both enhances and overrides one target, an `overrides` edge that resolves to
+  its own source, or an `overrides` edge onto a target that is not `open`: refused at registration with `422` (A6,
+  A8, A11, A12).
+- A chain `F overrides E overrides T`, all selected: `F` is in force; `E` and `T` are hidden, and a requirement on `T`
+  is satisfied by `F` (A3).
+- An org preset and a project preset with the same id: the requirement is the union of the must-have items of every
+  governing copy (A1). A must-have item no pack holds is dropped from the floor and reported (A10).
+- A GET then PUT of an activation after packs changed: the replace drops ids the packs no longer hold and judges the
+  floor only on deny entries it adds (A4).
+- A registration queue that is full: `503` with `Retry-After`; nothing is accepted.
 
 ## Requirements *(mandatory)*
 
@@ -187,10 +208,10 @@ A distribution pack settles two packs at one level that define the same artifact
 
 | ID | Title | User Story | Priority | Status | Delivery | No-op passable? |
 |----|-------|------------|----------|--------|----------|-----------------|
-| FR-001 | Whole-pack registration by archive | As core, I want `PUT /packs/{packId}` with an archive of the authored pack directory to create (`201`) or fully replace (`200`) the pack, removals included, validated as the whole-pack loader reads a pack, so the service holds exactly what I authored. | High | Open | [build] | no |
+| FR-001 | Whole-pack registration by archive | As core, I want `PUT /packs/{packId}` with an archive of the authored pack directory to be accepted (`202`, A5) and then create or fully replace the pack, removals included, validated as the whole-pack loader reads a pack, so the service holds exactly what I authored. | High | Open | [build] | no |
 | FR-002 | Version rule on replace | As core, I want any `pack_version` to replace the known one, an identical re-send to be a `200` no-op, and the same version with different content refused `409`, so a version always means one content. | High | Open | [build] | no |
 | FR-003 | Conditional and validated upload | As core, I want `If-Match` on the pack's revision honoured (`412` when stale), and an archive with an unknown file, a path leaving the pack, an invalid artifact or a changed `pack_level` refused `422` with violations, storing nothing. | High | Open | [build] | no |
-| FR-004 | Registration by source | As core, I want `POST /packs` naming a fetchable source (ADR-0005, #374) to fetch the pack and apply FR-001..FR-003, answering with the pack's location. | Medium | Open | [build] | no |
+| FR-004 | Registration by source | As core, I want `POST /packs` naming a fetchable source (ADR-0005, #374) naming its target `packId` (and optionally a `sha256` or a git commit) to be accepted (`202`), fetch the pack and apply FR-001..FR-003, its status naming the pack's location. | Medium | Open | [build] | no |
 | FR-005 | Delete an artifact | As core, I want `DELETE /packs/{packId}/artifacts/{kind}/{artifactId}` to remove the artifact, its outgoing edges and its preset items in that pack (`204`), `404` when not held, and `409` naming the referencing pack when another pack references it. | High | Open | [build] | no |
 | FR-006 | Delete a relationship | As core, I want a `DELETE` of one relationship of a pack to remove that edge only (`204`), and `404` when the pack holds no such edge. | Medium | Open | [build] | no |
 | FR-007 | Atomic replace | As core, I want a whole-pack replace and a delete to be all-or-nothing: a concurrent read sees the old or the new pack, never a mix, and a failed write leaves the old pack. | High | Open | [build] | no |
@@ -199,7 +220,7 @@ A distribution pack settles two packs at one level that define the same artifact
 | FR-010 | Edges under a layer override | As core, I want edges starting at an overridden artifact dropped and edges ending at it resolved to the winner. | High | Open | [build] | no |
 | FR-011 | Override allowed by mutability | As core, I want a layer override the owner's mutability level forbids to refuse the compose (ADR-0063 D3), surfacing as `500 pack_unreadable` with the violation. | High | Open | [build] | no |
 | FR-012 | Sibling conflict settled | As core, I want a descriptor `overrides` entry to put the named member's artifact in force (#357), and an unsettled sibling conflict to keep refusing. | Medium | Open | [build] | no |
-| FR-013 | Effective artifacts | As core, I want `listEffectiveArtifacts` to answer the artifacts in force: `selected` within `activatedKinds`, the language filter and the closure, plus the required floor, minus `deactivated` (never the floor), each with `packId` and `level` provenance and its reason, paged, with `summary`. | High | Open | [build] | no |
+| FR-013 | Effective artifacts | As core, I want `listEffectiveArtifacts` to answer the artifacts in force: `selected` (every kind, FR-040) within, the language filter and the closure, plus the required floor, minus `deactivated` (never the floor), each with `packId` and `level` provenance and its reason, paged, with `summary`. | High | Open | [build] | no |
 | FR-014 | Required floor scope | As core, I want the floor to be the must-have items of every governing preset in the closure (ratifying DIV-205), never stored. | High | Open | [ratchet] | no |
 | FR-015 | Enhancements at read | As core, I want an enhancement returned only when it is itself active, and `T is enhanced by E` to hold, so resolving `T` returns an active `E`; nothing is pulled in. | High | Open | [build] | no |
 | FR-016 | CRG overrides at read | As core, I want an active `E overrides T` to leave `T` out with reason `overridden`, and a cycle of active overrides to refuse the compose. | Medium | Open | [build] | no |
@@ -210,6 +231,25 @@ A distribution pack settles two packs at one level that define the same artifact
 | FR-021 | Read refusals | As core, I want `404 activation_not_found` for an unknown activation and `500 pack_unreadable` for a closure that cannot compose, on all four reads. | High | Open | [build] | no |
 | FR-022 | Reasons cleaned | As core, I want the moot `kind_default` reason removed from `EffectiveArtifactReason` (ADR-0053 d10 made it unreachable) and the new reasons (`overridden`, provenance) declared. | Medium | Open | [build] | no |
 | FR-023 | Offering stays a catalog | As core, I want `GET /offering` and its reads unchanged: they list every configured pack unmerged. | Medium | Open | [ratchet] | no |
+| FR-024 | Asynchronous registration | As core, I want `PUT /packs/{packId}` and `POST /packs` to accept a registration with `202` and a status URI after the synchronous checks (size, media type, `If-Match`, access), and `GET` on that URI to answer `pending`, `running`, `succeeded` (with the `PackRegistration`) or `refused` (with the `Problem`), so a slow fetch or impact check never holds my connection (IC-14; PR A; DM-01M6RA8225EXG6GAT1MM2R9T6C). | High | Open | [build] | no |
+| FR-025 | Registration impact check | As core, I want a registration refused (`422`, naming the packs) when any closure the pack joins would fail to compose, break a lock or mutability rule, hold an `enhances` cycle, an artifact that both enhances and overrides one target, an `overrides` edge onto itself or onto a target that is not `open`, so no activation turns into a `500` after the fact (IC-15; PR A; DM-01M6RA8225EXG6GAT1MM2R9T6C, DM-01M6RA86QPBM1VE5QZTB9AZ195, DM-01M6RA8G0RGRWSFW4DERH8W319, DM-01M6RA8S9G57W4BW55SNVHBQ10). | High | Open | [build] | no |
+| FR-026 | Version history and pins | As core, I want every `(pack_version, revision)` a pack ever held remembered, so a version is never reused with other content, and a pin no pack holds dropped by a write (reported in `dropped`) and reported by a read (`pinNotHeld`), never a `422` that blocks every write (IC-16, IC-19; PR A; DM-01M6RA9BKJY7X9BFV93QW1KM1T). | High | Open | [build] | no |
+| FR-027 | Floor and lock notices | As core, I want a successful registration's status to list the must-have items and locks it added or removed and the activations whose in-force set changes, and `GET /activations/{id}` to list its deny entries that are not applied, so no change of force is silent (IC-15, IC-17; PR A and B; DM-01M6RA9SAKCBSKGX165JM3CAGS). | Medium | Open | [build] | no |
+| FR-028 | Requirement union, held ids only | As core, I want the requirement of a preset id to be the union of the must-have items of every governing copy across levels, and a must-have item no pack holds dropped from the floor and reported, so a requirement only tightens and never names an unheld id (IC-09, IC-19; PR B, slice A0; DM-01M6RA7FHRC5K8QPX7KN5FZ4S8, DM-01M6RA8MG55V8C2V9PXWDTRNQS). | High | Open | [build] | no |
+| FR-029 | Transitive overrides, floor to a fixed point | As core, I want overrides to compose top to bottom (`F` over `E` over `T` leaves `F`, which satisfies a requirement on `T`), and the requirement judged on the final set by iterating to a fixed point, so a required artifact is in force or satisfied in every answer (IC-09; PR B; DM-01M6RA7RPNZS810FTFC98Z13GH, DM-01M6RA7M56M1409EV9JX1EW83K). | High | Open | [build] | no |
+| FR-030 | Enhancers grounded | As core, I want an enhancer in force only when its support reaches a non-enhancer in force (least fixed point), so no ring of enhancers holds itself up (IC-09; PR B; DM-01M6RA8G0RGRWSFW4DERH8W319, DM-01M6R4W3ZMSESETMQ0ZQTCZCFJ). | High | Open | [build] | no |
+| FR-031 | Replace round trip | As core, I want `PUT /activations/{id}` to judge the floor only on the deny entries it adds and to drop ids the packs no longer hold (reported in `dropped`), so a GET then PUT of the same body never fails without a pack change (IC-19; slice A0; DM-01M6RA7XC5HC8915GZT2R3H83W). | High | Open | [build] | no |
+| FR-032 | Write warnings | As core, I want `ActivationChange.warnings` to name each artifact a write applied that the read will not put in force (`enhanced_target_not_in_force`, `overridden`), so a write predicts the read (IC-17; PR B; DM-01M6RAA2B2G9PNXN2F9SJ7B1CR). | Medium | Open | [build] | no |
+| FR-033 | Lock scope and own policy | As core, I want a pack's policy to lock and enforce only artifacts of the pack and of the packs it builds on (`depends_on` and lineage), and never to bind the pack itself, so an enterprise pack can enforce over the packs it builds on without reaching unrelated packs (IC-19; slice A0; DM-01M6RA97220XBR7RR447FE2JXD, DM-01M6RAA6Y7NVVGKVKQV05GZYES). | High | Open | [build] | no |
+| FR-034 | `includeDeactivated` clears what it reaches | As core, I want a select with `includeDeactivated` to clear deny entries only on artifacts its walk reaches and selects, not on lineage ancestors it passes through (IC-19; slice A0; DM-01M6RA9XQSH3E07C7VCPCVD6R4). | Medium | Open | [build] | no |
+| FR-035 | Sibling settlement | As core, I want `enhances` not to count as a sibling conflict, and a settlement to name exactly one winner (IC-19; slice A0; DM-01M6RA92BS6GGCYTRCFQDYYY5S). | Medium | Open | [build] | no |
+| FR-036 | Removal against the new tree | As core, I want the inbound-reference check of a `DELETE` or a replace to judge references against the tree as it will be after the change (referrers the same request removes do not block), to count other packs' preset items as references, and every `409 artifact_referenced` to list the referring artifacts and packs (IC-06; PR A; DM-01M6RA9MQ6YAP048KD43DNFS4F, DM-01M6RA8MG55V8C2V9PXWDTRNQS). | High | Open | [build] | no |
+| FR-037 | Registration access and audit | As the operator, I want registration refused without an authenticated principal, off unless `charter.registration.enabled` and the source kind's own flag are on (the git allowlist empty by default), and every attempt written to an audit log (IC-18; PR A; post-plan security squad 7–8). | High | Open | [build] | no |
+| FR-038 | Cascade over merged edges | As core, I want the write cascade to walk the merged edges once the merge exists, so it never follows an edge of an overridden artifact (IC-07; PR B; DM-01M6R4W1H9P3451V89KHP97XKM). | Medium | Open | [build] | no |
+| FR-039 | Pack read | As core, I want `GET /packs/{packId}` to answer the stored pack's summary (`PackRegistration` shape, with a `self` link), so `Location` and `_links` point at a declared read (IC-02; PR A; post-plan contract squad). | Medium | Open | [build] | no |
+| FR-040 | One kind model | As core, I want mission types selected and denied like any kind (`selected.mission_type`, `deactivated.mission_type`, except when required or locked), selecting a mission type to cascade to its steps, and its steps and bound artifacts in force only while it is, so one rule set covers every kind (IC-20; slice A0; DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY, DM-01M6RCXTS0SMDNTWZ8G7GJ2P5S, DM-01M6RCXZ9HSHT4K3443YYZ8ZFC). | High | Open | [build] | no |
+| FR-041 | Remnant members refused, storage v2 | As core, I want `activatedKinds` and `missionTypes` on any activation write refused `422` now, a stored v1 document upgraded on read to `schemaVersion: 2` with the same in-force set, one kernel kind registry, and presets free to name any kind (IC-20; slice A0; DM-01M6RCY40CQQTHC130RWF43W0D, DM-01M6RCY8MYNGNPJ247M2Y4880N). | High | Open | [build] | no |
+| FR-042 | Client round trip | As core, I want a GET then PUT of an activation through the generated client to leave its revision unchanged, pinned by a test (the client turns an absent list into `[]` today) (IC-19; slice A0; A7 squad side finding). | Medium | Open | [build] | no |
 
 ### Non-Functional Requirements
 
@@ -217,11 +257,16 @@ A distribution pack settles two packs at one level that define the same artifact
 |----|-------|-------------|----------|----------|--------|
 | NFR-001 | Complexity limits | Every new or changed method stays within cyclomatic complexity ≤ 15, NPath ≤ 1000, ≤ 60 lines and nested-if depth ≤ 1; the suppression register does not grow. | Maintainability | High | Open |
 | NFR-002 | Scenario coverage | Each operation built or unreserved here has at least one behavioural `@contract` scenario that fails before and passes after; a `@reserved` pin does not count (ADR-0059 D1). | Quality | High | Open |
-| NFR-003 | Read latency | An effective read over a closure of 10 packs and 2,000 artifacts answers in under 300 ms CPU at p95 over 50 runs (report-only timing budget, like the activation budgets). | Performance | Medium | Open |
-| NFR-004 | Upload bound | A whole-pack archive over 32 MiB, or with more than 10,000 entries, is refused `413` / `422` before any file is written. | Security | High | Open |
-| NFR-005 | Archive safety | No archive entry may write outside the pack directory (no absolute paths, `..`, links or devices); 100% of a corpus of crafted archives is refused. | Security | High | Open |
+| NFR-003 | Read latency | An effective read over a closure of 10 packs and 2,000 artifacts, measured end to end through the HTTP layer (MockMvc, warm JVM, 10 warm-up runs), answers in under 300 ms wall time at p95 over 50 runs. The budget is reported at 1× and fails the build at 3× (a regression guard, not a flaky gate). | Performance | Medium | Open |
+| NFR-004 | Upload bound | A whole-pack archive over 32 MiB is refused `413` before the body is read; one with more than 10,000 entries (zip: counted from the end-of-central-directory record before any entry is read) or over 32 MiB expanded is refused `422`, having read at most 32 MiB + 64 KiB of decompressed bytes, and having written nothing outside staging. | Security | High | Open |
+| NFR-005 | Archive safety | No archive entry may write outside the pack directory (no absolute paths, `..`, links or devices; names ASCII `[A-Za-z0-9._-]` per segment; files `0600`, directories `0700`); 100% of a corpus of at least 20 crafted archives (tar, zip and git trees) is refused, each with its expected violation. | Security | High | Open |
 | NFR-006 | Atomicity under concurrency | With 8 concurrent uploads of one pack and readers in parallel, every read in 100 runs sees exactly one complete version. | Reliability | High | Open |
 | NFR-007 | One verified read | Each effective read composes the closure once from one verified read of the packs (as `ClosureQueries` does today). | Performance | High | Open |
+| NFR-008 | Registration acceptance | `202` is answered within 1 s of the last body byte at p95 over 50 runs of a 32 MiB archive; a registration reaches `succeeded` or `refused` within the source deadline (60 s) plus 30 s, or ends `refused` with `registration_timed_out`. | Performance | High | Open |
+| NFR-009 | Bounded ingest | At most 2 registrations run at once and at most 8 wait; the next answers `503` with `Retry-After`. The registry lock is taken with a 5 s `tryLock` (else the registration ends `refused` `503`), and no download, extraction or fetch runs under it. A staging sweep leaves no staging directory older than 15 minutes, and a registration is refused before writing when the pack volume has less than 2× the archive bound free. | Reliability | High | Open |
+| NFR-010 | Audit completeness | 100% of registration and `DELETE` attempts, accepted or refused, write one audit record (principal, `packId`, source kind and locator with the query cut, outcome, revision before and after). | Security | High | Open |
+| NFR-011 | git floor | The git source is usable only with `git` ≥ 2.50.1, checked at startup; below it, or without the binary, 100% of git-source requests are refused `503 pack_source_unavailable` and the other source kinds work. | Security | High | Open |
+| NFR-012 | Escaped errors | Every refusal body built from untrusted input (archive names, URLs, git stderr) escapes control characters and truncates each value to 256 bytes; git failures map to a fixed set of reasons, never raw stderr. | Security | Medium | Open |
 
 ### Constraints
 
@@ -231,8 +276,9 @@ A distribution pack settles two packs at one level that define the same artifact
 | C-002 | Hexagonal slices, no shadow logic | Merging and composition live in `packs`; `activations` asks `packs` through its port and never re-implements a walk or a merge; `HexagonalArchitectureTest` covers any new code. | Technical | High | Open |
 | C-003 | No core changes | Nothing in spec-kitty core changes in this mission. | Business | High | Open |
 | C-004 | Design is the oracle | Acceptance is against fixture packs authored per rule from the ADRs (ADR-0055 D3), not against core's Python answers. | Technical | High | Open |
-| C-005 | Stacked delivery | The mission ships as three stacked PRs on top of #399: A (the ADR, whole-pack `PUT`/`POST`, `DELETE`s), B (layer merge, `listEffectiveArtifacts`, skipped report), C (effective graph, action context). | Technical | Medium | Open |
+| C-005 | Stacked delivery | The mission ships as three stacked PRs on top of #399: A (slice A0, the ruling changes to #399's built behaviour, pending operator confirmation; then the ADR, asynchronous whole-pack `PUT`/`POST`, the impact check, `DELETE`s, the write generation), B (layer merge, the effective set, `listEffectiveArtifacts`, skipped report, write warnings), C (effective graph, action context, the deny-satisfied-by-override write rule). | Technical | Medium | Open |
 | C-006 | No disabled tests, no new suppressions | No test is disabled or quarantined to get green, and no static-analysis suppression is added. | Quality | High | Open |
+| C-008 | git is a host binary | The git source uses the system `git` binary, ≥ 2.50.1, never JGit; it never checks out a work tree (objects are read with `ls-tree` and `cat-file --batch`). README.md and `docs/guides/run-in-a-container.md` state the requirement. | Technical | High | Open |
 | C-007 | Divergences recorded | Each behaviour that differs from core (the layer override replacing whole, the CRG `overrides` read, the typed skipped report) gets a divergence-register entry. | Technical | Medium | Open |
 
 ### Key Entities
@@ -251,6 +297,9 @@ A distribution pack settles two packs at one level that define the same artifact
   states it); `POST /packs` by source supports the source kinds ADR-0005 names, starting with the ones the service can
   already fetch.
 - The pack revision used for `If-Match` is the content digest of the stored pack.
+- Registration status is held in memory on the one replica (ADR-0061), bounded and kept 1 hour after it ends; a
+  restart forgets pending registrations, and their status URI answers `404`. The client learns completion by polling
+  the status URI; no outbound webhook is called (a push callback would be a new SSRF surface).
 - `pack_level` of a stored pack cannot change by upload; moving a pack to another level means deleting and
   re-registering it under configuration.
 - Language filtering follows the activation's `languages` as the contract already describes.
@@ -267,3 +316,5 @@ A distribution pack settles two packs at one level that define the same artifact
   registration scenarios. — [build] · no-op passable: no
 - **SC-004**: The offering and composition scenarios that pass today still pass unchanged. — [ratchet] · no-op
   passable: yes
+- **SC-005**: Every counter-example of the ruleset review (A1–A15, B1–B8) has a scenario pinning its ruled answer. —
+  [build] · no-op passable: no

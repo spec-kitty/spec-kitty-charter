@@ -3,6 +3,8 @@
 **Branch**: `issue-10-layer-merge-effective-reads` (stacked on #399, the activation register's PR B; not yet on `main`) | **Date**: 2026-11-06 | **Spec**: [spec.md](spec.md)
 **Input**: Mission specification from `kitty-specs/layer-merge-and-effective-reads-01M6R0J6/spec.md`, the ten resolved
 decisions in [decisions/](decisions/) and the operator's planning rulings of 2026-11-06 (recorded in research.md).
+**Folded 2026-11-06:** the operator's rulings on the ruleset review (A1–A15, B1–B8; research R13–R18) and the
+post-plan squad's security, architecture and contract findings. See [the fold section](#fold-of-the-ruleset-rulings-and-the-post-plan-squad-2026-11-06).
 
 **Note**: This template is filled in by the `/spec-kitty.plan` command. See `packs/built-in/missions/mission-steps/software-dev/plan/prompt.md` for the execution workflow.
 
@@ -16,7 +18,12 @@ operator ruled Q1 to Q9 on 2026-11-06. No question is open.
 The charter service gains three things: whole-pack registration with removal, the layer merge, and the four
 effective reads. Together they finish ADR-0055 steps 3 and 4.
 
-- **PR A, registration and removal.**
+- **PR A, slice A0: changes to #399's built behaviour** that the ruleset rulings make (FR-026, FR-028, FR-031,
+  FR-033 to FR-035). Placement pending operator confirmation; see
+  [Changes to built behaviour](#changes-to-built-behaviour-from-399).
+- **PR A, registration and removal.** Registration is asynchronous (`202` and a status URI, FR-024) and runs an
+  impact check over every closure the pack joins (FR-025). The write generation and the read retry move here from
+  IC-07, because PR A's writes open the race.
   - A new ADR, **ADR-0065**, records the rule: registering a pack fully replaces it, the per-artifact writes are
     helpers, and removal is by `DELETE`. It supersedes ADR-0026 D2 and stays distinct from the derived-pack removal
     of ADR-0030. ADR-0063 is ours (the policy file), and ADR-0064 is claimed for #240
@@ -33,7 +40,8 @@ effective reads. Together they finish ADR-0055 steps 3 and 4.
   - `listEffectiveArtifacts` and `getActivationSkippedReport` are built in `activations` on the existing
     `AvailablePacks` port. The skipped report gains typed buckets.
 - **PR C, the graph and the action context.** `getEffectiveGraph`, with its list of layer overrides, and
-  `getEffectiveActionContext`. Both walk the merged edges in `packs`, through the same port.
+  `getEffectiveActionContext`. IC-13 (the deny-satisfied-by-override write rule) moves here, so PR B changes no
+  write rule. Both walk the merged edges in `packs`, through the same port.
 
 Each read composes the closure once, from one verified read (NFR-007). The cascade stays a write-time operation. The
 offering stays an unmerged catalog (FR-023).
@@ -49,8 +57,9 @@ offering stays an unmerged catalog (FR-023).
   dependencies commons-io, commons-lang3 and commons-codec. See the [supply-chain section](#supply-chain-directive_051).
 - The JDK for the rest: `GZIPInputStream` (gzip), `java.net.http` (HTTPS fetch, through the
   existing guarded exchange) and `ProcessBuilder` (git).
-- **Host requirement: the system `git` binary**, 2.37 or later (it needs `http.curloptResolve`). It is used only by
-  `POST /packs` with a git source; the service starts without it, and a git source then answers `422`.
+- **Host requirement: the system `git` binary**, 2.50.1 or later (C-008, NFR-011; no JGit). It is used only by
+  `POST /packs` with a git source; the service starts without it, and a git source then answers
+  `503 pack_source_unavailable`.
 
 **Storage**:
 
@@ -164,7 +173,7 @@ service/
 │            infra.api:   PackRegistrationController (PUT /packs/{packId}, POST /packs, both DELETEs),
 │                         ArchiveBodyAdvice (413/415 before binding), mappers
 ├── activations/
-│            domain:      EffectiveSet (the effective-set algebra: selection × activatedKinds × languages × floor −
+│            domain:      EffectiveSet (the effective-set algebra: selection × languages × floor −
 │                         deny, CRG overrides, enhances read), EffectiveSkippedReport (typed buckets), MergedSnapshot
 │                         (value), EffectiveTag (the read ETag)
 │            application: EffectiveReadService (the four reads, one PacksSession each); AvailablePacks /
@@ -210,7 +219,8 @@ gradle/libs.versions.toml, gradle/verification-metadata.xml (Commons Compress an
 
 ## Implementation Concern Map
 
-The concerns are listed in dependency order; IC-13, added after the Q9 ruling, follows IC-09. Each belongs to PR **A**, **B** or **C** (C-005). The stack is #399 →
+The concerns are listed in dependency order; IC-13, added after the Q9 ruling, follows IC-09 and now ships in PR C.
+IC-14 to IC-20 come from the 2026-11-06 fold and are described in the fold section. Each belongs to PR **A**, **B** or **C** (C-005). The stack is #399 →
 A → B → C.
 
 ### IC-01 (A) — ADR-0065 and the registration record
@@ -294,6 +304,17 @@ A → B → C.
 - **Writing.** Entries are written with `CREATE_NEW` and `NOFOLLOW_LINKS` under a fresh staging directory, with
   owner-only permissions.
 - **Archive shape.** One leading directory, the pack directory as authored, is stripped when every entry shares it.
+- **Hardening (post-plan security squad 4, 5, 6, 11).**
+  - tar: the decompressed stream is wrapped in a counting bound, so a bomb stops at 32 MiB + 64 KiB read; an
+    entry's type is classified from the raw link flag against an allowlist (`0`, NUL, `5`, and the PAX/GNU
+    long-name headers), and any other flag is refused; the reader runs in strict mode (no lenient header parsing).
+  - zip: the end-of-central-directory entry count is read before any entry, and over 10,000 is refused;
+    `setUseUnicodeExtraFields(false)`; a name must be ASCII or carry the EFS flag; the local and central names must
+    match; overlapping entries are refused; the body is spooled to an owner-only file in staging.
+  - Names: each segment matches `[A-Za-z0-9._-]+`, one leading `./` is stripped, and files are written `0600`,
+    directories `0700`.
+  - `packId`: the path segment matches `^[a-z0-9][a-z0-9-]{0,62}$`, is unique after case folding among the
+    configured packs, and the resolved directory's real path must have that name under the writable root.
 - **The corpus:** NFR-005's crafted archives are kept as tests, each built by code and not committed as a binary.
   They include zip-slip, absolute paths, symlink and hardlink chains, a device entry, a PAX path override, a GNU
   long name with `..`, a duplicate after case folding, a zip bomb, a 10,001-entry archive, a local-header and
@@ -312,8 +333,12 @@ A → B → C.
 
 - **Purpose:** make `PUT /packs/{packId}` hold exactly the uploaded pack, or change nothing (FR-001 to FR-003,
   FR-007).
-- **Locks (research R-lock).** The slow work runs first, outside every lock: the download, the extraction and the
-  staging. Steps 2 to 10 then run under `RegistryWriteLock`, then the pack's lock, always in that order.
+- **Asynchronous (FR-024, IC-14).** The controller does the synchronous checks (access, body size, media type and
+  magic bytes, `If-Match` against the current revision) and answers `202`; the flow below runs as the registration
+  job.
+- **Locks (research R-lock).** The slow work runs first, outside every lock: the download, the extraction, the
+  staging, the load and the revision (steps 1, 2 and 4). Steps 3 and 5 to 10 then run under `RegistryWriteLock`,
+  taken with a 5 s `tryLock` (else `refused` `503`), then the pack's lock, always in that order (NFR-009).
 - **The flow:**
   1. Extract to staging (IC-03), outside the locks.
   2. `WholePackStore.load(staging)`. A read violation, an unmodelled file or an unreadable graph is `422` with its
@@ -334,16 +359,19 @@ A → B → C.
      `If-Match`.
   7. Run the write gate over the diff of artifacts added, changed and removed, along the new pack's closure
      (ADR-0063 D3): a removal or change the level does not allow is `409 governance_policy_violation`.
-  8. Compose the configured packs with the staged pack in place. A composition refusal answers `422` with its
-     composition code.
-  9. Check the inbound references of every removed artifact, with IC-06's scan. A reference from another pack
-     refuses the replace with `409 artifact_referenced` (operator, Q3).
+  8. Check the inbound references of every removed artifact, with IC-06's scan run against the staged tree
+     (FR-036): a reference from another pack refuses the replace with `409 artifact_referenced` (operator, Q3),
+     listing the referrers. The scan runs before the compose, so a removal of a referenced artifact is answered
+     `409`, not a composition `422`.
+  9. The impact check (IC-15): compose every closure the staged pack joins. A refusal answers `422` with its code,
+     naming the packs.
   10. Commit: `PackCommitStore.replaceWhole`, the staging swapped in by the two-rename swap. A new pack goes through
       `create`. The write generation is odd for the duration of the swap.
 - **The registry lock on the existing writes.** `RegistryWriteLock` is introduced here for every pack write: the
   per-artifact registrations, `putPackRelationship` (so `ComposedRelationshipTargetCheck` cannot race a `DELETE`),
   the new registrations and both `DELETE`s.
-- **The answer:** the revision as `ETag`.
+- **The answer:** the job ends `succeeded` with the `PackRegistration` and the revision as its `ETag`, plus the
+  floor and lock notices (FR-027). The `(pack_version, revision)` pair is appended to the version history (IC-16).
 - **Relevant requirements:** FR-001, FR-002, FR-003, FR-007, NFR-006, SC-003.
 - **Affected surfaces:** `packs.application.PackRegistrationService`, `packs.infra.storage.PackCommitStore`,
   `WholePackStore`, `StorageRootLocations` (the writable level), `PackMutabilityPolicy`, `PackWriteLocks`,
@@ -367,23 +395,40 @@ A → B → C.
     `application/gzip`, `application/zip` or `application/octet-stream` (the format then sniffed from the magic
     bytes) and 32 MiB (research R9).
   - `HttpsGuideFetcher` becomes a thin user of it, and its tests stay as they are.
-  - Its allowlist is its own: `charter.pack-sources.https.allowed-hosts`.
+  - Its allowlist is its own: `charter.pack-sources.https.allowed-hosts`. `GlobalAddressResolverProvider` guards
+    the union of every named allowlist (guides, archives, git), checked at startup, so a host added for archives
+    cannot escape the rebinding guard (squad 1).
+  - When the request names a `sha256`, the downloaded body must match it, else `refused`
+    `422 pack_source_refused`.
 - **Git.**
   - `GitSourceFetcher` validates the URL and the ref (research R9).
   - It resolves and checks the host as the HTTPS guard does, then pins the checked address with
-    `http.curloptResolve`.
+    `http.curloptResolve`. The pin is built from the canonical URL the service rebuilt from parsed parts (lower-case
+    host, IPv6 bracketed, port 443), never from the URL as sent, so another spelling of the host cannot slip past
+    the pin (squad 3).
   - It runs `git` through `GitCommand`: `ProcessBuilder` with a fixed argument list and no shell, a sanitised
     environment, hooks off, `https` only, no submodules and no LFS.
-  - It does `init`, then a `fetch --depth 1` of the ref, then a `checkout --detach` into a temporary directory, with
-    a deadline and a size watch.
-  - It copies the work tree, without `.git`, through the same path rules into staging.
+  - It does `init --bare --template=`, then a `fetch --depth 1 --no-tags` of the ref into a private refspec
+    (`refs/charter/fetched`), then `rev-parse --end-of-options` to resolve the commit, with a deadline and a size
+    watch. It never checks out a work tree (C-008).
+  - It reads the tree with `ls-tree -r -z` and the blobs with `cat-file --batch`, accepting only modes `100644`,
+    `100755` and `040000` (a link `120000` or a submodule `160000` is refused), and writes each blob into staging
+    through IC-03's path rules and limits.
+  - When the request names a commit, the resolved commit must equal it; a branch ref without a commit requires
+    `If-Match` on the target pack (post-plan security squad 7).
   - The resolved commit is answered in `PackRegistration.source.commit`.
 - **Local path.**
   - The path is relative to `charter.pack-sources.filesystem.root`, read through `toRealPath()` and confined to that
     root.
   - Links inside it are refused, as in an archive.
-- **Refusals.** A refused source answers `422 validation_failed` with the guard's reason, as a refused `guideUri`
-  does.
+- **Refusals.** A refused source ends the registration `refused` with `422 pack_source_refused` and a fixed reason
+  (host not allowed, address not global, bad ref, wrong media type, digest mismatch); an upstream failure is `502`,
+  an upstream timeout `504`, and a disabled or missing source kind `503 pack_source_unavailable`. Reasons come from
+  a fixed set, never raw stderr (NFR-012).
+- **The target.** `POST /packs` names the target `packId`; the fetched descriptor's `name` must match it.
+- **Local path TOCTOU (squad 10).** The path is walked with a `SecureDirectoryStream` opened on the root; only
+  regular files with one link (`nlink == 1`) are read; a root under `/proc`, `/sys` or `/dev` or overlapping the
+  config root is refused at startup; every refusal reads the same, so the answer does not reveal what exists.
 - **Locks.** The fetch, the git run and the copy into staging all happen before any lock is taken. Only IC-04's
   locked steps follow. `POST /packs` takes the same `If-Match` and `If-None-Match: *` as the `PUT`.
 - **ArchUnit.** `NetworkCodeBoundaryTest` gains a rule: only `packs.infra.fetch.git` names `ProcessBuilder` or
@@ -394,8 +439,10 @@ A → B → C.
   `docs/guides/run-in-a-container.md` (the git host requirement).
 - **Sequencing/depends-on:** IC-03, IC-04.
 - **Risks:**
-  - git's own resolver is outside the JVM. The pinned address closes rebinding, but a `git` older than 2.37 ignores
-    the pin, so the service checks the version at first use and refuses the git source below it.
+  - git's own resolver is outside the JVM. The pinned address closes rebinding. The service checks `git` ≥ 2.50.1
+    at startup and disables the git source below it (NFR-011).
+  - Test seams: `GitCommand` and `GuardedHttpsExchange` sit behind ports, so the scenarios run against a local
+    bare repository served over a test HTTPS server and a stub exchange, never the network.
   - Extracting `GuardedHttpsExchange` touches the most security-reviewed class in `packs`. It needs its own review
     lens.
 
@@ -451,10 +498,16 @@ A → B → C.
   - the `LayerOverride` records (artifact, winning pack and level, losing pack and level);
   - the merged `EdgeIndex`. Edges starting at a losing place are dropped. Edges ending at a losing place, bare or
     `<pack>::`-qualified, resolve to the winner (FR-010).
+- **Presets.** `LayerMerge` is the one winner function for every id, presets included; a preset id's requirement is
+  the union over every governing copy (A1, FR-028), computed beside the winner.
+- **Facts cache.** `PackCompositionFacts` is cached per pack, keyed by the pack's revision, with a per-pack write
+  generation, so a read recomposes only what changed.
+- **The cascade (FR-038).** Once the merge exists, the write cascade walks the merged `EdgeIndex` (decision
+  `DM-01M6R4W1H9P3451V89KHP97XKM`), so it never follows an edge of an overridden artifact.
 - **Facts.** `PackCompositionFacts` gains `languages` (each held URN's `applies_to_languages`), read in the same
   assembly. `ClosureView.merged()` builds the merge lazily from the read it already holds (NFR-007), so the writes
   and `/offering` do not change (FR-023, SC-004).
-- **The read guard (research R-lock).**
+- **The read guard (research R-lock)** now ships in PR A (IC-04's writes open the race); IC-07 relies on it.
   - `ConsistentRead` checks the write generation as well as the two digests. An odd or changed generation is
     `STALE_INPUT`, and so is a first-digest failure while it moves.
   - `ClosureQueries.snapshot` retries a stale read up to three times, which is new.
@@ -468,7 +521,7 @@ A → B → C.
 - **Risks:**
   - `holderOf` today answers the first holder in closure order. The merged view must answer the winner without
     changing the compose's reference checks, which keep the first-holder rule.
-  - The write cascade keeps walking the unmerged index (research R2, open item 3).
+  - The write cascade now walks the merged index (FR-038); open item 3 is closed.
 
 ### IC-08 (B) — Contract B and the read scenarios, red first
 
@@ -477,8 +530,8 @@ A → B → C.
 - **`EffectiveArtifactReason`.** It drops `kind_default` (FR-022, ADR-0053 d10) and gains `overridden` and
   `mission_type_not_in_force`.
 - **`SkippedReport`.** It gains the required `staleIds`, `denyNotApplied`, `languageFiltered`, `overridden` and
-  `missionTypeNotInForce` buckets. A write's `ActivationChange.skipped` answers them empty. At read, `skippedByScope`
-  means outside `activatedKinds` (ADR-0059 follow-up).
+  `missionTypeNotInForce` buckets. A write's `ActivationChange.skipped` answers them empty. `skippedByScope` is
+  removed (IC-20).
 - **The two operations.**
   - `x-reserved` is removed from `listEffectiveArtifacts` and `getActivationSkippedReport`.
   - Their `501` pins are retired, so `ReservedOperationCoverageTest` goes 4 → 2.
@@ -512,21 +565,29 @@ A → B → C.
 - **The port.** `AvailablePacks.session(...)` answers `merged()`, a `MergedSnapshot` value. It holds the winners with
   provenance and policy level, the languages per URN, the `overrides` and `enhances` edges among the winners, and
   the layer overrides.
+- **Where it lives (post-plan architecture squad; C-002).** The override, floor and enhancer steps walk edges, so
+  they live in `packs.domain.InForceResolution`; `activations` passes the document's selection, deny entries,
+  kinds, languages and mission types through the port and gets the states back. `EffectiveSet` in `activations`
+  keeps only the precedence and the buckets.
+- **A stratified fixed point (research R13).** Strata: (1) the candidate set; (2) overrides, transitive top to
+  bottom (A3); (3) the floor, iterated to a fixed point on the final set (A2); (4) enhancers, as a least fixed point
+  grounded in a non-enhancer in force (A8). A stratum never changes an earlier one; a requirement that cannot be met
+  without a cycle is reported, not looped.
 - **`EffectiveSet`** is a pure domain function over the document and the `MergedSnapshot` (research R2):
-  1. The base set: the selected ids of the merged closure within `activatedKinds` and the language filter, minus
+  1. The base set: the selected ids of the merged closure (every kind, IC-20) within the language filter, minus
      the deny entries, plus every locked artifact. A deny entry on a locked artifact is not applied.
   2. Overrides: every target of an `overrides` edge from the base set leaves force (FR-016). A locked target stays,
      and the override is reported in `overrideNotApplied` (operator, Q6). An override cycle refuses with
      `pack_unreadable`.
   3. The requirement: a required, not locked artifact is satisfied when it, or an active override of it, is in
      force (operator, Q6 and Q8). An unsatisfied one is put in force with reason `required`, and a deny entry on it
-     is not applied (`denyNotApplied`). The overrides of what step 3 adds are applied once more.
+     is not applied (`denyNotApplied`). The floor is judged on the final set, to a fixed point (stratum 3).
   4. `enhances` (FR-015): an enhancer is in force only by its own route and only with a target in force (operator,
      Q8). Otherwise it is `inactive` with `enhanced_target_not_in_force`. The pruning repeats down chains, and a
      step enhancer is judged by its mission type. The reads report "T is enhanced by E" both ways, and pull nothing
      in.
-  5. A pruned enhancer that also overrides withdraws its overrides, and steps 2 to 4 run once more. A second change
-     refuses with `pack_unreadable` (research R11).
+  5. An artifact that both enhances and overrides one target is refused at registration (A11, FR-025), so this
+     step no longer exists.
   6. Each closure artifact gets one state and one reason, and each skipped one goes in one bucket, by a fixed
      precedence (data-model.md).
 - **`EffectiveReadService`.** It serves the reads:
@@ -551,7 +612,7 @@ A → B → C.
   - Paging over a set recomputed per request is stable only for one `ETag`. The cursor carries the tag, and a
     cursor from another tag answers `400`, as the artifact listing's cursor does.
 
-### IC-13 (B) — activations: a deny entry on a required artifact, satisfied by an override
+### IC-13 (C) — activations: a deny entry on a required artifact, satisfied by an override
 
 - **Purpose:** accept a deny entry on a required `T` when an active override of `T` satisfies the requirement and
   `T` is not locked (operator, Q9; research R12).
@@ -559,10 +620,10 @@ A → B → C.
   - It lives in `activations.domain.DocumentRules`, the floor refusal of #398 and #399. Locked `T`: `409
     artifact_locked`, unchanged. Required `T`: accepted when an override of `T` is active in the document as it will
     be stored after the write, else `409 artifact_required`.
-  - "Active" is selected or on the floor, within `activatedKinds`, the languages and `missionTypes`, not denied, and
+  - "Active" is selected or on the floor, within the languages, bound to a mission type in force, not denied, and
     not hidden. It is judged by `EffectiveSet` over the `MergedSnapshot`.
   - The judgement's scope is DIV-204's:
-    - create and replace judge every deny entry of the document;
+    - create judges every deny entry of the document; replace judges only the deny entries it adds (A4, FR-031);
     - deactivate, apply-preset with `force` and select with `includeDeactivated` judge only the deny entries they
       add;
     - removing the override later is not refused, and the read then lists the deny entry in `denyNotApplied`.
@@ -636,8 +697,10 @@ A → B → C.
 - **Purpose:** keep every reader's picture current in the PR that changes behaviour (DIRECTIVE_037, C-007).
 - **PR A.**
   - ADR-0065 (IC-01).
-  - The README.md and `run-in-a-container.md` host requirement: `git` 2.37 or later for git sources. The image must
-    carry it.
+  - The README.md and `run-in-a-container.md` host requirement: `git` 2.50.1 or later for git sources, no JGit
+    (C-008). The image must carry it. This is an IC-12 deliverable; nothing is edited before PR A.
+  - The A13 note: a cascading deactivate removes `t` and what its walk reached unless something else active keeps
+    it; prior selections are not remembered (accepted and documented, `DM-01M6RA8XSM9CZZX1ADX6G80T3X`).
   - `http-status-codes.md`: `413` and `415`.
   - `compose-packs.md`: register and remove.
   - `hexagonal-service.md`: the `infra.archive` ring and the process rule.
@@ -662,6 +725,237 @@ A → B → C.
 - **Sequencing/depends-on:** the code concern of each PR.
 - **Risks:** the docs checks (`check_docs.py`, markdownlint, cspell) run on every new term, for example `curlopt`.
   Add the cspell words with the change.
+
+## Fold of the ruleset rulings and the post-plan squad (2026-11-06)
+
+The operator ruled every item of the ruleset review (research/ruleset-review-2026-11-06.md) on 2026-11-06, recorded
+as decisions `DM-01M6RA7F…` to `DM-01M6RAA6…` (research R13 to R18). The post-plan squad's findings are folded into
+IC-03 to IC-09 above and into the concerns below.
+
+### IC-14 (A) — Asynchronous registration and its status resource
+
+- **Purpose:** FR-024 (A5, `DM-01M6RA8225EXG6GAT1MM2R9T6C`).
+- **Accept.** `PUT /packs/{packId}` and `POST /packs` run the synchronous checks (access, `charter.registration.enabled`
+  and the source kind's flag, the `packId` grammar, body size, media type and magic bytes, `If-Match` /
+  `If-None-Match: *` against the current revision), then answer `202 Accepted` with `Location:
+  /api/v1/pack-registrations/{registrationId}` and a `PackRegistrationStatus` body.
+- **Run.** A bounded executor (2 running, 8 waiting; the next is `503` with `Retry-After`, NFR-009) runs IC-04's
+  flow, and IC-05's fetch first for a source. `If-Match` is checked again under the lock; a revision moved since
+  acceptance ends `refused` `412`.
+- **Status.** `GET /pack-registrations/{registrationId}` answers `pending`, `running`, `succeeded` (with the
+  `PackRegistration`, the notices of FR-027 and `_links.pack`) or `refused` (with the `Problem` the synchronous API
+  would have answered). Status is kept in memory for 1 hour after it ends, at most 1,000 entries (one replica,
+  ADR-0061). The client polls the URI; there is no outbound callback (SSRF).
+- **Identical re-send.** Ends `succeeded` with outcome `unchanged`.
+- **`DELETE`s stay synchronous**: they read no source and do one bounded compose.
+- **Relevant requirements:** FR-001, FR-004, FR-024, NFR-008, NFR-009.
+- **Affected surfaces:** `packs.application.RegistrationJobs` (new), `PackRegistrationController`, the contract
+  (`paths/pack-registrations_registrationId.yaml`, `PackRegistrationStatus`).
+- **Sequencing/depends-on:** IC-02, IC-04.
+- **Risks:** a restart forgets pending jobs (their URI then answers `404`); clients re-send, which the version rule
+  makes idempotent.
+
+### IC-15 (A) — The registration impact check and the registration-time refusals
+
+- **Purpose:** FR-025 and the registration half of FR-027 (A5, A6, A8, A11, A12, B4).
+- **What it judges,** over every closure that contains the staged pack (not one global compose; ruleset G8), with the
+  staged pack in place:
+  - the compose rules (C17–C21) and the mutability rules, with the lock scope of FR-033;
+  - an `overrides` edge onto a target that is not `open` (A6): `422 override_not_permitted`;
+  - an `enhances` cycle, or an enhancer with no route to a non-enhancer (A8): `422 enhances_cycle`;
+  - an artifact that both enhances and overrides one target (A11): `422 conflicting_relations`;
+  - an `overrides` edge that resolves to its own source after the layer re-pointing (A12): `422 self_override`;
+  - an `overrides` cycle (C28): `422 override_cycle`.
+  Each violation names the closure's root pack and the packs involved.
+- **Notices (B4).** On success, the status lists the must-have items and locks added and removed. The activations
+  whose in-force set changes are listed from PR B on, through an `ActivationImpact` port that `packs` declares and
+  `activations.infra` implements, so the dependency direction is kept (C-002).
+- **Read side.** Stored packs registered before this rule are not re-judged; a read that meets one of these shapes
+  answers `500 pack_unreadable` naming the pack, as today. The startup census logs them.
+- **Relevant requirements:** FR-025, FR-027.
+- **Affected surfaces:** `packs.application.RegistrationImpact` (new), `PackCompositionResolver`, `CharterRefusalCode`.
+- **Sequencing/depends-on:** IC-04.
+- **Risks:** the check composes every closure containing the pack under the registry lock; the closures are found
+  from the reverse `depends_on` index, and NFR-009's lock budget bounds it.
+
+### IC-16 (A) — The version→digest history
+
+- **Purpose:** FR-026's registration half (B1).
+- **Shape.** `<config-root>/packs/.history/<packId>.json`, a list of `(pack_version, revision, registeredAt)`, written
+  in the same swap as the pack. A registration whose version appears with another revision ends `refused`
+  `409 pack_version_conflict`, whether or not that version is the stored one. A `DELETE` keeps the history.
+- **Relevant requirements:** FR-002, FR-026.
+- **Sequencing/depends-on:** IC-04.
+
+### IC-17 (B) — Write warnings and the activation's deny notice
+
+- **Purpose:** FR-032 (B6/B7) and the activation half of FR-027 (B4).
+- **Warnings.** `ActivationChange` gains `warnings: [{code, artifact}]`, codes `enhanced_target_not_in_force`,
+  and `overridden` (`kind_not_activated` is gone with IC-20), computed from `InForceResolution` over the document as stored.
+- **Notice.** `Activation` gains `denyNotApplied: [urn]`, the deny entries the floor or a lock overrides.
+- **Sequencing/depends-on:** IC-09.
+
+### IC-18 (A) — Registration access, flags and audit
+
+- **Purpose:** FR-037, NFR-010 (post-plan security squad 8).
+- **Rules.** Registration and `DELETE` require an authenticated principal (`401`); `charter.registration.enabled`
+  (default `false`) and `charter.pack-sources.<kind>.enabled` gate them (`503 pack_source_unavailable` when off);
+  the git allowlist is empty by default. Every attempt writes one audit record through an `AuditLog` port
+  (structured log by default).
+- **Sequencing/depends-on:** IC-02.
+
+### IC-19 (A0) — The ruling changes to #399's built behaviour
+
+- **Purpose:** apply the rulings that change behaviour #399 already ships, before PR A's new surface. See the table
+  below. Placement as the first slice of PR A is **pending operator confirmation**.
+- **Contract.** One `### Changed` fragment per behaviour, and a `### Breaking` block where a `422` becomes a drop.
+- **Sequencing/depends-on:** #399.
+
+### IC-20 (A, slice A0) — The kind model revision (A7)
+
+- **Purpose:** FR-040 and FR-041 (A7 `DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY`; Q1 `DM-01M6RCXTS0SMDNTWZ8G7GJ2P5S`, Q2 `DM-01M6RCXZ9HSHT4K3443YYZ8ZFC`, Q3 `DM-01M6RCY40CQQTHC130RWF43W0D`, Q4 `DM-01M6RCY8MYNGNPJ247M2Y4880N`;
+  research R18 and research/a7-kind-model-2026-11-06.md). Mission types, steps and agent profiles follow the same
+  activation, override and enhancement rules as any artifact.
+- **Placement:** PR A, slice A0, after IC-19 and before PR B's reads, which are built on this model. **Pending
+  operator confirmation.** Core must regenerate its DTOs before this ships (Q4).
+- **The document.** `⟨packs, sel, deny, langs⟩`: `mission_type` joins `selected` and `deactivated`.
+  `ActivatableKind` and `SelectableKind` merge into one kind enum. A mission type can be denied like any kind,
+  except when it is required or locked (Q2): `409 artifact_required` / `artifact_locked`, as for other kinds.
+- **Refuse now (Q4).** `activatedKinds` and `missionTypes` on any activation write (create, replace, the
+  per-artifact writes, apply-preset) answer `422 validation_failed`, with a violation per member naming its
+  replacement (`selected.mission_type`). There is no deprecation window. Neither is stored or answered.
+- **Storage.** `schemaVersion: 2`. A stored v1 document is upgraded on read: `missionTypes` move to
+  `selected.mission_type`, and selections of a kind outside the v1 `activatedKinds` are dropped (they were never in
+  force; locks and the floor were never gated, so what is in force does not change). The upgrade is written back on
+  the next write. Every `ETag` changes once (one `412` per client holding an old tag).
+- **The mission-type cascade and binding (Q1).** Selecting a mission type cascades to the steps it holds, as
+  `requires` does. A step, and any artifact bound to mission type M (including `action:M/s`), is in force only while
+  M is: the binding prunes in the same stratum and shape as an enhancer that needs its target (research R13
+  stratum 4), and replaces the `stepEnh` exemption. Rule W32 ("a mission type never cascades") is withdrawn. E16
+  stays in `packs` with "M is in force" as its predicate; the second definition of "mission type in force" (`mts`)
+  is deleted.
+- **Presets (Q3).** A preset may name any kind; the skill and glossary_pack exclusion is dropped. The preset key
+  `activated_kinds` is refused at registration (`422`), and `activated_mission_types` becomes a plain member list
+  under `mission_type`.
+- **Kernel.** One kind registry for activations, presets, packs and the contract. The unused `orgRequirable`,
+  `selectionOverlayable` and `InForceWhenAbsent` are deleted. `MISSION_TYPE` becomes requirable, matching
+  `RequiredFloor`.
+- **Reads.** The reason `kind_not_activated` and the `skippedByScope` kind bucket are dropped (with `kind_default`,
+  FR-022). `EffectiveArtifact.kind` takes the merged enum, so the listing shows mission types. B7's question
+  disappears: a select brings its artifact into force.
+- **Contract (breaking, allowed on 0.x).** `ActivationDocument`, `CreateActivationRequest`,
+  `ReplaceActivationRequest` and `ActivationChange` lose `activatedKinds` and `missionTypes`; `selected` and
+  `deactivated` gain `mission_type`; the kind enums merge; `EffectiveArtifactReason` drops `kind_not_activated`;
+  `SkippedReport.skippedByScope` is removed; preset schemas accept every kind. One `### Breaking` block. There is no
+  `contract-charter-v*` baseline yet (0.2.0-SNAPSHOT), so `-PcontractBaseline=none` stands. The corpus
+  `valid/02`, `valid/03`, `valid/08` and `invalid/14` are rewritten, and new invalid cases pin the `422` for each
+  removed member.
+- **Divergences.** DIV-203 and DIV-501 are updated; a new DIV records that core's `activated_kinds` narrowing is
+  not honoured (a core project that narrows it sees a larger effective set).
+- **ADR amendments.** ADR-0020 (D4, D7, rulings 4–5), ADR-0042 D2, ADR-0050 decision 6 (marked built; "absent"
+  reconciled with ADR-0053 d10), ADR-0059 D2.2 and D6. The ruleset page's W2, W5, W17, W32 (withdrawn), E2, E9, E14
+  and E16 follow (owned by the ruleset fork, IC-12).
+- **Core (C-003: nothing changes in core in this mission).** Core's strict DTOs must be regenerated from the new
+  contract before it calls a server with this change, and a note goes into core's migration notes: `activatedKinds`
+  and `missionTypes` are refused, mission types are selected under `selected.mission_type`, and `activated_kinds`
+  narrowing is gone. Both are handed over in the PR description and an issue comment, not edited in core here.
+- **Tests.** About 45 test methods in 22 classes are rewritten or deleted (squad estimate); main code shrinks by
+  roughly 300 to 350 lines. Scenarios: a mission type selected cascades to its steps; a step of a denied mission type
+  is not in force; a deny on a required mission type is `409`; `activatedKinds` on a write is `422`; a v1 document
+  reads as its v2 upgrade with the same in-force set.
+- **Relevant requirements:** FR-013, FR-017, FR-019, FR-022, FR-040, FR-041, C-001, C-007.
+- **Affected surfaces:** `kernel` (the kind registry), `activations.domain.{ActivationDocument, DocumentRules,
+  CascadeRules, StaleIds}`, the document store (schema v2 and the upgrade), `packs` preset reading,
+  `packs.application.ActionContextWalk`, the contracts and corpus, `client-java`, `docs/adr/{0020,0042,0050,0059}`,
+  `docs/conformance/divergence-register.md`.
+- **Sequencing/depends-on:** IC-19.
+- **Risks:** one `412` per client after the upgrade; a client not yet regenerated gets `422` on every write. Its
+  reads still work.
+
+### Test coverage: the generated client's absent lists (side finding of the A7 squad)
+
+- **Hazard (exists in #399).** The generated client (`ActivationConfig.java:63-73`) turns an absent list into `[]`,
+  so a GET then PUT through the client changes the stored document and its revision. No test covers it.
+- **Item (FR-042, IC-19).** Add a client round-trip test: GET then PUT through `client-java` leaves the revision
+  unchanged. The fix (an absent list stays absent, or the server treats `[]` and absent alike when canonicalising)
+  follows from the test; no behaviour is assumed here.
+
+### Changes to built behaviour (from #399)
+
+Code areas are in the #399 worktree (`.worktrees/fold-b`, head `1d37ccd9`), read only. Proposed placement: slice A0
+of PR A, **pending operator confirmation**, unless the row says otherwise.
+
+| Ruling | Change | Code area (#399) | Placement |
+|---|---|---|---|
+| B5 (`DM-01M6RA9XQSH3E07C7VCPCVD6R4`) | `includeDeactivated` clears deny entries only on artifacts the walk reaches and selects, not on lineage ancestors it passes | `activations/domain/CascadeRules.java` (clearing, lines 28–33), `ActivationSelectionService.java:63-77` | A0, pending |
+| A4 (`DM-01M6RA7XC5HC8915GZT2R3H83W`) | replace judges the floor only on added deny entries and drops stale ids, reported in `dropped` | `activations/domain/DocumentRules.java` (`check`, `checkWrite`, `addedDenies`), `ActivationService.java` (replace) | A0, pending |
+| B1 (`DM-01M6RA9BKJY7X9BFV93QW1KM1T`) | writes drop an unsatisfiable version pin (reported in `dropped`) instead of `422 version_not_held`; reads report `pinNotHeld` | `DocumentRules.java:36,151-165` (`version_not_held`), `StaleIds.java` | A0 (writes), B (reads), pending |
+| A15 (`DM-01M6RA97220XBR7RR447FE2JXD`) | a pack's policy locks only artifacts of itself and its `depends_on`/lineage ancestors | `packs/application/PackMutabilityPolicy.java`, `ClosureView.java` (locked set) | A0, pending |
+| B8 (`DM-01M6RAA6Y7NVVGKVKQV05GZYES`) | a pack's own policy never binds the pack itself (C25 aligned with C21) | `PackMutabilityPolicy.authorize` (line 157) | A0, pending |
+| A10 (`DM-01M6RA8MG55V8C2V9PXWDTRNQS`) | the floor holds only held ids; unheld must-have items are reported | `packs/domain/RequiredFloor.java`, `ClosureQueries.java` | A0, pending |
+| A14 (`DM-01M6RA92BS6GGCYTRCFQDYYY5S`) | `enhances` is not a sibling conflict; a settlement names exactly one winner | the sibling-conflict check in `packs` composition (`PackCompositionResolver`) | A0, pending |
+| A7 (IC-20; Q1–Q4) | the kind model revision: `mission_type` in `sel`/`deny`, one kind enum and registry, `activatedKinds`/`missionTypes` refused `422`, storage v2 with upgrade on read, mission-type cascade and binding, presets name any kind | kernel kind enums, `ActivationDocument`, `DocumentRules`, `CascadeRules`, the document store, preset reading | A0, pending |
+| FR-042 (A7 side finding) | test: a GET then PUT through the generated client keeps the revision | `client-java` `ActivationConfig.java:63-73` | A0 (test first), pending |
+| B6/B7 (`DM-01M6RAA2B2G9PNXN2F9SJ7B1CR`) | `ActivationChange.warnings` | `ActivationChangeMapper.java`, `ActivationChange` | B (needs the in-force resolution), pending |
+| A8, A11, A12, A6 | new registration refusals; stored packs are not re-judged | `packs` registration services | A (IC-15), new surface |
+
+### PR slicing after the fold
+
+- **PR A:** A0 (IC-19, IC-20) → IC-01, IC-02, IC-03, IC-04 (with the write generation and read retry), IC-14, IC-15,
+  IC-16, IC-18, IC-05, IC-06.
+- **PR B:** IC-07 (merge, presets, facts cache, merged cascade), IC-08, IC-09 (`InForceResolution` in `packs`),
+  IC-17.
+- **PR C:** IC-10, IC-11, IC-13.
+- IC-20 (A7) is in slice A0, after IC-19 (pending operator confirmation).
+
+### Contract findings folded (post-plan contract squad)
+
+- `GET /packs/{packId}` (`getPack`) is declared, so `Location` and `_links.self` point at a declared read (FR-039).
+- `PackIfMatch` is declared `required: false`; the `DELETE`s use a separate `PackIfMatchRequired`.
+- Each removal `404` carries its own code: `pack_not_found`, `kind_not_found`, `artifact_not_found`,
+  `relationship_not_found`.
+- New source codes: `pack_source_refused` (422), `pack_source_unavailable` (503), and `502`/`504` for an upstream
+  failure or timeout, as plain `Problem`s.
+- The body's magic bytes must match `Content-Type`, else `415`.
+- `PackSource` is one closed object with `kind` in snake case (`https_archive`, `git`, `filesystem`), the target
+  `packId`, and the optional `sha256` or `commit`.
+- The effective list's cursor is a keyset (`kind`, `id`, `ETag`); `summary` counts are the same on every page.
+- Each fragment carries one `### Breaking` block listing every break of that PR.
+
+### Traceability
+
+| FR | IC | PR | Decision |
+|---|---|---|---|
+| FR-024 | IC-14 | A | DM-01M6RA8225EXG6GAT1MM2R9T6C |
+| FR-025 | IC-15 | A | DM-01M6RA8225…, DM-01M6RA86QPBM1VE5QZTB9AZ195, DM-01M6RA8G0RGRWSFW4DERH8W319, DM-01M6RA8S9G57W4BW55SNVHBQ10 |
+| FR-026 | IC-16, IC-19 | A0, A, B | DM-01M6RA9BKJY7X9BFV93QW1KM1T |
+| FR-027 | IC-15, IC-17 | A, B | DM-01M6RA9SAKCBSKGX165JM3CAGS |
+| FR-028 | IC-07, IC-09, IC-19 | A0, B | DM-01M6RA7FHRC5K8QPX7KN5FZ4S8, DM-01M6RA8MG55V8C2V9PXWDTRNQS |
+| FR-029 | IC-09 | B | DM-01M6RA7RPNZS810FTFC98Z13GH, DM-01M6RA7M56M1409EV9JX1EW83K |
+| FR-030 | IC-09 | B | DM-01M6RA8G0RGRWSFW4DERH8W319, DM-01M6R4W3ZMSESETMQ0ZQTCZCFJ |
+| FR-031 | IC-19 | A0 | DM-01M6RA7XC5HC8915GZT2R3H83W |
+| FR-032 | IC-17 | B | DM-01M6RAA2B2G9PNXN2F9SJ7B1CR |
+| FR-033 | IC-19 | A0 | DM-01M6RA97220XBR7RR447FE2JXD, DM-01M6RAA6Y7NVVGKVKQV05GZYES |
+| FR-034 | IC-19 | A0 | DM-01M6RA9XQSH3E07C7VCPCVD6R4 |
+| FR-035 | IC-19 | A0 | DM-01M6RA92BS6GGCYTRCFQDYYY5S |
+| FR-036 | IC-04, IC-06 | A | DM-01M6RA9MQ6YAP048KD43DNFS4F, DM-01M6RA8MG55V8C2V9PXWDTRNQS |
+| FR-037 | IC-18 | A | post-plan security squad 7–8 |
+| FR-038 | IC-07 | B | DM-01M6R4W1H9P3451V89KHP97XKM |
+| FR-039 | IC-02 | A | post-plan contract squad |
+| FR-040 | IC-20 | A0 | DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY, DM-01M6RCXTS0SMDNTWZ8G7GJ2P5S, DM-01M6RCXZ9HSHT4K3443YYZ8ZFC |
+| FR-041 | IC-20 | A0 | DM-01M6RCY40CQQTHC130RWF43W0D, DM-01M6RCY8MYNGNPJ247M2Y4880N |
+| FR-042 | IC-19 | A0 | A7 squad side finding |
+
+A13 (`DM-01M6RA8XSM9CZZX1ADX6G80T3X`) is documentation only (IC-12); B2 (`DM-01M6RA9G56DTA5GFY5Z28S0DB1`) keeps the
+built eager drop.
+
+### Fixtures
+
+The scenario fixtures are authored per rule, inline: a built-in pack with a locked directive and an extendable one;
+an org pack overriding, enhancing and holding a preset that shadows a built-in preset id; a project pack with a layer
+override, a CRG chain `F → E → T`, an enhancer ring, a dual-edge artifact and a self-override (the last three only in
+refused registrations); a pack pinned at 1.0 and re-registered at 2.0; and a corpus of at least 20 hostile archives
+and git trees (NFR-005).
 
 ## Component view (C4, level 3: the charter service, merge and read flow)
 
@@ -767,7 +1061,7 @@ C4Component
 
 ### The system `git` binary (host requirement)
 
-- **Why a binary.** The operator ruled out JGit. `git` 2.37 or later must be on `PATH`, or named by the absolute
+- **Why a binary.** The operator ruled out JGit. `git` 2.50.1 or later must be on `PATH`, or named by the absolute
   path in `charter.pack-sources.git.executable`. It is resolved once and checked with `git --version`. Without it,
   the git source answers `422` and nothing else changes. README.md and `docs/guides/run-in-a-container.md` state the
   requirement, and the container image must carry it.
@@ -794,7 +1088,8 @@ C4Component
     - `core.symlinks=false` checks links out as files, and the copy into staging refuses them anyway.
     - `core.fsmonitor` and the LFS filter are off (`filter.lfs.*=`, `GIT_LFS_SKIP_SMUDGE=1`).
     - `transfer.fsckObjects=true` refuses malformed objects.
-    - The work tree passes the same path rules and limits as an archive (IC-03), and `.git` is never copied.
+    - There is no work tree: blobs are read with `cat-file --batch` and pass the same path rules and limits as an
+      archive (IC-03). A link or submodule mode is refused.
   - **Configuration and credentials.** The environment is built from empty, not inherited:
     - `PATH` of the git directory only;
     - `HOME` and `XDG_CONFIG_HOME` set to the temporary directory;
@@ -807,7 +1102,7 @@ C4Component
     - A deadline over the whole fetch, `charter.pack-sources.timeout` (60 s), after which the process tree is
       destroyed forcibly.
     - `--depth 1 --no-tags`, a single ref.
-    - A watch on the temporary directory's size, 32 MiB of work tree plus a fixed allowance for objects, which kills
+    - A watch on the temporary directory's size, 32 MiB of blobs plus a fixed allowance for objects, which kills
       the fetch when exceeded.
     - At most two git fetches at once.
     - stdout and stderr are drained and capped, and stderr is logged at DEBUG with the URL's path cut, as the guide

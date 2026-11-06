@@ -15,7 +15,8 @@ then project), and the winner is **the level that applies** (ADR-0048 d7).
 | version | semver | the descriptor `pack_version` |
 | level | `org` \| `project` | the descriptor `pack_level`; never `built-in`; equal to the stored level on a replace |
 | revision | `sha256:` hex | `PackRevision` v2 over the stored tree (research R4); the `ETag` |
-| outcome | `created` \| `replaced` \| `unchanged` | `201`, `200`, or `200` with nothing written |
+| outcome | `created` \| `replaced` \| `unchanged` | reported in the status of a `succeeded` registration (A5) |
+| notices | `floorAdded`, `floorRemoved`, `locksAdded`, `locksRemoved`, `activationsAffected` | B4; `activationsAffected` from PR B |
 | source | absent \| PackSourceRecord | absent for `PUT`; for `POST`, what was fetched |
 
 **PackSourceRecord.** It holds `kind` (`https-archive` \| `git` \| `filesystem`) and the locator as sent (`url`,
@@ -33,12 +34,31 @@ in this cut.
 - **Fixed identity.** `descriptorPackId` and `level` never change for a `packId`.
 - **All or nothing.** A refused or failed write changes zero stored files (FR-007).
 
-### PackSource (request of `POST /packs`; contract `PackSource`, `oneOf` on `kind`)
+### PackRegistrationStatus (contract; the status resource of A5)
+
+| Field | Type | Rules |
+|---|---|---|
+| registrationId | ULID | in the status URI |
+| state | `pending` \| `running` \| `succeeded` \| `refused` | moves only forward |
+| packId | configured identifier | the target |
+| result | absent \| PackRegistration | present when `succeeded` |
+| problem | absent \| Problem | present when `refused`; the refusal the synchronous API would have answered |
+| acceptedAt, finishedAt | instant | kept 1 hour after `finishedAt`, at most 1,000 entries |
+
+### PackVersionHistory (internal, per pack; B1)
+
+- A list of `(pack_version, revision, registeredAt)`, appended in the same swap as the pack and kept on `DELETE`.
+- Invariant: a `pack_version` maps to one revision for the life of the `packId`.
+
+### PackSource (request of `POST /packs`; contract `PackSource`, one closed object)
+
+Common fields: `kind` (`https_archive` \| `git` \| `filesystem`), `packId` (required, `^[a-z0-9][a-z0-9-]{0,62}$`),
+and the optional `sha256` (https archive) or `commit` (git).
 
 | Kind | Fields | Guard |
 |---|---|---|
-| `https-archive` | `url` | `https`, port 443, exact host on `charter.pack-sources.https.allowed-hosts`, global unicast, checked hops, 32 MiB, archive media type |
-| `git` | `url`, `ref` | `https`, host on `charter.pack-sources.git.allowed-hosts`, ref grammar (research R9), pinned address, system git ≥ 2.37 |
+| `https_archive` | `url`, `sha256?` | `https`, port 443, exact host on `charter.pack-sources.https.allowed-hosts`, global unicast, checked hops, 32 MiB, archive media type and magic bytes |
+| `git` | `url`, `ref`, `commit?` | `https`, host on `charter.pack-sources.git.allowed-hosts` (empty by default), ref grammar (research R9), pinned address, system git ≥ 2.50.1, no work tree |
 | `filesystem` | `path` | relative; resolved through `toRealPath()` under `charter.pack-sources.filesystem.root` |
 
 ### StagedPack (internal value, `packs.infra.archive`)
@@ -71,9 +91,10 @@ in this cut.
 ### InboundReference (internal value)
 
 - `(referringPack, referringArtifact?, reference as written)`, resolved by `PackCompositionResolver.holderOf` over
-  the referring pack's `compositionClosure`.
-- A non-empty set refuses the removal with `409 artifact_referenced`. The `packs` member names the referring packs,
-  at most 100.
+  the referring pack's `compositionClosure` as it will be after the change (B3): a referrer the same request removes
+  does not count. Another pack's preset item naming the artifact counts (A10).
+- A non-empty set refuses the removal with `409 artifact_referenced`. The `packs` member names the referring packs
+  and `violations` the referring artifacts, at most 100 each.
 
 ## Packs slice: the merge (PR B)
 
@@ -139,7 +160,7 @@ No packs type crosses (C-002).
 | packId | configured identifier | the winner's pack (new) |
 | level | PackLevel | the winner's level (new) |
 
-**EffectiveArtifactReason:** `selected`, `required`, `locked`, `deactivated`, `not_selected`, `kind_not_activated`,
+**EffectiveArtifactReason:** `selected`, `required`, `locked`, `deactivated`, `not_selected`, (`kind_not_activated` removed by IC-20)
 `language_filtered`, `overridden` (new), `mission_type_not_in_force` (new) and `enhanced_target_not_in_force` (new). `kind_default` is removed
 (ADR-0053 d10).
 
@@ -148,9 +169,9 @@ No packs type crosses (C-002).
 | # | Rule | State | Reason |
 |---|---|---|---|
 | 1 | Locked along the closure | active | `locked` |
-| 2 | Kind outside `activatedKinds` | inactive | `kind_not_activated` |
+| 2 | (removed by IC-20: no kind gate) | — | — |
 | 3 | Filtered by `languages` | inactive | `language_filtered` |
-| 4 | Bound to a mission type not in `missionTypes` | inactive | `mission_type_not_in_force` |
+| 4 | Bound to a mission type not in force | inactive | `mission_type_not_in_force` |
 | 5 | Denied in `deactivated` | excluded | `deactivated` |
 | 6 | Not in `selected` | inactive | `not_selected` |
 | 7 | Target of `overrides` from an active artifact | inactive | `overridden` |
@@ -184,11 +205,11 @@ Every artifact the document names that is not in force appears once, in the buck
 
 | Bucket | Entry | Holds |
 |---|---|---|
-| `staleIds` (new) | ArtifactReference | the ids in `selected`, `deactivated` or `missionTypes` that the merged closure does not hold (ADR-0059 D4) |
+| `staleIds` (new) | ArtifactReference | the ids in `selected` or `deactivated` (`mission_type` included, IC-20) that the merged closure does not hold (ADR-0059 D4) |
 | `denyNotApplied` (new) | `{kind, artifactId, reason: required \| locked}` | the deny entries not applied (ADR-0013 D2): on a locked artifact, or on a required one nothing else satisfies |
 | `enhancedTargetNotInForce` (new) | `{kind, artifactId, targets: [ArtifactReference]}` | the selected enhancers none of whose targets is in force (operator, Q8) |
 | `overrideNotApplied` (new) | `{kind, artifactId, overriddenBy: ArtifactReference}` | an active `E overrides T` not applied because `T` is locked; `T` and `E` are both in force (operator, Q6) |
-| `skippedByScope` | ArtifactReference | the selected artifacts of a kind outside `activatedKinds` (ADR-0059 follow-up: the read's meaning) |
+| `skippedByScope` | — | **removed by IC-20** (no kind gate). Formerly: the selected artifacts of a kind outside `activatedKinds` (ADR-0059 follow-up: the read's meaning) |
 | `languageFiltered` (new) | ArtifactReference | the selected artifacts the language filter excludes |
 | `missionTypeNotInForce` (new) | ArtifactReference | the selected artifacts bound to a mission type not in force; in an action context, the mission type itself (`kind: mission_type`) |
 | `skippedDeactivated` | SkippedDeactivated | the selected and denied artifacts. At read, `viaRequires` is `false` and `requiredBy` is `[]` |
@@ -251,3 +272,25 @@ changes nothing. The write generation is odd during the swap (research R-lock).
 - **Deny entry on a locked `T`.** Always `409 artifact_locked`.
 - **Scope.** Create and replace judge every deny entry of the document. The per-artifact and preset writes judge
   only the deny entries they add.
+
+## Fold of 2026-11-06 (ruleset rulings)
+
+- **ActivationChange** gains `warnings: [{code, artifact}]` (B6/B7), codes `enhanced_target_not_in_force`,
+  `overridden` (`kind_not_activated` is dropped, IC-20); and drops an unsatisfiable pin into `dropped` (B1).
+- **Activation** gains `denyNotApplied: [urn]` (B4).
+- **SkippedReport** gains `pinNotHeld` and `requiredNotHeld` (B1, A10).
+- **The floor** is the union of the must-have items of every governing copy of a preset id, restricted to held ids
+  (A1, A10). **Locks** of a pack's policy apply to the pack and its `depends_on`/lineage ancestors only, never to the
+  pack itself (A15, B8).
+- **In force** is the stratified fixed point of research R13, computed in `packs.domain.InForceResolution`.
+
+## Kind model revision (IC-20, A7)
+
+- **ActivationDocument v2:** `schemaVersion: 2`; `selected` and `deactivated` hold every kind, `mission_type`
+  included; `activatedKinds` and `missionTypes` are gone (`422` on write). A v1 document is upgraded on read:
+  `missionTypes` → `selected.mission_type`, selections of a kind outside v1 `activatedKinds` dropped.
+- **Kind:** one enum and one kernel registry (`ActivatableKind` and `SelectableKind` merged); `MISSION_TYPE` is
+  requirable; presets name any kind.
+- **Binding:** an artifact bound to mission type M (its steps `action:M/s` included) is in force only while M is;
+  selecting M cascades to its steps.
+- **Removed:** reason `kind_not_activated`, `SkippedReport.skippedByScope`, the `mts` derivation.

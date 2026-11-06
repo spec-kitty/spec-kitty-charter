@@ -18,9 +18,13 @@ changes.
     - `If-None-Match: *` makes the request create-only: `412` when the pack exists;
     - an identical archive answers `200` (`unchanged`) even under a stale `If-Match`, because the version rule runs
       first. The description says so, citing RFC 9110 §13.1.1.
-  - **Answers:**
-    - `201`: created. `PackRegistration`, `ETag` (revision), `Location: /api/v1/packs/{packId}`.
-    - `200`: replaced, or unchanged when the revision is identical. `PackRegistration` and `ETag`.
+  - **Answers (asynchronous, A5; folded 2026-11-06):**
+    - `202`: accepted. `PackRegistrationStatus` (`pending`), `Location: /api/v1/pack-registrations/{registrationId}`.
+      Every answer below except `400`, `401`, `403`, `412` (at acceptance), `413`, `415` and `503` is now the
+      `problem` of a `refused` status, not a synchronous answer; a `succeeded` status carries the
+      `PackRegistration` (outcome `created`, `replaced` or `unchanged`) and its revision.
+    - `503`: the registration queue is full (`Retry-After`), or registration is disabled
+      (`pack_source_unavailable`).
     - `400`: both `If-Match` and `If-None-Match` were sent.
     - `401`, `403`.
     - `409`:
@@ -30,31 +34,39 @@ changes.
       - `artifact_referenced` (new): a removed artifact another pack references (operator, Q3).
     - `412`: stale `If-Match`, or `If-None-Match: *` on an existing pack, as a plain `Problem`.
     - `413`: body over 32 MiB, as a plain `Problem`, answered before the body is read.
-    - `415`: another `Content-Type`, as a plain `Problem`.
+    - `415`: another `Content-Type`, or magic bytes that do not match it, as a plain `Problem`.
     - `422`:
       - `validation_failed` with `violations` (at most 100): an archive path or entry type refused, over 10,000
         entries or 32 MiB expanded, an unmodelled file, an invalid artifact, a changed `pack_level` or `pack_id`;
-      - a composition code: the stored set no longer composes with this pack, under ADR-0056 per-operation status.
+      - a composition code: a closure containing this pack no longer composes, naming the packs (the impact check,
+        IC-15), under ADR-0056 per-operation status;
+      - `override_not_permitted`, `enhances_cycle`, `conflicting_relations`, `self_override`, `override_cycle`
+        (A6, A8, A11, A12, C28).
     - `500`: `pack_unreadable`, `internal_error`.
 - **`registerPackFromSource`: `POST /packs`** (new `paths/packs.yaml`).
-  - **Request body.** `PackSource` (JSON), guarded by the shared body limit.
-  - **Answers.** As `PUT`, except:
-    - the same `If-Match` and `If-None-Match: *` as the `PUT`, applied to the pack the fetched descriptor's
-      `pack_id` names;
-    - `Location` on both `201` and `200`;
-    - a refused source (a host not allowed, a non-global address, unreachable, a bad ref, the wrong media type, the
-      git binary missing or too old) is `422 validation_failed` with the guard's reason. A refused `guideUri`
-      answers the same way.
+  - **Request body.** `PackSource` (JSON), guarded by the shared body limit. It names the target `packId`.
+  - **Answers.** As `PUT` (`202` and a status), except:
+    - the same `If-Match` and `If-None-Match: *` as the `PUT`, applied to the target `packId`; the fetched
+      descriptor's `name` must match it;
+    - a refused source (a host not allowed, a non-global address, a bad ref, the wrong media type, a digest or
+      commit mismatch) ends `refused` with `422 pack_source_refused` and a fixed reason; an upstream failure `502`,
+      an upstream timeout `504`; a disabled source kind, or `git` missing or older than 2.50.1, `503
+      pack_source_unavailable`.
+- **`getPackRegistration`: `GET /pack-registrations/{registrationId}`** (new). `200` with `PackRegistrationStatus`;
+  `404 registration_not_found` once forgotten (1 hour after it ends, or after a restart).
+- **`getPack`: `GET /packs/{packId}`** (new, FR-039). `200` with the stored pack's `PackRegistration` (outcome
+  absent), `ETag`, `_links.self`; `404 pack_not_found`.
 - **`deletePackArtifact`: `DELETE /packs/{packId}/artifacts/{kind}/{artifactId}`** (added to the existing item path).
   - **Header.** `If-Match` on the pack revision is required, through the new pack-specific parameter
     `parameters/PackIfMatch.yaml`, not the activations' `IfMatch.yaml`. Absent answers `428`, stale answers `412`,
     checked under the registry lock (research R-lock).
   - **Answers:**
     - `204`, with `ETag` (the new revision);
-    - `404`: `pack_not_found`, `kind_not_found` or `artifact_not_found`;
+    - `404`: `pack_not_found`, `kind_not_found` or `artifact_not_found`, each its own code;
     - `409`:
-      - `artifact_referenced`, whose `packs` member (at most 100) names the referring packs. When the referrer is
-        another artifact of the same pack, `detail` and `violations` name that artifact (operator, Q2);
+      - `artifact_referenced`, whose `packs` member (at most 100) names the referring packs and whose `violations`
+        name every referring artifact, a preset item included (A10, B3). References are judged against the tree after
+        the removal;
       - `governance_policy_violation` (ADR-0030 D3);
     - `412`, `428`;
     - `500`.
@@ -74,22 +86,25 @@ changes.
   - It holds `packId`, `descriptorPackId`, `name`, `version`, `level` (`PackLevel`, restricted to `org` and
     `project`), `revision` (`Sha256Digest`) and `outcome` (`created`, `replaced`, `unchanged`).
   - It also holds an optional `source`: `PackSourceRecord`, with `kind`, `url`, `ref`, `path` and `commit`.
-  - `_links`: `edit` (the `PUT`) and `artifacts`. There is no `self`, because `GET /packs/{packId}` is not
-    declared.
-- **`PackSource`**, a `oneOf` discriminated on `kind`:
-  - `https-archive {url}`;
-  - `git {url, ref}`;
-  - `filesystem {path}`.
-
-  Each is closed. `url` has `format: uri` and the pattern `^https://`. `ref` follows the grammar of research R9.
-  `path` is a relative path with no `..` segment.
+  - `_links`: `self` (`getPack`), `edit` (the `PUT`) and `artifacts`.
+  - `notices` (B4): `floorAdded`, `floorRemoved`, `locksAdded`, `locksRemoved`, and from PR B `activationsAffected`.
+- **`PackRegistrationStatus`**, closed: `registrationId`, `state` (`pending`, `running`, `succeeded`, `refused`),
+  `packId`, `acceptedAt`, `finishedAt`, `result` (`PackRegistration`), `problem` (`Problem`).
+- **`PackSource`**, one closed object (post-plan contract squad): `kind` (`https_archive`, `git`, `filesystem`),
+  `packId` (required, `^[a-z0-9][a-z0-9-]{0,62}$`), and per kind `url` + optional `sha256` (https archive), `url`
+  + `ref` + optional `commit` (git), `path` (filesystem); a field foreign to the kind is `422`. `url` has
+  `format: uri` and the pattern `^https://`. `ref` follows the grammar of research R9. `path` is a relative path
+  with no `..` segment.
 
 ### `CharterRefusalCode`
 
 - **Added, raised:**
   - `pack_version_conflict` (409);
   - `artifact_referenced` (409);
-  - `relationship_not_found` (404).
+  - `relationship_not_found` (404);
+  - `registration_not_found` (404);
+  - `pack_source_refused` (422) and `pack_source_unavailable` (503);
+  - `override_not_permitted`, `enhances_cycle`, `conflicting_relations`, `self_override` (422).
 - **Raised by the new operations,** under ADR-0056's per-operation status (`x-refusal.operations`):
   - `artifact_not_found` (404 on `deletePackArtifact`);
   - `validation_failed` (422);
@@ -100,14 +115,16 @@ changes.
 
 ### Other changes
 
-- **`parameters/PackIfMatch.yaml`** (new): a strong entity tag of the pack revision. It is used by the four new
-  operations, which keep their own `required` flag.
+- **`parameters/PackIfMatch.yaml`** (new, `required: false`) and **`PackIfMatchRequired.yaml`** (new,
+  `required: true`, for the two `DELETE`s): a strong entity tag of the pack revision. OpenAPI cannot override
+  `required` on a `$ref`, so there are two parameters.
 - **The per-artifact registrations' `If-Match` text** (`POST`/`PUT /packs/{packId}/artifacts/<kind>…`): it stays
   optional, and adds "without it, the write is last-writer-wins on the whole pack". This is a description change
   only.
 - **The relationship `DELETE`'s `If-Match`** is required as above. `putPackRelationship` is unchanged (already
   required).
-- **ADR-0019's table.** `paths/packs.yaml` adds `POST /packs`. The pack collection `GET /packs` stays undeclared.
+- **ADR-0019's table.** `paths/packs.yaml` adds `POST /packs`; `GET /packs/{packId}` and
+  `GET /pack-registrations/{registrationId}` are added. The pack collection `GET /packs` stays undeclared.
 - **Scenarios.**
   - `scenarios/registration/whole-pack-registration.feature` is new and tagged `@contract`. It covers US1 AS1 to AS7
     and the source kinds, and takes the place of the `@WIP` `register-pack.feature` promises PR-PACK-REGISTER-001
@@ -148,7 +165,7 @@ changes.
   | `enhancedTargetNotInForce` | new `EnhancerWithoutTarget {kind, artifactId, targets: [ArtifactReference]}` |
 
   Two existing buckets change their wording:
-  - `skippedByScope`'s description and `x-derived` rule say: at read, outside `activatedKinds` (the ADR-0059
+  - (Superseded by IC-20: `skippedByScope` is removed.) `skippedByScope`'s description and `x-derived` rule say: at read, outside `activatedKinds` (the ADR-0059
     follow-up);
   - `skippedDeactivated` says: at read, `viaRequires` is false and `requiredBy` is empty.
 - **`listEffectiveArtifacts` and `getActivationSkippedReport`:**
@@ -214,3 +231,27 @@ changes.
 - The per-artifact registrations' shapes and statuses (`POST`/`PUT /packs/{packId}/artifacts/<kind>…`,
   `PUT …/relationships`). Only the `If-Match` description changes, as above.
 - `contracts/packs/` (the archive is the pack directory as authored).
+
+## Fold of 2026-11-06 (ruleset rulings and post-plan contract squad)
+
+- **Slice A0 (#399 behaviour, pending operator confirmation).** `### Changed`: `replaceActivation` judges the floor
+  only on added deny entries and drops stale ids into `dropped` (A4); `includeDeactivated` clears only what the walk
+  reaches (B5). `### Breaking`: an unsatisfiable version pin is dropped into `dropped` instead of
+  `422 version_not_held` (B1); `version_not_held` stays for `createActivation` (ambiguity logged).
+- **PR B.** `ActivationChange.warnings` (B6/B7), `Activation.denyNotApplied` (B4), `SkippedReport.pinNotHeld` and
+  `requiredNotHeld` (B1, A10), `PackRegistration.notices.activationsAffected`.
+- **Paging.** `listEffectiveArtifacts` uses a keyset cursor over (`kind`, `id`) bound to the `ETag`; a cursor from
+  another tag is `400`. `summary` is computed over the whole set and is identical on every page.
+- **Breaking declarations.** Each PR's fragment carries one `### Breaking` block listing all its breaks.
+- **A7, the kind model (IC-20, slice A0; breaking, allowed on 0.x with no `contract-charter-v*` baseline).**
+  - `activatedKinds` and `missionTypes` are removed from `ActivationDocument`, `CreateActivationRequest`,
+    `ReplaceActivationRequest` and `ActivationChange`; sent on a write, each is `422 validation_failed` with a
+    violation naming `selected.mission_type` (refused now, no deprecation window).
+  - `selected` and `deactivated` gain `mission_type`; the kind enums merge into one schema; preset schemas accept
+    every kind, and the preset key `activated_kinds` is refused at registration.
+  - `EffectiveArtifactReason` drops `kind_not_activated`; `SkippedReport.skippedByScope` is removed.
+  - The document `schemaVersion` becomes 2 (upgrade on read; every `ETag` changes once).
+  - Corpus: `valid/02`, `valid/03`, `valid/08` and `invalid/14` rewritten; new invalid cases for each removed member.
+    DIV-203 and DIV-501 updated; a new DIV for core's `activated_kinds` narrowing.
+  - Core: regenerate the strict DTOs before calling a server with this change; the migration note is handed over
+    (C-003).
