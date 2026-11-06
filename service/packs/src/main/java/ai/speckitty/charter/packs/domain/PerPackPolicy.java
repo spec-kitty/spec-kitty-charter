@@ -8,7 +8,7 @@ import java.util.Optional;
 
 /**
  * The mutability policies of the packs of a composition, each keyed by the {@code pack_id} its descriptor declares
- * (ADR-0062). It answers one question, shared by the registration write gate and the activation lock query: the level
+ * (ADR-0063). It answers one question, shared by the registration write gate and the activation lock query: the level
  * of a target along a closure.
  *
  * <p>The answer is the highest level any pack of the closure declares for the target (OPEN &lt; EXTENDABLE &lt; LOCKED),

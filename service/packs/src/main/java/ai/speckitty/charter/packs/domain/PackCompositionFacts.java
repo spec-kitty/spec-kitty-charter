@@ -11,7 +11,7 @@ import java.util.Objects;
  * @param changed the distinct targets of its {@code enhances} and {@code overrides} relations, in first-seen order
  * @param defined the artifacts it holds, as bare URNs ({@code <kind>:<id>}), in a stable order
  * @param references the references it writes, as written (bare or pack-qualified), in first-seen order
- * @param policy the mutability policy its descriptor names (ADR-0062); {@link MutabilityPolicySource#empty()} when it
+ * @param policy the mutability policy its descriptor names (ADR-0063); {@link MutabilityPolicySource#empty()} when it
  *     names none
  * @param presets the activation presets the pack holds ({@link Pack#presets()}), from the same assembly; empty when it
  *     holds none

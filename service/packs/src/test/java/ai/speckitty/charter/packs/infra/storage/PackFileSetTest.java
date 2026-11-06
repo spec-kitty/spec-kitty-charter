@@ -193,7 +193,7 @@ class PackFileSetTest {
     }
 
     /**
-     * ADR-0062: {@code policy.yaml} is digested after the manifest, so a lock edit moves the fingerprint and a
+     * ADR-0063: {@code policy.yaml} is digested after the manifest, so a lock edit moves the fingerprint and a
      * stale read cannot serve the old level; a pack without one keeps its digest list.
      */
     @Test

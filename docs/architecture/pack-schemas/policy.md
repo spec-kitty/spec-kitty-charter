@@ -14,5 +14,5 @@ audience:
 # Pack schema: Pack mutability policy
 
 This page describes the optional `policy.yaml` a pack names with `mutability_policy` in `pack.yaml`
-([ADR-0062](/adr/0062-pack-mutability-policy-file/)). Read it when you lock or restrict artifacts of your pack; the
+([ADR-0063](/adr/0063-pack-mutability-policy-file/)). Read it when you lock or restrict artifacts of your pack; the
 diagram, the property list and the link to the schema file are generated from the schema itself.

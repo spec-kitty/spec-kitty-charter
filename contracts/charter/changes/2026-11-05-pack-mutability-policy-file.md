@@ -1,6 +1,6 @@
 ### Added
 
-- A pack declares its mutability levels in a policy file (FR-022, ADR-0062; pack-schema change, no API schema change).
+- A pack declares its mutability levels in a policy file (FR-022, ADR-0063; pack-schema change, no API schema change).
   `pack.yaml` gains the optional `mutability_policy`, a pack-relative path that the `pack-descriptor` schema admits only
   as `policy.yaml` in this version. The new closed `contracts/packs/schemas/policy.schema.json` validates the file:
   `schema_version` (the integer 1), `kind_defaults` (an artifact kind token to `open`, `extendable` or `locked`) and

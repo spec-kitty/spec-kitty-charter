@@ -21,11 +21,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * The mutability policy file through the whole-pack store (ADR-0062): a pack whose descriptor names {@code policy.yaml}
+ * The mutability policy file through the whole-pack store (ADR-0063): a pack whose descriptor names {@code policy.yaml}
  * is written with the file, so the stored pack keeps its locks and stays readable; a named file that is missing or
  * invalid refuses the write and leaves no target. A pack without the key is the control: its round trip is unchanged.
  */
-@DisplayName("Policy round trip (ADR-0062)")
+@DisplayName("Policy round trip (ADR-0063)")
 class PolicyRoundTripTest {
 
     private static final String PACK_YAML =

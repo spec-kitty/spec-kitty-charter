@@ -299,7 +299,7 @@ writes come after the read stages, one at a time: charter document save and comp
   load whose inputs changed included. It may be retried.
 - `governance_policy_violation` (409) is raised by the registration writes when the mutability level of the
   pack that owns the target does not permit the write (ADR-0012, epic #55). Each pack's `policy.yaml` is read, per
-  pack, along the closure of the pack written ([ADR-0062](/adr/0062-pack-mutability-policy-file/)); no open pack ships one yet, so every target is open and
+  pack, along the closure of the pack written ([ADR-0063](/adr/0063-pack-mutability-policy-file/)); no open pack ships one yet, so every target is open and
   no write is refused with it until one does.
 - `pack_level_mismatch` and `drg_schema_error` are declared and raised by no operation: no operation reaches the
   whole-pack load that still refuses a graph as `drg_schema_error`. `ReservedRefusalCodesTest` reads every code the

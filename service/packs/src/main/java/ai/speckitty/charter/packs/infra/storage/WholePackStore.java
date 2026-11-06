@@ -71,7 +71,7 @@ public final class WholePackStore {
      *     none, or it is unreadable or lists a preset entry that does not name {@code presets/<id>.yaml} (then a
      *     violation on the aggregate). This store is its only owner (ADR-0042).
      * @param policy the text of the mutability policy file the descriptor names, as read and checked against the
-     *     {@code policy} schema (ADR-0062); empty when the descriptor names none, or the named file is missing or
+     *     {@code policy} schema (ADR-0063); empty when the descriptor names none, or the named file is missing or
      *     invalid (then a violation on the aggregate)
      */
     public record LoadedPack(
@@ -236,7 +236,7 @@ public final class WholePackStore {
     }
 
     /**
-     * The text of the policy file the descriptor names (ADR-0062), read and checked as the compose reads it; a named
+     * The text of the policy file the descriptor names (ADR-0063), read and checked as the compose reads it; a named
      * file that is missing or invalid is a violation on the aggregate, so the write refuses the pack instead of storing
      * a descriptor that names a file it does not hold.
      */
@@ -415,7 +415,7 @@ public final class WholePackStore {
     }
 
     /**
-     * Writes {@code pack.yaml} and, right after it, the policy file it names (ADR-0062), as it was read. A descriptor that
+     * Writes {@code pack.yaml} and, right after it, the policy file it names (ADR-0063), as it was read. A descriptor that
      * names a policy file the loaded pack does not hold is refused: the stored pack would be unreadable.
      */
     private void putDescriptor(Path staging, LoadedPack loaded, Set<String> written) throws IOException {

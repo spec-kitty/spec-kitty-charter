@@ -25,7 +25,7 @@ import java.util.Optional;
  * @param requiresCore the {@code requires_core} text as written, when stated
  * @param activeCharter the {@code active_charter} path, when stated
  * @param packDrg the {@code pack_drg} path, when stated
- * @param mutabilityPolicy the {@code mutability_policy} path, when stated (ADR-0062)
+ * @param mutabilityPolicy the {@code mutability_policy} path, when stated (ADR-0063)
  * @param dependencies the {@code depends_on} entries, in file order
  * @param overrides the {@code overrides} entries, in file order
  */
