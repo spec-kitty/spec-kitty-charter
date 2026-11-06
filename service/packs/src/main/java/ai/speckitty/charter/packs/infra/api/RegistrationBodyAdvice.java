@@ -5,11 +5,13 @@ import ai.speckitty.charter.api.model.ParadigmRegistration;
 import ai.speckitty.charter.api.model.RelationshipRegistration;
 import ai.speckitty.charter.api.model.StyleguideRegistration;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
-import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.transport.BodyLimit;
+import ai.speckitty.charter.packs.infra.api.JsonBodyGuard.BodyFault;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpInputMessage;
@@ -22,7 +24,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestBodyAdviceAd
  * into the DTO.
  *
  * <ul>
- *   <li><b>Bounded (#310, #323).</b> A body larger than {@link RegistrationLists#BODY_LIMIT} (1 MiB) is refused, by its
+ *   <li><b>Bounded (#310, #323).</b> A body larger than {@link BodyLimit#MAX_BYTES} (1 MiB) is refused, by its
  *       {@code Content-Length} before a byte is read and otherwise one byte past the limit, so an oversized body is
  *       never parsed nor held whole. It is the toolguide's room for the fields beside its guide. A relationship
  *       registration has no list, so it is bounded only; a {@code null} in one of its members is bean validation's.
@@ -86,14 +88,14 @@ public class RegistrationBodyAdvice extends RequestBodyAdviceAdapter {
             return inputMessage;
         }
         HttpHeaders headers = inputMessage.getHeaders();
-        byte[] body = RegistrationLists.readBounded(inputMessage, RegistrationLists.BODY_LIMIT, guarded.kind());
+        Function<BodyFault, CharterRefusal> refusal = RegistrationLists.refusal(guarded.kind());
+        byte[] body = JsonBodyGuard.readBounded(inputMessage, BodyLimit.MAX_BYTES, refusal);
         if (guarded.lists().isEmpty()) {
-            return RegistrationLists.replay(headers, body);
+            return JsonBodyGuard.replay(headers, body);
         }
-        RegistrationLists.firstNull(body, headers.getContentType(), List.of(), guarded.lists())
-                .ifPresent(nul -> {
-                    throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, nul.detail());
-                });
-        return RegistrationLists.replay(headers, body);
+        JsonBodyGuard.firstNull(body, headers.getContentType(), guarded.lists()).ifPresent(nul -> {
+            throw refusal.apply(new BodyFault.NullFound(nul));
+        });
+        return JsonBodyGuard.replay(headers, body);
     }
 }
