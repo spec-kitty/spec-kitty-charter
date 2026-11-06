@@ -636,6 +636,26 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     Then the response status is 404
     And the problem code is "mission_type_not_found"
 
+  Scenario: A mission type path id is matched exactly, as missionTypes is
+    missionTypes is not normalized on a PUT, so the path id of a mission type is not either: another case or the
+    full URN names no mission type.
+    Given the activation "a-1" holds:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      """
+    When I PUT "/activations/a-1/selections/mission_type/RESEARCH" with the stored ETag and the body:
+      """
+      {}
+      """
+    Then the response status is 404
+    And the problem code is "mission_type_not_found"
+    When I PUT "/activations/a-1/selections/mission_type/mission_type:research" with the stored ETag and the body:
+      """
+      {}
+      """
+    Then the response status is 404
+    And the problem code is "mission_type_not_found"
+
   Scenario: Selecting an artifact the closure does not hold is 404 artifact_not_found
     US3 AS8, FR-010.
     Given the activation "a-1" holds:
@@ -643,6 +663,59 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       {"schemaVersion": 1, "packs": [{"packId": "main"}]}
       """
     When I PUT "/activations/a-1/selections/directive/NO_SUCH" with the stored ETag and the body:
+      """
+      {}
+      """
+    Then the response status is 404
+    And the problem code is "artifact_not_found"
+
+  Scenario: A select names its artifact in any known spelling and stores the declared id
+    ADR-0020 D4 (operator ruling of 2026-11-06): the path id is read as a document's id is, so the full URN of the
+    path's kind and another case select the declared D2.
+    Given the activation "a-1" holds:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      """
+    When I PUT "/activations/a-1/selections/directive/directive:d2" with the stored ETag and the body:
+      """
+      {}
+      """
+    Then the response status is 200
+    And the field at "/applied" holds exactly the ids:
+      """
+      directive:D2
+      """
+    When I GET "/activations/a-1"
+    Then the field at "/config/selected/directive" holds exactly the ids:
+      """
+      D2
+      """
+
+  Scenario: An unselect in another case removes the declared id
+    ADR-0020 D4 (operator ruling of 2026-11-06).
+    Given the activation "a-1" holds:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "main"}], "selected": {"directive": ["D", "D2"]}}
+      """
+    When I DELETE "/activations/a-1/selections/directive/d" with the stored ETag
+    Then the response status is 200
+    And the field at "/applied" holds exactly the ids:
+      """
+      directive:D
+      """
+    When I GET "/activations/a-1"
+    Then the field at "/config/selected/directive" holds exactly the ids:
+      """
+      D2
+      """
+
+  Scenario: A path id spelled as a URN of another kind is 404 artifact_not_found
+    ADR-0020 D4: a URN of another kind than the path's names no artifact of that kind.
+    Given the activation "a-1" holds:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      """
+    When I PUT "/activations/a-1/selections/directive/tactic:D" with the stored ETag and the body:
       """
       {}
       """
@@ -1226,10 +1299,10 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       D2
       """
 
-  # Stale ids are dropped on write (ADR-0059 amendment R5, operator ruling of 2026-11-06).
+  # Stale ids are dropped on write (ADR-0059 amendment A5, operator ruling of 2026-11-06).
 
   Scenario: A write drops the ids the closure no longer declares and reports them in dropped
-    ADR-0059 amendment R5: a pack upgrade removed directive OLD, tactic old and mission type research, which the
+    ADR-0059 amendment A5: a pack upgrade removed directive OLD, tactic old and mission type research, which the
     stored document still names. Selecting D2 first drops them from selected, deactivated and missionTypes, then
     selects D2; dropped names them, and applied and cleared report only the select.
     Given the org pack "main" with the file "directives/OLD.directive.yaml":
@@ -1281,7 +1354,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     And the response body has no field at "/config/deactivated"
 
   Scenario: A write that only drops stale ids is not a no-op and stores a new revision
-    ADR-0059 amendment R5: D2 is already selected, so the select changes nothing but the drop of OLD; the dropped id
+    ADR-0059 amendment A5: D2 is already selected, so the select changes nothing but the drop of OLD; the dropped id
     counts as a change.
     Given the org pack "main" with the file "directives/OLD.directive.yaml":
       """
@@ -1310,7 +1383,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       """
 
   Scenario: An unselect that names a stale id drops it and stores a new revision
-    FR-010, ADR-0059 amendment R5: the closure no longer holds OLD, but the stored document still selects it, so the
+    FR-010, ADR-0059 amendment A5: the closure no longer holds OLD, but the stored document still selects it, so the
     unselect proceeds; OLD is dropped with every other stale id and reported in dropped only.
     Given the org pack "main" with the file "directives/OLD.directive.yaml":
       """
@@ -1342,7 +1415,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       """
 
   Scenario: A re-activate that names a stale id drops its deny entry and stores a new revision
-    FR-010, ADR-0059 amendment R5: the closure no longer holds the tactic old, but the stored document still denies it,
+    FR-010, ADR-0059 amendment A5: the closure no longer holds the tactic old, but the stored document still denies it,
     so the re-activate proceeds; old is dropped, reported in dropped only, and not in cleared.
     Given the org pack "main" with the file "tactics/old.tactic.yaml":
       """

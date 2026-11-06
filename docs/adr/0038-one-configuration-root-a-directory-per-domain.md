@@ -2,7 +2,7 @@
 title: "ADR-0038: The service keeps its files under one configuration root, a directory per domain"
 description: charter.config-root holds packs/ and activations/; every registered pack lives in packs/ at its declared level, so one layout serves a local machine and a hosted store.
 doc_status: active
-updated: 2026-10-31T00:00:00Z
+updated: 2026-11-06T00:00:00Z
 decision_status: Accepted; superseded in part by ADR-0041 (2026-10-28)
 decision_date: '2026-10-27'
 type: ADR
@@ -284,6 +284,21 @@ Alternatives considered:
   and aside copies written beside it.
 - **Admit only links inside the configuration root** (not chosen). It would refuse to serve a
   linked checkout at all, which is what #174 asked for.
+
+## Amendment 2026-11-06: the activation register is built
+
+Two lines of decision 2 above are out of date since the activation register was built (mission
+`activation-register-and-closure-01M6NXBD`). The original text stands; the changed points are these:
+
+- The directory of an activation is `activations/<encoded id>/activation.json`, not `activations/<id>/`. The encoded
+  id is the id lower-cased, a `-`, and a lowercase hexadecimal bitmap of the positions that were upper case, so
+  `ABC` is `abc-7` and `abc` is `abc-0`. The id grammar admits ids that differ only in case, and a case-insensitive
+  file system would otherwise give them one directory. The encoding is reversible, and a read checks that the
+  directory's name decodes to the id asked for.
+- `activations/` is no longer reserved: the activation API is served (`createActivation`, `getActivation`,
+  `replaceActivation`, `deleteActivation` and `listActivationPacks`; the sub-resource writes and the effective reads
+  still answer `501`). The storage decision is [ADR-0061](/adr/0061-one-replica-per-deployment/)'s amendment of the
+  same date.
 
 ## Alternatives considered
 
