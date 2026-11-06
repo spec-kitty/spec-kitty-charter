@@ -38,10 +38,10 @@
       "criterion_id": "FR-004",
       "description": "Verify FR-004 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "activation-register.feature 'A second DELETE finds nothing' (204 then 404 activation_not_found); If-Match on DELETE proven by ActivationConditionalRequestTest.deleteHonoursIfMatch (HTTP 412 on other validator, success on matching) and ActivationServiceTest.deleteHonoursIfMatch / aStaleIfMatchOnADeleteIsJudgedFromTheHeadersAloneAndTakesNoSnapshot - no @contract scenario for a conditional DELETE, unit/HTTP-level only. lane-m HEAD 7f6264b: ./gradlew verifyAll --rerun-tasks --max-workers=1 -PcontractBaseline=none BUILD SUCCESSFUL (127/127 tasks executed; 7200 tests, 0 failures, 0 errors, 4 pre-existing env skips in packs; 341 BDD scenarios incl. activation-register 35/35, activation-selections 41/41, activation-presets 14/14, activation-register-guards 5/5, activations 4/4)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:qa-test-executor-elena",
+      "verified_at": "2026-11-06T02:55:18.836302+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
