@@ -92,6 +92,9 @@ loses its gating role. Those changes are follow-ups, not part of this record.
 1. **Five relations, no depth limit.** The activation cascade walks `requires`, `suggests`, `refines`, `scope`
    and `instantiates` forward, as core does. It stops at a denied artifact and reports it (ADR-0013 D4). Each
    artifact is visited once (the ADR-0025 visited-URN guard), so a cycle through `enhances` ends.
+   *Superseded 2026-11-06 (R4):* the cascade walks six relations, these five and `enhances`, all forward at write
+   time; the visited guard ends a cycle through any of them, and there is no read-time pull for a cycle to run
+   through. See the [amendment](#amendment-2026-11-06).
 2. **`enhances`, both ways, at read.** *Superseded 2026-11-06 (R4):* `enhances` is a cascade relation like the
    others, walked at write time in its declared direction, and there is no read-time pull; see the
    [amendment](#amendment-2026-11-06). The rest of this point is kept as the record of the 2026-11-05 ruling. The edge runs from the enhancing artifact to its target, and the pull follows it in
@@ -145,6 +148,8 @@ loses its gating role. Those changes are follow-ups, not part of this record.
 force with it: a hard dependency, a recommendation, the target it narrows, what it puts in force within its scope,
 or its template. `enhances` keeps an enhancing artifact and the artifact it adds to in force together, unless one is denied. The other edges
 either replace content or point at what must not be activated.
+*Superseded 2026-11-06 (R4):* `enhances` is walked forward like the five, so a cascade from an enhancer puts its
+target in force, and a target puts none of its enhancers in force; see the [amendment](#amendment-2026-11-06).
 
 ### D3. A layer override takes the place of the whole artifact (ruled)
 
@@ -162,6 +167,8 @@ This differs from core's field merge (core ADR `3.x/2026-05-16-1`). The divergen
 difference.
 
 **Why.** The overriding artifact says everything it takes from no lower level, with no partial-field surprises; an `enhances` edge into the id still adds to it, and that enhancer joins under D2.2.
+*Superseded 2026-11-06 (R4):* the enhancer does not join because the id is in force; a read returns it with the id
+only when it is itself active. See the [amendment](#amendment-2026-11-06).
 
 ### D4. A stored document a pack upgrade made stale is served and flagged (ruled; ADR-0020 question 5)
 
@@ -260,6 +267,8 @@ this record stands.
 - D3, D2.2 and D2.4 depart from core. A project with a partial override, with an artifact that enhances another, in either direction,
   or with a profile whose parent `requires` or `scope`s more, sees different content after the switch. Core's
   cascade excludes lineage, so it does not pass through `specializes_from`.
+  *Superseded in part 2026-11-06 (R4):* the `enhances` departure is one direction only: core's cascade does not
+  follow `enhances`, and this one walks it forward, from the enhancer to its target.
 - D3, D4 and D5 change the contract. D5: `summary` and `governanceFingerprint` leave `Activation`, and `304` is
   added to five operations. D4: the skipped report, closed with four buckets in
   `contracts/charter/schemas/SkippedReport.yaml`, has no bucket for a dropped id or an unapplied deny entry. D3: no
@@ -267,6 +276,8 @@ this record stands.
   `EffectiveArtifactReason` value names the `enhances` pull, and the description and `x-derived` rule of
   `SkippedDeactivated.requiredBy` assume a forward edge and a single reacher. `skippedByScope` also mixes the
   `cascade` scope with `kind_not_activated`.
+  *Superseded 2026-11-06 (R4):* the D2.2 point is moot: there is no `enhances` pull, so no `EffectiveArtifactReason`
+  value names one, and every edge the cascade walks is forward. See the [amendment](#amendment-2026-11-06).
 
 ## Follow-ups
 
@@ -288,7 +299,8 @@ this record stands.
   read-time pull) and widen both the description and the `x-derived` rule of
   `SkippedDeactivated.requiredBy`, as 0.x contract changes in the #291 contract change. The same change widens
   `skippedByScope`'s rule to mean outside `activatedKinds` at read and separates it from `kind_not_activated`.
-- State in the #291 contract change whether `ActivationChange.skipped` includes what the read-time pull skips.
+- State in the #291 contract change whether `ActivationChange.skipped` includes what the read-time pull skips (moot:
+  R4 of the 2026-11-06 amendment removes the read-time pull).
 - Have `getEffectiveGraph` carry the layer-override report in the #291 contract change. `Diagnostic` today describes
   one pack's load, so the contract change either widens its description or adds a schema that carries the report.
 - Update `docs/architecture/offering-and-activation.md` for D2.2, D4 and D5 (the `Activation` example and canonical
