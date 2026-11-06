@@ -21,7 +21,9 @@ put:
     excludes it. A write that changes nothing (the id is already denied and not selected) answers 200 with the same
     revision and an empty applied and cleared. A path id the activation's closure does not hold is 404
     artifact_not_found; a kind outside the path's enum, mission_type included, is 422 activation_invalid with a
-    violation at the path.
+    violation at the path. A document a pack upgrade made stale has one way out: while it stores an id the closure no longer holds, every
+    per-artifact and preset write of the activation is 422 activation_invalid, and an unselect or re-activate of
+    that id is 404 artifact_not_found; a replaceActivation without the stale ids recovers it.
   tags:
   - Activation
   parameters:
@@ -79,7 +81,9 @@ delete:
     id is in cleared and in applied (removed from deactivated). Requires If-Match (ADR-0020 D6). A write that
     changes nothing (the id is not in the list) answers 200 with the same revision and an empty applied and
     cleared. A re-activate adds no deny entry, so it is never 409. A path id the activation's closure does not hold is 404 artifact_not_found; a kind outside the path's
-    enum, mission_type included, is 422 activation_invalid with a violation at the path.
+    enum, mission_type included, is 422 activation_invalid with a violation at the path. A document a pack upgrade made stale has one way out: while it stores an id the closure no longer holds, every
+    per-artifact and preset write of the activation is 422 activation_invalid, and an unselect or re-activate of
+    that id is 404 artifact_not_found; a replaceActivation without the stale ids recovers it.
   tags:
   - Activation
   parameters:

@@ -258,6 +258,13 @@ five operations declare that `400`. Every other answer comes from one flow (`Act
    it were not there, and keeps it. Only a deactivate adds a deny entry, so only `deactivateActivationArtifact`
    declares `409`. `createActivation` and `replaceActivation` judge the whole document they are sent.
 
+   A stale id is not tolerated the same way. While the stored document holds an id the closure no longer holds (a
+   pack upgrade removed it), every per-artifact and preset write of the activation is `422 activation_invalid`,
+   since every id of the computed document is judged; and an unselect or re-activate of that id is
+   `404 artifact_not_found`, since step 4 checks the path id against the closure. No per-artifact write can remove
+   it. The client recovers with `replaceActivation`: it fetches the document, drops the stale ids and `PUT`s the
+   result with the fetched `ETag` as `If-Match`.
+
 A per-artifact write has no body list for a pointer to index, so a `422` the document's rules raise on the computed
 document points at the whole request (`""`), and keeps the codes and the details.
 

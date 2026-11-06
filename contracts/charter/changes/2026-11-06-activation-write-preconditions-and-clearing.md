@@ -30,3 +30,6 @@
   artifact an `ArtifactReference` can name: a template, an asset, an unselected intermediate or a lineage ancestor on
   the way leads back to the artifact that put it in the walk (for an ancestor, its descendant), as
   `ArtifactReference`'s description and ADR-0059 D2.4 say; among the nearest, the first in code-point order.
+- The five per-artifact and preset write descriptions say how a document a pack upgrade made stale recovers: while it
+  stores an id the closure no longer holds, every such write is `422 activation_invalid`, and an unselect or
+  re-activate of that id is `404 artifact_not_found`; a `replaceActivation` without the stale ids recovers it.

@@ -220,3 +220,9 @@ re-review of the fixes. Folded on lane-m (369063b..ac1faa9 and the re-review fol
    the operator.
 6. `includeDeactivated` clears out-of-scope deny entries it walks through (F4), and the write-time pull is bounded by
    `activatedKinds` (F5). Both follow the contract text; neither is spelled out in ADR-0059. Awaiting confirmation.
+7. A document a pack upgrade made stale is a dead end for the per-artifact writes. While it stores an id the closure
+   no longer holds, every per-artifact and preset write is `422` (every id of the computed document is judged), and
+   an unselect or re-activate of that id is `404 artifact_not_found` (`requireHeld` checks the path id against the
+   closure). Only a full `replaceActivation` recovers it. Documented in the five write descriptions and in
+   `offering-and-activation.md`; whether a per-artifact write should tolerate a stale id, or an unselect and a
+   re-activate remove one, awaits the operator.
