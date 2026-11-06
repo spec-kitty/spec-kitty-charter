@@ -4,8 +4,9 @@
 - **Origin flow:** `plan`
 - **Slot key:** `plan.floor.required-enhancer`
 - **Input key:** `required_enhancer`
-- **Status:** `open`
+- **Status:** `resolved`
 - **Created:** `2026-11-06T10:01:08.340614+00:00`
+- **Resolved:** `2026-11-06T10:25:36.041421+00:00`
 - **Opened by:** `cli`
 - **Other answer:** `false`
 
@@ -21,7 +22,7 @@ A required or locked artifact that is an enhancer whose target is not in force: 
 
 ## Final answer
 
-_(none)_
+Enhancer rule wins: not in force, reported as required-but-ungrounded
 
 ## Rationale
 
@@ -30,3 +31,4 @@ _(none)_
 ## Change log
 
 - `2026-11-06T10:01:08.340614+00:00` - opened
+- `2026-11-06T10:25:36.041421+00:00` - resolved (final_answer="Enhancer rule wins: not in force, reported as required-but-ungrounded")

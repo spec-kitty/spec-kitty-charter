@@ -466,7 +466,7 @@
     {
       "created_at": "2026-11-06T10:01:05.833649Z",
       "decision_id": "01M6R4W1H9P3451V89KHP97XKM",
-      "final_answer": null,
+      "final_answer": "Merged edges",
       "input_key": "cascade_edges",
       "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",
       "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
@@ -480,17 +480,17 @@
       "other_answer": false,
       "question": "Should the write cascade walk the merged edges (after layer overrides) instead of every holding pack's edges?",
       "rationale": null,
-      "resolved_at": null,
+      "resolved_at": "2026-11-06T10:25:33.707613Z",
       "resolved_by": null,
       "slot_key": "plan.cascade.merged-edges",
-      "status": "open",
+      "status": "resolved",
       "step_id": null,
       "summary_json": null
     },
     {
       "created_at": "2026-11-06T10:01:08.340614Z",
       "decision_id": "01M6R4W3ZMSESETMQ0ZQTCZCFJ",
-      "final_answer": null,
+      "final_answer": "Enhancer rule wins: not in force, reported as required-but-ungrounded",
       "input_key": "required_enhancer",
       "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",
       "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
@@ -504,10 +504,10 @@
       "other_answer": false,
       "question": "A required or locked artifact that is an enhancer whose target is not in force: in force or not?",
       "rationale": null,
-      "resolved_at": null,
+      "resolved_at": "2026-11-06T10:25:36.041421Z",
       "resolved_by": null,
       "slot_key": "plan.floor.required-enhancer",
-      "status": "open",
+      "status": "resolved",
       "step_id": null,
       "summary_json": null
     }
