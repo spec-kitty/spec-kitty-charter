@@ -9,13 +9,14 @@ Feature: Applying a preset to an activation
   reported in cleared. applied lists every id the write added to or removed from selected, deactivated or
   missionTypes, so the ids a replaced key drops are listed too; a kind is never an entry. A preset id no pack of
   the closure holds is 404 preset_not_found; when two packs of the closure hold one preset id, the last in merge
-  order wins. The write requires If-Match and answers an ActivationChange with the new revision as its ETag; a
+  order wins: a pack merges after the pack it extends by parent_pack, and two packs of one level that hold one
+  preset id without being related by parent_pack are refused (pack_sibling_conflict). The write requires If-Match and answers an ActivationChange with the new revision as its ETag; a
   write that changes nothing answers 200 with the same revision and stores nothing.
 
   The fixture is one org pack, main, over a second, shared, and a third pack, other, the activation does not
   name. main holds directives A, B, C and M, tactic t and the mission types old-type and software-dev. Its
   presets: team (directives B and C, the kind gate [directives]), also held by shared with tactic u, where
-  main's wins; force-me (directives B and M); no-kinds (directive A and no kind gate); mission-types
+  main's wins because main extends shared by parent_pack; force-me (directives B and M); no-kinds (directive A and no kind gate); mission-types
   (activated_mission_types [software-dev]). other holds the preset outside.
 
   Background:
@@ -47,7 +48,7 @@ Feature: Applying a preset to an activation
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943R
       pack_version: 1.0.0
-      parent_pack: null
+      parent_pack: 01M4P01D5TWB5FKZGNNQG3943S
       name: main-pack
       pack_level: org
       depends_on:
