@@ -41,7 +41,8 @@ class ActivationFileCodecTest {
 
     @Test
     void writesSchemaVersionTwo() {
-        assertThat(text(ActivationFileCodec.encode(ActivationDocument.builder().build().document())))
+        assertThat(text(ActivationFileCodec.encode(
+                        ActivationDocument.builder().build().document())))
                 .isEqualTo("{\"schemaVersion\":2}");
         assertThat(text(ActivationFileCodec.encode(everyMember())))
                 .isEqualTo("{\"deactivated\":{\"directive\":[\"DIRECTIVE_001\"],\"mission_type\":[\"documentation\"]},"

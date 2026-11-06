@@ -128,7 +128,8 @@ class FileActivationRepositoryTest extends ActivationRepositoryContract {
 
     @Test
     void readingAVersionOneFileLeavesItsBytesAndModificationTimeAlone() throws IOException {
-        byte[] versionOne = "{\"missionTypes\":[\"software-dev\"],\"schemaVersion\":1}".getBytes(StandardCharsets.UTF_8);
+        byte[] versionOne =
+                "{\"missionTypes\":[\"software-dev\"],\"schemaVersion\":1}".getBytes(StandardCharsets.UTF_8);
         storeBytes(repository(), ID, versionOne);
         FileTime written = FileTime.fromMillis(1_000_000_000L);
         Files.setLastModifiedTime(file(ID), written);

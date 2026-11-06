@@ -70,13 +70,7 @@ public class ActivationMapper {
                 packs -> builder.packs(
                         packs.stream().map(ActivationMapper::packRef).toList()));
         ifPresent(config.getLanguages(), builder::languages);
-        kindLists(config.getSelected()).forEach((kind, ids) -> {
-            if (kind == ArtifactKind.MISSION_TYPE) {
-                builder.missionTypes(ids);
-            } else {
-                builder.selected(kind, ids);
-            }
-        });
+        kindLists(config.getSelected()).forEach(builder::selected);
         kindLists(config.getDeactivated()).forEach(builder::deactivated);
         return builder.build();
     }
@@ -88,17 +82,7 @@ public class ActivationMapper {
      * @return its config
      */
     public ActivationConfig toConfig(ActivationDocument document) {
-        Map<String, Object> tree = new LinkedHashMap<>(document.toCanonicalTree());
-        tree.remove("activatedKinds");
-        if (tree.remove("missionTypes") instanceof List<?> missionTypes) {
-            Map<String, Object> selected = new LinkedHashMap<>();
-            if (tree.get("selected") instanceof Map<?, ?> lists) {
-                lists.forEach((kind, ids) -> selected.put(String.valueOf(kind), ids));
-            }
-            selected.put(ArtifactKind.MISSION_TYPE.token(), missionTypes);
-            tree.put("selected", selected);
-        }
-        return JSON.convertValue(tree, ActivationConfig.class);
+        return JSON.convertValue(document.toCanonicalTree(), ActivationConfig.class);
     }
 
     /**

@@ -30,8 +30,8 @@ import java.util.stream.Collectors;
  * The codes:
  *
  * <ul>
- *   <li>{@code unknown_artifact}: a {@code selected} or {@code deactivated} id the closure does not hold;
- *   <li>{@code unknown_mission_type}: a {@code missionTypes} id the closure does not hold;
+ *   <li>{@code unknown_artifact}: a {@code selected} or {@code deactivated} id the closure does not hold, of any kind,
+ *       {@code mission_type} included;
  *   <li>{@code unknown_pack}: a {@code packs} id no configured pack has;
  *   <li>{@code version_not_held}: a pinned {@code packs} version other than the one held, refused with a detail naming
  *       both versions (research R2; operator ruling of 2026-11-06);
@@ -167,12 +167,7 @@ public final class DocumentRules {
     }
 
     private static List<RefusalViolation> idViolations(ActivationDocument.Written written, ClosureSnapshot snapshot) {
-        List<RefusalViolation> violations = new ArrayList<>(unknown(
-                "/missionTypes",
-                written.missionTypes(),
-                snapshot.missionTypes(),
-                "unknown_mission_type",
-                "mission type"));
+        List<RefusalViolation> violations = new ArrayList<>();
         for (Map.Entry<ArtifactKind, List<String>> list : written.selected().entrySet()) {
             violations.addAll(unknownArtifacts("/selected", list, snapshot));
         }
@@ -232,9 +227,7 @@ public final class DocumentRules {
         Map<ArtifactKind, List<String>> deactivated = declared(written.deactivated(), snapshot);
         ActivationDocument document = built.document().withLists(selected, deactivated);
         return new ActivationDocument.Built(
-                document,
-                built.violations(),
-                new ActivationDocument.Written(written.packs(), written.missionTypes(), selected, deactivated));
+                document, built.violations(), new ActivationDocument.Written(written.packs(), selected, deactivated));
     }
 
     private static Map<ArtifactKind, List<String>> declared(
@@ -250,19 +243,6 @@ public final class DocumentRules {
                         })
                         .toList()));
         return declared;
-    }
-
-    private static List<RefusalViolation> unknown(
-            String pointer, List<String> listed, Set<String> held, String code, String noun) {
-        List<RefusalViolation> violations = new ArrayList<>();
-        for (int i = 0; i < listed.size(); i++) {
-            String id = listed.get(i);
-            if (!held.contains(id)) {
-                violations.add(new RefusalViolation(
-                        pointer + "/" + i, code, "The activation's packs hold no " + noun + " '" + id + "'."));
-            }
-        }
-        return violations;
     }
 
     private static Optional<CharterRefusal> floorRefusal(ActivationDocument document, ClosureSnapshot snapshot) {

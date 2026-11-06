@@ -108,8 +108,10 @@ abstract class ActivationRepositoryContract {
         CasResult result = repository.replace(ID, Optional.of(read), document(1));
 
         assertThat(result).isEqualTo(new CasResult.Written(StoredActivation.of(ID, document(1)), false));
-        assertThat(storedBytes(repository, ID)).isEqualTo(Jcs.canonical(document(1).toCanonicalTree()));
-        assertThat(new String(storedBytes(repository, ID), StandardCharsets.UTF_8)).contains("\"schemaVersion\":2");
+        assertThat(storedBytes(repository, ID))
+                .isEqualTo(Jcs.canonical(document(1).toCanonicalTree()));
+        assertThat(new String(storedBytes(repository, ID), StandardCharsets.UTF_8))
+                .contains("\"schemaVersion\":2");
         assertThat(repository.find(ID)).contains(StoredActivation.of(ID, document(1)));
     }
 

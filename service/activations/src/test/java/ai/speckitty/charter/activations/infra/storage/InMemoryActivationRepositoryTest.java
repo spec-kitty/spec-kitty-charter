@@ -46,8 +46,9 @@ class InMemoryActivationRepositoryTest extends ActivationRepositoryContract {
         seeded[0] = ' ';
         memory.storedBytes(id).orElseThrow()[0] = ' ';
 
-        assertThat(memory.storedBytes(id)).hasValueSatisfying(
-                bytes -> assertThat(bytes).isEqualTo("{\"schemaVersion\":2}".getBytes(StandardCharsets.UTF_8)));
+        assertThat(memory.storedBytes(id))
+                .hasValueSatisfying(
+                        bytes -> assertThat(bytes).isEqualTo("{\"schemaVersion\":2}".getBytes(StandardCharsets.UTF_8)));
         assertThat(memory.storedBytes(new ActivationId("absent"))).isEmpty();
     }
 }

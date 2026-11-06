@@ -33,10 +33,7 @@ class ActivationDocumentUpgradeTest {
 
     static Stream<Arguments> versionOneDocuments() {
         return Stream.of(
-                Arguments.of(
-                        "the minimal document",
-                        "{\"schemaVersion\":1}",
-                        "{\"schemaVersion\":2}"),
+                Arguments.of("the minimal document", "{\"schemaVersion\":1}", "{\"schemaVersion\":2}"),
                 Arguments.of(
                         "an absent activatedKinds keeps every selection",
                         "{\"schemaVersion\":1,\"selected\":{\"directive\":[\"D1\"],\"tactic\":[\"T1\"]}}",
@@ -140,7 +137,8 @@ class ActivationDocumentUpgradeTest {
             }
             at = Optional.ofNullable(at.orElseThrow().getParent());
         }
-        throw new AssertionError("the ActivationConfig corpus is not above " + Path.of("").toAbsolutePath());
+        throw new AssertionError(
+                "the ActivationConfig corpus is not above " + Path.of("").toAbsolutePath());
     }
 
     private static byte[] utf8(String text) {

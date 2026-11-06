@@ -55,9 +55,8 @@ class ActivationDocumentTest {
     @Test
     void anEmptyAllowListIsStoredAsAbsentSoBothGiveOneRevision() {
         ActivationDocument absent = build(b -> b.selected(DIRECTIVE, List.of("D1")));
-        ActivationDocument empty = build(b -> b.selected(DIRECTIVE, List.of("D1"))
-                .selected(TACTIC, List.of())
-                .selected(MISSION_TYPE, List.of()));
+        ActivationDocument empty = build(b ->
+                b.selected(DIRECTIVE, List.of("D1")).selected(TACTIC, List.of()).selected(MISSION_TYPE, List.of()));
 
         assertThat(empty.selected(TACTIC)).isEmpty();
         assertThat(empty.selected(MISSION_TYPE)).isEmpty();
@@ -97,7 +96,8 @@ class ActivationDocumentTest {
         assertThat(document.deactivated(MISSION_TYPE)).containsExactly("documentation");
         assertThat(document.withoutSelected(MISSION_TYPE, "research").selected(MISSION_TYPE))
                 .hasValueSatisfying(ids -> assertThat(ids).containsExactly("software-dev"));
-        assertThat(document.withoutDeny(MISSION_TYPE, "documentation").deactivated()).isEmpty();
+        assertThat(document.withoutDeny(MISSION_TYPE, "documentation").deactivated())
+                .isEmpty();
         assertThat(canonical(document))
                 .isEqualTo("{\"deactivated\":{\"mission_type\":[\"documentation\"]},\"schemaVersion\":2,"
                         + "\"selected\":{\"mission_type\":[\"research\",\"software-dev\"]}}");
@@ -154,7 +154,8 @@ class ActivationDocumentTest {
 
         assertThat(built.violations())
                 .extracting(RefusalViolation::pointer, RefusalViolation::code)
-                .containsExactly(tuple("/selected/asset", "unknown_kind"), tuple("/deactivated/template", "unknown_kind"));
+                .containsExactly(
+                        tuple("/selected/asset", "unknown_kind"), tuple("/deactivated/template", "unknown_kind"));
         assertThat(built.document().selected()).containsOnlyKeys(DIRECTIVE);
         assertThat(built.document().deactivated()).isEmpty();
     }
@@ -264,12 +265,6 @@ class ActivationDocumentTest {
 
         Map<String, Object> tree = document.toCanonicalTree();
 
-        assertThat(tree.keySet())
-                .containsExactly(
-                        "schemaVersion",
-                        "packs",
-                        "selected",
-                        "deactivated",
-                        "languages");
+        assertThat(tree.keySet()).containsExactly("schemaVersion", "packs", "selected", "deactivated", "languages");
     }
 }
