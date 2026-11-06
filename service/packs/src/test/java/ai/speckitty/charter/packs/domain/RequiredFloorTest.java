@@ -105,9 +105,11 @@ class RequiredFloorTest {
         Preset requiresZ = new Preset(
                 "z",
                 "governs",
-                List.of(),
-                Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("Z"), PresetItem.mustHave("D1"))),
-                List.of(PresetItem.mustHave("unheld-mission")));
+                Map.of(
+                        ArtifactKind.DIRECTIVE,
+                        List.of(PresetItem.mustHave("Z"), PresetItem.mustHave("D1")),
+                        ArtifactKind.MISSION_TYPE,
+                        List.of(PresetItem.mustHave("unheld-mission"))));
 
         RequiredFloor floor = RequiredFloor.of(
                 List.of(Map.entry("org", List.of(requiresZ)), Map.entry("team", List.of(governing("t", "Z")))),

@@ -383,9 +383,7 @@ class ClosureQueriesTest {
         Preset governing = new Preset(
                 "governing",
                 "governs",
-                List.of(),
-                Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("Z"), PresetItem.mustHave("D1"))),
-                List.of());
+                Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("Z"), PresetItem.mustHave("D1"))));
         pack(
                 "org",
                 PackLevel.ORG,
