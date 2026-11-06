@@ -1299,10 +1299,10 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       D2
       """
 
-  # Stale ids are dropped on write (ADR-0059 amendment R5, operator ruling of 2026-11-06).
+  # Stale ids are dropped on write (ADR-0059 amendment A5, operator ruling of 2026-11-06).
 
   Scenario: A write drops the ids the closure no longer declares and reports them in dropped
-    ADR-0059 amendment R5: a pack upgrade removed directive OLD, tactic old and mission type research, which the
+    ADR-0059 amendment A5: a pack upgrade removed directive OLD, tactic old and mission type research, which the
     stored document still names. Selecting D2 first drops them from selected, deactivated and missionTypes, then
     selects D2; dropped names them, and applied and cleared report only the select.
     Given the org pack "main" with the file "directives/OLD.directive.yaml":
@@ -1354,7 +1354,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     And the response body has no field at "/config/deactivated"
 
   Scenario: A write that only drops stale ids is not a no-op and stores a new revision
-    ADR-0059 amendment R5: D2 is already selected, so the select changes nothing but the drop of OLD; the dropped id
+    ADR-0059 amendment A5: D2 is already selected, so the select changes nothing but the drop of OLD; the dropped id
     counts as a change.
     Given the org pack "main" with the file "directives/OLD.directive.yaml":
       """
@@ -1383,7 +1383,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       """
 
   Scenario: An unselect that names a stale id drops it and stores a new revision
-    FR-010, ADR-0059 amendment R5: the closure no longer holds OLD, but the stored document still selects it, so the
+    FR-010, ADR-0059 amendment A5: the closure no longer holds OLD, but the stored document still selects it, so the
     unselect proceeds; OLD is dropped with every other stale id and reported in dropped only.
     Given the org pack "main" with the file "directives/OLD.directive.yaml":
       """
@@ -1415,7 +1415,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       """
 
   Scenario: A re-activate that names a stale id drops its deny entry and stores a new revision
-    FR-010, ADR-0059 amendment R5: the closure no longer holds the tactic old, but the stored document still denies it,
+    FR-010, ADR-0059 amendment A5: the closure no longer holds the tactic old, but the stored document still denies it,
     so the re-activate proceeds; old is dropped, reported in dropped only, and not in cleared.
     Given the org pack "main" with the file "tactics/old.tactic.yaml":
       """

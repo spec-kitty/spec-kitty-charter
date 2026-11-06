@@ -195,12 +195,12 @@ re-review of the fixes. Folded on lane-m (369063b..ac1faa9 and the re-review fol
 | F1 | A stale deny entry on a now-required artifact made every later write `409` | changed: per-artifact and preset writes judge the floor only on the deny entries they add; create and replace judge the whole document | `DocumentRules.checkWrite`; DIV-204 |
 | F2 | A floor artifact became a cascading-deactivate candidate | changed: the floor is never a candidate | `CascadeRules` |
 | F3 | A template or asset predecessor answered `500`; `referencedBy` could name an ancestor or an inactive intermediate | changed: back-walk to the nearest nameable or active artifact, code-point tie-break | `Predecessors` |
-| F4 | `includeDeactivated` left out-of-scope deny entries it walked through | changed, then reversed by operator ruling R3 (2026-11-06): it clears only the deny entries the walk passes through within the `cascade` scope; a denied artifact outside the scope stops the walk and keeps its entry | contract `SelectionRequest`; `CascadeRules.planSelect`; ADR-0059 amendment |
-| F5 | The write-time `enhances` pull ignored `activatedKinds` | changed: bounded by `activatedKinds` (absent means none). Superseded by operator ruling R4 (2026-11-06): there is no write-time pull; `enhances` is a cascade relation | `CascadeRules.CASCADE_RELATIONS`; DIV-207 |
+| F4 | `includeDeactivated` left out-of-scope deny entries it walked through | changed, then reversed by operator ruling A3 (2026-11-06): it clears only the deny entries the walk passes through within the `cascade` scope; a denied artifact outside the scope stops the walk and keeps its entry | contract `SelectionRequest`; `CascadeRules.planSelect`; ADR-0059 amendment |
+| F5 | The write-time `enhances` pull ignored `activatedKinds` | changed: bounded by `activatedKinds` (absent means none). Superseded by operator ruling A4 (2026-11-06): there is no write-time pull; `enhances` is a cascade relation | `CascadeRules.CASCADE_RELATIONS`; DIV-207 |
 | F6 | A bad body answered `422` before `428`/`404`/`412` | changed: body faults deferred to the `422` step on the five writes; `415` still comes first | `DeferredBody` |
 | F7 | `400`, `409` and the stale-preset `422` undeclared | changed: `400` on five operations, `409` on deactivate only, the `422` documented | contract paths |
 | F8 | A mission type is never in a cascade's scope | kept: javadoc and docs corrected, pinned by a test | `CascadeRules` |
-| F9 | A deactivate's own walk does not follow lineage, a select's does | changed by operator ruling R2 (2026-11-06): the deactivate's own walk follows the lineage as a select's does | `CascadeRules.planDeactivate`; ADR-0059 amendment |
+| F9 | A deactivate's own walk does not follow lineage, a select's does | changed by operator ruling A2 (2026-11-06): the deactivate's own walk follows the lineage as a select's does | `CascadeRules.planDeactivate`; ADR-0059 amendment |
 | F10 | Test gaps: lineage-blind fake graph, NFR-006 timing, NFR-004 select race, native hints for response types | changed: all four added; CI runs `:activations:timingBudgets` report-only | tests; `service.yml` |
 | R1 | Scalar coercion and duplicate members let wrong bodies commit | changed (re-review follow-up) | `ActivationBodyAdvice` |
 | R2 | A floor member with no active referrer named itself in `referencedBy` | changed: left out of `skippedShared` | `CascadeRules` |
@@ -214,12 +214,12 @@ re-review of the fixes. Folded on lane-m (369063b..ac1faa9 and the re-review fol
 3. A preset "lists" a key when its file holds at least one member for it; a key with an empty list counts as not
    listed (the packs `Preset` record cannot tell an absent key from an empty one). Assumed default, applied in FR-016
    and WP14.
-4. Ruled 2026-11-06 (R2): a deactivate's own cascade follows the lineage as a select's does (F9), so a cascading
+4. Ruled 2026-11-06 (A2): a deactivate's own cascade follows the lineage as a select's does (F9), so a cascading
    select and a cascading deactivate of the same profile round-trip. FR-015 and ADR-0059 carry the amendment.
 5. Ruled 2026-11-06: `includeDeactivated` clears only the deny entries the walk passes through within the `cascade`
-   scope (R3, reversing F4), and there is no write-time `enhances` pull to bound (R4, superseding F5). FR-013 and
+   scope (A3, reversing F4), and there is no write-time `enhances` pull to bound (A4, superseding F5). FR-013 and
    ADR-0059 carry the amendment.
-6. Ruled 2026-11-06 (R5): stale ids are dropped on write. Every per-artifact and preset write first removes the
+6. Ruled 2026-11-06 (A5): stale ids are dropped on write. Every per-artifact and preset write first removes the
    stored ids the closure no longer declares (`selected`, `deactivated`, `missionTypes`) and reports them in the new
    `ActivationChange.dropped`; a write that only drops is not a no-op. A select or deactivate of a path id the closure no
    longer holds is still `404`; an unselect or re-activate of one the stored list still names drops it (an id in

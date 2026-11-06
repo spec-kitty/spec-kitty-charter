@@ -307,7 +307,7 @@ class ReachabilityTest {
                 .containsOnlyKeys(urn("directive:D"), urn("tactic:T1"), urn("tactic:T2"));
     }
 
-    // ---- enhances (ADR-0059 D2 as amended on 2026-11-06, R4) --------------------------------------------------------
+    // ---- enhances (ADR-0059 D2 as amended on 2026-11-06, A4) --------------------------------------------------------
 
     @Test
     void enhancesIsCrossedInItsDeclaredDirectionOnlyLikeAnyRelation() {

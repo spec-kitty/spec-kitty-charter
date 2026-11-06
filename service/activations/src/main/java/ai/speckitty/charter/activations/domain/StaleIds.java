@@ -7,7 +7,7 @@ import java.util.Objects;
 import java.util.TreeSet;
 
 /**
- * The ids of a stored document its closure no longer declares (ADR-0059 amendment R5, operator ruling of 2026-11-06):
+ * The ids of a stored document its closure no longer declares (ADR-0059 amendment A5, operator ruling of 2026-11-06):
  * a pack upgrade removed them. Every per-artifact and preset write drops them first, from {@code selected},
  * {@code deactivated} and {@code missionTypes}, and reports them in {@code ActivationChange.dropped}, instead of
  * refusing the write until a full replace. {@code packs}, {@code activatedKinds} and {@code languages} are left as they

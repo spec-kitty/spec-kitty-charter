@@ -403,7 +403,7 @@ class ActivationSelectionServiceTest {
                         refused -> assertThat(refused.kind()).isEqualTo(PreconditionException.Kind.STALE));
     }
 
-    // Stale ids are dropped on write (ADR-0059 amendment R5, operator ruling of 2026-11-06).
+    // Stale ids are dropped on write (ADR-0059 amendment A5, operator ruling of 2026-11-06).
 
     @Test
     void aSelectDropsTheStoredIdsTheClosureNoLongerDeclaresAndReportsThem() {

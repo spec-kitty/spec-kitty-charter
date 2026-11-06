@@ -48,9 +48,9 @@ import org.springframework.stereotype.Component;
  *       held or not ({@code 404 artifact_not_found}, or
  *       {@code mission_type_not_found}); an unselect or a re-activate also takes an id the closure no longer holds
  *       when the stored list it removes the id from still names it, since the drop below removes it (ADR-0059
- *       amendment R5);
+ *       amendment A5);
  *   <li>the stored document without the ids the closure no longer declares ({@link #current}, {@link StaleIds}): the use
- *       case computes its change from it, and the ids dropped are reported in {@code dropped} (ADR-0059 amendment R5);
+ *       case computes its change from it, and the ids dropped are reported in {@code dropped} (ADR-0059 amendment A5);
  *   <li>after the use case computed its {@link ActivationChange}: a document equal to the stored one is a no-op, which
  *       answers the stored revision and writes nothing, unless the write dropped a stale id: one that did is never a
  *       no-op, even when the change put the id back (a stale preset member the stored list names); any other is
@@ -230,7 +230,7 @@ public class ActivationWrites {
      * The path's artifact with its id as declared (ADR-0020 D4, operator ruling of 2026-11-06): a known spelling of an
      * id the closure holds (the declared id, the full URN of the path's kind, or another case of either) is that
      * declared id, as {@link DocumentRules#normalize} reads an id of the document. A spelling the closure holds no id
-     * for is read against the stored list the write removes the id from, so a stale id (ADR-0059 amendment R5) is
+     * for is read against the stored list the write removes the id from, so a stale id (ADR-0059 amendment A5) is
      * matched the same way. A spelling neither names is kept as written, for {@link #requireHeldOrStale} to refuse.
      * A mission type is matched exactly, as {@code missionTypes} is in the document, which is not normalized: its path
      * id is kept as written.
@@ -294,7 +294,7 @@ public class ActivationWrites {
     /**
      * Refuses a path id the closure does not hold, unless the stored list the write removes it from still names it:
      * then it is a stale id, which {@link #current} drops and {@link #commit} reports in {@code dropped} (ADR-0059
-     * amendment R5). An id named in neither place is refused as {@link #requireHeld} refuses it (FR-010).
+     * amendment A5). An id named in neither place is refused as {@link #requireHeld} refuses it (FR-010).
      *
      * @param snapshot the closure
      * @param target the path's artifact
@@ -337,7 +337,7 @@ public class ActivationWrites {
 
     /**
      * The document a write computes its change from: the stored one without the ids its closure no longer declares
-     * (ADR-0059 amendment R5). {@link #commit} reports those ids in {@code dropped}.
+     * (ADR-0059 amendment A5). {@link #commit} reports those ids in {@code dropped}.
      *
      * @param loaded the activation as loaded
      * @param snapshot the closure the document names, resolved

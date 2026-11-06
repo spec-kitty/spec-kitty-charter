@@ -90,7 +90,7 @@ public class ActivationExclusionService {
      * Re-activates one artifact: its deny entry is removed (a deny list it empties is dropped), and nothing else
      * changes. One that is not denied is a no-op. An id the closure no longer holds is refused unless the stored
      * document still denies it: then it is dropped as a stale id and reported in {@code dropped} only, not in
-     * {@code cleared} (ADR-0059 amendment R5).
+     * {@code cleared} (ADR-0059 amendment A5).
      *
      * @param id the activation's id
      * @param kind the path's kind token

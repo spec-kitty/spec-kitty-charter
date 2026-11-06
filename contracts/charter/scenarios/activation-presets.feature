@@ -409,7 +409,7 @@ Feature: Applying a preset to an activation
     Then the response header "ETag" is the stored ETag
 
   Scenario: A stale preset member the stored document already names is 422, never a no-op
-    ADR-0059 amendment R5: a pack upgrade removed GONE, which the stored selected.directive and the preset still
+    ADR-0059 amendment A5: a pack upgrade removed GONE, which the stored selected.directive and the preset still
     name. The write drops GONE from the stored document and the preset puts it back, so the computed document
     equals the stored one. A write that dropped a stale id is never a no-op, so the document is judged, and GONE
     is an unknown_artifact at the whole request. Nothing is stored.

@@ -323,7 +323,7 @@ class ActivationExclusionServiceTest {
 
     @Test
     void aReactivateDropsTheStoredIdsTheClosureNoLongerDeclares() {
-        // ADR-0059 amendment R5: GONE and old are stale; the write drops them and names them.
+        // ADR-0059 amendment A5: GONE and old are stale; the write drops them and names them.
         StoredActivation before = stored(ActivationDocument.builder()
                 .selected(ArtifactKind.DIRECTIVE, List.of("GONE"))
                 .deactivated(ArtifactKind.TACTIC, List.of("old", "t")));

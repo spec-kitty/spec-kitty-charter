@@ -82,7 +82,7 @@ public class ActivationSelectionService {
      * Unselects one artifact, or one mission type: it leaves {@code selected} (or {@code missionTypes}), and nothing
      * else changes. One that is not selected is a no-op. An id the closure no longer holds is refused unless the stored
      * document still selects it: then it is dropped as a stale id and reported in {@code dropped} only (ADR-0059
-     * amendment R5).
+     * amendment A5).
      *
      * @param id the activation's id
      * @param kind the path's kind token

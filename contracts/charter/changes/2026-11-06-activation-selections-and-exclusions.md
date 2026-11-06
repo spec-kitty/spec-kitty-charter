@@ -16,12 +16,12 @@
   `GET`, so an `ActivationChange` carries no `self`: its `up` link names the activation (`Links` and the example say
   so).
 - A cascading deactivate walks the `specializes_from` lineage exactly as a cascading select does (operator ruling of
-  2026-11-06, ADR-0059 amendment R2): what a select reached through a profile's ancestor is a candidate of the
+  2026-11-06, ADR-0059 amendment A2): what a select reached through a profile's ancestor is a candidate of the
   deactivate of that profile, so a cascading select and a cascading deactivate round-trip. An artifact another active
   artifact needs is still kept and reported in `skippedShared`. `ExclusionRequest.cascade` and
   `deactivateActivationArtifact` say so; two scenarios of `activation-selections.feature` pin it.
 - A cascade walks `enhances` as one of its relations, in its declared direction (operator ruling of 2026-11-06,
-  ADR-0059 amendment R4): `E enhances T` runs from E to T, as `requires` and `scope` do. A cascading select of E
+  ADR-0059 amendment A4): `E enhances T` runs from E to T, as `requires` and `scope` do. A cascading select of E
   selects T; one of T selects no enhancer; a cascading deactivate of E unselects T unless another active artifact
   needs it, which is then kept and named in `skippedShared`. The relation set is core's five and `enhances`; four
   scenarios of `activation-selections.feature` pin it. No write walks `enhances` any other way: there is no

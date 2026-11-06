@@ -678,7 +678,7 @@
     A specialized profile needs what its parent requires or scopes, but selecting the profile must
     not put the parent in force beside it. Passing only requires and scope keeps the parent's
     recommendations (suggests) and other edges out of the walk.
-  ruling: ADR-0059 D2.4 (as revised 2026-11-05) and its amendment of 2026-11-06 (R2)
+  ruling: ADR-0059 D2.4 (as revised 2026-11-05) and its amendment of 2026-11-06 (A2)
   status: open
   since: 2026-11-06
   evidence:
@@ -701,7 +701,7 @@
     select and a cascading deactivate of the same artifact round-trip. An enhancer and the artifact
     it enhances stay in force together because the cascade selects both, not because a read pulls
     one in.
-  ruling: ADR-0059 D2 as amended on 2026-11-06 (R4), superseding D2.2
+  ruling: ADR-0059 D2 as amended on 2026-11-06 (A4), superseding D2.2
   status: open
   since: 2026-11-06
   note: >-
