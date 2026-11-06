@@ -129,7 +129,7 @@ Feature: The activation register and the packs an activation builds on
     When I remember the header "ETag"
     And I PUT "/activations/a-2" with the body:
       """
-      {"schemaVersion": 1, "selected": {"directive": ["directive:DIRECTIVE_001", "directive_001"]}}
+      {"schemaVersion": 1, "selected": {"directive": ["directive:DIRECTIVE_001", "directive_001", "DIRECTIVE:Directive_001"]}}
       """
     Then the response status is 201
     And the field at "/config/selected/directive/0" is "DIRECTIVE_001"
