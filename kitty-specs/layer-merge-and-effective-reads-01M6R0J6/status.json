@@ -160,7 +160,7 @@
     },
     "WP05": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": null,
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 2,
@@ -182,14 +182,14 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 21872,
-      "shell_pid_created_at": "1793984863.77",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T020": "done",
-        "T021": "done",
-        "T022": "done",
-        "T023": "done",
-        "T024": "done"
+        "T020": "planned",
+        "T021": "planned",
+        "T022": "planned",
+        "T023": "planned",
+        "T024": "planned"
       }
     },
     "WP06": {
