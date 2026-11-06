@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -27,7 +26,7 @@ class CascadeRulesLineageTest {
             ActivationDocument.builder().build().document();
 
     private static ActivationChange select(ActivationDocument document, CascadeScope scope, Reach reach) {
-        return CascadeRules.applySelect(document, P, scope, false, reach, Set.of());
+        return CascadeRules.applySelect(document, P, scope, false, reach);
     }
 
     private static CascadeScope scope(String... kinds) {

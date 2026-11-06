@@ -231,8 +231,6 @@ class PacksAvailabilityTest {
         PacksSession session = adapter.session(Optional.of(List.of("alpha")));
         session.reach(plan);
         session.reach(plan);
-        session.enhancesPull(Set.of(d1), Set.of(ArtifactKind.DIRECTIVE));
-        session.enhancersOf(Set.of(d1));
 
         assertThat(session.snapshot().held(ArtifactKind.DIRECTIVE)).containsExactlyInAnyOrder("D1", "D2");
         assertThat(closures.calls).as("one verified read for the session").isEqualTo(1);
@@ -249,9 +247,6 @@ class PacksAvailabilityTest {
         assertThat(session.snapshot().unknownPacks()).containsExactly("ghost");
         assertThat(session.reach(new ReachPlan(Set.of(d1), CascadeRules.CASCADE_RELATIONS, Set.of(), true)))
                 .isEqualTo(Reach.empty());
-        assertThat(session.enhancesPull(Set.of(d1), Set.of(ArtifactKind.DIRECTIVE)))
-                .isEmpty();
-        assertThat(session.enhancersOf(Set.of(d1))).isEmpty();
     }
 
     @Test

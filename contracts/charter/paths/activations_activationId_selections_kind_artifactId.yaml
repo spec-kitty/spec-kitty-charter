@@ -11,9 +11,9 @@ put:
     the named kinds from it: the walk stops at a deactivated artifact and reports it, unless includeDeactivated is
     true, which walks through deactivated artifacts and clears the exclusions of everything the walk goes through,
     whatever the cascade's kinds (a cleared artifact outside them is reported in skippedByScope and not selected; a
-    lineage ancestor passed through is cleared and never selected), and those the read-time enhances pull reaches
-    from what it selects, within the kinds activatedKinds names (absent means none). An enhancer is never added to
-    selected (ADR-0059 D2.2); one whose exclusion is cleared is in cleared and in applied. One write, one new revision; answers the ActivationChange and the new ETag. Requires If-Match (ADR-0020
+    lineage ancestor passed through is cleared and never selected). The walk crosses enhances like any other
+    relation, from the enhancer to what it enhances (ADR-0059 D2, as amended on 2026-11-06), so selecting an
+    enhancer with a cascade selects its target and selecting a target selects no enhancer. One write, one new revision; answers the ActivationChange and the new ETag. Requires If-Match (ADR-0020
     D6). Absent means none: when selected holds no list for the kind, the select adds one that holds exactly the
     artifact (and what the cascade reaches), as it would to []. A write that changes nothing answers 200 with the
     same revision and an empty applied and cleared. A path id the activation's closure does not hold is 404

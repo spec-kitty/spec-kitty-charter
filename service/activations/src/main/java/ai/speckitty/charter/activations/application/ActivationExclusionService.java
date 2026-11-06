@@ -9,14 +9,12 @@ import ai.speckitty.charter.activations.domain.CascadeScope;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.activations.domain.DocumentRules;
 import ai.speckitty.charter.activations.domain.Reach;
-import ai.speckitty.charter.activations.domain.ReachPlan;
 import ai.speckitty.charter.activations.domain.SkippedReport;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.Urn;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -32,9 +30,9 @@ import org.springframework.stereotype.Service;
  * {@link CascadeRules}'; {@code applied} and {@code cleared} are {@link ActivationChange#of}'s.
  *
  * <p>A deactivate refuses a target on the floor first ({@code 409 artifact_locked} or {@code artifact_required},
- * naming the packs), before any walk. It then walks the target's own reach, and drives {@link CascadeRules#planShared}
- * to its fixed point from {@link Reach#empty()}: every step walks the same session, so the whole request reads the
- * packs once (NFR-007). The last answer is what the other active artifacts keep.
+ * naming the packs), before any walk. It then walks the target's own reach and the shared reach of the other active
+ * artifacts ({@link CascadeRules#planShared}), both on the same session, so the whole request reads the packs once
+ * (NFR-007).
  */
 @Service
 public class ActivationExclusionService {
@@ -81,13 +79,9 @@ public class ActivationExclusionService {
         ActivationDocument before = loaded.document();
         refuseFloor(before, target, snapshot);
         Reach own = ActivationWrites.walk(session, CascadeRules.planDeactivate(before, target, scope));
-        Map<ArtifactRef, Set<ArtifactRef>> enhancers = own.reached().isEmpty()
-                ? Map.of()
-                : session.enhancersOf(own.reached().keySet());
         Set<ArtifactRef> floor = floorOf(snapshot);
-        Shared shared = new Shared(session, before, target, scope, own, enhancers, floor);
-        ActivationChange change =
-                CascadeRules.applyDeactivate(before, target, scope, own, shared.fixedPoint(), enhancers, floor);
+        Reach others = ActivationWrites.walk(session, CascadeRules.planShared(before, target, scope, own, floor));
+        ActivationChange change = CascadeRules.applyDeactivate(before, target, scope, own, others, floor);
         return writes.commit(loaded, change, snapshot);
     }
 
@@ -134,37 +128,5 @@ public class ActivationExclusionService {
                 .flatMap(urn -> Urn.parse(urn).flatMap(ArtifactRef::of).stream())
                 .forEach(floor::add);
         return floor;
-    }
-
-    /**
-     * The fixed point of the shared walk ({@link CascadeRules#planShared}): from {@link Reach#empty()}, each step walks
-     * the plan the previous answer gives, until the plan is the one before. The starts only grow, so it ends within one
-     * step per artifact the target reached; the bound guards that promise.
-     */
-    private record Shared(
-            PacksSession session,
-            ActivationDocument before,
-            ArtifactRef target,
-            CascadeScope scope,
-            Reach own,
-            Map<ArtifactRef, Set<ArtifactRef>> enhancers,
-            Set<ArtifactRef> floor) {
-
-        Reach fixedPoint() {
-            ReachPlan plan = plan(Reach.empty());
-            for (int step = 0; step <= own.reached().size(); step++) {
-                Reach answer = ActivationWrites.walk(session, plan);
-                ReachPlan next = plan(answer);
-                if (next.equals(plan)) {
-                    return answer;
-                }
-                plan = next;
-            }
-            throw new IllegalStateException("The shared walk of " + target.urn() + " found no fixed point.");
-        }
-
-        private ReachPlan plan(Reach previous) {
-            return CascadeRules.planShared(before, target, scope, own, enhancers, floor, previous);
-        }
     }
 }

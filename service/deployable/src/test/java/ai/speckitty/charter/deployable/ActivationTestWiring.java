@@ -3,7 +3,6 @@ package ai.speckitty.charter.deployable;
 import ai.speckitty.charter.activations.application.AvailablePacks;
 import ai.speckitty.charter.activations.application.PacksSession;
 import ai.speckitty.charter.activations.domain.ActivationDocument;
-import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
@@ -77,16 +76,6 @@ public class ActivationTestWiring {
                 @Override
                 public Reach reach(ReachPlan plan) {
                     return Reach.empty();
-                }
-
-                @Override
-                public Set<ArtifactRef> enhancesPull(Set<ArtifactRef> starts, Set<ArtifactKind> kinds) {
-                    return Set.of();
-                }
-
-                @Override
-                public Map<ArtifactRef, Set<ArtifactRef>> enhancersOf(Set<ArtifactRef> targets) {
-                    return Map.of();
                 }
             };
         }

@@ -50,34 +50,6 @@ public record ReachResult(
         }
     }
 
-    /** Which way an {@code enhances} edge was crossed by the pull. */
-    public enum Direction {
-        /** The node enhances its predecessor. */
-        ENHANCER_OF,
-        /** The node is what its predecessor enhances. */
-        TARGET_OF
-    }
-
-    /**
-     * How the {@code enhances} pull reached a node.
-     *
-     * @param predecessor the node before it
-     * @param direction which way the {@code enhances} edge between them runs
-     */
-    public record Pulled(Urn predecessor, Direction direction) {
-
-        /**
-         * Checks the fields.
-         *
-         * @param predecessor the predecessor
-         * @param direction the direction
-         */
-        public Pulled {
-            Objects.requireNonNull(predecessor, "predecessor");
-            Objects.requireNonNull(direction, "direction");
-        }
-    }
-
     /**
      * Checks and copies the fields, keeping their order.
      *

@@ -14,7 +14,6 @@ import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -73,10 +72,7 @@ public class ActivationSelectionService {
         ActivationDocument before = loaded.document();
         Reach reach =
                 ActivationWrites.walk(session, CascadeRules.planSelect(before, target, scope, includeDeactivated));
-        Set<ArtifactRef> pulled = includeDeactivated
-                ? session.enhancesPull(CascadeRules.walkSelected(target, scope, reach), CascadeRules.pullKinds(before))
-                : Set.of();
-        ActivationChange change = CascadeRules.applySelect(before, target, scope, includeDeactivated, reach, pulled);
+        ActivationChange change = CascadeRules.applySelect(before, target, scope, includeDeactivated, reach);
         return writes.commit(loaded, change, session.snapshot());
     }
 

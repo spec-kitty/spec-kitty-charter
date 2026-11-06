@@ -22,8 +22,7 @@
   document they are sent.
 - `SelectionRequest.includeDeactivated` says what it clears: the deny entries of everything the walk goes through,
   whatever the cascade's kinds (one outside them is cleared, stays in `skippedByScope` and is not selected; a lineage
-  ancestor passed through is cleared and never selected), and of what the read-time `enhances` pull reaches from what
-  the walk selects, within the kinds `activatedKinds` names (absent means none, ADR-0059 D2.2).
+  ancestor passed through is cleared and never selected).
 - A cascading deactivate never removes an artifact on the required or locked floor; a selected one the cascade reached
   is kept, and reported in `skippedShared` when another active artifact still references it, named by that artifact.
   One no other active artifact reaches is not reported: it was never a candidate, and `referencedBy` never names the

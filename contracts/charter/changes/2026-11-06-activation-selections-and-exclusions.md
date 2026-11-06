@@ -11,12 +11,8 @@
   enum (`mission_type` on the exclusions path included) is `422 activation_invalid` with a violation at `/kind`; the
   two `404` codes become raised by an operation, so `artifact_not_found` and `mission_type_not_found` are `raised:
   true` in `x-refusal`. The writes' `404` is the new `ActivationArtifactNotFound` response, which names only codes
-  they raise. An enhancer is never added to `selected` (ADR-0059 D2.2): with `includeDeactivated`, a denied enhancer
-  the read-time `enhances` pull reaches from what the walk selects has its deny entry cleared, so it is in `cleared`
-  and in `applied` (removed from `deactivated`), but never in `selected`. A cascading deactivate keeps a candidate an
-  active enhancer references, naming the enhancer in `skippedShared.referencedBy`. `ActivationChange.skipped` reports
-  the write-time walk only; what the read-time `enhances` pull leaves out is reported by the effective reads
-  (`getActivationSkippedReport`, a later change), as the schema's description now says. The write's path has no
+  they raise. `ActivationChange.skipped` reports the write-time walk only; what a read leaves out is reported by the
+  effective reads (`getActivationSkippedReport`, a later change), as the schema's description now says. The write's path has no
   `GET`, so an `ActivationChange` carries no `self`: its `up` link names the activation (`Links` and the example say
   so).
 - A cascading deactivate walks the `specializes_from` lineage exactly as a cascading select does (operator ruling of
@@ -28,4 +24,7 @@
   ADR-0059 amendment R4): `E enhances T` runs from E to T, as `requires` and `scope` do. A cascading select of E
   selects T; one of T selects no enhancer; a cascading deactivate of E unselects T unless another active artifact
   needs it, which is then kept and named in `skippedShared`. The relation set is core's five and `enhances`; four
-  scenarios of `activation-selections.feature` pin it.
+  scenarios of `activation-selections.feature` pin it. No write walks `enhances` any other way: there is no
+  write-time `enhances` pull, so `includeDeactivated` clears no deny entry the walk does not reach, and a cascading
+  deactivate keeps an artifact an active enhancer enhances because the shared walk crosses `enhances` to it, not by a
+  rule of its own. `SelectionRequest.includeDeactivated`, `ActivationChange` and the two write descriptions say so.

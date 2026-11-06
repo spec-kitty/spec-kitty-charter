@@ -83,8 +83,8 @@ final class Reaches {
      * the lineage, every reached node's {@code specializes_from} chain is walked as the packs slice walks it
      * (ADR-0059 D2.4): an ancestor is passed (recorded in {@code ancestorsPassed} and {@code ancestry}, never reached),
      * its {@code requires} and {@code scope} targets join the forward walk, and a stopped ancestor stops the chain. It
-     * stands in for the packs slice's walk, so a test can drive {@link CascadeRules#planShared}'s fixed point the way
-     * the application does.
+     * stands in for the packs slice's walk, so a test can walk {@link CascadeRules#planShared} the way the application
+     * does.
      */
     static final class Graph implements Function<ReachPlan, Reach> {
 

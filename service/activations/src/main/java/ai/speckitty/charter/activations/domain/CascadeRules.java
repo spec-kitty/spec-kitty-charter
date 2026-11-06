@@ -15,29 +15,30 @@ import java.util.TreeSet;
 import java.util.function.Predicate;
 
 /**
- * The cascade policy (ADR-0059 D2, FR-011 to FR-015), as pure functions over values: what a walk the packs slice made
- * means for the activation document. The domain plans each walk ({@link ReachPlan}) and reads its answer
- * ({@link Reach}); it walks nothing itself.
+ * The cascade policy (ADR-0059 D2 as amended on 2026-11-06, FR-011 to FR-015), as pure functions over values: what a
+ * walk the packs slice made means for the activation document. The domain plans each walk ({@link ReachPlan}) and
+ * reads its answer ({@link Reach}); it walks nothing itself. Every walk crosses the same relations
+ * ({@link #CASCADE_RELATIONS}), each in its declared direction, with the lineage; {@code enhances} is one of them and
+ * has no rule of its own.
  *
  * <ul>
- *   <li><b>Select</b> ({@link #planSelect}, {@link #applySelect}): the target and what the walk reached over the five
- *       relations ({@code requires}, {@code suggests}, {@code refines}, {@code scope}, {@code instantiates}) and the
- *       lineage pass-through, within the scope, join {@code selected}. The rest is reported: out of scope in
- *       {@code skippedByScope}, a stop in {@code skippedDeactivated}, what lies only behind a stop in
- *       {@code unreachedBehindDeactivated} (whatever the scope). A lineage ancestor that is passed through is never in
- *       force and never reported; a denied one stops the pass-through and is reported as any stop is (D2.4).
+ *   <li><b>Select</b> ({@link #planSelect}, {@link #applySelect}): the target and what the walk reached, within the
+ *       scope, join {@code selected}. The rest is reported: out of scope in {@code skippedByScope}, a stop in
+ *       {@code skippedDeactivated}, what lies only behind a stop in {@code unreachedBehindDeactivated} (whatever the
+ *       scope). A lineage ancestor that is passed through is never in force and never reported; a denied one stops the
+ *       pass-through and is reported as any stop is (D2.4).
  *   <li><b>Clearing</b>: a select clears the target's own deny entry; with {@code includeDeactivated} it also clears the
- *       deny entries of everything the walk went through, whatever the scope (what it reached, the ancestors it passed),
- *       and of what the {@code enhances} pull reaches from what it selects, bounded by the document's
- *       {@code activatedKinds} ({@link #pullKinds}). A cleared artifact outside the scope, a cleared ancestor and a
- *       pulled artifact are cleared, never selected (D2.2): the first stays in {@code skippedByScope}.
+ *       deny entries of everything the walk went through, whatever the scope (what it reached, the ancestors it
+ *       passed). A cleared artifact outside the scope and a cleared ancestor are cleared, never selected: the first
+ *       stays in {@code skippedByScope}.
  *   <li><b>Deactivate</b> ({@link #planDeactivate}, {@link #planShared}, {@link #applyDeactivate}): the target and, with
- *       a cascade, the selected artifacts in scope only it reaches leave {@code selected}. A floor artifact is never a
- *       candidate: it stays a start of the shared walk, and one that is selected and reached is reported in
- *       {@code skippedShared} when another active artifact reaches it, named by that artifact. A candidate another active artifact ({@code selected} plus the floor) reaches, or an
- *       active enhancer references, is kept and reported in {@code skippedShared}. Only the target gets a deny entry.
- *       A mission type is never a candidate: no cascade scope admits it, so a selected one the target reached is
- *       reported in {@code skippedByScope} and stays.
+ *       a cascade, the selected artifacts in scope only it reaches leave {@code selected}. The target's walk follows
+ *       the lineage as the select's does, so the two round-trip. A floor artifact is never a candidate: it stays a
+ *       start of the shared walk, and one that is selected and reached is reported in {@code skippedShared} when
+ *       another active artifact reaches it, named by that artifact. A candidate the shared walk from the other active
+ *       artifacts ({@code selected} plus the floor) reaches is kept and reported in {@code skippedShared}. Only the
+ *       target gets a deny entry. A mission type is never a candidate: no cascade scope admits it, so a selected one
+ *       the target reached is reported in {@code skippedByScope} and stays.
  *   <li><b>Reporting</b> ({@link Predecessors}): {@code SkippedDeactivated.requiredBy} names, for each way to a stop,
  *       the nearest predecessor of a kind an {@code ArtifactReference} can name that is not a passed ancestor, and
  *       {@code SharedSkip.referencedBy} the nearest predecessor active after the write (the other active artifacts and
@@ -65,7 +66,7 @@ public final class CascadeRules {
     private CascadeRules() {}
 
     /**
-     * The walk of a select: from the target over the five relations with the lineage, stopping at the document's deny
+     * The walk of a select: from the target over the cascade relations with the lineage, stopping at the document's deny
      * entries (other than the target's own), or nowhere with {@code includeDeactivated}.
      *
      * @param document the document before the write
@@ -84,37 +85,6 @@ public final class CascadeRules {
     }
 
     /**
-     * What a select puts in {@code selected}: the target and the reached artifacts in scope. The application starts
-     * the {@code enhances} pull here when the write includes deactivated artifacts.
-     *
-     * @param target the artifact selected
-     * @param scope the cascade scope
-     * @param reach the walk's answer
-     * @return the artifacts, sorted
-     */
-    public static SortedSet<ArtifactRef> walkSelected(ArtifactRef target, CascadeScope scope, Reach reach) {
-        SortedSet<ArtifactRef> selecting =
-                new TreeSet<>(scopeSplit(target, scope, reach).inScope());
-        selecting.add(target);
-        return selecting;
-    }
-
-    /**
-     * The kinds the write-time {@code enhances} pull of {@code includeDeactivated} may reach: those the document's
-     * {@code activatedKinds} names, as the read-time pull is bounded (ADR-0059 D2.2, FR-013). Absent means none, as
-     * {@code []} does ({@link ActivationDocument#inForce}). The pull keeps no artifact of another kind and does not
-     * continue through one.
-     *
-     * @param document the document before the write
-     * @return the kinds; empty when the document activates none
-     */
-    public static Set<ArtifactKind> pullKinds(ActivationDocument document) {
-        Set<ArtifactKind> kinds = EnumSet.noneOf(ArtifactKind.class);
-        ActivationDocument.kinds().stream().filter(document::inForce).forEach(kinds::add);
-        return kinds;
-    }
-
-    /**
      * A select: the delta and the report.
      *
      * @param document the document before the write
@@ -122,8 +92,6 @@ public final class CascadeRules {
      * @param scope the cascade scope
      * @param includeDeactivated whether denied artifacts are taken back into the cascade
      * @param reach the answer of the {@link #planSelect} walk; ignored without a cascade
-     * @param pulled what the {@code enhances} pull reached from {@link #walkSelected}; ignored without
-     *     {@code includeDeactivated}
      * @return the change
      */
     public static ActivationChange applySelect(
@@ -131,13 +99,12 @@ public final class CascadeRules {
             ArtifactRef target,
             CascadeScope scope,
             boolean includeDeactivated,
-            Reach reach,
-            Set<ArtifactRef> pulled) {
+            Reach reach) {
         Reach walked = scope.cascades() ? reach : Reach.empty();
         Split split = scopeSplit(target, scope, walked);
-        SortedSet<ArtifactRef> selecting = walkSelected(target, scope, walked);
-        Set<ArtifactRef> clearing =
-                clearing(document, target, includeDeactivated ? union(walkedThrough(walked), pulled) : Set.of());
+        SortedSet<ArtifactRef> selecting = new TreeSet<>(split.inScope());
+        selecting.add(target);
+        Set<ArtifactRef> clearing = clearing(document, target, includeDeactivated ? walkedThrough(walked) : Set.of());
         ActivationDocument after = withoutDenies(withSelections(document, selecting), clearing);
         SkippedReport skipped = new SkippedReport(
                 List.copyOf(split.outOfScope()), deniedReport(walked), behindReport(walked), List.of());
@@ -164,25 +131,17 @@ public final class CascadeRules {
     }
 
     /**
-     * The walk of the other active artifacts for a deactivate, one step of a fixed point the application drives.
-     *
-     * <p>The walk starts from {@code selected} and the floor, less the target and the candidates (which must not keep
-     * one another), plus each candidate an active enhancer references: a kept candidate is active after the write, so
-     * what it reaches must stay too. It crosses the five relations with the lineage and stops at the target and the
-     * deny entries. An enhancer is active when it is one of the other active artifacts or the previous walk reached
-     * it, so a kept candidate that enhances another candidate keeps that one on the next step.
-     *
-     * <p>The application starts with {@code previous} = {@link Reach#empty()}, walks the plan, and calls again with
-     * the answer until the plan equals the one before (at most one step per candidate, since the starts only grow);
-     * the last answer is {@link #applyDeactivate}'s {@code othersReach}. Every step reads the same closure snapshot.
+     * The walk of the other active artifacts for a deactivate: it starts from {@code selected} and the floor, less the
+     * target and the candidates (which must not keep one another), crosses the cascade relations with the lineage, and
+     * stops at the target and the deny entries. A candidate it reaches is shared; since the walk goes on through a
+     * candidate it reached, a kept candidate keeps what it reaches in turn, in the same walk. Its answer is
+     * {@link #applyDeactivate}'s {@code othersReach}.
      *
      * @param document the document before the write
      * @param target the artifact deactivated
      * @param scope the cascade scope
      * @param ownReach the answer of the {@link #planDeactivate} walk
-     * @param enhancers for each candidate, its enhancers, one hop over the enhances relation
      * @param floor the artifacts the governing packs require
-     * @param previous the answer of the previous step's walk; {@link Reach#empty()} for the first step
      * @return the plan; one that walks nothing when the target reached no selected artifact in scope (no candidate and
      *     no selected floor artifact, whose {@code referencedBy} the walk also finds)
      */
@@ -191,36 +150,29 @@ public final class CascadeRules {
             ArtifactRef target,
             CascadeScope scope,
             Reach ownReach,
-            Map<ArtifactRef, Set<ArtifactRef>> enhancers,
-            Set<ArtifactRef> floor,
-            Reach previous) {
+            Set<ArtifactRef> floor) {
         if (selectedReached(document, target, scope, ownReach).isEmpty()) {
             return ReachPlan.none(target);
         }
         Set<ArtifactRef> candidates = candidates(document, target, scope, ownReach, floor);
-        Set<ArtifactRef> starts = new TreeSet<>(others(document, target, candidates, floor));
-        starts.addAll(enhancerKept(
-                candidates, enhancers, union(starts, previous.reached().keySet())));
         Set<ArtifactRef> stops = new TreeSet<>(denied(document));
         stops.add(target);
-        return new ReachPlan(starts, CASCADE_RELATIONS, stops, true);
+        return new ReachPlan(others(document, target, candidates, floor), CASCADE_RELATIONS, stops, true);
     }
 
     /**
      * A deactivate: the target is denied and unselected, and with a cascade so is every candidate no other active
-     * artifact keeps. A candidate is kept when the shared walk reached it or an active enhancer references it; its
-     * {@code referencedBy} is the nearest predecessor active after the write, or else an active enhancer. A selected
-     * floor artifact the target reached is never a candidate; it is reported too, named by the nearest other active
-     * artifact that reaches it, and left out when none does: the floor keeps it, and it never names itself.
-     * {@code skippedByScope} lists only the out-of-scope
-     * artifacts the target reached that are selected: one not selected is left alone and not reported.
+     * artifact keeps. A candidate is kept when the shared walk reached it; its {@code referencedBy} is the nearest
+     * predecessor active after the write. A selected floor artifact the target reached is never a candidate; it is
+     * reported too, named by the nearest other active artifact that reaches it, and left out when none does: the floor
+     * keeps it, and it never names itself. {@code skippedByScope} lists only the out-of-scope artifacts the target
+     * reached that are selected: one not selected is left alone and not reported.
      *
      * @param document the document before the write
      * @param target the artifact deactivated
      * @param scope the cascade scope
      * @param ownReach the answer of the {@link #planDeactivate} walk; ignored without a cascade
-     * @param othersReach the answer of the last {@link #planShared} step's walk (its fixed point)
-     * @param enhancers for each candidate, its enhancers, one hop over the enhances relation
+     * @param othersReach the answer of the {@link #planShared} walk
      * @param floor the artifacts the governing packs require
      * @return the change
      * @throws IllegalArgumentException when the target's kind has no deny list
@@ -231,18 +183,13 @@ public final class CascadeRules {
             CascadeScope scope,
             Reach ownReach,
             Reach othersReach,
-            Map<ArtifactRef, Set<ArtifactRef>> enhancers,
             Set<ArtifactRef> floor) {
         requireDeniable(target);
         Reach own = scope.cascades() ? ownReach : Reach.empty();
         Set<ArtifactRef> candidates = candidates(document, target, scope, own, floor);
         Set<ArtifactRef> others = others(document, target, candidates, floor);
-        Set<ArtifactRef> kept = kept(
-                candidates,
-                othersReach,
-                enhancers,
-                union(others, othersReach.reached().keySet()));
-        Sharing sharing = new Sharing(new Predecessors(othersReach), union(others, kept), enhancers);
+        Set<ArtifactRef> kept = retained(candidates, othersReach.reached().keySet());
+        Sharing sharing = new Sharing(new Predecessors(othersReach), union(others, kept));
         List<SkippedReport.SharedSkip> shared =
                 sharing.report(kept, retained(selectedReached(document, target, scope, own), floor));
         Set<ArtifactRef> leaving = without(candidates, kept);
@@ -264,7 +211,7 @@ public final class CascadeRules {
         return split;
     }
 
-    /** The target's own deny entry and, with includeDeactivated, those of what is selected and what is pulled. */
+    /** The target's own deny entry and, with includeDeactivated, those of what the walk went through. */
     private static Set<ArtifactRef> clearing(
             ActivationDocument document, ArtifactRef target, Set<ArtifactRef> included) {
         Set<ArtifactRef> clearing = new TreeSet<>(included);
@@ -332,28 +279,6 @@ public final class CascadeRules {
         others.remove(target);
         others.removeAll(candidates);
         return others;
-    }
-
-    /** The candidates the shared walk reached or an active enhancer references: they stay selected. */
-    private static Set<ArtifactRef> kept(
-            Set<ArtifactRef> candidates,
-            Reach othersReach,
-            Map<ArtifactRef, Set<ArtifactRef>> enhancers,
-            Set<ArtifactRef> active) {
-        Set<ArtifactRef> kept = retained(candidates, othersReach.reached().keySet());
-        kept.addAll(enhancerKept(candidates, enhancers, active));
-        return kept;
-    }
-
-    /** The candidates an active enhancer references. */
-    private static Set<ArtifactRef> enhancerKept(
-            Set<ArtifactRef> candidates, Map<ArtifactRef, Set<ArtifactRef>> enhancers, Set<ArtifactRef> active) {
-        Set<ArtifactRef> kept = new TreeSet<>();
-        candidates.stream()
-                .filter(candidate ->
-                        enhancers.getOrDefault(candidate, Set.of()).stream().anyMatch(active::contains))
-                .forEach(kept::add);
-        return kept;
     }
 
     private static void requireDeniable(ArtifactRef target) {
@@ -458,14 +383,12 @@ public final class CascadeRules {
     /**
      * The {@code skippedShared} report of a deactivate: who keeps each kept candidate and each selected floor artifact
      * the target reached. An artifact is never named as what keeps itself: a floor artifact no other active artifact
-     * reaches is left out, and a kept candidate always has another (the shared walk or an enhancer kept it).
+     * reaches is left out, and a kept candidate always has another (the shared walk reached it from one).
      *
-     * @param predecessors the ways of the shared walk's fixed point
+     * @param predecessors the ways of the shared walk
      * @param active what is active after the write: the other active artifacts and the kept candidates
-     * @param enhancers for each candidate, its enhancers
      */
-    private record Sharing(
-            Predecessors predecessors, Set<ArtifactRef> active, Map<ArtifactRef, Set<ArtifactRef>> enhancers) {
+    private record Sharing(Predecessors predecessors, Set<ArtifactRef> active) {
 
         List<SkippedReport.SharedSkip> report(Set<ArtifactRef> kept, Set<ArtifactRef> floorReached) {
             Set<ArtifactRef> reported = union(kept, floorReached);
@@ -474,14 +397,12 @@ public final class CascadeRules {
                     .toList();
         }
 
-        /** The nearest active artifact back along the shared walk's ways, or else an active enhancer's. */
+        /** The nearest active artifact back along the shared walk's ways. */
         private Optional<ArtifactRef> referencedBy(ArtifactRef kept) {
             Predicate<ArtifactRef> accepted = ref -> !ref.equals(kept) && active.contains(ref);
             List<ArtifactRef> ways =
                     predecessors.ways(kept).stream().map(Reach.Via::from).toList();
-            return predecessors
-                    .nearest(ways, accepted)
-                    .or(() -> predecessors.nearest(enhancers.getOrDefault(kept, Set.of()), accepted));
+            return predecessors.nearest(ways, accepted);
         }
     }
 }

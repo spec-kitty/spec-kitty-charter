@@ -48,9 +48,6 @@ class ActivationSelectionBudgetTest {
         FakeAvailablePacks packs = new FakeAvailablePacks(closure());
         Map<ArtifactRef, List<ArtifactRef>> graph = graph();
         packs.walks(plan -> walk(plan, graph));
-        for (int i = 0; i < ARTIFACTS; i += 10) {
-            packs.enhances(tactic(i), tactic((i + 1) % ARTIFACTS));
-        }
         ActivationSelectionService service = new ActivationSelectionService(new ActivationWrites(repository, packs));
         assertThat(select(service, repository, -1).change().applied())
                 .as("the fixture reaches beyond its target")

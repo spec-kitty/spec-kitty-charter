@@ -9,7 +9,6 @@ import static ai.speckitty.charter.kernel.domain.RelationType.REQUIRES;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
@@ -33,7 +32,7 @@ class CascadeRulesReportingTest {
             .document();
 
     private static List<SkippedReport.SkippedDeactivated> denied(ArtifactRef target, Reach reach) {
-        return CascadeRules.applySelect(X_DENIED, target, CascadeScope.all(), false, reach, Set.of())
+        return CascadeRules.applySelect(X_DENIED, target, CascadeScope.all(), false, reach)
                 .skipped()
                 .skippedDeactivated();
     }
@@ -50,7 +49,7 @@ class CascadeRulesReportingTest {
         Reach own = reach().start("directive:D")
                 .reached("tactic:T2", "directive:D", REQUIRES)
                 .build();
-        return CascadeRules.applyDeactivate(document, D, CascadeScope.all(), own, others, Map.of(), Set.of())
+        return CascadeRules.applyDeactivate(document, D, CascadeScope.all(), own, others, Set.of())
                 .skipped()
                 .skippedShared();
     }

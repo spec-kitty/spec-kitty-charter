@@ -370,11 +370,11 @@ class ClosureQueriesTest {
     }
 
     /**
-     * The view answers the reach and the enhances lookups from the edges of the facts the one verified read
-     * already holds; asking them reads nothing more.
+     * The view answers every reach, over {@code requires} or {@code enhances} alike, from the edges of the facts the one
+     * verified read already holds; asking it reads nothing more.
      */
     @Test
-    void theViewAnswersReachAndEnhancersFromTheSameReadWithNoFurtherRead() {
+    void theViewAnswersEachReachFromTheSameReadWithNoFurtherRead() {
         Urn tacticT = new Urn(NodeKind.TACTIC, "t");
         Urn tacticE = new Urn(NodeKind.TACTIC, "e");
         pack(
@@ -414,10 +414,11 @@ class ClosureQueriesTest {
                 urn -> false,
                 Optional.empty()));
 
+        ReachResult enhanced = view.reach(
+                new ReachRequest(Set.of(tacticE), Set.of(RelationType.ENHANCES), urn -> false, Optional.empty()));
+
         assertThat(reached.reached()).containsOnlyKeys(new Urn(NodeKind.DIRECTIVE, "A1"), tacticT);
-        assertThat(view.enhancesPull(Set.of(tacticT))).containsOnlyKeys(tacticE);
-        assertThat(view.enhancersOf(Set.of(tacticT)))
-                .containsEntry(tacticT, List.of(new EdgeIndex.Place(new PackIdentifier("alpha"), tacticE)));
+        assertThat(enhanced.reached()).containsOnlyKeys(tacticE, tacticT);
         assertThat(digests.get()).as("still one ConsistentRead").isEqualTo(2);
         assertThat(factsRead).as("each closure pack's facts read once").containsExactlyInAnyOrder("alpha", "beta");
     }

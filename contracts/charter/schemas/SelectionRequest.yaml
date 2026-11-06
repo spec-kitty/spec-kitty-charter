@@ -18,9 +18,8 @@ properties:
     description: >-
       When true, the cascade walks through deactivated artifacts and clears their exclusions: of everything the walk
       goes through, whatever the cascade's kinds (one outside them is cleared, reported in skippedByScope and not
-      selected; a lineage ancestor passed through is cleared and never selected), and of what the read-time enhances
-      pull reaches from what the walk selects, within the kinds activatedKinds names (absent means none). A pulled
-      artifact is never selected. Absent means false.
+      selected; a lineage ancestor passed through is cleared and never selected). enhances is walked like any other
+      relation, from the enhancer to what it enhances; nothing else is cleared. Absent means false.
     x-source:
       path: docs/adr/0020-offering-and-activations.md
       symbol: D6

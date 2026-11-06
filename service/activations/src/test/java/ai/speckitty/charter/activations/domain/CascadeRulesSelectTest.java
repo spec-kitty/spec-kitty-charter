@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 /** FR-011, FR-012; US3 AS1, AS2, AS6, AS8. The fixture: D requires T, D requires X, X denied, E enhances T. */
@@ -33,7 +32,7 @@ class CascadeRulesSelectTest {
             .build();
 
     private static ActivationChange select(ActivationDocument document, CascadeScope scope, Reach reach) {
-        return CascadeRules.applySelect(document, D, scope, false, reach, Set.of());
+        return CascadeRules.applySelect(document, D, scope, false, reach);
     }
 
     @Test
@@ -150,7 +149,7 @@ class CascadeRulesSelectTest {
         ArtifactRef software = new ArtifactRef(MISSION_TYPE, "software-dev");
 
         ActivationChange change =
-                CascadeRules.applySelect(X_DENIED, software, CascadeScope.none(), false, Reach.empty(), Set.of());
+                CascadeRules.applySelect(X_DENIED, software, CascadeScope.none(), false, Reach.empty());
 
         assertThat(change.after().missionTypes().orElseThrow()).containsExactly("software-dev");
         assertThat(change.after().selected()).isEmpty();

@@ -1,7 +1,6 @@
 package ai.speckitty.charter.packs.application;
 
 import static ai.speckitty.charter.packs.application.EdgeIndexTest.edge;
-import static ai.speckitty.charter.packs.application.EdgeIndexTest.pack;
 import static ai.speckitty.charter.packs.application.EdgeIndexTest.urn;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -9,8 +8,6 @@ import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.EdgeIndexTest.Closure;
-import ai.speckitty.charter.packs.application.ReachResult.Direction;
-import ai.speckitty.charter.packs.application.ReachResult.Pulled;
 import ai.speckitty.charter.packs.application.ReachResult.Via;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -310,91 +307,23 @@ class ReachabilityTest {
                 .containsOnlyKeys(urn("directive:D"), urn("tactic:T1"), urn("tactic:T2"));
     }
 
-    // ---- enhances (ADR-0059 D2.2, R1) ------------------------------------------------------------------------------
+    // ---- enhances (ADR-0059 D2 as amended on 2026-11-06, R4) --------------------------------------------------------
 
     @Test
-    void thePullRunsBothWays() {
+    void enhancesIsCrossedInItsDeclaredDirectionOnlyLikeAnyRelation() {
         EdgeIndex index = new Closure()
                 .pack("alpha", List.of("tactic:E", "tactic:T"), edge("tactic:E", RelationType.ENHANCES, "tactic:T"))
                 .index();
+        Set<RelationType> enhances = EnumSet.of(RelationType.ENHANCES);
 
-        assertThat(Reachability.enhancesPull(index, urns("tactic:T")))
-                .containsOnlyKeys(urn("tactic:E"))
-                .containsEntry(urn("tactic:E"), List.of(new Pulled(urn("tactic:T"), Direction.ENHANCER_OF)));
-        assertThat(Reachability.enhancesPull(index, urns("tactic:E")))
-                .containsOnlyKeys(urn("tactic:T"))
-                .containsEntry(urn("tactic:T"), List.of(new Pulled(urn("tactic:E"), Direction.TARGET_OF)));
-    }
+        ReachResult fromE =
+                Reachability.reach(index, new ReachRequest(urns("tactic:E"), enhances, urn -> false, Optional.empty()));
+        ReachResult fromT =
+                Reachability.reach(index, new ReachRequest(urns("tactic:T"), enhances, urn -> false, Optional.empty()));
 
-    @Test
-    void thePullIsTransitiveOverAChainAndTerminatesOnACycle() {
-        EdgeIndex chain = new Closure()
-                .pack(
-                        "alpha",
-                        List.of("tactic:E1", "tactic:E2", "tactic:T"),
-                        edge("tactic:E1", RelationType.ENHANCES, "tactic:E2"),
-                        edge("tactic:E2", RelationType.ENHANCES, "tactic:T"))
-                .index();
-        assertThat(Reachability.enhancesPull(chain, urns("tactic:T")))
-                .containsOnlyKeys(urn("tactic:E1"), urn("tactic:E2"));
-
-        EdgeIndex cycle = new Closure()
-                .pack(
-                        "alpha",
-                        List.of("tactic:A", "tactic:B"),
-                        edge("tactic:A", RelationType.ENHANCES, "tactic:B"),
-                        edge("tactic:B", RelationType.ENHANCES, "tactic:A"))
-                .index();
-        assertThat(Reachability.enhancesPull(cycle, urns("tactic:A"))).containsOnlyKeys(urn("tactic:B"));
-    }
-
-    @Test
-    void thePullNeverCrossesACascadeRelation() {
-        EdgeIndex index = new Closure()
-                .pack(
-                        "alpha",
-                        List.of("tactic:E", "tactic:T", "tactic:Z"),
-                        edge("tactic:E", RelationType.ENHANCES, "tactic:T"),
-                        edge("tactic:E", RelationType.REQUIRES, "tactic:Z"))
-                .index();
-
-        assertThat(Reachability.enhancesPull(index, urns("tactic:T"))).containsOnlyKeys(urn("tactic:E"));
-    }
-
-    @Test
-    void aBoundedPullKeepsOnlyWhatItAdmitsAndDoesNotContinueThroughTheRest() {
-        // T is enhanced by the styleguide S, which is enhanced by the tactic E2: with only tactics admitted, S is not
-        // pulled, so neither is E2 behind it; E1 enhances T directly and is.
-        EdgeIndex index = new Closure()
-                .pack(
-                        "alpha",
-                        List.of("tactic:T", "tactic:E1", "styleguide:S", "tactic:E2"),
-                        edge("tactic:E1", RelationType.ENHANCES, "tactic:T"),
-                        edge("styleguide:S", RelationType.ENHANCES, "tactic:T"),
-                        edge("tactic:E2", RelationType.ENHANCES, "styleguide:S"))
-                .index();
-
-        assertThat(Reachability.enhancesPull(
-                        index, urns("tactic:T"), urn -> urn.toString().startsWith("tactic:")))
-                .containsOnlyKeys(urn("tactic:E1"));
-        assertThat(Reachability.enhancesPull(index, urns("tactic:T")))
-                .containsOnlyKeys(urn("tactic:E1"), urn("styleguide:S"), urn("tactic:E2"));
-    }
-
-    @Test
-    void enhancersOfIsTheOneHopReverseLookupWithTheEnhancersPack() {
-        EdgeIndex index = new Closure()
-                .pack("beta", List.of("tactic:T"))
-                .pack(
-                        "alpha",
-                        List.of("beta"),
-                        List.of("tactic:E1", "tactic:E2"),
-                        edge("tactic:E1", RelationType.ENHANCES, "tactic:E2"),
-                        edge("tactic:E2", RelationType.ENHANCES, "beta::tactic:T"))
-                .index();
-
-        assertThat(Reachability.enhancersOf(index, urns("tactic:T")))
-                .containsOnlyKeys(urn("tactic:T"))
-                .containsEntry(urn("tactic:T"), List.of(new EdgeIndex.Place(pack("alpha"), urn("tactic:E2"))));
+        assertThat(fromE.reached())
+                .containsOnlyKeys(urn("tactic:E"), urn("tactic:T"))
+                .containsEntry(urn("tactic:T"), List.of(via("tactic:E", RelationType.ENHANCES)));
+        assertThat(fromT.reached()).as("no walk runs an edge backwards").containsOnlyKeys(urn("tactic:T"));
     }
 }

@@ -7,12 +7,12 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
   added to or removed from selected, deactivated or missionTypes, and cleared the deny entries it removed. A
   write that changes nothing answers 200 with the same revision and stores nothing.
 
-  A cascading select walks requires, suggests, refines, scope and instantiates forward from the target, follows
-  <pack>:: targets, passes through a profile's specializes_from ancestors (requires and scope only), stops at a
-  deny entry and reports it (ADR-0059 D2). The enhances pull runs at read time: a select never adds an enhancer
-  to selected (D2.2), and with includeDeactivated it clears the deny entries of what the pull reaches from what
-  the walk selects. A cascading deactivate unselects what only the target kept, keeps what another active
-  artifact reaches or an active enhancer references (skippedShared), and denies the target alone (ADR-0013 D2-D5).
+  A cascading select walks requires, suggests, refines, scope, instantiates and enhances from the target, each in
+  its declared direction (an enhancer to what it enhances), follows <pack>:: targets, passes through a profile's
+  specializes_from ancestors (requires and scope only), stops at a deny entry and reports it (ADR-0059 D2, as
+  amended on 2026-11-06). There is no enhances pull at write time. A cascading deactivate walks the same way,
+  unselects what only the target kept, keeps what another active artifact reaches (skippedShared), and denies the
+  target alone (ADR-0013 D2-D5).
 
   The fixture is one org pack, main, over a second, shared. In the graph: D requires t, x, t2, t3 and shared::xt;
   e enhances t (the enhancer of User Story 3); D2 requires t2; e2 enhances t3 (the enhancer of User Story 4);
@@ -256,8 +256,8 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
   # User Story 3: select and unselect one artifact, with cascade.
 
   Scenario: A cascading select selects what the target requires, skips a denied one and never selects an enhancer
-    US3 AS1: x is denied, so the walk stops there and reports it; e enhances t, which the walk selects, but the
-    enhances pull runs at read time (ADR-0059 D2.2), so e is neither selected nor applied.
+    US3 AS1: x is denied, so the walk stops there and reports it; e enhances t, which the walk selects, but
+    enhances runs from e to t (ADR-0059 D2, as amended on 2026-11-06), so e is neither selected nor applied.
     Given the activation "a-1" holds:
       """
       {"schemaVersion": 1, "packs": [{"packId": "main"}], "deactivated": {"tactic": ["x"]}}
@@ -335,10 +335,10 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       """
     And the response body has no field at "/config/selected/tactic"
 
-  Scenario: includeDeactivated clears the walk's deny entries and the enhancer's, and selects no enhancer
-    US3 AS3 (R2): x and e are denied. The walk selects D, t, x, t2, t3 and xt; the enhances pull from them reaches
-    e (it enhances t, and the document activates tactics), so e's deny entry is cleared too: e is in cleared and
-    in applied (removed from deactivated), and absent from selected.
+  Scenario: includeDeactivated clears the deny entries the walk passes through, and no enhancer's
+    US3 AS3, ADR-0059 D2 (operator ruling of 2026-11-06): x and e are denied. The walk selects D, t, x, t2, t3 and
+    xt, and clears x. e enhances t, but enhances runs from e to t, so the walk never reaches e and there is no
+    enhances pull at write time: e stays denied.
     Given the activation "a-1" holds:
       """
       {"schemaVersion": 1, "packs": [{"packId": "main"}], "activatedKinds": ["directive", "tactic"], "deactivated": {"tactic": ["e", "x"]}}
@@ -350,13 +350,11 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     Then the response status is 200
     And the field at "/cleared" holds exactly the ids:
       """
-      tactic:e
       tactic:x
       """
     And the field at "/applied" holds exactly the ids:
       """
       directive:D
-      tactic:e
       tactic:t
       tactic:t2
       tactic:t3
@@ -373,7 +371,10 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       x
       xt
       """
-    And the response body has no field at "/config/deactivated"
+    And the field at "/config/deactivated/tactic" holds exactly the ids:
+      """
+      e
+      """
 
   Scenario: includeDeactivated clears a deny entry the walk went through outside the scope, without selecting it
     FR-013, SelectionRequest.includeDeactivated: the walk takes x back whatever the scope, so x's deny entry is
@@ -408,28 +409,6 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     When I GET "/activations/a-1"
     Then the response body has no field at "/config/selected/tactic"
     And the response body has no field at "/config/deactivated"
-
-  Scenario: includeDeactivated clears what the enhances pull reaches only in the kinds the document activates
-    FR-013, ADR-0059 D2.2: the write clears what the read-time pull would reach, and that pull is bounded by
-    activatedKinds. The document activates directives only, so e (a tactic that enhances t) stays denied.
-    Given the activation "a-1" holds:
-      """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "activatedKinds": ["directive"], "deactivated": {"tactic": ["e", "x"]}}
-      """
-    When I PUT "/activations/a-1/selections/directive/D" with the stored ETag and the body:
-      """
-      {"cascade": ["all"], "includeDeactivated": true}
-      """
-    Then the response status is 200
-    And the field at "/cleared" holds exactly the ids:
-      """
-      tactic:x
-      """
-    When I GET "/activations/a-1"
-    Then the field at "/config/deactivated/tactic" holds exactly the ids:
-      """
-      e
-      """
 
   Scenario: A stop reached through a template is required by what instantiates it
     ArtifactReference.yaml: requiredBy names artifacts an ArtifactReference can name, so a template on the way to
@@ -900,7 +879,8 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     And the response body has no field at "/config/deactivated/tactic"
 
   Scenario: A cascading deactivate keeps what a selected enhancer references
-    US4 AS2 (R6): e2 is selected and enhances t3, which only D reaches, so t3 stays, naming e2.
+    US4 AS2: e2 is selected and enhances t3, which only D reaches; the shared walk from e2 crosses enhances to t3,
+    so t3 stays, naming e2.
     Given the activation "a-1" holds:
       """
       {"schemaVersion": 1, "packs": [{"packId": "main"}], "selected": {"directive": ["D"], "tactic": ["e2", "t3"]}}
@@ -927,9 +907,9 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       t3
       """
 
-  Scenario: A candidate kept by an enhancer keeps the candidate it enhances, on a second shared step
+  Scenario: A candidate kept by an enhancer keeps the candidate it enhances, in the same shared walk
     US4 AS2, FR-015: K requires c, c3 and c5, and c3 requires c4; the selected e2 enhances c, and c enhances c3.
-    e2 keeps c; only once c is kept does it keep c3, and c3 keeps c4. c5 leaves selected.
+    The shared walk from e2 crosses enhances to c, goes on through c to c3 and c3 keeps c4. c5 leaves selected.
     Given the org pack "main" with the file "directives/K.directive.yaml":
       """
       schema_version: '1.0'

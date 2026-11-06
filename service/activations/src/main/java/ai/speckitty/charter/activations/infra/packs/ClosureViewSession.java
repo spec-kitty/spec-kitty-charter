@@ -5,7 +5,6 @@ import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
-import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.ClosureView;
@@ -19,7 +18,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.function.Predicate;
 
 /**
  * A {@link PacksSession} over one {@link ClosureView}: the snapshot copied from the view, and every walk answered by the
@@ -52,26 +50,6 @@ final class ClosureViewSession implements PacksSession {
     @Override
     public Reach reach(ReachPlan plan) {
         return reachOf(view.reach(requestOf(plan)));
-    }
-
-    @Override
-    public Set<ArtifactRef> enhancesPull(Set<ArtifactRef> starts, Set<ArtifactKind> kinds) {
-        Predicate<Urn> admits = urn ->
-                ArtifactRef.of(urn).filter(ref -> kinds.contains(ref.kind())).isPresent();
-        Set<ArtifactRef> pulled = refs(view.enhancesPull(urns(starts), admits).keySet());
-        pulled.removeAll(starts);
-        return pulled;
-    }
-
-    @Override
-    public Map<ArtifactRef, Set<ArtifactRef>> enhancersOf(Set<ArtifactRef> targets) {
-        Map<ArtifactRef, Set<ArtifactRef>> enhancers = new LinkedHashMap<>();
-        view.enhancersOf(urns(targets))
-                .forEach((urn, places) -> ArtifactRef.of(urn)
-                        .ifPresent(target -> enhancers.put(
-                                target,
-                                refs(places.stream().map(place -> place.urn()).toList()))));
-        return enhancers;
     }
 
     /**

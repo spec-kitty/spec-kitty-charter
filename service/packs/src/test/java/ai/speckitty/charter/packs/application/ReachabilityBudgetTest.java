@@ -51,24 +51,19 @@ class ReachabilityBudgetTest {
         }
         Set<Urn> deny = Set.of(tactic(7), tactic(131), tactic(402));
         ReachRequest request = new ReachRequest(
-                starts,
-                EnumSet.copyOf(Arrays.asList(FIVE)),
-                deny::contains,
-                Optional.of(ReachRequest.Lineage.specializesFrom()));
+                starts, cascadeRelations(), deny::contains, Optional.of(ReachRequest.Lineage.specializesFrom()));
         assertThat(Reachability.reach(index, request).reached())
                 .as("the fixture reaches beyond its starts")
                 .hasSizeGreaterThan(STARTS);
 
         for (int warm = 0; warm < WARM_UP; warm++) {
             Reachability.reach(index, request);
-            Reachability.enhancesPull(index, starts);
         }
         ThreadMXBean threads = ManagementFactory.getThreadMXBean();
         long[] nanos = new long[MEASURED];
         for (int measured = 0; measured < MEASURED; measured++) {
             long begin = threads.getCurrentThreadCpuTime();
             Reachability.reach(index, request);
-            Reachability.enhancesPull(index, starts);
             nanos[measured] = threads.getCurrentThreadCpuTime() - begin;
         }
         Arrays.sort(nanos);
@@ -76,6 +71,13 @@ class ReachabilityBudgetTest {
         System.out.printf(
                 "ReachabilityBudgetTest: p95 %.3f ms CPU over %d reaches of %d artifacts from %d starts (report-only)%n",
                 p95Millis, MEASURED, ARTIFACTS, STARTS);
+    }
+
+    /** The cascade's relations: the five, and {@code enhances} in its declared direction (ADR-0059 D2, R4). */
+    private static Set<RelationType> cascadeRelations() {
+        Set<RelationType> relations = EnumSet.copyOf(Arrays.asList(FIVE));
+        relations.add(RelationType.ENHANCES);
+        return relations;
     }
 
     private static Urn tactic(int index) {

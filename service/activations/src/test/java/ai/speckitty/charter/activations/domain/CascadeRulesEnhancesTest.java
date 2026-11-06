@@ -7,7 +7,6 @@ import static ai.speckitty.charter.kernel.domain.RelationType.ENHANCES;
 import static ai.speckitty.charter.kernel.domain.RelationType.REQUIRES;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
@@ -37,14 +36,13 @@ class CascadeRulesEnhancesTest {
     private static ActivationChange select(ArtifactRef target) {
         ActivationDocument document = selecting();
         Reach reach = CLOSURE.apply(CascadeRules.planSelect(document, target, CascadeScope.all(), false));
-        return CascadeRules.applySelect(document, target, CascadeScope.all(), false, reach, Set.of());
+        return CascadeRules.applySelect(document, target, CascadeScope.all(), false, reach);
     }
 
     private static ActivationChange deactivate(ActivationDocument document, ArtifactRef target) {
         Reach own = CLOSURE.apply(CascadeRules.planDeactivate(document, target, CascadeScope.all()));
-        Reach others = CLOSURE.apply(CascadeRules.planShared(
-                document, target, CascadeScope.all(), own, Map.of(), Set.of(), Reach.empty()));
-        return CascadeRules.applyDeactivate(document, target, CascadeScope.all(), own, others, Map.of(), Set.of());
+        Reach others = CLOSURE.apply(CascadeRules.planShared(document, target, CascadeScope.all(), own, Set.of()));
+        return CascadeRules.applyDeactivate(document, target, CascadeScope.all(), own, others, Set.of());
     }
 
     @Test
@@ -52,7 +50,8 @@ class CascadeRulesEnhancesTest {
         ActivationDocument document = selecting("tactic:E");
 
         assertThat(CascadeRules.CASCADE_RELATIONS).contains(ENHANCES).hasSize(6);
-        assertThat(CascadeRules.planSelect(document, E, CascadeScope.all(), false).relations())
+        assertThat(CascadeRules.planSelect(document, E, CascadeScope.all(), false)
+                        .relations())
                 .contains(ENHANCES);
         assertThat(CascadeRules.planDeactivate(document, E, CascadeScope.all()).relations())
                 .contains(ENHANCES);

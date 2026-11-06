@@ -4,7 +4,6 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
-import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ComponentResolver;
@@ -14,15 +13,12 @@ import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.ResolvedReference;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -93,10 +89,7 @@ public final class EdgeIndex implements ComposeResolver {
     private final List<PackUnderResolution> closure;
     private final Map<PackIdentifier, PackUnderResolution> byPack = new LinkedHashMap<>();
     private final Map<Place, List<Relationship>> outgoing = new LinkedHashMap<>();
-    private final Map<Place, List<Relationship>> enhancesInto = new HashMap<>();
-    private final Map<Urn, List<Relationship>> incoming = new HashMap<>();
     private final IdentityHashMap<Relationship, Place> sources = new IdentityHashMap<>();
-    private final Set<Relationship> reversed = Collections.newSetFromMap(new IdentityHashMap<>());
 
     private EdgeIndex(List<PackUnderResolution> closure) {
         this.closure = List.copyOf(closure);
@@ -125,7 +118,6 @@ public final class EdgeIndex implements ComposeResolver {
             index.checkQualified(pack, edges);
             edges.forEach(edge -> index.add(pack, edge));
         }
-        index.reverse();
         return index;
     }
 
@@ -149,39 +141,6 @@ public final class EdgeIndex implements ComposeResolver {
     @Override
     public ComponentResolver inPack(PackIdentifier pack) {
         return urn -> node(new Place(pack, urn), outgoing.getOrDefault(new Place(pack, urn), List.of()));
-    }
-
-    /**
-     * The places that write a relation into an artifact, in any pack that holds it: the reverse index, built once.
-     *
-     * @param urn the target
-     * @param type the relation
-     * @return the sources' places, each once, in index order
-     */
-    public List<Place> incoming(Urn urn, RelationType type) {
-        return incoming.getOrDefault(urn, List.of()).stream()
-                .filter(edge -> edge.type() == type)
-                .map(this::sourceOf)
-                .distinct()
-                .toList();
-    }
-
-    /**
-     * A resolver over the {@code enhances} edges only, each crossable both ways: from an artifact to what it enhances,
-     * and from an artifact to each artifact that enhances it ({@link #isReversed}). The pull walks it.
-     */
-    ComposeResolver enhancesBothWays() {
-        return new ComposeResolver() {
-            @Override
-            public Optional<PackIdentifier> holdingPack(PackQualifiedReference reference, PackIdentifier referring) {
-                return EdgeIndex.this.holdingPack(reference, referring);
-            }
-
-            @Override
-            public ComponentResolver inPack(PackIdentifier pack) {
-                return urn -> node(new Place(pack, urn), enhancesAt(new Place(pack, urn)));
-            }
-        };
     }
 
     /** Every place of the closure that holds the URN, in closure order. */
@@ -209,11 +168,6 @@ public final class EdgeIndex implements ComposeResolver {
         return Objects.requireNonNull(sources.get(edge), "an edge of this index");
     }
 
-    /** Whether an edge is the reverse of an {@code enhances} edge, from its target to its enhancer. */
-    boolean isReversed(Relationship edge) {
-        return reversed.contains(edge);
-    }
-
     /**
      * The place an indexed edge leads to, as {@link GraphWalk} resolves it: a bare target in the source's pack, a
      * qualified one in the pack the compose's rule gives it; empty when the compose holds no such pack.
@@ -228,13 +182,6 @@ public final class EdgeIndex implements ComposeResolver {
 
     private Optional<CharterArtifact> node(Place place, List<Relationship> edges) {
         return holds(place) ? Optional.of(new EdgeNode(place.pack(), place.urn(), edges)) : Optional.empty();
-    }
-
-    private List<Relationship> enhancesAt(Place place) {
-        Stream<Relationship> forward =
-                outgoing.getOrDefault(place, List.of()).stream().filter(edge -> edge.type() == RelationType.ENHANCES);
-        return Stream.concat(forward, enhancesInto.getOrDefault(place, List.of()).stream())
-                .toList();
     }
 
     /** Refuses, as the compose does, a qualified endpoint outside the writer's {@code depends_on} closure. */
@@ -273,39 +220,6 @@ public final class EdgeIndex implements ComposeResolver {
     private void put(Place source, Relationship edge) {
         outgoing.computeIfAbsent(source, ignored -> new ArrayList<>()).add(edge);
         sources.put(edge, source);
-    }
-
-    /** The reverse index of every edge, and the reverse of each {@code enhances} edge as an edge of its target. */
-    private void reverse() {
-        List<Relationship> forward =
-                outgoing.values().stream().flatMap(List::stream).toList();
-        for (Relationship edge : forward) {
-            neighbour(edge).ifPresent(target -> {
-                incoming.computeIfAbsent(target.urn(), ignored -> new ArrayList<>())
-                        .add(edge);
-                reverseEnhances(edge, target);
-            });
-        }
-    }
-
-    private void reverseEnhances(Relationship edge, Place target) {
-        if (edge.type() != RelationType.ENHANCES) {
-            return;
-        }
-        Place enhancer = sourceOf(edge);
-        Relationship back = new Relationship(
-                target.urn(),
-                Optional.empty(),
-                enhancer.urn(),
-                Optional.of(Objects.requireNonNull(byPack.get(enhancer.pack()), "a closure pack")
-                        .descriptor()
-                        .name()),
-                RelationType.ENHANCES,
-                edge.when(),
-                edge.rationale());
-        enhancesInto.computeIfAbsent(target, ignored -> new ArrayList<>()).add(back);
-        sources.put(back, target);
-        reversed.add(back);
     }
 
     private static PackIdentifier idOf(PackUnderResolution pack) {

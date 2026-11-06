@@ -3,14 +3,10 @@ package ai.speckitty.charter.packs.application;
 import ai.speckitty.charter.kernel.domain.Descent;
 import ai.speckitty.charter.kernel.domain.DrgNode;
 import ai.speckitty.charter.kernel.domain.GraphWalker;
-import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.EdgeIndex.Place;
-import ai.speckitty.charter.packs.application.ReachResult.Direction;
-import ai.speckitty.charter.packs.application.ReachResult.Pulled;
 import ai.speckitty.charter.packs.application.ReachResult.Via;
-import ai.speckitty.charter.packs.domain.ComposeResolver;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -21,7 +17,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.function.Predicate;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -62,60 +57,6 @@ public final class Reachability {
                 behind,
                 urnsOf(walked.ancestors.keySet()),
                 byUrn(walked.ancestors));
-    }
-
-    /**
-     * What the {@code enhances} pull reaches from a set of artifacts (ADR-0059 D2.2, R1): every artifact joined to a
-     * start over {@code enhances} in either direction, transitively, with every way it was reached. It never crosses
-     * another relation. A start is not part of the answer.
-     *
-     * @param index the closure's edges
-     * @param starts the artifacts the pull starts from
-     * @return each pulled artifact with every predecessor and the direction of the edge crossed
-     */
-    public static Map<Urn, List<Pulled>> enhancesPull(EdgeIndex index, Set<Urn> starts) {
-        return enhancesPull(index, starts, urn -> true);
-    }
-
-    /**
-     * The {@code enhances} pull bounded by the caller's policy (ADR-0059 D2.2): a node the bound does not admit is not
-     * pulled, and the pull does not continue through it. A start is walked whatever the bound.
-     *
-     * @param index the closure's edges
-     * @param starts the artifacts the pull starts from
-     * @param admits the nodes the pull may reach, for example those of the kinds an activation activates
-     * @return each pulled artifact with every predecessor and the direction of the edge crossed
-     */
-    public static Map<Urn, List<Pulled>> enhancesPull(EdgeIndex index, Set<Urn> starts, Predicate<Urn> admits) {
-        Objects.requireNonNull(index, "index");
-        Objects.requireNonNull(starts, "starts");
-        Objects.requireNonNull(admits, "admits");
-        Pull pull = new Pull(index, admits);
-        new TreeSet<>(starts).forEach(start -> index.placesOf(start).forEach(pull::walkFrom));
-        Map<Urn, List<Pulled>> pulled = byUrn(pull.pulled);
-        starts.forEach(pulled::remove);
-        return pulled;
-    }
-
-    /**
-     * The one-hop reverse lookup of {@code enhances}: for each target, the artifacts that write {@code enhances} onto
-     * it, with their packs. Deactivate's shared check reads it.
-     *
-     * @param index the closure's edges
-     * @param targets the targets
-     * @return each target that has an enhancer, with its enhancers' places
-     */
-    public static Map<Urn, List<Place>> enhancersOf(EdgeIndex index, Set<Urn> targets) {
-        Objects.requireNonNull(index, "index");
-        Objects.requireNonNull(targets, "targets");
-        Map<Urn, List<Place>> enhancers = new LinkedHashMap<>();
-        for (Urn target : new TreeSet<>(targets)) {
-            List<Place> of = index.incoming(target, RelationType.ENHANCES);
-            if (!of.isEmpty()) {
-                enhancers.put(target, of);
-            }
-        }
-        return enhancers;
     }
 
     private static Set<Urn> behind(Cascade walked, Cascade open) {
@@ -287,55 +228,6 @@ public final class Reachability {
                     next.add(target);
                 }
             }
-        }
-    }
-
-    /** The state of the {@code enhances} pull, keyed by place, and its visitor. */
-    private static final class Pull implements GraphWalker {
-
-        private final EdgeIndex index;
-        private final ComposeResolver bothWays;
-        private final Predicate<Urn> admits;
-        private final Map<Place, Set<Pulled>> pulled = new LinkedHashMap<>();
-        private final Set<Place> expanded = new HashSet<>();
-        private @Nullable Place pending;
-
-        private Pull(EdgeIndex index, Predicate<Urn> admits) {
-            this.index = index;
-            this.bothWays = index.enhancesBothWays();
-            this.admits = admits;
-        }
-
-        private void walkFrom(Place place) {
-            if (expanded.contains(place)) {
-                return;
-            }
-            pending = place;
-            new GraphWalk(bothWays)
-                    .walk(bothWays.inPack(place.pack()).resolve(place.urn()).orElseThrow(), this);
-        }
-
-        @Override
-        public Descent onNode(DrgNode node) {
-            Place here = Objects.requireNonNull(pending, "a walk starts at a place");
-            return expanded.add(here) ? Descent.CONTINUE : Descent.SKIP;
-        }
-
-        @Override
-        public Descent onRelationship(Relationship relationship) {
-            Optional<Place> target = index.neighbour(relationship).filter(index::holds);
-            if (relationship.type() != RelationType.ENHANCES
-                    || target.isEmpty()
-                    || !admits.test(target.get().urn())) {
-                return Descent.SKIP;
-            }
-            Direction direction = index.isReversed(relationship) ? Direction.ENHANCER_OF : Direction.TARGET_OF;
-            record(
-                    pulled,
-                    target.get(),
-                    Optional.of(new Pulled(index.sourceOf(relationship).urn(), direction)));
-            pending = target.get();
-            return Descent.CONTINUE;
         }
     }
 }

@@ -20,5 +20,5 @@
   `getEffectiveGraph`, `getEffectiveActionContext`) stay reserved, and none of them takes a request body, so the
   scenario that pinned the `501` before an unbindable body is bound is retired (a test now fails if a reserved
   operation declares a `requestBody`).
-- Deferred (R5): `ActivationChange.skipped` reports the write-time skips only; what the read-time `enhances` pull
-  leaves out is reported by the effective reads, which the effective-reads mission builds.
+- `ActivationChange.skipped` reports the write-time skips only; what a read leaves out is reported by the effective
+  reads, which the effective-reads mission builds.

@@ -28,8 +28,8 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Deactivate and re-activate over an in-memory register and a counting fake of the packs. The fixture's graph: D
- * requires t, t2 and t3; D2 requires t2; e2 enhances t3. Every write reads the packs once (NFR-007), however many steps
- * the shared walk's fixed point takes; a target on the floor is refused before any walk.
+ * requires t, t2 and t3; D2 requires t2; e2 enhances t3. Every write reads the packs once (NFR-007) for the target's
+ * walk and the shared walk; a target on the floor is refused before any walk.
  */
 class ActivationExclusionServiceTest {
 
@@ -56,22 +56,20 @@ class ActivationExclusionServiceTest {
                 .requiredBy("directive:RQ", "main")
                 .build());
         service = new ActivationExclusionService(new ActivationWrites(repository, packs));
-        packs.walks(ActivationExclusionServiceTest::walk);
-        packs.enhances(E2, T3);
+        packs.walks(plan -> walk(plan, FIXTURE));
     }
 
-    /** The fixture's graph, walked forward from the plan's starts, stopping nowhere. */
-    private static Reach walk(ReachPlan plan) {
-        Map<ArtifactRef, List<Reach.Via>> reached = new LinkedHashMap<>();
-        plan.starts().forEach(start -> reached.put(start, List.of()));
-        if (plan.starts().contains(D) && !plan.stopAt().contains(D)) {
-            List.of(T, T2, T3).forEach(to -> reached.put(to, List.of(new Reach.Via(D, RelationType.REQUIRES))));
-        }
-        if (plan.starts().contains(D2)) {
-            reached.put(T2, List.of(new Reach.Via(D2, RelationType.REQUIRES)));
-        }
-        return new Reach(reached, Map.of(), Set.of(), Set.of(), Map.of());
-    }
+    /** The fixture's graph: each source with its typed edges. */
+    private static final Map<ArtifactRef, List<Reach.Via>> FIXTURE = Map.of(
+            D,
+            List.of(
+                    new Reach.Via(T, RelationType.REQUIRES),
+                    new Reach.Via(T2, RelationType.REQUIRES),
+                    new Reach.Via(T3, RelationType.REQUIRES)),
+            D2,
+            List.of(new Reach.Via(T2, RelationType.REQUIRES)),
+            E2,
+            List.of(new Reach.Via(T3, RelationType.ENHANCES)));
 
     private StoredActivation stored(ActivationDocument.Builder builder) {
         return repository
@@ -102,9 +100,9 @@ class ActivationExclusionServiceTest {
         assertThat(now().selected(ArtifactKind.TACTIC).orElseThrow()).containsExactly("t2");
         assertThat(now().deactivated()).containsOnlyKeys(ArtifactKind.DIRECTIVE);
         assertThat(packs.calls())
-                .as("one read for the target's walk and every shared step")
+                .as("one read for the target's walk and the shared walk")
                 .isEqualTo(1);
-        assertThat(packs.walked()).hasSizeGreaterThanOrEqualTo(2);
+        assertThat(packs.walked()).hasSize(2);
     }
 
     @Test
@@ -244,24 +242,33 @@ class ActivationExclusionServiceTest {
     }
 
     @Test
-    void aKeptCandidateThatEnhancesAnotherCandidateKeepsItOnTheSecondSharedStep() {
-        // D requires c, c3 and c5; c3 requires c4. The selected styleguide e2 enhances c, and c enhances c3. The first
-        // shared step keeps c (its enhancer e2 is active); only the second, from c, keeps c3 and what c3 reaches.
+    void aKeptCandidateThatEnhancesAnotherCandidateKeepsItInTheSameSharedWalk() {
+        // D requires c, c3 and c5; c3 requires c4. The selected styleguide e2 enhances c, and c enhances c3. The shared
+        // walk from e2 crosses enhances to c, and goes on through c to c3 and c4; c5 leaves.
         ArtifactRef c = new ArtifactRef(ArtifactKind.TACTIC, "c");
         ArtifactRef c3 = new ArtifactRef(ArtifactKind.TACTIC, "c3");
         ArtifactRef c4 = new ArtifactRef(ArtifactKind.TACTIC, "c4");
         ArtifactRef c5 = new ArtifactRef(ArtifactKind.TACTIC, "c5");
         ArtifactRef e2 = new ArtifactRef(ArtifactKind.STYLEGUIDE, "e2");
-        Map<ArtifactRef, List<ArtifactRef>> requires = Map.of(D, List.of(c, c3, c5), c3, List.of(c4));
+        Map<ArtifactRef, List<Reach.Via>> edges = Map.of(
+                D,
+                List.of(
+                        new Reach.Via(c, RelationType.REQUIRES),
+                        new Reach.Via(c3, RelationType.REQUIRES),
+                        new Reach.Via(c5, RelationType.REQUIRES)),
+                c3,
+                List.of(new Reach.Via(c4, RelationType.REQUIRES)),
+                e2,
+                List.of(new Reach.Via(c, RelationType.ENHANCES)),
+                c,
+                List.of(new Reach.Via(c3, RelationType.ENHANCES)));
         FakeAvailablePacks chain = new FakeAvailablePacks(ClosureSnapshots.snapshot()
                 .pack("main", "1.0.0")
                 .held(ArtifactKind.DIRECTIVE, "D")
                 .held(ArtifactKind.TACTIC, "c", "c3", "c4", "c5")
                 .held(ArtifactKind.STYLEGUIDE, "e2")
                 .build());
-        chain.walks(plan -> requiresWalk(plan, requires));
-        chain.enhances(e2, c);
-        chain.enhances(c, c3);
+        chain.walks(plan -> walk(plan, edges));
         ActivationExclusionService chained = new ActivationExclusionService(new ActivationWrites(repository, chain));
         StoredActivation before = stored(ActivationDocument.builder()
                 .selected(ArtifactKind.DIRECTIVE, List.of("D"))
@@ -283,20 +290,27 @@ class ActivationExclusionServiceTest {
                 .as("one read of the packs for the whole request")
                 .isEqualTo(1);
         assertThat(chain.walked())
-                .as("the target's own walk and two shared steps")
-                .hasSize(1 + 2);
+                .as("the target's own walk and one shared walk")
+                .hasSize(1 + 1);
     }
 
-    /** A forward walk over requires from the plan's starts, stopping at (and not passing) the plan's stops. */
-    private static Reach requiresWalk(ReachPlan plan, Map<ArtifactRef, List<ArtifactRef>> requires) {
+    /**
+     * A forward walk from the plan's starts over the typed edges whose relation the plan crosses, stopping at (and not
+     * passing) the plan's stops. Each edge is held as a {@link Reach.Via} whose {@code from} is the edge's target.
+     */
+    private static Reach walk(ReachPlan plan, Map<ArtifactRef, List<Reach.Via>> edges) {
         Map<ArtifactRef, List<Reach.Via>> reached = new LinkedHashMap<>();
         Map<ArtifactRef, List<Reach.Via>> stopped = new LinkedHashMap<>();
         ArrayDeque<ArtifactRef> frontier = new ArrayDeque<>(plan.starts());
         plan.starts().forEach(start -> reached.put(start, List.of()));
         while (!frontier.isEmpty()) {
             ArtifactRef from = frontier.removeFirst();
-            for (ArtifactRef to : requires.getOrDefault(from, List.of())) {
-                Reach.Via via = new Reach.Via(from, RelationType.REQUIRES);
+            for (Reach.Via edge : edges.getOrDefault(from, List.of())) {
+                ArtifactRef to = edge.from();
+                Reach.Via via = new Reach.Via(from, edge.relation());
+                if (!plan.relations().contains(edge.relation())) {
+                    continue;
+                }
                 if (plan.stopAt().contains(to)) {
                     stopped.put(to, List.of(via));
                 } else if (reached.putIfAbsent(to, List.of(via)) == null) {

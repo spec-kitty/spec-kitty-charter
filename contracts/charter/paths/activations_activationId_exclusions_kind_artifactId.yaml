@@ -9,7 +9,7 @@ put:
     Adds the artifact to deactivated and removes it from selected, as charter deactivate does. With cascade, walks
     as a cascading select does, the specializes_from lineage included (ADR-0059 amendment of 2026-11-06), removes
     the reached artifacts from selected, records a deny entry only for the named artifact, and keeps an artifact
-    another active one still reaches, or an active enhancer references (skippedShared). A cascade never removes an
+    another active one still reaches, over any cascade relation, enhances included (skippedShared). A cascade never removes an
     artifact a pack requires or locks: it is kept, with what it reaches, and a selected one the cascade reached is
     reported in skippedShared when another active artifact still references it, named by that artifact; one only the
     floor keeps is not reported. A named artifact a pack requires or locks is 409, naming every requiring pack, and

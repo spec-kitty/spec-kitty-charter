@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Predicate;
 
 /**
  * What one verified read of a composition closure answers (NFR-007, FR-009, FR-023): a read-only value an adapter maps
@@ -36,8 +35,8 @@ import java.util.function.Predicate;
  *     a view by id over this list
  * @param parents each closure pack's {@code parent_pack}, by descriptor {@code pack_id}; a pack without one is absent
  * @param fingerprint the verified digest of the inputs every field was read from
- * @param edges the typed edges of the closure's packs, indexed from the facts the same read holds; the reach and
- *     the {@code enhances} lookups answer from it with no further read
+ * @param edges the typed edges of the closure's packs, indexed from the facts the same read holds; the reach answers
+ *     from it with no further read
  */
 public record ClosureView(
         List<OfferingReadService.OfferingEntry> packs,
@@ -148,39 +147,6 @@ public record ClosureView(
      */
     public ReachResult reach(ReachRequest request) {
         return Reachability.reach(edges, request);
-    }
-
-    /**
-     * What the {@code enhances} pull reaches from the artifacts, both ways and transitively
-     * ({@link Reachability#enhancesPull}).
-     *
-     * @param starts the artifacts the pull starts from
-     * @return each pulled artifact with every way it was reached
-     */
-    public Map<Urn, List<ReachResult.Pulled>> enhancesPull(Set<Urn> starts) {
-        return Reachability.enhancesPull(edges, starts);
-    }
-
-    /**
-     * The {@code enhances} pull bounded by the caller's policy ({@link Reachability#enhancesPull}): a node it does not
-     * admit is neither pulled nor walked through.
-     *
-     * @param starts the artifacts the pull starts from
-     * @param admits the nodes the pull may reach
-     * @return each pulled artifact with every way it was reached
-     */
-    public Map<Urn, List<ReachResult.Pulled>> enhancesPull(Set<Urn> starts, Predicate<Urn> admits) {
-        return Reachability.enhancesPull(edges, starts, admits);
-    }
-
-    /**
-     * The artifacts that enhance each target, one hop ({@link Reachability#enhancersOf}).
-     *
-     * @param targets the targets
-     * @return each target that has an enhancer, with its enhancers' places
-     */
-    public Map<Urn, List<EdgeIndex.Place>> enhancersOf(Set<Urn> targets) {
-        return Reachability.enhancersOf(edges, targets);
     }
 
     /**

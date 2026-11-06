@@ -209,7 +209,7 @@ that calls it. A run that selects only some scenarios reports the others' operat
   stored id and on an `If-Match` over an id nothing is stored under).
 - `activation-selections.feature`: the per-artifact writes (ADR-0020 D6, ADR-0059 D2, #291): select and unselect
   one artifact or mission type under `…/selections/{kind}/{artifactId}`, deactivate and re-activate one under
-  `…/exclusions/{kind}/{artifactId}`, the cascade and the `enhances` pull, the `ActivationChange` each answers, their
+  `…/exclusions/{kind}/{artifactId}`, the cascade (`enhances` among its relations), the `ActivationChange` each answers, their
   preconditions (`428`, `412`, `400`) and their refusals.
 - `activation-presets.feature`: applying a preset, `PUT …/presets/{presetId}` (ADR-0059 D6, #291): the keys it
   replaces, `force`, `preset_not_found` and a stale preset member.

@@ -228,23 +228,4 @@ class EdgeIndexTest {
                         index.inPack(pack("beta")).resolve(urn("directive:B")).orElseThrow()))
                 .containsExactly("directive:B requires alpha::tactic:T");
     }
-
-    @Test
-    void theReverseIndexNamesEachSourceOfARelationIntoAUrnWithItsPack() {
-        EdgeIndex index = new Closure()
-                .pack("beta", List.of("tactic:T"), edge("tactic:T", RelationType.REQUIRES, "tactic:U"))
-                .pack(
-                        "alpha",
-                        List.of("beta"),
-                        List.of("tactic:E", "tactic:F"),
-                        edge("tactic:E", RelationType.ENHANCES, "beta::tactic:T"),
-                        edge("tactic:F", RelationType.REQUIRES, "beta::tactic:T"))
-                .index();
-
-        assertThat(index.incoming(urn("tactic:T"), RelationType.ENHANCES))
-                .containsExactly(new EdgeIndex.Place(pack("alpha"), urn("tactic:E")));
-        assertThat(index.incoming(urn("tactic:T"), RelationType.REQUIRES))
-                .containsExactly(new EdgeIndex.Place(pack("alpha"), urn("tactic:F")));
-        assertThat(index.incoming(urn("tactic:E"), RelationType.ENHANCES)).isEmpty();
-    }
 }

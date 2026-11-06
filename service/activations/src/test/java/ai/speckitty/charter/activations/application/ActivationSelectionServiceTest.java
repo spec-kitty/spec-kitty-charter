@@ -37,7 +37,6 @@ class ActivationSelectionServiceTest {
     private static final ArtifactRef D = new ArtifactRef(ArtifactKind.DIRECTIVE, "D");
     private static final ArtifactRef T = new ArtifactRef(ArtifactKind.TACTIC, "t");
     private static final ArtifactRef X = new ArtifactRef(ArtifactKind.TACTIC, "x");
-    private static final ArtifactRef E = new ArtifactRef(ArtifactKind.TACTIC, "e");
     private static final Optional<List<String>> ALL = Optional.of(List.of("all"));
 
     private final CountingRepository repository = new CountingRepository();
@@ -49,10 +48,9 @@ class ActivationSelectionServiceTest {
         packs = new FakeAvailablePacks(closure().build());
         service = new ActivationSelectionService(new ActivationWrites(repository, packs));
         packs.walks(ActivationSelectionServiceTest::walk);
-        packs.enhances(E, T);
     }
 
-    /** D requires t and x: x is stopped at when the plan stops at it, and reached otherwise. */
+    /** D requires t and x: x is stopped at when the plan stops at it, and reached otherwise; e is not reached. */
     private static Reach walk(ReachPlan plan) {
         if (!plan.starts().contains(D)) {
             return Reach.empty();
@@ -107,32 +105,21 @@ class ActivationSelectionServiceTest {
     }
 
     @Test
-    void includeDeactivatedClearsTheDenyEntryOfAPulledEnhancerWithoutSelectingIt() {
+    void includeDeactivatedNeverClearsTheDenyEntryOfAnEnhancerTheWalkDoesNotReach() {
+        // ADR-0059 D2 (operator ruling of 2026-11-06): e enhances t runs from e to t, so the walk from D never reaches
+        // e, and no enhances pull runs at write time.
         StoredActivation before = stored(ActivationDocument.builder()
                 .activatedKinds(List.of(ArtifactKind.TACTIC))
                 .deactivated(ArtifactKind.TACTIC, List.of("e", "x")));
 
         ActivationWrites.Outcome outcome = service.select(ID, "directive", "D", ALL, true, List.of(), quoted(before));
 
-        assertThat(outcome.change().cleared()).containsExactly(E, X);
-        assertThat(outcome.change().applied()).containsExactly(D, E, T, X);
-        assertThat(now().selected(ArtifactKind.TACTIC).orElseThrow()).containsExactly("t", "x");
-        assertThat(now().deactivated()).isEmpty();
-        assertThat(packs.calls()).isEqualTo(1);
-    }
-
-    @Test
-    void thePullOfIncludeDeactivatedReachesOnlyTheKindsTheDocumentActivates() {
-        // ADR-0059 D2.2, FR-013: the write clears what the read-time pull would reach, and that pull is bounded by
-        // activatedKinds; absent means none.
-        StoredActivation before = stored(ActivationDocument.builder()
-                .activatedKinds(List.of(ArtifactKind.DIRECTIVE))
-                .deactivated(ArtifactKind.TACTIC, List.of("e", "x")));
-
-        ActivationWrites.Outcome outcome = service.select(ID, "directive", "D", ALL, true, List.of(), quoted(before));
-
         assertThat(outcome.change().cleared()).containsExactly(X);
+        assertThat(outcome.change().applied()).containsExactly(D, T, X);
+        assertThat(now().selected(ArtifactKind.TACTIC).orElseThrow()).containsExactly("t", "x");
         assertThat(now().deactivated(ArtifactKind.TACTIC)).containsExactly("e");
+        assertThat(packs.calls()).isEqualTo(1);
+        assertThat(packs.walked()).hasSize(1);
     }
 
     @Test
