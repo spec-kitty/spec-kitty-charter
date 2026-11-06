@@ -2,6 +2,7 @@ package ai.speckitty.charter.activations.infra.api;
 
 import ai.speckitty.charter.activations.application.ActivationExclusionService;
 import ai.speckitty.charter.activations.application.ActivationIdMint;
+import ai.speckitty.charter.activations.application.ActivationPresetService;
 import ai.speckitty.charter.activations.application.ActivationSelectionService;
 import ai.speckitty.charter.activations.application.ActivationService;
 import ai.speckitty.charter.activations.application.ActivationWrites;
@@ -72,6 +73,7 @@ final class StandaloneActivationMvc {
                 new ActivationService(repository, packs, new ActivationIdMint()),
                 new ActivationSelectionService(writes),
                 new ActivationExclusionService(writes),
+                new ActivationPresetService(writes),
                 mapper,
                 new ActivationChangeMapper(mapper));
     }

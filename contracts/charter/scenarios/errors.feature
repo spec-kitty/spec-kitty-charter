@@ -132,17 +132,14 @@ Feature: Failures outside the charter's refusals
     And the contract says "mission_type_not_found" may not be retried
     And the contract says "mission_type_not_found" is raised by an operation
 
-  @reserved
-  Scenario: preset_not_found is reserved for the activation set
-    A declaration pin, not behavior. No operation of this version raises the code: the activation
-    operations that will raise it answer 501 until they are built (ADR-0020 D8, D10), and the unit
-    test ReservedRefusalCodesTest fails when a main class other than the enum and its title mapping
-    names it. #291, which builds the activation writes, raises it and deletes this pin. Nothing here
-    calls the service.
+  Scenario: preset_not_found is raised by the preset application
+    A declaration pin: applying a preset raises the code when the path names a preset no pack of the
+    activation's closure holds, and activation-presets.feature pins the behavior. ReservedRefusalCodesTest
+    fails when the contract marks it raised and no main class names it. Nothing here calls the service.
     Then the contract declares the refusal code "preset_not_found"
     And the contract says "preset_not_found" is answered with status 404
     And the contract says "preset_not_found" may not be retried
-    And the contract says "preset_not_found" is raised by no operation
+    And the contract says "preset_not_found" is raised by an operation
 
   Scenario: artifact_required is raised by the activation register
     A declaration pin: the activation register raises the code (#125, #360), and the scenarios of
@@ -181,10 +178,10 @@ Feature: Failures outside the charter's refusals
     operation that answered it is gone, and the reserved activation operation that will answer it again
     (ADR-0020 D7) answers 501 until it is built. unresolved_edge_endpoint, and, with the load that
     judged a pack's graph, pack_level_mismatch and drg_schema_error, are raised by no operation (no
-    operation reaches the whole-pack load that still refuses a graph as drg_schema_error); neither is
-    the code still reserved for the activation set, preset_not_found. The activation register adds
-    activation_not_found, activation_invalid, artifact_required and artifact_locked, and its per-artifact
-    writes add artifact_not_found and mission_type_not_found.
+    operation reaches the whole-pack load that still refuses a graph as drg_schema_error). The activation
+    register adds activation_not_found, activation_invalid, artifact_required and artifact_locked, its
+    per-artifact writes add artifact_not_found and mission_type_not_found, and the preset application adds
+    preset_not_found.
     Then the contract says exactly these refusal codes are raised by an operation:
       | pack_unreadable             |
       | internal_error              |
@@ -216,3 +213,4 @@ Feature: Failures outside the charter's refusals
       | artifact_locked             |
       | artifact_not_found          |
       | mission_type_not_found      |
+      | preset_not_found            |

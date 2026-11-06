@@ -1,6 +1,7 @@
 package ai.speckitty.charter.activations.infra.api;
 
 import ai.speckitty.charter.activations.application.ActivationExclusionService;
+import ai.speckitty.charter.activations.application.ActivationPresetService;
 import ai.speckitty.charter.activations.application.ActivationSelectionService;
 import ai.speckitty.charter.activations.application.ActivationService;
 import ai.speckitty.charter.activations.application.ActivationWrites;
@@ -38,10 +39,11 @@ import org.springframework.web.server.ResponseStatusException;
  * The activation set (ADR-0020). The register is built: {@code createActivation}, {@code getActivation},
  * {@code replaceActivation}, {@code deleteActivation} and the closure read {@code listActivationPacks} answer through
  * {@link ActivationService}; the per-artifact writes ({@code selectActivationArtifact},
- * {@code unselectActivationArtifact}, {@code deactivateActivationArtifact} and {@code reactivateActivationArtifact})
- * through {@link ActivationSelectionService} and {@link ActivationExclusionService}, each answering the
- * {@code ActivationChange} with the stored revision as its {@code ETag}. A refusal they throw is answered by the problem
- * handlers. The other five operations stay reserved (ADR-0020 D8): each carries its own {@link ReservedOperation} mark,
+ * {@code unselectActivationArtifact}, {@code deactivateActivationArtifact} and {@code reactivateActivationArtifact}) and
+ * the preset write ({@code applyActivationPreset}) through {@link ActivationSelectionService},
+ * {@link ActivationExclusionService} and {@link ActivationPresetService}, each answering the {@code ActivationChange}
+ * with the stored revision as its {@code ETag}. A refusal they throw is answered by the problem handlers. The four
+ * effective reads stay reserved (ADR-0020 D8): each carries its own {@link ReservedOperation} mark,
  * so an operation is built by removing its mark alone. The composition root's {@code ReservedOperationInterceptor} answers a marked one {@code 501} before
  * the request is bound; each throws the same answer in case one is reached. A marked method reads and stores nothing
  * ({@code HexagonalArchitectureTest}).
@@ -60,6 +62,7 @@ public class ActivationController implements ActivationApi {
     private final ActivationService activations;
     private final ActivationSelectionService selections;
     private final ActivationExclusionService exclusions;
+    private final ActivationPresetService presets;
     private final ActivationMapper mapper;
     private final ActivationChangeMapper changes;
 
@@ -69,6 +72,7 @@ public class ActivationController implements ActivationApi {
      * @param activations the register's use cases
      * @param selections the select and the unselect
      * @param exclusions the deactivate and the re-activate
+     * @param presets the preset write
      * @param mapper the document's wire mapper
      * @param changes the per-artifact writes' wire mapper
      */
@@ -77,20 +81,22 @@ public class ActivationController implements ActivationApi {
             ActivationService activations,
             ActivationSelectionService selections,
             ActivationExclusionService exclusions,
+            ActivationPresetService presets,
             ActivationMapper mapper,
             ActivationChangeMapper changes) {
         this.activations = Objects.requireNonNull(activations, "activations");
         this.selections = Objects.requireNonNull(selections, "selections");
         this.exclusions = Objects.requireNonNull(exclusions, "exclusions");
+        this.presets = Objects.requireNonNull(presets, "presets");
         this.mapper = Objects.requireNonNull(mapper, "mapper");
         this.changes = Objects.requireNonNull(changes, "changes");
     }
 
     @Override
-    @ReservedOperation
     public ResponseEntity<ActivationChange> applyActivationPreset(
             String activationId, String presetId, PresetApplication presetApplication, @Nullable String ifMatch) {
-        throw notBuilt();
+        boolean force = Boolean.TRUE.equals(presetApplication.getForce());
+        return changed(presets.apply(new ActivationId(activationId), presetId, force, ifMatch));
     }
 
     @Override
