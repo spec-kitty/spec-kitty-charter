@@ -15,28 +15,32 @@ import java.util.TreeSet;
  *
  * <ul>
  *   <li>{@code applied}: every id the write added to or removed from {@code selected} or {@code deactivated}, of every
- *       kind, {@code mission_type} included.
+ *       kind.
  *   <li>{@code cleared}: every id the write removed from {@code deactivated}.
  * </ul>
  *
  * <p>{@code dropped} is apart from both: the ids the write removed from the stored document before it computed anything,
  * because the activation's closure no longer declares them (ADR-0059 amendment A5, {@link StaleIds}). They are
  * measured against the stored document, {@code applied} and {@code cleared} against the document without them.
+ * {@code droppedPins} is apart as well: the version pins the write dropped from {@code packs} because no pack of the
+ * closure holds the pinned version (B1, decision DM-01M6RN5Y406SB4KA13QYMQ2P8J, {@link StaleIds}), each as it was.
  *
- * <p>A no-op has all three empty, and its document keeps its revision.
+ * <p>A no-op has all four empty, and its document keeps its revision.
  *
  * @param after the document after the write
  * @param applied the ids whose state the write changed, sorted
  * @param cleared the deny entries the write removed, sorted
  * @param skipped what the cascade left out
  * @param dropped the stale ids the write dropped from the stored document, sorted
+ * @param droppedPins the version pins the write dropped from the stored document, in its pack order
  */
 public record ActivationChange(
         ActivationDocument after,
         List<ArtifactRef> applied,
         List<ArtifactRef> cleared,
         SkippedReport skipped,
-        List<ArtifactRef> dropped) {
+        List<ArtifactRef> dropped,
+        List<PackRef> droppedPins) {
 
     /**
      * Checks the fields and sorts the lists.
@@ -46,6 +50,7 @@ public record ActivationChange(
      * @param cleared the cleared deny entries
      * @param skipped the skipped report
      * @param dropped the dropped stale ids
+     * @param droppedPins the dropped version pins
      */
     public ActivationChange {
         Objects.requireNonNull(after, "after");
@@ -53,6 +58,7 @@ public record ActivationChange(
         cleared = List.copyOf(new TreeSet<>(cleared));
         Objects.requireNonNull(skipped, "skipped");
         dropped = List.copyOf(new TreeSet<>(dropped));
+        droppedPins = List.copyOf(droppedPins);
     }
 
     /**
@@ -65,7 +71,7 @@ public record ActivationChange(
      */
     public ActivationChange(
             ActivationDocument after, List<ArtifactRef> applied, List<ArtifactRef> cleared, SkippedReport skipped) {
-        this(after, applied, cleared, skipped, List.of());
+        this(after, applied, cleared, skipped, List.of(), List.of());
     }
 
     /**
@@ -75,7 +81,18 @@ public record ActivationChange(
      * @return the change
      */
     public ActivationChange withDropped(List<ArtifactRef> stale) {
-        return new ActivationChange(after, applied, cleared, skipped, stale);
+        return new ActivationChange(after, applied, cleared, skipped, stale, droppedPins);
+    }
+
+    /**
+     * The same change, reporting what the write dropped from the stored document before it computed it: the stale ids
+     * and the unheld pins.
+     *
+     * @param drops what {@link StaleIds#drop} dropped
+     * @return the change
+     */
+    public ActivationChange withDropped(StaleIds.Dropped drops) {
+        return new ActivationChange(after, applied, cleared, skipped, drops.dropped(), drops.droppedPins());
     }
 
     /**
