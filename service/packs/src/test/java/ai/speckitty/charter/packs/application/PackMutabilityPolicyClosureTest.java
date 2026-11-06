@@ -75,11 +75,10 @@ class PackMutabilityPolicyClosureTest {
         WritePolicyGate gate = new PackMutabilityPolicy(policies::get, pack -> closure);
 
         assertThatThrownBy(() -> gate.authorize(packWithDescriptor(), Operation.REPLACE, target))
-                .isInstanceOfSatisfying(
-                        CharterRefusal.class,
-                        refusal -> assertThat(refusal.getMessage())
-                                .contains("extendable")
-                                .contains("Q"));
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
+                    assertThat(refusal.getMessage()).contains("extendable").contains("Q");
+                });
         assertThatCode(() -> gate.authorize(packWithDescriptor(), Operation.RELATIONSHIP, target))
                 .doesNotThrowAnyException();
     }
