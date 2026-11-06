@@ -1,6 +1,7 @@
 description: >-
   The activation the path names does not exist, refused with 404 activation_not_found: also for an activation this
-  client may not see, so ids do not leak, and for one a DELETE already removed (ADR-0020 D6).
+  client may not see, so ids do not leak, and for one a DELETE already removed (ADR-0020 D6). A replaceActivation or
+  deleteActivation that carries If-Match is answered 412 instead (PreconditionFailed): no stored revision matches.
 headers:
   Charter-Contract-Version:
     $ref: ../headers/CharterContractVersion.yaml

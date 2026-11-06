@@ -4,7 +4,8 @@ Feature: The guards of the activation register
   request without the worktree token, or with another one, is a 401, and a request a browser makes is a 403.
   A write evaluates its preconditions before it judges its document (RFC 9110 section 13.2.2): a stale If-Match,
   or If-None-Match: * on a stored id, is a 412 even when the document names what its packs do not hold, and the
-  stored document is kept.
+  stored document is kept. An If-Match on an id nothing is stored under is a 412 too, on PUT and on DELETE: no
+  stored revision matches it (RFC 9110 section 13.1.1), so the precondition fails before the id is judged.
 
   Background:
     Given the org pack "alpha" with the file "pack.yaml":
@@ -81,3 +82,22 @@ Feature: The guards of the activation register
     When I GET "/activations/a-1"
     Then the response status is 200
     And the field at "/config/selected/directive/0" is "DIRECTIVE_001"
+
+  Scenario: A PUT with If-Match on an id nothing is stored under is a 412, not a 404
+    When I PUT "/activations/a-9" with the header "If-Match": '"sha256:0000000000000000000000000000000000000000000000000000000000000000"' and the body:
+      """
+      {"schemaVersion": 1, "selected": {"directive": ["DIRECTIVE_001"]}}
+      """
+    Then the response status is 412
+    And the problem has no code
+    When I GET "/activations/a-9"
+    Then the response status is 404
+    And the problem code is "activation_not_found"
+
+  Scenario: A DELETE with If-Match on an id nothing is stored under is a 412, not a 404
+    When I DELETE "/activations/a-9" with the header "If-Match": "*"
+    Then the response status is 412
+    And the problem has no code
+    When I send DELETE "/activations/a-9"
+    Then the response status is 404
+    And the problem code is "activation_not_found"
