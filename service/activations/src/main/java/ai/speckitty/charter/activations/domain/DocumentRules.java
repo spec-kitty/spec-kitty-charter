@@ -32,8 +32,8 @@ import java.util.stream.Collectors;
  *   <li>{@code unknown_artifact}: a {@code selected} or {@code deactivated} id the closure does not hold;
  *   <li>{@code unknown_mission_type}: a {@code missionTypes} id the closure does not hold;
  *   <li>{@code unknown_pack}: a {@code packs} id no configured pack has;
- *   <li>{@code version_not_held}: a pinned {@code packs} version other than the one held (research R2, an open review
- *       item, decided here alone);
+ *   <li>{@code version_not_held}: a pinned {@code packs} version other than the one held, refused with a detail naming
+ *       both versions (research R2; operator ruling of 2026-11-06);
  *   <li>{@code duplicate_pack}, {@code unknown_kind} and {@code empty_deny_list}: the shape violations of
  *       {@link ActivationDocument.Builder}.
  * </ul>

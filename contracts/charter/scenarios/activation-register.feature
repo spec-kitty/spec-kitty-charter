@@ -335,7 +335,8 @@ Feature: The activation register and the packs an activation builds on
     Then the response status is 404
 
   Scenario: A pack pinned to a version the service does not hold is refused at the pin
-    R2: alpha is held at 1.0.0.
+    R2: alpha is held at 1.0.0. The operator ruled on 2026-11-06 that a pin differing from the held version stays
+    refused, and the violation tells the client both versions.
     When I PUT "/activations/a-1" with the body:
       """
       {"schemaVersion": 1, "packs": [{"packId": "alpha", "version": "2.0.0"}]}
@@ -344,6 +345,7 @@ Feature: The activation register and the packs an activation builds on
     And the problem code is "activation_invalid"
     And the field at "/violations/0/pointer" is "/packs/0/version"
     And the field at "/violations/0/code" is "version_not_held"
+    And the field at "/violations/0/detail" is "The pack 'alpha' is held at 1.0.0, not 2.0.0."
     When I GET "/activations/a-1"
     Then the response status is 404
 

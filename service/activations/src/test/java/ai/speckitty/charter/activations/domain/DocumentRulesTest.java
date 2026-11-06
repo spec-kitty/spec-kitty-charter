@@ -94,6 +94,17 @@ class DocumentRulesTest {
     }
 
     @Test
+    void aVersionPinOtherThanTheHeldOneIsAnInvalidDocumentTellingTheHeldAndThePinnedVersion() {
+        CharterRefusal refusal = refusal(ActivationDocument.builder().packs(List.of(PackRef.pinned("org-a", "2.0.0"))));
+
+        assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_INVALID);
+        assertThat(refusal.violations())
+                .singleElement()
+                .satisfies(violation ->
+                        assertThat(violation.detail()).isEqualTo("The pack 'org-a' is held at 2.1.0, not 2.0.0."));
+    }
+
+    @Test
     void anEmptyDenyListIsInvalid() {
         assertThat(violations(ActivationDocument.builder().deactivated(DIRECTIVE, List.of())))
                 .extracting(RefusalViolation::pointer, RefusalViolation::code)
