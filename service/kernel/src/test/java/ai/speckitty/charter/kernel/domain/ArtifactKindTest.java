@@ -28,13 +28,17 @@ class ArtifactKindTest {
         assertThat(Arrays.stream(ArtifactKind.values()).filter(ArtifactKind::selectionOverlayable))
                 .allMatch(ArtifactKind::orgRequirable)
                 .hasSize(8);
-        assertThat(Arrays.stream(ArtifactKind.values())
-                        .filter(k -> k.inForceWhenAbsent() == ArtifactKind.InForceWhenAbsent.REQUIRED))
-                .containsExactly(ArtifactKind.SKILL);
         assertThat(ArtifactKind.ASSET.orgRequirable()).isTrue();
         assertThat(ArtifactKind.TEMPLATE.orgRequirable()).isFalse();
         assertThat(ArtifactKind.MISSION_TYPE.orgRequirable()).isFalse();
         assertThat(ArtifactKind.MISSION_TYPE.selectionOverlayable()).isFalse();
+    }
+
+    @Test
+    void anAbsentActivationKeyMeansNoneForEveryKind() {
+        assertThat(ArtifactKind.InForceWhenAbsent.values()).containsExactly(ArtifactKind.InForceWhenAbsent.NONE);
+        assertThat(ArtifactKind.values()).allMatch(k -> k.inForceWhenAbsent() == ArtifactKind.InForceWhenAbsent.NONE);
+        assertThat(ArtifactKind.SKILL.inForceWhenAbsent()).isEqualTo(ArtifactKind.InForceWhenAbsent.NONE);
     }
 
     @Test
