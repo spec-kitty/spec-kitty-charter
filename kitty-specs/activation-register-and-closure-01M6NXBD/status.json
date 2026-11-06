@@ -483,7 +483,7 @@
     },
     "WP14": {
       "actor": "claude",
-      "agent": "claude:claude-opus-5-5:reviewer-renata",
+      "agent": "claude:claude-opus-5-5:java-jenny",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -494,7 +494,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "applyActivationPreset served (ADR-0059 D6): listed keys replaced incl. activatedKinds/missionTypes, A7 empty=not listed, force clears, applied per A1, 404 preset_not_found (raised). Reserved 5->4, binding pin retired behind noReservedOperationTakesABody. activation-presets.feature 12 scenarios red (501) then green. Gates: contracts:check, activations:check, packs:check -x openPacksRoundTrip, web-transport:check, deployable:check all green. A7 empty list pinned in PresetRulesTest (schema forbids activated_kinds: [], so the scenario uses an absent key).",
-        "Review passed: applyActivationPreset served per ADR-0059 D6 (listed keys replaced incl. activatedKinds/missionTypes, A7 empty=unlisted, force clears matching denies into cleared, applied per A1, 404 preset_not_found for unknown and outside-closure presets); x-reserved removed, reserved 5->4, noReservedOperationTakesABody verified by mutation (fails on a reserved requestBody); preset_not_found raised; precondition order 428/404/412 before snapshot, then 404 preset, DocumentRules 422, CAS 412. Gates green: activations/web-transport/contracts check (397 activation tests), deployable:test 784 tests 0 failures, activation-presets.feature 12/12. Anti-pattern checklist all PASS. Coordination: out-of-map edits sequenced by dependency on approved owners: errors.feature, activations.feature (WP08), CharterRefusalCode.yaml, ReservedRefusalCodesTest (WP09), ActivationController, ActivationControllerTest, StandaloneActivationMvc (WP05/WP13), ReservedOperationCoverageTest, OperationCoverageTest, ContractDescriptionsTest, ReservedActivationOperationTest (WP08/WP16), responses/ActivationPresetNotFound.yaml + _index. Fragment dated 2026-11-06 per 'date it the day you write it'. Follow-ups for WP15: document stale-preset 422 in the operation description; template/asset-only gate yields activatedKinds []."
+        "Review passed: applyActivationPreset served per ADR-0059 D6 (listed keys replaced incl. activatedKinds/missionTypes, A7 empty=unlisted, force clears matching denies into cleared, applied per A1, 404 preset_not_found for unknown and outside-closure presets); x-reserved removed, reserved 5->4, noReservedOperationTakesABody verified by mutation (fails on a reserved requestBody); preset_not_found raised; precondition order 428/404/412 before snapshot, then 404 preset, DocumentRules 422, CAS 412. Gates green: activations/web-transport/contracts check (397 activation tests), deployable:test 784 tests 0 failures, activation-presets.feature 12/12. Anti-pattern checklist all PASS. Coordination: out-of-map edits sequenced by dependency on approved owners: errors.feature, activations.feature (WP08), CharterRefusalCode.yaml, ReservedRefusalCodesTest (WP09), ActivationController, ActivationControllerTest, StandaloneActivationMvc (WP05/WP13), ReservedOperationCoverageTest, OperationCoverageTest, ContractDescriptionsTest, ReservedActivationOperationTest (WP08/WP16), responses/ActivationPresetNotFound.yaml + _index. Fragment dated 2026-11-06 per 'date it the day you write it'. Follow-ups for WP15: document stale-preset 422 in the operation description; template/asset-only gate yields activatedKinds [].",
+        "Post-review squad fixes on lane-m (369063b..88f81ae) need review"
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
@@ -503,7 +504,7 @@
         "reviewer": "claude:claude-opus-5-5:reviewer-renata",
         "verdict": "approved"
       },
-      "role": "reviewer",
+      "role": "implementer",
       "shell_pid": 3482,
       "shell_pid_created_at": "1793927342.23",
       "subtasks": {
