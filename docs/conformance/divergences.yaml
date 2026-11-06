@@ -655,27 +655,6 @@
     - "charter: service/activations/src/main/java/ai/speckitty/charter/activations/domain/ClosureSnapshot.java"
     - "corpus case: floor-closure-scoped"
 
-- id: DIV-208
-  surface: The spelling of an artifact id in an activation document or path
-  core: >-
-    Accepts another known spelling of an artifact's id; the allow list can then mix spellings of one
-    artifact.
-  service: >-
-    Matches an id exactly as declared (the tail of the artifact's URN). Another spelling of the same
-    artifact is an unknown id: 422 activation_invalid in a document. The normalization of another
-    known spelling to the declared id that ADR-0020 D4 rules is not built.
-  rationale: >-
-    The register is built with exact lookups; normalizing needs the set of known spellings of each
-    artifact, which no read of this version derives. Core already emits declared ids (its response of
-    2026-10-20), so a document core writes is accepted as written.
-  ruling: ADR-0020 D4
-  status: open
-  since: 2026-11-06
-  evidence:
-    - "charter: contracts/charter/schemas/ArtifactId.yaml; contracts/charter/parameters/ArtifactIdPath.yaml"
-    - "charter: service/activations/src/main/java/ai/speckitty/charter/activations/domain/DocumentRules.java (an id the closure does not hold is a violation)"
-    - "corpus case: id-matched-as-declared"
-
 # Pack-level files (DIV-301..399), mission pack-level-files-round-trip-01M60H1A (#195, ADR-0042).
 - id: DIV-301
   surface: Validate mode, presets and the pack manifest

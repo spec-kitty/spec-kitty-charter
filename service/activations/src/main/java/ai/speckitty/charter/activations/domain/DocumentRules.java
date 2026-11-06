@@ -9,6 +9,7 @@ import ai.speckitty.charter.kernel.domain.RequiringPack;
 import ai.speckitty.charter.kernel.domain.Urn;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -150,8 +151,66 @@ public final class DocumentRules {
     private static List<RefusalViolation> unknownArtifacts(
             String member, Map.Entry<ArtifactKind, List<String>> list, ClosureSnapshot snapshot) {
         ArtifactKind kind = list.getKey();
-        return unknown(
-                member + "/" + kind.token(), list.getValue(), snapshot.held(kind), "unknown_artifact", kind.token());
+        String pointer = member + "/" + kind.token();
+        List<RefusalViolation> violations = new ArrayList<>();
+        for (int i = 0; i < list.getValue().size(); i++) {
+            String id = list.getValue().get(i);
+            switch (ArtifactSpellings.resolve(kind, id, snapshot.held(kind))) {
+                case ArtifactSpellings.Resolution.Declared declared -> {}
+                case ArtifactSpellings.Resolution.Unknown unknown ->
+                    violations.add(new RefusalViolation(
+                            pointer + "/" + i,
+                            "unknown_artifact",
+                            "The activation's packs hold no " + kind.token() + " '" + id + "'."));
+                case ArtifactSpellings.Resolution.Ambiguous ambiguous ->
+                    violations.add(new RefusalViolation(
+                            pointer + "/" + i,
+                            "ambiguous_artifact",
+                            "'" + id + "' matches " + String.join(", ", ambiguous.candidates())
+                                    + ", which differ only by case; write the declared id."));
+            }
+        }
+        return violations;
+    }
+
+    /**
+     * Writes every known spelling of an id (the declared id, its full URN, a case variant of either) as the declared
+     * id, in the allow and deny lists as written and in the document, so that every spelling gives one stored document
+     * and one revision (ADR-0020 D4, operator ruling of 2026-11-06). A spelling that is unknown or ambiguous is left
+     * as written, for {@link #check(ActivationDocument.Built, ClosureSnapshot)} to refuse at its position. A closure
+     * that did not compose normalizes nothing.
+     *
+     * @param built the document as the request built it
+     * @param snapshot the closure the document names
+     * @return the document with the declared ids, and its shape violations unchanged
+     */
+    public static ActivationDocument.Built normalize(ActivationDocument.Built built, ClosureSnapshot snapshot) {
+        if (!snapshot.resolved()) {
+            return built;
+        }
+        ActivationDocument.Written written = built.written();
+        Map<ArtifactKind, List<String>> selected = declared(written.selected(), snapshot);
+        Map<ArtifactKind, List<String>> deactivated = declared(written.deactivated(), snapshot);
+        ActivationDocument document = built.document().withLists(selected, deactivated);
+        return new ActivationDocument.Built(
+                document,
+                built.violations(),
+                new ActivationDocument.Written(written.packs(), written.missionTypes(), selected, deactivated));
+    }
+
+    private static Map<ArtifactKind, List<String>> declared(
+            Map<ArtifactKind, List<String>> lists, ClosureSnapshot snapshot) {
+        Map<ArtifactKind, List<String>> declared = new EnumMap<>(ArtifactKind.class);
+        lists.forEach((kind, ids) -> declared.put(
+                kind,
+                ids.stream()
+                        .map(id -> switch (ArtifactSpellings.resolve(kind, id, snapshot.held(kind))) {
+                            case ArtifactSpellings.Resolution.Declared found -> found.id();
+                            case ArtifactSpellings.Resolution.Unknown unknown -> id;
+                            case ArtifactSpellings.Resolution.Ambiguous ambiguous -> id;
+                        })
+                        .toList()));
+        return declared;
     }
 
     private static List<RefusalViolation> unknown(

@@ -119,6 +119,53 @@ Feature: The activation register and the packs an activation builds on
     And the field at "/config/selected/directive/0" is "DIRECTIVE_002"
     And the response header "ETag" is the quoted field "/revision"
 
+  Scenario: Every known spelling of an id stores the declared id under one revision
+    ADR-0020 D4 (operator ruling of 2026-11-06): the full URN and a case variant normalize to the declared id.
+    When I PUT "/activations/a-1" with the body:
+      """
+      {"schemaVersion": 1, "selected": {"directive": ["DIRECTIVE_001"]}}
+      """
+    Then the response status is 201
+    When I remember the header "ETag"
+    And I PUT "/activations/a-2" with the body:
+      """
+      {"schemaVersion": 1, "selected": {"directive": ["directive:DIRECTIVE_001", "directive_001"]}}
+      """
+    Then the response status is 201
+    And the field at "/config/selected/directive/0" is "DIRECTIVE_001"
+    And the response header "ETag" is the remembered header
+    When I GET "/activations/a-2"
+    Then the field at "/config/selected/directive/0" is "DIRECTIVE_001"
+    And the response header "ETag" is the remembered header
+
+  Scenario: A deny entry spelled as a URN is judged as the declared id
+    Given the org pack "alpha" with the file "presets/governing.yaml":
+      """
+      schema_version: '1.0'
+      id: governing
+      description: The first directive is required.
+      activated_directives:
+        - id: DIRECTIVE_001
+          must_have: true
+      """
+    When I PUT "/activations/a-1" with the body:
+      """
+      {"schemaVersion": 1, "deactivated": {"directive": ["directive:directive_001"]}}
+      """
+    Then the response status is 409
+    And the problem code is "artifact_required"
+
+  Scenario: A URN of another kind is an unknown id
+    No kind's id grammar admits two ids that differ only by case, so the ambiguous refusal is pinned in DocumentRulesTest.
+    When I PUT "/activations/a-1" with the body:
+      """
+      {"schemaVersion": 1, "selected": {"directive": ["tactic:DIRECTIVE_001"]}}
+      """
+    Then the response status is 422
+    And the problem code is "activation_invalid"
+    And the field at "/violations/0/pointer" is "/selected/directive/0"
+    And the field at "/violations/0/code" is "unknown_artifact"
+
   Scenario: An id no pack of the closure holds is refused, naming the id, and nothing is stored
     US1 AS5.
     When I PUT "/activations/a-1" with the body:

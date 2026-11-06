@@ -1,10 +1,11 @@
 title: ArtifactId
 description: >-
-  An artifact's declared id, the tail of its URN (directive:DIRECTIVE_001 has the id DIRECTIVE_001). An id is
-  matched exactly as declared: another spelling of the same artifact is an unknown id. ADR-0020 D4 rules that a
-  write may use another known spelling and is normalized to the declared id; that normalization is not built
-  (DIV-208).
+  An artifact's declared id, the tail of its URN (directive:DIRECTIVE_001 has the id DIRECTIVE_001). A write may
+  spell the id as the declared id, as its full URN of the list's kind (directive:DIRECTIVE_001), or as a case-insensitive
+  match of either (ADR-0020 D4, operator ruling of 2026-11-06); the stored document holds the declared id. A match
+  between two declared ids that differ only by case is refused (422 ambiguous_artifact) unless it is exactly one of
+  them, and a URN of another kind than the list's is an unknown id.
 type: string
 minLength: 1
 maxLength: 128
-pattern: ^[A-Za-z0-9][A-Za-z0-9_.-]*$
+pattern: ^([a-z][a-z_]*:)?[A-Za-z0-9][A-Za-z0-9_.-]*$

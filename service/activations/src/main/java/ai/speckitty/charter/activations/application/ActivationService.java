@@ -201,10 +201,11 @@ public class ActivationService {
     /** The document, when it may be stored: one snapshot of the closure it names, and the rules over it. */
     private ActivationDocument checked(ActivationDocument.Built built) {
         ClosureSnapshot snapshot = packs.snapshot(packIdsOf(built.document()));
-        DocumentRules.check(built, snapshot).ifPresent(refusal -> {
+        ActivationDocument.Built normalized = DocumentRules.normalize(built, snapshot);
+        DocumentRules.check(normalized, snapshot).ifPresent(refusal -> {
             throw refusal;
         });
-        return built.document();
+        return normalized.document();
     }
 
     private static Optional<List<String>> packIdsOf(ActivationDocument document) {
