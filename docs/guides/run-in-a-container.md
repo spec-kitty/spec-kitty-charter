@@ -97,6 +97,7 @@ Among other checks, the service refuses to start, naming the property, file or d
   - a management port of its own;
   - health details, components or probe groups;
   - a moved `/actuator` path, an endpoint mapped to another path, or the discovery page switched on.
+- `server.forward-headers-strategy` is anything but `none`: forwarded headers are ignored.
 - `spring.mvc.log-request-details` is on: it would log the token.
 - `logging.level` puts `org.apache.coyote` or the request logger beneath it at `TRACE`, directly or through `root`,
   `org` or `org.apache`, or `server.tomcat.accesslog.pattern` holds `%{Authorization}i`: either would log the token.

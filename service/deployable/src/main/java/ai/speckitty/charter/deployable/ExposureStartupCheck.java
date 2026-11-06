@@ -37,6 +37,7 @@ import org.springframework.core.env.Environment;
  *       logs request headers, the bearer token among them; so does TRACE on the Tomcat logger that writes the raw
  *       request, set there or on a parent such as {@code root}, and an access-log pattern with the
  *       {@code Authorization} header (ADR-0041 decision 8);
+ *   <li>under the container profile, {@code server.forward-headers-strategy} stays {@code none};
  *   <li>no endpoint is mapped to another path and the discovery page stays off.
  * </ul>
  *
@@ -57,6 +58,7 @@ public class ExposureStartupCheck implements InitializingBean {
     static final String PROBES_PROPERTY = "management.endpoint.health.probes.enabled";
     static final String DISCOVERY_PROPERTY = "management.endpoints.web.discovery.enabled";
     static final String PATH_MAPPING_PROPERTY = "management.endpoints.web.path-mapping";
+    static final String FORWARD_HEADERS_PROPERTY = "server.forward-headers-strategy";
     static final String LOGGING_LEVEL_PROPERTY = "logging.level";
     static final String LOGGING_GROUP_PROPERTY = "logging.group";
     static final String ACCESS_LOG_PATTERN_PROPERTY = "server.tomcat.accesslog.pattern";
@@ -73,6 +75,7 @@ public class ExposureStartupCheck implements InitializingBean {
     private static final String BASE_PATH = "/actuator";
     private static final String HEALTH = "health";
     private static final String NEVER = "never";
+    private static final String NONE = "none";
 
     /**
      * The logger that writes the raw request, the {@code Authorization} header included, at TRACE. Found by setting
@@ -148,6 +151,11 @@ public class ExposureStartupCheck implements InitializingBean {
                     + " must be false under the container profile: it logs request headers, the token among them");
         }
         if (container) {
+            requireValue(
+                    environment,
+                    FORWARD_HEADERS_PROPERTY,
+                    NONE,
+                    "forwarded headers are ignored under the container profile (ADR-0041 decision 4)");
             refuseTraceOfTheRequestHeaders(environment);
             refuseAuthorizationInTheAccessLog(environment);
         }
