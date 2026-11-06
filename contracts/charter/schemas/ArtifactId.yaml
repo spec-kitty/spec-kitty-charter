@@ -1,7 +1,9 @@
 title: ArtifactId
 description: >-
-  An artifact's declared id, the tail of its URN (directive:DIRECTIVE_001 has the id DIRECTIVE_001). A write may
-  use another known spelling of the same artifact; the stored document holds the declared id (ADR-0020 D4).
+  An artifact's declared id, the tail of its URN (directive:DIRECTIVE_001 has the id DIRECTIVE_001). An id is
+  matched exactly as declared: another spelling of the same artifact is an unknown id. ADR-0020 D4 rules that a
+  write may use another known spelling and is normalized to the declared id; that normalization is not built
+  (DIV-208).
 type: string
 minLength: 1
 maxLength: 128
