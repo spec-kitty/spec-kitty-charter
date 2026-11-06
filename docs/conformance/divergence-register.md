@@ -482,8 +482,10 @@ Not divergences, because the contract matches core:
 - preset `--force` (`{"force": true}`);
 - derived `languages`, which core's seam does not send.
 
-Unknown and stale deny entries are refused by the contract and dropped by core's seam at export.
-That is an export rule, not a divergence.
+Unknown and stale deny entries are refused by `createActivation` and `replaceActivation` and dropped by core's seam
+at export. That is an export rule, not a divergence. The per-artifact and preset writes drop the stale ids of a
+stored document themselves and report them in `ActivationChange.dropped` (ADR-0059 amendment of 2026-11-06), which
+core's seam reads as part of the service's answer.
 
 ## Pack-level files (DIV-301..399, ADR-0042)
 

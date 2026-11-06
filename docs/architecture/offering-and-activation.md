@@ -258,18 +258,21 @@ five operations declare that `400`. Every other answer comes from one flow (`Act
    it were not there, and keeps it. Only a deactivate adds a deny entry, so only `deactivateActivationArtifact`
    declares `409`. `createActivation` and `replaceActivation` judge the whole document they are sent.
 
-   A stale id is not tolerated the same way. While the stored document holds an id the closure no longer holds (a
-   pack upgrade removed it), every per-artifact and preset write of the activation is `422 activation_invalid`,
-   since every id of the computed document is judged; and an unselect or re-activate of that id is
-   `404 artifact_not_found`, since step 4 checks the path id against the closure. No per-artifact write can remove
-   it. The client recovers with `replaceActivation`: it fetches the document, drops the stale ids and `PUT`s the
-   result with the fetched `ETag` as `If-Match`.
+   A stale id is dropped on write ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/#amendment-2026-11-06)
+   R5). Before the write computes anything, it removes from the stored document every id the closure no longer
+   holds (a pack upgrade removed it), in `selected`, `deactivated` and `missionTypes`, and reports them in
+   `dropped`. A dropped id is a change, so such a write is never a no-op and answers a new revision. A path id the
+   closure no longer holds is still `404 artifact_not_found` (step 4), and that write drops nothing. An unknown pack
+   or a pinned version the closure does not hold is not dropped: every per-artifact and preset write stays
+   `422 activation_invalid` (`unknown_pack`, `version_not_held`), and the client recovers with `replaceActivation`.
+   `createActivation` and `replaceActivation` drop nothing: an unknown id in the body the client sends is `422`.
 
 A per-artifact write has no body list for a pointer to index, so a `422` the document's rules raise on the computed
 document points at the whole request (`""`), and keeps the codes and the details.
 
 Each write answers an `ActivationChange` with the new revision as its `ETag`. `applied` lists every id the write
 added to or removed from `selected`, `deactivated` or `missionTypes`; `cleared` lists the deny entries it removed;
+`dropped`, present only when there is one, lists the stale ids it dropped first, which are in neither of the other two;
 `skipped` is the write-time report of the cascade, never what a read leaves out (the effective reads report that). A write's path has no `GET`, so the answer carries no `self`: its `up` link names the
 activation.
 

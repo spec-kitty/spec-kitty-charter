@@ -221,9 +221,8 @@ re-review of the fixes. Folded on lane-m (369063b..ac1faa9 and the re-review fol
 6. Ruled 2026-11-06: `includeDeactivated` clears only the deny entries the walk passes through within the `cascade`
    scope (R3, reversing F4), and there is no write-time `enhances` pull to bound (R4, superseding F5). FR-013 and
    ADR-0059 carry the amendment.
-7. A document a pack upgrade made stale is a dead end for the per-artifact writes. While it stores an id the closure
-   no longer holds, every per-artifact and preset write is `422` (every id of the computed document is judged), and
-   an unselect or re-activate of that id is `404 artifact_not_found` (`requireHeld` checks the path id against the
-   closure). Only a full `replaceActivation` recovers it. Documented in the five write descriptions and in
-   `offering-and-activation.md`; whether a per-artifact write should tolerate a stale id, or an unselect and a
-   re-activate remove one, awaits the operator.
+7. Ruled 2026-11-06 (R5): stale ids are dropped on write. Every per-artifact and preset write first removes the
+   stored ids the closure no longer declares (`selected`, `deactivated`, `missionTypes`) and reports them in the new
+   `ActivationChange.dropped`; a write that only drops is not a no-op. A path id the closure no longer holds is still
+   `404`, and an unknown pack or a pinned version is still `422` until a full `replaceActivation`; `PUT` and create
+   are unchanged. FR-017 and ADR-0059 carry the amendment (`StaleIds`, `ActivationWrites.current`).

@@ -38,7 +38,7 @@ writes of [ADR-0020](/adr/0020-offering-and-activations/) D6 under
   the closure no longer holds is `422`.
 - **Still `501`:** the four effective reads.
 - **Differences from core:** DIV-206 and DIV-207 ([divergence register](/conformance/divergence-register/)).
-- **Stale documents:** an id a pack upgrade removed makes every per-artifact write `422`; a full `PUT` without it
-  recovers the document.
+- **Stale ids:** a per-artifact or preset write drops the stored ids a pack upgrade removed and lists them in
+  `dropped`; an unknown pack or version pin is still `422` until a full `PUT`.
 
 [Offering and activation](/architecture/offering-and-activation/#the-cascade) has the rules.

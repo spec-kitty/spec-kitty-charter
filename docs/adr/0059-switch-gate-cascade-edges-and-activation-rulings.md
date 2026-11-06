@@ -170,6 +170,8 @@ difference.
   (ADR-0013 D2), and the skipped report lists that too.
 - **On write.** A `PUT` that still carries an unknown id is refused `422 activation_invalid`, and one that denies a
   required or locked artifact `409` (ADR-0020 D9). The client cleans the document up before it writes it back.
+  *Amended 2026-11-06 (R5):* a per-artifact or preset write drops the stale ids itself and reports them; see the
+  [amendment](#amendment-2026-11-06).
 
 ADR-0020 D6's round trip ("a `PUT` of a fetched `config` answers `200` with the same `ETag`") holds for a document
 the offering has not made stale; ADR-0020 D6 carries a note.
@@ -220,6 +222,15 @@ this record stands.
   only behind it in `unreachedBehindDeactivated`, and its deny entry stays. A denied ancestor of a kind outside the
   scope stops the lineage the same way. This reverses the reading of 2026-11-06 (squad finding F4) that cleared the
   out-of-scope deny entries the walk went through.
+- **R5. Stale ids are dropped on write.** Every per-artifact and preset write (select, unselect, deactivate,
+  re-activate, apply a preset) first removes from the stored document every id the activation's closure no longer
+  declares, in `selected`, `deactivated` and `missionTypes`, instead of answering `422` until a full `PUT`. The write
+  reports them in a new optional `ActivationChange.dropped`, so the drop is never silent, and a dropped id is a
+  change: a write that only drops stale ids is not a no-op and gets a new revision. `PUT` and create are unchanged:
+  an unknown id in a body the client sent is still `422`. An unknown pack or a pinned version in `packs` is not
+  dropped either: such a document still makes every write `422` (`unknown_pack`, `version_not_held`), which only a
+  full `PUT` recovers. A path id the closure no longer holds is still `404 artifact_not_found` (FR-010), and that
+  write drops nothing. This answers the open review item on stale documents (research item 7).
 - **R2. A cascading deactivate follows the lineage.** The target's own walk passes through every
   `specializes_from` ancestor exactly as a select's walk does (D2.4), so selecting a profile with a cascade and then
   deactivating it with a cascade round-trips: what the select reached through an ancestor leaves `selected` again.
