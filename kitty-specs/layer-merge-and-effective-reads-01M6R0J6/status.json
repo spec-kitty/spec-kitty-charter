@@ -160,9 +160,9 @@
     },
     "WP05": {
       "actor": "claude",
-      "agent": null,
-      "agent_profile": "java-jenny",
-      "agent_profile_version": "1.0",
+      "agent": "claude::java-jenny",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 2,
       "implementer_of_record": "claude",
       "lane": "for_review",
@@ -171,7 +171,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "Ready for review (commit 0ef213ba). Q1: Reachability step term (mission type reaches held action:M/<s> like requires); CascadeScope admits mission_type; selection no longer forces cascade=none. Q2: exclusion service accepts mission_type (via ActivationWrites.selectable); floor 409s apply. B5: includeDeactivated clears only reached-and-selected. Red first: 19 new/rewritten tests failed on assertions/guards (scratchpad red-wp05.log), now green. Gates: ':packs:test --tests *Reachability*' EXIT=0; ':activations:checkstyleMain :activations:checkstyleTest :packs:checkstyleMain :packs:checkstyleTest' EXIT=0; ':packs:timingBudgets' EXIT=0 (Reachability p95 14.3 ms); ':deployable:test --tests *HexagonalArchitectureTest*' 59/59 green (task EXIT=1 only from the 109 known CharterContractSuite failures, WP08); ':activations:test' EXIT=1 with only the known WP08 failures (ActivationBodyAdviceTest x4, ActivationJsonTest[2]). Out-of-map: EdgeIndex.stepsOf accessor; ActivationWriteOrderTest one assertion. Follow-ups: WP08 must rewrite activation-selections.feature 'includeDeactivated clears a denied ancestor inside the scope' and SelectionRequest.includeDeactivated text for B5; WP04 should delete now-unused ActivationWrites.deniable; packs do not yet hold action:M/s (facts defined set), so the step term reaches nothing in production until steps are held; ClosureViewSession drops vias from actions, so requiredBy of a stop behind a step is empty (WP24).",
-        "Unchanged resubmit (identity-only cycle, #368 precedent)"
+        "Unchanged resubmit (identity-only cycle, #368 precedent)",
+        "Cycle 2 fixes (commit a350a927). (1) spotlessApply; :activations:check and :packs:check spotless+checkstyle green; :activations:test only the 5 WP08 failures; :packs:test only 3 pre-existing WP06 preset failures (PresetRoundTripTest x2, PresetYamlTest), confirmed failing on HEAD without this change. (2) Q1 in production: DomainRepositoryService holds graph-declared action nodes (declaredWithoutFile), so EdgeIndex.holds/stepsOf see action:M/s; the sibling define contest skips steps, so siblings sharing a step behave as for their mission type alone (tests: unsettled -> refused on mission_type:m only; settled by overrides on m -> composes; step-only siblings -> compose). MissionTypeStepsHeldTest builds the EdgeIndex from real composition facts (mission-type file + steps.graph.yaml as in the WP01 Q1 scenario) and reaches directive:SD. Red first: 4 assertion failures (scratchpad red-wp05-cycle2.log). Out-of-map: DomainRepositoryService, PackCompositionResolver, PackCompositionResolverTest, new MissionTypeStepsHeldTest. DoD: applied names what the steps reach, not action nodes. ActivationWrites.deniable left for the merge."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
