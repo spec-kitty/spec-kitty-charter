@@ -28,8 +28,8 @@ import org.springframework.context.ConfigurableApplicationContext;
 /**
  * NFR-005 and SC-003: the activation documents survive a restart of the service. The whole application boots on a
  * configuration root, writes 20 documents through the wired {@link ActivationRepository}, closes, boots again on the
- * same root and reads each one back: the files are byte-identical and the revisions equal. Until the HTTP operations
- * are built (WP09) the test drives the repository bean directly.
+ * same root and reads each one back: the files are byte-identical and the revisions equal. The test drives the
+ * repository bean directly.
  */
 class ActivationRestartTest {
 

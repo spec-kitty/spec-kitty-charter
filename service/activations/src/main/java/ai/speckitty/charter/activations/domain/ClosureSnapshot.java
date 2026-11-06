@@ -10,7 +10,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * What one verified read of an activation's pack closure holds (squad A1, NFR-007): everything the document rules and
+ * What one verified read of an activation's pack closure holds (NFR-007): everything the document rules and
  * the cascade ask about pack content, as one value. The application receives it from its {@code AvailablePacks} port;
  * the adapter copies it from the packs slice's closure view, so no packs type crosses into this record. Every
  * collection is a defensive, unmodifiable copy.

@@ -248,7 +248,7 @@ class DocumentRulesTest {
         assertThat(refusal.requiredBy()).isEmpty();
     }
 
-    // ---- RequiringPack.via: the extends chain from the document's packs (T113)
+    // ---- RequiringPack.via: the extends chain from the document's packs
 
     /** team extends org, which extends internal; helper is only depended on. */
     private static final ClosureSnapshot EXTENDED = snapshot()

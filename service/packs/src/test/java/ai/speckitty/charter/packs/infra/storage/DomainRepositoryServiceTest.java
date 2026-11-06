@@ -718,7 +718,7 @@ class DomainRepositoryServiceTest {
     }
 
     /**
-     * The presets ride on the facts from the assembly the facts already load (WP04, FR-023): a governing preset is
+     * The presets ride on the facts from the assembly the facts already load (FR-023): a governing preset is
      * there with its must-have items; a pack without presets has none; a broken preset makes the pack unreadable.
      */
     @Test

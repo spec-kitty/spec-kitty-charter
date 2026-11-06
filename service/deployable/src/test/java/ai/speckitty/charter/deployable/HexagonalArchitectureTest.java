@@ -285,7 +285,7 @@ class HexagonalArchitectureTest {
                             JavaClass.Predicates.resideInAnyPackage(GENERATED_API, JAVA, JSPECIFY, FRAMEWORK))
                     .and(DescribedPredicate.not(JavaClass.Predicates.belongToAnyOf(ReservedOperation.class))));
 
-    // No production controller is reserved whole since the activation set marks each operation (WP05); the type-level
+    // No production controller is reserved whole since the activation set marks each operation; the type-level
     // rule still gates one that is, so it may select nothing here. Its control below runs it unchanged.
     @Test
     void aReservedControllerReadsAndStoresNothing() {

@@ -6,7 +6,7 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
- * The name of an activation's directory in the file register (T106): the id lower-cased, a {@code -}, then a lowercase
+ * The name of an activation's directory in the file register: the id lower-cased, a {@code -}, then a lowercase
  * hexadecimal bitmap of the positions that were upper case (bit {@code i} for the character at {@code i}). {@code aBc}
  * is {@code abc-2}, {@code ABC} is {@code abc-7} and {@code abc} is {@code abc-0}.
  *

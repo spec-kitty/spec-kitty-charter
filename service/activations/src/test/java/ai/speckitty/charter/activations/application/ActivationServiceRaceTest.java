@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * Concurrent conditional writes through {@link ActivationService} over the file register (T111, NFR-004): the
+ * Concurrent conditional writes through {@link ActivationService} over the file register (NFR-004): the
  * precondition the service judges first and the compare-and-set the register judges again agree, so of writers that
  * hold one revision exactly one wins, and of two create-only writers exactly one creates. Each race runs 100 times,
  * released by a latch, with a timeout and no sleep.

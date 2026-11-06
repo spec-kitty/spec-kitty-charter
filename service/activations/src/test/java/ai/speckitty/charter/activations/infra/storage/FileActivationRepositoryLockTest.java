@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * The per-id locks are striped (T107): a fixed number of locks, however many ids are written, and two writes to one
+ * The per-id locks are striped: a fixed number of locks, however many ids are written, and two writes to one
  * id are still serialised by the compare-and-set.
  */
 class FileActivationRepositoryLockTest {
