@@ -1,0 +1,146 @@
+schema_version: 1
+mission_id: 01M6NSDRM2CB30966R5GDMRX5V
+mission_slug: test-mutation-floors-01M6NSDR
+mission_number: 17
+friendly_name: Mutation testing floors, and PIT on packs
+mission_type: software-dev
+target_branch: test-mutation-floors
+created_at: '2026-11-05T17:04:34.563229+00:00'
+created_by:
+  kind: runtime
+  id: spec-kitty-generator
+  display: Spec Kitty Generator
+provenance:
+  kind: runtime_post_completion
+  invoked_at: '2026-11-05T17:04:34.563229+00:00'
+  policy_resolved_from:
+    enabled: <default>
+    timing: <default>
+    failure_policy: <default>
+    write_record: <default>
+    generate_proposals: <default>
+    apply_proposals: <default>
+    permissions.write_record: <default>
+    permissions.inspect_mission_artifacts: <default>
+    permissions.propose_glossary_changes: <default>
+    permissions.propose_drg_changes: <default>
+    permissions.propose_doctrine_changes: <default>
+    permissions.apply_low_risk_changes: <default>
+    permissions.apply_structural_changes: <default>
+    precedence: <default>
+    generator: <default>
+policy_source:
+  enabled: <default>
+  timing: <default>
+  failure_policy: <default>
+  write_record: <default>
+  generate_proposals: <default>
+  apply_proposals: <default>
+  permissions.write_record: <default>
+  permissions.inspect_mission_artifacts: <default>
+  permissions.propose_glossary_changes: <default>
+  permissions.propose_drg_changes: <default>
+  permissions.propose_doctrine_changes: <default>
+  permissions.apply_low_risk_changes: <default>
+  permissions.apply_structural_changes: <default>
+  precedence: <default>
+  generator: <default>
+findings_status: has_findings
+helped: []
+not_helpful:
+- id: n-006
+  category: doc
+  summary: analysis-report.md present; findings not machine-readable
+  evidence_refs:
+  - e-016
+  details: An analysis-report.md artifact is present for this mission and its frontmatter carries a machine-readable
+    findings count, but no resolved verdict (the verdict key is absent or records the legacy 'unknown' marker), so the
+    count is not asserted; review it manually.
+- id: n-001
+  category: review_loop
+  summary: WP01 required 1 rejection cycle(s) before approval
+  evidence_refs:
+  - e-011
+  details: WP WP01 was sent back to an earlier lane with documented review feedback 1 time(s).
+- id: n-002
+  category: review_loop
+  summary: WP02 required 1 rejection cycle(s) before approval
+  evidence_refs:
+  - e-012
+  details: WP WP02 was sent back to an earlier lane with documented review feedback 1 time(s).
+- id: n-003
+  category: review_loop
+  summary: WP03 required 1 rejection cycle(s) before approval
+  evidence_refs:
+  - e-013
+  details: WP WP03 was sent back to an earlier lane with documented review feedback 1 time(s).
+- id: n-004
+  category: review_loop
+  summary: WP04 required 1 rejection cycle(s) before approval
+  evidence_refs:
+  - e-014
+  details: WP WP04 was sent back to an earlier lane with documented review feedback 1 time(s).
+- id: n-005
+  category: review_loop
+  summary: WP05 required 1 rejection cycle(s) before approval
+  evidence_refs:
+  - e-015
+  details: WP WP05 was sent back to an earlier lane with documented review feedback 1 time(s).
+gaps: []
+proposals: []
+evidence_refs:
+- id: e-001
+  kind: file
+  path: kitty-specs/test-mutation-floors-01M6NSDR/meta.json
+- id: e-002
+  kind: file
+  path: kitty-specs/test-mutation-floors-01M6NSDR/spec.md
+- id: e-003
+  kind: file
+  path: kitty-specs/test-mutation-floors-01M6NSDR/plan.md
+- id: e-004
+  kind: file
+  path: kitty-specs/test-mutation-floors-01M6NSDR/tasks.md
+- id: e-005
+  kind: file
+  path: kitty-specs/test-mutation-floors-01M6NSDR/tasks/WP01-mutation-conventions-and-floor-check.md
+- id: e-006
+  kind: file
+  path: kitty-specs/test-mutation-floors-01M6NSDR/tasks/WP02-pit-on-packs.md
+- id: e-007
+  kind: file
+  path: kitty-specs/test-mutation-floors-01M6NSDR/tasks/WP03-nightly-workflow.md
+- id: e-008
+  kind: file
+  path: kitty-specs/test-mutation-floors-01M6NSDR/tasks/WP04-adr-and-docs.md
+- id: e-009
+  kind: file
+  path: kitty-specs/test-mutation-floors-01M6NSDR/tasks/WP05-kernel-survivor-triage.md
+- id: e-010
+  kind: file
+  path: kitty-specs/test-mutation-floors-01M6NSDR/status.events.jsonl
+- id: e-011
+  kind: event_range
+  path: kitty-specs/test-mutation-floors-01M6NSDR/status.events.jsonl
+  range: 01M6NVXN4MNDG5KZ0ABBZTYG5K
+- id: e-012
+  kind: event_range
+  path: kitty-specs/test-mutation-floors-01M6NSDR/status.events.jsonl
+  range: 01M6P9MGSNBW1BP632ZPEFCS0P
+- id: e-013
+  kind: event_range
+  path: kitty-specs/test-mutation-floors-01M6NSDR/status.events.jsonl
+  range: 01M6P6F4G2Z522E9JRPC1XH0HV
+- id: e-014
+  kind: event_range
+  path: kitty-specs/test-mutation-floors-01M6NSDR/status.events.jsonl
+  range: 01M6PAB5WX215JWWBP56BGE8H8
+- id: e-015
+  kind: event_range
+  path: kitty-specs/test-mutation-floors-01M6NSDR/status.events.jsonl
+  range: 01M6NXKDDGQEJBBXMRAK0RMT3K
+- id: e-016
+  kind: file
+  path: kitty-specs/test-mutation-floors-01M6NSDR/analysis-report.md
+generator_version: '1.0'
+provenance_history: []

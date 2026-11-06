@@ -1,0 +1,106 @@
+{
+  "version": 1,
+  "mission_slug": "test-mutation-floors-01M6NSDR",
+  "mission_id": "01M6NSDRM2CB30966R5GDMRX5V",
+  "mission_branch": "kitty/mission-test-mutation-floors-01M6NSDR",
+  "target_branch": "test-mutation-floors",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "build-logic/src/main/kotlin/MutationFloors.kt",
+        "build-logic/src/main/kotlin/charter.domain-conventions.gradle.kts",
+        "build-logic/src/main/kotlin/charter.mutation-conventions.gradle.kts",
+        "build-logic/src/test/kotlin/MutationFloorsTest.kt",
+        "service/kernel/build.gradle.kts",
+        "service/missions/build.gradle.kts",
+        "service/profiles/build.gradle.kts"
+      ],
+      "predicted_surfaces": [
+        "tracker-integration"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-e",
+      "wp_ids": [
+        "WP05"
+      ],
+      "write_scope": [
+        "service/kernel/src/test/java/ai/speckitty/charter/kernel/domain/**"
+      ],
+      "predicted_surfaces": [
+        "tracker-integration"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "gradle/verification-metadata.xml",
+        "service/packs/build.gradle.kts",
+        "service/packs/pit-targets.init.gradle"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "tracker-integration"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        ".github/workflows/mutation-nightly.yml",
+        "scripts/ci/mutation_summary.py",
+        "scripts/ci/test_mutation_summary.py"
+      ],
+      "predicted_surfaces": [
+        "artifact-rendering",
+        "tracker-integration"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "docs/adr/0060-nightly-mutation-floor.md",
+        "docs/changelog/2026-11-05-nightly-mutation-floors.md",
+        "docs/guides/service-build.md"
+      ],
+      "predicted_surfaces": [
+        "artifact-rendering",
+        "tracker-integration"
+      ],
+      "depends_on_lanes": [
+        "lane-b",
+        "lane-c"
+      ],
+      "parallel_group": 2
+    }
+  ],
+  "computed_at": "2026-11-05T12:09:39.360512+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "planning_commit_sha": "5d890eb5a9e98fc5fa2933c95af7caac0f3f48a4"
+}
