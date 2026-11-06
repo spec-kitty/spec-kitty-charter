@@ -56,15 +56,18 @@
     },
     "WP02": {
       "actor": "claude",
-      "agent": "claude",
-      "agent_profile": "java-jenny",
-      "agent_profile_version": "1.0",
+      "agent": "claude::java-jenny",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude",
       "lane": "for_review",
       "last_event_id": "01M6RRF7WQ087NH1E82VQB52NP",
       "last_transition_at": "2026-11-06T15:43:37.879992+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review: ArtifactKind is the one kind registry. Deleted dead orgRequirable/selectionOverlayable/InForceWhenAbsent (no main readers; their test assertions removed from ArtifactKindTest); mission_type activatable and requirable (javadoc); NodeKind.plural routes mission_types to ArtifactKind; fromToken documented as the one exact parse, with every-token and case-only-refusal tests. Parity test in ArtifactKindTest pins the activatable set to every generated ActivatableKind copy (ArtifactReference/EffectiveArtifact/SharedSkip/SkippedDeactivated KindEnum, SelectedArtifacts members); shown failing when GUARD was flipped activatable. Red first: commit cb8bb5b1 (theRegistryHoldsOnlyTheFactsItsConsumersRead AssertionError naming the 3 dead facts), green 83d69e5c. Gates: ./gradlew --max-workers=1 -Dorg.gradle.internal.repository.max.retries=10 -PcontractBaseline=none :kernel:check exit 0; :deployable:test HexagonalArchitectureTest 59/59 pass (deployable CharterContractSuite has 109 pre-existing failures from WP01's contract removals, owned by WP03-WP06). out-of-map: service/kernel/build.gradle.kts - test-only :charter-api + Spring Boot BOM for the parity test. Divergence: none new (mission_type requirable note for docs WP)."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 21767,
