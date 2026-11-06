@@ -170,4 +170,63 @@ class ContainerPropertiesTest {
                     .hasValue(List.of("charter.example.org"));
         }
     }
+
+    // Each entry is a host name, an IPv4 or a bracketed IPv6 address (issue #268): a wildcard would let a rebinding
+    // host through, and a port, scheme or trailing dot would never match a request.
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(
+            strings = {
+                "*",
+                "*.example.com",
+                ".example.com",
+                "example.com.",
+                "host:8080",
+                "http://host",
+                "host/path",
+                "a@b",
+                "b\u00fccher.de",
+                "0.0.0.0",
+                "0",
+                "0.0",
+                "0x0",
+                "0X0.0",
+                "[::]",
+                "[::ffff:0.0.0.0]",
+                "[::ffff:0:0]",
+                "[0:0:0:0:0:0:0:0]",
+                "::1",
+                "[fe80::1%25eth0]",
+                "-leading.example",
+                "trailing-.example",
+                "two..dots"
+            })
+    void underTheContainerProfileAMalformedEntryFailsTheStartNamingTheProperty(String entry) {
+        runner.withPropertyValues(CONTAINER, PROPERTY + "=charter.internal," + entry)
+                .run(context -> assertThat(context)
+                        .hasFailed()
+                        .getFailure()
+                        .hasStackTraceContaining(PROPERTY + " entries must each be a host name"));
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(
+            strings = {
+                "charter.internal",
+                "LOCALHOST",
+                "localhost",
+                "10.0.0.5",
+                "127.0.0.1",
+                "[::1]",
+                "[2001:db8::1]",
+                "a",
+                "xn--bcher-kva.de"
+            })
+    void underTheContainerProfileAWellFormedEntryBinds(String entry) {
+        runner.withPropertyValues(CONTAINER, PROPERTY + "=" + entry)
+                .run(context -> assertThat(
+                                context.getBean(ContainerWiring.class).properties())
+                        .map(ContainerProperties::allowedHosts)
+                        .hasValue(List.of(entry)));
+    }
 }

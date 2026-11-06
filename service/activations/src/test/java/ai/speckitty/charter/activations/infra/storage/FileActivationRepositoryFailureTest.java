@@ -63,7 +63,7 @@ class FileActivationRepositoryFailureTest {
 
     @Test
     void aMoveThatThrowsAnIoExceptionLeavesTheOldDocumentAndNoTempFile() throws IOException {
-        FileActivationRepository.Rename failing = (temp, target) -> {
+        FileActivationRepository.Durability failing = (temp, target) -> {
             throw new IOException("injected: the disk is gone");
         };
         everyRunKeepsTheOldDocument(failing);
@@ -71,13 +71,13 @@ class FileActivationRepositoryFailureTest {
 
     @Test
     void aMoveThatThrowsARuntimeExceptionLeavesTheOldDocumentAndNoTempFile() throws IOException {
-        FileActivationRepository.Rename failing = (temp, target) -> {
+        FileActivationRepository.Durability failing = (temp, target) -> {
             throw new IllegalStateException("injected: the move blew up");
         };
         everyRunKeepsTheOldDocument(failing);
     }
 
-    private void everyRunKeepsTheOldDocument(FileActivationRepository.Rename failing) throws IOException {
+    private void everyRunKeepsTheOldDocument(FileActivationRepository.Durability failing) throws IOException {
         Random random = new Random(SEED);
         for (int run = 0; run < RUNS; run++) {
             ActivationId id = new ActivationId("run-" + run);
