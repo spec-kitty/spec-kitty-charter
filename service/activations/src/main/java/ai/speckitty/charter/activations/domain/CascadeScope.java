@@ -3,6 +3,7 @@ package ai.speckitty.charter.activations.domain;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
@@ -13,7 +14,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * The kinds a cascade walks into (the contract's {@code CascadeScope}): none when the request has no {@code cascade},
- * every kind of {@link ActivationDocument#kinds()} for {@code ["all"]}, or the kinds named. {@code all} stands alone:
+ * every activatable kind but {@code mission_type}, which no cascade reaches, for {@code ["all"]}, or the kinds named. {@code all} stands alone:
  * mixed with kinds it is an {@code all_mixed_with_kinds} violation at {@code /cascade} (422).
  */
 public final class CascadeScope {
@@ -22,6 +23,12 @@ public final class CascadeScope {
     public static final String ALL = "all";
 
     private static final CascadeScope NONE = new CascadeScope(false, Set.of());
+
+    /** The kinds a cascade walks into: every activatable kind but {@code mission_type}. */
+    private static final Set<ArtifactKind> CASCADE_KINDS =
+            Collections.unmodifiableSet(EnumSet.copyOf(Arrays.stream(ArtifactKind.values())
+                    .filter(kind -> kind.activatable() && kind != ArtifactKind.MISSION_TYPE)
+                    .toList()));
 
     private final boolean cascades;
     private final Set<ArtifactKind> kinds;
@@ -46,7 +53,7 @@ public final class CascadeScope {
      * @return the scope of every kind
      */
     public static CascadeScope all() {
-        return new CascadeScope(true, ActivationDocument.kinds());
+        return new CascadeScope(true, CASCADE_KINDS);
     }
 
     /**
@@ -75,8 +82,7 @@ public final class CascadeScope {
         Set<ArtifactKind> kinds = EnumSet.noneOf(ArtifactKind.class);
         List<RefusalViolation> violations = new ArrayList<>();
         for (int i = 0; i < tokens.size(); i++) {
-            Optional<ArtifactKind> kind =
-                    ArtifactKind.fromToken(tokens.get(i)).filter(ActivationDocument.kinds()::contains);
+            Optional<ArtifactKind> kind = ArtifactKind.fromToken(tokens.get(i)).filter(CASCADE_KINDS::contains);
             kind.ifPresent(kinds::add);
             if (kind.isEmpty()) {
                 violations.add(new RefusalViolation(
