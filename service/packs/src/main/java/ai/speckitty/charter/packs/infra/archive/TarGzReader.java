@@ -9,15 +9,14 @@ import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 
 /**
- * Reads a gzip-compressed tar (IC-03). The JDK's {@link GZIPInputStream} feeds a {@link TarArchiveInputStream} created
- * directly (no factory, strict header parsing); a counting bound sits on the decompressed stream, so a bomb stops at
+ * Reads a gzip-compressed tar (IC-03). The JDK's {@link GZIPInputStream} feeds a {@link GuardedTarInputStream}
+ * (a {@link TarArchiveInputStream} created directly, no factory, strict header parsing, with its meta headers capped
+ * at 64 KiB and its PAX and GNU long names kept from starting with {@code /}); a counting bound sits on the decompressed stream, so a bomb stops at
  * 32 MiB + 64 KiB read. An entry's type is judged from its raw link flag against an allowlist, and its name is checked
  * after PAX and GNU long-name headers have been applied ({@code getName()}).
  */
 final class TarGzReader {
 
-    private static final int RECORD_SIZE = 512;
-    private static final int BLOCK_SIZE = 20 * RECORD_SIZE;
     private static final byte FLAG_FILE = '0';
     private static final byte FLAG_OLD_FILE = 0;
     private static final byte FLAG_DIRECTORY = '5';
@@ -43,7 +42,7 @@ final class TarGzReader {
     }
 
     private void readEntries(InputStream plain, PackTree tree) throws IOException {
-        try (TarArchiveInputStream tar = new TarArchiveInputStream(plain, BLOCK_SIZE, RECORD_SIZE, "UTF-8", false)) {
+        try (TarArchiveInputStream tar = GuardedTarInputStream.open(plain)) {
             int count = 0;
             for (TarArchiveEntry entry = tar.getNextEntry(); entry != null; entry = tar.getNextEntry()) {
                 if (++count > limits.maxEntries()) {

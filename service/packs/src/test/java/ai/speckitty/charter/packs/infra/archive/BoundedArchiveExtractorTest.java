@@ -250,7 +250,8 @@ class BoundedArchiveExtractorTest {
     void bidiAndOtherFormatCharactersAreEscapedLikeControls() {
         assertThat(new ArchiveViolation(Code.PATH_CHARACTER, "a\u202eb\u200bc\ufeffd\u2066e").path())
                 .isEqualTo("a\\u202eb\\u200bc\\ufeffd\\u2066e");
-        assertThat(new ArchiveViolation(Code.PATH_CHARACTER, "caf\u00e9").path()).isEqualTo("caf\u00e9");
+        assertThat(new ArchiveViolation(Code.PATH_CHARACTER, "caf\u00e9").path())
+                .isEqualTo("caf\u00e9");
     }
 
     @Test
@@ -352,7 +353,7 @@ class BoundedArchiveExtractorTest {
     void theExpandedBudgetShrinksWithEveryFileAZipWrites() {
         ArchiveLimits limits = new ArchiveLimits(1_000_000, 1_000, 10, 64 * 1024, 4_096);
         RawZip zip = new RawZip();
-        zip.file("pack/a.txt", "a".repeat(600)).deflated().declaredSize(100);
+        zip.file("pack/a.txt", "a".repeat(600)).deflated();
         zip.file("pack/b.txt", "b".repeat(600)).deflated().declaredSize(100);
 
         ArchiveRefusal refusal = refused(limits, zip.build(), ArchiveFormat.ZIP);

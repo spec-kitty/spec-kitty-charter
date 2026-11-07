@@ -168,7 +168,8 @@ class HostileArchiveCorpusTest {
                         v(PATH_TOO_LONG, "a/".repeat(128))),
                 tar(
                         "tar PAX x header over 64 KiB",
-                        tarOf(t -> t.pax(Map.of("comment", "a".repeat(65 * 1024))).file("ok.txt", "x")),
+                        tarOf(t ->
+                                t.pax(Map.of("comment", "a".repeat(65 * 1024))).file("ok.txt", "x")),
                         v(HEADER_TOO_LARGE, "")),
                 tar(
                         "tar PAX global header over 64 KiB",
@@ -401,8 +402,8 @@ class HostileArchiveCorpusTest {
                 .gz();
         Path staging = Files.createDirectory(work.resolve("staging"));
 
-        Throwable thrown = org.assertj.core.api.Assertions.catchThrowable(() -> new BoundedArchiveExtractor()
-                .extract(new ByteArrayInputStream(tar), ArchiveFormat.TAR_GZ, staging));
+        Throwable thrown = org.assertj.core.api.Assertions.catchThrowable(() ->
+                new BoundedArchiveExtractor().extract(new ByteArrayInputStream(tar), ArchiveFormat.TAR_GZ, staging));
 
         assertThat(thrown).isInstanceOf(ArchiveRefusal.class);
         ArchiveRefusal refusal = (ArchiveRefusal) thrown;

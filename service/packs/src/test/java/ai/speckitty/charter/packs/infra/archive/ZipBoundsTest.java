@@ -79,8 +79,7 @@ class ZipBoundsTest {
         RawZip zip = withHeaders(1);
         zip.declaredCount(10_001);
 
-        assertThat(refuse(zip.build()).violations())
-                .containsExactly(new ArchiveViolation(Code.TOO_MANY_ENTRIES, ""));
+        assertThat(refuse(zip.build()).violations()).containsExactly(new ArchiveViolation(Code.TOO_MANY_ENTRIES, ""));
         assertThat(opened).hasValue(0);
     }
 
@@ -103,8 +102,7 @@ class ZipBoundsTest {
         RawZip zip = withHeaders(2);
         zip.zip64Count(5);
 
-        assertThat(refuse(zip.build()).violations())
-                .containsExactly(new ArchiveViolation(Code.ZIP_COUNT_MISMATCH, ""));
+        assertThat(refuse(zip.build()).violations()).containsExactly(new ArchiveViolation(Code.ZIP_COUNT_MISMATCH, ""));
         assertThat(opened).hasValue(0);
     }
 
@@ -201,8 +199,8 @@ class ZipBoundsTest {
         Files.writeString(foreign, "belongs to the caller");
         byte[] zip = withHeaders(1).build();
 
-        Throwable thrown = catchThrowable(() -> new BoundedArchiveExtractor()
-                .extract(new ByteArrayInputStream(zip), ArchiveFormat.ZIP, staging));
+        Throwable thrown = catchThrowable(
+                () -> new BoundedArchiveExtractor().extract(new ByteArrayInputStream(zip), ArchiveFormat.ZIP, staging));
 
         assertThat(thrown).isInstanceOf(UncheckedIOException.class);
         assertThat(Files.readString(foreign)).isEqualTo("belongs to the caller");
@@ -218,7 +216,8 @@ class ZipBoundsTest {
         new ZipReader(ArchiveLimits.DEFAULTS).read(new ByteArrayInputStream(zip.build()), tree, staging);
 
         assertThat(tree.clean()).isFalse();
-        assertThat(ArchiveFixtures.tree(staging.resolve(PackTree.DIRECTORY_NAME)).keySet())
+        assertThat(ArchiveFixtures.tree(staging.resolve(PackTree.DIRECTORY_NAME))
+                        .keySet())
                 .containsExactly("pack/", "pack/a.txt");
     }
 
@@ -243,7 +242,11 @@ class ZipBoundsTest {
             }
             ByteBuffer end = ByteBuffer.allocate(22).order(ByteOrder.LITTLE_ENDIAN);
             end.putInt(0x06054b50).putShort((short) 0).putShort((short) 0);
-            end.putShort((short) count).putShort((short) count).putInt((int) size).putInt(0).putShort((short) 0);
+            end.putShort((short) count)
+                    .putShort((short) count)
+                    .putInt((int) size)
+                    .putInt(0)
+                    .putShort((short) 0);
             end.rewind();
             out.write(end);
         }

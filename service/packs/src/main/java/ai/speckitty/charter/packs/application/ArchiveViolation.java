@@ -8,7 +8,7 @@ import java.util.Locale;
  * input, so it is escaped and truncated here, whoever builds the violation (NFR-012).
  *
  * @param code why the archive or entry was refused
- * @param path the entry path concerned, control characters escaped and cut to {@value #MAX_VALUE_BYTES} bytes; empty
+ * @param path the entry path concerned, control, line-separator and Unicode format (bidi) characters escaped and cut to {@value #MAX_VALUE_BYTES} bytes; empty
  *     when the whole archive is concerned
  */
 public record ArchiveViolation(Code code, String path) {
@@ -103,6 +103,6 @@ public record ArchiveViolation(Code code, String path) {
     }
 
     private static boolean isControl(int cp) {
-        return Character.isISOControl(cp) || cp == 0x2028 || cp == 0x2029;
+        return Character.isISOControl(cp) || cp == 0x2028 || cp == 0x2029 || Character.getType(cp) == Character.FORMAT;
     }
 }

@@ -14,10 +14,12 @@ final class ZipLocalHeader {
 
     private final byte[] name;
     private final long dataStart;
+    private final int extraLength;
 
-    private ZipLocalHeader(byte[] name, long dataStart) {
+    private ZipLocalHeader(byte[] name, long dataStart, int extraLength) {
         this.name = name;
         this.dataStart = dataStart;
+        this.extraLength = extraLength;
     }
 
     /** Reads the header at the offset; null when the offset or the signature is wrong. */
@@ -36,12 +38,17 @@ final class ZipLocalHeader {
         }
         byte[] name =
                 ZipEndRecord.read(channel, offset + FIXED_SIZE, nameLength).array();
-        return new ZipLocalHeader(name, offset + FIXED_SIZE + nameLength + extraLength);
+        return new ZipLocalHeader(name, offset + FIXED_SIZE + nameLength + extraLength, extraLength);
     }
 
     /** Whether the local name is byte for byte the central directory's. */
     boolean nameEquals(byte[] centralName) {
         return Arrays.equals(name, centralName);
+    }
+
+    /** The length of the local header's extra fields, which the extractor never parses. */
+    int extraLength() {
+        return extraLength;
     }
 
     /** The offset of the entry's data. */

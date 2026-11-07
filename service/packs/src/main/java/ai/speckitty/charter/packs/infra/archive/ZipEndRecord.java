@@ -6,10 +6,20 @@ import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 
 /**
- * The entry count of a zip, read from its end-of-central-directory record (and the ZIP64 record it points to) before
- * any entry is touched (NFR-004). The search takes the last signature in the final 64 KiB, as the library does.
+ * Where a zip's central directory is and how many entries it declares, read from its end-of-central-directory record
+ * (and the ZIP64 record it points to) before any entry is touched (NFR-004). The search takes the last signature in the
+ * final 64 KiB, as the library does.
  */
 final class ZipEndRecord {
+
+    /**
+     * What the end record declares.
+     *
+     * @param count the number of central-directory entries
+     * @param offset where the central directory starts
+     * @param size how many bytes it declares
+     */
+    record Location(long count, long offset, long size) {}
 
     private static final int END_SIZE = 22;
     private static final int MAX_COMMENT = 0xFFFF;
@@ -19,11 +29,12 @@ final class ZipEndRecord {
     private static final int ZIP64_END_SIZE = 56;
     private static final int ZIP64_END_SIGNATURE = 0x06064b50;
     private static final int COUNT_OVERFLOW = 0xFFFF;
+    private static final long FIELD_OVERFLOW = 0xFFFFFFFFL;
 
     private ZipEndRecord() {}
 
-    /** The number of entries the archive declares. */
-    static long entryCount(FileChannel channel) throws IOException {
+    /** The central directory the archive declares. */
+    static Location locate(FileChannel channel) throws IOException {
         long size = channel.size();
         int tailLength = (int) Math.min(size, END_SIZE + MAX_COMMENT);
         long tailStart = size - tailLength;
@@ -32,8 +43,13 @@ final class ZipEndRecord {
         if (at < 0) {
             throw new IOException("no end of central directory record");
         }
-        long count = Short.toUnsignedInt(tail.getShort(at + 10));
-        return count == COUNT_OVERFLOW ? zip64Count(channel, tailStart + at, count) : count;
+        Location end = new Location(
+                Short.toUnsignedInt(tail.getShort(at + 10)),
+                Integer.toUnsignedLong(tail.getInt(at + 16)),
+                Integer.toUnsignedLong(tail.getInt(at + 12)));
+        boolean overflow =
+                end.count() == COUNT_OVERFLOW || end.offset() == FIELD_OVERFLOW || end.size() == FIELD_OVERFLOW;
+        return overflow ? zip64(channel, tailStart + at, end) : end;
     }
 
     private static int lastSignature(ByteBuffer tail) {
@@ -45,7 +61,7 @@ final class ZipEndRecord {
         return -1;
     }
 
-    private static long zip64Count(FileChannel channel, long endAt, long fallback) throws IOException {
+    private static Location zip64(FileChannel channel, long endAt, Location fallback) throws IOException {
         long locatorAt = endAt - LOCATOR_SIZE;
         if (locatorAt < 0) {
             return fallback;
@@ -63,17 +79,23 @@ final class ZipEndRecord {
             throw new IOException("ZIP64 end record has a bad signature");
         }
         long total = record.getLong(32);
-        return total < 0 ? Long.MAX_VALUE : total;
+        return new Location(total < 0 ? Long.MAX_VALUE : total, record.getLong(48), record.getLong(40));
     }
 
     static ByteBuffer read(FileChannel channel, long position, int length) throws IOException {
         ByteBuffer buffer = ByteBuffer.allocate(length).order(ByteOrder.LITTLE_ENDIAN);
+        fill(channel, buffer, position);
+        return buffer;
+    }
+
+    /** Fills the buffer from the position; the buffer is left full, with its position at the end. */
+    static void fill(FileChannel channel, ByteBuffer buffer, long position) throws IOException {
+        int start = buffer.position();
         while (buffer.hasRemaining()) {
-            int n = channel.read(buffer, position + buffer.position());
+            int n = channel.read(buffer, position + buffer.position() - start);
             if (n < 0) {
                 throw new IOException("unexpected end of archive");
             }
         }
-        return buffer;
     }
 }

@@ -18,8 +18,9 @@ import org.apache.commons.compress.archivers.zip.ZipShort;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Reads a zip (IC-03). The body is spooled to an owner-only file in staging; the entry count is read from the
- * end-of-central-directory record before any entry; {@link ZipFile} is built with its builder, without the Unicode
+ * Reads a zip (IC-03). The body is spooled to an owner-only file in staging; the central directory is walked from the
+ * end-of-central-directory record, and checked for its entry count and extra-field sizes ({@link ZipCentralDirectory}),
+ * before any entry is read; {@link ZipFile} is built with its builder, without the Unicode
  * extra fields and without trusting local headers (this reader checks them itself). Every entry is inspected before any is written: encrypted entries, methods other than STORED and
  * DEFLATED, Unicode extra fields, non-ASCII names without the EFS flag, a local name that differs from the central
  * one, overlapping data and Unix link, device, FIFO and socket modes are refused. A zip with no Unix mode carries no
@@ -69,8 +70,11 @@ final class ZipReader {
     /** Reads the archive into the tree; the body is read once and not closed. */
     void read(InputStream body, PackTree tree, Path stagingRoot) throws IOException {
         Path spool = stagingRoot.resolve(SPOOL_NAME);
+        // CREATE_NEW: when the file already exists this throws, and the cleanup below is never reached, so the caller's
+        // file is left alone; the file deleted is always one this call created.
+        java.io.OutputStream out = ArchiveIo.createFile(spool);
         try {
-            spool(body, spool);
+            spool(body, out);
             try (FileChannel channel = FileChannel.open(spool, StandardOpenOption.READ)) {
                 readSpooled(channel, tree);
             }
@@ -79,9 +83,8 @@ final class ZipReader {
         }
     }
 
-    private void spool(InputStream body, Path spool) throws IOException {
+    private void spool(InputStream body, java.io.OutputStream out) throws IOException {
         LimitedInputStream bounded = new LimitedInputStream(body, limits.maxBodyBytes(), Code.BODY_TOO_LARGE, true);
-        java.io.OutputStream out = ArchiveIo.createFile(spool);
         try {
             ArchiveIo.copy(bounded, out);
         } finally {
@@ -90,14 +93,15 @@ final class ZipReader {
     }
 
     private void readSpooled(FileChannel channel, PackTree tree) throws IOException {
-        if (ZipEndRecord.entryCount(channel) > limits.maxEntries()) {
-            throw new ArchiveLimitException(Code.TOO_MANY_ENTRIES, "");
-        }
+        new ZipCentralDirectory(channel, limits).verify();
         try (ZipFile zip = opener.open(channel)) {
             List<Planned> planned = inspect(zip, channel, tree);
             if (tree.clean()) {
                 for (Planned p : planned) {
                     write(zip, p, tree);
+                    if (!tree.clean()) {
+                        break;
+                    }
                 }
             }
         }
@@ -128,7 +132,9 @@ final class ZipReader {
             return;
         }
         spans.add(new Span(entry.getLocalHeaderOffset(), local.dataStart() + entry.getCompressedSize(), name));
-        Code refused = entryViolation(entry, local);
+        Code refused = local.extraLength() > ZipCentralDirectory.MAX_EXTRA_BYTES
+                ? Code.ZIP_EXTRA_FIELD_TOO_LARGE
+                : entryViolation(entry, local);
         if (refused != null) {
             tree.violation(refused, name);
             return;

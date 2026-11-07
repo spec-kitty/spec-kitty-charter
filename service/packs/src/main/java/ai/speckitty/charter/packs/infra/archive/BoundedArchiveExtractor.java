@@ -7,6 +7,7 @@ import ai.speckitty.charter.packs.application.PackArchiveReader;
 import ai.speckitty.charter.packs.application.StagedPack;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 
 /**
@@ -62,6 +63,11 @@ public final class BoundedArchiveExtractor implements PackArchiveReader {
         } catch (ArchiveLimitException e) {
             tree.violation(e.code(), e.path());
         } catch (IOException e) {
+            tree.violation(Code.ARCHIVE_UNREADABLE, "");
+        } catch (UncheckedIOException e) {
+            throw e; // the host failed (a write), not the archive
+        } catch (RuntimeException e) {
+            // A library's runtime failure on malformed input (an unchecked parse error) is a refusal, never a 500.
             tree.violation(Code.ARCHIVE_UNREADABLE, "");
         }
     }
