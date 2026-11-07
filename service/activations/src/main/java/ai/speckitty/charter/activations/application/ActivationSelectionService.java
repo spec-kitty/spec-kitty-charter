@@ -88,18 +88,20 @@ public class ActivationSelectionService {
             OptionalInt depth,
             List<RefusalViolation> bodyFaults,
             @Nullable String ifMatch) {
-        StoredActivation loaded = writes.loaded(id, ifMatch);
-        ActivationWrites.requireWellFormed(bodyFaults);
-        ArtifactRef written = ActivationWrites.selectable(kind, artifactId);
-        CascadeScope scope = ActivationWrites.scope(cascade);
-        PacksSession session = writes.session(loaded);
-        ArtifactRef target = ActivationWrites.declared(session.snapshot(), written, Set.of());
-        ActivationWrites.requireHeld(session.snapshot(), target);
-        ActivationDocument before = ActivationWrites.current(loaded, session.snapshot());
-        Reach reach = ActivationWrites.walk(
-                session, CascadeRules.planSelect(before, target, scope, includeDeactivated, depth));
-        ActivationChange change = CascadeRules.applySelect(before, target, scope, includeDeactivated, depth, reach);
-        return writes.commit(loaded, change, session.snapshot());
+        return writes.exclusively(() -> {
+            StoredActivation loaded = writes.loaded(id, ifMatch);
+            ActivationWrites.requireWellFormed(bodyFaults);
+            ArtifactRef written = ActivationWrites.selectable(kind, artifactId);
+            CascadeScope scope = ActivationWrites.scope(cascade);
+            PacksSession session = writes.session(loaded);
+            ArtifactRef target = ActivationWrites.declared(session.snapshot(), written, Set.of());
+            ActivationWrites.requireHeld(session.snapshot(), target);
+            ActivationDocument before = ActivationWrites.current(loaded, session.snapshot());
+            Reach reach = ActivationWrites.walk(
+                    session, CascadeRules.planSelect(before, target, scope, includeDeactivated, depth));
+            ActivationChange change = CascadeRules.applySelect(before, target, scope, includeDeactivated, depth, reach);
+            return writes.commit(loaded, change, session.snapshot());
+        });
     }
 
     /**
@@ -116,15 +118,17 @@ public class ActivationSelectionService {
      */
     public ActivationWrites.Outcome unselect(
             ActivationId id, String kind, String artifactId, @Nullable String ifMatch) {
-        StoredActivation loaded = writes.loaded(id, ifMatch);
-        ArtifactRef written = ActivationWrites.selectable(kind, artifactId);
-        PacksSession session = writes.session(loaded);
-        ArtifactRef target = ActivationWrites.declared(
-                session.snapshot(), written, ActivationWrites.selectedOf(loaded.document(), written));
-        ActivationWrites.requireHeldOrStale(
-                session.snapshot(), target, ActivationWrites.selects(loaded.document(), target));
-        ActivationDocument before = ActivationWrites.current(loaded, session.snapshot());
-        ActivationDocument after = before.withoutSelected(target.kind(), target.id());
-        return writes.commit(loaded, ActivationChange.of(before, after, SkippedReport.empty()), session.snapshot());
+        return writes.exclusively(() -> {
+            StoredActivation loaded = writes.loaded(id, ifMatch);
+            ArtifactRef written = ActivationWrites.selectable(kind, artifactId);
+            PacksSession session = writes.session(loaded);
+            ArtifactRef target = ActivationWrites.declared(
+                    session.snapshot(), written, ActivationWrites.selectedOf(loaded.document(), written));
+            ActivationWrites.requireHeldOrStale(
+                    session.snapshot(), target, ActivationWrites.selects(loaded.document(), target));
+            ActivationDocument before = ActivationWrites.current(loaded, session.snapshot());
+            ActivationDocument after = before.withoutSelected(target.kind(), target.id());
+            return writes.commit(loaded, ActivationChange.of(before, after, SkippedReport.empty()), session.snapshot());
+        });
     }
 }

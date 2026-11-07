@@ -101,16 +101,14 @@ public class ActivationWrites {
 
     /**
      * Runs a whole write, from its first read to its store, excluding every pack registration, so that the activation is
-     * judged against the packs it is stored with and a registration's impact check sees it. (Not yet applied by the
-     * services: this commit has the seam.)
+     * judged against the packs it is stored with and a registration's impact check sees it.
      *
      * @param work the write
      * @param <T> what it answers
      * @return what the work answers
      */
     <T> T exclusively(java.util.function.Supplier<T> work) {
-        Objects.requireNonNull(coordination, "coordination");
-        return work.get();
+        return coordination.exclusively(work);
     }
 
     /**
