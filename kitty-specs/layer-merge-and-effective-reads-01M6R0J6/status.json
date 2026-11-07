@@ -559,7 +559,7 @@
     },
     "WP16": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": "claude:sonnet:java-jenny",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
@@ -568,6 +568,9 @@
       "last_event_id": "01M6VTWGDDJ0B4Z3RHG62VZA22",
       "last_transition_at": "2026-11-07T20:23:33.037089+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "verifyAll green on ceadd3c1; POST /packs stays reserved for WP17/WP18"
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 13416,
