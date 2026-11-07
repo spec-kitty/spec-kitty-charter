@@ -58,6 +58,17 @@ class PackCommitStoreTest {
         return () -> List.of(new PackLocation("pack-a", PackLevel.ORG, packDir));
     }
 
+    /**
+     * {@code pack-a} without its deliberately unreadable tactic. A write through {@link CommitStorePackWriteStore} is
+     * judged over every closure the pack joins as it will be after the write (IC-15), which a pack that cannot be read
+     * cannot be, so a test of the write path itself (the precondition, the shard) starts from a readable pack.
+     */
+    private static Path unbrokenCopyOf(Path host) throws IOException {
+        Path packDir = PackFixtures.copyOf("pack-a", host);
+        Files.delete(packDir.resolve("broken-tactic.tactic.yaml"));
+        return packDir;
+    }
+
     private static Pack mutatedWithToolguide(Pack baseline, String toolguideId) {
         Pack.Builder builder = Pack.builder().id(baseline.id()).descriptor(baseline.descriptor());
         baseline.tactics().forEach(builder::tactic);
@@ -168,7 +179,7 @@ class PackCommitStoreTest {
     @Test
     @DisplayName("a commit whose If-Match went stale before the swap is refused (412) and changes zero files")
     void aCommitWithAStaleIfMatchIsRefusedAndChangesNothing(@TempDir Path host) throws IOException {
-        Path packDir = PackFixtures.copyOf("pack-a", host);
+        Path packDir = unbrokenCopyOf(host);
         YamlSerializationStrategy strategy = new YamlSerializationStrategy();
         DomainRepositoryService service = new DomainRepositoryService(locations(packDir), strategy);
         PackCommitStore store = new PackCommitStore(locations(packDir), strategy);
@@ -242,7 +253,7 @@ class PackCommitStoreTest {
     @DisplayName("a registration over a partly invalid relationship shard is refused and leaves the shard"
             + " byte-unchanged, while one into a pack without a shard lands")
     void aRegistrationOverAnInvalidShardIsRefusedAndKeepsTheShard(@TempDir Path host) throws IOException {
-        Path packDir = PackFixtures.copyOf("pack-a", host);
+        Path packDir = unbrokenCopyOf(host);
         String partlyInvalid = """
                 schema_version: '1.0'
                 generated_at: STATIC
@@ -281,7 +292,7 @@ class PackCommitStoreTest {
     @Test
     @DisplayName("a write to a configured but broken pack is pack_unreadable, while an unconfigured pack is not found")
     void aBrokenConfiguredPackIsUnreadableNotNotFoundOnAWrite(@TempDir Path host) throws IOException {
-        Path packDir = PackFixtures.copyOf("pack-a", host);
+        Path packDir = unbrokenCopyOf(host);
         String descriptor = Files.readString(packDir.resolve(PackFileSet.PACK_YAML), StandardCharsets.UTF_8);
         Files.writeString(packDir.resolve(PackFileSet.PACK_YAML), "pack_id: [\n", StandardCharsets.UTF_8);
         YamlSerializationStrategy strategy = new YamlSerializationStrategy();

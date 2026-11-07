@@ -48,8 +48,8 @@ class PerArtifactImpactTest {
                     rig.repository,
                     read);
             this.directives = new DirectiveRegistrationService(rig.repository, rig.writeStore, gate);
-            this.relationships = new RelationshipRegistrationService(
-                    rig.repository, rig.writeStore, gate, (source, target) -> {});
+            this.relationships =
+                    new RelationshipRegistrationService(rig.repository, rig.writeStore, gate, (source, target) -> {});
         }
 
         String revisionOf(String pack) {
@@ -90,8 +90,8 @@ class PerArtifactImpactTest {
         PackIdentifier mid = new PackIdentifier("mid");
         Map<String, String> before = rig.filesOf(rig.packs.resolve("mid"));
 
-        CharterRefusal refused = refusal(() -> writes.directives.registerDirective(
-                mid, directive("mid", "OPEN_ONE"), false, null));
+        CharterRefusal refused =
+                refusal(() -> writes.directives.registerDirective(mid, directive("mid", "OPEN_ONE"), false, null));
 
         assertThat(refused.code())
                 .as("base and mid are both org packs, so two packs of one level would define OPEN_ONE")
@@ -99,7 +99,7 @@ class PerArtifactImpactTest {
         assertThat(refused.packs())
                 .as("the packs involved, so the caller knows whom to talk to")
                 .extracting(RefusalPack::packId)
-                .contains(RegistrationImpactTest.BASE_ID, MID_ID);
+                .contains("base", "mid");
         assertThat(rig.filesOf(rig.packs.resolve("mid"))).as("nothing changed").isEqualTo(before);
 
         writes.directives.registerDirective(mid, directive("mid", "MID_TWO"), false, null);
@@ -125,8 +125,8 @@ class PerArtifactImpactTest {
         assertThat(refused.packs())
                 .as("the pack that breaks the rule first, then the pack that holds the level")
                 .extracting(RefusalPack::packId)
-                .startsWith(RegistrationImpactTest.DERIVED_ID)
-                .contains(RegistrationImpactTest.BASE_ID);
+                .startsWith("derived")
+                .contains("base");
         assertThat(rig.filesOf(rig.packs.resolve("derived")))
                 .as("nothing changed: no registered shard was written")
                 .isEqualTo(before)
@@ -171,5 +171,73 @@ class PerArtifactImpactTest {
         assertThat(rig.filesOf(rig.packs.resolve("derived")))
                 .containsKey("DERIVED_TWO.directive.yaml")
                 .containsKey("registered.graph.yaml");
+    }
+
+    // ---- the cost of the check
+    // ---------------------------------------------------------------------------------------
+
+    private static final int SMALL = 8;
+    private static final int LARGE = 40;
+
+    /**
+     * The check reads each pack once, through one session: the configured locations are listed as often for a write
+     * with many stored packs as with few. Every listing parses every pack.yaml, so a check that listed once per pack it
+     * looks at would be a square (NFR-009; WP16 fixed one in the whole-pack registration).
+     */
+    @Test
+    void aPerArtifactWriteListsTheConfiguredLocationsAsOftenWithManyStoredPacksAsWithFew(@TempDir Path host) {
+        int few = listingsOfOneWrite(host.resolve("few"), SMALL);
+        int many = listingsOfOneWrite(host.resolve("many"), LARGE);
+
+        assertThat(many)
+                .as("listings of one PUT with %d stored packs against %d stored packs", LARGE, SMALL)
+                .isEqualTo(few);
+        assertThat(few).as("listings of one PUT, however few packs are stored").isLessThanOrEqualTo(LISTINGS);
+    }
+
+    /**
+     * What one PUT lists today: the load, the revision, the pack lock, the commit and one for the check. A check that
+     * listed per pack would add one for each stored pack.
+     */
+    private static final int LISTINGS = 5;
+
+    private static int listingsOfOneWrite(Path host, int stored) {
+        Rig rig = new Rig(host);
+        for (int i = 1; i <= stored; i++) {
+            rig.install(
+                    "other-" + i,
+                    Packs.of("01M6R0WP14" + String.format("%016d", i), "other-" + i, "1.0.0", "org")
+                            .directive("OTHER_" + i, "Other " + i));
+        }
+        rig.register(
+                "target",
+                rig.stage(Packs.of(MID_ID, "target", "1.0.0", "org").directive("T_ONE", "One")),
+                Preconditions.none());
+        java.util.concurrent.atomic.AtomicInteger listings = new java.util.concurrent.atomic.AtomicInteger();
+        ai.speckitty.charter.packs.infra.storage.DomainRepositoryService.Locations counting = () -> {
+            listings.incrementAndGet();
+            return rig.locations.all();
+        };
+        ai.speckitty.charter.packs.infra.storage.YamlSerializationStrategy strategy =
+                new ai.speckitty.charter.packs.infra.storage.YamlSerializationStrategy();
+        ai.speckitty.charter.packs.infra.storage.DomainRepositoryService repository =
+                new ai.speckitty.charter.packs.infra.storage.DomainRepositoryService(counting, strategy);
+        ai.speckitty.charter.packs.infra.storage.CommitStorePackWriteStore store =
+                new ai.speckitty.charter.packs.infra.storage.CommitStorePackWriteStore(
+                        counting,
+                        strategy,
+                        new ai.speckitty.charter.packs.infra.storage.PackCommitStore(
+                                counting, strategy, rig.lock, rig.generation),
+                        rig.lock,
+                        rig.generation);
+        DirectiveRegistrationService puts = new DirectiveRegistrationService(
+                repository, store, new ai.speckitty.charter.packs.application.PermissiveWritePolicyGate());
+
+        puts.registerDirective(new PackIdentifier("target"), directive("target", "T_TWO"), false, null);
+
+        assertThat(rig.packs.resolve("target").resolve("T_TWO.directive.yaml"))
+                .as("the write landed")
+                .isRegularFile();
+        return listings.get();
     }
 }

@@ -5,10 +5,14 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Relationship;
+import ai.speckitty.charter.packs.application.ActivationImpact;
 import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.PackWriteGeneration;
 import ai.speckitty.charter.packs.application.PackWriteStore;
+import ai.speckitty.charter.packs.application.RegistrationImpact;
 import ai.speckitty.charter.packs.application.RegistryWriteLock;
+import ai.speckitty.charter.packs.application.WriteFacts;
+import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackFinding;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -37,6 +41,11 @@ import org.springframework.stereotype.Service;
  * ({@link PackWriteLocks}) {@link #exclusively} holds across a registration's load, precondition and commit. That lock is
  * taken inside the {@link RegistryWriteLock}, always in that order (R-lock), and {@link #commit} brackets its swap with
  * the {@link PackWriteGeneration}, so a verified read can tell a swap ran.
+ *
+ * <p>{@link #commit} is the one choke point every per-artifact write goes through, so it is where the write is judged
+ * over every closure the pack joins as it will be after the write, under both locks and just before the swap (IC-15,
+ * operator ruling DM-01M6VG6GC40AKYYFRR35SV8HVW): no registration service can leave the check out, and a closure that
+ * would no longer compose refuses the write with its code before anything is staged.
  */
 @Service
 public final class CommitStorePackWriteStore implements PackWriteStore {
@@ -46,6 +55,20 @@ public final class CommitStorePackWriteStore implements PackWriteStore {
     private final PackCommitStore commitStore;
     private final RegistryWriteLock registryLock;
     private final PackWriteGeneration generation;
+    private final RegistrationImpact impact;
+
+    /**
+     * An adapter over the configured locations and WP04's commit store, judging each write with an impact check over
+     * the same locations and no stored activation.
+     *
+     * @param locations the configured pack locations
+     * @param strategy the serialization format (used to read a descriptor when resolving by declared id)
+     * @param commitStore WP04's aggregate-commit store
+     */
+    public CommitStorePackWriteStore(
+            DomainRepositoryService.Locations locations, SerializationStrategy strategy, PackCommitStore commitStore) {
+        this(locations, strategy, commitStore, RegistryWriteLock.shared(), PackWriteGeneration.shared());
+    }
 
     /**
      * An adapter over the configured locations and WP04's commit store.
@@ -53,11 +76,15 @@ public final class CommitStorePackWriteStore implements PackWriteStore {
      * @param locations the configured pack locations
      * @param strategy the serialization format (used to read a descriptor when resolving by declared id)
      * @param commitStore WP04's aggregate-commit store
+     * @param impact the impact check every write is judged with
      */
     @Autowired
     public CommitStorePackWriteStore(
-            DomainRepositoryService.Locations locations, SerializationStrategy strategy, PackCommitStore commitStore) {
-        this(locations, strategy, commitStore, RegistryWriteLock.shared(), PackWriteGeneration.shared());
+            DomainRepositoryService.Locations locations,
+            SerializationStrategy strategy,
+            PackCommitStore commitStore,
+            RegistrationImpact impact) {
+        this(locations, strategy, commitStore, RegistryWriteLock.shared(), PackWriteGeneration.shared(), impact);
     }
 
     /**
@@ -76,6 +103,34 @@ public final class CommitStorePackWriteStore implements PackWriteStore {
             PackCommitStore commitStore,
             RegistryWriteLock registryLock,
             PackWriteGeneration generation) {
+        this(
+                locations,
+                strategy,
+                commitStore,
+                registryLock,
+                generation,
+                new RegistrationImpact(new StagedPackViewFactory(locations, strategy), ActivationImpact.NONE));
+    }
+
+    /**
+     * An adapter over an explicit registry lock, write generation and impact check; a test plants the stored
+     * activations the check composes.
+     *
+     * @param locations the configured pack locations
+     * @param strategy the serialization format
+     * @param commitStore WP04's aggregate-commit store
+     * @param registryLock the lock every write takes before the pack's own
+     * @param generation the write generation a commit's swap is bracketed with
+     * @param impact the impact check every write is judged with
+     */
+    public CommitStorePackWriteStore(
+            DomainRepositoryService.Locations locations,
+            SerializationStrategy strategy,
+            PackCommitStore commitStore,
+            RegistryWriteLock registryLock,
+            PackWriteGeneration generation,
+            RegistrationImpact impact) {
+        this.impact = Objects.requireNonNull(impact, "impact");
         this.locations = Objects.requireNonNull(locations, "locations");
         this.strategy = Objects.requireNonNull(strategy, "strategy");
         this.commitStore = Objects.requireNonNull(commitStore, "commitStore");
@@ -157,8 +212,28 @@ public final class CommitStorePackWriteStore implements PackWriteStore {
     public PackRevision commit(PackIdentifier pack, @Nullable String ifMatch, Change change) {
         @Nullable String shard = change.relationships().map(RelationshipShard::write).orElse(null);
         @Nullable CharterArtifact artifact = change.artifact().orElse(null);
-        return exclusively(
-                pack, () -> generation.bracket(pack.value(), () -> commitStore.commit(pack, ifMatch, artifact, shard)));
+        return exclusively(pack, () -> {
+            requireClosuresCompose(pack, change);
+            return generation.bracket(pack.value(), () -> commitStore.commit(pack, ifMatch, artifact, shard));
+        });
+    }
+
+    /**
+     * Judges the closures the pack joins as the pack will be after the write: the artifact it adds or replaces held, and
+     * the registered relationships it leaves in place of the stored ones. Runs under the registry lock and the pack's
+     * own, so what the check reads cannot change before the swap.
+     */
+    private void requireClosuresCompose(PackIdentifier pack, Change change) {
+        List<Relationship> registeredBefore =
+                change.relationships().isPresent() ? registeredRelationships(pack) : List.of();
+        impact.check(pack, facts -> {
+            PackCompositionFacts written = change.artifact()
+                    .map(artifact -> WriteFacts.withArtifact(facts, artifact.urn()))
+                    .orElse(facts);
+            return change.relationships()
+                    .map(after -> WriteFacts.withRegisteredEdges(written, registeredBefore, after))
+                    .orElse(written);
+        });
     }
 
     /** The pack's live directory, resolved as {@link DomainRepositoryService}/{@link PackCommitStore} resolve it. */
