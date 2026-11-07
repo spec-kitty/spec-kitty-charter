@@ -532,7 +532,8 @@
       "last_transition_at": "2026-11-07T16:46:05.627303+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "T070-T075 and WP14 hand-offs done; verifyAll green."
+        "T070-T075 and WP14 hand-offs done; verifyAll green.",
+        "cycle 2"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
