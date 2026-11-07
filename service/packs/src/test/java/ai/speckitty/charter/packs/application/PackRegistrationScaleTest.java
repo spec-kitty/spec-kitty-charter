@@ -47,8 +47,8 @@ class PackRegistrationScaleTest {
 
     @Test
     void replacingAPackListsTheConfiguredLocationsAsOftenWithManyStoredPacksAsWithFew(@TempDir Path host) {
-        int few = listingsOfOneReplace(host.resolve("few"), SMALL);
-        int many = listingsOfOneReplace(host.resolve("many"), LARGE);
+        int few = listingsOfOneReplace(host.resolve("few"), SMALL, false);
+        int many = listingsOfOneReplace(host.resolve("many"), LARGE, false);
 
         assertThat(many)
                 .as("listings for a replace with %d stored packs against %d stored packs", LARGE, SMALL)
@@ -56,6 +56,20 @@ class PackRegistrationScaleTest {
         assertThat(few)
                 .as("listings of one replace, however few packs are stored")
                 .isLessThanOrEqualTo(8);
+    }
+
+    @Test
+    void aReplaceThatRemovesAnArtifactScansTheOtherPacksWithoutListingOncePerPack(@TempDir Path host) {
+        int few = listingsOfOneReplace(host.resolve("few"), SMALL, true);
+        int many = listingsOfOneReplace(host.resolve("many"), LARGE, true);
+
+        assertThat(many)
+                .as(
+                        "listings for a replace that drops an artifact (the inbound scan reads every other pack) with %d"
+                                + " stored packs against %d",
+                        LARGE, SMALL)
+                .isEqualTo(few);
+        assertThat(few).as("listings of one replace with an inbound scan").isLessThanOrEqualTo(10);
     }
 
     private static int listingsOfOneCreate(Path host, int stored) {
@@ -77,24 +91,29 @@ class PackRegistrationScaleTest {
         return listings.get();
     }
 
-    private static int listingsOfOneReplace(Path host, int stored) {
+    private static int listingsOfOneReplace(Path host, int stored, boolean dropsAnArtifact) {
         Rig rig = new Rig(host);
         install(rig, stored);
         String id = PackRegistrationServiceTest.ulid('Z');
         rig.register(
                 "fresh",
-                rig.stage(Packs.of(id, "fresh", "1.0.0", "org").directive("FRESH_ONE", "Fresh")),
+                rig.stage(Packs.of(id, "fresh", "1.0.0", "org")
+                        .directive("FRESH_ONE", "Fresh")
+                        .directive("FRESH_TWO", "Fresh, the one a replace may drop")),
                 Preconditions.none());
         AtomicInteger listings = new AtomicInteger();
         PackRegistrationService service = serviceCountingListings(rig, listings);
 
-        PackRegistrationService.RegistrationOutcome outcome = service.register(
-                "fresh",
-                rig.stage(Packs.of(id, "fresh", "2.0.0", "org").directive("FRESH_ONE", "Fresh again")),
-                Preconditions.none());
+        PackRegistrationService.RegistrationOutcome outcome =
+                service.register("fresh", rig.stage(replacement(id, dropsAnArtifact)), Preconditions.none());
 
         assertThat(outcome.outcome()).isEqualTo(Outcome.REPLACED);
         return listings.get();
+    }
+
+    private static Packs replacement(String id, boolean dropsAnArtifact) {
+        Packs next = Packs.of(id, "fresh", "2.0.0", "org").directive("FRESH_ONE", "Fresh again");
+        return dropsAnArtifact ? next : next.directive("FRESH_TWO", "Fresh, kept");
     }
 
     private static void install(Rig rig, int stored) {
