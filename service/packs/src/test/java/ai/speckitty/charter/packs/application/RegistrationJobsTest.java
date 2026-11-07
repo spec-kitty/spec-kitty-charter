@@ -417,6 +417,51 @@ class RegistrationJobsTest {
     }
 
     @Test
+    void aDeadlineThatReachesTheJobAsItsCommitBeginsDoesNotEndIt(@TempDir Path host) throws Exception {
+        CountDownLatch swapping = new CountDownLatch(1);
+        CountDownLatch finishSwap = new CountDownLatch(1);
+        Harness h = new Harness(host, Duration.ofSeconds(30), () -> {
+            swapping.countDown();
+            await(finishSwap);
+        });
+        h.rig.install("pack-x", h.pack("pack-x", "1.0.0"));
+        h.gate.holdWhileRunning();
+        Reservation replacing = h.start(
+                "pack-x",
+                Preconditions.none(),
+                h.stage(h.pack("pack-x", "1.1.0").directive("N", "New")));
+        h.await(() -> h.status(replacing).state() == State.RUNNING);
+        h.clock.advance(RegistrationJobs.DEADLINE.plusSeconds(1));
+        CountDownLatch inTheEnd = new CountDownLatch(1);
+        CountDownLatch goOn = new CountDownLatch(1);
+        Thread watchdog = new Thread(() -> {
+            // Reading 1 is the sweep's own; reading 2 is the job's, taken as it ends the job.
+            h.clock.pauseThisThreadAtCall(2, inTheEnd, goOn);
+            h.jobs.expireOverdue();
+        });
+        watchdog.setDaemon(true);
+        watchdog.start();
+        assertThat(inTheEnd.await(10, TimeUnit.SECONDS))
+                .as("the watchdog is about to end the job")
+                .isTrue();
+
+        h.gate.releaseWhileRunning();
+        assertThat(swapping.await(10, TimeUnit.SECONDS))
+                .as("the job began its commit")
+                .isTrue();
+        goOn.countDown();
+        watchdog.join(TimeUnit.SECONDS.toMillis(10));
+        finishSwap.countDown();
+        Status ended = h.awaitEnd(replacing);
+
+        assertThat(ended.state())
+                .as("a job that began its commit is never reported refused, whoever reaches it")
+                .isEqualTo(State.SUCCEEDED);
+        assertThat(h.audit.entries()).hasSize(1);
+        assertThat(h.audit.entries().getFirst().outcome()).isEqualTo("succeeded:replaced");
+    }
+
+    @Test
     void aReservationThatIsNeverStartedExpiresAndFreesItsSlot(@TempDir Path host) {
         Harness h = new Harness(host);
         Reservation leaked = h.jobs.reserve("pack-x", Preconditions.none(), ORIGIN);
@@ -611,6 +656,20 @@ class RegistrationJobsTest {
     /** A clock a test moves. */
     static final class ManualClock extends Clock {
         private volatile Instant now = START;
+        private volatile long pausingThread = -1;
+        private volatile int pauseAtCall;
+        private volatile CountDownLatch pausedEntered = new CountDownLatch(0);
+        private volatile CountDownLatch pausedRelease = new CountDownLatch(0);
+        private int callsOfPausing;
+
+        /** The calling thread stops at its {@code call}-th reading of the clock until {@code release}. */
+        void pauseThisThreadAtCall(int call, CountDownLatch entered, CountDownLatch release) {
+            pauseAtCall = call;
+            pausedEntered = entered;
+            pausedRelease = release;
+            callsOfPausing = 0;
+            pausingThread = Thread.currentThread().threadId();
+        }
 
         void advance(Duration by) {
             now = now.plus(by);
@@ -628,6 +687,10 @@ class RegistrationJobsTest {
 
         @Override
         public Instant instant() {
+            if (Thread.currentThread().threadId() == pausingThread && ++callsOfPausing == pauseAtCall) {
+                pausedEntered.countDown();
+                await(pausedRelease);
+            }
             return now;
         }
     }
