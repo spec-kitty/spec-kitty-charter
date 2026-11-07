@@ -873,6 +873,23 @@ IC-03 to IC-09 above and into the concerns below.
 - **Risks:** one `412` per client after the upgrade; a client not yet regenerated gets `422` on every write. Its
   reads still work.
 
+### IC-21 (A0) — Cascade depth (#408 ruling 1, 2026-11-07)
+
+- **Purpose:** give a cascading select and a cascading deactivate an optional `depth`, so a client can deepen a cascade
+  step by step (FR-043). Absent means unlimited, as ADR-0059 D2 rules (core parity).
+- **Meaning (decision `DM-01M6TDH0SY5Q224GX709DXWG8K`):** `depth` counts `suggests` hops, as ADR-0018 D4's `depth`
+  does. `requires`, the other hard relations, `enhances` and the lineage pass-through are walked in full; `depth: 0`
+  follows no `suggests` edge. The walk state is the pair (artifact, `suggests` hops used); an artifact first reached
+  over more hops is reached again when a later path uses fewer.
+- **Contract.** `depth` (integer, minimum 0) on `SelectionRequest` and `ExclusionRequest`; a `### Added` fragment; a
+  scenario pinning depth 0 and 1 against the unlimited walk, and the round trip of a cascading deactivate at the same
+  depth. A negative or non-integer `depth` is `422 validation_failed`.
+- **Code.** `ReachPlan` carries the bound; the packs walk honours it; the deactivate's shared walk (the other active
+  artifacts) stays unlimited, so a kept candidate is never dropped by the bound.
+- **Read side.** The language filter at read (ruling 2) and the conditional `suggests` entries (ruling 3) are folded
+  into FR-013, FR-017 and FR-019, for PR B and C.
+- **Sequencing/depends-on:** WP08 (the shared scenario glue and the request mapping).
+
 ### Test coverage: the generated client's absent lists (side finding of the A7 squad)
 
 - **Hazard (exists in #399).** The generated client (`ActivationConfig.java:63-73`) turns an absent list into `[]`,
@@ -908,6 +925,7 @@ own PR stacked on #399 before PR A (decision `DM-01M6RFGB9NVD9MDWZ6AP0PBYH7`), u
   IC-17.
 - **PR C:** IC-10, IC-11, IC-13.
 - IC-20 (A7) is in PR A0, after IC-19 (decision `DM-01M6RFGB9NVD9MDWZ6AP0PBYH7`).
+- IC-21 (cascade depth, #408) is in PR A0, after IC-20 (decision `DM-01M6TDH0SY5Q224GX709DXWG8K`).
 
 ### Contract findings folded (post-plan contract squad)
 
