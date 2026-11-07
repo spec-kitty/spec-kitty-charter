@@ -99,9 +99,11 @@ class PacksAvailabilityTest {
         Preset governing = new Preset(
                 "governing",
                 "D2 is required.",
-                List.of(ArtifactKind.DIRECTIVE),
-                Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("D2"), PresetItem.of("D1"))),
-                List.of(PresetItem.of("software-dev")));
+                Map.of(
+                        ArtifactKind.DIRECTIVE,
+                        List.of(PresetItem.mustHave("D2"), PresetItem.of("D1")),
+                        ArtifactKind.MISSION_TYPE,
+                        List.of(PresetItem.of("software-dev"))));
         return new ClosureView(
                 List.of(
                         new OfferingEntry(
