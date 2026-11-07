@@ -152,9 +152,9 @@ class RegistrationJobsTest {
         h.gate.releaseBeforeRun();
         accepted.forEach(h::awaitEnd);
         Reservation control = h.start("pack-eleven", Preconditions.none(), h.stage(h.pack("pack-eleven", "1.0.0")));
-        assertThat(h.awaitEnd(control).state())
+        assertThat(h.awaitEnd(control).ending())
                 .as("a slot is free again once the jobs ended")
-                .isEqualTo(State.SUCCEEDED);
+                .isInstanceOf(Succeeded.class);
     }
 
     @Test
@@ -673,8 +673,9 @@ class RegistrationJobsTest {
         }
 
         Packs pack(String name, String version) {
-            return Packs.of(PackRegistrationServiceTest.ulid('A'), name, version, "org")
-                    .directive("ONE", "One");
+            // One pack_id per name: two packs may not hold the same one.
+            String id = "01M6R0WP14" + String.format("%016d", Math.abs((long) name.hashCode()));
+            return Packs.of(id, name, version, "org").directive("ONE", "One");
         }
 
         /** A stager that writes the pack into the job's directory, as an extractor does. */

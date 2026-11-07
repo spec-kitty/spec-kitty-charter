@@ -67,6 +67,22 @@ public final class PackRegistrationService {
         }
 
         /**
+         * Checks the preconditions against the stored revision: a registration that asks for the pack to be absent
+         * (create only) or to be at a revision, and finds otherwise, is stale.
+         *
+         * @param stored the stored pack's revision; empty when no pack is stored under the name
+         * @throws PreconditionException {@code STALE} (412) when they do not hold
+         */
+        public void requireMet(Optional<PackRevision> stored) {
+            if (ifNoneMatchAny && stored.isPresent()) {
+                throw stale("If-None-Match: * asks for a pack that does not exist, and it does; read the pack again.");
+            }
+            if (ifMatch != null && (stored.isEmpty() || !PackRevision.matches(ifMatch, stored.get()))) {
+                throw stale("The If-Match precondition is stale; read the pack again.");
+            }
+        }
+
+        /**
          * No precondition.
          *
          * @return the empty preconditions
@@ -207,7 +223,30 @@ public final class PackRegistrationService {
      * @throws RegistryWriteLock.RegistryBusyException when the registry lock was not free in time (503)
      */
     public RegistrationOutcome register(String packId, StagedPack staged, Preconditions preconditions) {
+        return register(packId, staged, preconditions, () -> {});
+    }
+
+    /**
+     * Registers a pack as {@link #register(String, StagedPack, Preconditions)} does, calling {@code beforeCommit} once the
+     * decisive steps have judged the upload and just before anything is written. The job runs it to learn that the
+     * deadline or a shutdown ended the registration first: it throws, and nothing is stored. A call that returned is
+     * the point of no return, so the job ends as the commit does.
+     *
+     * @param packId the name the pack is stored under (the path parameter)
+     * @param staged the extracted upload
+     * @param preconditions the conditional headers
+     * @param beforeCommit called under the locks, after the impact check and before the swap; whatever it throws ends
+     *     the registration with nothing written
+     * @return what was done and the revision
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal a refusal of the flow, with its code
+     * @throws ai.speckitty.charter.kernel.transport.PreconditionException {@code STALE} (412) when the precondition
+     *     does not hold
+     * @throws RegistryWriteLock.RegistryBusyException when the registry lock was not free in time (503)
+     */
+    public RegistrationOutcome register(
+            String packId, StagedPack staged, Preconditions preconditions, Runnable beforeCommit) {
         Objects.requireNonNull(packId, "packId");
+        Objects.requireNonNull(beforeCommit, "beforeCommit");
         Objects.requireNonNull(staged, "staged");
         Objects.requireNonNull(preconditions, "preconditions");
         requireValidPackId(packId);
@@ -215,11 +254,11 @@ public final class PackRegistrationService {
         WholePackWriteStore.Contents contents = loader.loadStaged(staged);
         PackRevision revision = store.revisionOf(staged);
         Upload upload = new Upload(packId, staged, contents, revision, preconditions);
-        return store.exclusively(packId, () -> decide(upload));
+        return store.exclusively(packId, () -> decide(upload, beforeCommit));
     }
 
     /** Steps 3 and 5 to 10, under the registry lock and then the pack's own. */
-    private RegistrationOutcome decide(Upload upload) {
+    private RegistrationOutcome decide(Upload upload, Runnable beforeCommit) {
         store.requireWritableLocation(upload.packId());
         // One session for the identity step and the inbound scan: every listing of the locations parses every
         // pack.yaml,
@@ -236,6 +275,7 @@ public final class PackRegistrationService {
         gate.authorizeStaged(upload.contents().pack(), writesOf(upload.contents(), before));
         requireNoInboundReference(upload, stored, before, view);
         RegistrationImpact.Notices notices = impact.check(replacementOf(upload, stored));
+        beforeCommit.run();
         return commit(upload, stored, notices);
     }
 
@@ -384,15 +424,7 @@ public final class PackRegistrationService {
     }
 
     private static void checkPreconditions(Preconditions preconditions, Optional<Stored> stored) {
-        if (preconditions.ifNoneMatchAny() && stored.isPresent()) {
-            throw stale("If-None-Match: * asks for a pack that does not exist, and it does; read the pack again.");
-        }
-        String ifMatch = preconditions.ifMatch();
-        if (ifMatch != null
-                && (stored.isEmpty()
-                        || !PackRevision.matches(ifMatch, stored.get().revision()))) {
-            throw stale("The If-Match precondition is stale; read the pack again.");
-        }
+        preconditions.requireMet(stored.map(Stored::revision));
     }
 
     private static PreconditionException stale(String detail) {

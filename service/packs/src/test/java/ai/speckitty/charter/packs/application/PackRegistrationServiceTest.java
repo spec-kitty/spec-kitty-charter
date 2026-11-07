@@ -121,6 +121,48 @@ class PackRegistrationServiceTest {
         assertThat(rig.filesOf(rig.packs.resolve("pack-x")).get("pack.yaml")).contains("pack_version: 1.0.0");
     }
 
+    // ---- the point of no return -----------------------------------------------------------------------------------
+
+    @Test
+    void theBeforeCommitHookRunsJustBeforeTheWriteAndWhateverItThrowsLeavesNothingWritten(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        java.util.List<Boolean> lockedInHook = new java.util.ArrayList<>();
+        StagedPack upload =
+                rig.stage(Packs.of(ORG_PACK, "pack-x", "1.0.0", "org").directive("DIRECTIVE_001", "One"));
+
+        assertThatThrownBy(() -> rig.service.register("pack-x", upload, Preconditions.none(), () -> {
+                    lockedInHook.add(rig.lock.isHeldByCurrentThread());
+                    throw new IllegalStateException("the deadline ended the registration");
+                }))
+                .isInstanceOf(IllegalStateException.class);
+
+        assertThat(lockedInHook).as("the hook runs under the registry lock").containsExactly(true);
+        assertThat(rig.packs.resolve("pack-x")).as("nothing was written").doesNotExist();
+        assertThat(rig.asidesBeside(rig.packs.resolve("pack-x"))).isEmpty();
+        assertThat(rig.register("pack-x", upload, Preconditions.none()).outcome())
+                .as("the control: without the hook's throw the same upload is stored")
+                .isEqualTo(Outcome.CREATED);
+    }
+
+    @Test
+    void theBeforeCommitHookIsNotRunForARegistrationThatIsRefusedOrUnchanged(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        Packs pack = Packs.of(ORG_PACK, "pack-x", "1.0.0", "org").directive("DIRECTIVE_001", "One");
+        rig.register("pack-x", rig.stage(pack), Preconditions.none());
+        java.util.concurrent.atomic.AtomicInteger calls = new java.util.concurrent.atomic.AtomicInteger();
+
+        RegistrationOutcome unchanged =
+                rig.service.register("pack-x", rig.stage(pack), Preconditions.none(), calls::incrementAndGet);
+        refusal(() -> rig.service.register(
+                "pack-x",
+                rig.stage(pack.directive("DIRECTIVE_001", "Same version, other content")),
+                Preconditions.none(),
+                calls::incrementAndGet));
+
+        assertThat(unchanged.outcome()).isEqualTo(Outcome.UNCHANGED);
+        assertThat(calls).as("nothing was about to be written").hasValue(0);
+    }
+
     // ---- the version rule (steps 4 to 6) -------------------------------------------------------------------------
 
     @Test

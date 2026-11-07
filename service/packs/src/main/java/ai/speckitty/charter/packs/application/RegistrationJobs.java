@@ -1,15 +1,39 @@
 package ai.speckitty.charter.packs.application;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.transport.PreconditionException;
+import ai.speckitty.charter.kernel.transport.RetryLaterException;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditions;
 import ai.speckitty.charter.packs.application.PackRegistrationService.RegistrationOutcome;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -295,47 +319,133 @@ public final class RegistrationJobs implements AutoCloseable {
         void require();
     }
 
+    private static final System.Logger LOG = System.getLogger(RegistrationJobs.class.getName());
+
+    private static final String INTERNAL_DETAIL = "The charter service failed unexpectedly; the failure is logged.";
+    private static final String STOPPING_DETAIL = "The service is stopping; send the registration again.";
+
+    private final Dependencies dependencies;
+    private final java.time.Clock clock;
+    private final ThreadPoolExecutor executor;
+    private final Map<String, Job> jobs = new LinkedHashMap<>();
+    private final AtomicInteger inFlight = new AtomicInteger();
+    private final SecureRandom random = new SecureRandom();
+    private volatile boolean closing;
+    private @Nullable ScheduledExecutorService watchdog;
+    private @Nullable ScheduledFuture<?> watchdogRuns;
+
     /**
-     * Jobs over their dependencies.
+     * Jobs over their dependencies, with no watchdog: {@link #expireOverdue()} is called by whoever holds the clock. The
+     * composition root starts the watchdog ({@link #startWatchdog(Duration)}); a test moves its own clock.
      *
      * @param dependencies the clock, the flow, the stored revisions, the audit trail and the seams
      */
     public RegistrationJobs(Dependencies dependencies) {
-        Objects.requireNonNull(dependencies, "dependencies");
+        this.dependencies = Objects.requireNonNull(dependencies, "dependencies");
+        this.clock = dependencies.clock();
+        AtomicInteger workers = new AtomicInteger();
+        this.executor = new ThreadPoolExecutor(
+                RUNNING_LIMIT, RUNNING_LIMIT, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(), task -> {
+                    Thread thread = new Thread(task, "charter-registration-" + workers.incrementAndGet());
+                    thread.setDaemon(true);
+                    return thread;
+                });
     }
 
     /**
-     * Takes a slot for a registration of {@code packId}: the preconditions are judged against the stored revision, and a
-     * full queue is refused, before the caller reads the body.
+     * Starts the thread that ends the jobs that passed the deadline, every {@code period} of real time.
+     *
+     * @param period how often it looks
+     * @return these jobs
+     */
+    public RegistrationJobs startWatchdog(Duration period) {
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(task -> {
+            Thread thread = new Thread(task, "charter-registration-watchdog");
+            thread.setDaemon(true);
+            return thread;
+        });
+        watchdogRuns = scheduler.scheduleWithFixedDelay(
+                this::expireOverdueQuietly, period.toMillis(), period.toMillis(), TimeUnit.MILLISECONDS);
+        watchdog = scheduler;
+        return this;
+    }
+
+    private void expireOverdueQuietly() {
+        try {
+            expireOverdue();
+        } catch (RuntimeException failure) {
+            LOG.log(System.Logger.Level.WARNING, "The registration watchdog failed; it runs again.", failure);
+        }
+    }
+
+    /**
+     * Takes a slot for a registration of {@code packId}: a full queue is refused, and the preconditions are judged
+     * against the stored revision, before the caller reads the body.
      *
      * @param packId the target pack
      * @param preconditions the conditional headers
      * @param origin where the attempt came from
-     * @return the reservation
+     * @return the reservation, whose staging directory exists
+     * @throws RetryLaterException when two jobs run and eight wait already, or the service is stopping
+     * @throws PreconditionException {@code STALE} when the preconditions do not hold against the stored pack
      */
     public Reservation reserve(String packId, Preconditions preconditions, Origin origin) {
-        return new Reservation() {
-            @Override
-            public String id() {
-                return "";
+        Objects.requireNonNull(packId, "packId");
+        Objects.requireNonNull(preconditions, "preconditions");
+        Objects.requireNonNull(origin, "origin");
+        if (closing) {
+            throw new RetryLaterException(STOPPING_DETAIL, RETRY_AFTER_SECONDS);
+        }
+        if (inFlight.incrementAndGet() > RUNNING_LIMIT + WAITING_LIMIT) {
+            inFlight.decrementAndGet();
+            throw new RetryLaterException(
+                    "Two registrations run and " + WAITING_LIMIT + " wait; send this one again shortly.",
+                    RETRY_AFTER_SECONDS);
+        }
+        try {
+            Optional<PackRevision> stored = storedRevision(packId);
+            preconditions.requireMet(stored);
+            Job job = new Job(this, packId, preconditions, origin, stored);
+            admit(job);
+            return job;
+        } catch (RuntimeException | Error refused) {
+            inFlight.decrementAndGet();
+            throw refused;
+        }
+    }
+
+    /** Seconds a refused client waits: a registration takes a few seconds, and a slot frees as soon as one ends. */
+    private static final int RETRY_AFTER_SECONDS = 5;
+
+    private Optional<PackRevision> storedRevision(String packId) {
+        try {
+            return Optional.of(dependencies.revisions().currentRevision(new PackIdentifier(packId)));
+        } catch (CharterRefusal absent) {
+            if (absent.code() == RefusalCode.PACK_NOT_FOUND) {
+                return Optional.empty();
             }
+            throw absent;
+        }
+    }
 
-            @Override
-            public Path directory() {
-                return Path.of("");
+    private void admit(Job job) {
+        synchronized (jobs) {
+            evict(clock.instant(), true);
+            jobs.put(job.id, job);
+        }
+    }
+
+    /** Forgets the statuses an hour old and, to make room, the oldest ended ones. Called with {@code jobs} held. */
+    private void evict(Instant now, boolean makeRoom) {
+        jobs.values().removeIf(job -> job.expired(now));
+        if (makeRoom) {
+            Iterator<Job> oldest = jobs.values().iterator();
+            while (jobs.size() >= MAX_RETAINED && oldest.hasNext()) {
+                if (oldest.next().ended()) {
+                    oldest.remove();
+                }
             }
-
-            @Override
-            public void start(Stager stager) {}
-
-            @Override
-            public void abandon() {}
-
-            @Override
-            public Status status() {
-                return new Status("", packId, State.PENDING, Instant.EPOCH, null, null);
-            }
-        };
+        }
     }
 
     /**
@@ -345,11 +455,33 @@ public final class RegistrationJobs implements AutoCloseable {
      * @return the status; empty when the id is unknown, ended more than an hour ago or was evicted
      */
     public Optional<Status> status(String id) {
-        return Optional.empty();
+        synchronized (jobs) {
+            Job job = jobs.get(id);
+            if (job == null) {
+                return Optional.empty();
+            }
+            if (job.expired(clock.instant())) {
+                jobs.remove(id);
+                return Optional.empty();
+            }
+            return Optional.of(job.status());
+        }
     }
 
     /** Ends the jobs that passed the deadline and have not begun their commit; the scheduler calls it, a test calls it. */
-    public void expireOverdue() {}
+    public void expireOverdue() {
+        Instant now = clock.instant();
+        List<Job> snapshot;
+        synchronized (jobs) {
+            evict(now, false);
+            snapshot = List.copyOf(jobs.values());
+        }
+        for (Job job : snapshot) {
+            if (!now.isBefore(job.acceptedAt.plus(DEADLINE))) {
+                job.expire();
+            }
+        }
+    }
 
     /**
      * The staging directories of jobs that have not ended, which the sweep never deletes.
@@ -357,7 +489,11 @@ public final class RegistrationJobs implements AutoCloseable {
      * @return the directories
      */
     public Set<Path> owned() {
-        return Set.of();
+        synchronized (jobs) {
+            Set<Path> owned = new LinkedHashSet<>();
+            jobs.values().stream().filter(job -> !job.ended()).forEach(job -> owned.add(job.directory));
+            return owned;
+        }
     }
 
     /**
@@ -366,9 +502,368 @@ public final class RegistrationJobs implements AutoCloseable {
      * @return how many
      */
     public int retained() {
-        return 0;
+        synchronized (jobs) {
+            return jobs.size();
+        }
     }
 
+    /**
+     * Stops taking registrations, ends what has not begun its commit {@code refused} ({@code 503}: send it again), lets a
+     * commit that has begun finish, and removes the staging directories. A job the process never got to end is forgotten
+     * with it: its status URI answers {@code 404} after a restart and the client sends the pack again, which the version
+     * rule makes idempotent.
+     */
     @Override
-    public void close() {}
+    public void close() {
+        closing = true;
+        ScheduledExecutorService scheduler = watchdog;
+        if (scheduler != null) {
+            scheduler.shutdownNow();
+        }
+        ScheduledFuture<?> runs = watchdogRuns;
+        if (runs != null) {
+            runs.cancel(false);
+        }
+        List<Job> snapshot;
+        synchronized (jobs) {
+            snapshot = List.copyOf(jobs.values());
+        }
+        snapshot.forEach(Job::stop);
+        executor.shutdown();
+        try {
+            if (!executor.awaitTermination(30, TimeUnit.SECONDS)) {
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException interrupted) {
+            executor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    // ---- one job -------------------------------------------------------------------------------------------------
+
+    /** Where a job is in its life, which only moves forward. */
+    private enum Phase {
+        RESERVED,
+        QUEUED,
+        RUNNING,
+        COMMITTING,
+        ENDED
+    }
+
+    /** Raised inside a job that has ended while its worker still ran: it must write nothing. */
+    private static final class JobEnded extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+
+        JobEnded() {
+            super("The registration ended before its commit.", null, false, false);
+        }
+    }
+
+    /** One registration. Every change of its phase takes the job's monitor, so one thread wins the end. */
+    private static final class Job implements Reservation {
+        private final RegistrationJobs owner;
+        private final String id;
+        private final String packId;
+        private final Preconditions preconditions;
+        private final Origin origin;
+        private final String revisionBefore;
+        private final Instant acceptedAt;
+        private final Path directory;
+        private Phase phase = Phase.RESERVED;
+        private @Nullable Instant finishedAt;
+        private @Nullable Ending ending;
+        private @Nullable Future<?> task;
+        private @Nullable Thread worker;
+        private @Nullable Stager stager;
+
+        Job(
+                RegistrationJobs owner,
+                String packId,
+                Preconditions preconditions,
+                Origin origin,
+                Optional<PackRevision> stored) {
+            this.owner = owner;
+            this.acceptedAt = owner.clock.instant();
+            this.id = Ulid.next(acceptedAt, owner.random);
+            this.packId = packId;
+            this.preconditions = preconditions;
+            this.origin = origin;
+            this.revisionBefore = stored.map(PackRevision::token).orElse("");
+            this.directory = owner.dependencies.stagingRoot().resolve(id);
+            try {
+                Files.createDirectories(directory);
+            } catch (IOException failure) {
+                throw new UncheckedIOException("cannot create the staging directory of a registration", failure);
+            }
+        }
+
+        @Override
+        public String id() {
+            return id;
+        }
+
+        @Override
+        public Path directory() {
+            return directory;
+        }
+
+        @Override
+        public synchronized Status status() {
+            State state = switch (phase) {
+                case RESERVED, QUEUED -> State.PENDING;
+                case RUNNING, COMMITTING -> State.RUNNING;
+                case ENDED -> ending instanceof Succeeded ? State.SUCCEEDED : State.REFUSED;
+            };
+            return new Status(id, packId, state, acceptedAt, finishedAt, ending);
+        }
+
+        synchronized boolean ended() {
+            return phase == Phase.ENDED;
+        }
+
+        synchronized boolean expired(Instant now) {
+            return phase == Phase.ENDED && finishedAt != null && !now.isBefore(finishedAt.plus(RETENTION));
+        }
+
+        @Override
+        public void start(Stager work) {
+            synchronized (this) {
+                if (phase != Phase.RESERVED) {
+                    throw new IllegalStateException("The registration was started or ended already.");
+                }
+                phase = Phase.QUEUED;
+                stager = Objects.requireNonNull(work, "stager");
+            }
+            try {
+                task = owner.executor.submit(this::run);
+            } catch (RejectedExecutionException stopped) {
+                end(new Refused(Kind.BUSY, null, STOPPING_DETAIL));
+            }
+        }
+
+        @Override
+        public void abandon() {
+            boolean released;
+            synchronized (this) {
+                released = phase == Phase.RESERVED;
+                if (released) {
+                    phase = Phase.ENDED;
+                    finishedAt = owner.clock.instant();
+                }
+            }
+            if (released) {
+                owner.inFlight.decrementAndGet();
+                deleteDirectory();
+                synchronized (owner.jobs) {
+                    owner.jobs.remove(id);
+                }
+            }
+        }
+
+        /**
+         * The worker's whole run of the job. The staging directory is removed before the end is published, so a client
+         * that reads a finished status finds nothing of the job on disk.
+         */
+        private void run() {
+            Ending result = null;
+            try {
+                result = attempt();
+            } finally {
+                deleteDirectory();
+                if (result != null) {
+                    end(result);
+                }
+                clearWorker();
+            }
+        }
+
+        private @Nullable Ending attempt() {
+            try {
+                if (ended()) {
+                    return null;
+                }
+                owner.dependencies.gate().beforeRun(id);
+                if (!markRunning()) {
+                    return null;
+                }
+                owner.dependencies.gate().whileRunning(id);
+                return work();
+            } catch (JobEnded gone) {
+                // The deadline or the shutdown ended the job first: its answer stands, and nothing was written.
+                return null;
+            } catch (RuntimeException | Error failure) {
+                LOG.log(System.Logger.Level.WARNING, "A registration job failed unexpectedly.", failure);
+                return new Refused(Kind.CODED, internal(), INTERNAL_DETAIL);
+            }
+        }
+
+        private synchronized void clearWorker() {
+            worker = null;
+        }
+
+        private synchronized boolean markRunning() {
+            if (phase != Phase.QUEUED) {
+                return false;
+            }
+            phase = Phase.RUNNING;
+            worker = Thread.currentThread();
+            return true;
+        }
+
+        /** The decisive step passed: from here the deadline no longer ends the job. */
+        private synchronized void beginCommit() {
+            if (phase != Phase.RUNNING) {
+                throw new JobEnded();
+            }
+            phase = Phase.COMMITTING;
+        }
+
+        private @Nullable Ending work() {
+            try {
+                owner.dependencies.room().require();
+                Staged staged = Objects.requireNonNull(stager).stage(directory);
+                RegistrationOutcome outcome =
+                        owner.dependencies.service().register(packId, staged.pack(), preconditions, this::beginCommit);
+                return new Succeeded(outcome, staged.source());
+            } catch (CharterRefusal refusal) {
+                return new Refused(Kind.CODED, refusal, detail(refusal));
+            } catch (PreconditionException stale) {
+                return new Refused(Kind.STALE, null, detail(stale));
+            } catch (RetryLaterException busy) {
+                return new Refused(Kind.BUSY, null, detail(busy));
+            } catch (JobEnded gone) {
+                throw gone;
+            } catch (Exception failure) {
+                if (failure instanceof InterruptedException) {
+                    Thread.currentThread().interrupt();
+                }
+                if (ended()) {
+                    return null;
+                }
+                LOG.log(System.Logger.Level.WARNING, "A registration job failed unexpectedly.", failure);
+                return new Refused(Kind.CODED, internal(), INTERNAL_DETAIL);
+            }
+        }
+
+        private static String detail(Throwable failure) {
+            return Objects.requireNonNullElse(failure.getMessage(), "");
+        }
+
+        private static CharterRefusal internal() {
+            return new CharterRefusal(RefusalCode.INTERNAL_ERROR, INTERNAL_DETAIL);
+        }
+
+        /** The deadline: ends the job unless its commit began. A worker still staging is interrupted. */
+        void expire() {
+            Refused timedOut = new Refused(
+                    Kind.CODED,
+                    new CharterRefusal(
+                            RefusalCode.REGISTRATION_TIMED_OUT,
+                            "The registration did not finish within " + DEADLINE.toSeconds() + " seconds."),
+                    "The registration did not finish within " + DEADLINE.toSeconds() + " seconds.");
+            endUnlessCommitting(timedOut);
+        }
+
+        /** The shutdown: ends the job unless its commit began, which is let to finish. */
+        void stop() {
+            endUnlessCommitting(new Refused(Kind.BUSY, null, STOPPING_DETAIL));
+        }
+
+        private void endUnlessCommitting(Refused refusal) {
+            Thread active;
+            synchronized (this) {
+                if (phase == Phase.COMMITTING || phase == Phase.ENDED) {
+                    return;
+                }
+                active = worker;
+            }
+            if (end(refusal) && active != null) {
+                active.interrupt();
+            }
+            Future<?> queued = task;
+            if (queued != null) {
+                queued.cancel(false);
+            }
+        }
+
+        /**
+         * Ends the job with {@code result} if it has not ended: the one end, whoever reaches it, and the one audit entry
+         * of the attempt. A job whose worker is not running owns its directory no longer.
+         *
+         * @return whether this call ended it
+         */
+        private boolean end(Ending result) {
+            Instant now = owner.clock.instant();
+            boolean idle;
+            synchronized (this) {
+                if (phase == Phase.ENDED) {
+                    return false;
+                }
+                idle = worker == null;
+                phase = Phase.ENDED;
+                finishedAt = now;
+                ending = result;
+            }
+            owner.inFlight.decrementAndGet();
+            try {
+                owner.dependencies.audit().record(auditEntry(now, result));
+            } catch (RuntimeException lost) {
+                LOG.log(System.Logger.Level.ERROR, "The audit entry of a registration could not be written.", lost);
+            }
+            if (idle) {
+                deleteDirectory();
+            }
+            return true;
+        }
+
+        private AuditLog.Entry auditEntry(Instant now, Ending result) {
+            String after =
+                    result instanceof Succeeded done ? done.outcome().revision().token() : revisionBefore;
+            return new AuditLog.Entry(
+                    now,
+                    origin.worktree(),
+                    origin.credential(),
+                    origin.operation(),
+                    packId,
+                    origin.sourceKind(),
+                    origin.locator(),
+                    outcomeOf(result),
+                    revisionBefore,
+                    after);
+        }
+
+        private static String outcomeOf(Ending result) {
+            if (result instanceof Succeeded done) {
+                return "succeeded:" + done.outcome().outcome().name().toLowerCase(Locale.ROOT);
+            }
+            Refused refused = (Refused) result;
+            return switch (refused.kind()) {
+                case STALE -> "refused:precondition_failed";
+                case BUSY -> "refused:registry_busy";
+                case CODED ->
+                    codedOutcome(Objects.requireNonNull(refused.refusal()).code());
+            };
+        }
+
+        private static String codedOutcome(RefusalCode code) {
+            return code == RefusalCode.INTERNAL_ERROR ? "failed:internal_error" : "refused:" + code.token();
+        }
+
+        private void deleteDirectory() {
+            if (!Files.exists(directory, java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
+                return;
+            }
+            try (Stream<Path> walk = Files.walk(directory)) {
+                for (Path path : walk.sorted(Comparator.reverseOrder()).toList()) {
+                    Files.deleteIfExists(path);
+                }
+            } catch (IOException | UncheckedIOException failure) {
+                LOG.log(
+                        System.Logger.Level.WARNING,
+                        "The staging directory of a registration could not be removed; the sweep takes it later.",
+                        failure);
+            }
+        }
+    }
 }
