@@ -145,3 +145,16 @@ README.md (requirements section) and `run-in-a-container.md`: git ≥ 2.50.1 on 
 - Check each behaviour against the plan IC and the rule ids cited, not against core's Python answers (C-004).
 - Check the red-first evidence (the commit order or the run log) and that no test was weakened to pass.
 - Check that nothing outside `owned_files` changed beyond the listed shared-file edits.
+
+## Added by the runner (2026-11-07)
+
+- `contracts/charter/schemas/Link.yaml` still says a pack write is never `DELETE`; reword it for the two `DELETE`s of PR A (decision `DM-01M6TVMGH94ZF07KSWSCANEASV`), and update the `edit` relation row in `docs/architecture/hypermedia-hateoas.md` (WP11 hand-off).
+
+## Hand-off from WP14 (2026-11-07)
+
+Divergence-register entries (core merges per artifact; PR A replaces the whole pack):
+- A registration replaces the stored pack rather than merging into it; the same revision answers `unchanged`.
+- The same version with another revision is `409 pack_version_conflict`.
+- `REMOVE` joins the write gate, and edges are gated as `RELATIONSHIP` writes on their source.
+- A stored pack that cannot be read is repaired by a whole-pack replace (the diff treats every uploaded artifact as a
+  replace and removes nothing).
