@@ -3,14 +3,13 @@ name: service
 # The charter service build: the charter's own contract checks (lint, bundle, closed response
 # objects, breaking-change check), contract generation, unit tests, the architecture gate, the BDD
 # contracts, the spec-kitty-open-packs round-trip, the aggregated Javadoc and coverage
-# (./gradlew verifyAll), then the CPU-time budgets on their own and report-only (./gradlew :packs:timingBudgets, #316,
-# ADR-0057). It uploads
-# three artifacts: `javadoc`, `coverage` and `contract-bundle`.
+# (./gradlew verifyAll). It uploads three artifacts: `javadoc`, `coverage` and `contract-bundle`.
 # The jar job builds the service's jar, starts it with scripts/release/smoke-service.sh and uploads it as
 # `service-jar`, which a service release attaches (ADR-0046); the native executables are service-native.yml's.
 # The release-rehearsal job runs every release rehearsal (scripts/release/rehearse-*.sh): it publishes nothing.
 # docs-site.yml calls this workflow (workflow_call) and publishes the `javadoc` artifact in the docsite.
-# Mutation testing is not here: it runs nightly only (mutation-nightly.yml).
+# Mutation testing is not here: it runs nightly only (mutation-nightly.yml). Nor are the CPU-time budgets
+# (#316, ADR-0057): they run nightly, report-only (timing-nightly.yml).
 on:
   # Pull requests enter through the CI gate orchestrator (.github/workflows/ci.yml), which calls
   # this workflow via workflow_call; there is no direct pull_request trigger, so nothing double-runs.
@@ -142,23 +141,6 @@ jobs:
             build/contracts/contract/charter-openapi.yaml
             build/contracts/contract/charter-openapi.yaml.sha256
           if-no-files-found: error
-
-      # The CPU-time budgets (tests tagged `timing`, #316), alone on the runner: under Verify's parallel module tests the
-      # load, not the code, decided whether they passed. The correctness of the same work is in Verify (:packs:test).
-      # The same properties as Verify, so the configuration cache is reused; the task itself requires symbolic links.
-      # Report-only (ADR-0057): the runners of this workflow differ in CPU speed by about 2x, so a budget measures the
-      # runner as much as the code. A budget over its limit never fails the job; the next step makes it visible.
-      - name: Check the CPU-time budgets (report-only)
-        id: timing
-        continue-on-error: true
-        run: ./gradlew :packs:timingBudgets :activations:timingBudgets -PopenPacksDir="$GITHUB_WORKSPACE/.open-packs" -PrequireSymlinks=true
-
-      - name: Report a CPU-time budget over its limit
-        if: steps.timing.outcome == 'failure'
-        run: |
-          echo "::warning title=CPU-time budget over its limit::A CPU-time budget failed (report-only, ADR-0057). Read the measured times in 'Check the CPU-time budgets'; compare with other runs before treating it as a regression."
-          echo "### ⚠️ A CPU-time budget is over its limit (report-only, ADR-0057)" >> "$GITHUB_STEP_SUMMARY"
-          echo "The budgets do not gate this run. The measured times are in the step log of 'Check the CPU-time budgets'." >> "$GITHUB_STEP_SUMMARY"
 
   # The service's jar, the fallback a release attaches beside the native executables (ADR-0046 decision 5), started
   # and checked like them before it is uploaded.

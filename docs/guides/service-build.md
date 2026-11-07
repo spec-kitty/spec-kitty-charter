@@ -2,7 +2,7 @@
 title: Building the service
 description: How to build and test the charter service, what each verification task checks, how to change the contract or a dependency, and how a release is cut.
 doc_status: active
-updated: 2026-11-05T00:00:00Z
+updated: 2026-11-07T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -92,18 +92,21 @@ Not in `verifyAll` either: the whole-pack round-trip gate (below), which CI runs
 Not in `verifyAll` by design: the CPU-time budgets, the tests tagged `timing`
 ([#316](https://github.com/spec-kitty/spec-kitty-charter/issues/316)). A budget only means something on a quiet
 machine, and `verifyAll` runs every module's tests at once. Run them in an invocation of their own, as the only task
-named; CI runs them as a step of their own after `verifyAll`. That step is **report-only**: a budget over its limit
-raises a warning and a job-summary line, and never fails the job or blocks a pull request
-([ADR-0057](/adr/0057-performance-budgets-never-block-a-pull-request/)). Each prints the CPU time it measured against its
-budget, and the task fails rather than skips where symbolic links cannot be made:
+named; CI runs both modules' tasks with `--no-parallel`, nightly and on demand in a workflow of their own
+(`timing-nightly.yml`), not on pull requests. A gating step compiles the tests first. Only the following budget step is **report-only**: a failure there raises a warning and a job-summary line and
+never fails the job ([ADR-0057](/adr/0057-performance-budgets-never-block-a-pull-request/)). An overrun opens no issue
+and sends no notification; inspect the Actions page for a slowdown that persists across nights. Each budget prints the
+CPU time it measured, and its task fails rather than skips where symbolic links cannot be made:
 
 ```bash
-./gradlew :packs:timingBudgets
+./gradlew :packs:timingBudgets --no-parallel
+./gradlew :activations:timingBudgets --no-parallel
 ```
 
-Today that is `PackFileSetBudgetTest`, the 10 s CPU-time budget of the generated-tree checks (NFR-001 of the verified
-source fingerprint). The checks themselves, whether the fingerprint changes exactly when it must and the store loads
-exactly the planted files, stay in `:packs:test` (`PackFileSetExactnessTest`). A test that holds work to a time or
+For example, the packs task includes `PackFileSetBudgetTest`, the 10 s CPU-time budget of the generated-tree checks
+(NFR-001 of the verified source fingerprint); activations has its own timing-tagged budgets. The generated-tree checks
+themselves, whether the fingerprint changes exactly when it must and the store loads exactly the planted files, stay in
+`:packs:test` (`PackFileSetExactnessTest`). A test that holds work to a time or
 CPU-time budget is tagged `timing`. A hang cap (`@Timeout`) and a deadline check, which proves a guard cuts work off
 within a bound far above the work's own time, are not budgets and need no tag. A deadline check is written as a hang
 cap of 30 s, next to an assertion of the cause it proves; the cap stops the test's wait, not work that ignores an
