@@ -1,7 +1,7 @@
 {
-  "event_count": 200,
-  "last_event_id": "01M6VEEASV3308XSEF7MXFGHP2",
-  "materialized_at": "2026-11-07T16:46:05.627303+00:00",
+  "event_count": 201,
+  "last_event_id": "01M6VFVF55QFRPS38QTD8B8YKZ",
+  "materialized_at": "2026-11-07T17:10:44.645749+00:00",
   "mission_number": "",
   "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
   "mission_type": "",
@@ -12,8 +12,8 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 0,
-    "in_progress": 1,
+    "for_review": 1,
+    "in_progress": 0,
     "in_review": 0,
     "planned": 14
   },
@@ -527,9 +527,9 @@
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
       "implementer_of_record": "claude",
-      "lane": "in_progress",
-      "last_event_id": "01M6VEEASV3308XSEF7MXFGHP2",
-      "last_transition_at": "2026-11-07T16:46:05.627303+00:00",
+      "lane": "for_review",
+      "last_event_id": "01M6VFVF55QFRPS38QTD8B8YKZ",
+      "last_transition_at": "2026-11-07T17:10:44.645749+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "T070-T075 and WP14 hand-offs done; verifyAll green.",
@@ -547,12 +547,12 @@
       "shell_pid": null,
       "shell_pid_created_at": null,
       "subtasks": {
-        "T070": "planned",
-        "T071": "planned",
-        "T072": "planned",
-        "T073": "planned",
-        "T074": "planned",
-        "T075": "planned"
+        "T070": "done",
+        "T071": "done",
+        "T072": "done",
+        "T073": "done",
+        "T074": "done",
+        "T075": "done"
       }
     },
     "WP16": {
