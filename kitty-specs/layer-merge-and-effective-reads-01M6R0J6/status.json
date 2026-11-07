@@ -481,7 +481,7 @@
     },
     "WP14": {
       "actor": "claude",
-      "agent": "claude:opus:reviewer-renata",
+      "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -494,6 +494,7 @@
         "T064-T069 done; verifyAll green. Open items handed to WP16/WP20 (5222fcce, 7e839ea8)."
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/layer-merge-and-effective-reads-01M6R0J6-coord/kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP14-a-whole-pack-registration/review-cycle-1.md",
         "reference": "review-cycle://layer-merge-and-effective-reads-01M6R0J6/WP14-a-whole-pack-registration/review-cycle-1.md",
@@ -501,15 +502,15 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 15732,
-      "shell_pid_created_at": "1794059302.49",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T064": "done",
-        "T065": "done",
-        "T066": "done",
-        "T067": "done",
-        "T068": "done",
-        "T069": "done"
+        "T064": "planned",
+        "T065": "planned",
+        "T066": "planned",
+        "T067": "planned",
+        "T068": "planned",
+        "T069": "planned"
       }
     },
     "WP15": {
