@@ -156,6 +156,18 @@
       "verdict": "not-applicable",
       "wp": null
     },
+    "#405": {
+      "evidence_ref": "https://github.com/spec-kitty/spec-kitty-open-packs/issues/131 (operator steer 2026-11-07, decision DM-01M6TDH5BSMNZMFJBY1NPBZYTK)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
+      "wp": null
+    },
     "#408": {
       "evidence_ref": "Ruling 1 is FR-043/IC-21, built by WP30 in PR A0; rulings 2-3 are folded into FR-013, FR-017, FR-019 (PR B, C). research/rulings-2026-11-07.md",
       "fr": null,
