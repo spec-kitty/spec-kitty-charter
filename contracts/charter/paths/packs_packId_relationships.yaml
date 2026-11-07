@@ -97,6 +97,12 @@ put:
         body limit (1 MiB; refused validation_failed before it is read), or its to cannot resolve in the compose of
         the pack (pack_reference_pack_missing, pack_reference_unqualified or pack_reference_artifact_missing, each with
         a packs member).
+        The write is also judged over every closure the pack joins, as the pack will be after it, under the registry
+        lock (the registration impact check, IC-15; operator ruling DM-01M6VG6GC40AKYYFRR35SV8HVW, FR-025): a closure
+        that would no longer compose is refused with its composition code (pack_sibling_conflict, two packs of one level
+        defining one id, among them), and one that would break a relation rule with override_not_permitted,
+        enhances_cycle, conflicting_relations, self_override or override_cycle. The packs member names the closure's
+        root pack and the packs involved, and nothing is written.
       headers:
         Charter-Contract-Version:
           $ref: ../headers/CharterContractVersion.yaml
