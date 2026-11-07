@@ -9,6 +9,7 @@ import ai.speckitty.charter.api.model.RequiringPack;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
 import ai.speckitty.charter.kernel.transport.RetryLaterException;
+import java.util.List;
 import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -37,6 +38,27 @@ public class RefusalHandler {
 
     private static final Log LOGGER = LogFactory.getLog(RefusalHandler.class);
 
+    /** The operation whose 200 body carries the problem of a refused registration (ADR-0056). */
+    static final String REGISTRATION_STATUS = "getPackRegistration";
+
+    /** The eleven pack composition codes, which a refused registration carries as 422 where a read answers 500. */
+    private static Map<RefusalCode, HttpStatus> registrationStatusCodes() {
+        return java.util.stream.Stream.of(
+                        RefusalCode.PACK_DEPENDENCY_CYCLE,
+                        RefusalCode.PACK_DEPENDENCY_UNKNOWN,
+                        RefusalCode.PACK_DEPENDENCY_OUT_OF_RANGE,
+                        RefusalCode.PACK_PARENT_UNRESOLVED,
+                        RefusalCode.PACK_LEVEL_VIOLATION,
+                        RefusalCode.PACK_NAME_CONFLICT,
+                        RefusalCode.PACK_DUPLICATE_ID,
+                        RefusalCode.PACK_SIBLING_CONFLICT,
+                        RefusalCode.PACK_REFERENCE_UNQUALIFIED,
+                        RefusalCode.PACK_REFERENCE_PACK_MISSING,
+                        RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING)
+                .collect(java.util.stream.Collectors.toUnmodifiableMap(
+                        code -> code, code -> HttpStatus.UNPROCESSABLE_CONTENT));
+    }
+
     /**
      * The refusal codes an operation answers with a status other than the code's own, by the operation's
      * {@code operationId} (the name of its controller method): the {@code operations} map of the code's entry in the
@@ -49,7 +71,9 @@ public class RefusalHandler {
             Map.of(
                     RefusalCode.PACK_REFERENCE_PACK_MISSING, HttpStatus.UNPROCESSABLE_CONTENT,
                     RefusalCode.PACK_REFERENCE_UNQUALIFIED, HttpStatus.UNPROCESSABLE_CONTENT,
-                    RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING, HttpStatus.UNPROCESSABLE_CONTENT));
+                    RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING, HttpStatus.UNPROCESSABLE_CONTENT),
+            REGISTRATION_STATUS,
+            registrationStatusCodes());
 
     /**
      * The most violations a problem body lists (the contract's {@code maxItems}). A 1 MiB body of nulls or unknown ids
@@ -153,7 +177,32 @@ public class RefusalHandler {
      * @return the problem, with its code, packs and violations
      */
     public PackRegistrationProblem registrationProblem(ai.speckitty.charter.kernel.domain.CharterRefusal refusal) {
-        return new PackRegistrationProblem(title(refusal.code()), 500);
+        HttpStatus status = statusOf(refusal.code(), REGISTRATION_STATUS);
+        PackRegistrationProblem problem = new PackRegistrationProblem(title(refusal.code()), status.value());
+        problem.setCode(refusal.code().token());
+        problem.setDetail(refusal.getMessage() + leftOut(refusal.violations().size()));
+        if (!refusal.packs().isEmpty()) {
+            problem.setPacks(packDtos(refusal.packs()));
+        }
+        if (!refusal.violations().isEmpty()) {
+            problem.setViolations(violationDtos(refusal.violations()));
+        }
+        return problem;
+    }
+
+    private static List<RefusalPack> packDtos(List<ai.speckitty.charter.kernel.domain.RefusalPack> packs) {
+        return packs.stream()
+                .limit(MAX_PACKS)
+                .map(pack -> new RefusalPack(pack.descriptorPackId(), pack.packId(), pack.name()))
+                .toList();
+    }
+
+    private static List<RefusalViolation> violationDtos(
+            List<ai.speckitty.charter.kernel.domain.RefusalViolation> violations) {
+        return violations.stream()
+                .limit(MAX_VIOLATIONS)
+                .map(violation -> new RefusalViolation(violation.pointer(), violation.code(), violation.detail()))
+                .toList();
     }
 
     /**
@@ -211,16 +260,10 @@ public class RefusalHandler {
                 CharterRefusal.CodeEnum.fromValue(refusal.code().token()));
         body.setDetail(refusal.getMessage() + leftOut(refusal.violations().size()));
         if (!refusal.packs().isEmpty()) {
-            body.setPacks(refusal.packs().stream()
-                    .limit(MAX_PACKS)
-                    .map(pack -> new RefusalPack(pack.descriptorPackId(), pack.packId(), pack.name()))
-                    .toList());
+            body.setPacks(packDtos(refusal.packs()));
         }
         if (!refusal.violations().isEmpty()) {
-            body.setViolations(refusal.violations().stream()
-                    .limit(MAX_VIOLATIONS)
-                    .map(violation -> new RefusalViolation(violation.pointer(), violation.code(), violation.detail()))
-                    .toList());
+            body.setViolations(violationDtos(refusal.violations()));
         }
         if (!refusal.requiredBy().isEmpty()) {
             body.setRequiredBy(refusal.requiredBy().stream()
