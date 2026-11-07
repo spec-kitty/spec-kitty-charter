@@ -464,15 +464,18 @@ class PackRegistrationServiceTest {
     }
 
     @Test
-    void anExtendableArtifactOfTheAncestorMayBeRegisteredButNotReplaced(@TempDir Path host) {
+    void anExtendableArtifactOfTheAncestorMayNeitherBeRegisteredNorReplacedByAPackBuiltOnIt(@TempDir Path host) {
         Rig rig = rigWithBase(host);
-        assertThat(rig.register(
-                                "derived",
-                                rig.stage(derived("1.0.0").directive("EXT_ONE", "First")),
-                                Preconditions.none())
-                        .outcome())
-                .as("REGISTER is within extendable")
-                .isEqualTo(Outcome.CREATED);
+        // Decision 01M6VEDYX8TQ4AKCP7C19WAP75 (C21): an id an ancestor holds is a REPLACE of the ancestor's artifact,
+        // so
+        // the first step, which this test expected to create the pack, is refused.
+        assertThat(refusalOf(() -> rig.register(
+                        "derived", rig.stage(derived("1.0.0").directive("EXT_ONE", "First")), Preconditions.none())))
+                .as("holding an id base holds is a replace, and extendable does not permit it")
+                .isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
+        assertThat(rig.packs.resolve("derived")).as("nothing was created").doesNotExist();
+
+        rig.install("derived", derived("1.0.0").directive("EXT_ONE", "First"));
         Map<String, String> before = rig.filesOf(rig.packs.resolve("derived"));
         StagedPack replaced = rig.stage(derived("2.0.0").directive("EXT_ONE", "Second"));
 

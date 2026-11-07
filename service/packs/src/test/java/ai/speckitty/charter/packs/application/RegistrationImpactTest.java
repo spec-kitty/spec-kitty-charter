@@ -692,4 +692,86 @@ class RegistrationImpactTest {
         assertThat(output.getAll()).contains("WARN").contains("acme").contains("enhances_cycle");
         assertThat(rig.filesOf(rig.packs.resolve("acme"))).containsKey("relations.graph.yaml");
     }
+
+    // ---- C21: an id an ancestor holds is a replace of the ancestor's artifact (decision 01M6VEDYX8TQ4AKCP7C19WAP75)
+    // ----
+
+    @Test
+    void creatingAPackThatHoldsAnExtendableIdOfItsAncestorIsRefusedAndAnOpenIdIsNot(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("base", rig.stage(basePolicy("1.0.0")), Preconditions.none());
+
+        assertThat(refusalOf(() -> rig.register(
+                        "derived", rig.stage(derived("1.0.0").directive("EXT_ONE", "Mine")), Preconditions.none())))
+                .isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
+        assertThat(refusalOf(() -> rig.register(
+                        "derived", rig.stage(derived("1.0.0").directive("LOCKED_ONE", "Mine")), Preconditions.none())))
+                .isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
+        assertThat(rig.packs.resolve("derived")).doesNotExist();
+
+        assertThat(rig.register(
+                                "derived",
+                                rig.stage(derived("1.0.0").directive("OPEN_ONE", "Mine")),
+                                Preconditions.none())
+                        .outcome())
+                .as("the control: an open id may be replaced by a pack built on it")
+                .isEqualTo(Outcome.CREATED);
+    }
+
+    @Test
+    void aReplaceThatAddsAnExtendableIdOfTheAncestorIsRefusedAndAnOpenIdIsNot(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("base", rig.stage(basePolicy("1.0.0")), Preconditions.none());
+        rig.register("derived", rig.stage(derived("1.0.0")), Preconditions.none());
+        Map<String, String> before = rig.filesOf(rig.packs.resolve("derived"));
+
+        assertThat(refusalOf(() -> rig.register(
+                        "derived", rig.stage(derived("2.0.0").directive("EXT_ONE", "Mine")), Preconditions.none())))
+                .isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
+        assertThat(rig.filesOf(rig.packs.resolve("derived")))
+                .as("nothing changed")
+                .isEqualTo(before);
+
+        assertThat(rig.register(
+                                "derived",
+                                rig.stage(derived("2.0.0").directive("OPEN_ONE", "Mine")),
+                                Preconditions.none())
+                        .outcome())
+                .isEqualTo(Outcome.REPLACED);
+    }
+
+    @Test
+    void thePerArtifactPutOfAnExtendableIdOfTheAncestorIsRefusedAndOfAnOpenIdIsNot(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("base", rig.stage(basePolicy("1.0.0")), Preconditions.none());
+        rig.register("derived", rig.stage(derived("1.0.0")), Preconditions.none());
+        ConsistentRead read = new ConsistentRead(
+                new ai.speckitty.charter.packs.infra.storage.FileSystemPackSources(rig.locations::all), rig.generation);
+        PackMutabilityPolicy gate = new PackMutabilityPolicy(
+                new OfferingReadService(rig.repository, rig.repository, rig.repository, read),
+                rig.repository,
+                rig.repository,
+                read);
+        DirectiveRegistrationService puts = new DirectiveRegistrationService(rig.repository, rig.writeStore, gate);
+        ai.speckitty.charter.kernel.domain.PackIdentifier derivedPack =
+                new ai.speckitty.charter.kernel.domain.PackIdentifier("derived");
+
+        assertThat(refusalOf(() -> puts.registerDirective(derivedPack, directiveOf("EXT_ONE"), false, null)))
+                .isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
+        assertThat(rig.filesOf(rig.packs.resolve("derived"))).doesNotContainKey("directives/EXT_ONE.directive.yaml");
+
+        puts.registerDirective(derivedPack, directiveOf("OPEN_ONE"), false, null);
+        assertThat(rig.filesOf(rig.packs.resolve("derived"))).containsKey("directives/OPEN_ONE.directive.yaml");
+    }
+
+    private static ai.speckitty.charter.packs.domain.Directive directiveOf(String id) {
+        return ai.speckitty.charter.packs.domain.Directive.builder()
+                .id(new ai.speckitty.charter.packs.domain.DirectiveIdentifier(id))
+                .packId(new ai.speckitty.charter.kernel.domain.PackIdentifier("derived"))
+                .schemaVersion("1.0")
+                .title(id)
+                .intent("Intent of " + id)
+                .enforcement(ai.speckitty.charter.packs.domain.Enforcement.REQUIRED)
+                .build();
+    }
 }
