@@ -74,11 +74,10 @@ public record RequiredFloor(Map<Urn, List<String>> requiredBy) {
         return requiredBy.getOrDefault(Objects.requireNonNull(urn, "urn"), List.of());
     }
 
-    /** The must-have items of one preset, artifacts first, then mission types; none for a convenience preset. */
+    /** The must-have items of one preset, of every kind, mission types included; none for a convenience preset. */
     private static List<Urn> mustHaveOf(Preset preset) {
         List<Urn> items = new ArrayList<>();
         preset.required().forEach((kind, ids) -> ids.forEach(id -> items.add(new Urn(NodeKind.of(kind), id))));
-        preset.requiredMissionTypes().forEach(id -> items.add(Urn.missionType(id)));
         return items;
     }
 

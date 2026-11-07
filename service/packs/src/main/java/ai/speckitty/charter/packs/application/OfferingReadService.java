@@ -304,8 +304,6 @@ public final class OfferingReadService {
             preset.artifacts()
                     .forEach((kind, items) ->
                             items.forEach(item -> mentions.add(new Urn(NodeKind.of(kind), item.id()).toString())));
-            preset.missionTypes()
-                    .forEach(item -> mentions.add(Urn.missionType(item.id()).toString()));
         }
         facts.policy().urnEntries().keySet().forEach(urn -> mentions.add(urn.toString()));
         return mentions;

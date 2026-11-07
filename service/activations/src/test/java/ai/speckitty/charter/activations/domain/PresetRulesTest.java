@@ -93,6 +93,37 @@ class PresetRulesTest {
     }
 
     @Test
+    void skillsAndGlossaryPacksAreAppliedLikeAnyKindAndForceClearsTheirDenies() {
+        // FR-041 (Q3): a preset may name any kind; nothing strips skills or glossary packs from it.
+        ActivationDocument before = document()
+                .selected(ArtifactKind.SKILL, List.of("old-skill"))
+                .deactivated(ArtifactKind.GLOSSARY_PACK, List.of("core-terms"))
+                .build()
+                .document();
+        PresetView preset = preset(Map.of(
+                ArtifactKind.SKILL, Set.of("pr-review"),
+                ArtifactKind.GLOSSARY_PACK, Set.of("core-terms"),
+                ArtifactKind.MISSION_TYPE, Set.of("software-dev")));
+
+        ActivationChange denied = PresetRules.apply(before, preset, false);
+        ActivationChange forced = PresetRules.apply(before, preset, true);
+
+        assertThat(denied.after().selected(ArtifactKind.SKILL).orElseThrow()).containsExactly("pr-review");
+        assertThat(denied.after().selected(ArtifactKind.GLOSSARY_PACK)).isEmpty();
+        assertThat(denied.after().deactivated(ArtifactKind.GLOSSARY_PACK)).containsExactly("core-terms");
+        assertThat(forced.after().selected(ArtifactKind.GLOSSARY_PACK).orElseThrow())
+                .containsExactly("core-terms");
+        assertThat(forced.after().deactivated(ArtifactKind.GLOSSARY_PACK)).isEmpty();
+        assertThat(forced.applied())
+                .contains(
+                        new ArtifactRef(ArtifactKind.SKILL, "old-skill"),
+                        new ArtifactRef(ArtifactKind.SKILL, "pr-review"),
+                        new ArtifactRef(ArtifactKind.GLOSSARY_PACK, "core-terms"),
+                        new ArtifactRef(ArtifactKind.MISSION_TYPE, "software-dev"));
+        assertThat(forced.cleared()).containsExactly(new ArtifactRef(ArtifactKind.GLOSSARY_PACK, "core-terms"));
+    }
+
+    @Test
     void unlistedMissionTypesAreUntouched() {
         ActivationDocument before = document()
                 .selected(ArtifactKind.MISSION_TYPE, List.of("old-type"))
