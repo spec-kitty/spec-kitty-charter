@@ -9,6 +9,7 @@ import ai.speckitty.charter.kernel.domain.Urn;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -19,6 +20,14 @@ class RequiredFloorTest {
 
     private static final Urn D1 = new Urn(NodeKind.DIRECTIVE, "D1");
     private static final Urn D2 = new Urn(NodeKind.DIRECTIVE, "D2");
+
+    /** Every item these tests name is held by some pack of the closure, unless a test says otherwise. */
+    private static final Set<Urn> HELD = Set.of(
+            D1, D2, new Urn(NodeKind.DIRECTIVE, "D3"), Urn.missionType("software-dev"), Urn.missionType("research"));
+
+    private static RequiredFloor floorOf(List<Map.Entry<String, List<Preset>>> presetsByPackInOrder) {
+        return RequiredFloor.of(presetsByPackInOrder, HELD);
+    }
 
     private static Preset governing(String id, String... mustHaveDirectives) {
         List<PresetItem> items = new ArrayList<>();
@@ -42,7 +51,7 @@ class RequiredFloorTest {
 
     @Test
     void aGoverningPresetsMustHaveItemIsRequiredByItsPackAndAConvenienceItemIsNot() {
-        RequiredFloor floor = RequiredFloor.of(List.of(
+        RequiredFloor floor = floorOf(List.of(
                 Map.entry("builtin", List.of(convenience("c"))), Map.entry("org", List.of(governing("p", "D1")))));
 
         assertThat(floor.requiredBy()).containsOnlyKeys(D1);
@@ -59,7 +68,7 @@ class RequiredFloorTest {
 
     @Test
     void twoGoverningPresetsInTwoPacksRequiringOneItemListBothPacksInClosureOrder() {
-        RequiredFloor floor = RequiredFloor.of(List.of(
+        RequiredFloor floor = floorOf(List.of(
                 Map.entry("team", List.of(governing("t", "D1"))),
                 Map.entry("org", List.of(governing("o", "D1"), governing("o2", "D1")))));
 
@@ -77,7 +86,7 @@ class RequiredFloorTest {
                         ArtifactKind.MISSION_TYPE,
                         List.of(PresetItem.mustHave("software-dev"), PresetItem.of("research"))));
 
-        RequiredFloor floor = RequiredFloor.of(List.of(Map.entry("org", List.of(missions))));
+        RequiredFloor floor = floorOf(List.of(Map.entry("org", List.of(missions))));
 
         assertThat(floor.requiringPacks(Urn.missionType("software-dev"))).containsExactly("org");
         assertThat(floor.isRequired(Urn.missionType("research"))).isFalse();
@@ -85,16 +94,55 @@ class RequiredFloorTest {
 
     @Test
     void anEmptyClosureHasAnEmptyFloor() {
-        assertThat(RequiredFloor.of(List.of()).requiredBy()).isEmpty();
-        assertThat(RequiredFloor.of(List.of(Map.entry("org", List.of()))).requiredBy())
+        assertThat(floorOf(List.of()).requiredBy()).isEmpty();
+        assertThat(floorOf(List.of(Map.entry("org", List.of()))).requiredBy()).isEmpty();
+    }
+
+    // A10 (FR-028, DM-01M6RA8MG55V8C2V9PXWDTRNQS, rule C31): Req(C) = Req0(C) ∩ H(C); Unheld(C) is reported.
+    @Test
+    void a10AMustHaveItemNoPackOfTheClosureHoldsIsDroppedFromTheFloorAndReportedWithItsRequiringPacks() {
+        Urn unheld = new Urn(NodeKind.DIRECTIVE, "Z");
+        Preset requiresZ = new Preset(
+                "z",
+                "governs",
+                Map.of(
+                        ArtifactKind.DIRECTIVE,
+                        List.of(PresetItem.mustHave("Z"), PresetItem.mustHave("D1")),
+                        ArtifactKind.MISSION_TYPE,
+                        List.of(PresetItem.mustHave("unheld-mission"))));
+
+        RequiredFloor floor = RequiredFloor.of(
+                List.of(Map.entry("org", List.of(requiresZ)), Map.entry("team", List.of(governing("t", "Z")))),
+                Set.of(D1));
+
+        assertThat(floor.isRequired(unheld))
+                .as("an unheld must-have item is not on the floor")
+                .isFalse();
+        assertThat(floor.isRequired(Urn.missionType("unheld-mission"))).isFalse();
+        assertThat(floor.requiredBy()).containsOnlyKeys(D1);
+        assertThat(floor.unheld())
+                .as("each unheld item with its requiring packs, in closure order")
+                .containsOnlyKeys(unheld, Urn.missionType("unheld-mission"))
+                .containsEntry(unheld, List.of("org", "team"))
+                .containsEntry(Urn.missionType("unheld-mission"), List.of("org"));
+    }
+
+    @Test
+    void aFloorWhoseItemsAreAllHeldReportsNothingUnheld() {
+        RequiredFloor floor = floorOf(List.of(Map.entry("org", List.of(governing("p", "D1")))));
+
+        assertThat(floor.unheld()).isEmpty();
+        assertThat(new RequiredFloor(Map.of(D1, List.of("org"))).unheld())
+                .as("a floor built from its items alone reports nothing unheld")
                 .isEmpty();
     }
 
     @Test
     void theFloorIsReadOnly() {
-        RequiredFloor floor = RequiredFloor.of(List.of(Map.entry("org", List.of(governing("p", "D1")))));
+        RequiredFloor floor = floorOf(List.of(Map.entry("org", List.of(governing("p", "D1")))));
 
         assertThatThrownBy(() -> floor.requiredBy().clear()).isInstanceOf(UnsupportedOperationException.class);
         assertThatThrownBy(() -> floor.requiringPacks(D1).add("x")).isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(() -> floor.unheld().clear()).isInstanceOf(UnsupportedOperationException.class);
     }
 }

@@ -13,6 +13,7 @@ import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -86,7 +87,13 @@ class PresetTest {
         artifacts.put(ArtifactKind.SKILL, List.of(PresetItem.mustHave("pr-review")));
         artifacts.put(ArtifactKind.GLOSSARY_PACK, List.of(PresetItem.of("core-terms")));
 
-        RequiredFloor floor = RequiredFloor.of(List.of(Map.entry("org", List.of(preset("house-rules", artifacts)))));
+        Set<Urn> held = Set.of(
+                new Urn(NodeKind.DIRECTIVE, "GUARD"),
+                new Urn(NodeKind.SKILL, "pr-review"),
+                Urn.missionType("software-dev"));
+
+        RequiredFloor floor =
+                RequiredFloor.of(List.of(Map.entry("org", List.of(preset("house-rules", artifacts)))), held);
 
         assertThat(floor.requiredBy())
                 .containsOnlyKeys(
