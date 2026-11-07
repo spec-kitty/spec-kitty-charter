@@ -1,8 +1,10 @@
 description: >-
   If-Match names a revision that is not current, or If-None-Match: * names an activation that exists: 412, a Problem
   with no code. On replaceActivation and deleteActivation, an If-Match on an activation that does not exist is 412
-  too, not 404: no stored revision matches it (RFC 9110 section 13.1.1). The client fetches the activation again
-  before it retries (ADR-0020 D9).
+  too, not 404: no stored revision matches it (RFC 9110 section 13.1.1). A replaceActivation without If-Match is
+  412 as well when it loses to another writer on every one of its eight attempts (each judged from a fresh read of
+  the document it replaces); nothing is stored. The client fetches the activation again before it retries (ADR-0020
+  D9).
 headers:
   Charter-Contract-Version:
     $ref: ../headers/CharterContractVersion.yaml

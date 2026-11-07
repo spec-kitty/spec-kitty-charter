@@ -11,9 +11,9 @@ put:
     cascade from it reaches the steps it holds, crossed like requires (Q1, decision DM-01M6RCXTS0SMDNTWZ8G7GJ2P5S;
     rule W20), so what those steps reach within the cascade's kinds is selected. With cascade, walks the graph into
     the named kinds from it: the walk stops at a deactivated artifact and reports it, unless includeDeactivated is
-    true, which walks through the deactivated artifacts of the cascade's kinds and clears their exclusions: of what
-    the walk reaches within those kinds and of each lineage ancestor it passes through whose kind is among them (a
-    cleared ancestor is never selected). A deactivated artifact outside the cascade's kinds keeps its exclusion: the
+    true, which walks through the deactivated artifacts of the cascade's kinds and clears the exclusions of what the
+    walk reaches and selects within those kinds only (B5, decision DM-01M6RA9XQSH3E07C7VCPCVD6R4): a lineage
+    ancestor it passes through, which it never selects, keeps its exclusion. A deactivated artifact outside the cascade's kinds keeps its exclusion: the
     walk stops there and reports it, as it does without includeDeactivated (ADR-0059 amendment of 2026-11-06). The walk crosses enhances like any other
     relation, from the enhancer to what it enhances (ADR-0059 D2, as amended on 2026-11-06), so selecting an
     enhancer with a cascade selects its target and selecting a target selects no enhancer. One write, one new revision; answers the ActivationChange and the new ETag. Requires If-Match (ADR-0020

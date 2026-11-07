@@ -1,5 +1,6 @@
 package ai.speckitty.charter.activations.infra.api;
 
+import ai.speckitty.charter.api.model.Activation;
 import ai.speckitty.charter.api.model.ActivationChange;
 import ai.speckitty.charter.api.model.ActivationConfig;
 import ai.speckitty.charter.api.model.DeactivatedArtifacts;
@@ -41,6 +42,7 @@ public class ActivationJson {
     @Bean
     public JacksonModule activationJsonModule() {
         return new SimpleModule("charter-activation-json")
+                .setMixInAnnotation(Activation.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(ActivationConfig.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(PackPin.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(SelectedArtifacts.class, OmitAbsentMembers.class)
