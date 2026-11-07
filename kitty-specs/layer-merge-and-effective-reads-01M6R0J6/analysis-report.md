@@ -4,15 +4,15 @@ artifact_type: spec-kitty.analysis-report
 command: /spec-kitty.analyze
 mission_slug: layer-merge-and-effective-reads-01M6R0J6
 mission_id: 01M6R0J642MF7F33XVMMPSBSAT
-generated_at: '2026-11-07T07:44:30.814708+00:00'
+generated_at: '2026-11-07T10:17:23.947599+00:00'
 analyzer_agent: unknown
 input_artifacts:
   spec.md:
     path: kitty-specs/layer-merge-and-effective-reads-01M6R0J6/spec.md
-    sha256: bb87bdd826e4c2c37d626179c09a11bd24346de479ee5f7e525aab6ed2ca91e7
+    sha256: 86546e93a0ba9421297cc85c70042eef21092e77b691bc23759ffe48d0b60d94
   plan.md:
     path: kitty-specs/layer-merge-and-effective-reads-01M6R0J6/plan.md
-    sha256: 7016f10f096cf95b4ca4e5fffd81e4101c553ff2df44a2f454b290bc1373da37
+    sha256: fef7b10162ea9e050fd5989a33f88a84f7fbd985aacb442d6b7cacb2842bab2c
   tasks.md:
     path: kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks.md
     sha256: 521629a48b49c0af6e484f673af42ced1e51fa73204c00adcc47cb8c3354850d
@@ -21,10 +21,10 @@ input_artifacts:
     sha256: 4294d3d4acf870b61bc424ac17d3d34708093d4dbc6126f5b1f72941b23497cc
 verdict: ready
 issue_counts:
-  low: 8
+  medium: 0
+  low: 6
   high: 0
   critical: 0
-  medium: 0
   info: 0
 findings:
 - id: C1
@@ -34,11 +34,7 @@ findings:
 - id: I1
   severity: low
   category: inconsistency
-  summary: lane-planning holds WP09 (PR A0) and WP10 (PR A); split by commit at closeout (carried).
-- id: I2
-  severity: low
-  category: inconsistency
-  summary: WP06 points at packs/built-in/, which is not in this repository (carried; WP06 is approved, so moot for execution).
+  summary: lane-planning holds WP09 (PR A0, merged) and WP10 (PR A); split by commit at closeout (carried).
 - id: U2
   severity: low
   category: underspecification
@@ -46,27 +42,24 @@ findings:
 - id: I3
   severity: low
   category: inconsistency
-  summary: data-model.md and contracts/contract-delta.md do not list SelectionRequest/ExclusionRequest.depth or SkippedReport.skippedByDepth, which IC-21 and WP30 add.
-- id: I4
+  summary: research.md R6 and line ~266 are superseded by the plan's 2026-11-07 fold; marked with a note rather than rewritten.
+- id: I5
   severity: low
   category: inconsistency
-  summary: tasks.md MVP still names WP01-WP08 as PR A0; PR A0 now also holds WP30 (and WP09).
-- id: U3
+  summary: Several WP prompts (WP11, WP14, WP19) carry markdownlint list-spacing and double-blank-line flags inherited from the WP template; kitty-specs is outside the repo's markdownlint scope.
+- id: U4
   severity: low
   category: underspecification
-  summary: spec.md Edge Cases do not state the bounded deactivate's round-trip gap (DM-01M6TF3BA808JMW0W0A0CPXBNW); only IC-21 and WP30 do.
-- id: C2
-  severity: low
-  category: coverage
-  summary: "WP28's prompt (FR-019) does not name #408 ruling 3 (conditional suggests entries) explicitly; it binds only through the amended FR-019 text."
+  summary: getPackRegistration carrying the registration refusal codes in x-refusal is stated as a recommendation; WP11 settles it in the contract.
 ---
 
-## Specification Analysis Report (re-run, 2026-11-07)
+## Specification Analysis Report (re-run, 2026-11-07, phase A delta)
 
-Mission `layer-merge-and-effective-reads-01M6R0J6`. Re-run after the operator's 2026-11-07 rulings were folded
-(commits 45328fe4, 292aacf, 7be529e): FR-043 and IC-21 (cascade depth, #408 ruling 1, new WP30 in PR A0), the read-side
-rulings 2-3 folded into FR-013, FR-017 and FR-019, WP09 gaining T158, and the WP30 plan-squad findings. Charter:
-`.kittify/charter/charter.md`.
+Re-run after the phase A plan delta (commits 983b449d, 64f8d366): the plan predated main's #403 (ADR-0064) and #390.
+Folded: the 14 delta-squad findings, the operator's rulings DM-01M6TQ62HXYF362GAFS2BZ3PGF (a relationship DELETE
+removes only registered edges; `409 relationship_not_registered` otherwise) and DM-01M6TQ67C9ZTNGZB9CY28JS54F (PR A
+stays strict; #404 out of scope), the runner's follow-ups DM-01M6TR1KDAJ64GMJD6AYNZKT59, and the operator's resolution
+of DM-01M6TKXG93KR109CJKFX3HBB05 (keep the 422). PR A0 items (WP01-WP09, WP30) are approved and in PR #414.
 
 ### Findings
 
@@ -74,35 +67,32 @@ rulings 2-3 folded into FR-013, FR-017 and FR-019, WP09 gaining T158, and the WP
 |----|----------|----------|-------------|---------|----------------|
 | C1 | Coverage | LOW | WP frontmatter | NFR-001, C-004, C-005 unmapped (carried). | Map with `map-requirements`. |
 | I1 | Inconsistency | LOW | lanes.json | lane-planning spans PR A0 and A (carried). | Split by commit at closeout. |
-| I2 | Inconsistency | LOW | tasks/WP06:147 | Non-existent directory (carried; WP06 approved). | None needed for execution. |
-| U2 | Underspecification | LOW | spec.md NFR-005 | Archive count spans two jobs (carried). | State per job. |
-| I3 | Inconsistency | LOW | data-model.md, contract-delta.md | `depth` and `skippedByDepth` absent. | WP30 adds them to the contract; WP09 notes them in its A0 docs. |
-| I4 | Inconsistency | LOW | tasks.md:20-23 | MVP names WP01-WP08 only. | Read as "PR A0"; WP30 and WP09 ship in it. |
-| U3 | Underspecification | LOW | spec.md Edge Cases | Bounded deactivate round-trip gap not in spec. | Pinned by WP30 T154 and the ExclusionRequest text. |
-| C2 | Coverage | LOW | tasks/WP28 | Ruling 3 not named in WP28's prompt. | FR-019's amended text binds it; the B/C hand-over names it. |
+| U2 | Underspecification | LOW | spec.md NFR-005 | Archive count spans two jobs (carried). | State per job in WP13/WP18. |
+| I3 | Inconsistency | LOW | research.md R6, ~266 | Superseded text kept with a pointer. | None; the plan is authoritative. |
+| I5 | Inconsistency | LOW | tasks/WP11, WP14, WP19 | Template markdownlint flags. | None needed (out of lint scope). |
+| U4 | Underspecification | LOW | plan IC-02/IC-14 | x-refusal placement is a recommendation. | WP11 decides in the contract. |
 
-### Coverage summary
+### Coverage summary (phase A)
 
-| Requirement | Has WP? | WPs | Notes |
-|---|---|---|---|
-| FR-013 | yes | WP22-WP25, WP29 | amended: read-only language filter, no filter without activation, conditional suggests |
-| FR-017 | yes | WP22, WP24, WP25 | amended: language-filtered bucket |
-| FR-019 | yes | WP27, WP28 | amended: conditional suggests entries with `when` and `reason` |
-| FR-043 | yes | WP30 | new (cascade depth, suggests hops) |
-| FR-001-FR-042 | yes | unchanged | as in the prior run |
+| Requirement | WPs |
+|---|---|
+| FR-001, FR-003 | WP11, WP13, WP14 (+WP16 for FR-001) |
+| FR-005, FR-006 | WP11, WP19 |
+| FR-025 | WP10, WP15 |
+| FR-036 | WP14, WP19 |
+| FR-037, NFR-010 | WP11, WP16 |
+
+`relationship_not_registered` is consistent across spec, plan, contract-delta, WP11 and WP19.
 
 ### Charter alignment
 
-No conflict. WP30 is contract first with a red scenario before code (C-001), adds no suppression and keeps the walk in
-`packs` (C-002), and had an adversarial squad at the plan point, whose findings are folded.
+No conflict. Contract first (C-001), strict refusals, no suppressions; the plan-point squad ran against main's
+current state before phase A code.
 
 ### Metrics
 
-- Total requirements: 43 FR, 12 NFR, 8 C (63 plus SC-001-SC-005)
-- Total subtasks: 158 (T153-T158 new)
-- FR coverage: 100%
-- Ambiguity count: 0; duplication count: 0; critical issues: 0
+- FR coverage: 100%; critical: 0; high: 0; ambiguity: 0; duplication: 0.
 
 ### Next actions
 
-Only LOW findings: implementation may proceed (WP30, then WP09).
+Only LOW findings: phase A may proceed (WP10, WP12, WP13 first).
