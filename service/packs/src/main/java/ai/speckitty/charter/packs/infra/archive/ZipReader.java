@@ -19,8 +19,8 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * Reads a zip (IC-03). The body is spooled to an owner-only file in staging; the entry count is read from the
- * end-of-central-directory record before any entry; {@link ZipFile} is built with its builder and without the Unicode
- * extra fields. Every entry is inspected before any is written: encrypted entries, methods other than STORED and
+ * end-of-central-directory record before any entry; {@link ZipFile} is built with its builder, without the Unicode
+ * extra fields and without trusting local headers (this reader checks them itself). Every entry is inspected before any is written: encrypted entries, methods other than STORED and
  * DEFLATED, Unicode extra fields, non-ASCII names without the EFS flag, a local name that differs from the central
  * one, overlapping data and Unix link, device, FIFO and socket modes are refused. A zip with no Unix mode carries no
  * link flag, so its entries are plain files.
@@ -76,6 +76,7 @@ final class ZipReader {
         try (ZipFile zip = ZipFile.builder()
                 .setSeekableByteChannel(channel)
                 .setUseUnicodeExtraFields(false)
+                .setIgnoreLocalFileHeader(true)
                 .get()) {
             List<Planned> planned = inspect(zip, channel, tree);
             if (tree.clean()) {

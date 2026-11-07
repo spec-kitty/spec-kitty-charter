@@ -306,6 +306,104 @@ class BoundedArchiveExtractorTest {
         assertThat(none).isEmpty();
     }
 
+    @Test
+    void aBombIsCutOffWithinTheSlackAndTheRefusalSaysHowMuchWasRead() {
+        long mebibyte = 1024L * 1024L;
+        RawTar tar = new RawTar();
+        byte[] block = new byte[(int) mebibyte];
+        IntStream.range(0, 40).forEach(i -> tar.entry("pack/f" + i + ".bin", (byte) '0', block, ""));
+
+        ArchiveRefusal refusal = refused(ArchiveLimits.DEFAULTS, tar.gz(), ArchiveFormat.TAR_GZ);
+
+        assertThat(refusal.decompressedBytes()).isBetween(32 * mebibyte, 32 * mebibyte + 64 * 1024);
+    }
+
+    @Test
+    void aZipThatLiesAboutItsSizeIsCutOffAtTheExpandedLimit() {
+        ArchiveLimits limits = new ArchiveLimits(1_000_000, 1_000, 10, 64 * 1024, 4_096);
+        RawZip zip = new RawZip();
+        zip.add(RawZip.zeros("pack/big.bin", 100_000).declaredSize(10));
+
+        ArchiveRefusal refusal = refused(limits, zip.build(), ArchiveFormat.ZIP);
+
+        assertThat(refusal.violations()).containsExactly(new ArchiveViolation(Code.EXPANDED_TOO_LARGE, "pack/big.bin"));
+        assertThat(refusal.decompressedBytes()).isBetween(1L, 1_001L);
+    }
+
+    @Test
+    void aZipWhoseDeclaredSizesAddUpToTooMuchIsRefusedBeforeAnythingIsRead() {
+        ArchiveLimits limits = new ArchiveLimits(1_000_000, 1_000, 10, 64 * 1024, 4_096);
+        RawZip zip = new RawZip();
+        zip.add(RawZip.zeros("pack/big.bin", 100_000));
+
+        ArchiveRefusal refusal = refused(limits, zip.build(), ArchiveFormat.ZIP);
+
+        assertThat(refusal.decompressedBytes()).isZero();
+    }
+
+    @Test
+    void theExpandedBudgetShrinksWithEveryFileAZipWrites() {
+        ArchiveLimits limits = new ArchiveLimits(1_000_000, 1_000, 10, 64 * 1024, 4_096);
+        RawZip zip = new RawZip();
+        zip.file("pack/a.txt", "a".repeat(600)).deflated().declaredSize(100);
+        zip.file("pack/b.txt", "b".repeat(600)).deflated().declaredSize(100);
+
+        ArchiveRefusal refusal = refused(limits, zip.build(), ArchiveFormat.ZIP);
+
+        assertThat(refusal.violations()).contains(new ArchiveViolation(Code.EXPANDED_TOO_LARGE, "pack/b.txt"));
+    }
+
+    @Test
+    void theZipEntryLimitHoldsAtItsBoundary() throws Exception {
+        ArchiveLimits limits = new ArchiveLimits(1_000_000, 1_000_000, 3, 64 * 1024, 4_096);
+        RawZip three = new RawZip();
+        IntStream.range(0, 3).forEach(i -> three.file("p/" + i, "x"));
+        RawZip four = new RawZip();
+        IntStream.range(0, 4).forEach(i -> four.file("p/" + i, "x"));
+        RawZip fourClaimingThree = new RawZip();
+        IntStream.range(0, 4).forEach(i -> fourClaimingThree.file("p/" + i, "x"));
+        fourClaimingThree.declaredCount(3);
+
+        assertThat(new BoundedArchiveExtractor(limits)
+                        .extract(new ByteArrayInputStream(three.build()), ArchiveFormat.ZIP, staging))
+                .isNotNull();
+        staging = Files.createDirectory(work.resolve("second"));
+        assertThat(refused(limits, four.build(), ArchiveFormat.ZIP).violations())
+                .extracting(ArchiveViolation::code)
+                .containsExactly(Code.TOO_MANY_ENTRIES);
+        assertThat(refused(limits, fourClaimingThree.build(), ArchiveFormat.ZIP).violations())
+                .extracting(ArchiveViolation::code)
+                .containsExactly(Code.TOO_MANY_ENTRIES);
+    }
+
+    @Test
+    void aPathOfExactlyTheLimitIsAcceptedAndOneByteMoreIsRefused() throws Exception {
+        ArchiveLimits limits = new ArchiveLimits(1_000_000, 1_000_000, 10, 64 * 1024, 12);
+        String exact = "ab/cd/efgh.yml";
+        assertThat(exact.length()).isEqualTo(14);
+        String atLimit = "abcd/efgh.yml";
+        assertThat(atLimit.length()).isEqualTo(13);
+        byte[] ok = new RawTar().file("abcd/efg.yml", "x").file("top.txt", "y").gz();
+        byte[] over = new RawTar().file(atLimit, "x").gz();
+
+        assertThat(new BoundedArchiveExtractor(limits)
+                        .extract(new ByteArrayInputStream(ok), ArchiveFormat.TAR_GZ, staging))
+                .isNotNull();
+        Path other = Files.createDirectory(work.resolve("other"));
+        Throwable thrown = catchThrowable(() -> new BoundedArchiveExtractor(limits)
+                .extract(new ByteArrayInputStream(over), ArchiveFormat.TAR_GZ, other));
+        assertThat(((ArchiveRefusal) thrown).violations())
+                .containsExactly(new ArchiveViolation(Code.PATH_TOO_LONG, atLimit));
+    }
+
+    @Test
+    void anEmptyDirectoryEntryIsCreated() throws Exception {
+        StagedPack staged =
+                extract(new RawTar().file("pack.yaml", "x").dir("empty/").gz(), ArchiveFormat.TAR_GZ);
+
+        assertThat(Files.isDirectory(staged.directory().resolve("empty"))).isTrue();
+    }
+
     private static byte[] zipOf(String name, byte[] content) {
         RawZip zip = new RawZip();
         zip.bytes(name, content);

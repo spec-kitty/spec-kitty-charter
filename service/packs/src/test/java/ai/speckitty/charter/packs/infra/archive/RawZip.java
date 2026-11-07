@@ -35,6 +35,7 @@ final class RawZip {
         byte[] localExtra = new byte[0];
         int crc;
         long uncompressed;
+        long centralOffset = -1;
 
         Entry(String name, byte[] content) {
             this.name = name.getBytes(StandardCharsets.UTF_8);
@@ -87,6 +88,11 @@ final class RawZip {
             return this;
         }
 
+        Entry centralOffset(long value) {
+            this.centralOffset = value;
+            return this;
+        }
+
         Entry extra(byte[] value) {
             this.centralExtra = value;
             this.localExtra = value;
@@ -96,6 +102,8 @@ final class RawZip {
 
     private final List<Entry> entries = new ArrayList<>();
     private int declaredCount = -1;
+    private long zip64Count = -1;
+    private boolean reverseCentral;
 
     /** A regular file, STORED. */
     Entry file(String name, String content) {
@@ -121,6 +129,18 @@ final class RawZip {
     /** Overrides the entry count the end-of-central-directory record carries. */
     RawZip declaredCount(int count) {
         this.declaredCount = count;
+        return this;
+    }
+
+    /** Writes a ZIP64 end record carrying {@code total} entries, and an end record whose counts overflow. */
+    RawZip zip64Count(long total) {
+        this.zip64Count = total;
+        return this;
+    }
+
+    /** Writes the central directory in the reverse of the physical order. */
+    RawZip reverseCentral() {
+        this.reverseCentral = true;
         return this;
     }
 
@@ -183,11 +203,19 @@ final class RawZip {
             out.writeBytes(entry.stored);
         }
         int centralStart = out.size();
-        for (int i = 0; i < entries.size(); i++) {
-            out.writeBytes(central(entries.get(i), offsets.get(i)));
+        for (int k = 0; k < entries.size(); k++) {
+            int i = reverseCentral ? entries.size() - 1 - k : k;
+            Entry entry = entries.get(i);
+            out.writeBytes(central(entry, entry.centralOffset >= 0 ? entry.centralOffset : offsets.get(i)));
         }
         int centralSize = out.size() - centralStart;
         int count = declaredCount >= 0 ? declaredCount : entries.size();
+        if (zip64Count >= 0) {
+            int recordAt = out.size();
+            out.writeBytes(zip64End(zip64Count, centralSize, centralStart));
+            out.writeBytes(zip64Locator(recordAt));
+            count = 0xFFFF;
+        }
         out.writeBytes(end(count, centralSize, centralStart));
         return out.toByteArray();
     }
@@ -206,7 +234,25 @@ final class RawZip {
         return b.array();
     }
 
-    private static byte[] central(Entry e, int offset) {
+    private static byte[] zip64End(long total, int centralSize, int centralStart) {
+        ByteBuffer b = ByteBuffer.allocate(56).order(ByteOrder.LITTLE_ENDIAN);
+        b.putInt(0x06064b50)
+                .putLong(44)
+                .putShort((short) 45)
+                .putShort((short) 45)
+                .putInt(0)
+                .putInt(0);
+        b.putLong(total).putLong(total).putLong(centralSize).putLong(centralStart);
+        return b.array();
+    }
+
+    private static byte[] zip64Locator(int recordAt) {
+        ByteBuffer b = ByteBuffer.allocate(20).order(ByteOrder.LITTLE_ENDIAN);
+        b.putInt(0x07064b50).putInt(0).putLong(recordAt).putInt(1);
+        return b.array();
+    }
+
+    private static byte[] central(Entry e, long offset) {
         ByteBuffer b =
                 ByteBuffer.allocate(46 + e.name.length + e.centralExtra.length).order(ByteOrder.LITTLE_ENDIAN);
         int madeBy = e.unixMode != 0 ? (3 << 8) | 20 : 20;
@@ -216,7 +262,7 @@ final class RawZip {
         b.putShort((short) e.name.length)
                 .putShort((short) e.centralExtra.length)
                 .putShort((short) 0);
-        b.putShort((short) 0).putShort((short) 0).putInt(e.unixMode << 16).putInt(offset);
+        b.putShort((short) 0).putShort((short) 0).putInt(e.unixMode << 16).putInt((int) offset);
         b.put(e.name).put(e.centralExtra);
         return b.array();
     }

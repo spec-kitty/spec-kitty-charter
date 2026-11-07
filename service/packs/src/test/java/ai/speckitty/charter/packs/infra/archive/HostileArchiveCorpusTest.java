@@ -135,6 +135,14 @@ class HostileArchiveCorpusTest {
                         "tar duplicate after case folding",
                         tarOf(t -> t.file("pack/A.yaml", "1").file("pack/a.yaml", "2")),
                         v(PATH_COLLISION, "pack/a.yaml")),
+                tar(
+                        "tar the same file twice",
+                        tarOf(t -> t.file("pack/a.yaml", "1").file("pack/a.yaml", "2")),
+                        v(PATH_COLLISION, "pack/a.yaml")),
+                tar(
+                        "tar a file where a directory is",
+                        tarOf(t -> t.file("pack/a/b.yaml", "1").file("pack/a", "2")),
+                        v(PATH_COLLISION, "pack/a")),
                 tar("tar empty segment", tarOf(t -> t.file("pack//a", "x")), v(PATH_EMPTY_SEGMENT, "pack//a")),
                 tar("tar backslash", tarOf(t -> t.file("pack\\evil", "x")), v(PATH_BACKSLASH, "pack\\evil")),
                 tar("tar drive letter", tarOf(t -> t.file("C:/evil", "x")), v(PATH_DRIVE_LETTER, "C:/evil")),
@@ -253,6 +261,41 @@ class HostileArchiveCorpusTest {
                             z.file("pack/a.txt", "2");
                         }),
                         v(PATH_COLLISION, "pack/a.txt")),
+                zip(
+                        "zip the same file twice",
+                        zipOf(z -> {
+                            z.file("pack/a.txt", "1");
+                            z.file("pack/a.txt", "2");
+                        }),
+                        v(PATH_COLLISION, "pack/a.txt")),
+                zip(
+                        "zip NUL in a name",
+                        zipOf(z -> z.file("x", "x").rawName("pack/a\0b".getBytes(StandardCharsets.UTF_8))),
+                        v(PATH_NUL, "pack/a\\u0000b")),
+                zip(
+                        "zip overlapping entries with the central directory in reverse order",
+                        zipOf(z -> {
+                            z.file("pack/a.txt", "aaaa");
+                            z.file("pack/b.txt", "bbbb").declaredCompressed(1_000);
+                            z.file("pack/c.txt", "c".repeat(2_000));
+                            z.reverseCentral();
+                        }),
+                        v(ZIP_OVERLAP, "pack/c.txt")),
+                zip(
+                        "zip central offset past the end of the file",
+                        zipOf(z -> z.file("pack/a.txt", "x").centralOffset(1_000_000)),
+                        v(ARCHIVE_UNREADABLE, "")),
+                zip(
+                        "zip central offset not at a local header",
+                        zipOf(z -> z.file("pack/a.txt", "x".repeat(100)).centralOffset(40)),
+                        v(ARCHIVE_UNREADABLE, "pack/a.txt")),
+                zip(
+                        "zip ZIP64 end record claims 10,001 entries",
+                        zipOf(z -> {
+                            z.file("pack/a.txt", "x");
+                            z.zip64Count(10_001);
+                        }),
+                        v(TOO_MANY_ENTRIES, "")),
                 zip("zip backslash", zipOf(z -> z.file("pack\\evil.txt", "x")), v(PATH_BACKSLASH, "pack\\evil.txt")),
                 zip("zip drive letter", zipOf(z -> z.file("C:/evil.txt", "x")), v(PATH_DRIVE_LETTER, "C:/evil.txt")),
                 zip("zip empty segment", zipOf(z -> z.file("pack//a.txt", "x")), v(PATH_EMPTY_SEGMENT, "pack//a.txt")),
@@ -379,6 +422,27 @@ class HostileArchiveCorpusTest {
                         ArchiveFormat.TAR_GZ,
                         tarOf(t -> t.file("a.yaml", "1").file("b.yaml", "2")),
                         Map.of("a.yaml", "1", "b.yaml", "2")),
+                new Benign(
+                        "zip with a ZIP64 end record",
+                        ArchiveFormat.ZIP,
+                        zipOf(z -> {
+                            z.file("pack.yaml", "name: p\n");
+                            z.zip64Count(1);
+                        }),
+                        plain),
+                new Benign(
+                        "tar and an empty directory",
+                        ArchiveFormat.TAR_GZ,
+                        tarOf(t -> t.file("pack.yaml", "name: p\n").dir("empty/")),
+                        Map.of("pack.yaml", "name: p\n", "empty/", "")),
+                new Benign(
+                        "zip and an empty directory",
+                        ArchiveFormat.ZIP,
+                        zipOf(z -> {
+                            z.file("pack.yaml", "name: p\n");
+                            z.dir("empty/");
+                        }),
+                        Map.of("pack.yaml", "name: p\n", "empty/", "")),
                 new Benign("zip regular file", ArchiveFormat.ZIP, zipOf(z -> z.file("pack.yaml", "name: p\n")), plain),
                 new Benign(
                         "zip nested directory, deflated",

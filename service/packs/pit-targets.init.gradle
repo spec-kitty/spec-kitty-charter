@@ -1,8 +1,8 @@
 // Narrows PIT to the classes and tests named on the command line, so a mutation run covers one work package's
 // classes instead of a module's whole PIT scope. A module's scope comes from charter.mutation-conventions
-// (ai.speckitty.charter.*) or, in packs, from its build file: domain, application, infra.storage and infra.fetch, with
-// their unit tests only. A narrowed packs run keeps the packs exclusions (application.config, infra.fetch.config,
-// infra.api, *WiredTest and the open-packs, whole-pack and timing tags); pass the -P flags every packs run takes.
+// (ai.speckitty.charter.*) or, in packs, from its build file: domain, application, infra.storage, infra.fetch, infra.archive and
+// infra.api, with their unit tests only. A narrowed packs run keeps the packs exclusions (application.config,
+// infra.fetch.config, *WiredTest and the open-packs, whole-pack, timing, git-host and stress tags); pass the -P flags every packs run takes.
 //
 //   ./gradlew :packs:pitest --no-configuration-cache --max-workers=2 \
 //     -I service/packs/pit-targets.init.gradle \

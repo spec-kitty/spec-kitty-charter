@@ -143,12 +143,10 @@ final class PackTree {
         }
     }
 
-    /** The staged pack, or the refusal when any violation was found; the staged files are removed then. */
+    /** The staged pack, or the refusal when any violation was found (the caller then calls {@link #discard()}). */
     StagedPack finish() throws ArchiveRefusal {
         if (!clean()) {
-            ArchiveRefusal refusal = new ArchiveRefusal(violations, omitted, decompressed);
-            discard();
-            throw refusal;
+            throw new ArchiveRefusal(violations, omitted, decompressed);
         }
         boolean strip = !topLevelFile && topLevel.size() == 1;
         return new StagedPack(strip ? root.resolve(topLevel.iterator().next()) : root);
