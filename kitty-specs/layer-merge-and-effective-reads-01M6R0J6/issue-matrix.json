@@ -132,18 +132,6 @@
       "verdict": "not-applicable",
       "wp": null
     },
-    "#397": {
-      "evidence_ref": "Context only: GraphWalk sees only derived relations, so phase A relation checks read EdgeIndex/edges() (plan delta squad finding 8); no work owed by this mission.",
-      "fr": null,
-      "nfr": null,
-      "repo": null,
-      "sc": null,
-      "scope": null,
-      "source_file": null,
-      "title": null,
-      "verdict": "not-applicable",
-      "wp": null
-    },
     "#398": {
       "evidence_ref": "Cited for context: #374 is a closed input analysis; #398/#399 are the base PRs this mission stacks on",
       "fr": null,
@@ -166,30 +154,6 @@
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
       "verdict": "not-applicable",
-      "wp": null
-    },
-    "#403": {
-      "evidence_ref": "PR #403 (ADR-0064) merged on main; cited as the change the phase A plan was re-checked against; no work owed.",
-      "fr": null,
-      "nfr": null,
-      "repo": null,
-      "sc": null,
-      "scope": null,
-      "source_file": null,
-      "title": null,
-      "verdict": "not-applicable",
-      "wp": null
-    },
-    "#404": {
-      "evidence_ref": "Follow-up: #404 (repair writes). Operator ruling DM-01M6TQ67C9ZTNGZB9CY28JS54F: PR A stays strict; #404 out of scope.",
-      "fr": null,
-      "nfr": null,
-      "repo": null,
-      "sc": null,
-      "scope": null,
-      "source_file": null,
-      "title": null,
-      "verdict": "deferred-with-followup",
       "wp": null
     },
     "#405": {
