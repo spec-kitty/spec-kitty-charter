@@ -174,9 +174,6 @@ public class PacksAvailability implements AvailablePacks {
     private static ClosureSnapshot.PresetView presetOf(Preset preset) {
         Map<ArtifactKind, Set<String>> members = new EnumMap<>(ArtifactKind.class);
         preset.artifacts().forEach((kind, items) -> members.put(kind, ids(items)));
-        if (!preset.missionTypes().isEmpty()) {
-            members.put(ArtifactKind.MISSION_TYPE, ids(preset.missionTypes()));
-        }
         return new ClosureSnapshot.PresetView(preset.id(), members);
     }
 
