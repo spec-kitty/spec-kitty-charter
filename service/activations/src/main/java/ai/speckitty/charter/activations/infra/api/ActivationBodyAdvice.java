@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -71,6 +72,9 @@ import tools.jackson.databind.type.LogicalType;
  *   <li>a scalar of another type than the one declared, which the strict re-read does not coerce (a string or a
  *       decimal for the integer {@code schemaVersion}, a number or a boolean for a string): its pointer, code
  *       {@code unreadable_body};
+ *   <li>a {@code depth} of a select or a deactivate (IC-21, FR-043) that is a whole number below 0
+ *       ({@code below_minimum}) or past the int32 range ({@code above_maximum}), at {@code /depth}; a {@code depth} that
+ *       is no whole number is the strict re-read's {@code unreadable_body}, as for any scalar;
  *   <li>a member the document had before the one kind model (IC-20, Q4): {@code activatedKinds} or
  *       {@code missionTypes} at the top of {@code createActivation}'s or {@code replaceActivation}'s document, whatever
  *       its value, code {@code removed_member}, whose detail names its replacement. A body with one is
@@ -104,6 +108,11 @@ public class ActivationBodyAdvice extends RequestBodyAdviceAdapter {
             "selected.<kind>: the kind gate is gone, and a select brings its artifact into force",
             "missionTypes",
             "selected.mission_type: a mission type is selected like any kind");
+
+    /** The bodies whose {@code depth} (IC-21) is an int32 of at least 0, which the guard judges before the strict bind. */
+    private static final Set<Type> DEPTH_BODIES = Set.of(SelectionRequest.class, ExclusionRequest.class);
+
+    private static final BigInteger INT32_MAX = BigInteger.valueOf(Integer.MAX_VALUE);
 
     private static final String REMOVED = "removed_member";
     private static final byte[] NO_MEMBERS = "{}".getBytes(StandardCharsets.UTF_8);
@@ -284,7 +293,7 @@ public class ActivationBodyAdvice extends RequestBodyAdviceAdapter {
         List<RefusalViolation> unknown = new ArrayList<>();
         unknownMembers(tree, target, "", unknown);
         if (unknown.isEmpty()) {
-            strictRead(tree, target).ifPresent(unknown::add);
+            depthRange(tree, target).or(() -> strictRead(tree, target)).ifPresent(unknown::add);
         }
         violations.addAll(unknown);
         return violations;
@@ -409,6 +418,29 @@ public class ActivationBodyAdvice extends RequestBodyAdviceAdapter {
         } catch (JacksonException otherwise) {
             return Optional.empty();
         }
+    }
+
+    /**
+     * The {@code depth} of a select or a deactivate when it is a whole number outside {@code [0, 2147483647]}
+     * ({@code below_minimum}, {@code above_maximum}), at {@code /depth}. A {@code depth} that is no whole number is the
+     * strict bind's ({@code unreadable_body}), and one in range binds.
+     */
+    private static Optional<RefusalViolation> depthRange(JsonNode tree, Class<?> target) {
+        JsonNode depth = tree.path("depth");
+        if (!DEPTH_BODIES.contains(target) || !depth.isIntegralNumber()) {
+            return Optional.empty();
+        }
+        BigInteger value = depth.bigIntegerValue();
+        if (value.signum() < 0) {
+            return Optional.of(new RefusalViolation(
+                    "/depth", "below_minimum", "The value at '/depth' is " + value + ", below the minimum 0."));
+        }
+        return value.compareTo(INT32_MAX) > 0
+                ? Optional.of(new RefusalViolation(
+                        "/depth",
+                        "above_maximum",
+                        "The value at '/depth' is " + value + ", above the maximum " + INT32_MAX + "."))
+                : Optional.empty();
     }
 
     private static String escaped(String member) {

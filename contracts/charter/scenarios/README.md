@@ -231,6 +231,8 @@ that calls it. A run that selects only some scenarios reports the others' operat
   and `[]` registering as absent for a selected kind.
 - `activation-ruling-changes.feature`: one scenario per ruling of the ruleset review that PR A0 changes (A4, B1, B5,
   A10, A14, A15, B8; SC-005), each with a control in the same answer; the A10 report and `DELETE` half is `@WIP`.
+- `activation-cascade-depth.feature`: the optional `depth` of a cascading select and deactivate (IC-21, FR-043; #408): the
+  count of `suggests` hops, `skippedByDepth`, the round trip of a deactivate and its gap, and the refusals at `/depth`.
 - `activations.feature`: the activation operations still reserved (ADR-0020 D8), the four effective reads: one 501
   pin per operation, each removed when its operation is built.
 - `relationships.feature`: a registered relationship from a mission type the pack holds, and the refusal of one it

@@ -17,6 +17,7 @@ import ai.speckitty.charter.kernel.domain.Urn;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Stream;
@@ -52,8 +53,8 @@ public class ActivationExclusionService {
     }
 
     /**
-     * Deactivates one artifact, with an optional cascade, whose request body may be malformed: only the target gets a
-     * deny entry.
+     * Deactivates one artifact, with an optional cascade of unlimited depth, whose request body may be malformed: only
+     * the target gets a deny entry.
      *
      * @param id the activation's id
      * @param kind the path's kind token
@@ -71,6 +72,32 @@ public class ActivationExclusionService {
             Optional<List<String>> cascade,
             List<RefusalViolation> bodyFaults,
             @Nullable String ifMatch) {
+        return deactivate(id, kind, artifactId, cascade, OptionalInt.empty(), bodyFaults, ifMatch);
+    }
+
+    /**
+     * Deactivates one artifact, with an optional cascade, whose request body may be malformed: only the target gets a
+     * deny entry. A {@code depth} bounds the {@code suggests} hops of the target's own walk; the shared walk of the
+     * other active artifacts is unlimited (decision DM-01M6TF3BA808JMW0W0A0CPXBNW).
+     *
+     * @param id the activation's id
+     * @param kind the path's kind token
+     * @param artifactId the path's id
+     * @param cascade the body's {@code cascade} tokens; empty when absent
+     * @param depth the body's {@code depth}; empty when absent, which is unlimited (IC-21, FR-043)
+     * @param bodyFaults the faults the inbound adapter found in the body, refused once the preconditions hold
+     * @param ifMatch the {@code If-Match} header, verbatim; null when absent
+     * @return the outcome
+     * @throws CharterRefusal with {@code artifact_locked} or {@code artifact_required} for a target on the floor
+     */
+    public ActivationWrites.Outcome deactivate(
+            ActivationId id,
+            String kind,
+            String artifactId,
+            Optional<List<String>> cascade,
+            OptionalInt depth,
+            List<RefusalViolation> bodyFaults,
+            @Nullable String ifMatch) {
         StoredActivation loaded = writes.loaded(id, ifMatch);
         ActivationWrites.requireWellFormed(bodyFaults);
         ArtifactRef written = ActivationWrites.selectable(kind, artifactId);
@@ -81,10 +108,10 @@ public class ActivationExclusionService {
         ActivationWrites.requireHeld(snapshot, target);
         ActivationDocument before = ActivationWrites.current(loaded, snapshot);
         refuseFloor(before, target, snapshot);
-        Reach own = ActivationWrites.walk(session, CascadeRules.planDeactivate(before, target, scope));
+        Reach own = ActivationWrites.walk(session, CascadeRules.planDeactivate(before, target, scope, depth));
         Set<ArtifactRef> floor = floorOf(snapshot);
         Reach others = ActivationWrites.walk(session, CascadeRules.planShared(before, target, scope, own, floor));
-        ActivationChange change = CascadeRules.applyDeactivate(before, target, scope, own, others, floor);
+        ActivationChange change = CascadeRules.applyDeactivate(before, target, scope, depth, own, others, floor);
         return writes.commit(loaded, change, snapshot);
     }
 

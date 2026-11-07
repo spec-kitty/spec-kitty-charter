@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -46,6 +47,11 @@ import java.util.function.Predicate;
  *       the kept candidates). A template, an asset, an ancestor or an unselected intermediate leads back to what put it
  *       in the walk; a lineage pass-through leads back to its descendant; among the nearest, the first in code-point
  *       order is named.
+ *   <li><b>Depth</b> (IC-21, FR-043): an optional bound on the {@code suggests} hops of a select's walk and of a
+ *       deactivate's own walk; the plans carry it ({@link ReachPlan#suggestsBound()}) and the packs slice honours it.
+ *       The deactivate's shared walk never carries it (decision DM-01M6TF3BA808JMW0W0A0CPXBNW), so a deactivate at depth
+ *       N removes what a select at depth N selected except what another active artifact reaches over {@code suggests}.
+ *       With a cascade and a depth the report adds {@code skippedByDepth}, the {@code suggests} frontier past the bound.
  * </ul>
  *
  * <p>The {@code 409} for a required or locked target is {@link DocumentRules}', checked before a plan is made.
@@ -67,10 +73,8 @@ public final class CascadeRules {
     private CascadeRules() {}
 
     /**
-     * The walk of a select: from the target over the cascade relations with the lineage, stopping at the document's deny
-     * entries other than the target's own. With {@code includeDeactivated} it stops only at those whose kind the scope
-     * does not admit, so an artifact outside the scope stops the walk as it would without it (ADR-0059 as amended on
-     * 2026-11-06, A3); a denied ancestor is passed through only when its kind is in scope.
+     * The walk of a select without a depth: unlimited ({@link #planSelect(ActivationDocument, ArtifactRef, CascadeScope,
+     * boolean, OptionalInt)}).
      *
      * @param document the document before the write
      * @param target the artifact selected
@@ -80,6 +84,29 @@ public final class CascadeRules {
      */
     public static ReachPlan planSelect(
             ActivationDocument document, ArtifactRef target, CascadeScope scope, boolean includeDeactivated) {
+        return planSelect(document, target, scope, includeDeactivated, OptionalInt.empty());
+    }
+
+    /**
+     * The walk of a select: from the target over the cascade relations with the lineage, stopping at the document's deny
+     * entries other than the target's own. With {@code includeDeactivated} it stops only at those whose kind the scope
+     * does not admit, so an artifact outside the scope stops the walk as it would without it (ADR-0059 as amended on
+     * 2026-11-06, A3); a denied ancestor is passed through only when its kind is in scope. A {@code depth} bounds the
+     * {@code suggests} hops the walk may cross (IC-21, FR-043) and nothing else; it means nothing without a cascade.
+     *
+     * @param document the document before the write
+     * @param target the artifact selected
+     * @param scope the cascade scope
+     * @param includeDeactivated whether denied artifacts are taken back into the cascade
+     * @param depth the {@code suggests} hops the walk may cross; empty for an unlimited walk
+     * @return the plan; one that {@linkplain ReachPlan#walks() walks} nothing without a cascade
+     */
+    public static ReachPlan planSelect(
+            ActivationDocument document,
+            ArtifactRef target,
+            CascadeScope scope,
+            boolean includeDeactivated,
+            OptionalInt depth) {
         if (!scope.cascades()) {
             return ReachPlan.none(target);
         }
@@ -87,11 +114,11 @@ public final class CascadeRules {
         if (includeDeactivated) {
             stops.removeIf(ref -> scope.admits(ref.kind()));
         }
-        return new ReachPlan(Set.of(target), CASCADE_RELATIONS, without(stops, Set.of(target)), true);
+        return new ReachPlan(Set.of(target), CASCADE_RELATIONS, without(stops, Set.of(target)), true, depth);
     }
 
     /**
-     * A select: the delta and the report.
+     * A select without a depth: the delta and the report, with no {@code skippedByDepth}.
      *
      * @param document the document before the write
      * @param target the artifact selected
@@ -106,6 +133,28 @@ public final class CascadeRules {
             CascadeScope scope,
             boolean includeDeactivated,
             Reach reach) {
+        return applySelect(document, target, scope, includeDeactivated, OptionalInt.empty(), reach);
+    }
+
+    /**
+     * A select: the delta and the report. With a cascade and a {@code depth}, the report also says what lay one
+     * {@code suggests} hop past the bound ({@code skippedByDepth}).
+     *
+     * @param document the document before the write
+     * @param target the artifact selected
+     * @param scope the cascade scope
+     * @param includeDeactivated whether denied artifacts are taken back into the cascade
+     * @param depth the {@code suggests} hops the walk was bounded by; empty when it was not
+     * @param reach the answer of the {@link #planSelect} walk; ignored without a cascade
+     * @return the change
+     */
+    public static ActivationChange applySelect(
+            ActivationDocument document,
+            ArtifactRef target,
+            CascadeScope scope,
+            boolean includeDeactivated,
+            OptionalInt depth,
+            Reach reach) {
         Reach walked = scope.cascades() ? reach : Reach.empty();
         Split split = scopeSplit(target, scope, walked);
         SortedSet<ArtifactRef> selecting = new TreeSet<>(split.inScope());
@@ -114,13 +163,23 @@ public final class CascadeRules {
         ActivationDocument after = withoutDenies(withSelections(document, selecting), clearing);
         SkippedReport skipped = new SkippedReport(
                 List.copyOf(split.outOfScope()), deniedReport(walked), behindReport(walked), List.of());
-        return ActivationChange.of(document, after, skipped);
+        Set<ArtifactRef> stops =
+                planSelect(document, target, scope, includeDeactivated).stopAt();
+        Set<ArtifactRef> selectedAfter = active(after);
+        return ActivationChange.of(
+                document,
+                after,
+                reportedByDepth(
+                        skipped,
+                        scope,
+                        depth,
+                        walked,
+                        ref -> scope.admits(ref.kind()) && !stops.contains(ref) && !selectedAfter.contains(ref)));
     }
 
     /**
-     * The target's own walk for a deactivate: the relations a select walks, with the lineage, stopping nowhere. It
-     * follows the lineage exactly as the select walk does (ADR-0059 D2, operator ruling of 2026-11-06), so a cascading
-     * deactivate undoes a cascading select: what the target reached through an ancestor is a candidate too.
+     * The target's own walk for a deactivate without a depth: unlimited ({@link #planDeactivate(ActivationDocument,
+     * ArtifactRef, CascadeScope, OptionalInt)}).
      *
      * @param document the document before the write
      * @param target the artifact deactivated, of an activatable kind, {@code mission_type} included
@@ -129,10 +188,29 @@ public final class CascadeRules {
      * @throws IllegalArgumentException when the target's kind has no deny list
      */
     public static ReachPlan planDeactivate(ActivationDocument document, ArtifactRef target, CascadeScope scope) {
+        return planDeactivate(document, target, scope, OptionalInt.empty());
+    }
+
+    /**
+     * The target's own walk for a deactivate: the relations a select walks, with the lineage, stopping nowhere. It
+     * follows the lineage exactly as the select walk does (ADR-0059 D2, operator ruling of 2026-11-06), so a cascading
+     * deactivate undoes a cascading select: what the target reached through an ancestor is a candidate too. A
+     * {@code depth} bounds this walk alone (IC-21), so a deactivate at depth N undoes a select at depth N in what it
+     * removes; {@link #planShared}'s walk stays unlimited (decision DM-01M6TF3BA808JMW0W0A0CPXBNW).
+     *
+     * @param document the document before the write
+     * @param target the artifact deactivated, of an activatable kind, {@code mission_type} included
+     * @param scope the cascade scope
+     * @param depth the {@code suggests} hops the target's walk may cross; empty for an unlimited walk
+     * @return the plan; one that walks nothing without a cascade
+     * @throws IllegalArgumentException when the target's kind has no deny list
+     */
+    public static ReachPlan planDeactivate(
+            ActivationDocument document, ArtifactRef target, CascadeScope scope, OptionalInt depth) {
         Objects.requireNonNull(document, "document");
         requireDeniable(target);
         return scope.cascades()
-                ? new ReachPlan(Set.of(target), CASCADE_RELATIONS, Set.of(), true)
+                ? new ReachPlan(Set.of(target), CASCADE_RELATIONS, Set.of(), true, depth)
                 : ReachPlan.none(target);
     }
 
@@ -167,12 +245,7 @@ public final class CascadeRules {
     }
 
     /**
-     * A deactivate: the target is denied and unselected, and with a cascade so is every candidate no other active
-     * artifact keeps. A candidate is kept when the shared walk reached it; its {@code referencedBy} is the nearest
-     * predecessor active after the write. A selected floor artifact the target reached is never a candidate; it is
-     * reported too, named by the nearest other active artifact that reaches it, and left out when none does: the floor
-     * keeps it, and it never names itself. {@code skippedByScope} lists only the out-of-scope artifacts the target
-     * reached that are selected: one not selected is left alone and not reported.
+     * A deactivate without a depth: the change and the report, with no {@code skippedByDepth}.
      *
      * @param document the document before the write
      * @param target the artifact deactivated
@@ -190,6 +263,38 @@ public final class CascadeRules {
             Reach ownReach,
             Reach othersReach,
             Set<ArtifactRef> floor) {
+        return applyDeactivate(document, target, scope, OptionalInt.empty(), ownReach, othersReach, floor);
+    }
+
+    /**
+     * A deactivate: the target is denied and unselected, and with a cascade so is every candidate no other active
+     * artifact keeps. A candidate is kept when the shared walk reached it; its {@code referencedBy} is the nearest
+     * predecessor active after the write. A selected floor artifact the target reached is never a candidate; it is
+     * reported too, named by the nearest other active artifact that reaches it, and left out when none does: the floor
+     * keeps it, and it never names itself. {@code skippedByScope} lists only the out-of-scope artifacts the target
+     * reached that are selected: one not selected is left alone and not reported. With a cascade and a {@code depth},
+     * the report also says what lay one {@code suggests} hop past the target's own walk ({@code skippedByDepth}). The
+     * shared walk is unlimited, so a candidate another active artifact reaches over {@code suggests} is kept whatever
+     * the depth (decision DM-01M6TF3BA808JMW0W0A0CPXBNW).
+     *
+     * @param document the document before the write
+     * @param target the artifact deactivated
+     * @param scope the cascade scope
+     * @param depth the {@code suggests} hops the target's walk was bounded by; empty when it was not
+     * @param ownReach the answer of the {@link #planDeactivate} walk; ignored without a cascade
+     * @param othersReach the answer of the {@link #planShared} walk
+     * @param floor the artifacts the governing packs require
+     * @return the change
+     * @throws IllegalArgumentException when the target's kind has no deny list
+     */
+    public static ActivationChange applyDeactivate(
+            ActivationDocument document,
+            ArtifactRef target,
+            CascadeScope scope,
+            OptionalInt depth,
+            Reach ownReach,
+            Reach othersReach,
+            Set<ArtifactRef> floor) {
         requireDeniable(target);
         Reach own = scope.cascades() ? ownReach : Reach.empty();
         Set<ArtifactRef> candidates = candidates(document, target, scope, own, floor);
@@ -203,10 +308,41 @@ public final class CascadeRules {
         ActivationDocument after = unselected(document, leaving).withDeny(target.kind(), target.id());
         List<ArtifactRef> outOfScope =
                 List.copyOf(retained(scopeSplit(target, scope, own).outOfScope(), active(document)));
-        return ActivationChange.of(document, after, new SkippedReport(outOfScope, List.of(), List.of(), shared));
+        SkippedReport skipped = new SkippedReport(outOfScope, List.of(), List.of(), shared);
+        Set<ArtifactRef> activeBefore = active(document);
+        return ActivationChange.of(
+                document,
+                after,
+                reportedByDepth(
+                        skipped,
+                        scope,
+                        depth,
+                        own,
+                        ref -> scope.admits(ref.kind()) && activeBefore.contains(ref) && !floor.contains(ref)));
     }
 
     // Select steps.
+
+    /**
+     * The report with {@code skippedByDepth} when a cascade ran under a depth: the {@code suggests} targets one hop past
+     * the bound that a reference can name and that a deeper walk would act on, as {@code worthReporting} says (a select
+     * would select it, a deactivate would remove it, so never a floor artifact). Without a cascade and a depth there was no bound to cut at, so the
+     * report is left as it is.
+     */
+    private static SkippedReport reportedByDepth(
+            SkippedReport skipped,
+            CascadeScope scope,
+            OptionalInt depth,
+            Reach walked,
+            Predicate<ArtifactRef> worthReporting) {
+        if (!scope.cascades() || depth.isEmpty()) {
+            return skipped;
+        }
+        return skipped.withSkippedByDepth(walked.beyondBound().stream()
+                .filter(ref -> selectable(ref.kind()))
+                .filter(worthReporting)
+                .toList());
+    }
 
     /** The reached artifacts other than the target, split by the scope; a kind no reference can name is dropped. */
     private static Split scopeSplit(ArtifactRef target, CascadeScope scope, Reach reach) {

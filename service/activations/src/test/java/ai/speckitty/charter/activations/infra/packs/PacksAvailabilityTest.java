@@ -306,7 +306,10 @@ class PacksAvailabilityTest {
                 Map.of()));
 
         assertThat(reach.reached()).containsOnlyKeys(pRef, rRef);
-        assertThat(reach.reached().get(rRef)).containsExactly(new Reach.Via(qRef, RelationType.REQUIRES));
+        assertThat(reach.reached().get(rRef))
+                .containsExactly(
+                        new Reach.Via(qRef, RelationType.REQUIRES),
+                        new Reach.Via(new ArtifactRef(ArtifactKind.MISSION_TYPE, "software-dev"), RelationType.SCOPE));
         assertThat(reach.stopped().get(qRef)).containsExactly(new Reach.Via(pRef, RelationType.SPECIALIZES_FROM));
         assertThat(reach.behindStopped()).containsExactly(rRef);
         assertThat(reach.ancestorsPassed()).containsExactly(qRef);
