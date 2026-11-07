@@ -66,6 +66,17 @@ public class CharterSteps {
         this.packs = packs;
     }
 
+    /**
+     * A value an earlier step remembered ({@code I remember the field ... of the response body}), for the steps of other
+     * glue classes that compare against it.
+     *
+     * @param key the field name that was remembered
+     * @return the remembered text; {@code null} when nothing was
+     */
+    public @Nullable String remembered(String key) {
+        return remembered.get(key);
+    }
+
     @Before
     public void freshPacks() {
         packs.reset();

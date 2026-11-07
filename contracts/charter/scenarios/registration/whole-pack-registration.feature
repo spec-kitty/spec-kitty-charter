@@ -496,6 +496,48 @@ Feature: Registering a whole pack replaces the pack the service holds
     When I PUT "/packs/acme" with the archive "v1"
     Then the response status is 202
 
+  # bound by: WP16 (T079, decision DM-01M6TV6VDNHNCVWRHHC74WATV0: the packId grammar is checked before the body is read)
+  @WIP
+  Scenario Outline: A packId outside the grammar is a 400 before the body is read, and one inside it is accepted
+    When I PUT "/packs/<packId>" with the archive "v1"
+    Then the response status is 400
+    And the problem has no code
+    And the response has no "Location" header
+    When I PUT "/packs/acme" with the archive "v1"
+    Then the response status is 202
+
+    Examples: ids the grammar ^[a-z0-9][a-z0-9-]{0,62}$ refuses
+      | packId                                                            |
+      | Acme                                                              |
+      | -acme                                                             |
+      | acme_x                                                            |
+      | acme.x                                                            |
+      | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |
+
+  # bound by: WP16 (ADR-0065 D12, WP12 and WP14 hand-offs: a write that meets a busy registry is told to retry, not answered 500)
+  @WIP
+  Scenario: A per-artifact write that meets a busy registry answers 503 with Retry-After, and succeeds once it is free
+    When I PUT "/packs/acme" with the archive "v1"
+    And I poll the registration until it ends
+    And I GET "/packs/acme"
+    And I remember the ETag
+    And the pack registry is held by another write
+    And I PUT "/packs/acme/artifacts/directive/C" with the remembered ETag and the body:
+      """
+      {"schemaVersion": "1.0", "title": "C written while the registry is busy", "intent": "A write that waits", "enforcement": "required"}
+      """
+    Then the response status is 503
+    And the problem has no code
+    And the response header "Retry-After" appears once
+    When I GET "/packs/acme/artifacts/directive/C"
+    Then the response status is 404
+    When the held pack registry is released
+    And I PUT "/packs/acme/artifacts/directive/C" with the remembered ETag and the body:
+      """
+      {"schemaVersion": "1.0", "title": "C written once the registry is free", "intent": "A write that waits", "enforcement": "required"}
+      """
+    Then the response status is 201
+
   # bound by: WP17 (US1 AS7, https_archive; PR-PACK-REGISTER-001)
   @WIP @promise:PR-PACK-REGISTER-001
   Scenario: A pack fetched from an allowlisted https archive is registered and its source recorded
@@ -767,7 +809,7 @@ Feature: Registering a whole pack replaces the pack the service holds
       generated_at: STATIC
       nodes: []
       edges:
-      - {source: 'directive:A', target: 'directive:LK', relation: overrides}
+      - {source: 'directive:A', target: 'main-pack::directive:LK', relation: overrides}
       """
     And the archive "over-open" is a copy of the archive "over-locked"
     And the archive "over-open" holds the file "overrides.graph.yaml":
@@ -776,7 +818,7 @@ Feature: Registering a whole pack replaces the pack the service holds
       generated_at: STATIC
       nodes: []
       edges:
-      - {source: 'directive:A', target: 'directive:OP', relation: overrides}
+      - {source: 'directive:A', target: 'main-pack::directive:OP', relation: overrides}
       """
     When I PUT "/packs/acme" with the archive "over-locked"
     And I poll the registration until it ends
@@ -784,7 +826,8 @@ Feature: Registering a whole pack replaces the pack the service holds
     And the field at "/problem/status" is 422
     And the field at "/problem/code" is "override_not_permitted"
     And the field at "/problem/packs/0/packId" is "acme"
-    And the field at "/problem/packs/1/packId" is "main-pack"
+    And the field at "/problem/packs/1/packId" is "main"
+    And the field at "/problem/packs/1/name" is "main-pack"
     When I GET "/packs/acme"
     Then the response status is 404
     When I PUT "/packs/acme" with the archive "over-open"
@@ -821,11 +864,14 @@ Feature: Registering a whole pack replaces the pack the service holds
     And I poll the registration until it ends
     Then the field at "/state" is "succeeded"
 
-    Examples: one rule each, an enhances cycle, an enhance and an override of one target, an override of itself, an overrides cycle
+    Examples: one rule each, an enhances cycle, an enhance and an override of one target, an override of itself (both ends qualified to one place), an overrides cycle; and a bare self-loop, which the load refuses first as invalid
       | code                  | edges                                                                                                                                       |
       | enhances_cycle        | {source: 'directive:A', target: 'directive:B', relation: enhances}, {source: 'directive:B', target: 'directive:A', relation: enhances}     |
       | conflicting_relations | {source: 'directive:B', target: 'directive:A', relation: enhances}, {source: 'directive:B', target: 'directive:A', relation: overrides}    |
-      | self_override         | {source: 'directive:A', target: 'directive:A', relation: overrides}                                                                         |
+      | self_override         | {source: 'acme::directive:A', target: 'acme::directive:A', relation: overrides}                                                           |
+      | validation_failed     | {source: 'directive:A', target: 'directive:A', relation: overrides}                                                                         |
+      | enhances_cycle        | {source: 'acme::directive:A', target: 'acme::directive:A', relation: enhances}                                                            |
+      | validation_failed     | {source: 'directive:A', target: 'directive:A', relation: enhances}                                                                          |
       | override_cycle        | {source: 'directive:A', target: 'directive:B', relation: overrides}, {source: 'directive:B', target: 'directive:A', relation: overrides}   |
 
   # bound by: WP16 (plan delta squad finding 3: a reserved shard is refused, a stamped one is accepted and replaces)
