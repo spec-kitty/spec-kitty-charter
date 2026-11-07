@@ -37,9 +37,10 @@ import org.springframework.web.server.ResponseStatusException;
  * the body is read (the flags, the packId grammar, the headers, the declared length, the queue) are
  * {@link RegistrationAdmission}'s, the body's size and media type {@link ArchiveBodyAdvice}'s, and the {@code 401} the
  * guard's; this class spools the judged body into the slot the admission took, hands the job its stager, and answers.
- * Everything after the {@code 202} is the job's. {@code POST /packs} and the two {@code DELETE}s are still reserved
- * (ADR-0020 D8): each is marked, so the composition root's {@code ReservedOperationInterceptor} answers {@code 501}
- * before the request is bound.
+ * Everything after the {@code 202} is the job's. The two {@code DELETE}s are {@link PackRemovalController}'s: they carry
+ * the same contract tag, so the generated interface is this one. {@code POST /packs} is still reserved (ADR-0020 D8): it
+ * is marked, so the composition root's {@code ReservedOperationInterceptor} answers {@code 501} before the request is
+ * bound.
  */
 @RestController
 @RequestMapping("${charter.api.base-path:/api/v1}")
@@ -77,19 +78,15 @@ public class PackRegistrationController implements RegistrationApi {
     }
 
     @Override
-    @ReservedOperation
     public ResponseEntity<Void> deletePackArtifact(
             String packId, String kind, String artifactId, @Nullable String ifMatch) {
-        Objects.requireNonNull(removals, "removals");
-        throw notBuilt();
+        return removals.deleteArtifact(packId, kind, artifactId, ifMatch);
     }
 
     @Override
-    @ReservedOperation
     public ResponseEntity<Void> deletePackRelationship(
             String packId, String from, String to, @Nullable String ifMatch) {
-        Objects.requireNonNull(removals, "removals");
-        throw notBuilt();
+        return removals.deleteRelationship(packId, from, to, ifMatch);
     }
 
     @Override

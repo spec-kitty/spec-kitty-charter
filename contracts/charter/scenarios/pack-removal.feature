@@ -441,6 +441,15 @@ Feature: One artifact or one registered relationship is removed from a pack
     And the problem code is "relationship_not_registered"
     When I GET "/info"
     Then the field "sourceFingerprint" of the response body is the remembered one
+    When I GET "/packs/qa"
+    And I remember the ETag
+    And I PUT "/packs/qa/relationships" with the remembered ETag and the body:
+      """
+      {"from": "directive:D1", "to": "directive:D2", "type": "suggests"}
+      """
+    Then the response status is 201
+    When I DELETE "/packs/qa/relationships?from=directive:D1&to=directive:D2" with the header "If-Match": "*"
+    Then the response status is 204
 
   # bound by: WP19 (a relationship DELETE needs the revision too, and a pair with no edge is 404)
   Scenario: A relationship delete needs the pack revision, and a pair with no edge is not found
@@ -456,36 +465,58 @@ Feature: One artifact or one registered relationship is removed from a pack
     Then the response status is 404
     And the problem code is "relationship_not_found"
 
-  # bound by: WP19 (decision DM-01M6TQ67C9ZTNGZB9CY28JS54F: PR A is strict, the removal that breaks a closure is a 422)
-  Scenario: A removal that leaves an enhancer with no route to a non-enhancer is refused 422, and another removal is accepted
-    Given the org pack "qa" with the file "lineage.graph.yaml":
+  # bound by: WP19 (decision DM-01M6TQ67C9ZTNGZB9CY28JS54F: PR A is strict, a removal that leaves a closure broken is a
+  # 422). The activation lists no pack, so it roots at every configured pack, and the pack rival that is installed after
+  # it holds D1 as qa does: its closure does not compose (two packs of one level hold one id), so no removal from qa
+  # repairs it. A removal cannot break a closure that composes:
+  # an enhancer chain over held artifacts always ends at an artifact that enhances nothing, and a held target is never
+  # removed while something refers to it (409).
+  Scenario: A removal that leaves a closure of a stored activation broken is refused 422, and is accepted once the closure is whole
+    Given the org pack "qa" with the file "registered.graph.yaml":
       """
       schema_version: '1.0'
       generated_at: STATIC
-      nodes: []
+      generated_by: charter-registration
+      nodes:
+      - urn: directive:D2
+        kind: directive
+      - urn: directive:D3
+        kind: directive
       edges:
-      - {source: 'directive:D1', target: 'directive:D2', relation: enhances}
+      - source: directive:D2
+        target: directive:D3
+        relation: requires
       """
-    When I GET "/packs/qa"
-    And I remember the ETag
-    And I PUT "/packs/qa/relationships" with the remembered ETag and the body:
+    And the activation "a-1" holds:
       """
-      {"from": "directive:D2", "to": "directive:D3", "type": "enhances"}
+      {"schemaVersion": 2}
       """
-    Then the response status is 201
-    When I remember the ETag
-    And I PUT "/packs/qa/relationships" with the remembered ETag and the body:
+    And the org pack "rival" with the file "pack.yaml":
       """
-      {"from": "directive:D3", "to": "tactic:t", "type": "suggests"}
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+      pack_version: 1.0.0
+      parent_pack: null
+      name: rival
+      pack_level: org
       """
-    Then the response status is 201
+    And the org pack "rival" with the file "directives/D1.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: D1
+      title: The rival D1
+      intent: A directive of a pack that does not build on qa
+      enforcement: required
+      """
     When I GET "/info"
     And I remember the field "sourceFingerprint" of the response body
     And I DELETE "/packs/qa/relationships?from=directive:D2&to=directive:D3" with the header "If-Match": "*"
     Then the response status is 422
-    And the problem code is "enhances_cycle"
-    And the field at "/packs/0/packId" is "qa"
+    And the problem code is "pack_sibling_conflict"
+    And the field at "/packs/0/packId" is "rival"
+    And the field at "/packs/1/packId" is "qa"
     When I GET "/info"
     Then the field "sourceFingerprint" of the response body is the remembered one
-    When I DELETE "/packs/qa/relationships?from=directive:D3&to=tactic:t" with the header "If-Match": "*"
+    When I DELETE "/activations/a-1" with the header "If-Match": "*"
+    Then the response status is 204
+    When I DELETE "/packs/qa/relationships?from=directive:D2&to=directive:D3" with the header "If-Match": "*"
     Then the response status is 204

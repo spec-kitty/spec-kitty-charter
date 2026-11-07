@@ -88,7 +88,7 @@ class PackRemovalControllerTest {
 
         mvc.perform(withIfMatch(delete(ARTIFACT)))
                 .andExpect(status().isNoContent())
-                .andExpect(header().string("ETag", REVISION.token()));
+                .andExpect(header().string("ETag", "\"" + REVISION.token() + "\""));
 
         assertThat(entries).singleElement().satisfies(entry -> {
             assertThat(entry.outcome()).isEqualTo("succeeded:204");
@@ -108,7 +108,7 @@ class PackRemovalControllerTest {
 
         mvc.perform(withIfMatch(delete(RELATIONSHIP)))
                 .andExpect(status().isNoContent())
-                .andExpect(header().string("ETag", REVISION.token()));
+                .andExpect(header().string("ETag", "\"" + REVISION.token() + "\""));
 
         assertThat(entries).singleElement().satisfies(entry -> {
             assertThat(entry.outcome()).isEqualTo("succeeded:204");
@@ -188,7 +188,7 @@ class PackRemovalControllerTest {
 
     @Test
     void aQueryParameterThatIsNoReferenceIsA400AndNothingIsRemoved() throws Exception {
-        mvc.perform(withIfMatch(delete("/api/v1/packs/qa/relationships?from=nonsense&to=directive:D2")))
+        mvc.perform(withIfMatch(delete("/api/v1/packs/qa/relationships?from=a::b::c&to=directive:D2")))
                 .andExpect(status().isBadRequest());
 
         assertThat(entries)

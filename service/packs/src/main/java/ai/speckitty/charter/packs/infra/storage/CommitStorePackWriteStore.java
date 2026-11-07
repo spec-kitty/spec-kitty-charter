@@ -2,9 +2,11 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Relationship;
+import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.ActivationImpact;
 import ai.speckitty.charter.packs.application.PackRemovalStore;
 import ai.speckitty.charter.packs.application.PackRevision;
@@ -21,11 +23,17 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -72,20 +80,29 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
     }
 
     /**
-     * An adapter over the configured locations and WP04's commit store.
+     * An adapter over the configured locations and WP04's commit store, as Spring wires it: every write is judged with the
+     * deployment's impact check, which composes the stored activations as well; a context without one gets a check over the
+     * same locations and no stored activation.
      *
      * @param locations the configured pack locations
      * @param strategy the serialization format (used to read a descriptor when resolving by declared id)
      * @param commitStore WP04's aggregate-commit store
-     * @param impact the impact check every write is judged with
+     * @param impact the impact check every write is judged with, when the context has one
      */
     @Autowired
     public CommitStorePackWriteStore(
             DomainRepositoryService.Locations locations,
             SerializationStrategy strategy,
             PackCommitStore commitStore,
-            RegistrationImpact impact) {
-        this(locations, strategy, commitStore, RegistryWriteLock.shared(), PackWriteGeneration.shared(), impact);
+            ObjectProvider<RegistrationImpact> impact) {
+        this(
+                locations,
+                strategy,
+                commitStore,
+                RegistryWriteLock.shared(),
+                PackWriteGeneration.shared(),
+                impact.getIfAvailable(() ->
+                        new RegistrationImpact(new StagedPackViewFactory(locations, strategy), ActivationImpact.NONE)));
     }
 
     /**
@@ -239,31 +256,77 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
 
     @Override
     public PackIdentifier configuredName(PackIdentifier pack) {
-        return pack; // not resolved yet
+        return new PackIdentifier(location(pack).name());
     }
 
     @Override
     public Authored authored(PackIdentifier pack) {
-        return Authored.NONE; // not read yet
+        Path directory = resolve(pack);
+        Path parent = directory.getParent();
+        if (parent == null || directory.getFileName() == null) {
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "a pack directory needs a parent directory");
+        }
+        FilesystemPackStore.GraphRead read = new FilesystemPackStore(parent, strategy)
+                .readGraphs(new PackIdentifier(directory.getFileName().toString()));
+        Set<Urn> declared = new LinkedHashSet<>();
+        List<Relationship> edges = new ArrayList<>();
+        for (GraphDocument document : read.documents()) {
+            if (!RelationshipShard.SHARD_PATH.equals(document.file())) {
+                declaredNodes(document).forEach(declared::add);
+                document.edges()
+                        .forEach(edge -> DomainRepositoryService.typedEdge(edge).ifPresent(edges::add));
+            }
+        }
+        return new Authored(declared, edges);
+    }
+
+    /** The nodes a graph document declares, as URNs; a node that names no URN is left out. */
+    private static Stream<Urn> declaredNodes(GraphDocument document) {
+        return switch (document) {
+            case GraphDocument.Shard shard -> shard.nodes().stream().flatMap(node -> Urn.parse(node.urn()).stream());
+            case GraphDocument.Fragment fragment ->
+                fragment.nodes().stream()
+                        .flatMap(node -> NodeKind.fromPlural(node.kind()).stream()
+                                .flatMap(kind -> Urn.parse(kind.token() + ":" + node.id()).stream()));
+        };
     }
 
     @Override
     public PackRevision remove(PackIdentifier pack, Removal removal) {
-        return currentRevision(pack); // removes nothing yet
+        return exclusively(pack, () -> {
+            Path directory = resolve(pack);
+            List<String> files = removal.artifact()
+                    .map(urn -> ArtifactFiles.of(directory, urn, strategy))
+                    .orElse(List.of());
+            // The shard is rewritten only when an edge goes: a removal adds none, so equal sizes mean none went.
+            @Nullable String shard = removal.relationships().size()
+                            == registeredRelationships(pack).size()
+                    ? null
+                    : RelationshipShard.write(removal.relationships());
+            Map<String, String> presets = new LinkedHashMap<>();
+            removal.presets()
+                    .forEach(preset ->
+                            presets.put(PresetFiles.pathOf(preset.id()), PresetYaml.write(PresetFiles.toDso(preset))));
+            return generation.bracket(pack.value(), () -> commitStore.remove(pack, files, shard, presets));
+        });
     }
 
     /** The pack's live directory, resolved as {@link DomainRepositoryService}/{@link PackCommitStore} resolve it. */
     private Path resolve(PackIdentifier pack) {
+        return normalized(location(pack));
+    }
+
+    /** The configured location of a pack: the one of that name, otherwise the one whose {@code pack.yaml} declares the id. */
+    private PackLocation location(PackIdentifier pack) {
         List<PackLocation> configured = locations.all();
         for (PackLocation location : configured) {
             if (location.name().equals(pack.value())) {
-                return normalized(location);
+                return location;
             }
         }
         for (PackLocation location : configured) {
-            Path directory = normalized(location);
-            if (declaresId(directory, pack)) {
-                return directory;
+            if (declaresId(normalized(location), pack)) {
+                return location;
             }
         }
         // The identifier matches no configured pack: the caller asked wrongly (CharterRefusalCode pack_not_found).

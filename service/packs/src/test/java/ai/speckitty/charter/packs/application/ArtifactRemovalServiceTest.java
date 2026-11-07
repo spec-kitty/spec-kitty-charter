@@ -370,7 +370,7 @@ class ArtifactRemovalServiceTest {
     // -------------------------------------------------------------------
 
     private static final String SIBLING_A = PackRegistrationServiceTest.ulid('T');
-    private static final String SIBLING_B = PackRegistrationServiceTest.ulid('U');
+    private static final String SIBLING_B = PackRegistrationServiceTest.ulid('K');
 
     @Test
     void aRemovalThatLeavesAClosureTheActivationRootsBrokenIsRefusedAndTheSameRemovalOtherwiseIsNot(
