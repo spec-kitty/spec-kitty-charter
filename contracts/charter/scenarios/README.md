@@ -235,6 +235,9 @@ that calls it. A run that selects only some scenarios reports the others' operat
   count of `suggests` hops, `skippedByDepth`, the round trip of a deactivate and its gap, and the refusals at `/depth`.
 - `activations.feature`: the activation operations still reserved (ADR-0020 D8), the four effective reads: one 501
   pin per operation, each removed when its operation is built.
+- `registration/reserved-registration.feature`: the six whole-pack registration operations still reserved (contract set
+  `pack-registration`): one 501 pin per operation, the PUT and the POST before their body is bound. Not `@WIP`. Each
+  pin is removed when its operation is built.
 - `relationships.feature`: a registered relationship from a mission type the pack holds, and the refusal of one it
   does not hold (#194, ADR-0044).
 - `composition.feature`: the compose of the configured packs' `depends_on` closure on `GET /offering`, in the
@@ -281,7 +284,8 @@ vocabulary above.
 - `Then the path of the Location header starts with "<text>"`, `Then the field at "<json-pointer>" is present`,
   `Then the field at "<json-pointer>" is absent` and `Then the field at "<json-pointer>" is the remembered one` (the
   remember step is `When I remember the field "<field>" of the response body`).
-- The `RegistrationJobs` seam: `Given the registration jobs are held before they run`, `When I release the held
+- The `RegistrationJobs` seam: `Given the registration jobs are held before they run`, `Given the registration queue is full` (two
+  held jobs run and eight wait, ADR-0065 D8), `When I release the held
   registration jobs`, `When I release the held registration jobs and hold them while they run` (the job is then
   `running`) and `When the service forgets the ended registrations` (the clock passes the hour the status is kept).
 - One seam per source kind: `Given the https host "<host>" is allowed`, `Given the https host "<host>" serves "<url>" with
@@ -312,7 +316,7 @@ vocabulary above.
     the codes from the `x-refusal` map, so a code the map marks `raised: false` is enforced without editing it.
   - A *501 pin* pins a reserved operation (ADR-0020 D8). It sends one well-formed request to the operation and ends
     with `Then the operation is refused as not implemented`. Its feature names `ReservedOperationCoverageTest`, which
-    keeps the 501 pins and the operations that carry `x-reserved` one to one, and the issue that will build the
+    keeps the 501 pins and the operations that carry `x-reserved` one to one, contract set by contract set, and the issue that will build the
     operation. The pin is removed, with the operation's `501` and `x-reserved`, when the operation is built.
 
   The charter's refusal score counts behavioral codes apart from the declared ones.

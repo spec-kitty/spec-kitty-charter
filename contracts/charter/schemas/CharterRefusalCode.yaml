@@ -96,12 +96,16 @@ description: >-
   (NFR-009), checked before anything is written.
 
   Where they are declared (ADR-0056). A registration is asynchronous: its 409 and 422 answers, and these codes, are the
-  problem of a refused status, returned in the 200 body of getPackRegistration. So getPackRegistration is the operation
-  whose operations entries carry the codes a registration can end with, each with the status its problem carries, the
-  eleven composition codes as 422 in place of 500; registerPackFromArchive and registerPackFromSource declare only
+  problem of a refused status, returned in the 200 body of getPackRegistration. So the operations map of a code names
+  getPackRegistration only where the problem carries another status than the entry's: the eleven composition codes,
+  as 422 in place of 500, and no entry repeats the status of its own code. A code with no entry for getPackRegistration
+  is carried there with the status of its entry (pack_version_conflict 409, pack_source_refused 422,
+  pack_source_unavailable 503, registration_timed_out 504, pack_storage_full 503, registration_conflict 409,
+  validation_failed 422). registerPackFromArchive and registerPackFromSource declare only
   their synchronous answers (202, 400, 401, 403, 412, 413, 415, 428 for the git branch-ref rule only, and 503). The two
   DELETEs are synchronous, so deletePackArtifact and deletePackRelationship answer their own 409 and 422, the
-  composition codes as 422 there too. artifact_not_found, registration_conflict, governance_policy_violation and
+  composition codes as 422 there too. An artifact the pack does not hold is the not-found code of its kind there, as on
+  getPackArtifact. registration_conflict, governance_policy_violation and
   validation_failed are existing codes that these operations also raise.
 
   The eleven codes of the pack composition are 500 like pack_unreadable, and for the same reason: the request is
@@ -209,9 +213,6 @@ x-refusal:
     status: 409
     retryable: false
     raised: true
-    operations:
-      getPackRegistration:
-        status: 409
   stale_input:
     status: 500
     retryable: true
@@ -249,16 +250,10 @@ x-refusal:
     status: 422
     retryable: false
     raised: true
-    operations:
-      getPackRegistration:
-        status: 422
   registration_conflict:
     status: 409
     retryable: false
     raised: true
-    operations:
-      getPackRegistration:
-        status: 409
   activation_not_found:
     status: 404
     retryable: false
@@ -415,19 +410,11 @@ x-refusal:
     retryable: false
     raised: false
     description: the same pack_version was registered with another revision
-    operations:
-      getPackRegistration:
-        status: 409
   artifact_referenced:
     status: 409
     retryable: false
     raised: false
     description: another artifact or pack still refers to the artifact a DELETE or a replace removes
-    operations:
-      getPackRegistration:
-        status: 409
-      deletePackArtifact:
-        status: 409
   relationship_not_found:
     status: 404
     retryable: false
@@ -438,9 +425,6 @@ x-refusal:
     retryable: false
     raised: false
     description: the pair is held outside registered.graph.yaml (authored or derived), or in both kinds of document
-    operations:
-      deletePackRelationship:
-        status: 409
   registration_not_found:
     status: 404
     retryable: false
@@ -451,93 +435,46 @@ x-refusal:
     retryable: false
     raised: false
     description: a source the service refuses, with a reason from a fixed set
-    operations:
-      getPackRegistration:
-        status: 422
   pack_source_unavailable:
     status: 503
     retryable: false
     raised: false
     description: registration or the source kind is switched off, or the system git is missing or older than 2.50.1
-    operations:
-      getPackRegistration:
-        status: 503
   override_not_permitted:
     status: 422
     retryable: false
     raised: false
     description: an overrides edge onto a target that is not open
-    operations:
-      getPackRegistration:
-        status: 422
-      deletePackArtifact:
-        status: 422
-      deletePackRelationship:
-        status: 422
   enhances_cycle:
     status: 422
     retryable: false
     raised: false
     description: an enhances cycle, or an enhancer with no route to a non-enhancer
-    operations:
-      getPackRegistration:
-        status: 422
-      deletePackArtifact:
-        status: 422
-      deletePackRelationship:
-        status: 422
   conflicting_relations:
     status: 422
     retryable: false
     raised: false
     description: an artifact that both enhances and overrides one target
-    operations:
-      getPackRegistration:
-        status: 422
-      deletePackArtifact:
-        status: 422
-      deletePackRelationship:
-        status: 422
   self_override:
     status: 422
     retryable: false
     raised: false
     description: an overrides edge that resolves to its own source
-    operations:
-      getPackRegistration:
-        status: 422
-      deletePackArtifact:
-        status: 422
-      deletePackRelationship:
-        status: 422
   override_cycle:
     status: 422
     retryable: false
     raised: false
     description: a cycle of overrides edges
-    operations:
-      getPackRegistration:
-        status: 422
-      deletePackArtifact:
-        status: 422
-      deletePackRelationship:
-        status: 422
   registration_timed_out:
     status: 504
     retryable: true
     raised: false
     description: the job ended at the source deadline plus 30 seconds
-    operations:
-      getPackRegistration:
-        status: 504
   pack_storage_full:
     status: 503
     retryable: true
     raised: false
     description: less than twice the archive bound is free
-    operations:
-      getPackRegistration:
-        status: 503
 x-source:
   path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RefusalCode.java
   symbol: RefusalCode

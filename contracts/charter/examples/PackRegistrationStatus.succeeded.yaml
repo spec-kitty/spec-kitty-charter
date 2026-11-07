@@ -32,3 +32,5 @@ value:
   _links:
     self:
       href: /api/v1/pack-registrations/01M6TQ62HXYF362GAFS2BZ3PGF
+    pack:
+      href: /api/v1/packs/acme-review-pack

@@ -5,7 +5,8 @@ description: >-
   worker), running, then succeeded (result holds the PackRegistration) or refused (problem holds the refusal the
   synchronous API would have answered: the 409 and 422 answers of the registration flow are never synchronous). The
   status is kept in memory for one hour after the job ends, at most 1,000 entries, and a restart forgets it: its URI
-  then answers 404 registration_not_found, and a client re-sends the pack, which the version rule makes idempotent.
+  then answers 404 registration_not_found, and a client re-sends the pack, which the version rule makes idempotent. A
+  succeeded status carries a pack link (the stored pack, GET /packs/{packId}) beside its self.
 type: object
 additionalProperties: false
 required:

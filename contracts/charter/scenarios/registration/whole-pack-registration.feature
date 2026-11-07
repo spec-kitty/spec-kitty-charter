@@ -12,7 +12,7 @@
 # State: every scenario is @WIP. The operations are declared in the contract and reserved (x-reserved, 501) until their
 # services are built (decision DM-01M6RN6GC7PJS8BGHMAYM4JSSW: a contract WP commits its scenarios @WIP, and the serving
 # WP binds the glue, records the red assertion failure and removes the tag). Who binds each scenario is named above it:
-# WP15 the impact check and the version history, WP16 the PUT path and the status resource, WP17 the https_archive and
+# WP16 the PUT path, the status resource, the impact check and the version history, WP17 the https_archive and
 # filesystem sources, WP18 the git source. A serving WP removes @WIP only from the scenarios it binds.
 #
 # Steps the serving WPs add (listed in scenarios/README.md, "Registration steps"): the archive steps (an archive is
@@ -179,7 +179,7 @@ Feature: Registering a whole pack replaces the pack the service holds
     When I GET "/packs/acme"
     Then the field "revision" of the response body is the remembered one
 
-  # bound by: WP15 (US1 AS3, the version history of IC-16)
+  # bound by: WP16 (US1 AS3, the version history of IC-16)
   @WIP
   Scenario: The same version with other content is refused, and a new version is accepted
     Given the archive "same-version" is a copy of the archive "v1"
@@ -467,6 +467,21 @@ Feature: Registering a whole pack replaces the pack the service holds
     When I PUT "/packs/acme" with the archive "v1"
     Then the response status is 202
 
+  # bound by: WP16 (spec edge case, ADR-0065 D8: two registrations run and eight wait; the next is refused with Retry-After)
+  @WIP
+  Scenario: A full registration queue answers 503 with Retry-After, and nothing is stored
+    Given the registration jobs are held before they run
+    And the registration queue is full
+    When I PUT "/packs/acme" with the archive "v1"
+    Then the response status is 503
+    And the problem has no code
+    And the response header "Retry-After" appears once
+    When I GET "/packs/acme"
+    Then the response status is 404
+    When I release the held registration jobs
+    And I PUT "/packs/acme" with the archive "v1"
+    Then the response status is 202
+
   # bound by: WP16 (NFR-004: the body limit holds before the body is read; the media type must match the bytes)
   @WIP
   Scenario: A body over the limit, or in another media type, is refused before a registration exists
@@ -651,7 +666,7 @@ Feature: Registering a whole pack replaces the pack the service holds
       | refs/heads/a@{1}      |
       | refs/heads/topic.lock |
 
-  # bound by: WP15 (IC-15, FR-025: a composition code, naming the packs)
+  # bound by: WP16 (IC-15, FR-025: a composition code, naming the packs)
   @WIP
   Scenario: A registration that leaves a closure unable to compose is refused naming the packs
     Given the archive "dependent" holds the file "pack.yaml":
@@ -701,25 +716,27 @@ Feature: Registering a whole pack replaces the pack the service holds
     Then the field at "/state" is "succeeded"
     And the field at "/result/outcome" is "replaced"
 
-  # bound by: WP15 (IC-15, A6: an overrides edge onto a target that is not open; the control overrides an open one)
+  # bound by: WP16 (IC-15, A6: an overrides edge onto a target that is not open; the control overrides an open one)
+  # The lock is a built-in one, as US1 AS8 says, and the refusal names both packs: the pack that breaks the rule
+  # first, then the pack that holds the lock.
   @WIP
   Scenario: An overrides edge onto a locked artifact is refused, and onto an open one is accepted
-    Given the org pack "main" with the file "pack.yaml":
+    Given the built-in pack "main" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943W
       pack_version: 1.0.0
       parent_pack: null
       name: main-pack
-      pack_level: org
+      pack_level: built-in
       mutability_policy: policy.yaml
       """
-    And the org pack "main" with the file "policy.yaml":
+    And the built-in pack "main" with the file "policy.yaml":
       """
       schema_version: 1
       artifacts:
         directive:LK: locked
       """
-    And the org pack "main" with the file "directives/LK.directive.yaml":
+    And the built-in pack "main" with the file "directives/LK.directive.yaml":
       """
       schema_version: '1.0'
       id: LK
@@ -727,7 +744,7 @@ Feature: Registering a whole pack replaces the pack the service holds
       intent: The directive main locks
       enforcement: required
       """
-    And the org pack "main" with the file "directives/OP.directive.yaml":
+    And the built-in pack "main" with the file "directives/OP.directive.yaml":
       """
       schema_version: '1.0'
       id: OP
@@ -767,13 +784,14 @@ Feature: Registering a whole pack replaces the pack the service holds
     And the field at "/problem/status" is 422
     And the field at "/problem/code" is "override_not_permitted"
     And the field at "/problem/packs/0/packId" is "acme"
+    And the field at "/problem/packs/1/packId" is "main-pack"
     When I GET "/packs/acme"
     Then the response status is 404
     When I PUT "/packs/acme" with the archive "over-open"
     And I poll the registration until it ends
     Then the field at "/state" is "succeeded"
 
-  # bound by: WP15 (IC-15, A8, A11, A12, C28: each relation rule, each with the control that composes)
+  # bound by: WP16 (IC-15, A8, A11, A12, C28: each relation rule, each with the control that composes)
   @WIP
   Scenario Outline: A registration whose relations break a rule is refused with that rule's code
     Given the archive "relations" is a copy of the archive "v1"

@@ -22,8 +22,9 @@ get:
     the problem of a refused status is returned in the 200 body of this operation, so the codes a registration can end
     with carry their status for getPackRegistration in the operations map of their x-refusal entry (CharterRefusalCode),
     the eleven pack composition codes as 422 in place of 500; registerPackFromArchive and registerPackFromSource declare
-    only their synchronous answers. The answer is verified against the source fingerprint and carries it. The operation
-    is reserved until the registration service is built (ADR-0020 D8).
+    only their synchronous answers. The status is read from the registration jobs, not from a pack file, so
+    the answer carries no Charter-Source-Fingerprint (decision DM-01M6TV6VDNHNCVWRHHC74WATV0). The operation is
+    reserved until the registration service is built (ADR-0020 D8).
   tags:
   - Registration
   x-reserved:
@@ -37,8 +38,6 @@ get:
           $ref: ../headers/CharterContractVersion.yaml
         Charter-Worktree:
           $ref: ../headers/CharterWorktree.yaml
-        Charter-Source-Fingerprint:
-          $ref: ../headers/CharterSourceFingerprint.yaml
       content:
         application/json:
           schema:

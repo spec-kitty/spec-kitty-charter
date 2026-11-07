@@ -20,13 +20,15 @@
     registration_not_found` once the status is forgotten (one hour after the job ends, or after a restart). A `refused`
     status carries every `409` and `422` of the flow, and `412` after a revision moved, so the registration codes are
     declared on this operation's `x-refusal` entries, not on the two registrations (the `x-refusal` text of
-    `CharterRefusalCode` says so). It is a verified read: it declares `Charter-Source-Fingerprint`, as the lint rule
-    for every `GET` `200` requires.
+    `CharterRefusalCode` says so). It reads the registration jobs, not a pack file, so its `200` carries no
+    `Charter-Source-Fingerprint` (decision DM-01M6TV6VDNHNCVWRHHC74WATV0); the path is exempt from the lint rules of
+    that header, as the activation reads are.
   - `getPack`, `GET /packs/{packId}`: `200` with the stored pack as a `PackRegistration` (no outcome), the quoted
     revision as its `ETag`, `_links.self`; `404 pack_not_found` (FR-039).
   - `deletePackArtifact`, `DELETE /packs/{packId}/artifacts/{kind}/{artifactId}` (in the existing item path file): `204`
     with the new revision as `ETag`; `If-Match` on the pack revision is required (`428` absent, `412` stale); `404`
-    `pack_not_found`, `kind_not_found` or `artifact_not_found`; `409` `artifact_referenced` (with `packs` and
+    `pack_not_found`, `kind_not_found` or the not-found code of the kind (`directive_not_found` and the like, the code
+    `getPackArtifact` answers on the same path); `409` `artifact_referenced` (with `packs` and
     `violations`), `governance_policy_violation` (the new `REMOVE` operation of the write gate) or
     `registration_conflict` (the artifact is written in the pack's author-written graph documents, which a `DELETE`
     never rewrites); `422` for a closure that no longer composes (PR A stays strict, decision
@@ -40,7 +42,7 @@
   - Schemas `PackRegistration` (`packId`, `descriptorPackId`, `name`, `version`, `level` as `org` or `project`,
     `revision`, `outcome`, `source`, `notices` of FR-027: `floorAdded`, `floorRemoved`, `locksAdded`, `locksRemoved`,
     and `_links`), `PackRegistrationStatus` (`registrationId`, `state`, `packId`, `acceptedAt`, `finishedAt`, `result`,
-    `problem`, `_links`) and `PackSource` (one closed object: `kind` as `https_archive`, `git` or `filesystem`,
+    `problem`, `_links`, with a `pack` link on a succeeded status: the new relation `pack` of the hypermedia guide) and `PackSource` (one closed object: `kind` as `https_archive`, `git` or `filesystem`,
     `packId`, and by kind `url`, `ref`, `commit`, `sha256` or `path`).
   - `CharterRefusalCode` gains `pack_version_conflict`, `artifact_referenced`, `relationship_not_found`,
     `relationship_not_registered`, `registration_not_found`, `pack_source_refused`, `pack_source_unavailable`,

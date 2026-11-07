@@ -146,10 +146,10 @@ Feature: One artifact or one registered relationship is removed from a pack
     Then the response status is 204
 
     Examples: the pack, the kind, the artifact
-      | path                                 | code               |
-      | /packs/nope/artifacts/directive/D3   | pack_not_found     |
-      | /packs/qa/artifacts/procedure/D3     | kind_not_found     |
-      | /packs/qa/artifacts/directive/NOPE   | artifact_not_found |
+      | path                                 | code                |
+      | /packs/nope/artifacts/directive/D3   | pack_not_found      |
+      | /packs/qa/artifacts/procedure/D3     | kind_not_found      |
+      | /packs/qa/artifacts/directive/NOPE   | directive_not_found |
 
   # bound by: WP19 (US2 AS2: another pack's edge refers to the artifact; the refusal changes nothing)
   @WIP
