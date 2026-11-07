@@ -168,6 +168,18 @@
       "verdict": "not-applicable",
       "wp": null
     },
+    "#403": {
+      "evidence_ref": "PR #403 (ADR-0064) merged on main; cited as the change the phase A plan was re-checked against; no work owed.",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
     "#405": {
       "evidence_ref": "Follow-up: spec-kitty/spec-kitty-open-packs#131 (edges), then the charter pin bump and guard test (operator steer 2026-11-07, DM-01M6TDH5BSMNZMFJBY1NPBZYTK)",
       "fr": null,
