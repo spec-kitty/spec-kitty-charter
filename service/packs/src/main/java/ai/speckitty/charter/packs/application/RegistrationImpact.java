@@ -124,8 +124,9 @@ public final class RegistrationImpact {
 
         static Views over(StagedPackViews.View packs) {
             ConsistentRead unverified = new ConsistentRead(() -> "overlay", new PackWriteGeneration());
-            OfferingReadService offering =
-                    new OfferingReadService(packs.catalog(), packs.descriptors(), packs.artifacts(), unverified);
+            OfferingReadService offering = new OfferingReadService(
+                            packs.catalog(), packs.descriptors(), packs.artifacts(), unverified)
+                    .pinned();
             return new Views(offering, new ClosureQueries(offering, packs.catalog(), unverified));
         }
     }
