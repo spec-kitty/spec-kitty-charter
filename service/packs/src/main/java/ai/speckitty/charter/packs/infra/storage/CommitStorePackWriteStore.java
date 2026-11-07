@@ -6,6 +6,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.packs.application.ActivationImpact;
+import ai.speckitty.charter.packs.application.PackRemovalStore;
 import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.PackWriteGeneration;
 import ai.speckitty.charter.packs.application.PackWriteStore;
@@ -48,7 +49,7 @@ import org.springframework.stereotype.Service;
  * would no longer compose refuses the write with its code before anything is staged.
  */
 @Service
-public final class CommitStorePackWriteStore implements PackWriteStore {
+public final class CommitStorePackWriteStore implements PackWriteStore, PackRemovalStore {
 
     private final DomainRepositoryService.Locations locations;
     private final SerializationStrategy strategy;
@@ -234,6 +235,21 @@ public final class CommitStorePackWriteStore implements PackWriteStore {
                     .map(after -> WriteFacts.withRegisteredEdges(written, registeredBefore, after))
                     .orElse(written);
         });
+    }
+
+    @Override
+    public PackIdentifier configuredName(PackIdentifier pack) {
+        return pack; // not resolved yet
+    }
+
+    @Override
+    public Authored authored(PackIdentifier pack) {
+        return Authored.NONE; // not read yet
+    }
+
+    @Override
+    public PackRevision remove(PackIdentifier pack, Removal removal) {
+        return currentRevision(pack); // removes nothing yet
     }
 
     /** The pack's live directory, resolved as {@link DomainRepositoryService}/{@link PackCommitStore} resolve it. */

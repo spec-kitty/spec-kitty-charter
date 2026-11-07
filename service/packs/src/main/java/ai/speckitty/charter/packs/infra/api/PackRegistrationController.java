@@ -51,6 +51,7 @@ public class PackRegistrationController implements RegistrationApi {
     private final PackSummaryQuery summaries;
     private final PackArchiveReader archives;
     private final PackRegistrationMapper mapper;
+    private final PackRemovalController removals;
 
     /**
      * A controller over the registration jobs and the stored packs.
@@ -59,23 +60,27 @@ public class PackRegistrationController implements RegistrationApi {
      * @param summaries the stored-pack read
      * @param archives the archive extractor
      * @param mapper the contract shapes
+     * @param removals the adapter of the two {@code DELETE}s
      */
     @Autowired
     PackRegistrationController(
             RegistrationJobs jobs,
             PackSummaryQuery summaries,
             PackArchiveReader archives,
-            PackRegistrationMapper mapper) {
+            PackRegistrationMapper mapper,
+            PackRemovalController removals) {
         this.jobs = Objects.requireNonNull(jobs, "jobs");
         this.summaries = Objects.requireNonNull(summaries, "summaries");
         this.archives = Objects.requireNonNull(archives, "archives");
         this.mapper = Objects.requireNonNull(mapper, "mapper");
+        this.removals = Objects.requireNonNull(removals, "removals");
     }
 
     @Override
     @ReservedOperation
     public ResponseEntity<Void> deletePackArtifact(
             String packId, String kind, String artifactId, @Nullable String ifMatch) {
+        Objects.requireNonNull(removals, "removals");
         throw notBuilt();
     }
 
@@ -83,6 +88,7 @@ public class PackRegistrationController implements RegistrationApi {
     @ReservedOperation
     public ResponseEntity<Void> deletePackRelationship(
             String packId, String from, String to, @Nullable String ifMatch) {
+        Objects.requireNonNull(removals, "removals");
         throw notBuilt();
     }
 

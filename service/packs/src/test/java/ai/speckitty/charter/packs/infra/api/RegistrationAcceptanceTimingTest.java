@@ -67,7 +67,8 @@ class RegistrationAcceptanceTimingTest {
                     jobs,
                     mock(PackSummaryQuery.class),
                     refusing,
-                    new PackRegistrationMapper(new Hypermedia("/api/v1"), new RefusalHandler()));
+                    new PackRegistrationMapper(new Hypermedia("/api/v1"), new RefusalHandler()),
+                    mock(PackRemovalController.class));
             MockMvc mvc = MockMvcBuilders.standaloneSetup(controller)
                     .addInterceptors(new RegistrationAdmission(new RegistrationSwitch(true), jobs, info))
                     .setControllerAdvice(new ArchiveBodyAdvice(), new RefusalHandler())
