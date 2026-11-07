@@ -220,7 +220,12 @@ public final class PackRegistrationService {
     /** Steps 3 and 5 to 10, under the registry lock and then the pack's own. */
     private RegistrationOutcome decide(Upload upload) {
         store.requireWritableLocation(upload.packId());
-        Optional<Stored> stored = checkIdentity(upload);
+        // One session for the identity step and the inbound scan: every listing of the locations parses every
+        // pack.yaml,
+        // so a read per pack looked at would make the registration grow with the square of the stored packs (NFR-009).
+        // The registry lock is held, so nothing a session has read goes stale before it is dropped.
+        StagedPackViews.View view = views.session().stored();
+        Optional<Stored> stored = checkIdentity(upload, view);
         Optional<RegistrationOutcome> unchanged = applyVersionRule(upload, stored);
         if (unchanged.isPresent()) {
             return unchanged.get();
@@ -228,7 +233,7 @@ public final class PackRegistrationService {
         checkPreconditions(upload.preconditions(), stored);
         Before before = beforeOf(stored);
         gate.authorizeStaged(upload.contents().pack(), writesOf(upload.contents(), before));
-        requireNoInboundReference(upload, stored, before);
+        requireNoInboundReference(upload, stored, before, view);
         RegistrationImpact.Notices notices = impact.check(replacementOf(upload, stored));
         return commit(upload, stored, notices);
     }
@@ -246,31 +251,28 @@ public final class PackRegistrationService {
 
     // ---- step 3: the identity ------------------------------------------------------------------------------------
 
-    private Optional<Stored> checkIdentity(Upload upload) {
+    private Optional<Stored> checkIdentity(Upload upload, StagedPackViews.View view) {
         if (upload.level() == PackLevel.BUILT_IN) {
             throw new CharterRefusal(
                     RefusalCode.REGISTRATION_CONFLICT,
                     "A built-in pack is read-only; only org and project packs are registered.");
         }
-        // One session for the whole identity step: every listing of the locations parses every pack.yaml, so a read per
-        // pack looked at would make the step, and the registration, grow with the square of the stored packs (NFR-009).
-        StagedPackViews.View stored = views.session().stored();
-        List<ConfiguredPack> configured = stored.catalog().configured();
+        List<ConfiguredPack> configured = view.catalog().configured();
         requireNoCaseTwin(upload.packId(), configured);
         Optional<ConfiguredPack> named = configured.stream()
                 .filter(candidate -> candidate.id().value().equals(upload.packId()))
                 .findFirst();
         if (named.isEmpty()) {
-            requireFreePackId(upload, configured, stored.descriptors());
-            requireFreeName(upload, configured, Optional.empty(), stored.descriptors());
+            requireFreePackId(upload, configured, view.descriptors());
+            requireFreeName(upload, configured, Optional.empty(), view.descriptors());
             return Optional.empty();
         }
         Stored replaced = new Stored(
                 named.get(),
-                stored.descriptors().get(named.get().id()),
+                view.descriptors().get(named.get().id()),
                 revisions.currentRevision(named.get().id()));
         requireSameIdentity(upload, replaced);
-        requireFreeName(upload, configured, Optional.of(named.get()), stored.descriptors());
+        requireFreeName(upload, configured, Optional.of(named.get()), view.descriptors());
         return Optional.of(replaced);
     }
 
@@ -510,7 +512,8 @@ public final class PackRegistrationService {
     }
 
     /** Before the compose: a removed artifact that another pack still refers to is a 409, not a composition 422. */
-    private void requireNoInboundReference(Upload upload, Optional<Stored> stored, Before before) {
+    private void requireNoInboundReference(
+            Upload upload, Optional<Stored> stored, Before before, StagedPackViews.View view) {
         if (stored.isEmpty()) {
             return;
         }
@@ -520,6 +523,7 @@ public final class PackRegistrationService {
                 .filter(urn -> !now.contains(urn))
                 .forEach(urn -> Urn.parse(urn).ifPresent(removed::add));
         List<InboundReferences.Referrer> referrers = inbound.scan(
+                view,
                 new InboundReferences.StagedTree(
                         Optional.of(stored.get().configured().id()),
                         Optional.of(stored.get().descriptor().name()),

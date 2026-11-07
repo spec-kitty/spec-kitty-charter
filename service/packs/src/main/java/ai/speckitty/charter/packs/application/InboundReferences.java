@@ -118,12 +118,27 @@ public final class InboundReferences {
      * @return the referrers, by pack and referrer; empty when nothing refers
      */
     public List<Referrer> scan(StagedTree staged, Set<Urn> removed) {
+        return scan(new StagedPackViews.View(catalog, descriptors, artifacts), staged, removed);
+    }
+
+    /**
+     * The same scan over the stored packs of one session. A registration passes the session it judges its identity
+     * with, so that the scan reads each pack's files once and lists the configured locations once, instead of once per
+     * pack it reads (every listing parses every {@code pack.yaml}, NFR-009).
+     *
+     * @param stored the stored packs, read through one session
+     * @param staged the staged tree
+     * @param removed the artifacts the replace removes
+     * @return the referrers, by pack and referrer; empty when nothing refers
+     */
+    public List<Referrer> scan(StagedPackViews.View stored, StagedTree staged, Set<Urn> removed) {
+        Objects.requireNonNull(stored, "stored");
         Objects.requireNonNull(staged, "staged");
         Objects.requireNonNull(removed, "removed");
         if (removed.isEmpty()) {
             return List.of();
         }
-        List<Member> members = membersOf(staged);
+        List<Member> members = membersOf(stored, staged);
         Set<Referrer> found = new LinkedHashSet<>();
         for (Member member : members) {
             found.addAll(referrersOf(member, members, staged, removed));
@@ -137,11 +152,11 @@ public final class InboundReferences {
     }
 
     /** The configured packs but the one the tree replaces, which the tree stands for, and the tree. */
-    private List<Member> membersOf(StagedTree staged) {
+    private static List<Member> membersOf(StagedPackViews.View stored, StagedTree staged) {
         List<Member> members = new ArrayList<>();
-        for (ConfiguredPack configured : catalog.configured()) {
+        for (ConfiguredPack configured : stored.catalog().configured()) {
             if (!staged.replacing().filter(configured.id()::equals).isPresent()) {
-                readMember(configured).ifPresent(members::add);
+                readMember(stored, configured).ifPresent(members::add);
             }
         }
         PackIdentifier id = staged.replacing()
@@ -150,14 +165,14 @@ public final class InboundReferences {
         return members;
     }
 
-    private Optional<Member> readMember(ConfiguredPack configured) {
+    private static Optional<Member> readMember(StagedPackViews.View stored, ConfiguredPack configured) {
         try {
-            Optional<PackDescriptor> descriptor = descriptors.find(configured.id());
+            Optional<PackDescriptor> descriptor = stored.descriptors().find(configured.id());
             if (descriptor.isEmpty()) {
                 return Optional.empty();
             }
-            return Optional.of(
-                    new Member(configured.id(), descriptor.get(), artifacts.compositionFacts(configured.id()), false));
+            return Optional.of(new Member(
+                    configured.id(), descriptor.get(), stored.artifacts().compositionFacts(configured.id()), false));
         } catch (CharterRefusal unreadable) {
             return Optional.empty();
         }
