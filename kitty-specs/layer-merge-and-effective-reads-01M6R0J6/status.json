@@ -559,7 +559,7 @@
     },
     "WP16": {
       "actor": "claude",
-      "agent": "claude:opus:reviewer-renata",
+      "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -572,6 +572,7 @@
         "verifyAll green on ceadd3c1; POST /packs stays reserved for WP17/WP18"
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/layer-merge-and-effective-reads-01M6R0J6-coord/kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP16-a-async-registration-api/review-cycle-1.md",
         "reference": "review-cycle://layer-merge-and-effective-reads-01M6R0J6/WP16-a-async-registration-api/review-cycle-1.md",
@@ -579,17 +580,17 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 10065,
-      "shell_pid_created_at": "1794083065.96",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T076": "done",
-        "T077": "done",
-        "T078": "done",
-        "T079": "done",
-        "T080": "done",
-        "T081": "done",
-        "T082": "done",
-        "T151": "done"
+        "T076": "planned",
+        "T077": "planned",
+        "T078": "planned",
+        "T079": "planned",
+        "T080": "planned",
+        "T081": "planned",
+        "T082": "planned",
+        "T151": "planned"
       }
     },
     "WP17": {
