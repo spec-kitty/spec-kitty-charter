@@ -234,3 +234,16 @@ NFR-008 latency in `timingBudgets`, report-only.
   crash. Clean them in the job sweep (or at start-up), under the registry lock.
 - The tree copy in `replaceWhole`/`create` runs under the registry lock; with the 5 s `tryLock` a large pack can make
   other writers answer `503`. If the job's tests show it, copy before taking the lock.
+
+## Hand-off from WP15 (2026-11-07)
+
+- `whole-pack-registration.feature`: the `self_override` row `A overrides A` cannot reach `self_override`; the staged load
+  refuses a bare self-loop first (`422 validation_failed`). Rewrite the row with qualified endpoints that resolve to one
+  place (`base::directive:X` onto `base::directive:X`), as WP15's tests do, and keep a bare self-loop row expecting
+  `422 validation_failed`. The same holds for `enhances` onto itself.
+- The A6 scenario's edge `directive:A → directive:LK` is bare and resolves only in another pack, so the compose refuses
+  `pack_reference_unqualified` first; write it `main-pack::directive:LK`.
+- `RegistrationOutcome.notices` is now a record (`floorAdded`, `floorRemoved`, `locksAdded`, `locksRemoved`); map it
+  into the job's status body as the contract's notices.
+- The start-up census logs one WARN per stored pack whose closure the impact check would now refuse (decision 01M6VD94VEVPSC1JXQ1RA7YYHQ covers
+  C21 through the staged gate).
