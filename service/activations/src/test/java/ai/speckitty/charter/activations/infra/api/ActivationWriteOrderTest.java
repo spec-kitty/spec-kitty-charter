@@ -165,10 +165,10 @@ class ActivationWriteOrderTest {
 
         assertThat(putBody(SELECT, twice).getStatus()).isEqualTo(428);
         assertThat(putBody(SELECT, twice, STALE).getStatus()).isEqualTo(412);
-        assertThat(violations(putBody(SELECT, twice, etag))).containsExactly("/cascade", "unreadable_body");
-        assertThat(violations(putBody(DEACTIVATE, twice, etag))).containsExactly("/cascade", "unreadable_body");
+        assertThat(violations(putBody(SELECT, twice, etag))).containsExactly("/cascade", "duplicate_member");
+        assertThat(violations(putBody(DEACTIVATE, twice, etag))).containsExactly("/cascade", "duplicate_member");
         assertThat(violations(putBody(PRESET, "{\"force\": true, \"force\": false}", etag)))
-                .containsExactly("/force", "unreadable_body");
+                .containsExactly("/force", "duplicate_member");
         assertThat(send(get("/api/v1/activations/a-1")).getHeader("ETag")).isEqualTo(etag);
     }
 

@@ -150,7 +150,8 @@ public record ClosureSnapshot(
      * The extends chain from a pack the activation names up its {@code parent_pack} line to a requiring pack, as a
      * {@code 409}'s {@code RequiringPack.via} names it: the named pack first, then each parent up to, and without, the
      * requiring pack (the contract's example: an activation of {@code team}, which extends {@code internal}, has
-     * {@code via: [team]} for {@code internal}).
+     * {@code via: [team]} for {@code internal}). The walk needs no bound: the compose refuses a {@code parent_pack}
+     * cycle, a pack that names itself included, as {@code pack_dependency_cycle}, so a snapshot's line always ends.
      *
      * @param rootPackId the configured id of the pack the activation names
      * @param requiringPackId the configured id of the requiring or locking pack
@@ -161,7 +162,7 @@ public record ClosureSnapshot(
     public Optional<List<String>> extendsChain(String rootPackId, String requiringPackId) {
         List<String> chain = new ArrayList<>();
         Optional<String> at = Optional.of(rootPackId);
-        while (at.isPresent() && chain.size() <= packs.size()) {
+        while (at.isPresent()) {
             String current = at.orElseThrow();
             if (current.equals(requiringPackId)) {
                 return Optional.of(List.copyOf(chain));
