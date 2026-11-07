@@ -107,6 +107,65 @@ class ZipBoundsTest {
     }
 
     @Test
+    void aZip64LocatorThatSendsTheLibraryToAnotherDirectoryIsRefusedWithoutOpeningTheLibrary() {
+        byte[] big = withHeaders(10_001).build();
+
+        assertThat(refuse(honestEndRecordOverALyingLocator(big)).violations())
+                .containsExactly(new ArchiveViolation(Code.ZIP_COUNT_MISMATCH, ""));
+        assertThat(opened).hasValue(0);
+    }
+
+    @Test
+    void anEndRecordThatDisagreesWithTheZip64RecordIsRefusedWithoutOpeningTheLibrary() {
+        RawZip zip = withHeaders(1);
+        zip.zip64Locator(3);
+
+        assertThat(refuse(zip.build()).violations()).containsExactly(new ArchiveViolation(Code.ZIP_COUNT_MISMATCH, ""));
+        assertThat(opened).hasValue(0);
+    }
+
+    @Test
+    void anHonestZip64ArchiveWithALocatorAndNoOverflowFieldsStillOpens() throws Exception {
+        RawZip zip = withHeaders(2);
+        zip.zip64Locator(2);
+
+        new BoundedArchiveExtractor(ArchiveLimits.DEFAULTS, counting())
+                .extract(new ByteArrayInputStream(zip.build()), ArchiveFormat.ZIP, staging);
+
+        assertThat(opened).hasValue(1);
+    }
+
+    /**
+     * The reviewer's shape: the end record honestly describes the first header alone (count 1), and a ZIP64 record and
+     * locator, which the library follows whatever the end record says, describe the whole directory.
+     */
+    private static byte[] honestEndRecordOverALyingLocator(byte[] zip) {
+        ByteBuffer in = ByteBuffer.wrap(zip).order(ByteOrder.LITTLE_ENDIAN);
+        int end = zip.length - 22;
+        int size = in.getInt(end + 12);
+        int offset = in.getInt(end + 16);
+        int first = CENTRAL_FIXED + Short.toUnsignedInt(in.getShort(offset + 28));
+        int total = Short.toUnsignedInt(in.getShort(end + 10));
+        ByteBuffer out = ByteBuffer.allocate(end + 56 + 20 + 22).order(ByteOrder.LITTLE_ENDIAN);
+        out.put(zip, 0, end);
+        out.putInt(0x06064b50)
+                .putLong(44)
+                .putShort((short) 45)
+                .putShort((short) 45)
+                .putInt(0)
+                .putInt(0);
+        out.putLong(total).putLong(total).putLong(size).putLong(offset);
+        out.putInt(0x07064b50).putInt(0).putLong(end).putInt(1);
+        out.putInt(0x06054b50)
+                .putShort((short) 0)
+                .putShort((short) 0)
+                .putShort((short) 1)
+                .putShort((short) 1);
+        out.putInt(first).putInt(offset).putShort((short) 0);
+        return out.array();
+    }
+
+    @Test
     void aCentralHeaderWithMoreThan1024BytesOfExtraFieldsIsRefusedWithoutOpeningTheLibrary() {
         RawZip zip = new RawZip();
         zip.file("pack/a.txt", "x").extra(extra(1_025));

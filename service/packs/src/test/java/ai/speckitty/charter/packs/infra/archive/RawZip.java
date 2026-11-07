@@ -103,6 +103,7 @@ final class RawZip {
     private final List<Entry> entries = new ArrayList<>();
     private int declaredCount = -1;
     private long zip64Count = -1;
+    private boolean zip64Overflow = true;
     private boolean reverseCentral;
 
     /** A regular file, STORED. */
@@ -135,6 +136,16 @@ final class RawZip {
     /** Writes a ZIP64 end record carrying {@code total} entries, and an end record whose counts overflow. */
     RawZip zip64Count(long total) {
         this.zip64Count = total;
+        return this;
+    }
+
+    /**
+     * Writes a ZIP64 end record carrying {@code total} entries and its locator, but leaves the end record's own fields
+     * as they are (no overflow values), the way the library still finds the ZIP64 record.
+     */
+    RawZip zip64Locator(long total) {
+        this.zip64Count = total;
+        this.zip64Overflow = false;
         return this;
     }
 
@@ -214,7 +225,7 @@ final class RawZip {
             int recordAt = out.size();
             out.writeBytes(zip64End(zip64Count, centralSize, centralStart));
             out.writeBytes(zip64Locator(recordAt));
-            count = 0xFFFF;
+            count = zip64Overflow ? 0xFFFF : count;
         }
         out.writeBytes(end(count, centralSize, centralStart));
         return out.toByteArray();
