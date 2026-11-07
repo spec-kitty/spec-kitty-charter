@@ -1,10 +1,10 @@
 {
-  "event_count": 203,
-  "last_event_id": "01M6VG56NAP5QNMS4JTE3DVVCM",
-  "materialized_at": "2026-11-07T17:16:03.626339+00:00",
+  "event_count": 205,
+  "last_event_id": "01M6VG7TKXCCVEQ4XFT5X3V87G",
+  "materialized_at": "2026-11-07T17:17:29.585498+00:00",
   "mission_number": "",
   "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
-  "mission_type": "",
+  "mission_type": "software-dev",
   "schema_version": 2,
   "summary": {
     "approved": 16,
@@ -13,9 +13,9 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 14
+    "planned": 13
   },
   "work_packages": {
     "WP01": {
@@ -558,11 +558,20 @@
       }
     },
     "WP16": {
-      "actor": "finalize-tasks",
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M6RG98Z2PA1MWN4SXWKQ1HCG",
-      "last_transition_at": "2026-11-06T13:20:33.762123+00:00"
+      "implementer_of_record": "claude",
+      "lane": "in_progress",
+      "last_event_id": "01M6VG7TKXCCVEQ4XFT5X3V87G",
+      "last_transition_at": "2026-11-07T17:17:29.585498+00:00",
+      "model": "__resolved_model_absent__",
+      "provider": "__resolved_provider_absent__",
+      "role": "implementer",
+      "shell_pid": 13416,
+      "shell_pid_created_at": "1794071845.69"
     },
     "WP17": {
       "actor": "finalize-tasks",
