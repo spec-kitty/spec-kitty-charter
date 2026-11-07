@@ -2,7 +2,7 @@
 title: Contributing to spec-kitty-charter
 description: How work lands in spec-kitty-charter during the bootstrap — branches and pull requests, documentation rules, the contract-first order, and where decisions go.
 doc_status: draft
-updated: 2026-10-18T00:00:00Z
+updated: 2026-11-05T00:00:00Z
 type: Guide
 kind: How-To
 audience:
@@ -72,9 +72,9 @@ The conformance corpus joins these checks with roadmap step 3.
 ## Landing a pull request
 
 - The one required check is `CI gate / gate`
-  ([ADR-0023](/adr/0023-ci-gate-required-check/)). It runs the service build and
-  the docs checks for the parts of the repository the pull request changes. The native executables are not part of
-  it: they are built nightly on `main` and for each service release
+  ([ADR-0023](/adr/0023-ci-gate-required-check/)). It runs the service build, the whole-pack
+  round trip and the docs checks for the parts of the repository the pull request changes. The native
+  executables are not part of it: they are built nightly on `main` and for each service release
   ([ADR-0060](/adr/0060-native-build-runs-nightly-and-per-release/)).
 - `main` lands pull requests through a merge queue
   ([ADR-0047](/adr/0047-generated-indexes-and-merge-queue/)). The gate runs again on each queue entry,

@@ -15,6 +15,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpInputMessage;
@@ -29,20 +30,49 @@ class RegistrationListsTest {
     @Test
     void theListMembersOfEachRegistrationAreReadOffItsDto() {
         assertThat(RegistrationLists.of(DirectiveRegistration.class))
-                .containsExactly(
-                        "explicitAllowances",
-                        "integrityRules",
-                        "procedures",
-                        "references",
-                        "relationships",
-                        "validationCriteria");
-        assertThat(RegistrationLists.of(ParadigmRegistration.class))
-                .containsExactly("directiveRefs", "references", "relationships");
+                .containsExactly("explicitAllowances", "integrityRules", "validationCriteria");
+        assertThatThrownBy(() -> RegistrationLists.of(ParadigmRegistration.class))
+                .as("a paradigm registration has no list left (ADR-0064), so its guard names none")
+                .isInstanceOf(IllegalStateException.class);
         assertThat(RegistrationLists.of(StyleguideRegistration.class))
-                .containsExactly(
-                        "antiPatterns", "appliesToLanguages", "patterns", "principles", "references", "tooling");
-        assertThat(RegistrationLists.of(ToolguideRegistration.class))
-                .containsExactly("appliesToLanguages", "commands", "references");
+                .containsExactly("antiPatterns", "appliesToLanguages", "patterns", "principles", "tooling");
+        assertThat(RegistrationLists.of(ToolguideRegistration.class)).containsExactly("appliesToLanguages", "commands");
+    }
+
+    /** ADR-0064: the members a body may send are read off the DTO, so a removed relationship field is not among them. */
+    @Test
+    void theMembersOfEachRegistrationAreReadOffItsDtoWithoutTheRemovedFields() {
+        assertThat(RegistrationLists.members(DirectiveRegistration.class))
+                .contains("id", "integrityRules")
+                .doesNotContain("references", "relationships", "procedures");
+        assertThat(RegistrationLists.members(ParadigmRegistration.class))
+                .containsExactlyInAnyOrder("id", "schemaVersion", "name", "summary");
+        assertThat(RegistrationLists.members(StyleguideRegistration.class)).doesNotContain("references");
+        assertThat(RegistrationLists.members(ToolguideRegistration.class)).doesNotContain("references");
+    }
+
+    @Test
+    void onlyARemovedRelationshipMemberIsToldWhereARelationshipIsWritten() {
+        assertThat(RegistrationLists.unknownMemberDetail("directive", "procedures"))
+                .isEqualTo("A directive registration has no member procedures; a relationship is registered through"
+                        + " PUT /packs/{packId}/relationships.");
+        assertThat(RegistrationLists.unknownMemberDetail("directive", "titel"))
+                .as("a typo is named, not answered with a relationship hint")
+                .isEqualTo("A directive registration has no member titel.");
+    }
+
+    @Test
+    void anUndeclaredMemberIsFoundWhereverItStandsAndANestedOneIsNot() {
+        assertThat(RegistrationLists.firstUnknown(bytes("{\"id\":\"a\",\"relationships\":[]}"), null, Set.of("id")))
+                .contains("relationships");
+        assertThat(RegistrationLists.firstUnknown(bytes("{\"surprise\":1,\"id\":\"a\"}"), null, Set.of("id")))
+                .contains("surprise");
+        assertThat(RegistrationLists.firstUnknown(bytes("{\"id\":{\"nested\":1}}"), null, Set.of("id")))
+                .as("a nested member is bean validation's, not this check's")
+                .isEmpty();
+        assertThat(RegistrationLists.firstUnknown(bytes("[{\"surprise\":1}]"), null, Set.of("id")))
+                .as("a body that is not an object is the converter's")
+                .isEmpty();
     }
 
     @Test

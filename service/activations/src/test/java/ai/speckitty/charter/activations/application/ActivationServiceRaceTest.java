@@ -153,6 +153,11 @@ class ActivationServiceRaceTest {
         }
 
         @Override
+        public List<StoredActivation> list() {
+            return real.list();
+        }
+
+        @Override
         public Optional<StoredActivation> find(ActivationId id) {
             return real.find(id);
         }

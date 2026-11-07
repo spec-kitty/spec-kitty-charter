@@ -40,7 +40,7 @@ One Gradle module per **vertical concern slice** ([ADR-0006](/adr/0006-onion-ver
 
 | Module | Depends on | Holds |
 |---|---|---|
-| `kernel` | nothing outside the JDK | The shared domain kernel: the cross-slice vocabulary — packs, the CRG, `PackSource`, artifact kinds, refusal codes. Pure; no infra |
+| `kernel` | nothing outside the JDK | The shared domain kernel: the cross-slice vocabulary — packs, the CRG, `PackSource`, artifact kinds, refusal codes, and the `markdown` form's line rules (#299). Pure; no infra |
 | `packs` | `kernel`, `web-transport` | The packs slice (pack registration, validation and storage), built; its layers are: `domain` (models, repository ports, services), `application` (read/write use cases, and the ports of what a use case needs from outside the domain: `GuideFormat`, `GuideFetcher`), `infra` (`api.rest`, reserved `api.graphql`, `storage`, and `fetch`, the outbound HTTPS adapter that fetches a toolguide's guide by URI, [ADR-0043](/adr/0043-sanitized-artifact-shapes-procedures-and-toolguide-guides/)) |
 | `activations` | `kernel`, `packs`, `web-transport` | The activation register: the document, its storage, its write rules and its HTTP adapter (with its request-body advice and problem mapping); asks `packs` through one port (`AvailablePacks`, implemented in `infra.packs`). Its layers are `domain`, `application`, `infra.api` and `infra.packs`; the composition root chooses where its documents are stored |
 | `missiontypes` | `kernel` | The mission-types slice, same four layers as packages |

@@ -6,10 +6,12 @@ description: >-
   tactic_not_found, directive_not_found, styleguide_not_found, paradigm_not_found, toolguide_not_found,
   kind_not_found, activation_not_found, artifact_not_found and preset_not_found are 404; validation_failed and
   activation_invalid are 422; registration_conflict, governance_policy_violation, artifact_required and
-  artifact_locked are 409; every other code is 500. x-refusal below gives each code's status. pack_not_found means the identifier matches no configured pack, neither by its
+  artifact_locked are 409; every other code is 500, but the pack registration codes below. x-refusal below gives each
+  code's status. pack_not_found means the identifier matches no configured pack, neither by its
   configured name nor by the pack_id its pack.yaml declares. kind_not_found means the path names an
   artifact kind this service does not serve (any token but tactic, directive, styleguide, paradigm and
-  toolguide); the pack is judged first, so an unknown pack with an unknown kind is pack_not_found. A configured pack whose pack.yaml is
+  toolguide), on the generic artifact item read and on deletePackArtifact; the pack is judged first, so an unknown pack
+  with an unknown kind is pack_not_found. A configured pack whose pack.yaml is
   missing or invalid is pack_unreadable (500) on the offering and on every artifact read (operator
   ruling of 2026-10-31). A configured pack whose directory is missing, or a pack holding a file the fingerprint covers that cannot be read or a directory that
   cannot be listed, is pack_unreadable (500) on every read, because the first digest covers every configured pack. A change to pack.yaml
@@ -44,7 +46,8 @@ description: >-
   activation_not_found (404), an activation no document is stored under; artifact_not_found (404), a per-artifact
   write whose path names an artifact the activation's closure does not hold; preset_not_found (404), a preset
   application whose path names a preset no pack of the activation's closure holds; activation_invalid (422), a
-  document or body the service refuses, each refused part listed in violations; artifact_required and
+  document or body the service refuses, each refused part listed in violations (a document carrying a removed member, activatedKinds or missionTypes, is
+  validation_failed, not activation_invalid); artifact_required and
   artifact_locked (409), a deactivation a pack requires or locks, whose refusal names every requiring pack in
   requiredBy. Only the four effective reads of an activation stay reserved (ADR-0020 D8), and the one code they
   will raise again, action_not_found, is not raised (above). A unit test of the service fails when any main class
@@ -55,7 +58,7 @@ description: >-
   and whether an operation of this version raises it (raised). A code has one status, except where its entry
   carries an operations map: operations.<operationId>.status is the status that one operation answers the
   code with, in place of the entry's status, and every other operation answers the entry's status. Only
-  putPackRelationship declares one (below). A code is raised when an operation of this version
+  putPackRelationship, getPackRegistration, deletePackArtifact and deletePackRelationship declare one (below). A code is raised when an operation of this version
   reaches the code that refuses with it, even when no configuration of this version provokes the refusal
   (governance_policy_violation); a code that only a part no operation reaches refuses with is not raised
   (drg_schema_error). Clients and the contract scenarios read it.
@@ -65,17 +68,61 @@ description: >-
   representation the operation does not have, a method the path does not have, a request the
   server rejected before routing, a request the service refused as unauthorized (401) or
   forbidden (403) before routing it) and says nothing about the charter. internal_error is a fault of
-  the service and may be retried, and so may stale_input, whose inputs changed during the read;
+  the service and may be retried, and so may stale_input, whose inputs changed during the read,
+  registration_timed_out, whose source may answer faster next time, and pack_storage_full, whose space may be freed;
   every other code is a deterministic refusal, and the same read is refused the same way again
   until the request or the configured packs change.
+
+  Fourteen codes belong to the whole-pack registration and the two DELETEs (ADR-0065, FR-001 to FR-006, FR-024,
+  FR-025; PR A of the layer merge mission). Their operations are reserved until the services that raise them are built
+  (ADR-0020 D8), so each is raised: false until the service that raises it is built, and the work package that builds the
+  service flips it. pack_version_conflict is raised by the whole-pack registration service (the same pack_version sent
+  with another revision), artifact_referenced (a replace that removes an artifact another pack still refers to) and the
+  five relation codes of the impact check, override_not_permitted, enhances_cycle, conflicting_relations, self_override
+  and override_cycle (a registration that leaves a closure it joins breaking a relation rule), whose operations stay
+  reserved until their controller and job are built.
+  pack_version_conflict (409): the same pack_version was registered with another revision. artifact_referenced (409):
+  another artifact or pack still refers to the artifact a DELETE or a replace removes; its packs member names the
+  referring packs (at most 100) and its violations name every referring artifact. relationship_not_found (404): no
+  graph document of the pack holds an edge on the pair a DELETE names and no derived relation joins it.
+  relationship_not_registered (409): the pair is held outside registered.graph.yaml, authored in a source shard or
+  drg/fragment.yaml or derived, or in both kinds of document; a DELETE removes only a registered edge and never rewrites
+  an author file, and the fixed reason says to register the whole pack. registration_not_found (404): no registration is
+  held under the id. pack_source_refused (422): a source the service refuses (a host not on the allowlist, an address
+  that is not global, a bad ref, the wrong media type, a digest or commit mismatch, a descriptor whose name is not the
+  target), with a reason from a fixed set. pack_source_unavailable (503): registration, or the source kind, is switched
+  off, or the system git is missing or older than 2.50.1. override_not_permitted, enhances_cycle, conflicting_relations,
+  self_override and override_cycle (422): a relation the registration impact check refuses, naming the root pack of the
+  closure and the packs involved (IC-15): an overrides edge onto a target that is not open, an enhances cycle or an
+  enhancer with no route to a non-enhancer, an artifact that both enhances and overrides one target, an overrides edge
+  that resolves to its own source, and an overrides cycle. registration_timed_out (504): the registration job's end
+  state at the source deadline plus 30 seconds (NFR-008); the 504 is the planner's proposal, no earlier text gave the
+  code a status, and this contract confirms it. pack_storage_full (503): less than twice the archive bound is free
+  (NFR-009), checked before anything is written.
+
+  Where they are declared (ADR-0056). A registration is asynchronous: its 409 and 422 answers, and these codes, are the
+  problem of a refused status, returned in the 200 body of getPackRegistration. So the operations map of a code names
+  getPackRegistration only where the problem carries another status than the entry's: the eleven composition codes,
+  as 422 in place of 500, and no entry repeats the status of its own code. A code with no entry for getPackRegistration
+  is carried there with the status of its entry (pack_version_conflict 409, pack_source_refused 422,
+  pack_source_unavailable 503, registration_timed_out 504, pack_storage_full 503, registration_conflict 409,
+  validation_failed 422). registerPackFromArchive and registerPackFromSource declare only
+  their synchronous answers (202, 400, 401, 403, 412, 413, 415, 428 for the git branch-ref rule only, and 503). The two
+  DELETEs are synchronous, so deletePackArtifact and deletePackRelationship answer their own 409 and 422, the
+  composition codes as 422 there too. An artifact the pack does not hold is the not-found code of its kind there, as on
+  getPackArtifact. registration_conflict, governance_policy_violation and
+  validation_failed are existing codes that these operations also raise.
 
   The eleven codes of the pack composition are 500 like pack_unreadable, and for the same reason: the request is
   fine and the configured packs are not, so the same read is refused the same way until a pack is fixed. The one
   exception is the registration of a relationship (putPackRelationship), which judges the request's own to
   against the compose of the pack it registers into: pack_reference_pack_missing (a qualified to naming a pack
   outside the source pack's depends_on closure), pack_reference_unqualified (a bare to that only another pack
-  holds) and pack_reference_artifact_missing (a qualified to naming an artifact the named pack does not hold, or a preset item or policy lock naming a held artifact only by case)
-  answer 422 there, because the request is what is wrong, and are refused before any file is written.
+  holds) and pack_reference_artifact_missing (a qualified to naming an artifact the named pack does not hold)
+  answer 422 there, because the request is what is wrong, and are refused before any file is written. On
+  putPackRelationship a preset or lock mismatch also answers 422 until the pack is fixed; the detail names the pack.
+  A preset item or policy lock naming a held artifact only by case is pack_reference_artifact_missing, and a preset
+  item whose id is outside the id grammar is pack_unreadable.
   They are pack_dependency_cycle, pack_dependency_unknown, pack_dependency_out_of_range,
   pack_parent_unresolved, pack_level_violation, pack_name_conflict, pack_duplicate_id,
   pack_sibling_conflict, pack_reference_unqualified, pack_reference_pack_missing and
@@ -124,6 +171,20 @@ enum:
   - pack_reference_unqualified
   - pack_reference_pack_missing
   - pack_reference_artifact_missing
+  - pack_version_conflict
+  - artifact_referenced
+  - relationship_not_found
+  - relationship_not_registered
+  - registration_not_found
+  - pack_source_refused
+  - pack_source_unavailable
+  - override_not_permitted
+  - enhances_cycle
+  - conflicting_relations
+  - self_override
+  - override_cycle
+  - registration_timed_out
+  - pack_storage_full
 x-refusal:
   mission_type_not_found:
     status: 404
@@ -226,40 +287,102 @@ x-refusal:
     status: 500
     retryable: false
     raised: true
+    operations:
+      getPackRegistration:
+        status: 422
+      deletePackArtifact:
+        status: 422
+      deletePackRelationship:
+        status: 422
   pack_dependency_unknown:
     status: 500
     retryable: false
     raised: true
+    operations:
+      getPackRegistration:
+        status: 422
+      deletePackArtifact:
+        status: 422
+      deletePackRelationship:
+        status: 422
   pack_dependency_out_of_range:
     status: 500
     retryable: false
     raised: true
+    operations:
+      getPackRegistration:
+        status: 422
+      deletePackArtifact:
+        status: 422
+      deletePackRelationship:
+        status: 422
   pack_parent_unresolved:
     status: 500
     retryable: false
     raised: true
+    operations:
+      getPackRegistration:
+        status: 422
+      deletePackArtifact:
+        status: 422
+      deletePackRelationship:
+        status: 422
   pack_level_violation:
     status: 500
     retryable: false
     raised: true
+    operations:
+      getPackRegistration:
+        status: 422
+      deletePackArtifact:
+        status: 422
+      deletePackRelationship:
+        status: 422
   pack_name_conflict:
     status: 500
     retryable: false
     raised: true
+    operations:
+      getPackRegistration:
+        status: 422
+      deletePackArtifact:
+        status: 422
+      deletePackRelationship:
+        status: 422
   pack_duplicate_id:
     status: 500
     retryable: false
     raised: true
+    operations:
+      getPackRegistration:
+        status: 422
+      deletePackArtifact:
+        status: 422
+      deletePackRelationship:
+        status: 422
   pack_sibling_conflict:
     status: 500
     retryable: false
     raised: true
+    operations:
+      getPackRegistration:
+        status: 422
+      deletePackArtifact:
+        status: 422
+      deletePackRelationship:
+        status: 422
   pack_reference_unqualified:
     status: 500
     retryable: false
     raised: true
     operations:
       putPackRelationship:
+        status: 422
+      getPackRegistration:
+        status: 422
+      deletePackArtifact:
+        status: 422
+      deletePackRelationship:
         status: 422
   pack_reference_pack_missing:
     status: 500
@@ -268,6 +391,12 @@ x-refusal:
     operations:
       putPackRelationship:
         status: 422
+      getPackRegistration:
+        status: 422
+      deletePackArtifact:
+        status: 422
+      deletePackRelationship:
+        status: 422
   pack_reference_artifact_missing:
     status: 500
     retryable: false
@@ -275,6 +404,82 @@ x-refusal:
     operations:
       putPackRelationship:
         status: 422
+      getPackRegistration:
+        status: 422
+      deletePackArtifact:
+        status: 422
+      deletePackRelationship:
+        status: 422
+  pack_version_conflict:
+    status: 409
+    retryable: false
+    raised: true
+    description: the same pack_version was registered with another revision
+  artifact_referenced:
+    status: 409
+    retryable: false
+    raised: true
+    description: another artifact or pack still refers to the artifact a DELETE or a replace removes
+  relationship_not_found:
+    status: 404
+    retryable: false
+    raised: false
+    description: no graph document of the pack holds an edge on the pair, and no derived relation joins it
+  relationship_not_registered:
+    status: 409
+    retryable: false
+    raised: false
+    description: the pair is held outside registered.graph.yaml (authored or derived), or in both kinds of document
+  registration_not_found:
+    status: 404
+    retryable: false
+    raised: false
+    description: no registration is held under the id
+  pack_source_refused:
+    status: 422
+    retryable: false
+    raised: false
+    description: a source the service refuses, with a reason from a fixed set
+  pack_source_unavailable:
+    status: 503
+    retryable: false
+    raised: false
+    description: registration or the source kind is switched off, or the system git is missing or older than 2.50.1
+  override_not_permitted:
+    status: 422
+    retryable: false
+    raised: true
+    description: an overrides edge onto a target that is not open
+  enhances_cycle:
+    status: 422
+    retryable: false
+    raised: true
+    description: an enhances cycle, or an enhancer with no route to a non-enhancer
+  conflicting_relations:
+    status: 422
+    retryable: false
+    raised: true
+    description: an artifact that both enhances and overrides one target
+  self_override:
+    status: 422
+    retryable: false
+    raised: true
+    description: an overrides edge that resolves to its own source
+  override_cycle:
+    status: 422
+    retryable: false
+    raised: true
+    description: a cycle of overrides edges
+  registration_timed_out:
+    status: 504
+    retryable: true
+    raised: false
+    description: the job ended at the source deadline plus 30 seconds
+  pack_storage_full:
+    status: 503
+    retryable: true
+    raised: false
+    description: less than twice the archive bound is free
 x-source:
   path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RefusalCode.java
   symbol: RefusalCode

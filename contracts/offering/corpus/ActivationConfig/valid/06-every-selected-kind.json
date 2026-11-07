@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "selected": {
     "directive": [],
     "tactic": [],
@@ -11,6 +11,7 @@
     "mission_step_contract": [],
     "glossary_pack": [],
     "skill": [],
-    "anti_pattern": []
+    "anti_pattern": [],
+    "mission_type": []
   }
 }

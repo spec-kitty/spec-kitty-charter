@@ -88,7 +88,7 @@ class ArtifactControllerTest {
                     .packId(PACK)
                     .schemaVersion("1.0")
                     .name("Rehearse")
-                    .step(new TacticStep("Only step", Optional.empty(), List.of(), List.of()))
+                    .step(new TacticStep("Only step", Optional.empty(), List.of()))
                     .build())
             .directive(Directive.builder()
                     .id(new DirectiveIdentifier("GUARD"))
@@ -151,7 +151,8 @@ class ArtifactControllerTest {
                         new StyleguideReadService(store, store, read, revisions),
                         new ParadigmReadService(store, store, read, revisions),
                         new ToolguideReadService(store, store, read, revisions),
-                        new TacticReadService(store, store, read)));
+                        new TacticReadService(store, store, read)),
+                pack -> List.of());
         return new ArtifactController(reads, new Hypermedia("/api/v1"), new MarkdownGuideFormat());
     }
 

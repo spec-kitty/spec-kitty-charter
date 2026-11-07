@@ -1,4 +1,4 @@
-summary: A directive of alpha that relies on a directive of beta and on a procedure alpha holds.
+summary: The edges of alpha's graph documents from directive USE, to a directive of beta and to a procedure alpha holds.
 value:
   items:
     - reference: beta-pack::directive:SHARE

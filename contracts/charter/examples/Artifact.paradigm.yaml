@@ -8,9 +8,6 @@ value:
     schemaVersion: '1.0'
     name: Layered architecture
     summary: Keep the layers apart.
-    directiveRefs: []
-    references: []
-    relationships: []
   _links:
     self:
       href: /api/v1/packs/qa/artifacts/paradigm/layered

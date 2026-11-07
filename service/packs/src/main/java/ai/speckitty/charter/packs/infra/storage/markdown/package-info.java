@@ -3,7 +3,7 @@
  * ({@link ai.speckitty.charter.packs.domain.markdown.MarkdownDocument}) and written back canonically by
  * {@link ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec}. Ambiguous Markdown is refused with a
  * {@link ai.speckitty.charter.packs.infra.storage.markdown.MarkdownRefusal} that names the line. The line rules are the
- * domain's ({@link ai.speckitty.charter.packs.domain.markdown.MarkdownScanner}): a line scanner that follows
+ * kernel's ({@link ai.speckitty.charter.kernel.markdown.MarkdownScanner}, #299): a line scanner that follows
  * CommonMark's fence rules, not a full CommonMark parser, and no third-party parser is used.
  */
 @NullMarked

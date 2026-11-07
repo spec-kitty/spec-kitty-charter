@@ -153,7 +153,7 @@ for one process; several processes over one root are out of scope
 ## The closure read
 
 `GET /activations/{activationId}/packs` (`listActivationPacks`) answers the packs a document builds on: the
-`depends_on` closure rooted at its `packs` (every configured pack when `packs` is absent), in dependency order. Each
+`depends_on` and `parent_pack` closure rooted at its `packs` (every configured pack when `packs` is absent), in dependency order. Each
 item has the offering's pack shape, `OfferingPack`, with the facts of each resolved dependency. A pack outside the
 closure is never judged, so an unrelated broken pack does not refuse it; a closure that does not compose is refused
 with the offering's `500` codes, naming the pack. Its `ETag` covers the revision and the closure's packs, and it

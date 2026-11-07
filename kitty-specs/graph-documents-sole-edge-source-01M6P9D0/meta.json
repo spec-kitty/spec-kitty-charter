@@ -1,0 +1,46 @@
+{
+  "accept_commit": "957abeecb6973448b4f2116e1bf1fbd4bafd1ee5",
+  "acceptance_history": [
+    {
+      "accept_commit": "a2a3bbf10e2656f04b97d5300d9aa6377d41d3b7",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-11-06T07:24:28.595089+00:00",
+      "accepted_by": "claude",
+      "accepted_from_commit": "bdb011a784363ea5ef83f866363904b51b0a9df7"
+    },
+    {
+      "accept_commit": "957abeecb6973448b4f2116e1bf1fbd4bafd1ee5",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-11-06T07:24:40.391663+00:00",
+      "accepted_by": "claude",
+      "accepted_from_commit": "075a7882c82e70ace37779d93a77b744e7a33b4d"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-11-06T07:24:40.391663+00:00",
+  "accepted_by": "claude",
+  "accepted_from_commit": "075a7882c82e70ace37779d93a77b744e7a33b4d",
+  "baseline_merge_commit": "b76510362ccc6b610938c14752ee12613771e3a7",
+  "contracts": "none",
+  "contracts_rationale": "The mission defines no new interface; it changes the repository's own contract at contracts/charter (and contracts/packs), whose files carry the change and its CHANGELOG fragment.",
+  "coordination_branch": "kitty/mission-graph-documents-sole-edge-source-01M6P9D0",
+  "created_at": "2026-11-05T16:41:48.255180+00:00",
+  "flattened": false,
+  "friendly_name": "Graph documents are the sole source of edges",
+  "merged_at": "2026-11-06T07:25:15.501270+00:00",
+  "merged_commit": "9ce14a74124253a335001bad03e03b1dfd97f87a",
+  "mid8": "01M6P9D0",
+  "mission_id": "01M6P9D0EW24EPHFS7S4TD7DHV",
+  "mission_number": 17,
+  "mission_slug": "graph-documents-sole-edge-source-01M6P9D0",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "The operator ruled on 2026-11-05 (issue #240) that a DRG edge has one home: the pack's graph documents (*.graph.yaml, drg/fragment.yaml), written through one relationship API (putPackRelationship). Today artifact fields such as a directive's procedures, a paradigm's directive_refs and typed references also mint edges, and registration bodies carry relationships arrays, so an edge can be authored in two places. This mission removes those fields from the domain, the pack schemas and the contract, retires the interim mapping, makes the round-trip gate compare edges from the graph documents only, and drafts the open-packs migration.",
+  "purpose_tldr": "Drop the artifact fields that mint relationships so a pack's edges are authored only in its graph documents.",
+  "slug": "graph-documents-sole-edge-source-01M6P9D0",
+  "status_phase": "1",
+  "target_branch": "claude/240-drop-edge-fields",
+  "topology": "coord",
+  "vcs": "git",
+  "vcs_locked_at": "2026-11-05T17:06:18.795440+00:00"
+}

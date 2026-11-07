@@ -104,7 +104,6 @@ enum ToolguideBinding implements KindBinding<ToolguideDso, Toolguide> {
                 .lastUpdated(dso.lastUpdated().orElse(null));
         dso.commands().forEach(builder::command);
         dso.appliesToLanguages().forEach(builder::appliesToLanguage);
-        dso.references().forEach(builder::reference);
         return builder.build();
     }
 
@@ -120,7 +119,6 @@ enum ToolguideBinding implements KindBinding<ToolguideDso, Toolguide> {
                 toolguide.commands(),
                 toolguide.appliesToLanguages(),
                 toolguide.lastUpdated(),
-                toolguide.references(),
                 Optional.of(GuideMarkdown.toDocument(toolguide.title(), toolguide.guide())));
     }
 }
