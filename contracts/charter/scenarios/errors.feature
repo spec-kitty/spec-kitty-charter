@@ -199,6 +199,7 @@ Feature: Failures outside the charter's refusals
       | registration_conflict       |
       | governance_policy_violation |
       | pack_version_conflict       |
+      | artifact_referenced         |
       | pack_dependency_cycle       |
       | pack_dependency_unknown     |
       | pack_dependency_out_of_range |

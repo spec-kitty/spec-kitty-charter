@@ -122,6 +122,7 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
     private static final String BUILT_ON = "built-on";
 
     private final JudgingPolicies judgingPolicies;
+    private final JudgingPolicies stagedJudgingPolicies;
 
     /**
      * The gate Spring wires: the closure is the compose rooted at the pack being written, and each member's policy is
@@ -138,11 +139,7 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
             PackCatalogRepository catalog,
             PackDescriptorRepository descriptors,
             ConsistentRead read) {
-        this(pack -> read.read(STALE, () -> {
-                    PackIdentifier root = rootOf(catalog, descriptors, pack);
-                    return judgingOf(offerings.composedWithFacts(Set.of(root)), root);
-                })
-                .value());
+        this(liveJudging(offerings, catalog, descriptors, read), stagedJudging(offerings, catalog, descriptors, read));
     }
 
     /**
@@ -157,7 +154,12 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
     }
 
     private PackMutabilityPolicy(JudgingPolicies judgingPolicies) {
+        this(judgingPolicies, judgingPolicies);
+    }
+
+    private PackMutabilityPolicy(JudgingPolicies judgingPolicies, JudgingPolicies stagedJudgingPolicies) {
         this.judgingPolicies = judgingPolicies;
+        this.stagedJudgingPolicies = stagedJudgingPolicies;
     }
 
     /**
@@ -189,7 +191,34 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
      */
     @Override
     public void authorize(Pack pack, Operation operation, Urn target) {
-        Map<String, MutabilityPolicySource> byPack = judgingPolicies.of(pack);
+        require(pack, judgingPolicies.of(pack), operation, target);
+    }
+
+    /**
+     * Authorizes the writes of a whole-pack registration over the closure the staged pack will have (ADR-0065 D5): the
+     * policies are those of the packs the staged pack builds on, its own left out as ever (B8), read from the stored
+     * packs its {@code depends_on} and {@code parent_pack} name. The staged pack need not be stored, and the closure
+     * that is read is the one its descriptor declares, not the one it had. The closure is read once for all the writes.
+     *
+     * @param staged the staged pack
+     * @param writes the diff of the registration
+     * @throws CharterRefusal {@link RefusalCode#GOVERNANCE_POLICY_VIOLATION} (409) for the first write whose target's
+     *     level does not permit it; {@code PACK_UNREADABLE} or a composition refusal when the closure cannot be judged
+     */
+    @Override
+    public void authorizeStaged(Pack staged, List<Write> writes) {
+        Objects.requireNonNull(writes, "writes");
+        if (writes.isEmpty()) {
+            return;
+        }
+        Map<String, MutabilityPolicySource> byPack = stagedJudgingPolicies.of(staged);
+        for (Write write : writes) {
+            require(staged, byPack, write.operation(), write.target());
+        }
+    }
+
+    private static void require(
+            Pack pack, Map<String, MutabilityPolicySource> byPack, Operation operation, Urn target) {
         PerPackPolicy.Level level = new PerPackPolicy(byPack).levelIn(List.copyOf(byPack.keySet()), target);
         if (!level.level().permits(operation)) {
             throw new CharterRefusal(
@@ -230,6 +259,55 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
                 .filter(member -> member.configured().id().equals(root))
                 .forEach(member -> judging.remove(member.descriptor().packId()));
         return judging;
+    }
+
+    /** The policies judging a write into a stored pack: its live closure, composed in one verified read. */
+    private static JudgingPolicies liveJudging(
+            OfferingReadService offerings,
+            PackCatalogRepository catalog,
+            PackDescriptorRepository descriptors,
+            ConsistentRead read) {
+        return pack -> read.read(STALE, () -> {
+                    PackIdentifier root = rootOf(catalog, descriptors, pack);
+                    return judgingOf(offerings.composedWithFacts(Set.of(root)), root);
+                })
+                .value();
+    }
+
+    /** The policies judging a write of a staged pack: the closure its descriptor declares, in one verified read. */
+    private static JudgingPolicies stagedJudging(
+            OfferingReadService offerings,
+            PackCatalogRepository catalog,
+            PackDescriptorRepository descriptors,
+            ConsistentRead read) {
+        return staged -> read.read(STALE, () -> ancestorsJudging(offerings, catalog, descriptors, staged))
+                .value();
+    }
+
+    /**
+     * The policies judging a write of a staged pack: the closure of the packs it builds on, composed from the stored
+     * packs its descriptor names by {@code pack_id} ({@code parent_pack} and {@code depends_on}), each scoped as
+     * {@link #scopedPolicies} scopes it. The staged pack is not in it, so its own policy cannot bind it. A pack it names
+     * that is not stored has nothing to judge here: the impact check refuses the closure that cannot be composed.
+     */
+    private static Map<String, MutabilityPolicySource> ancestorsJudging(
+            OfferingReadService offerings,
+            PackCatalogRepository catalog,
+            PackDescriptorRepository descriptors,
+            Pack staged) {
+        Set<String> named =
+                new HashSet<>(staged.descriptor().parentPack().stream().toList());
+        staged.descriptor().dependencies().forEach(dependency -> named.add(dependency.packId()));
+        List<PackIdentifier> roots = catalog.configured().stream()
+                .map(ConfiguredPack::id)
+                .filter(candidate -> named.stream().anyMatch(packId -> declares(descriptors, candidate, packId)))
+                .toList();
+        if (roots.isEmpty()) {
+            return new LinkedHashMap<>();
+        }
+        OfferingReadService.ComposedClosure composed = offerings.composedWithFacts(roots);
+        return scopedPolicies(
+                composed.packs(), member -> composed.factsOf(member).policy());
     }
 
     /** The test seam's policies: each member's policy read through the port, scoped, the written pack's left out. */
@@ -334,10 +412,5 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
         } catch (CharterRefusal unreadable) {
             return false;
         }
-    }
-
-    @Override
-    public void authorizeStaged(Pack staged, List<Write> writes) {
-        // skeleton: the staged-closure judgement lands in the next commit
     }
 }

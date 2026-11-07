@@ -6,15 +6,22 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
+import ai.speckitty.charter.kernel.domain.Relationship;
+import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.WritePolicyGate;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -218,8 +225,9 @@ public final class PackRegistrationService {
             return unchanged.get();
         }
         checkPreconditions(upload.preconditions(), stored);
-        Objects.requireNonNull(gate, "gate");
-        Objects.requireNonNull(inbound, "inbound");
+        Before before = beforeOf(upload, stored);
+        gate.authorizeStaged(upload.contents().pack(), writesOf(upload.contents(), before));
+        requireNoInboundReference(upload, stored, before);
         return commit(upload, stored);
     }
 
@@ -358,6 +366,144 @@ public final class PackRegistrationService {
 
     private static PreconditionException stale(String detail) {
         return new PreconditionException(PreconditionException.Kind.STALE, detail);
+    }
+
+    // ---- steps 7 and 8: the diff, the write gate and the inbound scan --------------------------------------------
+
+    /**
+     * What the stored pack held, to diff the upload against: the artifacts it defined, the digest of each and the edges
+     * it wrote. A stored pack that cannot be read is not diffed: it is taken as holding every artifact the upload does,
+     * unchanged in nothing, so that each is judged as a replace, the strictest write, and nothing is judged removed.
+     *
+     * @param defined the artifacts held, as bare URNs
+     * @param digests the digest of each file-backed artifact
+     * @param edges the typed edges written, by their key
+     */
+    private record Before(Set<String> defined, Map<Urn, String> digests, Map<String, Relationship> edges) {
+
+        static final Before NOTHING = new Before(Set.of(), Map.of(), Map.of());
+
+        static Before of(WholePackWriteStore.Contents contents) {
+            return new Before(heldBy(contents), contents.digests(), edgesOf(contents));
+        }
+
+        /** An unreadable stored pack: every artifact of the upload is taken as held, with a digest nothing matches. */
+        static Before unreadable(WholePackWriteStore.Contents upload) {
+            return new Before(heldBy(upload), Map.of(), Map.of());
+        }
+    }
+
+    private Before beforeOf(Upload upload, Optional<Stored> stored) {
+        if (stored.isEmpty()) {
+            return Before.NOTHING;
+        }
+        try {
+            return Before.of(loader.loadStored(
+                    store.liveDirectory(stored.get().configured().id())));
+        } catch (CharterRefusal unreadable) {
+            return Before.unreadable(upload.contents());
+        }
+    }
+
+    private static Set<String> heldBy(WholePackWriteStore.Contents contents) {
+        Set<String> held = new TreeSet<>(contents.facts().defined());
+        contents.digests().keySet().forEach(urn -> held.add(urn.toString()));
+        return held;
+    }
+
+    private static Map<String, Relationship> edgesOf(WholePackWriteStore.Contents contents) {
+        Map<String, Relationship> edges = new LinkedHashMap<>();
+        for (Relationship edge : contents.facts().edges()) {
+            edges.putIfAbsent(
+                    String.join(
+                            "|",
+                            edge.fromReference().toString(),
+                            edge.type().token(),
+                            edge.toReference().toString()),
+                    edge);
+        }
+        return edges;
+    }
+
+    /** The writes of the diff: what the upload adds, changes and removes, and each edge it adds or drops. */
+    private static List<WritePolicyGate.Write> writesOf(WholePackWriteStore.Contents upload, Before before) {
+        Set<WritePolicyGate.Write> writes = new LinkedHashSet<>();
+        Set<String> now = heldBy(upload);
+        for (String urn : now) {
+            if (!before.defined().contains(urn)) {
+                write(writes, WritePolicyGate.Operation.REGISTER, urn);
+            }
+        }
+        for (String urn : before.defined()) {
+            if (!now.contains(urn)) {
+                write(writes, WritePolicyGate.Operation.REMOVE, urn);
+            }
+        }
+        upload.digests().forEach((urn, digest) -> {
+            if (before.defined().contains(urn.toString())
+                    && !digest.equals(before.digests().get(urn))) {
+                writes.add(new WritePolicyGate.Write(WritePolicyGate.Operation.REPLACE, urn));
+            }
+        });
+        Map<String, Relationship> edges = edgesOf(upload);
+        edges.forEach((key, edge) -> {
+            if (!before.edges().containsKey(key)) {
+                writes.add(new WritePolicyGate.Write(WritePolicyGate.Operation.RELATIONSHIP, edge.from()));
+            }
+        });
+        before.edges().forEach((key, edge) -> {
+            if (!edges.containsKey(key)) {
+                writes.add(new WritePolicyGate.Write(WritePolicyGate.Operation.RELATIONSHIP, edge.from()));
+            }
+        });
+        return List.copyOf(writes);
+    }
+
+    private static void write(Set<WritePolicyGate.Write> writes, WritePolicyGate.Operation operation, String urn) {
+        Urn.parse(urn).ifPresent(parsed -> writes.add(new WritePolicyGate.Write(operation, parsed)));
+    }
+
+    /** Before the compose: a removed artifact that another pack still refers to is a 409, not a composition 422. */
+    private void requireNoInboundReference(Upload upload, Optional<Stored> stored, Before before) {
+        if (stored.isEmpty()) {
+            return;
+        }
+        Set<String> now = heldBy(upload.contents());
+        Set<Urn> removed = new LinkedHashSet<>();
+        before.defined().stream()
+                .filter(urn -> !now.contains(urn))
+                .forEach(urn -> Urn.parse(urn).ifPresent(removed::add));
+        List<InboundReferences.Referrer> referrers = inbound.scan(
+                new InboundReferences.StagedTree(
+                        Optional.of(stored.get().configured().id()),
+                        upload.descriptor(),
+                        upload.contents().facts()),
+                removed);
+        if (!referrers.isEmpty()) {
+            throw referenced(upload, referrers);
+        }
+    }
+
+    /**
+     * The refusal names every referrer by its pack and artifact. A refusal carries the packs or the violations, not
+     * both (the kernel's {@code CharterRefusal} has no factory for the two), so the violations hold the pack in their
+     * pointer.
+     */
+    private static CharterRefusal referenced(Upload upload, List<InboundReferences.Referrer> referrers) {
+        List<RefusalViolation> violations = referrers.stream()
+                .map(referrer -> new RefusalViolation(
+                        referrer.pack().value() + "/" + referrer.referrer(),
+                        "artifact_referenced",
+                        referrer.referrer() + " of the pack " + referrer.name() + " refers to " + referrer.removed()
+                                + ", which the registration removes."))
+                .toList();
+        return CharterRefusal.withViolations(
+                RefusalCode.ARTIFACT_REFERENCED,
+                "The pack " + upload.packId() + " cannot drop " + referrers.size()
+                        + " artifact(s) that other packs still refer to; the first is "
+                        + referrers.getFirst().removed()
+                        + ".",
+                violations);
     }
 
     // ---- step 10: the commit -------------------------------------------------------------------------------------
