@@ -33,6 +33,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -112,6 +114,8 @@ public final class PackCommitStore implements WholePackWriteStore {
 
     /** The most links a dangling chain is followed through, as the usual {@code ELOOP} bound. */
     private static final int MAX_LINK_HOPS = 40;
+
+    private static final Logger LOG = LoggerFactory.getLogger(PackCommitStore.class);
 
     private final DomainRepositoryService.Locations locations;
     private final SerializationStrategy strategy;
@@ -348,17 +352,50 @@ public final class PackCommitStore implements WholePackWriteStore {
      */
     private record HistoryWrite(VersionHistoryStore store, String packId, Path staged) {
 
-        static HistoryWrite stage(Path writableRoot, String packId, Path tree, PackRevision revision)
+        /**
+         * Stages the history after the tree is stored. The pair the stored pack has now (the live directory, when there is
+         * one) goes in first when the history lacks it, so that a publish lost after an earlier swap heals here and a
+         * version label the stored pack holds is never free to reuse (IC-16). A stored pack that cannot be read has no
+         * pair to give.
+         */
+        static HistoryWrite stage(
+                Path writableRoot, String packId, Path tree, PackRevision revision, @Nullable Path live)
                 throws IOException {
             VersionHistoryStore store = new VersionHistoryStore(writableRoot);
+            List<PackVersionHistory.Entry> history = store.read(packId);
+            if (live != null) {
+                Optional<PackVersionHistory.Entry> stored = storedPair(live, packId);
+                if (stored.isPresent()) {
+                    history = PackVersionHistory.appended(history, stored.get());
+                }
+            }
             PackVersionHistory.Entry entry =
                     new PackVersionHistory.Entry(packVersionOf(tree), revision.token(), Instant.now());
-            List<PackVersionHistory.Entry> next = PackVersionHistory.appended(store.read(packId), entry);
-            return new HistoryWrite(store, packId, store.stage(packId, next));
+            return new HistoryWrite(store, packId, store.stage(packId, PackVersionHistory.appended(history, entry)));
         }
 
-        void publish() {
-            store.publish(packId, staged);
+        private static Optional<PackVersionHistory.Entry> storedPair(Path live, String packId) {
+            try {
+                return Optional.of(new PackVersionHistory.Entry(
+                        packVersionOf(live),
+                        revisionOf(live, new PackIdentifier(packId)).token(),
+                        Instant.now()));
+            } catch (IOException | RuntimeException unreadable) {
+                return Optional.empty();
+            }
+        }
+
+        /** Publishes the history; a failure now is a warning, because the pack has been stored and the next write heals it. */
+        void publishAfterSwap() {
+            try {
+                store.publish(packId, staged);
+            } catch (CharterRefusal lost) {
+                LOG.warn(
+                        "The pack {} was stored, but its version history could not be published ({}); the next"
+                                + " registration puts the entry back.",
+                        packId,
+                        lost.getMessage());
+            }
         }
 
         void discard() {
@@ -393,10 +430,10 @@ public final class PackCommitStore implements WholePackWriteStore {
             copy = Files.createTempDirectory(parent, ".pack-commit-");
             copyTree(staged.directory(), copy);
             PackRevision revision = revisionOf(copy, pack);
-            history = HistoryWrite.stage(writableRoot(), pack.value(), copy, revision);
+            history = HistoryWrite.stage(writableRoot(), pack.value(), copy, revision, liveDir);
             swapBracketed(pack.value(), copy, liveDir);
             copy = null; // swapped into place; there is nothing left to clean up
-            history.publish();
+            history.publishAfterSwap();
             return revision;
         } catch (CharterRefusal refusal) {
             deleteTree(copy);
@@ -430,10 +467,10 @@ public final class PackCommitStore implements WholePackWriteStore {
             staging = Files.createTempDirectory(root, ".pack-write-");
             copyTree(staged.directory(), staging);
             PackRevision revision = revisionOf(staging, new PackIdentifier(packId));
-            history = HistoryWrite.stage(root, packId, staging, revision);
+            history = HistoryWrite.stage(root, packId, staging, revision, null);
             placeBracketed(packId, staging, destination);
             staging = null; // moved into place; nothing left to clean up
-            history.publish();
+            history.publishAfterSwap();
             return revision;
         } catch (CharterRefusal refusal) {
             deleteTree(staging);
