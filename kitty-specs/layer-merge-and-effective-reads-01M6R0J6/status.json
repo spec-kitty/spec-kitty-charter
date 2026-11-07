@@ -1,7 +1,7 @@
 {
-  "event_count": 161,
-  "last_event_id": "01M6TZ7JV58FK9MZHJM7J41A28",
-  "materialized_at": "2026-11-07T12:20:15.845503+00:00",
+  "event_count": 162,
+  "last_event_id": "01M6TZ8K1KWGWS4QZTTFX3AJ3A",
+  "materialized_at": "2026-11-07T12:20:48.819997+00:00",
   "mission_number": "",
   "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
   "mission_type": "",
@@ -12,9 +12,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 0,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 16
   },
   "work_packages": {
@@ -442,22 +442,22 @@
     },
     "WP13": {
       "actor": "claude",
-      "agent": "claude:sonnet:java-jenny",
+      "agent": "claude:opus:reviewer-renata",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude:sonnet:java-jenny",
-      "lane": "for_review",
-      "last_event_id": "01M6TZ7JV58FK9MZHJM7J41A28",
-      "last_transition_at": "2026-11-07T12:20:15.845503+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M6TZ8K1KWGWS4QZTTFX3AJ3A",
+      "last_transition_at": "2026-11-07T12:20:48.819997+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "Bounded, path-safe extractor (tar.gz strict, zip via EOCD count before entries), commons-compress 1.28.0 with verification entries; corpus 61 hostile + 19 benign; red recorded; PIT adds infra.archive (floor 80), infra.api stays excluded; verifyAll green. Open: OSV/GHSA re-check of 1.28.0 blocked by proxy."
       ],
       "provider": "__resolved_provider_absent__",
-      "role": "implementer",
-      "shell_pid": 28186,
-      "shell_pid_created_at": "1794051561.67",
+      "role": "reviewer",
+      "shell_pid": 6931,
+      "shell_pid_created_at": "1794054044.86",
       "subtasks": {
         "T058": "done",
         "T059": "done",
