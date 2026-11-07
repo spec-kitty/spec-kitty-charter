@@ -94,7 +94,7 @@ public final class CharterRefusal extends RuntimeException {
      */
     public static CharterRefusal withPacksAndViolations(
             RefusalCode code, String detail, List<RefusalPack> packs, List<RefusalViolation> violations) {
-        return withViolations(code, detail, violations);
+        return new CharterRefusal(code, detail, packs, violations, List.of());
     }
 
     /**
