@@ -1,5 +1,6 @@
 package ai.speckitty.charter.activations.infra.api;
 
+import ai.speckitty.charter.api.model.Activation;
 import ai.speckitty.charter.api.model.ActivationChange;
 import ai.speckitty.charter.api.model.ActivationConfig;
 import ai.speckitty.charter.api.model.ArtifactReference;
@@ -36,6 +37,7 @@ public class ActivationRuntimeHints implements RuntimeHintsRegistrar {
         new BindingReflectionHintsRegistrar()
                 .registerReflectionHints(
                         hints.reflection(),
+                        Activation.class,
                         ActivationConfig.class,
                         PackPin.class,
                         SelectedArtifacts.class,

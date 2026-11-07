@@ -14,9 +14,9 @@ import tools.jackson.databind.node.ObjectNode;
 
 /**
  * The write-path step vocabulary of the registration scenarios: PUT/POST (or any method) with a JSON body, the
- * If-Match precondition (literal, or the ETag remembered from a prior answer), and the assertions on the artifact an
- * envelope holds: its relationships and a text field's lines. It sends through the one {@link ScenarioHttp} the scenario owns, so a later Then sees an earlier
- * When's exchange.
+ * If-Match precondition (literal, or the ETag remembered from a prior answer), and the assertion on a text field's lines
+ * of the artifact an envelope holds. It sends through the one {@link ScenarioHttp} the scenario owns, so a later Then
+ * sees an earlier When's exchange.
  */
 public class RegistrationSteps {
 
@@ -90,33 +90,5 @@ public class RegistrationSteps {
     public void rememberETag() {
         rememberedETag = http.response().getHeader(HttpHeaders.ETAG);
         assertThat(rememberedETag).as("the response carries an ETag").isNotNull();
-    }
-
-    @Then("the artifact in the response body has {int} relationship(s)")
-    public void relationshipCount(int count) throws Exception {
-        JsonNode relationships = artifactRelationships();
-        assertThat(relationships.isArray())
-                .as("the artifact has a relationships array: %s", http.body())
-                .isTrue();
-        assertThat(relationships.size()).isEqualTo(count);
-    }
-
-    @Then("a relationship of the artifact in the response body points to {string}")
-    public void aRelationshipPointsTo(String to) throws Exception {
-        JsonNode relationships = artifactRelationships();
-        boolean found = false;
-        for (JsonNode relationship : relationships) {
-            if (to.equals(relationship.path("to").asString())) {
-                found = true;
-                break;
-            }
-        }
-        assertThat(found).as("a relationship points to %s", to).isTrue();
-    }
-
-    /** The relationships of the artifact an envelope holds: those of the member its {@code kind} names. */
-    private JsonNode artifactRelationships() throws Exception {
-        JsonNode envelope = JSON.readTree(http.body());
-        return envelope.path(envelope.path("kind").asString()).path("relationships");
     }
 }

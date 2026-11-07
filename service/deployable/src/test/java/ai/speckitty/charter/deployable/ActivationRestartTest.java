@@ -50,7 +50,8 @@ class ActivationRestartTest {
     private static ActivationDocument document(int n) {
         return ActivationDocument.builder()
                 .packs(List.of(PackRef.pinned("pack-" + n, "1.0." + n), PackRef.of("shared")))
-                .activatedKinds(List.of(ArtifactKind.TACTIC, ArtifactKind.DIRECTIVE))
+                .selected(ArtifactKind.TACTIC, List.of("tactic-" + n, "shared-tactic"))
+                .selected(ArtifactKind.MISSION_TYPE, List.of("software-dev"))
                 .languages(List.of("java", "lang-" + n))
                 .deactivated(ArtifactKind.TACTIC, List.of("tactic-" + n))
                 .build()

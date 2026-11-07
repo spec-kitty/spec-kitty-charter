@@ -130,6 +130,7 @@ used.
 | `service-desc` | The contract document, `/api/v1/openapi.yaml` ([RFC 8631](https://www.rfc-editor.org/rfc/rfc8631)) | `GET` | Root; the service info | In the contract |
 | `packs` | `/api/v1/packs` | `GET` | Root | Proposed |
 | `offering` | `/api/v1/offering` | `GET` | Root; a pack in force; an activation | In the contract on the root; proposed elsewhere ([ADR-0020](/adr/0020-offering-and-activations/)) |
+| `pack` | `/api/v1/packs/{packId}` | `GET` | A registration status that succeeded: the pack it stored | In the contract |
 | `register` | `/api/v1/packs` | `POST` | Pack collection, once registration is built | Proposed |
 | `refresh` | `/api/v1/packs/refresh` | `POST` | Pack collection | Proposed |
 | `artifacts` | `…/artifacts{?kind}` | `GET` | Root (templated, `/api/v1/packs/{packId}/artifacts{?kind}`); an offering pack; a registered relationship (its pack's artifacts); a pack; the offering; an activation (`{?kind,state}`) | In the contract on the root, an offering pack and a registered relationship; proposed elsewhere |

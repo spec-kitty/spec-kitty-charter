@@ -87,12 +87,12 @@ flowchart LR
    > [Compose packs](/guides/compose-packs/#read-a-refusal); the split's remaining moves are the open-packs work, not
    > this page's pipeline.
    **Compose roots** (built, #360). The offering composes every configured pack. An activation
-   composes the `depends_on` closure of its `packs` (every configured pack when `packs` is absent),
+   composes the `depends_on` and `parent_pack` closure of its `packs` (every configured pack when `packs` is absent),
    and that closure is what its writes are checked against and what its closure read answers.
    The per-artifact writes (select, unselect, deactivate, re-activate, apply a preset) are served
    over that closure, and a select or a deactivate with a `cascade` walks it; the rules are in
    [The cascade](/architecture/offering-and-activation/#the-cascade). Merging the closure's layers
-   for an activation, and the read-time `enhances` pull, are the next mission's.
+   for an activation, and returning an active enhancement at read (ADR-0059 A4), are the next mission's.
 3. **Activate.** In core, a per-kind activation key that is absent means what the kind's
    `effective_when_absent` says (`all` for most kinds; `required` for `skill`). In the service's
    activation document an absent key means none, `skill` included

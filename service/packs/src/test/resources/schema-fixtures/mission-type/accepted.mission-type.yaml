@@ -11,11 +11,6 @@ expected_output_artifacts:
 - artifact_key: evidence.sources.research
   artifact_class: evidence
   path_pattern: research/source-register.csv
-references:
-- type: directive
-  id: DIRECTIVE_010
-  when: always
-  reason: the spec is the contract
 steps:
 - id: scoping
   title: Research Scoping
@@ -33,9 +28,6 @@ steps:
     path_pattern: spec.md
     blocking: true
     template_path: templates/research-spec-template.md
-  references:
-  - type: tactic
-    id: requirements-validation-workflow
 - id: methodology
   title: Methodology
 on_demand_steps:

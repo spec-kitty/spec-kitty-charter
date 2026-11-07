@@ -238,9 +238,21 @@ public final class JsonBodyGuard {
         return first;
     }
 
+    /**
+     * Whether the message converter reads a body declared in this charset from its bytes, leaving JSON to detect the
+     * encoding (endianness included), rather than decoding it in the charset. A reader of a request body that must see
+     * what the converter binds decodes it itself only when this is false.
+     *
+     * @param charset the charset the request declares
+     * @return true when the converter detects the encoding from the bytes
+     */
+    public static boolean detectsItself(Charset charset) {
+        return DETECTED.contains(charset.name());
+    }
+
     private static JsonParser parser(byte[] body, @Nullable MediaType contentType) {
         Charset charset = contentType == null ? null : contentType.getCharset();
-        if (charset == null || DETECTED.contains(charset.name())) {
+        if (charset == null || detectsItself(charset)) {
             return JSON.createParser(body);
         }
         return JSON.createParser(new InputStreamReader(new ByteArrayInputStream(body), charset));

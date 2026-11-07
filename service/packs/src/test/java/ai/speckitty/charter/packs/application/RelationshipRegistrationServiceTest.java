@@ -252,7 +252,6 @@ class RelationshipRegistrationServiceTest {
         real.directives.registerDirective(
                 PACK,
                 directive("GUARD"),
-                List.of(),
                 false,
                 real.writeStore.currentRevision(PACK).token());
         Urn guard = new Urn(NodeKind.DIRECTIVE, "GUARD");
