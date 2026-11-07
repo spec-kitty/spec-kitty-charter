@@ -16,3 +16,4 @@ Expected until then: `check_docs.py adr` reports a numbering gap at 0064 on the 
 ## Gate scope (operator, 2026-11-07)
 
 The gate runs `verifyAll` (and targeted module checks during implementation). It does not run per-target-environment builds (native or per-OS service builds) or the timing checks (`:packs:timingBudgets`, `:activations:timingBudgets`). This applies to PR A and to the B/C runner.
+The whole-pack round trip (`:packs:wholePackRoundTrip`) runs only at closeout, not in the per-WP gate.
