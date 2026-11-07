@@ -34,7 +34,8 @@ import java.util.stream.Collectors;
  *       {@code mission_type} included;
  *   <li>{@code unknown_pack}: a {@code packs} id no configured pack has;
  *   <li>{@code version_not_held}: a pinned {@code packs} version other than the one held, refused with a detail naming
- *       both versions (research R2; operator ruling of 2026-11-06);
+ *       both versions (research R2; operator ruling of 2026-11-06), by a create only: every other write drops the pin
+ *       (B1, decision DM-01M6RN5Y406SB4KA13QYMQ2P8J, {@link StaleIds});
  *   <li>{@code duplicate_pack}, {@code unknown_kind} and {@code empty_deny_list}: the shape violations of
  *       {@link ActivationDocument.Builder}.
  * </ul>
@@ -51,6 +52,13 @@ import java.util.stream.Collectors;
  * <p>A snapshot that is not {@linkplain ClosureSnapshot#resolved() resolved} holds no closure: a pack the document
  * names is configured as nothing (research R4). Only those packs are judged then, each an {@code unknown_pack}
  * violation at its first position; the ids cannot be judged against a closure that does not exist.
+ *
+ * <p>A replace ({@link #checkReplace}) is judged against the document it replaces (A4, decision
+ * DM-01M6RA7XC5HC8915GZT2R3H83W), so a GET then PUT of the same body never fails without a pack change: an id the
+ * packs no longer hold is no {@code unknown_artifact} when the stored document names it, a pin to a version no pack
+ * holds is no {@code version_not_held} (B1), and the floor is judged on the deny entries it adds only. Both are then
+ * dropped from the document stored ({@link StaleIds}). A mission type is judged as any kind is, its deny entries
+ * included (A7 Q2).
  *
  * <p>A stored document is not judged here: a read serves it unchanged.
  */
@@ -80,16 +88,22 @@ public final class DocumentRules {
      * @return the refusal; empty when the document may be stored
      */
     public static Optional<CharterRefusal> check(ActivationDocument.Built built, ClosureSnapshot snapshot) {
-        List<RefusalViolation> violations = new ArrayList<>(built.violations());
-        violations.addAll(packViolations(built.written(), snapshot));
-        if (snapshot.resolved()) {
-            violations.addAll(idViolations(built.written(), snapshot));
-            violations.addAll(denyViolations(built.written(), snapshot));
-        }
+        List<RefusalViolation> violations = violations(built, snapshot, Tolerance.NONE);
         if (violations.isEmpty()) {
             return floorRefusal(built.document(), snapshot);
         }
         return Optional.of(invalid(violations));
+    }
+
+    private static List<RefusalViolation> violations(
+            ActivationDocument.Built built, ClosureSnapshot snapshot, Tolerance tolerance) {
+        List<RefusalViolation> violations = new ArrayList<>(built.violations());
+        violations.addAll(packViolations(built.written(), snapshot, tolerance));
+        if (snapshot.resolved()) {
+            violations.addAll(idViolations("/selected", built.written().selected(), snapshot, tolerance));
+            violations.addAll(idViolations("/deactivated", built.written().deactivated(), snapshot, tolerance));
+        }
+        return violations;
     }
 
     /**
@@ -109,22 +123,84 @@ public final class DocumentRules {
         if (refusal.isEmpty() || !refusal.orElseThrow().violations().isEmpty()) {
             return refusal;
         }
-        return floorRefusal(addedDenies(before, after), snapshot);
+        return floorRefusal(addedDenies(before, after, snapshot), snapshot);
     }
 
-    /** The document's packs and the deny entries {@code after} holds and {@code before} does not. */
-    private static ActivationDocument addedDenies(ActivationDocument before, ActivationDocument after) {
+    /**
+     * Checks the body of a full replace against the document it replaces (A4, B1): every id is judged as
+     * {@link #check(ActivationDocument.Built, ClosureSnapshot)} judges it, except that an id the closure no longer
+     * holds is tolerated when the stored document names it (in any known spelling, in either list of its kind), and a
+     * pinned version the closure does not hold is tolerated; {@link StaleIds#drop} then drops both from the document
+     * stored. The floor is judged on the deny entries the body adds to the stored document only ({@link #addedDenies}),
+     * as {@link #checkWrite} judges a per-artifact write.
+     *
+     * @param built the body as the request built it, normalized, with its shape violations
+     * @param stored the document the replace replaces; the empty document when nothing is stored, so that every deny
+     *     entry is added and every unknown id is refused
+     * @param snapshot the closure the body names
+     * @return the refusal; empty when the body, less what {@link StaleIds#drop} drops, may be stored
+     */
+    public static Optional<CharterRefusal> checkReplace(
+            ActivationDocument.Built built, ActivationDocument stored, ClosureSnapshot snapshot) {
+        List<RefusalViolation> violations = violations(built, snapshot, Tolerance.replacing(stored));
+        if (!violations.isEmpty()) {
+            return Optional.of(invalid(violations));
+        }
+        ActivationDocument kept =
+                snapshot.resolved() ? StaleIds.drop(built.document(), snapshot).document() : built.document();
+        return floorRefusal(addedDenies(stored, kept, snapshot), snapshot);
+    }
+
+    /**
+     * What a write tolerates in the body it judges: nothing for a create; the ids the stored document names and every
+     * pinned version for a replace.
+     */
+    private record Tolerance(ActivationDocument stored, boolean pinsDropped) {
+
+        static final Tolerance NONE =
+                new Tolerance(ActivationDocument.builder().build().document(), false);
+
+        static Tolerance replacing(ActivationDocument stored) {
+            return new Tolerance(stored, true);
+        }
+
+        /** Whether an id the closure does not hold is one the stored document still names, so a stale one. */
+        boolean stale(ArtifactKind kind, String id) {
+            Set<String> named = new HashSet<>(stored.deactivated(kind));
+            stored.selected(kind).ifPresent(named::addAll);
+            return ArtifactSpellings.resolve(kind, id, named) instanceof ArtifactSpellings.Resolution.Declared;
+        }
+    }
+
+    /**
+     * The document's packs and the deny entries {@code after} holds and {@code before} does not
+     * ({@code Den(D') \ Den(D)}): the deny entries a write is judged on the floor for. The stored document is not
+     * re-normalized, so a stored entry is compared in the declared spelling the closure holds for it (as
+     * {@link ArtifactSpellings} resolves it): a stored deny in another spelling of the same artifact is not added.
+     */
+    static ActivationDocument addedDenies(
+            ActivationDocument before, ActivationDocument after, ClosureSnapshot snapshot) {
         ActivationDocument.Builder added = ActivationDocument.builder();
         after.packs().ifPresent(added::packs);
         after.deactivated().forEach((kind, ids) -> {
+            Set<String> held = snapshot.held(kind);
+            Set<String> stored = new HashSet<>();
+            before.deactivated(kind).forEach(id -> stored.add(declared(kind, id, held)));
             List<String> adding = ids.stream()
-                    .filter(id -> !before.deactivated(kind).contains(id))
+                    .filter(id -> !stored.contains(declared(kind, id, held)))
                     .toList();
             if (!adding.isEmpty()) {
                 added.deactivated(kind, adding);
             }
         });
         return added.build().document();
+    }
+
+    /** The declared id the closure holds for a spelled id; the spelling itself when it resolves to none. */
+    private static String declared(ArtifactKind kind, String id, Set<String> held) {
+        return ArtifactSpellings.resolve(kind, id, held) instanceof ArtifactSpellings.Resolution.Declared(String found)
+                ? found
+                : id;
     }
 
     private static CharterRefusal invalid(List<RefusalViolation> violations) {
@@ -135,20 +211,22 @@ public final class DocumentRules {
                 violations);
     }
 
-    private static List<RefusalViolation> packViolations(ActivationDocument.Written written, ClosureSnapshot snapshot) {
+    private static List<RefusalViolation> packViolations(
+            ActivationDocument.Written written, ClosureSnapshot snapshot, Tolerance tolerance) {
         List<PackRef> packs = written.packs();
         Set<String> seen = new HashSet<>();
         List<RefusalViolation> violations = new ArrayList<>();
         for (int i = 0; i < packs.size(); i++) {
             PackRef pack = packs.get(i);
             if (seen.add(pack.packId())) {
-                packViolation(pack, "/packs/" + i, snapshot).ifPresent(violations::add);
+                packViolation(pack, "/packs/" + i, snapshot, tolerance).ifPresent(violations::add);
             }
         }
         return violations;
     }
 
-    private static Optional<RefusalViolation> packViolation(PackRef pack, String pointer, ClosureSnapshot snapshot) {
+    private static Optional<RefusalViolation> packViolation(
+            PackRef pack, String pointer, ClosureSnapshot snapshot, Tolerance tolerance) {
         if (!snapshot.resolved() && !snapshot.unknownPacks().contains(pack.packId())) {
             return Optional.empty();
         }
@@ -159,31 +237,24 @@ public final class DocumentRules {
         }
         String held = entry.orElseThrow().version();
         return pack.version()
-                .filter(pinned -> !pinned.equals(held))
+                .filter(pinned -> !tolerance.pinsDropped() && !pinned.equals(held))
                 .map(pinned -> new RefusalViolation(
                         pointer + "/version",
                         "version_not_held",
                         "The pack '" + pack.packId() + "' is held at " + held + ", not " + pinned + "."));
     }
 
-    private static List<RefusalViolation> idViolations(ActivationDocument.Written written, ClosureSnapshot snapshot) {
+    private static List<RefusalViolation> idViolations(
+            String member, Map<ArtifactKind, List<String>> lists, ClosureSnapshot snapshot, Tolerance tolerance) {
         List<RefusalViolation> violations = new ArrayList<>();
-        for (Map.Entry<ArtifactKind, List<String>> list : written.selected().entrySet()) {
-            violations.addAll(unknownArtifacts("/selected", list, snapshot));
-        }
-        return violations;
-    }
-
-    private static List<RefusalViolation> denyViolations(ActivationDocument.Written written, ClosureSnapshot snapshot) {
-        List<RefusalViolation> violations = new ArrayList<>();
-        for (Map.Entry<ArtifactKind, List<String>> list : written.deactivated().entrySet()) {
-            violations.addAll(unknownArtifacts("/deactivated", list, snapshot));
+        for (Map.Entry<ArtifactKind, List<String>> list : lists.entrySet()) {
+            violations.addAll(unknownArtifacts(member, list, snapshot, tolerance));
         }
         return violations;
     }
 
     private static List<RefusalViolation> unknownArtifacts(
-            String member, Map.Entry<ArtifactKind, List<String>> list, ClosureSnapshot snapshot) {
+            String member, Map.Entry<ArtifactKind, List<String>> list, ClosureSnapshot snapshot, Tolerance tolerance) {
         ArtifactKind kind = list.getKey();
         String pointer = member + "/" + kind.token();
         List<RefusalViolation> violations = new ArrayList<>();
@@ -191,6 +262,7 @@ public final class DocumentRules {
             String id = list.getValue().get(i);
             switch (ArtifactSpellings.resolve(kind, id, snapshot.held(kind))) {
                 case ArtifactSpellings.Resolution.Declared declared -> {}
+                case ArtifactSpellings.Resolution.Unknown unknown when tolerance.stale(kind, id) -> {}
                 case ArtifactSpellings.Resolution.Unknown unknown ->
                     violations.add(new RefusalViolation(
                             pointer + "/" + i,
