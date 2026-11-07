@@ -782,6 +782,9 @@ public final class RegistrationJobs implements AutoCloseable {
                 return new Refused(Kind.STALE, null, detail(stale));
             } catch (RetryLaterException busy) {
                 return new Refused(Kind.BUSY, null, detail(busy));
+            } catch (SourceUpstreamException upstream) {
+                return new Refused(
+                        upstream.timedOut() ? Kind.UPSTREAM_TIMEOUT : Kind.UPSTREAM_FAILED, null, detail(upstream));
             } catch (JobEnded gone) {
                 throw gone;
             } catch (Exception failure) {
@@ -896,7 +899,8 @@ public final class RegistrationJobs implements AutoCloseable {
                 case STALE -> "refused:precondition_failed";
                 case BUSY -> "refused:registry_busy";
                 case FAILED -> "failed:internal_error";
-                case UPSTREAM_FAILED, UPSTREAM_TIMEOUT -> throw new UnsupportedOperationException("not built yet");
+                case UPSTREAM_FAILED -> "refused:upstream_failed";
+                case UPSTREAM_TIMEOUT -> "refused:upstream_timeout";
                 case CODED ->
                     "refused:"
                             + Objects.requireNonNull(refused.refusal()).code().token();

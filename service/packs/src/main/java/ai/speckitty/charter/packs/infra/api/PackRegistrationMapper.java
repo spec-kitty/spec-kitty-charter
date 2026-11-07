@@ -5,6 +5,7 @@ import ai.speckitty.charter.api.model.PackRegistration;
 import ai.speckitty.charter.api.model.PackRegistrationNotices;
 import ai.speckitty.charter.api.model.PackRegistrationProblem;
 import ai.speckitty.charter.api.model.PackRegistrationStatus;
+import ai.speckitty.charter.api.model.PackSourceRecord;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
@@ -79,7 +80,7 @@ final class PackRegistrationMapper {
             body.setFinishedAt(at(status.finishedAt()));
         }
         if (status.ending() instanceof RegistrationJobs.Succeeded done) {
-            body.setResult(result(done.outcome()));
+            body.setResult(result(done.outcome(), done.source()));
             own.put(Relation.PACK, links.link(PACKS, done.outcome().pack().value()));
         } else if (status.ending() instanceof RegistrationJobs.Refused refused) {
             body.setProblem(problem(refused));
@@ -88,13 +89,26 @@ final class PackRegistrationMapper {
         return body;
     }
 
-    PackRegistration result(RegistrationOutcome outcome) {
+    PackRegistration result(RegistrationOutcome outcome, Map<String, String> source) {
         PackRegistration body =
                 stored(outcome.pack().value(), outcome.descriptor(), outcome.level(), outcome.revision());
+        if (!source.isEmpty()) {
+            body.setSource(sourceRecord(source));
+        }
         body.setOutcome(
                 PackRegistration.OutcomeEnum.fromValue(outcome.outcome().name().toLowerCase(Locale.ROOT)));
         body.setNotices(notices(outcome.notices()));
         return body;
+    }
+
+    /** The source as the request named it, which the fetcher recorded: its kind, and the URL or the path. */
+    private static PackSourceRecord sourceRecord(Map<String, String> source) {
+        PackSourceRecord record = new PackSourceRecord(PackSourceRecord.KindEnum.fromValue(source.get("kind")));
+        record.setUrl(source.get("url"));
+        record.setRef(source.get("ref"));
+        record.setPath(source.get("path"));
+        record.setCommit(source.get("commit"));
+        return record;
     }
 
     PackRegistration summary(PackSummaryQuery.Summary summary) {
@@ -147,7 +161,8 @@ final class PackRegistrationMapper {
             case BUSY -> plain(HttpStatus.SERVICE_UNAVAILABLE, refused.detail());
             case FAILED ->
                 refusals.registrationProblem(new CharterRefusal(RefusalCode.INTERNAL_ERROR, refused.detail()));
-            case UPSTREAM_FAILED, UPSTREAM_TIMEOUT -> throw new UnsupportedOperationException("not built yet");
+            case UPSTREAM_FAILED -> plain(HttpStatus.BAD_GATEWAY, refused.detail());
+            case UPSTREAM_TIMEOUT -> plain(HttpStatus.GATEWAY_TIMEOUT, refused.detail());
         };
     }
 
