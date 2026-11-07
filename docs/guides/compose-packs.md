@@ -73,7 +73,9 @@ depends_on:
   one version. Ranges that only touch, such as `<2` and `>=2`, share none.
 - A range does not exclude prereleases unless it names one: `>=1.0` admits `1.1a1`. This deliberately departs from the
   default of `packaging`, so a pack at a prerelease version can satisfy a range written for its release line.
-- `parent_pack` is lineage only. It does not load anything; `depends_on` does.
+- `parent_pack` is an ordering and a cycle edge, as `depends_on` is: the pack a child extends merges before it, and a
+  `parent_pack` cycle, a pack that names itself included, is `pack_dependency_cycle`. It adds no `depends_on` entry and no
+  version range.
 
 ## Respect the level rule
 
@@ -137,6 +139,11 @@ enhances it do not conflict. The conflict is refused unless an
 [`overrides` edge](/glossary/charter/#overrides-edge) settles it. Across levels the same id is a legitimate layer
 override, so no edge is needed.
 
+Presets contest the same way, with one difference: no `overrides` edge settles them. Two packs at one level that both
+hold a preset with the same id are refused as `pack_sibling_conflict` unless one is on the other's `parent_pack`
+line, where the child, which merges after its parent, takes the place of the parent's copy. Across levels the preset of
+the level nearer the project wins, as a layer override (ADR-0059 decision 3).
+
 ```yaml
 overrides:
   - artifact: directive:DIRECTIVE_001
@@ -175,7 +182,7 @@ pack-scoped reads still answer.
 
 | Code | Cause | Fix |
 |---|---|---|
-| `pack_dependency_cycle` | `depends_on` edges lead from a pack back to itself. The detail names a pack on the cycle and the cycle path. | Remove an edge to break the cycle; a shared base belongs in a pack both depend on. |
+| `pack_dependency_cycle` | `depends_on` and `parent_pack` edges lead from a pack back to itself, or a pack names itself as its parent. The detail names a pack on the cycle and the cycle path. | Remove an edge to break the cycle; a shared base belongs in a pack both depend on. |
 | `pack_dependency_unknown` | A `depends_on[].pack_id` names no configured pack. | Correct the ULID, or configure the dependency's pack. |
 | `pack_dependency_out_of_range` | The held version misses the range, or two ranges on one dependency share no version. A malformed range is not this code: it makes `pack.yaml` unreadable (`pack_unreadable`). | Widen the range, update the held pack, or align the dependents' ranges. |
 | `pack_parent_unresolved` | `parent_pack` names no configured pack. | Correct the ULID, configure the parent pack, or set `parent_pack: null`. |
@@ -185,7 +192,7 @@ pack-scoped reads still answer.
 | `pack_sibling_conflict` | Two packs at one level both change, or both define, the same artifact id, and no `overrides` edge settles it. | Remove one change, or declare `overrides` naming a contesting member (see the caveats above). |
 | `pack_reference_unqualified` | A bare reference, on an edge end or in a typed reference, `procedures` or `directive_refs`, names an artifact only another pack holds. | Write it `<pack-name>::<urn>` and depend on that pack. |
 | `pack_reference_pack_missing` | A qualified reference names a pack outside the referring pack's own `depends_on` closure. | Add a `depends_on` on that pack, or correct the name. |
-| `pack_reference_artifact_missing` | A qualified reference names a pack in the closure, but that pack holds no such artifact. | Correct the URN, or reference the pack that holds it. |
+| `pack_reference_artifact_missing` | A qualified reference names a pack in the closure, but that pack holds no such artifact. Also: a preset item or a `policy.yaml` lock names an artifact the closure holds only under another case (`directive_001` for `DIRECTIVE_001`); ids are matched exactly, so it would govern nothing (operator ruling of 2026-11-06). | Correct the URN or the id to the declared spelling, or reference the pack that holds it. |
 
 ## See also
 

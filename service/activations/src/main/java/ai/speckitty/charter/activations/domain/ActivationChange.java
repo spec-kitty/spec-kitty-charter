@@ -20,7 +20,7 @@ import java.util.TreeSet;
  * </ul>
  *
  * <p>{@code dropped} is apart from both: the ids the write removed from the stored document before it computed anything,
- * because the activation's closure no longer declares them (ADR-0059 amendment R5, {@link StaleIds}). They are
+ * because the activation's closure no longer declares them (ADR-0059 amendment A5, {@link StaleIds}). They are
  * measured against the stored document, {@code applied} and {@code cleared} against the document without them.
  *
  * <p>A no-op has all three empty, and its document keeps its revision.
