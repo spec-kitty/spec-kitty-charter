@@ -591,6 +591,93 @@ class PackRegistrationServiceTest {
                 .isEqualTo(Outcome.REPLACED);
     }
 
+    private static final String BAD_EDGE =
+            "- source: directive:OPEN_ONE\n  target: directive:DERIVED_ONE\n  relation: not_a_relation\n";
+
+    /** Asserts that dropping a stored document, which breaks the graph schema, is refused when it held a locked edge. */
+    private void assertDroppedGraphIsGated(Path host, String file, String lockedText, String openText) {
+        Rig rig = rigWithBase(host.resolve("locked"));
+        rig.install("derived", derived("1.0.0").file(file, lockedText));
+
+        assertThat(refusalOf(() -> rig.register("derived", rig.stage(derived("2.0.0")), Preconditions.none())))
+                .isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
+
+        Rig control = rigWithBase(host.resolve("open"));
+        control.install("derived", derived("1.0.0").file(file, openText));
+        assertThat(control.register("derived", control.stage(derived("2.0.0")), Preconditions.none())
+                        .outcome())
+                .as("the control: the same document without the locked edge")
+                .isEqualTo(Outcome.REPLACED);
+    }
+
+    @Test
+    void aDroppedLockedEdgeIsGatedWhenItsDocumentHoldsAnEntryWithAnUnknownRelation(@TempDir Path host) {
+        assertDroppedGraphIsGated(
+                host, "edges.graph.yaml", shard("LOCKED_ONE") + BAD_EDGE, shard("OPEN_ONE") + BAD_EDGE);
+    }
+
+    @Test
+    void aDroppedLockedEdgeIsGatedWhenItsDocumentHasAnUnknownTopLevelKey(@TempDir Path host) {
+        assertDroppedGraphIsGated(
+                host, "edges.graph.yaml", shard("LOCKED_ONE") + "extra_key: 1\n", shard("OPEN_ONE") + "extra_key: 1\n");
+    }
+
+    @Test
+    void aDroppedLockedEdgeIsGatedWhenTheRegisteredShardHoldsABadEntry(@TempDir Path host) {
+        String locked = RelationshipShard.write(List.of(Relationship.of(
+                        Urn.parse("directive:LOCKED_ONE").orElseThrow(),
+                        Urn.parse("directive:DERIVED_ONE").orElseThrow(),
+                        RelationType.REQUIRES)))
+                + BAD_EDGE;
+        String open = RelationshipShard.write(List.of(Relationship.of(
+                        Urn.parse("directive:OPEN_ONE").orElseThrow(),
+                        Urn.parse("directive:DERIVED_ONE").orElseThrow(),
+                        RelationType.REQUIRES)))
+                + BAD_EDGE;
+
+        assertDroppedGraphIsGated(host, "registered.graph.yaml", locked, open);
+    }
+
+    @Test
+    void anArtifactFileThatDoesNotBindCountsByTheIdItDeclaresNotByItsFileName(@TempDir Path host) {
+        Rig rig = rigWithBase(host.resolve("locked"));
+        rig.install(
+                "derived",
+                derived("1.0.0")
+                        .file(
+                                "directives/DECOY.directive.yaml",
+                                Packs.directiveText("LOCKED_ONE", "Mine") + "references:\n  - directive:X\n"));
+
+        assertThat(refusalOf(() -> rig.register("derived", rig.stage(derived("2.0.0")), Preconditions.none())))
+                .as("DECOY.directive.yaml holds LOCKED_ONE")
+                .isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
+
+        Rig control = rigWithBase(host.resolve("open"));
+        control.install(
+                "derived",
+                derived("1.0.0")
+                        .file(
+                                "directives/DECOY.directive.yaml",
+                                Packs.directiveText("OPEN_ONE", "Mine") + "references:\n  - directive:X\n"));
+        assertThat(control.register("derived", control.stage(derived("2.0.0")), Preconditions.none())
+                        .outcome())
+                .as("the control: the same file holding an open id")
+                .isEqualTo(Outcome.REPLACED);
+    }
+
+    @Test
+    void aFileThatBindsUnderANameThatIsNotItsIdStillCountsByItsId(@TempDir Path host) {
+        Rig rig = rigWithBase(host);
+        rig.install(
+                "derived",
+                derived("1.0.0")
+                        .file("directives/DECOY.directive.yaml", Packs.directiveText("LOCKED_ONE", "Mine"))
+                        .file("directives/DERIVED_ONE.directive.yaml", LEGACY_DIRECTIVE));
+
+        assertThat(refusalOf(() -> rig.register("derived", rig.stage(derived("2.0.0")), Preconditions.none())))
+                .isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
+    }
+
     @Test
     void aReplaceMayNotTakeTheNameOfAnotherStoredPack(@TempDir Path host) {
         Rig rig = new Rig(host);

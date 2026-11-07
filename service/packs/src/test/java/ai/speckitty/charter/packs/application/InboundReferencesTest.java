@@ -313,6 +313,34 @@ class InboundReferencesTest {
     }
 
     @Test
+    void anArtifactFileThatDoesNotBindCountsByTheIdItDeclaresForTheScan(@TempDir Path host) throws IOException {
+        Rig rig = rigWith(
+                host.resolve("a"),
+                derived("1.0.0", "").file("refs.graph.yaml", edge("directive:D_ONE", "directive:A_ONE")));
+        Files.delete(rig.packs.resolve("base").resolve(A_FILE));
+        Files.writeString(
+                rig.packs.resolve("base/directives/DECOY.directive.yaml"),
+                Packs.directiveText("A_ONE", "A") + "references:\n  - directive:X\n");
+        Packs withoutDecoy = base("2.0.0").with(A_FILE, null);
+
+        assertThat(refusal(() -> rig.register("base", rig.stage(withoutDecoy), Preconditions.none()))
+                        .code())
+                .as("DECOY.directive.yaml holds A_ONE, which derived refers to")
+                .isEqualTo(RefusalCode.ARTIFACT_REFERENCED);
+
+        Rig control = rigWith(
+                host.resolve("b"),
+                derived("1.0.0", "").file("refs.graph.yaml", edge("directive:D_ONE", "directive:A_ONE")));
+        Files.writeString(
+                control.packs.resolve("base/directives/DECOY.directive.yaml"),
+                Packs.directiveText("FREE_ONE", "Free") + "references:\n  - directive:X\n");
+        assertThat(control.register("base", control.stage(base("2.0.0")), Preconditions.none())
+                        .outcome())
+                .as("the control: the same file holding an id nothing refers to")
+                .isEqualTo(Outcome.REPLACED);
+    }
+
+    @Test
     void aQualifiedReferenceToTheOldNameStillBlocksARenamingReplace(@TempDir Path host) {
         Rig rig = rigWith(
                 host, derived("1.0.0", "").file("refs.graph.yaml", edge("directive:D_ONE", "base::directive:A_ONE")));
