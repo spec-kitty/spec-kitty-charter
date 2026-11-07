@@ -254,7 +254,23 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
                             + violations.getFirst().pointer() + ".",
                     violations);
         }
-        return contentsOf(directory, loaded);
+        return stagedContentsOf(directory, loaded);
+    }
+
+    /** The facts of a staged tree; a file the reading of them cannot take is a fault of the upload, a 422, not a 500. */
+    private WholePackWriteStore.Contents stagedContentsOf(Path directory, LoadedPack loaded) {
+        try {
+            return contentsOf(directory, loaded);
+        } catch (CharterRefusal refusal) {
+            if (refusal.code() != RefusalCode.PACK_UNREADABLE) {
+                throw refusal;
+            }
+            String detail = String.valueOf(refusal.getMessage());
+            throw CharterRefusal.withViolations(
+                    RefusalCode.VALIDATION_FAILED,
+                    "The pack cannot be registered: " + detail,
+                    List.of(violationOf("pack", "unreadable", detail)));
+        }
     }
 
     @Override
@@ -466,7 +482,9 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
 
     /** A violation of the refusal; a kind that is no snake-case token is told as {@code invalid}. */
     private static RefusalViolation violationOf(String pointer, String code, String detail) {
-        return new RefusalViolation(pointer, code.matches("[a-z][a-z0-9_]*") ? code : "invalid", detail);
+        // The detail names the file as the pointer does, so a client that shows only the detail still says where.
+        String named = pointer.isEmpty() || detail.contains(pointer) ? detail : pointer + ": " + detail;
+        return new RefusalViolation(pointer, code.matches("[a-z][a-z0-9_]*") ? code : "invalid", named);
     }
 
     /** The reserved shard, when the tree holds one that no registration wrote. */
