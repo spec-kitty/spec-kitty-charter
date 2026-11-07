@@ -215,7 +215,15 @@ public final class RegistrationJobs implements AutoCloseable {
         default void whileRunning(String id) {}
     }
 
-    /** Where a job's attempt came from, for its audit entry. */
+    /**
+     * Where a job's attempt came from, for its audit entry.
+     *
+     * @param worktree the worktree identity
+     * @param credential what the request carried
+     * @param operation the operation
+     * @param sourceKind the source kind
+     * @param locator the locator with its query cut
+     */
     public record Origin(
             String worktree, AuditLog.Credential credential, String operation, String sourceKind, String locator) {
 
@@ -272,7 +280,17 @@ public final class RegistrationJobs implements AutoCloseable {
         Status status();
     }
 
-    /** What the jobs need of the outside world. */
+    /**
+     * What the jobs need of the outside world.
+     *
+     * @param clock the clock of the statuses and the deadline
+     * @param service the registration flow
+     * @param revisions the stored revisions
+     * @param audit the audit trail
+     * @param gate the test seam
+     * @param room the free-space check
+     * @param stagingRoot the directory the jobs stage in
+     */
     public record Dependencies(
             java.time.Clock clock,
             PackRegistrationService service,
