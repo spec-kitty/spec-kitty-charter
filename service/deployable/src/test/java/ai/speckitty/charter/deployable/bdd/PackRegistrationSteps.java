@@ -83,7 +83,8 @@ public class PackRegistrationSteps {
         this.clock = clock;
     }
 
-    @After
+    /** Before the scenario's packs are deleted (a higher order runs first): a job may still be writing into them. */
+    @After(order = 20000)
     public void putTheSeamsBack() {
         releaseTheRegistry();
         gate.releaseAll();
