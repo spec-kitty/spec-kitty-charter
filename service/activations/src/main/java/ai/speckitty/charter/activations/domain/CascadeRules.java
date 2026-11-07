@@ -29,7 +29,7 @@ import java.util.function.Predicate;
  *       pass-through and is reported as any stop is (D2.4).
  *   <li><b>Clearing</b>: a select clears the target's own deny entry; with {@code includeDeactivated} it also clears the
  *       deny entries the walk passes through within the scope: what it reached in scope and the ancestors it passed
- *       whose kind is in scope (R3). A denied artifact outside the scope stops the walk and keeps its deny entry, as
+ *       whose kind is in scope (A3). A denied artifact outside the scope stops the walk and keeps its deny entry, as
  *       without {@code includeDeactivated}. A cleared ancestor is cleared, never selected.
  *   <li><b>Deactivate</b> ({@link #planDeactivate}, {@link #planShared}, {@link #applyDeactivate}): the target and, with
  *       a cascade, the selected artifacts in scope only it reaches leave {@code selected}. The target's walk follows
@@ -69,7 +69,7 @@ public final class CascadeRules {
      * The walk of a select: from the target over the cascade relations with the lineage, stopping at the document's deny
      * entries other than the target's own. With {@code includeDeactivated} it stops only at those whose kind the scope
      * does not admit, so an artifact outside the scope stops the walk as it would without it (ADR-0059 as amended on
-     * 2026-11-06, R3); a denied ancestor is passed through only when its kind is in scope.
+     * 2026-11-06, A3); a denied ancestor is passed through only when its kind is in scope.
      *
      * @param document the document before the write
      * @param target the artifact selected
