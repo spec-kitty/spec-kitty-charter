@@ -134,6 +134,12 @@ API writes and how it is framed.
 - **Activation writes as the only write surface** (ADR-0020). Rejected: activation writes *choices*,
   not content; authoring content needs its own content-write path.
 
+## Amendment 2026-11-07: `DELETE`
+
+Decision 2 ("No `DELETE`, `PATCH` or generic CRUD") is superseded for `DELETE` by [ADR-0065](/adr/0065-pack-registration-replaces-the-whole-pack/): an artifact and a registered
+relationship can be removed by `DELETE`, and a whole-pack registration replaces the known pack, removals included.
+`PATCH` and generic CRUD stay out. The original text stands.
+
 ## References
 
 - [ADR-0005: The charter offering service registers and distributes packs](/adr/0005-service-registers-and-distributes-packs/)

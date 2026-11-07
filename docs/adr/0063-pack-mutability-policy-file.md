@@ -135,6 +135,14 @@ would repair it. The operator ruled on 2026-11-06 that repair writes are allowed
 valid being let through. That is not built; it is tracked in
 [#404](https://github.com/spec-kitty/spec-kitty-charter/issues/404).
 
+## Amendment 2026-11-07: REMOVE and the staged closure
+
+[ADR-0065](/adr/0065-pack-registration-replaces-the-whole-pack/) adds a REMOVE operation to the write gate: allowed on `open` and `extendable`, refused on `locked`
+([ADR-0012](/adr/0012-pack-mutability-policy/) decision 1, [ADR-0030](/adr/0030-removal-is-distinct-from-deactivation/)
+decision 3). The gate also runs over a closure composed with the written pack in place, since a registration writes
+a pack that is not yet in the live closure. Decision 3 stands. The 2026-11-06 repair-write amendment above is not
+applied in the registration work of that record, which stays strict.
+
 ## Open questions
 
 1. **Only `policy.yaml`.** The descriptor admits only `policy.yaml` in this version, because the whole-pack gate

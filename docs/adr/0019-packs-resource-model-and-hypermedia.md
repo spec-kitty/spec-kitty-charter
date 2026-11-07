@@ -160,6 +160,11 @@ break ([ADR-0022](/adr/0022-contract-versions-start-at-0-x/)).
    read-only `resolution` resource, and verification is part of distribution. This supersedes the
    example relations of [ADR-0007](/adr/0007-rest-hateoas-contract-of-record/) decision 4.
 
+   *Amended 2026-11-07 ([ADR-0065](/adr/0065-pack-registration-replaces-the-whole-pack/)): `PUT /packs/{packId}` replaces a whole pack and, like `POST /packs`, answers
+   `202 Accepted` with a status resource, not `201 Created`. `DELETE /packs/{packId}/artifacts/{kind}/{artifactId}`
+   and `DELETE /packs/{packId}/relationships` join the map, and `GET /pack-registrations/{registrationId}` is a new
+   top-level status resource.*
+
 ## Consequences
 
 ### Positive
