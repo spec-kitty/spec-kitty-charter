@@ -55,6 +55,9 @@ public class RefusalHandler {
      */
     static final int MAX_VIOLATIONS = 100;
 
+    /** The most packs a problem body lists, as {@code artifact_referenced} promises: a pack names at most 100 referrers. */
+    static final int MAX_PACKS = 100;
+
     private static final String INTERNAL_ERROR_DETAIL =
             "The charter service failed unexpectedly; the failure is logged.";
 
@@ -176,6 +179,7 @@ public class RefusalHandler {
         body.setDetail(refusal.getMessage() + leftOut(refusal.violations().size()));
         if (!refusal.packs().isEmpty()) {
             body.setPacks(refusal.packs().stream()
+                    .limit(MAX_PACKS)
                     .map(pack -> new RefusalPack(pack.descriptorPackId(), pack.packId(), pack.name()))
                     .toList());
         }
