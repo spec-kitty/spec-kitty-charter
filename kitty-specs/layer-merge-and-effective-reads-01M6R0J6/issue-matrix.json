@@ -180,6 +180,18 @@
       "verdict": "not-applicable",
       "wp": null
     },
+    "#404": {
+      "evidence_ref": "Follow-up: #404 (repair writes). Operator ruling DM-01M6TQ67C9ZTNGZB9CY28JS54F: PR A stays strict; #404 out of scope.",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
+      "wp": null
+    },
     "#405": {
       "evidence_ref": "Follow-up: spec-kitty/spec-kitty-open-packs#131 (edges), then the charter pin bump and guard test (operator steer 2026-11-07, DM-01M6TDH5BSMNZMFJBY1NPBZYTK)",
       "fr": null,
