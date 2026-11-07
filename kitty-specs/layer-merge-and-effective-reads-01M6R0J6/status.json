@@ -349,6 +349,9 @@
       "last_event_id": "01M6TRCXM1RNCX6TT228JYMRG8",
       "last_transition_at": "2026-11-07T10:20:50.689648+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "ADR-0065 written (D1-D13) with Amends notes for ADR-0026, 0005, 0019, 0030, 0063, 0064 D4; amendment notes added to 0005/0019/0026/0063; README untouched (generated index); docs checks clean except expected 0064 numbering gap"
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 4941,
