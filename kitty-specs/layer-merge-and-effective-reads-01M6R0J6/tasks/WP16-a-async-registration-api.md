@@ -216,3 +216,17 @@ NFR-008 latency in `timingBudgets`, report-only.
 
 - The registration job maps `RegistryBusyException` to `refused` `503` with `Retry-After` (WP12 hand-off; coordinate with WP14 so the mapping lives in one place).
 - When binding the AS8 scenario (`override_not_permitted` on a built-in lock), fix its assertion: the pack is created as `main` and named `main-pack`, so assert `/problem/packs/1/packId` is `main` or check `/name` (WP11 review cycle 2).
+
+## Hand-off from WP14 (2026-11-07)
+
+- `PackRegistrationService` lets `RegistryBusyException` propagate. Map it to `503` with `Retry-After` in one place that
+  serves both the registration job and the synchronous per-artifact writes (ADR-0065 D12, WP12 hand-off); today the
+  per-artifact writes still answer `500 internal_error` on contention. Add a scenario for the per-artifact `503`.
+- `409 artifact_referenced` carries `violations` only (pointer `<pack>/<referrer>`), because the kernel's
+  `CharterRefusal` has no factory taking both `packs` and `violations`. Add that factory (out-of-map kernel edit, with
+  its rationale) and have the refusal list the referring packs as the contract asks (Q2/Q3 ruling).
+- WP14 flipped `pack_version_conflict` and `artifact_referenced` to `raised: true`, because `ReservedRefusalCodesTest`
+  requires it once a main class names the code. Confirm this reading of the `x-refusal` text when you replace the
+  reserved handlers, and reword that text if it still says a reserved operation's codes stay `raised: false`.
+- `If-Match` together with `If-None-Match: *` throws `IllegalArgumentException` in `Preconditions`; the controller
+  answers it `400`.
