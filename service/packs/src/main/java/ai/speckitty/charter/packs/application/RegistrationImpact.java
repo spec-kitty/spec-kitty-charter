@@ -18,8 +18,12 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 /**
@@ -40,6 +44,8 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public final class RegistrationImpact {
+
+    private static final Logger LOG = LoggerFactory.getLogger(RegistrationImpact.class);
 
     /**
      * The floor and lock changes of a registration (FR-027, B4), over every closure the write joined: the must-have
@@ -179,25 +185,81 @@ public final class RegistrationImpact {
     }
 
     /**
-     * What the stored packs would be refused for now (stub).
+     * A stored pack the impact check would refuse now.
      *
-     * @param pack the configured name of the pack
+     * @param pack the configured name of the pack whose closure is refused
      * @param code the refusal code
-     * @param detail what is wrong
+     * @param detail what is wrong, as the refusal would say it
      */
-    public record Finding(String pack, RefusalCode code, String detail) {}
+    public record Finding(String pack, RefusalCode code, String detail) {
 
-    /**
-     * Judges the closure of every stored pack as a registration would (stub).
-     *
-     * @return one finding per stored pack that would be refused
-     */
-    public List<Finding> census() {
-        return List.of();
+        /**
+         * Checks the fields.
+         *
+         * @param pack the configured name of the pack
+         * @param code the refusal code
+         * @param detail what is wrong
+         */
+        public Finding {
+            Objects.requireNonNull(pack, "pack");
+            Objects.requireNonNull(code, "code");
+            Objects.requireNonNull(detail, "detail");
+        }
     }
 
-    /** Logs the census at startup (stub). */
-    public void logCensus() {}
+    /**
+     * The census (IC-15, read side): the closure of every stored pack, composed and judged as a registration judges a
+     * closure it joins. Packs registered before a rule are not re-judged on a read, which answers {@code pack_unreadable}
+     * only as it always has; this says which of them a write into their closure would now refuse. It reads and writes
+     * nothing but the packs, once each, and takes no lock.
+     *
+     * @return one finding per stored pack whose closure would be refused, in catalog order
+     */
+    public List<Finding> census() {
+        StagedPackViews.View stored = views.session().stored();
+        Views composing = Views.over(stored);
+        List<Finding> findings = new ArrayList<>();
+        for (ConfiguredPack pack : stored.catalog().configured()) {
+            censusOf(pack, composing).ifPresent(findings::add);
+        }
+        return findings;
+    }
+
+    private static Optional<Finding> censusOf(ConfiguredPack pack, Views composing) {
+        String name = pack.id().value();
+        try {
+            return ImpactRelations.check(composing.offering().composedWithFacts(List.of(pack.id())))
+                    .map(broken ->
+                            new Finding(name, broken.code(), broken.detail() + " (packs " + packsOf(broken) + ")"));
+        } catch (CharterRefusal refused) {
+            return Optional.of(new Finding(name, refused.code(), String.valueOf(refused.getMessage())));
+        }
+    }
+
+    private static String packsOf(ImpactRelations.Violation broken) {
+        return String.join(
+                ", ",
+                broken.packs().stream()
+                        .map(pack -> pack.configured().id().value())
+                        .toList());
+    }
+
+    /**
+     * Logs the census at startup, one warning per finding (T075). A census that cannot run is itself a warning, never a
+     * failure to start.
+     */
+    @EventListener(ApplicationReadyEvent.class)
+    public void logCensus() {
+        try {
+            census().forEach(finding -> LOG.warn(
+                    "The stored pack {} would be refused by the registration impact check ({}): {}",
+                    finding.pack(),
+                    finding.code().token(),
+                    finding.detail()));
+        } catch (RuntimeException unreadable) {
+            LOG.warn("The census of the stored packs could not run: {}", unreadable.getMessage());
+        }
+    }
 
     /**
      * Tells the activations slice that a registration was stored, under the locks.
