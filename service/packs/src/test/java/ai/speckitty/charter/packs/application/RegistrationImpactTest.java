@@ -26,6 +26,7 @@ import org.junit.jupiter.params.provider.MethodSource;
  * The registration impact check of IC-15 (FR-025, FR-027) and the hand-off rulings WP14's review left to it. Every refusal
  * is paired with a positive control on the same fixture, and a refusal is shown to change nothing on disk.
  */
+@org.junit.jupiter.api.extension.ExtendWith(org.springframework.boot.test.system.OutputCaptureExtension.class)
 class RegistrationImpactTest {
 
     static final String BASE_ID = PackRegistrationServiceTest.ulid('E');
@@ -631,5 +632,64 @@ class RegistrationImpactTest {
         refusalOf(() -> rig.register("acme", rig.stage(noticing("1.0.0", false, false)), Preconditions.none()));
 
         assertThat(rig.registered).containsExactly("acme");
+    }
+
+    // ---- the census of stored packs (T075)
+    // ---------------------------------------------------------------------------
+
+    private static final String CYCLE = graph(edge("A", "enhances", "B"), edge("B", "enhances", "A"));
+
+    private static Packs storedAcme(String relations) {
+        return Packs.of(ACME_ID, "acme", "1.0.0", "org")
+                .directive("A", "A")
+                .directive("B", "B")
+                .file("relations.graph.yaml", relations);
+    }
+
+    @Test
+    void theCensusNamesEachStoredPackThatWouldNowBeRefusedAndNoOther(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.install("acme", storedAcme(CYCLE));
+        rig.install("base", base("1.0.0"));
+
+        List<RegistrationImpact.Finding> findings = rig.impact.census();
+
+        assertThat(findings)
+                .extracting(RegistrationImpact.Finding::pack, RegistrationImpact.Finding::code)
+                .containsExactly(org.assertj.core.groups.Tuple.tuple("acme", RefusalCode.ENHANCES_CYCLE));
+        assertThat(findings.getFirst().detail()).contains("acme");
+        assertThat(rig.filesOf(rig.packs.resolve("acme")))
+                .as("the census reads and writes nothing")
+                .containsKey("relations.graph.yaml");
+    }
+
+    @Test
+    void theCensusFindsNothingInSoundPacks(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.install("acme", storedAcme(graph(edge("B", "enhances", "A"))));
+
+        assertThat(rig.impact.census()).isEmpty();
+    }
+
+    @Test
+    void aPackThatCannotBeComposedIsAFindingToo(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.install("derived", derived("1.0.0"));
+
+        assertThat(rig.impact.census())
+                .extracting(RegistrationImpact.Finding::pack, RegistrationImpact.Finding::code)
+                .containsExactly(org.assertj.core.groups.Tuple.tuple("derived", RefusalCode.PACK_DEPENDENCY_UNKNOWN));
+    }
+
+    @Test
+    void theStartupLogWarnsOnceForEachFindingAndRefusesNothing(
+            @TempDir Path host, org.springframework.boot.test.system.CapturedOutput output) {
+        Rig rig = new Rig(host);
+        rig.install("acme", storedAcme(CYCLE));
+
+        rig.impact.logCensus();
+
+        assertThat(output.getAll()).contains("WARN").contains("acme").contains("enhances_cycle");
+        assertThat(rig.filesOf(rig.packs.resolve("acme"))).containsKey("relations.graph.yaml");
     }
 }

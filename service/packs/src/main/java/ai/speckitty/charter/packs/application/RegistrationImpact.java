@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.application;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
@@ -176,6 +177,27 @@ public final class RegistrationImpact {
         }
         return diff.notices();
     }
+
+    /**
+     * What the stored packs would be refused for now (stub).
+     *
+     * @param pack the configured name of the pack
+     * @param code the refusal code
+     * @param detail what is wrong
+     */
+    public record Finding(String pack, RefusalCode code, String detail) {}
+
+    /**
+     * Judges the closure of every stored pack as a registration would (stub).
+     *
+     * @return one finding per stored pack that would be refused
+     */
+    public List<Finding> census() {
+        return List.of();
+    }
+
+    /** Logs the census at startup (stub). */
+    public void logCensus() {}
 
     /**
      * Tells the activations slice that a registration was stored, under the locks.

@@ -816,6 +816,7 @@ class PackRegistrationServiceTest {
         final PackCommitStore commits;
         final CommitStorePackWriteStore writeStore;
         final PackRegistrationService service;
+        final RegistrationImpact impact;
 
         /** The root sets of the stored activations a test plants: an empty optional is an activation with no packs. */
         final List<Optional<List<String>>> activations = new ArrayList<>();
@@ -844,6 +845,22 @@ class PackRegistrationServiceTest {
             ConsistentRead read = new ConsistentRead(new FileSystemPackSources(locations::all), generation);
             WritePolicyGate gate = new PackMutabilityPolicy(
                     new OfferingReadService(repository, repository, repository, read), repository, repository, read);
+            this.impact = new RegistrationImpact(
+                    new StagedPackViewFactory(repository, repository, pack -> {
+                        factReads.merge(pack.value(), 1, Integer::sum);
+                        return repository.compositionFacts(pack);
+                    }),
+                    new ActivationImpact() {
+                        @Override
+                        public List<Optional<List<String>>> activationRoots() {
+                            return List.copyOf(activations);
+                        }
+
+                        @Override
+                        public void registered(String packId, RegistrationImpact.Notices notices) {
+                            registered.add(packId);
+                        }
+                    });
             this.service = new PackRegistrationService(
                     new WholePackStore(strategy),
                     commits,
@@ -852,22 +869,7 @@ class PackRegistrationServiceTest {
                     repository,
                     gate,
                     new InboundReferences(repository, repository, repository),
-                    new RegistrationImpact(
-                            new StagedPackViewFactory(repository, repository, pack -> {
-                                factReads.merge(pack.value(), 1, Integer::sum);
-                                return repository.compositionFacts(pack);
-                            }),
-                            new ActivationImpact() {
-                                @Override
-                                public List<Optional<List<String>>> activationRoots() {
-                                    return List.copyOf(activations);
-                                }
-
-                                @Override
-                                public void registered(String packId, RegistrationImpact.Notices notices) {
-                                    registered.add(packId);
-                                }
-                            }));
+                    impact);
             create(packs);
         }
 
