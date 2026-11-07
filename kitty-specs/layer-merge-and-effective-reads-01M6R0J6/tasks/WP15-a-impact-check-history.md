@@ -177,3 +177,14 @@ At startup, run the relation checks over stored packs and log (WARN) each pack t
 - Check each behaviour against the plan IC and the rule ids cited, not against core's Python answers (C-004).
 - Check the red-first evidence (the commit order or the run log) and that no test was weakened to pass.
 - Check that nothing outside `owned_files` changed beyond the listed shared-file edits.
+
+## Hand-off from WP14 (2026-11-07)
+
+- WP14's staged-closure gate skips an ancestor it cannot find (not stored, or its descriptor unreadable), so it adds no
+  locks (WP14 review probe p5b registers through). The impact check must refuse a staged pack whose `depends_on` or
+  `parent_pack` names a pack that is not stored or cannot be read; add that case.
+- Dropping a dependency frees the pack from the ancestor's lock (judged along the new closure, ADR-0063 D3). This is
+  intended; keep a test that pins it.
+- WP14 review cycle 4 follow-up (q4b): when one id is declared by two stored files and one of them fails to read, the
+  salvage keeps the readable copy's digest, so keeping that copy byte-identical is not a replace. Poison the digest
+  whenever any file declaring the id fails to read, so no upload matches it (as for two readable twins). Red test first.
