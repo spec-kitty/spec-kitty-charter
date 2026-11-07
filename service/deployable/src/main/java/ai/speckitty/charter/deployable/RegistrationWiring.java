@@ -42,6 +42,7 @@ public class RegistrationWiring {
 
     private static final Duration WATCHDOG_PERIOD = Duration.ofSeconds(5);
     private static final String STAGING = "staging";
+    private static final String NO_STAGING = "registration-switched-off-no-config-root";
 
     /** For Spring, which instantiates the configuration class. */
     public RegistrationWiring() {}
@@ -74,19 +75,31 @@ public class RegistrationWiring {
         return RegistrationJobs.JobGate.OPEN;
     }
 
-    /** The directory registrations spool and extract in: configured, else {@code <config-root>/staging}. */
+    /**
+     * The directory registrations spool and extract in: configured, else {@code <config-root>/staging}. Registration
+     * switched on needs the configuration root, since that is where a registered pack is stored, and the service does not
+     * guess another place: without one it refuses to start. Switched off, nothing is staged, and the directory is a
+     * relative name that is neither created nor swept.
+     *
+     * @throws IllegalStateException when registration is switched on and no configuration root is set
+     */
     @Bean
     RegistrationStagingRoot registrationStagingRoot(
             RegistrationProperties properties, ObjectProvider<ConfigRoot> root) {
-        Path configured = properties.stagingDir();
-        if (configured != null) {
-            return new RegistrationStagingRoot(configured.toAbsolutePath().normalize());
-        }
         ConfigRoot configuredRoot = root.getIfAvailable();
-        Path base = configuredRoot != null
-                ? configuredRoot.root()
-                : Path.of(System.getProperty("java.io.tmpdir")).toAbsolutePath().normalize();
-        return new RegistrationStagingRoot(base.resolve(STAGING));
+        if (configuredRoot == null) {
+            if (properties.enabled()) {
+                throw new IllegalStateException(
+                        "charter.registration.enabled needs charter.config-root: registered packs"
+                                + " are staged and stored under it, and the service does not stage them in a directory it guesses.");
+            }
+            return new RegistrationStagingRoot(Path.of(NO_STAGING));
+        }
+        Path configured = properties.stagingDir();
+        return new RegistrationStagingRoot(
+                configured != null
+                        ? configured.toAbsolutePath().normalize()
+                        : configuredRoot.root().resolve(STAGING));
     }
 
     @Bean
@@ -118,10 +131,11 @@ public class RegistrationWiring {
             RegistrationJobs jobs,
             Clock registrationClock) {
         ConfigRoot configured = root.getIfAvailable();
-        Path packs =
-                configured != null ? configured.packs() : staging.directory().resolveSibling("packs");
+        if (configured == null) {
+            return SweepRunner.idle();
+        }
         StagingSweeper sweeper = new StagingSweeper(
-                staging.directory(), packs, jobs::owned, registrationClock, RegistryWriteLock.shared());
+                staging.directory(), configured.packs(), jobs::owned, registrationClock, RegistryWriteLock.shared());
         return SweepRunner.started(sweeper);
     }
 
@@ -132,14 +146,18 @@ public class RegistrationWiring {
      */
     record RegistrationStagingRoot(Path directory) {}
 
-    /** The sweeper and the scheduler that repeats it. */
+    /** The sweeper and the scheduler that repeats it; with no configuration root there is nothing to sweep. */
     static final class SweepRunner implements AutoCloseable {
-        private final ScheduledExecutorService scheduler;
+        private final @Nullable ScheduledExecutorService scheduler;
         private final @Nullable ScheduledFuture<?> repeats;
 
-        private SweepRunner(ScheduledExecutorService scheduler, @Nullable ScheduledFuture<?> repeats) {
+        private SweepRunner(@Nullable ScheduledExecutorService scheduler, @Nullable ScheduledFuture<?> repeats) {
             this.scheduler = scheduler;
             this.repeats = repeats;
+        }
+
+        static SweepRunner idle() {
+            return new SweepRunner(null, null);
         }
 
         static SweepRunner started(StagingSweeper sweeper) {
@@ -156,7 +174,9 @@ public class RegistrationWiring {
             if (repeats != null) {
                 repeats.cancel(false);
             }
-            scheduler.shutdownNow();
+            if (scheduler != null) {
+                scheduler.shutdownNow();
+            }
         }
     }
 
