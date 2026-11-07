@@ -534,7 +534,8 @@
       "notes": [
         "T070-T075 and WP14 hand-offs done; verifyAll green.",
         "cycle 2",
-        "Cycle 2 per 01M6VEDYX8TQ4AKCP7C19WAP75; verifyAll green."
+        "Cycle 2 per 01M6VEDYX8TQ4AKCP7C19WAP75; verifyAll green.",
+        "Review passed (cycle 2, aa00b60b). verifyAll green; :packs:test --rerun 3258/0 failed. C21 per ruling 01M6VEDYX8TQ4AKCP7C19WAP75: staged and per-artifact both judge an ancestor-held id as REPLACE (extendable and locked refused, open allowed). Held set probed with base<-mid<-top: an id only a descendant holds is still a REGISTER, ids held two levels down are judged, and the own policy is left out. History heals: plant-then-reuse is now 409, and the history reads 1.0.0, 2.0.0 (healed), 3.0.0. Cost: 200 dependents 2.4 s, with an activation 2.9 s, a chain of 100 0.85 s. Pinned views are per Views and per session under the registry lock, so the before and after views cannot share state. Hand-offs, not WP15's: (1) registration cost grows with the square of the catalog size in WP14's path (step-3 identity scan, per-pack listings): creating an unrelated pack takes 0.63/2.7/13.7 s at 100/200/400 packs, which breaks NFR-009 at about 300 packs; it must be fixed before PR A; (2) a per-artifact PUT is not impact-checked and can leave a closure broken (a PUT of an org-level id already held by an org ancestor created a PACK_SIBLING_CONFLICT state); (3) a healed history entry is stamped with the heal time. Out-of-map files are listed by the runner for the closeout messages."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
