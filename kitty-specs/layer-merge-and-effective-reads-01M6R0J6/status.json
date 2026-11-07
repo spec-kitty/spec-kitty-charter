@@ -304,7 +304,7 @@
     },
     "WP09": {
       "actor": "claude",
-      "agent": null,
+      "agent": "claude:sonnet:scribe-sally",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -314,7 +314,8 @@
       "last_transition_at": "2026-11-07T08:50:24.847238+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "PR A0 docs: ADR-0020/0042/0050/0059 amendments (2026-11-07, incl. #408 depth), DIV-209..215 + DIV-203/206/501 updated, changelog with core hand-over, ruleset scenario trace (A0 rows verified against lane scenario files), rules page flipped to built. Docs checks clean."
+        "PR A0 docs: ADR-0020/0042/0050/0059 amendments (2026-11-07, incl. #408 depth), DIV-209..215 + DIV-203/206/501 updated, changelog with core hand-over, ruleset scenario trace (A0 rows verified against lane scenario files), rules page flipped to built. Docs checks clean.",
+        "Cycle 2: review-cycle-1 fixes"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
