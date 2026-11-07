@@ -481,7 +481,7 @@
     },
     "WP14": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": "claude:sonnet:java-jenny",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
@@ -490,6 +490,9 @@
       "last_event_id": "01M6V47T9QMQX3K1761N8F71W0",
       "last_transition_at": "2026-11-07T13:47:46.360059+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "T064-T069 done; verifyAll green. Open items handed to WP16/WP20 (5222fcce, 7e839ea8)."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 22510,
