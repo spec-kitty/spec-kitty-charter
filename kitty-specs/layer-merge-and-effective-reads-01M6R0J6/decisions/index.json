@@ -1290,6 +1290,29 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-07T09:02:31.203530Z",
+      "decision_id": "01M6TKXG93KR109CJKFX3HBB05",
+      "final_answer": null,
+      "input_key": "preset_unheld_member",
+      "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",
+      "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
+      "opened_by": "claude-runner",
+      "options": [
+        "Drop unheld members on apply and report them in dropped (consistent with A4/A10)",
+        "Keep 422 unknown_artifact on apply (current)"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "A10 makes a governing preset with an unheld must-have item legal (the floor drops it), but applying that same preset answers 422 unknown_artifact (PresetRules.selected writes every member; ActivationPresetServiceTest.aPresetWhoseMemberTheClosureDoesNotHoldIs422 pins it). Should applying a preset drop members no pack holds and report them in dropped, as A4/A10 do elsewhere?",
+      "rationale": "Changes behaviour a test pins; operator ruling needed. Raised by the PR A0 pre-PR correctness squad (2026-11-07). Recommended: drop and report, for consistency with A4 and A10.",
+      "resolved_at": "2026-11-07T09:02:33.761645Z",
+      "resolved_by": null,
+      "slot_key": "plan.a0-squad.preset-unheld-member",
+      "status": "deferred",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",
