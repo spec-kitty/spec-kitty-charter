@@ -869,4 +869,41 @@ class RegistrationImpactTest {
                         "51 closures hold base; each pack is read and judged once per view (roots, before, after), not once per closure")
                 .isLessThanOrEqualTo(4 * packs);
     }
+
+    @Test
+    void theConfiguredLocationsAreListedOnceHoweverManyPacksTheCheckReads(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("base", rig.stage(orgBase("1.0.0")), Preconditions.none());
+        for (int i = 1; i <= 50; i++) {
+            rig.install(
+                    "dep-" + i,
+                    org(
+                                    ulid(i % 22).substring(0, 16) + String.format("%010d", i),
+                                    "dep-" + i,
+                                    "1.0.0",
+                                    dependsOn(BASE_ID))
+                            .directive("DEP_" + i, "Own"));
+        }
+        java.util.concurrent.atomic.AtomicInteger listings = new java.util.concurrent.atomic.AtomicInteger();
+        ai.speckitty.charter.packs.infra.storage.DomainRepositoryService.Locations counting = () -> {
+            listings.incrementAndGet();
+            return rig.locations.all();
+        };
+        ai.speckitty.charter.packs.domain.ConfiguredPack base = rig.repository.configured().stream()
+                .filter(pack -> pack.id().value().equals("base"))
+                .findFirst()
+                .orElseThrow();
+        RegistrationImpact.Replacement same = new RegistrationImpact.Replacement(
+                base, rig.repository.get(base.id()), rig.repository.compositionFacts(base.id()));
+        RegistrationImpact impact = new RegistrationImpact(
+                new ai.speckitty.charter.packs.infra.storage.StagedPackViewFactory(
+                        counting, new ai.speckitty.charter.packs.infra.storage.YamlSerializationStrategy()),
+                ActivationImpact.NONE);
+
+        impact.check(same);
+
+        assertThat(listings.get())
+                .as("each listing parses every pack.yaml, so one per pack read is a square; the session lists once")
+                .isLessThanOrEqualTo(2);
+    }
 }

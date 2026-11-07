@@ -6,6 +6,7 @@ import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import java.util.Objects;
+import java.util.function.Supplier;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -16,28 +17,42 @@ import org.springframework.stereotype.Service;
 @Service
 public final class StagedPackViewFactory implements StagedPackViews {
 
-    private final PackCatalogRepository catalog;
-    private final PackDescriptorRepository descriptors;
-    private final PackArtifactRepository artifacts;
+    private final Supplier<StagedPacks> sessions;
 
     /**
-     * A factory over the repository ports.
+     * A factory over the repository ports, which a session reads through as they are.
      *
      * @param catalog the configured packs
      * @param descriptors their descriptors
      * @param artifacts what the compose reads of each
      */
-    @Autowired
     public StagedPackViewFactory(
             PackCatalogRepository catalog, PackDescriptorRepository descriptors, PackArtifactRepository artifacts) {
-        this.catalog = Objects.requireNonNull(catalog, "catalog");
-        this.descriptors = Objects.requireNonNull(descriptors, "descriptors");
-        this.artifacts = Objects.requireNonNull(artifacts, "artifacts");
+        Objects.requireNonNull(catalog, "catalog");
+        Objects.requireNonNull(descriptors, "descriptors");
+        Objects.requireNonNull(artifacts, "artifacts");
+        this.sessions = () -> StagedPacks.stored(catalog, descriptors, artifacts);
+    }
+
+    /**
+     * A factory over the configured locations, as Spring wires it.
+     *
+     * @param locations the configured pack locations
+     * @param strategy the serialization format
+     */
+    @Autowired
+    public StagedPackViewFactory(DomainRepositoryService.Locations locations, SerializationStrategy strategy) {
+        Objects.requireNonNull(locations, "locations");
+        Objects.requireNonNull(strategy, "strategy");
+        this.sessions = () -> {
+            DomainRepositoryService repository = new DomainRepositoryService(locations, strategy);
+            return StagedPacks.stored(repository, repository, repository);
+        };
     }
 
     @Override
     public Session session() {
-        StagedPacks stored = StagedPacks.stored(catalog, descriptors, artifacts);
+        StagedPacks stored = sessions.get();
         return new Session() {
             @Override
             public View stored() {
