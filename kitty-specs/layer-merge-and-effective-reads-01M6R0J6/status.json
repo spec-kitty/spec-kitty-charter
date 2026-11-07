@@ -1,20 +1,20 @@
 {
-  "event_count": 212,
-  "last_event_id": "01M6VXMYSSVHHE0MH5JT65QDA5",
-  "materialized_at": "2026-11-07T21:11:51.353309+00:00",
+  "event_count": 213,
+  "last_event_id": "01M6VY4P6BMFD6TKTJTC38VAHK",
+  "materialized_at": "2026-11-07T21:20:26.827127+00:00",
   "mission_number": "",
   "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
   "mission_type": "",
   "schema_version": 2,
   "summary": {
-    "approved": 16,
+    "approved": 17,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
     "done": 0,
     "for_review": 0,
     "in_progress": 0,
-    "in_review": 1,
+    "in_review": 0,
     "planned": 13
   },
   "work_packages": {
@@ -564,9 +564,9 @@
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
       "implementer_of_record": "claude",
-      "lane": "in_review",
-      "last_event_id": "01M6VXMYSSVHHE0MH5JT65QDA5",
-      "last_transition_at": "2026-11-07T21:11:51.353309+00:00",
+      "lane": "approved",
+      "last_event_id": "01M6VY4P6BMFD6TKTJTC38VAHK",
+      "last_transition_at": "2026-11-07T21:20:26.827127+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "verifyAll green on ceadd3c1; POST /packs stays reserved for WP17/WP18",
@@ -576,10 +576,10 @@
       "provider": "__resolved_provider_absent__",
       "review": null,
       "review_result": {
-        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/layer-merge-and-effective-reads-01M6R0J6-coord/kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP16-a-async-registration-api/review-cycle-1.md",
-        "reference": "review-cycle://layer-merge-and-effective-reads-01M6R0J6/WP16-a-async-registration-api/review-cycle-1.md",
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/layer-merge-and-effective-reads-01M6R0J6-coord/kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP16-a-async-registration-api/review-cycle-2.md",
+        "reference": "review-cycle://layer-merge-and-effective-reads-01M6R0J6/WP16-a-async-registration-api/review-cycle-2.md",
         "reviewer": "claude:opus:reviewer-renata",
-        "verdict": "changes_requested"
+        "verdict": "approved"
       },
       "role": "reviewer",
       "shell_pid": 30189,
