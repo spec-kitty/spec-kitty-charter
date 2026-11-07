@@ -5,9 +5,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.activations.domain.ActivationDocument;
 import ai.speckitty.charter.activations.domain.ActivationId;
+import ai.speckitty.charter.activations.domain.ActivationRepository;
+import ai.speckitty.charter.activations.domain.ActivationRepository.CasResult;
+import ai.speckitty.charter.activations.domain.ActivationRepository.DeleteResult;
+import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.activations.domain.ClosureSnapshots;
 import ai.speckitty.charter.activations.domain.PackRef;
+import ai.speckitty.charter.activations.domain.Revision;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.activations.infra.storage.InMemoryActivationRepository;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
@@ -270,6 +275,47 @@ class ActivationServiceTest {
         assertThat(repository.find(ID)).isEmpty();
     }
 
+    /**
+     * A put without If-Match is judged against the document it replaces, read just before the write; when another
+     * writer wins every one of its eight compare-and-sets, it answers 412 (replaceActivation's description) and stores
+     * nothing.
+     */
+    @Test
+    void aPutWithoutIfMatchThatLosesEveryAttemptIsAFailedPreconditionAndStoresNothing() {
+        StoredActivation before = stored(selecting("D1"));
+        int[] attempts = {0};
+        ActivationRepository alwaysLosing = new ActivationRepository() {
+            @Override
+            public Optional<StoredActivation> find(ActivationId id) {
+                return repository.find(id);
+            }
+
+            @Override
+            public Optional<StoredActivation> create(ActivationId id, ActivationDocument document) {
+                return Optional.empty();
+            }
+
+            @Override
+            public CasResult replace(ActivationId id, Optional<Revision> expected, ActivationDocument document) {
+                attempts[0]++;
+                return new CasResult.Stale(before.revision());
+            }
+
+            @Override
+            public DeleteResult delete(ActivationId id, Optional<Revision> expected) {
+                return repository.delete(id, expected);
+            }
+        };
+        ActivationService losing = new ActivationService(alwaysLosing, packs, new ActivationIdMint());
+
+        assertThatThrownBy(() -> losing.put(ID, selecting("D2"), null, null))
+                .isInstanceOfSatisfying(
+                        PreconditionException.class,
+                        stale -> assertThat(stale.kind()).isEqualTo(PreconditionException.Kind.STALE));
+        assertThat(attempts[0]).isEqualTo(8);
+        assertThat(repository.find(ID)).contains(before);
+    }
+
     @Test
     void aDenyOnARequiredArtifactIsRefusedNamingThePackAndNothingIsStored() {
         assertThatThrownBy(() -> service.put(ID, denying("D1"), null, null))
@@ -282,17 +328,146 @@ class ActivationServiceTest {
     }
 
     @Test
-    void aStoredDenyOnANowRequiredArtifactIsServedAndRefusedOnWrite() {
+    void a4AGetThenPutOfAStoredDenyOnANowRequiredArtifactIsAcceptedAndKeepsTheRevision() {
+        // The review's counter-example: the stored document denies D1, which a pack now requires (it was tolerated
+        // since, ADR-0059 D4); the client sends back the body it read.
         StoredActivation stale = stored(denying("D1"));
 
         assertThat(service.get(ID, null))
                 .isEqualTo(new ActivationService.Read.Found<>(
                         stale, stale.revision().token()));
-        assertThatThrownBy(() -> service.put(ID, denying("D1"), quoted(stale), null))
+        ActivationService.Written conditional = service.put(ID, denying("D1"), quoted(stale), null);
+        ActivationService.Written unconditional = service.put(ID, denying("D1"), null, null);
+
+        assertThat(conditional.stored()).isEqualTo(stale);
+        assertThat(unconditional.stored()).isEqualTo(stale);
+        assertThat(conditional.dropped()).isEmpty();
+        assertThat(packs.calls()).isEqualTo(2);
+    }
+
+    @Test
+    void aPutWithoutAValidatorIsJudgedAgainstTheDocumentAnotherWriterStoredInBetween() {
+        stored(denying("D1"));
+        ActivationRepository racing = new ActivationRepository() {
+            private boolean raced;
+
+            @Override
+            public Optional<StoredActivation> find(ActivationId id) {
+                return repository.find(id);
+            }
+
+            @Override
+            public Optional<StoredActivation> create(ActivationId id, ActivationDocument document) {
+                return repository.create(id, document);
+            }
+
+            @Override
+            public CasResult replace(ActivationId id, Optional<Revision> expected, ActivationDocument document) {
+                if (!raced) {
+                    raced = true;
+                    repository.replace(id, Optional.empty(), selecting("D2").document());
+                }
+                return repository.replace(id, expected, document);
+            }
+
+            @Override
+            public DeleteResult delete(ActivationId id, Optional<Revision> expected) {
+                return repository.delete(id, expected);
+            }
+        };
+        ActivationService raced = new ActivationService(racing, packs, new ActivationIdMint());
+
+        assertThatThrownBy(() -> raced.put(ID, denying("D1"), null, null))
+                .as("the deny entry the other writer removed is added again, so it is judged on the floor")
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_REQUIRED));
+        assertThat(repository.find(ID).orElseThrow().document())
+                .isEqualTo(selecting("D2").document());
+        assertThat(packs.calls()).isEqualTo(1);
+    }
+
+    @Test
+    void aPutJudgesTheFloorOnADenyEntryItAddsNextToAToleratedOne() {
+        StoredActivation stale = stored(denying("D1"));
+        ActivationDocument.Built adding = ActivationDocument.builder()
+                .deactivated(ArtifactKind.DIRECTIVE, List.of("D1", "D2"))
+                .build();
+        packs.answer(ClosureSnapshots.snapshot()
+                .pack("alpha", "1.0.0")
+                .held(ArtifactKind.DIRECTIVE, "D1", "D2")
+                .requiredBy("directive:D1", "alpha")
+                .requiredBy("directive:D2", "alpha")
+                .build());
+
+        assertThatThrownBy(() -> service.put(ID, adding, quoted(stale), null))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_REQUIRED);
+                    assertThat(refusal.getMessage()).contains("directive:D2").doesNotContain("directive:D1");
+                });
         assertThat(repository.find(ID)).contains(stale);
+    }
+
+    @Test
+    void a4AGetThenPutAfterAPackUpgradeRemovedAnIdDropsItAndReportsIt() {
+        ActivationDocument.Built read = ActivationDocument.builder()
+                .selected(ArtifactKind.DIRECTIVE, List.of("D2", "GONE"))
+                .deactivated(ArtifactKind.TACTIC, List.of("OLD"))
+                .build();
+        StoredActivation before = stored(read);
+
+        ActivationService.Written written = service.put(ID, read, quoted(before), null);
+
+        assertThat(written.created()).isFalse();
+        assertThat(written.dropped())
+                .containsExactly(
+                        new ArtifactRef(ArtifactKind.DIRECTIVE, "GONE"), new ArtifactRef(ArtifactKind.TACTIC, "OLD"));
+        assertThat(written.stored().document())
+                .isEqualTo(ActivationDocument.builder()
+                        .selected(ArtifactKind.DIRECTIVE, List.of("D2"))
+                        .build()
+                        .document());
+        assertThat(repository.find(ID)).contains(written.stored());
+        assertThat(packs.calls()).isEqualTo(1);
+    }
+
+    @Test
+    void aPutStillRefusesAnUnknownIdTheStoredDocumentNeverNamed() {
+        StoredActivation before = stored(selecting("D2"));
+
+        assertThatThrownBy(() -> service.put(ID, selecting("D2", "NO_SUCH"), quoted(before), null))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_INVALID);
+                    assertThat(refusal.violations())
+                            .singleElement()
+                            .satisfies(violation -> assertThat(violation.code()).isEqualTo("unknown_artifact"));
+                });
+        assertThat(repository.find(ID)).contains(before);
+    }
+
+    @Test
+    void b1ACreateRefusesAPinNoPackHoldsAndAPutOfTheSameBodyDropsIt() {
+        ActivationDocument.Built pinned = ActivationDocument.builder()
+                .packs(List.of(PackRef.pinned("alpha", "0.9.0")))
+                .selected(ArtifactKind.DIRECTIVE, List.of("D2"))
+                .build();
+
+        assertThatThrownBy(() -> service.create(pinned))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.violations())
+                                .singleElement()
+                                .satisfies(violation -> {
+                                    assertThat(violation.pointer()).isEqualTo("/packs/0/version");
+                                    assertThat(violation.code()).isEqualTo("version_not_held");
+                                }));
+        ActivationService.Written written = service.put(ID, pinned, null, null);
+
+        assertThat(written.created()).isTrue();
+        assertThat(written.droppedPins()).containsExactly(PackRef.pinned("alpha", "0.9.0"));
+        assertThat(written.stored().document().packs()).contains(List.of(PackRef.of("alpha")));
+        assertThat(written.stored().document().selected(ArtifactKind.DIRECTIVE).orElseThrow())
+                .containsExactly("D2");
     }
 
     @Test

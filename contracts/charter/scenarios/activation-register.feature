@@ -4,8 +4,9 @@ Feature: The activation register and the packs an activation builds on
   mints an id, PUT stores under the client's id, both in canonical form under a revision, GET answers the
   stored document with the quoted revision as its ETag, and DELETE removes it. If-Match makes a write
   conditional and without it the last writer wins; If-None-Match: * creates only. The answer depends only on
-  the stored document (ADR-0059 D5), so a document an offering change made stale is served as stored and
-  refused on write (ADR-0059 D4). The closure read lists the packs the document builds on: the depends_on
+  the stored document (ADR-0059 D5), so a document an offering change made stale is served as stored (ADR-0059
+  D4). A PUT is judged against the document it replaces (A4): what the packs no longer satisfy in it is dropped
+  and reported, not refused, so a GET then PUT of the same body never fails without a pack change. The closure read lists the packs the document builds on: the depends_on
   closure of its packs, in dependency order, in the offering's pack shape. Absent means none (ADR-0053 d10)
   for every selected kind; an absent packs means every configured pack.
 
@@ -42,7 +43,7 @@ Feature: The activation register and the packs an activation builds on
     revision in double quotes.
     When I PUT "/activations/a-1" with the body:
       """
-      {"schemaVersion": 1, "selected": {"directive": ["DIRECTIVE_002", "DIRECTIVE_001", "DIRECTIVE_002"]}}
+      {"schemaVersion": 2, "selected": {"directive": ["DIRECTIVE_002", "DIRECTIVE_001", "DIRECTIVE_002"]}}
       """
     Then the response status is 201
     And the field at "/activationId" is "a-1"
@@ -56,10 +57,10 @@ Feature: The activation register and the packs an activation builds on
     ADR-0020 D3: the service mints the id; Location names the new activation and the ETag is its revision.
     When I POST "/activations" as JSON with the body:
       """
-      {"schemaVersion": 1}
+      {"schemaVersion": 2}
       """
     Then the response status is 201
-    And the field at "/config/schemaVersion" is 1
+    And the field at "/config/schemaVersion" is 2
     And the response header "ETag" is the quoted field "/revision"
     And the path of the Location header is the href of the link "self"
 
@@ -67,7 +68,7 @@ Feature: The activation register and the packs an activation builds on
     US1 AS2, the round trip (ADR-0020 D6).
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "selected": {"directive": ["DIRECTIVE_001"]}}
+      {"schemaVersion": 2, "selected": {"directive": ["DIRECTIVE_001"]}}
       """
     When I GET "/activations/a-1"
     Then the response status is 200
@@ -76,7 +77,7 @@ Feature: The activation register and the packs an activation builds on
     And I remember the header "ETag"
     And I PUT "/activations/a-1" with the remembered ETag and the body:
       """
-      {"schemaVersion": 1, "selected": {"directive": ["DIRECTIVE_001"]}}
+      {"schemaVersion": 2, "selected": {"directive": ["DIRECTIVE_001"]}}
       """
     Then the response status is 200
     And the response header "ETag" is the remembered header
@@ -85,18 +86,18 @@ Feature: The activation register and the packs an activation builds on
     US1 AS3: the If-Match names the first revision after another write replaced it.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "selected": {"directive": ["DIRECTIVE_001"]}}
+      {"schemaVersion": 2, "selected": {"directive": ["DIRECTIVE_001"]}}
       """
     And I remember the ETag
     When I PUT "/activations/a-1" with the body:
       """
-      {"schemaVersion": 1, "selected": {"directive": ["DIRECTIVE_002"]}}
+      {"schemaVersion": 2, "selected": {"directive": ["DIRECTIVE_002"]}}
       """
     Then the response status is 200
     When I remember the header "ETag"
     And I PUT "/activations/a-1" with the remembered ETag and the body:
       """
-      {"schemaVersion": 1, "selected": {"directive": []}}
+      {"schemaVersion": 2, "selected": {"directive": []}}
       """
     Then the response status is 412
     And the problem has no code
@@ -109,11 +110,11 @@ Feature: The activation register and the packs an activation builds on
     US1 AS4 (ADR-0020 D6).
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "selected": {"directive": ["DIRECTIVE_001"]}}
+      {"schemaVersion": 2, "selected": {"directive": ["DIRECTIVE_001"]}}
       """
     When I PUT "/activations/a-1" with the body:
       """
-      {"schemaVersion": 1, "selected": {"directive": ["DIRECTIVE_002"]}}
+      {"schemaVersion": 2, "selected": {"directive": ["DIRECTIVE_002"]}}
       """
     Then the response status is 200
     And the field at "/config/selected/directive/0" is "DIRECTIVE_002"
@@ -123,13 +124,13 @@ Feature: The activation register and the packs an activation builds on
     ADR-0020 D4 (operator ruling of 2026-11-06): the full URN and a case variant normalize to the declared id.
     When I PUT "/activations/a-1" with the body:
       """
-      {"schemaVersion": 1, "selected": {"directive": ["DIRECTIVE_001"]}}
+      {"schemaVersion": 2, "selected": {"directive": ["DIRECTIVE_001"]}}
       """
     Then the response status is 201
     When I remember the header "ETag"
     And I PUT "/activations/a-2" with the body:
       """
-      {"schemaVersion": 1, "selected": {"directive": ["directive:DIRECTIVE_001", "directive_001", "DIRECTIVE:Directive_001"]}}
+      {"schemaVersion": 2, "selected": {"directive": ["directive:DIRECTIVE_001", "directive_001", "DIRECTIVE:Directive_001"]}}
       """
     Then the response status is 201
     And the field at "/config/selected/directive/0" is "DIRECTIVE_001"
@@ -150,7 +151,7 @@ Feature: The activation register and the packs an activation builds on
       """
     When I PUT "/activations/a-1" with the body:
       """
-      {"schemaVersion": 1, "deactivated": {"directive": ["directive:directive_001"]}}
+      {"schemaVersion": 2, "deactivated": {"directive": ["directive:directive_001"]}}
       """
     Then the response status is 409
     And the problem code is "artifact_required"
@@ -159,7 +160,7 @@ Feature: The activation register and the packs an activation builds on
     No kind's id grammar admits two ids that differ only by case, so the ambiguous refusal is pinned in DocumentRulesTest.
     When I PUT "/activations/a-1" with the body:
       """
-      {"schemaVersion": 1, "selected": {"directive": ["tactic:DIRECTIVE_001"]}}
+      {"schemaVersion": 2, "selected": {"directive": ["tactic:DIRECTIVE_001"]}}
       """
     Then the response status is 422
     And the problem code is "activation_invalid"
@@ -170,7 +171,7 @@ Feature: The activation register and the packs an activation builds on
     US1 AS5.
     When I PUT "/activations/a-1" with the body:
       """
-      {"schemaVersion": 1, "selected": {"directive": ["DIRECTIVE_001", "NO_SUCH_DIRECTIVE"]}}
+      {"schemaVersion": 2, "selected": {"directive": ["DIRECTIVE_001", "NO_SUCH_DIRECTIVE"]}}
       """
     Then the response status is 422
     And the problem code is "activation_invalid"
@@ -193,7 +194,7 @@ Feature: The activation register and the packs an activation builds on
       """
     When I PUT "/activations/a-1" with the body:
       """
-      {"schemaVersion": 1, "deactivated": {"directive": ["DIRECTIVE_001"]}}
+      {"schemaVersion": 2, "deactivated": {"directive": ["DIRECTIVE_001"]}}
       """
     Then the response status is 409
     And the problem code is "artifact_required"
@@ -257,14 +258,14 @@ Feature: The activation register and the packs an activation builds on
       """
     When I PUT "/activations/a-1" with the body:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "aaa-child"}], "deactivated": {"directive": ["CHILD_ONLY"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "aaa-child"}], "deactivated": {"directive": ["CHILD_ONLY"]}}
       """
     Then the response status is 409
     And the problem code is "artifact_required"
     And the field at "/requiredBy/0/packId" is "aaa-child"
     When I PUT "/activations/a-1" with the body:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "aaa-child"}], "deactivated": {"directive": ["PARENT_ONLY"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "aaa-child"}], "deactivated": {"directive": ["PARENT_ONLY"]}}
       """
     Then the response status is 201
     When I GET "/activations/a-1/packs"
@@ -286,7 +287,7 @@ Feature: The activation register and the packs an activation builds on
       """
     When I PUT "/activations/a-1" with the body:
       """
-      {"schemaVersion": 1, "deactivated": {"directive": ["DIRECTIVE_001"]}}
+      {"schemaVersion": 2, "deactivated": {"directive": ["DIRECTIVE_001"]}}
       """
     Then the response status is 500
     And the problem code is "pack_reference_artifact_missing"
@@ -312,7 +313,7 @@ Feature: The activation register and the packs an activation builds on
       """
     When I PUT "/activations/a-1" with the body:
       """
-      {"schemaVersion": 1, "deactivated": {"directive": ["DIRECTIVE_001"]}}
+      {"schemaVersion": 2, "deactivated": {"directive": ["DIRECTIVE_001"]}}
       """
     Then the response status is 500
     And the problem code is "pack_reference_artifact_missing"
@@ -335,7 +336,7 @@ Feature: The activation register and the packs an activation builds on
       """
     When I PUT "/activations/a-1" with the body:
       """
-      {"schemaVersion": 1, "deactivated": {"directive": ["DIRECTIVE_001"]}}
+      {"schemaVersion": 2, "deactivated": {"directive": ["DIRECTIVE_001"]}}
       """
     Then the response status is 201
 
@@ -343,7 +344,7 @@ Feature: The activation register and the packs an activation builds on
     US1 AS7.
     When I PUT "/activations/a-1" with the body:
       """
-      {"schemaVersion": 1, "deactivated": {"directive": []}}
+      {"schemaVersion": 2, "deactivated": {"directive": []}}
       """
     Then the response status is 422
     And the problem code is "activation_invalid"
@@ -352,7 +353,7 @@ Feature: The activation register and the packs an activation builds on
     US1 AS8 (ADR-0020 D6).
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1}
+      {"schemaVersion": 2}
       """
     When I send DELETE "/activations/a-1"
     Then the response status is 204
@@ -364,12 +365,12 @@ Feature: The activation register and the packs an activation builds on
     US1 AS9 (ADR-0020 D3).
     When I PUT "/activations/a-1" with the header "If-None-Match": "*" and the body:
       """
-      {"schemaVersion": 1}
+      {"schemaVersion": 2}
       """
     Then the response status is 201
     When I PUT "/activations/a-1" with the header "If-None-Match": "*" and the body:
       """
-      {"schemaVersion": 1}
+      {"schemaVersion": 2}
       """
     Then the response status is 412
 
@@ -377,7 +378,7 @@ Feature: The activation register and the packs an activation builds on
     FR-002, ADR-0059 D5.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1}
+      {"schemaVersion": 2}
       """
     When I remember the header "ETag"
     And I GET "/activations/a-1" with If-None-Match the stored ETag
@@ -393,11 +394,11 @@ Feature: The activation register and the packs an activation builds on
   Scenario: Both validators on one request answer 400
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1}
+      {"schemaVersion": 2}
       """
     When I PUT "/activations/a-1" with the headers "If-Match": "\"sha256:1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f\"" and "If-None-Match": "*" and the body:
       """
-      {"schemaVersion": 1}
+      {"schemaVersion": 2}
       """
     Then the response status is 400
 
@@ -405,7 +406,7 @@ Feature: The activation register and the packs an activation builds on
     J10: a malformed precondition.
     When I PUT "/activations/a-1" with the header "If-None-Match": "\"x\"" and the body:
       """
-      {"schemaVersion": 1}
+      {"schemaVersion": 2}
       """
     Then the response status is 400
 
@@ -413,7 +414,7 @@ Feature: The activation register and the packs an activation builds on
     #323: the cap is judged before the document.
     When I PUT "/activations/a-1" with the body, its "padding" padded to 1048576 bytes:
       """
-      {"schemaVersion": 1, "padding": ""}
+      {"schemaVersion": 2, "padding": ""}
       """
     Then the response status is 422
     And the problem code is "activation_invalid"
@@ -422,7 +423,7 @@ Feature: The activation register and the packs an activation builds on
   Scenario: A member the document does not declare is refused
     When I PUT "/activations/a-1" with the body:
       """
-      {"schemaVersion": 1, "favourite": "DIRECTIVE_001"}
+      {"schemaVersion": 2, "favourite": "DIRECTIVE_001"}
       """
     Then the response status is 422
     And the problem code is "activation_invalid"
@@ -432,7 +433,7 @@ Feature: The activation register and the packs an activation builds on
   Scenario: A member stated twice is refused, never read last-wins
     When I PUT "/activations/a-1" with the body:
       """
-      {"schemaVersion": 1, "selected": {"directive": ["DIRECTIVE_001"], "directive": []}}
+      {"schemaVersion": 2, "selected": {"directive": ["DIRECTIVE_001"], "directive": []}}
       """
     Then the response status is 422
     And the problem code is "activation_invalid"
@@ -456,13 +457,13 @@ Feature: The activation register and the packs an activation builds on
     Examples:
       | body                                                          | pointer                 |
       | {"schemaVersion": "1"}                                        | /schemaVersion          |
-      | {"schemaVersion": 1.0}                                        | /schemaVersion          |
-      | {"schemaVersion": 1, "selected": {"directive": [1, true]}}    | /selected/directive/0   |
+      | {"schemaVersion": 2.0}                                        | /schemaVersion          |
+      | {"schemaVersion": 2, "selected": {"directive": [1, true]}}    | /selected/directive/0   |
 
   Scenario: A null list is refused
     When I PUT "/activations/a-1" with the body:
       """
-      {"schemaVersion": 1, "selected": {"directive": null}}
+      {"schemaVersion": 2, "selected": {"directive": null}}
       """
     Then the response status is 422
     And the problem code is "activation_invalid"
@@ -471,7 +472,7 @@ Feature: The activation register and the packs an activation builds on
     #125: null is never a value, at any depth; nothing is stored.
     When I PUT "/activations/a-1" with the body:
       """
-      {"schemaVersion": 1, "selected": {"directive": ["DIRECTIVE_001", null]}}
+      {"schemaVersion": 2, "selected": {"directive": ["DIRECTIVE_001", null]}}
       """
     Then the response status is 422
     And the problem code is "activation_invalid"
@@ -480,26 +481,36 @@ Feature: The activation register and the packs an activation builds on
     When I GET "/activations/a-1"
     Then the response status is 404
 
-  Scenario: A pack pinned to a version the service does not hold is refused at the pin
-    R2: alpha is held at 1.0.0. The operator ruled on 2026-11-06 that a pin differing from the held version stays
-    refused, and the violation tells the client both versions.
+  Scenario: A pack pinned to a version the service does not hold is dropped by a PUT and refused by a POST
+    R2: alpha is held at 1.0.0. Rewritten for B1 (decision DM-01M6RN5Y406SB4KA13QYMQ2P8J): a PUT drops a pin no pack
+    holds and lists it in droppedPins, so the stored document builds on alpha as held; it was 422 version_not_held.
+    createActivation keeps the refusal for a pin in its own body, and its violation tells the client both versions.
     When I PUT "/activations/a-1" with the body:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "alpha", "version": "2.0.0"}]}
+      {"schemaVersion": 2, "packs": [{"packId": "alpha", "version": "2.0.0"}]}
+      """
+    Then the response status is 201
+    And the field at "/droppedPins/0/packId" is "alpha"
+    And the field at "/droppedPins/0/version" is "2.0.0"
+    And the field at "/droppedPins" holds exactly 1 item
+    And the field at "/config/packs/0/packId" is "alpha"
+    And the response body has no field at "/config/packs/0/version"
+    And the response body has no field at "/dropped"
+    When I POST "/activations" as JSON with the body:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "alpha", "version": "2.0.0"}]}
       """
     Then the response status is 422
     And the problem code is "activation_invalid"
     And the field at "/violations/0/pointer" is "/packs/0/version"
     And the field at "/violations/0/code" is "version_not_held"
     And the field at "/violations/0/detail" is "The pack 'alpha' is held at 1.0.0, not 2.0.0."
-    When I GET "/activations/a-1"
-    Then the response status is 404
 
   Scenario: A pack pinned to a blank version is refused at the pin
     A version of only blanks is no version: the contract's pattern refuses it, and so does the service, 422.
     When I PUT "/activations/a-1" with the body:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "alpha", "version": "  "}]}
+      {"schemaVersion": 2, "packs": [{"packId": "alpha", "version": "  "}]}
       """
     Then the response status is 422
     And the problem code is "activation_invalid"
@@ -510,7 +521,7 @@ Feature: The activation register and the packs an activation builds on
     R4.
     When I PUT "/activations/a-1" with the body:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "no-such-pack"}]}
+      {"schemaVersion": 2, "packs": [{"packId": "no-such-pack"}]}
       """
     Then the response status is 422
     And the problem code is "activation_invalid"
@@ -518,10 +529,13 @@ Feature: The activation register and the packs an activation builds on
 
   # The stale documents of the Edge Cases (FR-017, ADR-0059 D4).
 
-  Scenario: A document naming an id the pack no longer holds is served as stored and refused on write
+  Scenario: A document naming an id the pack no longer holds is served as stored, and a PUT of it drops the id
+    ADR-0059 D4 on read. Rewritten for A4 (decision DM-01M6RA7XC5HC8915GZT2R3H83W): a PUT of the body a GET answered
+    drops the id the replaced document named and the pack no longer holds, and lists it in dropped; it was 422. An
+    unknown id the replaced document did not name is still refused (the negative control).
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "selected": {"directive": ["DIRECTIVE_002"]}}
+      {"schemaVersion": 2, "selected": {"directive": ["DIRECTIVE_002"]}}
       """
     And the file "directives/DIRECTIVE_002.directive.yaml" of the pack "alpha" is deleted
     When I GET "/activations/a-1" with If-None-Match the stored ETag
@@ -531,15 +545,31 @@ Feature: The activation register and the packs an activation builds on
     And the field at "/config/selected/directive/0" is "DIRECTIVE_002"
     When I PUT "/activations/a-1" with the body:
       """
-      {"schemaVersion": 1, "selected": {"directive": ["DIRECTIVE_002"]}}
+      {"schemaVersion": 2, "selected": {"directive": ["DIRECTIVE_002"]}}
+      """
+    Then the response status is 200
+    And the field at "/dropped" holds exactly the ids:
+      """
+      directive:DIRECTIVE_002
+      """
+    And the response body has no field at "/droppedPins"
+    And the response body has no field at "/config/selected"
+    And the field at "/config/schemaVersion" is 2
+    When I PUT "/activations/a-1" with the body:
+      """
+      {"schemaVersion": 2, "selected": {"directive": ["DIRECTIVE_002"]}}
       """
     Then the response status is 422
     And the problem code is "activation_invalid"
+    And the field at "/violations/0/pointer" is "/selected/directive/0"
 
-  Scenario: A deny entry on an id a pack now locks is kept on read, and denying it anew is refused
+  Scenario: A deny entry on an id a pack now locks is kept on read and by a PUT, and a new one is refused
+    Rewritten for A4 (decision DM-01M6RA7XC5HC8915GZT2R3H83W): a PUT judges the floor on the deny entries it adds
+    only, so re-sending the stored deny entry is 200 and keeps it; it was 409. The same deny entry on another
+    activation, where it is new, is 409 artifact_locked (the negative control).
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "deactivated": {"directive": ["DIRECTIVE_001"]}}
+      {"schemaVersion": 2, "deactivated": {"directive": ["DIRECTIVE_001"]}}
       """
     And the org pack "alpha" with the file "policy.yaml":
       """
@@ -561,17 +591,28 @@ Feature: The activation register and the packs an activation builds on
     And the field at "/config/deactivated/directive/0" is "DIRECTIVE_001"
     When I PUT "/activations/a-1" with the body:
       """
-      {"schemaVersion": 1, "deactivated": {"directive": ["DIRECTIVE_001"]}}
+      {"schemaVersion": 2, "deactivated": {"directive": ["DIRECTIVE_001"]}}
+      """
+    Then the response status is 200
+    And the response header "ETag" is the stored ETag
+    And the field at "/config/deactivated/directive/0" is "DIRECTIVE_001"
+    When I PUT "/activations/a-2" with the body:
+      """
+      {"schemaVersion": 2, "deactivated": {"directive": ["DIRECTIVE_001"]}}
       """
     Then the response status is 409
     And the problem code is "artifact_locked"
     And the field at "/requiredBy/0/packId" is "alpha"
+    When I GET "/activations/a-2"
+    Then the response status is 404
 
-  Scenario: A deny entry on an id a pack now requires is kept on read, and denying it anew is refused
-    ADR-0059 D4: alpha's governing preset arrives after the document was stored.
+  Scenario: A deny entry on an id a pack now requires is kept on read and by a PUT, and a new one is refused
+    ADR-0059 D4: alpha's governing preset arrives after the document was stored. Rewritten for A4 (decision
+    DM-01M6RA7XC5HC8915GZT2R3H83W): the PUT re-sends the stored deny entry, which it does not add, so it is 200 with
+    the same ETag and stores nothing new; it was 409. On another activation the same deny entry is new: 409.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "deactivated": {"directive": ["DIRECTIVE_001"]}}
+      {"schemaVersion": 2, "deactivated": {"directive": ["DIRECTIVE_001"]}}
       """
     And the org pack "alpha" with the file "presets/governing.yaml":
       """
@@ -589,7 +630,14 @@ Feature: The activation register and the packs an activation builds on
     And I remember the header "ETag"
     And I PUT "/activations/a-1" with the remembered ETag and the body:
       """
-      {"schemaVersion": 1, "deactivated": {"directive": ["DIRECTIVE_001"]}}
+      {"schemaVersion": 2, "deactivated": {"directive": ["DIRECTIVE_001"]}}
+      """
+    Then the response status is 200
+    And the response header "ETag" is the remembered header
+    And the field at "/config/deactivated/directive/0" is "DIRECTIVE_001"
+    When I PUT "/activations/a-2" with the body:
+      """
+      {"schemaVersion": 2, "deactivated": {"directive": ["DIRECTIVE_001"]}}
       """
     Then the response status is 409
     And the problem code is "artifact_required"
@@ -702,7 +750,7 @@ Feature: The activation register and the packs an activation builds on
       """
     And the activation "project" holds:
       """
-      {"schemaVersion": 1}
+      {"schemaVersion": 2}
       """
     When I GET "/offering"
     Then the response status is 200
@@ -883,7 +931,7 @@ Feature: The activation register and the packs an activation builds on
       """
     When I PUT "/activations/a-1" with the body:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "house"}], "deactivated": {"directive": ["D1"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "house"}], "deactivated": {"directive": ["D1"]}}
       """
     Then the response status is 409
     And the problem code is "artifact_locked"
@@ -934,7 +982,7 @@ Feature: The activation register and the packs an activation builds on
       """
     When I PUT "/activations/a-1" with the body:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "house"}], "deactivated": {"directive": ["D1"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "house"}], "deactivated": {"directive": ["D1"]}}
       """
     Then the response status is 409
     And the problem code is "artifact_locked"

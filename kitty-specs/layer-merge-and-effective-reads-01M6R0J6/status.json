@@ -4,7 +4,7 @@
   "materialized_at": "2026-11-07T07:43:02.572230+00:00",
   "mission_number": "",
   "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
-  "mission_type": "",
+  "mission_type": "software-dev",
   "schema_version": 2,
   "summary": {
     "approved": 8,

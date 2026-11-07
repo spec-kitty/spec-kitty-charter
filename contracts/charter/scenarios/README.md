@@ -123,6 +123,14 @@ Keep it small; add a step only when a scenario cannot be written without it.
   `Given the activation "<id>" holds:` followed by a JSON doc string — the same `PUT` of that document under that id,
   expecting `201`; the binding keeps the `ETag` it was stored with, and `When I GET "<path>" with If-None-Match the
   stored ETag` sends it back. Every scenario starts with no activation stored.
+- `Given the stored file of the activation "<id>" holds:` followed by a doc string — holds those bytes as the store
+  keeps the activation's file, past the API and every check, so a `schemaVersion: 1` document can be seeded.
+  `When I remember the stored file of the activation "<id>"`, then `Then the stored file of the activation "<id>" is
+  the remembered one` or `... differs from the remembered one` — the stored bytes are the same, or not: a read
+  writes nothing, a write that changed nothing stores nothing. `Then the stored file of the activation "<id>" has
+  the field "<json-pointer>" equal to <n>` — an integer member of the stored bytes, such as `/schemaVersion`.
+- `Then the field at "<json-pointer>" contains "<text>"` — the string member holds the text, such as the replacement
+  a violation's `detail` names.
 - `When I PUT "<path>" with the header "<name>": "<value>" and the body:` and `When I PUT "<path>" with the headers
   "<name>": "<value>" and "<name>": "<value>" and the body:` — a JSON `PUT` with those extra headers, for the
   conditional writes (`If-None-Match`, both validators at once).
@@ -159,6 +167,10 @@ and never from the contract's declarations: a verified read, a `GET` answered 20
 but the root `/`, carries exactly one `Charter-Source-Fingerprint`, equal to its own `sourceFingerprint` for
 `/info` and to what `/info` answers right after for another read; every other `GET` answer (a refusal, the root,
 `/openapi.yaml`, whose body is YAML) carries none. A write (`POST`, `PUT`) is exempt.
+
+A selected scenario (`@contract`, not `@WIP`) with a step no binding defines, or a pending one, fails the run
+(`UndefinedStepGuard`), naming the scenario and the step: Cucumber would report it as skipped and leave the build
+green. A scenario that is not bound yet is tagged `@WIP`.
 
 Every 2xx answer with a JSON body is also checked for its links (R-20), statically, with no further request:
 
@@ -213,6 +225,12 @@ that calls it. A run that selects only some scenarios reports the others' operat
   preconditions (`428`, `412`, `400`) and their refusals.
 - `activation-presets.feature`: applying a preset, `PUT …/presets/{presetId}` (ADR-0059 D6, #291): the keys it
   replaces, `force`, `preset_not_found` and a stale preset member.
+- `activation-kind-model.feature`: the one kind model of the activation document (IC-20, FR-040 to FR-042): mission
+  types selected and denied as a kind, the removed `activatedKinds` and `missionTypes` refused `422
+  validation_failed`, a stored `schemaVersion: 1` document upgraded on read and stored as version 2 on the next write,
+  and `[]` registering as absent for a selected kind.
+- `activation-ruling-changes.feature`: one scenario per ruling of the ruleset review that PR A0 changes (A4, B1, B5,
+  A10, A14, A15, B8; SC-005), each with a control in the same answer; the A10 report and `DELETE` half is `@WIP`.
 - `activations.feature`: the activation operations still reserved (ADR-0020 D8), the four effective reads: one 501
   pin per operation, each removed when its operation is built.
 - `relationships.feature`: a registered relationship from a mission type the pack holds, and the refusal of one it

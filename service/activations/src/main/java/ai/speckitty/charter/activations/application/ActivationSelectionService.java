@@ -9,7 +9,6 @@ import ai.speckitty.charter.activations.domain.CascadeScope;
 import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.SkippedReport;
 import ai.speckitty.charter.activations.domain.StoredActivation;
-import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import java.util.List;
 import java.util.Objects;
@@ -24,9 +23,8 @@ import org.springframework.stereotype.Service;
  * the one read of the packs and the compare-and-set are {@link ActivationWrites}'; the cascade is
  * {@link CascadeRules}'; {@code applied} and {@code cleared} are {@link ActivationChange#of}'s.
  *
- * <p>A select of kind {@code mission_type} adds the id to {@code missionTypes} and never cascades: no cascade edge
- * leaves a mission type here, so its {@code cascade} is checked for its shape and then ignored, and so is
- * {@code includeDeactivated}.
+ * <p>A mission type is selected like any kind (A7 Q1, rule W32 withdrawn): it joins {@code selected.mission_type}, and
+ * with a cascade the walk crosses from it to the steps it holds like {@code requires} (rule W20).
  */
 @Service
 public class ActivationSelectionService {
@@ -66,8 +64,7 @@ public class ActivationSelectionService {
         StoredActivation loaded = writes.loaded(id, ifMatch);
         ActivationWrites.requireWellFormed(bodyFaults);
         ArtifactRef written = ActivationWrites.selectable(kind, artifactId);
-        CascadeScope asked = ActivationWrites.scope(cascade);
-        CascadeScope scope = written.kind() == ArtifactKind.MISSION_TYPE ? CascadeScope.none() : asked;
+        CascadeScope scope = ActivationWrites.scope(cascade);
         PacksSession session = writes.session(loaded);
         ArtifactRef target = ActivationWrites.declared(session.snapshot(), written, Set.of());
         ActivationWrites.requireHeld(session.snapshot(), target);
@@ -79,7 +76,7 @@ public class ActivationSelectionService {
     }
 
     /**
-     * Unselects one artifact, or one mission type: it leaves {@code selected} (or {@code missionTypes}), and nothing
+     * Unselects one artifact, a mission type included: it leaves {@code selected}, and nothing
      * else changes. One that is not selected is a no-op. An id the closure no longer holds is refused unless the stored
      * document still selects it: then it is dropped as a stale id and reported in {@code dropped} only (ADR-0059
      * amendment A5).

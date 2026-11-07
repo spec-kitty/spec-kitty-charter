@@ -455,17 +455,21 @@ class DomainRepositoryServiceTest {
     // ---- PackArtifactRepository ---------------------------------------------------------------------
 
     /**
-     * FR-012: the refined artifacts are the distinct targets of a pack's {@code enhances} and {@code overrides}
-     * relations, in first-seen order; a {@code requires} relation refines nothing.
+     * FR-012, A14 (FR-035, DM-01M6RA92BS6GGCYTRCFQDYYY5S, rule C14): the changed artifacts a sibling contest counts are
+     * the distinct targets of a pack's {@code overrides} relations, in first-seen order; an {@code enhances} relation is
+     * additive and changes nothing, so two sibling enhancers of one target are no conflict, and a {@code requires}
+     * relation changes nothing either.
      */
     @Test
-    void changedArtifactsAreTheDistinctTargetsOfEnhancesAndOverridesEdges(@TempDir Path host) throws IOException {
+    void a14ChangedArtifactsAreTheDistinctTargetsOfOverridesEdgesAndAnEnhancesEdgeChangesNothing(@TempDir Path host)
+            throws IOException {
         Path pack = PackFixtures.copyOf("pack-descriptor-only", host);
         Files.writeString(pack.resolve("refinements.graph.yaml"), """
                 schema_version: '1.0'
                 generated_at: STATIC
                 nodes: []
                 edges:
+                - {source: tactic:alpha-tactic, target: directive:DIRECTIVE_010, relation: enhances}
                 - {source: tactic:alpha-tactic, target: directive:DIRECTIVE_009, relation: enhances}
                 - {source: tactic:alpha-tactic, target: directive:DIRECTIVE_009, relation: overrides}
                 - {source: tactic:alpha-tactic, target: tactic:beta-tactic, relation: requires}
@@ -913,7 +917,7 @@ class DomainRepositoryServiceTest {
 
     /**
      * The real stack (ADR-0063 D3, D4): pack {@code p} depends on {@code q}, and {@code q}'s policy file locks
-     * {@code directive:X}. The production gate composes {@code p}'s closure through the offering and refuses the write,
+     * {@code directive:X}, which {@code q} holds. The production gate composes {@code p}'s closure through the offering and refuses the write,
      * naming {@code q}, whether {@code p} is addressed by its configured name or its {@code pack_id}. With {@code q}'s
      * named file gone, the offering and the gate both refuse {@code pack_unreadable} naming {@code q}.
      */
@@ -931,6 +935,14 @@ class DomainRepositoryServiceTest {
                 mutability_policy: policy.yaml
                 """.formatted(qId));
         Files.writeString(q.resolve("policy.yaml"), "schema_version: 1\nartifacts: {directive:X: locked}\n");
+        // q holds directive:X: a pack's lock reaches only what it or a pack it builds on holds (A15, rule C22).
+        Files.writeString(q.resolve("X.directive.yaml"), """
+                id: X
+                schema_version: '1.0'
+                title: X
+                intent: x
+                enforcement: required
+                """);
         Path p = Files.createDirectories(host.resolve("p"));
         Files.writeString(p.resolve("pack.yaml"), """
                 pack_id: %s

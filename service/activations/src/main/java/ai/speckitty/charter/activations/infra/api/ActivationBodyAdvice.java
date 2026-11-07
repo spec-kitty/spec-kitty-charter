@@ -70,7 +70,12 @@ import tools.jackson.databind.type.LogicalType;
  *       up, so a member the walk could not judge is still refused, as its first unknown member;
  *   <li>a scalar of another type than the one declared, which the strict re-read does not coerce (a string or a
  *       decimal for the integer {@code schemaVersion}, a number or a boolean for a string): its pointer, code
- *       {@code unreadable_body}.
+ *       {@code unreadable_body};
+ *   <li>a member the document had before the one kind model (IC-20, Q4): {@code activatedKinds} or
+ *       {@code missionTypes} at the top of {@code createActivation}'s or {@code replaceActivation}'s document, whatever
+ *       its value, code {@code removed_member}, whose detail names its replacement. A body with one is
+ *       {@code 422 validation_failed} instead of {@code activation_invalid}, its other faults listed beside it; there is
+ *       no deprecation window.
  * </ul>
  *
  * <p>A body that is not JSON, or that the strict read refuses for any other reason, is handed on unchanged: the
@@ -93,6 +98,14 @@ public class ActivationBodyAdvice extends RequestBodyAdviceAdapter {
             Set.of(ActivationConfig.class, SelectionRequest.class, ExclusionRequest.class, PresetApplication.class);
     private static final Set<Type> DEFERRED =
             Set.of(SelectionRequest.class, ExclusionRequest.class, PresetApplication.class);
+    /** The members the one kind model removed from the document (Q4), each with the member that replaces it. */
+    private static final Map<String, String> REMOVED_MEMBERS = Map.of(
+            "activatedKinds",
+            "selected.<kind>: the kind gate is gone, and a select brings its artifact into force",
+            "missionTypes",
+            "selected.mission_type: a mission type is selected like any kind");
+
+    private static final String REMOVED = "removed_member";
     private static final byte[] NO_MEMBERS = "{}".getBytes(StandardCharsets.UTF_8);
 
     /** Reads the body as a tree, and refuses a member repeated in one object instead of keeping the last. */
@@ -287,7 +300,7 @@ public class ActivationBodyAdvice extends RequestBodyAdviceAdapter {
             String at = pointer + "/" + escaped(member.getKey());
             Type memberType = declared.get(member.getKey());
             if (memberType == null) {
-                violations.add(unknownAt(at, member.getKey()));
+                violations.add(missingAt(dto, at, member.getKey()));
             } else {
                 descend(member.getValue(), memberType, at, violations);
             }
@@ -320,6 +333,19 @@ public class ActivationBodyAdvice extends RequestBodyAdviceAdapter {
             }
         }
         return members;
+    }
+
+    /** A member the DTO does not declare: removed by the one kind model, at the document's top, or unknown. */
+    private static RefusalViolation missingAt(Class<?> dto, String pointer, String member) {
+        String replacement =
+                dto == ActivationConfig.class && pointer.equals("/" + member) ? REMOVED_MEMBERS.get(member) : null;
+        return replacement == null
+                ? unknownAt(pointer, member)
+                : new RefusalViolation(
+                        pointer,
+                        REMOVED,
+                        "The member '" + member + "' is not part of the activation document any more; use "
+                                + replacement + ".");
     }
 
     private static RefusalViolation unknownAt(String pointer, String member) {
@@ -385,9 +411,14 @@ public class ActivationBodyAdvice extends RequestBodyAdviceAdapter {
         return member.replace("~", "~0").replace("/", "~1");
     }
 
+    /**
+     * The refusal of a body's faults: {@code validation_failed} when the body sends a member the one kind model
+     * removed, else {@code activation_invalid}.
+     */
     private static CharterRefusal refused(List<RefusalViolation> violations) {
+        boolean removed = violations.stream().anyMatch(violation -> REMOVED.equals(violation.code()));
         return CharterRefusal.withViolations(
-                RefusalCode.ACTIVATION_INVALID,
+                removed ? RefusalCode.VALIDATION_FAILED : RefusalCode.ACTIVATION_INVALID,
                 "The activation request body breaks its schema in " + violations.size() + " place(s).",
                 violations);
     }

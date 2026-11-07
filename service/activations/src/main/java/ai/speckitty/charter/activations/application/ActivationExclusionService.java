@@ -29,6 +29,8 @@ import org.springframework.stereotype.Service;
  * preconditions, the one read of the packs and the compare-and-set are {@link ActivationWrites}'; the cascade is
  * {@link CascadeRules}'; {@code applied} and {@code cleared} are {@link ActivationChange#of}'s.
  *
+ * <p>A mission type is denied and re-activated like any kind (A7 Q2), under {@code deactivated.mission_type}.
+ *
  * <p>A deactivate refuses a target on the floor first ({@code 409 artifact_locked} or {@code artifact_required},
  * naming the packs), before any walk. It then walks the target's own reach and the shared reach of the other active
  * artifacts ({@link CascadeRules#planShared}), both on the same session, so the whole request reads the packs once
@@ -71,7 +73,7 @@ public class ActivationExclusionService {
             @Nullable String ifMatch) {
         StoredActivation loaded = writes.loaded(id, ifMatch);
         ActivationWrites.requireWellFormed(bodyFaults);
-        ArtifactRef written = ActivationWrites.deniable(kind, artifactId);
+        ArtifactRef written = ActivationWrites.selectable(kind, artifactId);
         CascadeScope scope = ActivationWrites.scope(cascade);
         PacksSession session = writes.session(loaded);
         ClosureSnapshot snapshot = session.snapshot();
@@ -101,7 +103,7 @@ public class ActivationExclusionService {
     public ActivationWrites.Outcome reactivate(
             ActivationId id, String kind, String artifactId, @Nullable String ifMatch) {
         StoredActivation loaded = writes.loaded(id, ifMatch);
-        ArtifactRef written = ActivationWrites.deniable(kind, artifactId);
+        ArtifactRef written = ActivationWrites.selectable(kind, artifactId);
         PacksSession session = writes.session(loaded);
         ArtifactRef target = ActivationWrites.declared(
                 session.snapshot(), written, loaded.document().deactivated(written.kind()));
