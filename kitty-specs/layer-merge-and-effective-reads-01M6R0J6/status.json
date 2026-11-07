@@ -442,7 +442,7 @@
     },
     "WP13": {
       "actor": "claude",
-      "agent": "claude:opus:reviewer-renata",
+      "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -455,6 +455,7 @@
         "Bounded, path-safe extractor (tar.gz strict, zip via EOCD count before entries), commons-compress 1.28.0 with verification entries; corpus 61 hostile + 19 benign; red recorded; PIT adds infra.archive (floor 80), infra.api stays excluded; verifyAll green. Open: OSV/GHSA re-check of 1.28.0 blocked by proxy."
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/layer-merge-and-effective-reads-01M6R0J6-coord/kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP13-a-archive-extractor/review-cycle-1.md",
         "reference": "review-cycle://layer-merge-and-effective-reads-01M6R0J6/WP13-a-archive-extractor/review-cycle-1.md",
@@ -462,16 +463,16 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 6931,
-      "shell_pid_created_at": "1794054044.86",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T058": "done",
-        "T059": "done",
-        "T060": "done",
-        "T061": "done",
-        "T062": "done",
-        "T063": "done",
-        "T150": "done"
+        "T058": "planned",
+        "T059": "planned",
+        "T060": "planned",
+        "T061": "planned",
+        "T062": "planned",
+        "T063": "planned",
+        "T150": "planned"
       }
     },
     "WP14": {
