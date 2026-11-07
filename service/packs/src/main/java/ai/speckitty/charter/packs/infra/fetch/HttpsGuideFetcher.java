@@ -100,19 +100,14 @@ public final class HttpsGuideFetcher implements GuideFetcher, AutoCloseable {
 
     /** Name resolution as the fetcher's pre-check sees it; production uses the JVM resolver (and so the guard). */
     @FunctionalInterface
-    interface Resolver {
-        List<InetAddress> resolve(String host) throws UnknownHostException;
-    }
+    interface Resolver extends GuardedHttpsExchange.Resolver {}
 
     /**
      * One request and its response, for one fetch; production sends it on a guarded {@link HttpClient} of its own whose
      * every task works for the fetch's {@code attempt}.
      */
     @FunctionalInterface
-    interface Transport {
-        CompletableFuture<HttpResponse<byte[]>> send(
-                HttpRequest request, HttpResponse.BodyHandler<byte[]> bodyHandler, GuardRefusals.Attempt attempt);
-    }
+    interface Transport extends GuardedHttpsExchange.Transport {}
 
     /**
      * The production fetcher: a direct {@link HttpClient} and the JVM's (guarded) resolver.
