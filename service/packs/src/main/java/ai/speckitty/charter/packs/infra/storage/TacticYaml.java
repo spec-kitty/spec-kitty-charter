@@ -30,8 +30,7 @@ enum TacticYaml implements YamlFormat<TacticDso> {
         List<TacticDso.Step> steps = new ArrayList<>();
         for (Object step : list(root, "steps")) {
             if (step instanceof Map<?, ?> s) {
-                steps.add(new TacticDso.Step(
-                        required(s, "title"), optional(s, "description"), strings(s, "examples"), references(s)));
+                steps.add(new TacticDso.Step(required(s, "title"), optional(s, "description"), strings(s, "examples")));
             }
         }
         return new TacticDso(
@@ -42,8 +41,7 @@ enum TacticYaml implements YamlFormat<TacticDso> {
                 optional(root, "purpose"),
                 optional(root, "notes"),
                 strings(root, "failure_modes"),
-                strings(root, "applies_to_languages"),
-                references(root));
+                strings(root, "applies_to_languages"));
     }
 
     @Override
@@ -59,38 +57,12 @@ enum TacticYaml implements YamlFormat<TacticDso> {
             out.put("title", step.title());
             YamlDumpEmitter.scalarInto(out, "description", step.description());
             YamlDumpEmitter.stringsInto(out, "examples", step.examples());
-            YamlDumpEmitter.mappingsInto(out, "references", referencesOut(step.references()));
             steps.add(out);
         }
         return emitter.mappings("steps", steps)
                 .strings("failure_modes", tactic.failureModes())
                 .strings("applies_to_languages", tactic.appliesToLanguages())
-                .mappings("references", referencesOut(tactic.references()))
                 .scalar("notes", tactic.notes())
                 .dump();
-    }
-
-    private static List<Map<String, Object>> referencesOut(List<TacticDso.Reference> references) {
-        List<Map<String, Object>> out = new ArrayList<>();
-        for (TacticDso.Reference reference : references) {
-            Map<String, Object> entry = YamlDumpEmitter.mapping();
-            entry.put("name", reference.name());
-            entry.put("type", reference.type());
-            entry.put("id", reference.id());
-            entry.put("when", reference.when());
-            out.add(entry);
-        }
-        return out;
-    }
-
-    private static List<TacticDso.Reference> references(Map<?, ?> owner) {
-        List<TacticDso.Reference> out = new ArrayList<>();
-        for (Object entry : list(owner, "references")) {
-            if (entry instanceof Map<?, ?> r) {
-                out.add(new TacticDso.Reference(
-                        required(r, "name"), required(r, "type"), required(r, "id"), required(r, "when")));
-            }
-        }
-        return out;
     }
 }

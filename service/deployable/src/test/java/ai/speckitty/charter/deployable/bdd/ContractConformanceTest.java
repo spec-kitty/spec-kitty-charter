@@ -92,8 +92,8 @@ class ContractConformanceTest {
     @Test
     void aSuccessBodyIsCheckedAgainstItsSchemaWithItsNullableMembers() {
         String tactic = "{\"id\":\"t1\",\"schemaVersion\":\"1\",\"name\":\"n\",\"purpose\":null,"
-                + "\"notes\":null,\"steps\":[{\"title\":\"s\",\"description\":null,\"examples\":[],"
-                + "\"references\":[]}],\"failureModes\":[],\"appliesToLanguages\":[],\"references\":[]}";
+                + "\"notes\":null,\"steps\":[{\"title\":\"s\",\"description\":null,\"examples\":[]}],"
+                + "\"failureModes\":[],\"appliesToLanguages\":[]}";
         String envelope = "{\"kind\":\"tactic\",\"id\":\"t1\",\"packId\":\"p1\",\"tactic\":%s,"
                 + "\"_links\":{\"self\":{\"href\":\"/api/v1/packs/p1/artifacts/tactic/t1\"},"
                 + "\"collection\":{\"href\":\"/api/v1/packs/p1/artifacts?kind=tactic\"}}}";

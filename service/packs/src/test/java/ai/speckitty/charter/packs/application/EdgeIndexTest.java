@@ -112,7 +112,7 @@ class EdgeIndexTest {
     }
 
     private static List<String> written(CharterArtifact node) {
-        return node.relationships().stream()
+        return node.derivedRelationships().stream()
                 .map(relationship ->
                         relationship.from() + " " + relationship.type().token() + " " + relationship.toReference())
                 .toList();
@@ -142,7 +142,7 @@ class EdgeIndexTest {
         assertThat(index.inPack(pack("alpha"))
                         .resolve(urn("tactic:T"))
                         .orElseThrow()
-                        .relationships())
+                        .derivedRelationships())
                 .as("a held artifact with no edges is still a node")
                 .isEmpty();
     }

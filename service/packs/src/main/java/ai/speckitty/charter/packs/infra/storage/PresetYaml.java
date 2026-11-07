@@ -2,8 +2,9 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import static ai.speckitty.charter.packs.infra.storage.YamlFields.list;
 import static ai.speckitty.charter.packs.infra.storage.YamlFields.required;
-import static ai.speckitty.charter.packs.infra.storage.YamlFields.strings;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.packs.domain.Preset;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -11,7 +12,8 @@ import java.util.Map;
 
 /**
  * The YAML form of {@code presets/<id>.yaml} (ADR-0042): how a {@link PresetDso} is written from scratch and read back
- * from a document that has already passed the bundled {@code preset} schema. Keys are written in schema order;
+ * from a document that has already passed the bundled {@code preset} schema, which refuses the removed kind gate
+ * {@code activated_kinds}. The scalar keys are written first, then the lists in the kind registry's order;
  * {@code must_have} is written only on a must-have item, as the schema has no {@code false} spelling, and a list the
  * preset does not hold is left out, as the schema has no empty one. Not a {@link YamlFormat}: a preset is a pack-level
  * file, not a kind.
@@ -21,22 +23,28 @@ final class PresetYaml {
     /** The schema that validates a preset, as {@code contracts/packs/file-kinds.yaml} names it. */
     static final String SCHEMA = "preset";
 
-    /** The activation-list keys, in the schema's order. */
-    static final List<String> LIST_KEYS = List.of(
-            "activated_directives",
-            "activated_tactics",
-            "activated_styleguides",
-            "activated_toolguides",
-            "activated_paradigms",
-            "activated_procedures",
-            "activated_agent_profiles",
-            "activated_mission_step_contracts",
-            "activated_anti_patterns",
-            "activated_mission_types");
+    /**
+     * The activation-list keys, {@code activated_<plural>} of every kind a preset may name, in the kernel registry's
+     * order (one kind model, IC-20): skills, glossary packs and mission types are lists like any other.
+     */
+    static final List<String> LIST_KEYS =
+            Preset.ACTIVATION_KINDS.stream().map(PresetYaml::keyOf).toList();
 
     private static final String MUST_HAVE = "must_have";
 
+    private static final String ACTIVATED = "activated_";
+
     private PresetYaml() {}
+
+    /**
+     * The activation-list key of a kind.
+     *
+     * @param kind the kind
+     * @return {@code activated_<plural>}
+     */
+    static String keyOf(ArtifactKind kind) {
+        return ACTIVATED + kind.plural();
+    }
 
     /**
      * Maps a schema-valid document to the persistence shape.
@@ -57,11 +65,7 @@ final class PresetYaml {
             }
         }
         return new PresetDso(
-                required(root, "schema_version"),
-                required(root, "id"),
-                required(root, "description"),
-                strings(root, "activated_kinds"),
-                lists);
+                required(root, "schema_version"), required(root, "id"), required(root, "description"), lists);
     }
 
     /**
@@ -74,8 +78,7 @@ final class PresetYaml {
         YamlDumpEmitter emitter = new YamlDumpEmitter()
                 .scalar("schema_version", preset.schemaVersion())
                 .scalar("id", preset.id())
-                .scalar("description", preset.description())
-                .strings("activated_kinds", preset.activatedKinds());
+                .scalar("description", preset.description());
         for (String key : LIST_KEYS) {
             List<PresetDso.Item> items = preset.lists().getOrDefault(key, List.of());
             List<Map<String, Object>> out = new ArrayList<>();

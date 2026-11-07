@@ -79,7 +79,6 @@ class ToolguideReadServiceTest {
         assertThat(read.summary()).isEqualTo(git.summary());
         assertThat(read.commands()).isEqualTo(git.commands());
         assertThat(read.appliesToLanguages()).isEqualTo(git.appliesToLanguages());
-        assertThat(read.references()).isEqualTo(git.references());
         assertThat(read.lastUpdated()).isEqualTo(git.lastUpdated()).contains("2026-01-01");
     }
 
@@ -93,10 +92,11 @@ class ToolguideReadServiceTest {
 
     @Test
     void everyReturnedToolguideMintsNoRelationships() {
-        // FR-015 / data-model: a toolguide's bare-string citations are not typed edges, so it originates no edges.
+        // ADR-0064: a toolguide's relationships are graph edges, never derived from a field.
         assertThat(service.toolguidesOf(PACK_A).value())
-                .allSatisfy(t -> assertThat(t.relationships()).isEmpty());
-        assertThat(service.toolguide(PACK_A, GIT).value().relationships()).isEmpty();
+                .allSatisfy(t -> assertThat(t.derivedRelationships()).isEmpty());
+        assertThat(service.toolguide(PACK_A, GIT).value().derivedRelationships())
+                .isEmpty();
     }
 
     @Test
@@ -181,7 +181,6 @@ class ToolguideReadServiceTest {
                 .command(id + " status")
                 .appliesToLanguage("java")
                 .lastUpdated(lastUpdated)
-                .reference("docs/" + id + ".md")
                 .build();
     }
 

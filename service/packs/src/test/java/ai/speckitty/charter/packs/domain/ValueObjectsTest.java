@@ -15,27 +15,18 @@ import org.junit.jupiter.api.Test;
 class ValueObjectsTest {
 
     @Test
-    @DisplayName("tactic references with equal components are equal; one differing component is not")
-    void tacticReferenceHasValueEquality() {
-        var reference = new TacticReference("n", "directive", "D1", "when");
-
-        assertThat(reference).isEqualTo(new TacticReference("n", "directive", "D1", "when"));
-        assertThat(reference).isNotEqualTo(new TacticReference("n", "directive", "D2", "when"));
-    }
-
-    @Test
     @DisplayName("tactic steps compare their lists by order")
     void tacticStepListsAreOrderSensitive() {
-        var first = new TacticStep("t", Optional.empty(), List.of("a", "b"), List.of());
+        var first = new TacticStep("t", Optional.empty(), List.of("a", "b"));
 
-        assertThat(first).isEqualTo(new TacticStep("t", Optional.empty(), List.of("a", "b"), List.of()));
-        assertThat(first).isNotEqualTo(new TacticStep("t", Optional.empty(), List.of("b", "a"), List.of()));
+        assertThat(first).isEqualTo(new TacticStep("t", Optional.empty(), List.of("a", "b")));
+        assertThat(first).isNotEqualTo(new TacticStep("t", Optional.empty(), List.of("b", "a")));
     }
 
     @Test
     @DisplayName("a tactic step with a blank title is rejected")
     void blankStepTitleIsRejected() {
-        assertThatThrownBy(() -> new TacticStep(" ", Optional.empty(), List.of(), List.of()))
+        assertThatThrownBy(() -> new TacticStep(" ", Optional.empty(), List.of()))
                 .isInstanceOf(ConstraintBreachException.class)
                 .hasMessageContaining("A tactic step needs a title that is not blank.");
     }

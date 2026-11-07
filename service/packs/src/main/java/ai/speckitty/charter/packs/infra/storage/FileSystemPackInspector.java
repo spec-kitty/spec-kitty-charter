@@ -141,7 +141,8 @@ public final class FileSystemPackInspector implements PackInspector {
      */
     @Override
     public PackContents inspect(PackRoot root, Scope scope) {
-        Path directory = Path.of(root.locator());
+        // #319: normalize, not toRealPath: a linked root keeps its configured name (#284).
+        Path directory = Path.of(root.locator()).toAbsolutePath().normalize();
         String name = root.name();
         if (!Files.isDirectory(directory)) {
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + name + " is not a directory");

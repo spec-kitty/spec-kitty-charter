@@ -19,6 +19,18 @@
         "relation": {
           "$ref": "#/$defs/Relation"
         },
+        "when": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "When"
+        },
         "reason": {
           "anyOf": [
             {

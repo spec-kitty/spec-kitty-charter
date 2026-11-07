@@ -696,7 +696,7 @@ final class FilesystemPackStore {
      * be a file the pack holds and digests as a template, never a file the table excludes or retires. A link is
      * followed, as the pack walk follows one, as long as its real place stays in the pack.
      *
-     * @param directory the pack directory
+     * @param directory the pack directory, absolute and normalized (the callers normalize it; #319)
      * @param file the artifact's pack-relative path
      * @param named the paths it names, relative to its file, with what names each
      * @param table the table that classifies the named file

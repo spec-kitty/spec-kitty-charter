@@ -3,7 +3,6 @@ package ai.speckitty.charter.packs.domain;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
-import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import java.util.ArrayList;
@@ -176,17 +175,6 @@ public final class MissionStepContract implements CharterArtifact {
      */
     public List<GateBinding> gates() {
         return gates;
-    }
-
-    /**
-     * A mission step contract mints no relationships. Its step delegations are values of the artifact; the pinned
-     * shard has no step-contract edges, and minting them is #148's.
-     *
-     * @return an empty list
-     */
-    @Override
-    public List<Relationship> relationships() {
-        return List.of();
     }
 
     /** Entity identity: equal when the identifier is equal, whatever the other fields hold. */

@@ -2,8 +2,8 @@
 title: "ADR-0026: The write surface is functional registration of packs, artifacts and relationships, not CRUD over storage"
 description: Why the API's only writes are functional registration of a pack, an artifact or a relationship edge over the Pack aggregate — not CRUD that exposes storage DSOs.
 doc_status: active
-updated: 2026-10-31T00:00:00Z
-decision_status: Accepted; superseded in part by ADR-0030 (2026-10-26)
+updated: 2026-11-05T00:00:00Z
+decision_status: 'Accepted, with Amendment 2026-11-05 (ADR-0064); superseded in part by ADR-0030 (2026-10-26)'
 decision_date: '2026-10-25'
 type: ADR
 kind: ADR
@@ -34,6 +34,17 @@ audience:
 Extends [ADR-0005](/adr/0005-service-registers-and-distributes-packs/) (pack registration) to artifact and relationship granularity, and records a deliberate departure from "content enters only as whole packs."
 
 Superseded in part by [ADR-0030](/adr/0030-removal-is-distinct-from-deactivation/) (2026-10-26): removal by a derived pack is distinct from deactivation by a project (decision 2).
+
+### Amendment 2026-11-05
+
+The operator ruled on [#240](https://github.com/spec-kitty/spec-kitty-charter/issues/240) on 2026-11-05 that an edge is written through one relationship operation
+([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decision 4). The original text stands, and each changed point is annotated:
+
+- decision 1.2: an artifact registration body carries the artifact's fields only, not its relationships;
+  a body with an undeclared member is refused ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decisions 4 and 5);
+- decision 1.3: a relationship no longer rides inside an artifact registration body;
+  `PUT /packs/{packId}/relationships` (`putPackRelationship`) is the only operation that writes an edge
+  ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decision 4).
 
 ## Context
 
@@ -73,11 +84,15 @@ API writes and how it is framed.
       artifact share one item URI. The per-kind paths are removed with no alias. "One family per kind" and every
       other part of D1.2 are unchanged: each kind keeps its own typed operation, operationId, request body and
       refusals. D1.3 (relationships) is unchanged.
+
+      *Amended 2026-11-05 ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decisions 4 and 5): the body carries the artifact's fields only. It carries no relationships, and a body that still sends `relationships`, or any other member its shape does not declare, is refused with 422 `validation_failed`.*
    3. **Register a relationship** — `PUT /packs/{packId}/relationships`, idempotent on the unordered
       `{from, to}` pair ([ADR-0025](/adr/0025-relationships-first-class-and-lazy-repository-walk/));
       body = `from`, `to`, `type`, `rationale` (directionality derives from the type). A relationship
       may also ride along inside an artifact registration body. The `from` endpoint must resolve
       within the pack; `to` may be external (CRG endpoints need not be local).
+
+      *Amended 2026-11-05 ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decision 4): a relationship no longer rides inside an artifact registration body. This operation is the only one that writes an edge.*
 2. **No `DELETE`, `PATCH` or generic CRUD.** Removing an artifact from force is **deactivation**, an
    activation concern ([ADR-0013](/adr/0013-persistent-deactivation/)/[ADR-0020](/adr/0020-offering-and-activations/)),
    not a storage mutation.
