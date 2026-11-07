@@ -278,7 +278,9 @@ pitest {
 tasks.named("pitest") { readsTheUnitTestInputs() }
 
 // Three floor groups, as the operator ruled them on 2026-11-05 (C-001): each at or below floor5(score - 3) of its first
-// measured run. domain+application (92.7 %) and infra.storage (90.7 %) take 85; infra.fetch (77.3 %) takes 70.
+// measured run. domain+application (92.7 %) and infra.storage (90.7 %) take 85; infra.fetch (77.3 %) takes 70. WP13 adds
+// infra.archive on the same rule: 87.5 % (239 of 273) on its first narrowed run takes 80. infra.api is mutated (above) but
+// has no floor yet.
 mutationFloors {
     group("domain+application") {
         packages.addAll("$packsPackage.domain", "$packsPackage.application")
@@ -288,6 +290,10 @@ mutationFloors {
     group("infra.storage") {
         packages.add("$packsPackage.infra.storage")
         floor = 85
+    }
+    group("infra.archive") {
+        packages.add("$packsPackage.infra.archive")
+        floor = 80
     }
     group("infra.fetch") {
         packages.add("$packsPackage.infra.fetch")
