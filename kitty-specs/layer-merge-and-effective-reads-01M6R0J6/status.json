@@ -522,7 +522,7 @@
     },
     "WP15": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": "claude:sonnet:java-jenny",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
@@ -531,6 +531,9 @@
       "last_event_id": "01M6VDAGN9B3RV6FTDFJ9ZW1AK",
       "last_transition_at": "2026-11-07T16:26:31.977364+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "T070-T075 and WP14 hand-offs done; verifyAll green."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 16749,
