@@ -124,7 +124,7 @@ class RegistrationJobsTest {
 
         assertThat(failed.state()).isEqualTo(State.REFUSED);
         assertThat(failed.ending()).isInstanceOfSatisfying(Refused.class, why -> {
-            assertThat(why.refusal().code()).isEqualTo(RefusalCode.INTERNAL_ERROR);
+            assertThat(why.kind()).isEqualTo(Kind.FAILED);
             assertThat(why.detail()).doesNotContain("shadow");
         });
         assertThat(h.audit.entries())

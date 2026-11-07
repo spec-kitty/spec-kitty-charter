@@ -5,8 +5,10 @@ import ai.speckitty.charter.api.model.PackRegistration;
 import ai.speckitty.charter.api.model.PackRegistrationNotices;
 import ai.speckitty.charter.api.model.PackRegistrationProblem;
 import ai.speckitty.charter.api.model.PackRegistrationStatus;
+import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.PackRegistrationService.RegistrationOutcome;
 import ai.speckitty.charter.packs.application.PackRevision;
@@ -143,6 +145,8 @@ final class PackRegistrationMapper {
             case CODED -> refusals.registrationProblem(Objects.requireNonNull(refused.refusal()));
             case STALE -> plain(HttpStatus.PRECONDITION_FAILED, refused.detail());
             case BUSY -> plain(HttpStatus.SERVICE_UNAVAILABLE, refused.detail());
+            case FAILED ->
+                refusals.registrationProblem(new CharterRefusal(RefusalCode.INTERNAL_ERROR, refused.detail()));
         };
     }
 

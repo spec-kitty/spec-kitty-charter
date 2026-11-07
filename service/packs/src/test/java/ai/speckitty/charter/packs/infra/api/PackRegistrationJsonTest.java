@@ -28,6 +28,24 @@ class PackRegistrationJsonTest {
 
         assertThat(hints.reflection().typeHints())
                 .extracting(hint -> hint.getType())
-                .containsExactly(TypeReference.of(PackRegistrationJson.class.getName() + "$OmitAbsentMembers"));
+                .contains(TypeReference.of(PackRegistrationJson.class.getName() + "$OmitAbsentMembers"));
+    }
+
+    @Test
+    void theModelsAStatusAndAStoredPackReachAreRegisteredForBinding() {
+        RuntimeHints hints = new RuntimeHints();
+        new PackRegistrationJson.Hints().registerHints(hints, PackRegistrationJsonTest.class.getClassLoader());
+
+        assertThat(hints.reflection().typeHints())
+                .extracting(hint -> hint.getType())
+                .contains(
+                        TypeReference.of(ai.speckitty.charter.api.model.PackRegistrationStatus.class),
+                        TypeReference.of(ai.speckitty.charter.api.model.PackRegistration.class),
+                        TypeReference.of(ai.speckitty.charter.api.model.PackRegistrationNotices.class),
+                        TypeReference.of(ai.speckitty.charter.api.model.PackRegistrationProblem.class),
+                        TypeReference.of(ai.speckitty.charter.api.model.ArtifactReference.class),
+                        TypeReference.of(ai.speckitty.charter.api.model.RefusalPack.class),
+                        TypeReference.of(ai.speckitty.charter.api.model.RefusalViolation.class),
+                        TypeReference.of(ai.speckitty.charter.api.model.Link.class));
     }
 }

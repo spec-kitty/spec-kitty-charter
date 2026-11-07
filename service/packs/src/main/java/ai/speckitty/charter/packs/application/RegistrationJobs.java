@@ -99,7 +99,9 @@ public final class RegistrationJobs implements AutoCloseable {
         /** The {@code If-Match} no longer names the stored revision ({@code 412}, a plain problem). */
         STALE,
         /** The registry lock was not free in time, or the service is stopping ({@code 503}, a plain problem). */
-        BUSY
+        BUSY,
+        /** The job failed in a way no refusal names: the answer is the service's own internal error, and it is logged. */
+        FAILED
     }
 
     /**
@@ -724,7 +726,7 @@ public final class RegistrationJobs implements AutoCloseable {
                 return null;
             } catch (RuntimeException | Error failure) {
                 LOG.log(System.Logger.Level.WARNING, "A registration job failed unexpectedly.", failure);
-                return new Refused(Kind.CODED, internal(), INTERNAL_DETAIL);
+                return new Refused(Kind.FAILED, null, INTERNAL_DETAIL);
             }
         }
 
@@ -772,16 +774,12 @@ public final class RegistrationJobs implements AutoCloseable {
                     return null;
                 }
                 LOG.log(System.Logger.Level.WARNING, "A registration job failed unexpectedly.", failure);
-                return new Refused(Kind.CODED, internal(), INTERNAL_DETAIL);
+                return new Refused(Kind.FAILED, null, INTERNAL_DETAIL);
             }
         }
 
         private static String detail(Throwable failure) {
             return Objects.requireNonNullElse(failure.getMessage(), "");
-        }
-
-        private static CharterRefusal internal() {
-            return new CharterRefusal(RefusalCode.INTERNAL_ERROR, INTERNAL_DETAIL);
         }
 
         /** The deadline: ends the job unless its commit began. A worker still staging is interrupted. */
@@ -871,13 +869,11 @@ public final class RegistrationJobs implements AutoCloseable {
             return switch (refused.kind()) {
                 case STALE -> "refused:precondition_failed";
                 case BUSY -> "refused:registry_busy";
+                case FAILED -> "failed:internal_error";
                 case CODED ->
-                    codedOutcome(Objects.requireNonNull(refused.refusal()).code());
+                    "refused:"
+                            + Objects.requireNonNull(refused.refusal()).code().token();
             };
-        }
-
-        private static String codedOutcome(RefusalCode code) {
-            return code == RefusalCode.INTERNAL_ERROR ? "failed:internal_error" : "refused:" + code.token();
         }
 
         private void deleteDirectory() {

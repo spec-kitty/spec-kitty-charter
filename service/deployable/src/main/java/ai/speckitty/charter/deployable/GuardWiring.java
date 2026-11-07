@@ -92,10 +92,15 @@ public class GuardWiring {
             ContainerWiring container,
             ServiceInfoQuery info,
             ObjectProvider<ObjectMapper> mapper,
-            AuditLog audit,
+            ObjectProvider<AuditLog> audit,
             @Value("${charter.api.base-path:/api/v1}") String basePath) {
         FilterRegistrationBean<WorktreeGuard> registration = new FilterRegistrationBean<>(new WorktreeGuard(
-                configuredToken(environment), policy(container), info, mapper::getObject, audit, basePath));
+                configuredToken(environment),
+                policy(container),
+                info,
+                mapper::getObject,
+                audit.getIfAvailable(() -> entry -> {}),
+                basePath));
         registration.setName("worktreeGuard");
         registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
         registration.setDispatcherTypes(EnumSet.of(DispatcherType.REQUEST));

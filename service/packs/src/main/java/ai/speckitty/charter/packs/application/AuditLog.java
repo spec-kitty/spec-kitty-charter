@@ -1,7 +1,6 @@
 package ai.speckitty.charter.packs.application;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Locale;
@@ -116,7 +115,7 @@ public interface AuditLog {
          */
         public static String locatorOf(String url) {
             try {
-                URI parsed = new URI(url);
+                URI parsed = URI.create(url);
                 String host = parsed.getHost();
                 if (!"https".equals(parsed.getScheme()) || host == null) {
                     return INVALID;
@@ -124,7 +123,7 @@ public interface AuditLog {
                 String port = parsed.getPort() < 0 ? "" : ":" + parsed.getPort();
                 String path = parsed.getRawPath() == null ? "" : parsed.getRawPath();
                 return "https://" + host + port + path;
-            } catch (URISyntaxException notAUrl) {
+            } catch (IllegalArgumentException notAUrl) {
                 return INVALID;
             }
         }
