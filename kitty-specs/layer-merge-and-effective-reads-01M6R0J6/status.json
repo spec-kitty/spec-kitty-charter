@@ -1,7 +1,7 @@
 {
-  "event_count": 167,
-  "last_event_id": "01M6V0NHW6NR7PCFNDFHE75RWK",
-  "materialized_at": "2026-11-07T12:45:22.182924+00:00",
+  "event_count": 172,
+  "last_event_id": "01M6V1AG6PP7Z264A2S0MG3WXY",
+  "materialized_at": "2026-11-07T12:56:48.598666+00:00",
   "mission_number": "",
   "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
   "mission_type": "software-dev",
@@ -445,27 +445,29 @@
       "agent": "claude:opus:reviewer-renata",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
-      "force_count": 1,
+      "force_count": 2,
       "implementer_of_record": "claude:sonnet:java-jenny",
       "lane": "in_review",
-      "last_event_id": "01M6V0NHW6NR7PCFNDFHE75RWK",
-      "last_transition_at": "2026-11-07T12:45:22.182924+00:00",
+      "last_event_id": "01M6V1AG6PP7Z264A2S0MG3WXY",
+      "last_transition_at": "2026-11-07T12:56:48.598666+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "Bounded, path-safe extractor (tar.gz strict, zip via EOCD count before entries), commons-compress 1.28.0 with verification entries; corpus 61 hostile + 19 benign; red recorded; PIT adds infra.archive (floor 80), infra.api stays excluded; verifyAll green. Open: OSV/GHSA re-check of 1.28.0 blocked by proxy.",
-        "Cycle 2: zip central-directory walk (count, extra-field caps), tar meta-header 64 KiB guard, absolute PAX/GNU names, RuntimeException -> 422, nits. Out-of-map: ArchiveViolation.java (codes, Cf escaping), pit-targets.init.gradle (stale comment). verifyAll green."
+        "Cycle 2: zip central-directory walk (count, extra-field caps), tar meta-header 64 KiB guard, absolute PAX/GNU names, RuntimeException -> 422, nits. Out-of-map: ArchiveViolation.java (codes, Cf escaping), pit-targets.init.gradle (stale comment). verifyAll green.",
+        "cycle 3: ZIP64 locator bypass",
+        "Cycle 3: ZIP64 locator always followed as the library does; EOCD/ZIP64 disagreement refused zip_count_mismatch. verifyAll green."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
       "review_result": {
-        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/layer-merge-and-effective-reads-01M6R0J6-coord/kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP13-a-archive-extractor/review-cycle-1.md",
-        "reference": "review-cycle://layer-merge-and-effective-reads-01M6R0J6/WP13-a-archive-extractor/review-cycle-1.md",
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/layer-merge-and-effective-reads-01M6R0J6-coord/kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP13-a-archive-extractor/review-cycle-2.md",
+        "reference": "review-cycle://layer-merge-and-effective-reads-01M6R0J6/WP13-a-archive-extractor/review-cycle-2.md",
         "reviewer": "claude:opus:reviewer-renata",
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 14058,
-      "shell_pid_created_at": "1794055518.26",
+      "shell_pid": 19164,
+      "shell_pid_created_at": "1794056205.05",
       "subtasks": {
         "T058": "done",
         "T059": "done",
