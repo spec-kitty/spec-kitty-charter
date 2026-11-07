@@ -1,6 +1,7 @@
 package ai.speckitty.charter.web;
 
 import ai.speckitty.charter.api.model.CharterRefusal;
+import ai.speckitty.charter.api.model.PackRegistrationProblem;
 import ai.speckitty.charter.api.model.Problem;
 import ai.speckitty.charter.api.model.RefusalPack;
 import ai.speckitty.charter.api.model.RefusalViolation;
@@ -141,6 +142,18 @@ public class RefusalHandler {
         return ResponseEntity.status(status)
                 .contentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .body(problem);
+    }
+
+    /**
+     * The problem a refused registration ends with, as the status resource answers it: the refusal the synchronous
+     * answer would have been, with the status its {@code x-refusal} entry gives {@code getPackRegistration} (the eleven
+     * composition codes are {@code 422} there, not {@code 500}).
+     *
+     * @param refusal the domain refusal the job ended with
+     * @return the problem, with its code, packs and violations
+     */
+    public PackRegistrationProblem registrationProblem(ai.speckitty.charter.kernel.domain.CharterRefusal refusal) {
+        return new PackRegistrationProblem(title(refusal.code()), 500);
     }
 
     /**

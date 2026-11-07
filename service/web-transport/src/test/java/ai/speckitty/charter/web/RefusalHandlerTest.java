@@ -188,6 +188,45 @@ class RefusalHandlerTest {
                 .isEqualTo("The activation names unknown tactics. 150 more violations are not listed.");
     }
 
+    @ParameterizedTest(name = "{0} -> {1}")
+    @CsvSource({
+        "PACK_DEPENDENCY_CYCLE, 422",
+        "PACK_DEPENDENCY_UNKNOWN, 422",
+        "PACK_DEPENDENCY_OUT_OF_RANGE, 422",
+        "PACK_PARENT_UNRESOLVED, 422",
+        "PACK_LEVEL_VIOLATION, 422",
+        "PACK_NAME_CONFLICT, 422",
+        "PACK_DUPLICATE_ID, 422",
+        "PACK_SIBLING_CONFLICT, 422",
+        "PACK_REFERENCE_UNQUALIFIED, 422",
+        "PACK_REFERENCE_PACK_MISSING, 422",
+        "PACK_REFERENCE_ARTIFACT_MISSING, 422",
+        "PACK_VERSION_CONFLICT, 409",
+        "REGISTRATION_CONFLICT, 409",
+        "VALIDATION_FAILED, 422",
+        "OVERRIDE_NOT_PERMITTED, 422",
+        "PACK_STORAGE_FULL, 503",
+        "REGISTRATION_TIMED_OUT, 504",
+        "PACK_UNREADABLE, 500",
+        "INTERNAL_ERROR, 500",
+    })
+    @DisplayName(
+            "the problem of a refused registration carries the status its x-refusal entry gives getPackRegistration")
+    void aRefusedRegistrationCarriesTheStatusOfItsEntryForTheStatusResource(RefusalCode code, int expectedStatus) {
+        ai.speckitty.charter.kernel.domain.RefusalPack pack = new ai.speckitty.charter.kernel.domain.RefusalPack(
+                "01M6R0WP14AAAAAAAAAAAAAAAA", "dependent", "dependent");
+        ai.speckitty.charter.api.model.PackRegistrationProblem problem = handler.registrationProblem(
+                new ai.speckitty.charter.kernel.domain.CharterRefusal(code, "detail", java.util.List.of(pack)));
+
+        assertThat(problem.getStatus()).isEqualTo(expectedStatus);
+        assertThat(problem.getCode()).isEqualTo(code.token());
+        assertThat(problem.getTitle()).isNotBlank();
+        assertThat(problem.getDetail()).isEqualTo("detail");
+        assertThat(problem.getPacks())
+                .extracting(ai.speckitty.charter.api.model.RefusalPack::getPackId)
+                .containsExactly("dependent");
+    }
+
     @Test
     @DisplayName("a request the service cannot take now is a 503 with Retry-After and no code")
     void retryLaterIsAServiceUnavailableWithRetryAfter() {
