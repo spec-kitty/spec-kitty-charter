@@ -32,9 +32,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
@@ -813,6 +815,16 @@ class PackRegistrationServiceTest {
         final PackCommitStore commits;
         final CommitStorePackWriteStore writeStore;
         final PackRegistrationService service;
+
+        /** The root sets of the stored activations a test plants: an empty optional is an activation with no packs. */
+        final List<Optional<List<String>>> activations = new ArrayList<>();
+
+        /** The packs the activations slice was told were registered, in order. */
+        final List<String> registered = new ArrayList<>();
+
+        /** How often the impact check read the composition facts of each pack, by configured name. */
+        final Map<String, Integer> factReads = new java.util.concurrent.ConcurrentHashMap<>();
+
         private final AtomicInteger staged = new AtomicInteger();
 
         /** What the swap does inside the window where the live directory is missing; a test sets it. */
@@ -838,7 +850,25 @@ class PackRegistrationServiceTest {
                     repository,
                     repository,
                     gate,
-                    new InboundReferences(repository, repository, repository));
+                    new InboundReferences(repository, repository, repository),
+                    new RegistrationImpact(
+                            repository,
+                            repository,
+                            pack -> {
+                                factReads.merge(pack.value(), 1, Integer::sum);
+                                return repository.compositionFacts(pack);
+                            },
+                            new ActivationImpact() {
+                                @Override
+                                public List<Optional<List<String>>> activationRoots() {
+                                    return List.copyOf(activations);
+                                }
+
+                                @Override
+                                public void registered(String packId, RegistrationImpact.Notices notices) {
+                                    registered.add(packId);
+                                }
+                            }));
             create(packs);
         }
 
