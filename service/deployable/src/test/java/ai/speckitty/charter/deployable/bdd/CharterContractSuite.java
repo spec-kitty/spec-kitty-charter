@@ -13,7 +13,9 @@ import org.junit.platform.suite.api.Suite;
 /**
  * Runs the contract scenarios of contracts/charter/scenarios against the service. Only scenarios tagged
  * {@code @contract} run, so a feature file placed there is not picked up before it is bound and tagged; scenarios
- * tagged {@code @WIP} describe a surface the contract does not have yet and are left out.
+ * tagged {@code @WIP} describe a surface the contract does not have yet and are left out. A selected scenario with an
+ * undefined or pending step fails the run ({@link UndefinedStepGuard}), which Cucumber would otherwise report as
+ * skipped.
  */
 @Suite
 @IncludeEngines("cucumber")
@@ -21,5 +23,7 @@ import org.junit.platform.suite.api.Suite;
 @IncludeTags("contract")
 @ExcludeTags("WIP")
 @ConfigurationParameter(key = GLUE_PROPERTY_NAME, value = "ai.speckitty.charter.deployable.bdd")
-@ConfigurationParameter(key = PLUGIN_PROPERTY_NAME, value = "pretty, summary")
+@ConfigurationParameter(
+        key = PLUGIN_PROPERTY_NAME,
+        value = "pretty, summary, ai.speckitty.charter.deployable.bdd.UndefinedStepGuard")
 public class CharterContractSuite {}

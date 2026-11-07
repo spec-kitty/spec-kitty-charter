@@ -33,6 +33,11 @@ tags:
     description: >-
       The toolguide registrations of a Charter Pack: register and replace a toolguide, which is read
       through Artifacts.
+  - name: Registration
+    description: >-
+      The whole Charter Pack: register it from an archive or from a source and poll the registration's status,
+      read the stored pack, and remove one artifact or one registered relationship from it (ADR-0065). Declared in
+      full: an operation not built yet carries x-reserved and answers 501 until it is (ADR-0020 D8).
   - name: Relationships
     description: The relationships registered between a Charter Pack's components.
   - name: Artifacts
@@ -53,6 +58,12 @@ paths:
     $ref: paths/openapi.yaml
   /offering:
     $ref: paths/offering.yaml
+  /packs:
+    $ref: paths/packs.yaml
+  /packs/{packId}:
+    $ref: paths/packs_packId.yaml
+  /pack-registrations/{registrationId}:
+    $ref: paths/pack-registrations_registrationId.yaml
   /packs/{packId}/relationships:
     $ref: paths/packs_packId_relationships.yaml
   /packs/{packId}/artifacts:

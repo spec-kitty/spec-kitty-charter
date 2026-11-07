@@ -38,7 +38,7 @@ class ActivationProblemsTest {
 
     private static final String DOCUMENT = "/api/v1/activations/b-1";
     private static final JsonMapper JSON = JsonMapper.builder().build();
-    private static final String VALID = "{\"schemaVersion\": 1}";
+    private static final String VALID = "{\"schemaVersion\": 2}";
 
     private final MockMvc mvc = StandaloneActivationMvc.over(new InMemoryActivationRepository());
 

@@ -55,12 +55,23 @@ put:
     that deactivates a required or locked artifact is 409 and nothing is stored; an unknown pack, kind or artifact
     is 422 with violations. Both If-Match and If-None-Match on one request is 400, and so is an If-None-Match other
     than * (a malformed precondition); so is an If-Match that is neither a quoted revision nor *, and an id outside the
-    declared pattern. A body over 1 MiB, an unknown member or a null is 422 activation_invalid. A
-    stored document an offering change made stale is served on read and refused on write (ADR-0059 D4): a write
-    that still names an id the closure no longer holds is 422, and one that denies an id now required or locked is
-    409, whatever the stored document held. A per-artifact or preset write instead drops the stored ids the closure
-    no longer holds and reports them in its dropped (ADR-0059 amendment of 2026-11-06); this write never drops an
-    id the client sent. A storage 500 may follow a committed change; read before retrying.
+    declared pattern. A body over 1 MiB, an unknown member or a null is 422 activation_invalid. A body that sends
+    activatedKinds or missionTypes is 422 validation_failed, with one violation per member at its pointer naming its
+    replacement (selected.mission_type for missionTypes; selected.<kind> for activatedKinds): the two members are not
+    part of the document since the one kind model (IC-20), and no deprecation window applies. A deny entry
+    on a mission type is judged as on any kind: on a required or locked one it is 409. A pack pinned to a version no
+    pack of the closure holds is not refused: the pin is dropped (B1, decision DM-01M6RN5Y406SB4KA13QYMQ2P8J) and
+    listed in the answer's droppedPins, and the answer's config is the stored document without it. The body is
+    judged against the document it replaces (A4, decision DM-01M6RA7XC5HC8915GZT2R3H83W), so a GET then PUT of the
+    same body never fails without a pack change: an id the closure no longer holds that the replaced document named
+    is dropped, not refused, and listed in the answer's dropped (an unknown id the replaced document did not name is
+    still 422); and the floor is judged on the deny entries the body adds only, so a deny entry the replaced document
+    already held is kept even when a pack now requires or locks it, while a new one is 409. A stored document an
+    offering change made stale is served as stored on read (ADR-0059 D4). Without If-Match the write is judged
+    against the document it replaces, read just before the write and compared on write; when another writer changes
+    the activation in between, it is judged again from a fresh read, up to eight times, and when every attempt loses
+    to another writer the answer is 412 and nothing is stored. A storage 500 may follow a committed change; read
+    before retrying.
   tags:
   - Activation
   parameters:
@@ -118,6 +129,8 @@ put:
       $ref: ../responses/ActivationInvalid.yaml
     '500':
       $ref: ../responses/OfferingUnreadable.yaml
+    '503':
+      $ref: ../responses/RegistryBusy.yaml
     default:
       $ref: ../../_shared/responses/Problem.yaml
 delete:
@@ -152,5 +165,7 @@ delete:
       $ref: ../responses/PreconditionFailed.yaml
     '500':
       $ref: ../../_shared/responses/Problem.yaml
+    '503':
+      $ref: ../responses/RegistryBusy.yaml
     default:
       $ref: ../../_shared/responses/Problem.yaml

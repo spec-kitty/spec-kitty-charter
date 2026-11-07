@@ -52,7 +52,7 @@ class GlossaryPackTest {
         assertThat(glossary.schemaVersion()).isEmpty();
         assertThat(glossary.description()).contains("Vocabulary.");
         assertThat(glossary.terms()).extracting(GlossaryTerm::surface).containsExactly("event", "aggregate");
-        assertThat(glossary.relationships()).isEmpty();
+        assertThat(glossary.derivedRelationships()).isEmpty();
     }
 
     @Test

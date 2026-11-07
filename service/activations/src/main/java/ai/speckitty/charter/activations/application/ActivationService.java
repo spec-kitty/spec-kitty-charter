@@ -5,10 +5,12 @@ import ai.speckitty.charter.activations.domain.ActivationId;
 import ai.speckitty.charter.activations.domain.ActivationRepository;
 import ai.speckitty.charter.activations.domain.ActivationRepository.CasResult;
 import ai.speckitty.charter.activations.domain.ActivationRepository.DeleteResult;
+import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.activations.domain.DocumentRules;
 import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.Revision;
+import ai.speckitty.charter.activations.domain.StaleIds;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
@@ -28,7 +30,9 @@ import org.springframework.stereotype.Service;
 /**
  * The activation register's use cases (ADR-0020 D3-D6, ADR-0059 D4-D5): create, register (put), read, delete, and the
  * closure read. A write is checked against its closure before it is stored, so nothing is stored on a {@code 409} or
- * a {@code 422}; a read serves the stored document as stored, without a look at the packs (FR-017).
+ * a {@code 422}; a read serves the stored document as stored, without a look at the packs (FR-017). A create judges
+ * every id, pin and deny entry of its body; a put judges its body against the document it replaces (A4, B1,
+ * {@link DocumentRules#checkReplace}), so a GET then PUT of the same body never fails without a pack change.
  *
  * <p>Each write and each closure read takes exactly one {@link AvailablePacks#snapshot} (NFR-007); a document read
  * and a delete take none. The headers arrive verbatim: an {@code If-Match} is compared strongly and an
@@ -38,9 +42,16 @@ import org.springframework.stereotype.Service;
 @Service
 public class ActivationService {
 
+    /** How often a put without a validator is judged again when other writers keep coming in between. */
+    private static final int LATEST_ATTEMPTS = 8;
+
+    private static final ActivationDocument NOTHING_STORED =
+            ActivationDocument.builder().build().document();
+
     private final ActivationRepository repository;
     private final AvailablePacks packs;
     private final ActivationIdMint mint;
+    private final WriteCoordination coordination;
 
     /**
      * The use cases over the register and the packs.
@@ -49,20 +60,59 @@ public class ActivationService {
      * @param packs the packs, asked once per write and per closure read
      * @param mint the id mint of {@link #create}
      */
-    @Autowired
     public ActivationService(ActivationRepository repository, AvailablePacks packs, ActivationIdMint mint) {
-        this.repository = Objects.requireNonNull(repository, "repository");
-        this.packs = Objects.requireNonNull(packs, "packs");
-        this.mint = Objects.requireNonNull(mint, "mint");
+        this(repository, packs, mint, WriteCoordination.NONE);
     }
 
     /**
-     * The outcome of a write.
+     * A service over its ports, whose writes exclude a pack registration.
+     *
+     * @param repository the activation register
+     * @param packs the packs
+     * @param mint the id source
+     * @param coordination what makes a write exclude a pack registration
+     */
+    @Autowired
+    public ActivationService(
+            ActivationRepository repository,
+            AvailablePacks packs,
+            ActivationIdMint mint,
+            WriteCoordination coordination) {
+        this.repository = Objects.requireNonNull(repository, "repository");
+        this.packs = Objects.requireNonNull(packs, "packs");
+        this.mint = Objects.requireNonNull(mint, "mint");
+        this.coordination = Objects.requireNonNull(coordination, "coordination");
+    }
+
+    /**
+     * The outcome of a put.
      *
      * @param stored the activation as now stored
      * @param created {@code true} when the write created it ({@code 201}), {@code false} when it replaced one
+     * @param dropped the ids of the body the packs no longer hold that the replaced document named, dropped (A4)
+     * @param droppedPins the pins of the body to a version no pack holds, dropped, each as written (B1)
      */
-    public record Written(StoredActivation stored, boolean created) {}
+    public record Written(
+            StoredActivation stored, boolean created, List<ArtifactRef> dropped, List<PackRef> droppedPins) {
+
+        /**
+         * Checks and copies the fields.
+         *
+         * @param stored the activation as now stored
+         * @param created whether the write created it
+         * @param dropped the dropped ids
+         * @param droppedPins the dropped pins
+         */
+        public Written {
+            Objects.requireNonNull(stored, "stored");
+            dropped = List.copyOf(dropped);
+            droppedPins = List.copyOf(droppedPins);
+        }
+
+        private Written(CasResult.Written written, StaleIds.Dropped drops) {
+            this(written.stored(), written.created(), drops.dropped(), drops.droppedPins());
+        }
+    }
 
     /**
      * The outcome of a conditional read.
@@ -98,11 +148,13 @@ public class ActivationService {
      *     the document breaks its closure, or with the refusal of the compose
      */
     public StoredActivation create(ActivationDocument.Built built) {
-        ActivationDocument document = checked(built);
-        ActivationId id = mint.mint();
-        return repository
-                .create(id, document)
-                .orElseThrow(() -> new IllegalStateException("The minted id " + id + " is already taken."));
+        return coordination.exclusively(() -> {
+            ActivationDocument document = checked(built);
+            ActivationId id = mint.mint();
+            return repository
+                    .create(id, document)
+                    .orElseThrow(() -> new IllegalStateException("The minted id " + id + " is already taken."));
+        });
     }
 
     /**
@@ -113,6 +165,13 @@ public class ActivationService {
      * {@code If-Match}, or {@code If-None-Match: *} on a stored id, is a {@code 412} whatever the body holds, before any
      * snapshot of the packs is taken. Only a write whose precondition holds has its document judged. The register's
      * compare-and-set judges the precondition again, so a writer that comes in between still answers {@code 412}.
+     *
+     * <p>The body is judged against the document it replaces ({@link DocumentRules#checkReplace}, A4 and B1): the floor
+     * on the deny entries it adds, and an id the packs no longer hold that the replaced document named, or a pin to a
+     * version no pack holds, dropped and reported instead of refused. The document judged against is the one the
+     * write replaces: the matched one under {@code If-Match}, none under {@code If-None-Match: *}, and without a
+     * validator the one read just before the write, by a compare-and-set at its revision that is judged again from a
+     * fresh read when another writer came in between, so the last writer still wins.
      *
      * @param id the activation's id
      * @param built the document as the request built it
@@ -126,13 +185,59 @@ public class ActivationService {
      */
     public Written put(
             ActivationId id, ActivationDocument.Built built, @Nullable String ifMatch, @Nullable String ifNoneMatch) {
-        Expected expected = expectedOf(id, preconditionOf(ifMatch, ifNoneMatch));
-        ActivationDocument document = checked(built);
-        return switch (expected) {
-            case Expected.Absent() ->
-                new Written(repository.create(id, document).orElseThrow(() -> stale(id)), true);
-            case Expected.At(Optional<Revision> revision) -> written(repository.replace(id, revision, document));
+        return coordination.exclusively(() -> {
+            Expected expected = expectedOf(id, preconditionOf(ifMatch, ifNoneMatch));
+            ClosureSnapshot snapshot = packs.snapshot(packIdsOf(built.document()));
+            ActivationDocument.Built normalized = DocumentRules.normalize(built, snapshot);
+            return switch (expected) {
+                case Expected.Absent() -> created(id, normalized, snapshot).orElseThrow(() -> stale(id));
+                case Expected.At(StoredActivation matched) ->
+                    replaced(matched, normalized, snapshot).orElseThrow(() -> stale(null));
+                case Expected.Latest() -> latest(id, normalized, snapshot);
+            };
+        });
+    }
+
+    /** The write without a validator: the last writer wins, judged against the document it replaces. */
+    private Written latest(ActivationId id, ActivationDocument.Built normalized, ClosureSnapshot snapshot) {
+        for (int attempt = 0; attempt < LATEST_ATTEMPTS; attempt++) {
+            Optional<StoredActivation> current = repository.find(id);
+            Optional<Written> written = current.isPresent()
+                    ? replaced(current.orElseThrow(), normalized, snapshot)
+                    : created(id, normalized, snapshot);
+            if (written.isPresent()) {
+                return written.orElseThrow();
+            }
+        }
+        throw stale(id);
+    }
+
+    /** Creates the document when the id is free; empty when another writer took it first. */
+    private Optional<Written> created(ActivationId id, ActivationDocument.Built normalized, ClosureSnapshot snapshot) {
+        StaleIds.Dropped drops = judged(normalized, NOTHING_STORED, snapshot);
+        return repository
+                .create(id, drops.document())
+                .map(stored -> new Written(new CasResult.Written(stored, true), drops));
+    }
+
+    /** Replaces a stored document at its revision; empty when another writer came in between. */
+    private Optional<Written> replaced(
+            StoredActivation current, ActivationDocument.Built normalized, ClosureSnapshot snapshot) {
+        StaleIds.Dropped drops =
+                judged(DocumentRules.normalize(normalized, snapshot, current.document()), current.document(), snapshot);
+        return switch (repository.replace(current.id(), Optional.of(current.revision()), drops.document())) {
+            case CasResult.Written written -> Optional.of(new Written(written, drops));
+            case CasResult.Stale _, CasResult.Missing _ -> Optional.empty();
         };
+    }
+
+    /** The body judged against the document it replaces, less what the packs no longer satisfy (A4, B1). */
+    private static StaleIds.Dropped judged(
+            ActivationDocument.Built normalized, ActivationDocument replaced, ClosureSnapshot snapshot) {
+        DocumentRules.checkReplace(normalized, replaced, snapshot).ifPresent(refusal -> {
+            throw refusal;
+        });
+        return StaleIds.drop(normalized.document(), snapshot);
     }
 
     /**
@@ -159,15 +264,18 @@ public class ActivationService {
      *     document was removed by another request after the {@code If-Match} matched it
      */
     public void delete(ActivationId id, @Nullable String ifMatch) {
-        Optional<Revision> expected = ifMatch == null ? Optional.empty() : matched(id, ifMatch);
-        DeleteResult result = repository.delete(id, expected);
-        switch (result) {
-            case DeleteResult.Deleted() -> {}
-            // With If-Match, a document another deleter removed since this request matched it is no stored revision:
-            // 412.
-            case DeleteResult.Missing() -> throw ifMatch == null ? notFound(id) : stale(id);
-            case DeleteResult.Stale _ -> throw stale(id);
-        }
+        coordination.exclusively(() -> {
+            Optional<Revision> expected = ifMatch == null ? Optional.empty() : matched(id, ifMatch);
+            DeleteResult result = repository.delete(id, expected);
+            switch (result) {
+                case DeleteResult.Deleted() -> {}
+                // With If-Match, a document another deleter removed since this request matched it is no stored
+                // revision:
+                // 412.
+                case DeleteResult.Missing() -> throw ifMatch == null ? notFound(id) : stale(id);
+                case DeleteResult.Stale _ -> throw stale(id);
+            }
+        });
     }
 
     /**
@@ -198,7 +306,7 @@ public class ActivationService {
                 : new Read.Found<>(snapshot, etag);
     }
 
-    /** The document, when it may be stored: one snapshot of the closure it names, and the rules over it. */
+    /** A create's document, when it may be stored: one snapshot of the closure it names, and every rule over it. */
     private ActivationDocument checked(ActivationDocument.Built built) {
         ClosureSnapshot snapshot = packs.snapshot(packIdsOf(built.document()));
         ActivationDocument.Built normalized = DocumentRules.normalize(built, snapshot);
@@ -221,11 +329,16 @@ public class ActivationService {
         record None() implements Precondition {}
     }
 
-    /** What the compare-and-set expects, judged against the register now: nothing stored, or a revision (or any). */
+    /**
+     * What the compare-and-set expects, judged against the register now: nothing stored, the stored activation the
+     * {@code If-Match} matched, or whatever is stored when the write is made.
+     */
     private sealed interface Expected {
         record Absent() implements Expected {}
 
-        record At(Optional<Revision> revision) implements Expected {}
+        record At(StoredActivation matched) implements Expected {}
+
+        record Latest() implements Expected {}
     }
 
     /**
@@ -240,8 +353,8 @@ public class ActivationService {
                 }
                 yield new Expected.Absent();
             }
-            case Precondition.Matching(String value) -> new Expected.At(matched(id, value));
-            case Precondition.None() -> new Expected.At(Optional.empty());
+            case Precondition.Matching(String value) -> new Expected.At(matchedActivation(id, value));
+            case Precondition.None() -> new Expected.Latest();
         };
     }
 
@@ -263,18 +376,15 @@ public class ActivationService {
      * matches it ({@code *} matches any stored one); the write then fails only when another writer comes in between.
      */
     private Optional<Revision> matched(ActivationId id, String ifMatch) {
-        Revision current = repository.find(id).orElseThrow(() -> stale(id)).revision();
-        if (!EntityTags.matches(ifMatch, current.token())) {
-            throw stale(id);
-        }
-        return Optional.of(current);
+        return Optional.of(matchedActivation(id, ifMatch).revision());
     }
 
-    private Written written(CasResult result) {
-        return switch (result) {
-            case CasResult.Written(StoredActivation stored, boolean created) -> new Written(stored, created);
-            case CasResult.Stale _, CasResult.Missing _ -> throw stale(null);
-        };
+    private StoredActivation matchedActivation(ActivationId id, String ifMatch) {
+        StoredActivation current = repository.find(id).orElseThrow(() -> stale(id));
+        if (!EntityTags.matches(ifMatch, current.revision().token())) {
+            throw stale(id);
+        }
+        return current;
     }
 
     private StoredActivation found(ActivationId id) {

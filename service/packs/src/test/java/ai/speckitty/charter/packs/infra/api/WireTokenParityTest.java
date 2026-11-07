@@ -6,14 +6,20 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
 import ai.speckitty.charter.api.model.Artifact;
+import ai.speckitty.charter.api.model.ArtifactReference;
 import ai.speckitty.charter.api.model.ArtifactSummary;
 import ai.speckitty.charter.api.model.CharterRefusal;
+import ai.speckitty.charter.api.model.EffectiveArtifact;
 import ai.speckitty.charter.api.model.Link;
 import ai.speckitty.charter.api.model.OfferingPack;
+import ai.speckitty.charter.api.model.SelectedArtifacts;
+import ai.speckitty.charter.api.model.SharedSkip;
+import ai.speckitty.charter.api.model.SkippedDeactivated;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.application.ArtifactReadService;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Pattern;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -23,6 +29,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
@@ -47,8 +54,49 @@ class WireTokenParityTest {
     /** The values of the contract's {@code ArtifactKindToken} enum, the {@code ?kind=} filter's. */
     private static final List<String> ARTIFACT_KIND_TOKENS = artifactKindTokens();
 
+    /** The activatable kinds of the one kind registry, in declaration order (IC-20). */
+    private static final List<String> ACTIVATABLE = Arrays.stream(ArtifactKind.values())
+            .filter(ArtifactKind::activatable)
+            .map(ArtifactKind::token)
+            .toList();
+
+    /** The members of the generated {@code SelectedArtifacts}: one JSON property per activatable kind. */
+    private static final List<String> SELECTED_MEMBERS = Arrays.stream(SelectedArtifacts.class.getDeclaredMethods())
+            .filter(m -> m.getName().startsWith("get"))
+            .map(m -> m.getAnnotation(JsonProperty.class))
+            .filter(Objects::nonNull)
+            .map(JsonProperty::value)
+            .toList();
+
     private static List<Pair> pairs() {
         return List.of(
+                // The generator inlines the contract's ActivatableKind into every schema that names it, so each copy
+                // is a pair of its own against the kernel's activatable kinds.
+                new Pair(
+                        "ArtifactReference.kind (ActivatableKind)",
+                        ACTIVATABLE,
+                        values(ArtifactReference.KindEnum.values(), ArtifactReference.KindEnum::getValue),
+                        ArtifactReference.KindEnum::fromValue),
+                new Pair(
+                        "EffectiveArtifact.kind (ActivatableKind)",
+                        ACTIVATABLE,
+                        values(EffectiveArtifact.KindEnum.values(), EffectiveArtifact.KindEnum::getValue),
+                        EffectiveArtifact.KindEnum::fromValue),
+                new Pair(
+                        "SharedSkip.kind (ActivatableKind)",
+                        ACTIVATABLE,
+                        values(SharedSkip.KindEnum.values(), SharedSkip.KindEnum::getValue),
+                        SharedSkip.KindEnum::fromValue),
+                new Pair(
+                        "SkippedDeactivated.kind (ActivatableKind)",
+                        ACTIVATABLE,
+                        values(SkippedDeactivated.KindEnum.values(), SkippedDeactivated.KindEnum::getValue),
+                        SkippedDeactivated.KindEnum::fromValue),
+                new Pair(
+                        "SelectedArtifacts members",
+                        ACTIVATABLE,
+                        SELECTED_MEMBERS,
+                        token -> member(SELECTED_MEMBERS, token)),
                 new Pair(
                         "CharterRefusalCode",
                         tokens(RefusalCode.values(), RefusalCode::token),
@@ -115,6 +163,12 @@ class WireTokenParityTest {
     @TestFactory
     Stream<DynamicTest> everyDomainTokenIsAContractValueAndNoMore() {
         return pairs().stream().map(pair -> dynamicTest(pair.contractEnum(), () -> assertParity(pair)));
+    }
+
+    @Test
+    void theActivatableKindsAreTheContractsActivatableKindInItsOrder() {
+        assertThat(values(ArtifactReference.KindEnum.values(), ArtifactReference.KindEnum::getValue))
+                .containsExactlyElementsOf(ACTIVATABLE);
     }
 
     @Test
