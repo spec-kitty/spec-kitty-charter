@@ -364,11 +364,16 @@
     "WP12": {
       "actor": "claude:sonnet:java-jenny",
       "agent": "claude:sonnet:java-jenny",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude:sonnet:java-jenny",
       "lane": "in_progress",
       "last_event_id": "01M6TR8Y2RMDPMF12B3ASX02B5",
       "last_transition_at": "2026-11-07T10:18:40.082125+00:00",
+      "model": "__resolved_model_absent__",
+      "provider": "__resolved_provider_absent__",
+      "role": "implementer",
       "shell_pid": 5474,
       "shell_pid_created_at": "1794046714.65"
     },
