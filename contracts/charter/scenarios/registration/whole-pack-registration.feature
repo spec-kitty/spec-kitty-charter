@@ -526,6 +526,23 @@ Feature: Registering a whole pack replaces the pack the service holds
       """
     Then the response status is 201
 
+  # bound by: WP16 (review cycle 1, issue 2: an activation write takes the registry lock, so it can answer 503 as a registration can)
+  Scenario: An activation write that meets a busy registry answers 503 with Retry-After, and succeeds once it is free
+    When the pack registry is held by another write
+    And I POST "/activations" as JSON with the body:
+      """
+      {"schemaVersion": 2}
+      """
+    Then the response status is 503
+    And the problem has no code
+    And the response header "Retry-After" appears once
+    When the held pack registry is released
+    And I POST "/activations" as JSON with the body:
+      """
+      {"schemaVersion": 2}
+      """
+    Then the response status is 201
+
   # bound by: WP17 (US1 AS7, https_archive; PR-PACK-REGISTER-001)
   @WIP @promise:PR-PACK-REGISTER-001
   Scenario: A pack fetched from an allowlisted https archive is registered and its source recorded
