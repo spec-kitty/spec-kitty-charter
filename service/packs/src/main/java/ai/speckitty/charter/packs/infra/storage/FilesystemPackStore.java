@@ -1072,12 +1072,27 @@ final class FilesystemPackStore {
         return directory;
     }
 
+    /** Files parsed by lookups by id, for the test that holds a bulk read to a bounded number of parses. */
+    private static final java.util.concurrent.atomic.LongAdder LOOKUP_PARSES =
+            new java.util.concurrent.atomic.LongAdder();
+
+    /**
+     * How many files lookups by id have parsed in this JVM. A lookup parses files until one declares the id, so a bulk
+     * read that looks every file up by id grows with the square of the pack; this is the counter that tells.
+     *
+     * @return the count
+     */
+    static long lookupParses() {
+        return LOOKUP_PARSES.sum();
+    }
+
     /**
      * The existing file of the kind whose id (under the kind's {@link KindBinding#idKey()}) is {@code elementId}; the
      * first in path order if several do.
      */
     private static Optional<Path> locate(Path directory, KindBinding<?, ?> kind, String elementId) {
         for (String file : PackFileSet.files(directory, kind.kind())) {
+            LOOKUP_PARSES.increment();
             ParsedYaml parsed =
                     ParsedYaml.parse(readText(directory.resolve(file)).orElse(""), file);
             if (parsed.document() instanceof java.util.Map<?, ?> map && elementId.equals(map.get(kind.idKey()))) {

@@ -18,6 +18,8 @@ import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.Skill;
 import ai.speckitty.charter.packs.domain.Template;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Proxy;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -25,6 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -795,6 +798,82 @@ class WholePackStoreTest {
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+    }
+
+    /** A strategy that counts how many artifact files it is asked to read. */
+    private static SerializationStrategy counting(SerializationStrategy delegate, AtomicInteger reads) {
+        return (SerializationStrategy) Proxy.newProxyInstance(
+                SerializationStrategy.class.getClassLoader(),
+                new Class<?>[] {SerializationStrategy.class},
+                (proxy, method, args) -> {
+                    if (method.getName().equals("read") && args != null && args.length == 3) {
+                        reads.incrementAndGet();
+                    }
+                    try {
+                        return method.invoke(delegate, args);
+                    } catch (InvocationTargetException failure) {
+                        throw failure.getCause();
+                    }
+                });
+    }
+
+    private static int readsToSalvage(Path host, int files) throws IOException {
+        Path pack = host.resolve("big-" + files);
+        write(
+                pack,
+                "pack.yaml",
+                "pack_id: 01M6R0WP14QQQQQQQQQQQQQQQQ\npack_version: 1.0.0\nname: big\npack_level: org\n");
+        for (int i = 0; i < files; i++) {
+            write(
+                    pack,
+                    "directives/D" + i + ".directive.yaml",
+                    "schema_version: \"1.0\"\nid: D" + i + "\ntitle: T\nintent: I\nenforcement: required\n");
+        }
+        AtomicInteger reads = new AtomicInteger();
+        long lookupsBefore = FilesystemPackStore.lookupParses();
+        WholePackWriteStore.Remains remains =
+                new WholePackStore(counting(new YamlSerializationStrategy(), reads)).salvageStored(pack);
+        assertThat(remains.defined()).hasSize(files);
+        return reads.get() + (int) (FilesystemPackStore.lookupParses() - lookupsBefore);
+    }
+
+    @Test
+    @DisplayName(
+            "salvageStored parses each file a bounded number of times, by strategy read or by lookup: its cost grows linearly")
+    void salvageStoredReadsEachFileABoundedNumberOfTimes(@TempDir Path host) throws IOException {
+        int small = readsToSalvage(host, 200);
+        int large = readsToSalvage(host, 400);
+
+        assertThat(small).as("reads for 200 files").isLessThanOrEqualTo(2 * 200);
+        assertThat(large).as("reads for 400 files").isLessThanOrEqualTo(2 * small + 10);
+    }
+
+    @Test
+    @DisplayName("salvageStored reads the file it listed, so two files declaring one id cannot stand in for each other")
+    void salvageStoredReadsEachListedFileEvenWhenTwoDeclareOneId(@TempDir Path host) throws IOException {
+        Urn urn = new Urn(NodeKind.DIRECTIVE, "TWIN");
+        String descriptor = "pack_id: 01M6R0WP14QQQQQQQQQQQQQQQQ\npack_version: 1.0.0\nname: twins\npack_level: org\n";
+        String one = "schema_version: \"1.0\"\nid: TWIN\ntitle: One\nintent: I\nenforcement: required\n";
+        String two = one.replace("One", "Two");
+        Path onlyOne = host.resolve("one");
+        write(onlyOne, "pack.yaml", descriptor);
+        write(onlyOne, "directives/A.directive.yaml", one);
+        Path onlyTwo = host.resolve("two");
+        write(onlyTwo, "pack.yaml", descriptor);
+        write(onlyTwo, "directives/B.directive.yaml", two);
+        Path both = host.resolve("both");
+        write(both, "pack.yaml", descriptor);
+        write(both, "directives/A.directive.yaml", one);
+        write(both, "directives/B.directive.yaml", two);
+
+        String digestOne = store.salvageStored(onlyOne).digests().get(urn);
+        String digestTwo = store.salvageStored(onlyTwo).digests().get(urn);
+        String digestBoth = store.salvageStored(both).digests().get(urn);
+
+        assertThat(digestOne).isNotEqualTo(digestTwo);
+        assertThat(digestBoth)
+                .as("the id is declared twice, with two contents: neither copy's digest stands for it")
+                .isNotIn(digestOne, digestTwo);
     }
 
     private static WholePackStore.LoadedPack with(WholePackStore.LoadedPack loaded, Template template) {
