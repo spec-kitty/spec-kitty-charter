@@ -1,19 +1,19 @@
-# Decided, not built yet (PR A0 of layer-merge-and-effective-reads; IC-20, FR-040, FR-041, FR-042):
+# PR A0 of layer-merge-and-effective-reads (IC-20, FR-040, FR-041, FR-042):
 # - The contract changed first (C-001, changes/2026-11-07-a0-one-kind-model.md); the service follows in the same PR.
-# - The file is tagged @WIP, so CharterContractSuite (@IncludeTags("contract"), @ExcludeTags("WIP")) selects none of
-#   it yet. The glue is bound in WP08, which records the red (an assertion failure with every step bound, decision
-#   DM-01M6RN6GC7PJS8BGHMAYM4JSSW) and takes the tag off. An undefined step is not red.
-# - Steps this file adds to the vocabulary of README.md, bound by WP08:
+# - Bound in WP08 (ActivationSteps), which recorded the red (an assertion failure with every step bound, decision
+#   DM-01M6RN6GC7PJS8BGHMAYM4JSSW) and took the @WIP tag off. An undefined step fails the suite (UndefinedStepGuard).
+# - Steps this file adds to the vocabulary of README.md:
 #   - `Given the stored file of the activation "<id>" holds:` writes the activation's file as the store keeps it,
 #     bypassing the API, so a schemaVersion 1 document can be seeded;
 #   - `When I remember the stored file of the activation "<id>"`, then `Then the stored file of the activation "<id>"
-#     is the remembered one` (the same bytes and the same modification time) or `... differs from the remembered one`;
+#     is the remembered one` (the same bytes; the scenarios store in memory, so there is no modification time) or
+#     `... differs from the remembered one`;
 #   - `Then the stored file of the activation "<id>" has the field "<pointer>" equal to <n>`;
 #   - `Then the field at "<pointer>" contains "<text>"`, a substring of a string field (a detail's named replacement).
 # - The four effective reads still answer 501 (PR B builds them, WP22): the read-only scenario below reads the
 #   activation and its closure only; PR B adds the four reads to it as they are built.
 
-@contract @activations @WIP
+@contract @activations
 Feature: One kind model on the activation document
   The activation document is packs, selected, deactivated and languages (IC-20; ruling A7). Mission types, steps and
   agent profiles are ordinary kinds of it: a mission type is selected under selected.mission_type and denied under
@@ -404,9 +404,14 @@ Feature: One kind model on the activation document
       """
     When I GET "/activations/a-1"
     Then the response status is 200
+    And the field at "/config/selected/directive" holds exactly the ids:
+      """
+      SD
+      """
     And the response body has no field at "/config/selected/tactic"
     And the response body has no field at "/config/selected/mission_type"
     When I remember the header "ETag"
+    And I remember the ETag
     And I remember the stored file of the activation "a-1"
     And I PUT "/activations/a-1" with the remembered ETag and the body:
       """
@@ -456,6 +461,7 @@ Feature: One kind model on the activation document
     And I GET "/activations/a-1"
     Then the response status is 200
     When I remember the header "ETag"
+    And I remember the ETag
     And I GET "/activations/a-1/packs"
     Then the response status is 200
     And the stored file of the activation "a-1" is the remembered one

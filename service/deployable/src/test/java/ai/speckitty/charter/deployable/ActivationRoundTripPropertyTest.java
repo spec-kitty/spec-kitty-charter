@@ -144,17 +144,26 @@ class ActivationRoundTripPropertyTest {
         }
     }
 
-    /** Non-empty deny lists of some kinds, never naming the fixture's required directive. */
+    /**
+     * Non-empty deny lists of some kinds, mission types included (one kind model, IC-20: a mission type is denied like
+     * any kind), never naming the fixture's required directive.
+     */
     private static void deactivated(Random random, ObjectNode deactivated) {
         for (ArtifactKind kind : ARTIFACT_KINDS) {
             List<String> pool = ActivationTestWiring.IDS.stream()
                     .filter(id -> kind != ArtifactKind.DIRECTIVE || !id.equals(ActivationTestWiring.REQUIRED))
                     .toList();
-            if (random.nextInt(4) == 0) {
-                ArrayNode list = deactivated.putArray(kind.token());
-                List<String> ids = subset(random, pool);
-                (ids.isEmpty() ? List.of(pool.getFirst()) : ids).forEach(list::add);
-            }
+            denyList(random, deactivated, kind, pool);
+        }
+        denyList(random, deactivated, ArtifactKind.MISSION_TYPE, ActivationTestWiring.MISSION_TYPES);
+    }
+
+    /** Leaves the kind's deny list absent, or writes a non-empty random subset of the pool. */
+    private static void denyList(Random random, ObjectNode deactivated, ArtifactKind kind, List<String> pool) {
+        if (random.nextInt(4) == 0) {
+            ArrayNode list = deactivated.putArray(kind.token());
+            List<String> ids = subset(random, pool);
+            (ids.isEmpty() ? List.of(pool.getFirst()) : ids).forEach(list::add);
         }
     }
 

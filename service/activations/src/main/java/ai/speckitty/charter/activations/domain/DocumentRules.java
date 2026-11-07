@@ -166,9 +166,14 @@ public final class DocumentRules {
 
         /** Whether an id the closure does not hold is one the stored document still names, so a stale one. */
         boolean stale(ArtifactKind kind, String id) {
+            return ArtifactSpellings.resolve(kind, id, named(kind)) instanceof ArtifactSpellings.Resolution.Declared;
+        }
+
+        /** The ids the stored document names for a kind, in either list. */
+        Set<String> named(ArtifactKind kind) {
             Set<String> named = new HashSet<>(stored.deactivated(kind));
             stored.selected(kind).ifPresent(named::addAll);
-            return ArtifactSpellings.resolve(kind, id, named) instanceof ArtifactSpellings.Resolution.Declared;
+            return named;
         }
     }
 
@@ -278,30 +283,54 @@ public final class DocumentRules {
      * @return the document with the declared ids, and its shape violations unchanged
      */
     public static ActivationDocument.Built normalize(ActivationDocument.Built built, ClosureSnapshot snapshot) {
+        return normalize(built, snapshot, ActivationDocument.builder().build().document());
+    }
+
+    /**
+     * {@link #normalize(ActivationDocument.Built, ClosureSnapshot)} for a replace: a spelling the closure holds no id for
+     * is read against the ids the stored document names for its kind (in either list), so that a stale id the body
+     * spells as a URN or in another case is written, and reported in {@code dropped}, as the stored document spells it
+     * ({@code ActivationWrites.declared} reads a path id the same way).
+     *
+     * @param built the document as the request built it
+     * @param snapshot the closure the document names
+     * @param stored the document the replace replaces; the empty document for a create
+     * @return the document with the declared ids, and its shape violations unchanged
+     */
+    public static ActivationDocument.Built normalize(
+            ActivationDocument.Built built, ClosureSnapshot snapshot, ActivationDocument stored) {
         if (!snapshot.resolved()) {
             return built;
         }
         ActivationDocument.Written written = built.written();
-        Map<ArtifactKind, List<String>> selected = declared(written.selected(), snapshot);
-        Map<ArtifactKind, List<String>> deactivated = declared(written.deactivated(), snapshot);
+        Map<ArtifactKind, List<String>> selected = declared(written.selected(), snapshot, stored);
+        Map<ArtifactKind, List<String>> deactivated = declared(written.deactivated(), snapshot, stored);
         ActivationDocument document = built.document().withLists(selected, deactivated);
         return new ActivationDocument.Built(
                 document, built.violations(), new ActivationDocument.Written(written.packs(), selected, deactivated));
     }
 
     private static Map<ArtifactKind, List<String>> declared(
-            Map<ArtifactKind, List<String>> lists, ClosureSnapshot snapshot) {
+            Map<ArtifactKind, List<String>> lists, ClosureSnapshot snapshot, ActivationDocument stored) {
         Map<ArtifactKind, List<String>> declared = new EnumMap<>(ArtifactKind.class);
-        lists.forEach((kind, ids) -> declared.put(
-                kind,
-                ids.stream()
-                        .map(id -> switch (ArtifactSpellings.resolve(kind, id, snapshot.held(kind))) {
-                            case ArtifactSpellings.Resolution.Declared found -> found.id();
-                            case ArtifactSpellings.Resolution.Unknown unknown -> id;
-                            case ArtifactSpellings.Resolution.Ambiguous ambiguous -> id;
-                        })
-                        .toList()));
+        lists.forEach((kind, ids) -> {
+            Set<String> storedIds = Tolerance.replacing(stored).named(kind);
+            declared.put(
+                    kind,
+                    ids.stream()
+                            .map(id -> declaredId(kind, id, snapshot.held(kind), storedIds))
+                            .toList());
+        });
         return declared;
+    }
+
+    /** The id as the closure declares it, else as the stored document spells it, else as written. */
+    private static String declaredId(ArtifactKind kind, String id, Set<String> held, Set<String> stored) {
+        ArtifactSpellings.Resolution resolution = ArtifactSpellings.resolve(kind, id, held);
+        if (resolution instanceof ArtifactSpellings.Resolution.Unknown) {
+            resolution = ArtifactSpellings.resolve(kind, id, stored);
+        }
+        return resolution instanceof ArtifactSpellings.Resolution.Declared found ? found.id() : id;
     }
 
     private static Optional<CharterRefusal> floorRefusal(ActivationDocument document, ClosureSnapshot snapshot) {
