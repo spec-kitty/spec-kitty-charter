@@ -9,7 +9,7 @@ put:
     IC-20; Q3, decision DM-01M6RCY40CQQTHC130RWF43W0D), skill, glossary_pack and mission_type included, and every
     kind of the preset is applied: each selected.<kind> it lists becomes exactly its members (its
     activated_mission_types become selected.mission_type); a key it does not list is left as it is. A preset has no
-    kind gate: the preset key activated_kinds is refused when the pack is registered. A preset lists a key when it
+    kind gate: a pack whose preset carries the key activated_kinds is refused as 500 pack_unreadable when it is loaded (a 422 when the pack is registered is planned, PR A). A preset lists a key when it
     holds at least
     one member for it, so an empty list counts as not listed. The preset is expanded into the document, so writing
     the document back never applies it twice. Without force a member the document denies is not selected and its
