@@ -1,7 +1,7 @@
 {
-  "event_count": 126,
-  "last_event_id": "01M6TJTMZMQCJHPQ07DDXCWBXT",
-  "materialized_at": "2026-11-07T08:43:29.140296+00:00",
+  "event_count": 127,
+  "last_event_id": "01M6TJWRG3FM6BQVHMB0T81KJC",
+  "materialized_at": "2026-11-07T08:44:38.275837+00:00",
   "mission_number": "",
   "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
   "mission_type": "",
@@ -12,9 +12,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 0,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 20
   },
   "work_packages": {
@@ -304,22 +304,22 @@
     },
     "WP09": {
       "actor": "claude",
-      "agent": "claude:sonnet:scribe-sally",
+      "agent": "claude:opus:reviewer-renata",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude:sonnet:scribe-sally",
-      "lane": "for_review",
-      "last_event_id": "01M6TJTMZMQCJHPQ07DDXCWBXT",
-      "last_transition_at": "2026-11-07T08:43:29.140296+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M6TJWRG3FM6BQVHMB0T81KJC",
+      "last_transition_at": "2026-11-07T08:44:38.275837+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "PR A0 docs: ADR-0020/0042/0050/0059 amendments (2026-11-07, incl. #408 depth), DIV-209..215 + DIV-203/206/501 updated, changelog with core hand-over, ruleset scenario trace (A0 rows verified against lane scenario files), rules page flipped to built. Docs checks clean."
       ],
       "provider": "__resolved_provider_absent__",
-      "role": "implementer",
-      "shell_pid": 12343,
-      "shell_pid_created_at": "1794040330.43",
+      "role": "reviewer",
+      "shell_pid": 18469,
+      "shell_pid_created_at": "1794041073.95",
       "subtasks": {
         "T040": "done",
         "T041": "done",
