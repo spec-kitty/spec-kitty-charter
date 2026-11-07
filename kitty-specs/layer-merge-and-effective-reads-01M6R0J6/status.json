@@ -315,7 +315,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "PR A0 docs: ADR-0020/0042/0050/0059 amendments (2026-11-07, incl. #408 depth), DIV-209..215 + DIV-203/206/501 updated, changelog with core hand-over, ruleset scenario trace (A0 rows verified against lane scenario files), rules page flipped to built. Docs checks clean.",
-        "Cycle 2: review-cycle-1 fixes"
+        "Cycle 2: review-cycle-1 fixes",
+        "Review passed (cycle 2, 16e8fa7f): the three blocking items are fixed. ADR-0050 now marks the E6 binding rule as planned for PR B; the rules page splits C31 so only the held-ids restriction is built; the changelog hand-over has item 6 for depth, skippedByDepth and unknown_member. The cycle-1 nits are fixed too: 'create or replace' wording and the 'Ruleset A4' / 'Ruleset B1' labels. check_docs all, markdownlint and cspell are clean on the changed files. All 42 scenario names in the A0 trace rows exist on lane-| and none is @WIP. Nits: (1) the DIV-212 row of divergence-register.md still says activatedKinds is 'refused on a write', while divergences.yaml now says 'create or replace'; align the two later. (2) Changelog hand-over item 6 could name the pointer, '422 unknown_member at /depth'. Shared files: the out-of-map edits are named in both commit messages."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
