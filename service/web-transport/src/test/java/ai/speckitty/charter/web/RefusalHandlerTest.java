@@ -188,6 +188,24 @@ class RefusalHandlerTest {
     }
 
     @Test
+    @DisplayName("at most 100 packs render, as artifact_referenced promises")
+    void packsAreCapped() {
+        List<ai.speckitty.charter.kernel.domain.RefusalPack> packs = java.util.stream.IntStream.range(0, 150)
+                .mapToObj(index -> new ai.speckitty.charter.kernel.domain.RefusalPack(
+                        "01M6R0WP14" + String.format("%016d", index), "pack-" + index, "name-" + index))
+                .toList();
+
+        CharterRefusal body = handler.refused(ai.speckitty.charter.kernel.domain.CharterRefusal.withPacksAndViolations(
+                        RefusalCode.ARTIFACT_REFERENCED, "Other packs refer to it.", packs, List.of()))
+                .getBody();
+
+        assertThat(body).isNotNull();
+        assertThat(body.getPacks()).hasSize(100);
+        assertThat(body.getPacks().getFirst().getPackId()).isEqualTo("pack-0");
+        assertThat(body.getPacks().getLast().getPackId()).isEqualTo("pack-99");
+    }
+
+    @Test
     @DisplayName("exactly 100 violations render whole, and the detail is unchanged")
     void violationsAtTheCapRenderWhole() {
         List<ai.speckitty.charter.kernel.domain.RefusalViolation> violations = java.util.stream.IntStream.range(0, 100)
