@@ -1353,6 +1353,26 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-07T10:14:39.787001Z",
+      "decision_id": "01M6TR1KDAJ64GMJD6AYNZKT59",
+      "final_answer": "(1) An artifact DELETE answers 409 registration_conflict when an author graph document holds an edge from the artifact or declares its node (removing the file alone would leave dangling edges; never rewrite author files). (2) A relationship DELETE of a pair that an author graph document also holds answers 409 relationship_not_registered and changes nothing, even when registered.graph.yaml holds it too (the author wrote it, per DM-01M6TQ62HXYF362GAFS2BZ3PGF; a 204 that leaves the edge in force would mislead). (3) registration_timed_out is reported with status 504 in the refused registration's problem. (4) A whole-pack replace gates every added or removed edge whose source is a locked ancestor artifact with the RELATIONSHIP operation, as putPackRelationship does. (5) A 401 on a registration or DELETE path is audited by the guard (NFR-010).",
+      "input_key": "phase_a_delta_followups",
+      "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",
+      "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
+      "opened_by": "claude-runner",
+      "options": [],
+      "origin_flow": "plan",
+      "other_answer": true,
+      "question": "Phase A plan delta: the open points the planner left (artifact DELETE vs authored edges, a pair in both registered and authored documents, registration_timed_out status, edge gating on a whole-pack replace, auditing a 401)",
+      "rationale": "Within the spec and the operator's ruling DM-01M6TQ62HXYF362GAFS2BZ3PGF; closes the planner's to-confirm points.",
+      "resolved_at": "2026-11-07T10:14:41.975964Z",
+      "resolved_by": "claude-runner",
+      "slot_key": "plan.phase-a.delta-followups",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",

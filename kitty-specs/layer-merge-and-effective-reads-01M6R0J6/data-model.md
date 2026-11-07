@@ -19,7 +19,7 @@ then project), and the winner is **the level that applies** (ADR-0048 d7).
 | notices | `floorAdded`, `floorRemoved`, `locksAdded`, `locksRemoved`, `activationsAffected` | B4; `activationsAffected` from PR B |
 | source | absent \| PackSourceRecord | absent for `PUT`; for `POST`, what was fetched |
 
-**PackSourceRecord.** It holds `kind` (`https-archive` \| `git` \| `filesystem`) and the locator as sent (`url`,
+**PackSourceRecord.** It holds `kind` (`https_archive` \| `git` \| `filesystem`) and the locator as sent (`url`,
 `ref`, `path`). For git it also holds the resolved `commit`. It is answered and never persisted: there is no lockfile
 in this cut.
 
@@ -33,6 +33,12 @@ in this cut.
   - Any other `version` replaces.
 - **Fixed identity.** `descriptorPackId` and `level` never change for a `packId`.
 - **All or nothing.** A refused or failed write changes zero stored files (FR-007).
+- **Reserved shard and closed files (plan delta squad, finding 3, 2026-11-07).** An archived `registered.graph.yaml`
+  without the registration stamp (`generated_by: charter-registration`) is refused as a reserved shard
+  (`FileSystemPackInspector` ~643); a stamped one is accepted, and the replace drops every registered edge the archive
+  leaves out. A removed field is refused as an unknown field (ADR-0064 D5). A preset with `activated_kinds`, or an item
+  id outside the id grammar, is refused. Each is `422 validation_failed` at registration, as is a `PACK_UNREADABLE` of
+  the load of a staging directory.
 
 ### PackRegistrationStatus (contract; the status resource of A5)
 
@@ -82,17 +88,36 @@ and the optional `sha256` (https archive) or `commit` (git).
 
 - **ArtifactRemoval:** `(packId, kind, artifactId, ifMatch?)`. When it applies:
   - the artifact file and its companions are removed;
-  - every edge whose source is the artifact is removed, from the registered shard and from the graph documents, and
-    so is its graph node;
-  - every preset item naming it is removed. An emptied key reads as not listed.
+  - every edge whose source is the artifact is removed from `registered.graph.yaml`. A `DELETE` never rewrites an
+    author-written graph document (`DM-01M6TQ62HXYF362GAFS2BZ3PGF`, applied to the artifact `DELETE` by decision
+    `DM-01M6TR1KDAJ64GMJD6AYNZKT59`): an edge from the artifact or a node declaration of it in a source shard or `drg/fragment.yaml`
+    refuses the removal with `409 registration_conflict`;
+  - every preset item naming it is removed. Every preset list has `minItems: 1`, so when the last item of a key goes,
+    the **key is deleted** from the preset file ("reads as not listed"). Writing `[]` would make the pack unreadable.
+  - the closures after the removal must still compose (PR A stays strict, `DM-01M6TQ67C9ZTNGZB9CY28JS54F`): else
+    `422`, and nothing is written.
 - **RelationshipRemoval:** `(packId, from, to, ifMatch?)`. It is keyed by the unordered `{from, to}` pair, as the
-  registration is (ADR-0026 D1.3).
+  registration is (ADR-0026 D1.3). It removes the edge **only from `registered.graph.yaml`**
+  (`DM-01M6TQ62HXYF362GAFS2BZ3PGF`). Outcomes: removed (`204`); no edge on the pair in any graph document and no
+  derived relation (`404 relationship_not_found`); an edge on the pair only in an author-written document or only as
+  a derived relation (a guard's `implemented_by`, ADR-0064 D7) (`409 relationship_not_registered`).
 
 ### InboundReference (internal value)
 
 - `(referringPack, referringArtifact?, reference as written)`, resolved by `PackCompositionResolver.holderOf` over
   the referring pack's `compositionClosure` as it will be after the change (B3): a referrer the same request removes
   does not count. Another pack's preset item naming the artifact counts (A10).
+- **Where the three parts come from (plan delta squad, finding 4, 2026-11-07).** `PackCompositionFacts.references`
+  holds both ends of every edge, with no source attached (`DomainRepositoryService` ~494-501), and
+  `CharterArtifact.writtenReferences()` holds derived relations only (`CharterArtifact.java` ~74). Neither can name a
+  referrer, so `InboundReferences` (new, WP14) is built from:
+  - `PackCompositionFacts.edges()` of every configured pack: each edge's target (and a foreign source) is attributed to
+    the artifact at its source end, which is `referringArtifact`, and to the pack that holds the edge;
+  - the presets of every configured pack: each item naming the artifact, with `referringArtifact` absent;
+  - the descriptor `overrides` entries (`PackDescriptor.overrides()`): an entry whose `artifact` names it.
+- **Not inbound references:** the data-only fields of ADR-0064 D11, namely an agent profile's `directive-references`
+  and its tactic, toolguide and styleguide references, a skill's `enhances` and `overrides`, a mission step's
+  delegations and a glossary term's `see_also`.
 - A non-empty set refuses the removal with `409 artifact_referenced`. The `packs` member names the referring packs
   and `violations` the referring artifacts, at most 100 each.
 

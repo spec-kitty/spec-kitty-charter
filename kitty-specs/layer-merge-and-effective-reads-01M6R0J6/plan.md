@@ -5,6 +5,9 @@
 decisions in [decisions/](decisions/) and the operator's planning rulings of 2026-11-06 (recorded in research.md).
 **Folded 2026-11-06:** the operator's rulings on the ruleset review (A1–A15, B1–B8; research R13–R18) and the
 post-plan squad's security, architecture and contract findings. See [the fold section](#fold-of-the-ruleset-rulings-and-the-post-plan-squad-2026-11-06).
+**Folded 2026-11-07 (phase A):** `main`'s #403 (ADR-0064) and #390, the phase A delta squad's findings and two
+operator rulings (`DM-01M6TQ62HXYF362GAFS2BZ3PGF`, `DM-01M6TQ67C9ZTNGZB9CY28JS54F`). See
+[the delta fold](#fold-of-the-phase-a-delta-squad-2026-11-07).
 
 **Note**: This template is filled in by the `/spec-kitty.plan` command. See `packs/built-in/missions/mission-steps/software-dev/plan/prompt.md` for the execution workflow.
 
@@ -26,13 +29,17 @@ effective reads. Together they finish ADR-0055 steps 3 and 4.
   IC-07, because PR A's writes open the race.
   - A new ADR, **ADR-0065**, records the rule: registering a pack fully replaces it, the per-artifact writes are
     helpers, and removal is by `DELETE`. It supersedes ADR-0026 D2 and stays distinct from the derived-pack removal
-    of ADR-0030. ADR-0063 is ours (the policy file), and ADR-0064 is claimed for #240
-    (`origin/claude/240-drop-edge-fields`), so 0065 is the next free number on this branch and on `origin/main`.
+    of ADR-0030. ADR-0063 is ours (the policy file), and ADR-0064 (graph documents are the only source of
+    relationships, merged as #403) is on `main`, so 0065 is the next free number on this branch and on `origin/main`
+    (plan delta squad, 2026-11-07). ADR-0065 also amends ADR-0064 D4 and ADR-0063 (IC-01).
   - `PUT /packs/{packId}` takes a `tar.gz` or `zip` archive of the authored pack directory. One bounded, path-safe
     extractor stages it; `WholePackStore.load` validates it; `PackCommitStore` swaps it in atomically.
   - `POST /packs` fetches the pack from one of three sources: an allowlisted HTTPS archive URL, a git repository and
     ref fetched with the system `git` binary, or a local path under a configured root.
-  - `DELETE /packs/{packId}/artifacts/{kind}/{artifactId}` and a `DELETE` of one relationship.
+  - `DELETE /packs/{packId}/artifacts/{kind}/{artifactId}` and a `DELETE` of one registered relationship (the edge
+    `putPackRelationship` wrote into `registered.graph.yaml`; an authored or derived edge is refused, IC-06). PR A stays
+    strict: a registration or `DELETE` whose resulting closures fail to compose or break a rule is refused, and #404
+    (repair writes) is out of scope (`DM-01M6TQ67C9ZTNGZB9CY28JS54F`).
 - **PR B, the merge and the first two reads.**
   - The layer merge lives in `packs`. `ClosureView` gains a merged closure: each artifact id with its winning version,
     `packId` and `level`, and the layer overrides applied, with edges resolved through them. #357 puts a settled
@@ -162,14 +169,17 @@ service/
 │                         from an overridden place dropped, edges into it resolved to the winner);
 │                         ActionContextWalk (ADR-0018's five steps over the merged index, filtered by a node
 │                         predicate); PackRegistrationService (whole pack: stage → load → gate → commit);
-│                         ArtifactRemovalService, RelationshipRemovalService; InboundReferences (the scan of every
-│                         configured pack); ports PackArchiveReader, PackSourceFetcher, WholePackWriteStore
+│                         ArtifactRemovalService, RelationshipRemovalService; InboundReferences (new, created by
+│                         WP14: the scan of every configured pack, built from `edges()`, presets and descriptor
+│                         `overrides`); ports PackArchiveReader, PackSourceFetcher, WholePackWriteStore;
+│                         WritePolicyGate.Operation gains REMOVE, plus a gate variant over the staged closure
 │            infra.archive (new): BoundedArchiveExtractor (tar.gz and zip, both via Commons Compress),
 │                         ArchiveLimits, StagedPack
 │            infra.fetch: GuardedHttpsExchange (extracted from HttpsGuideFetcher, shared), HttpsArchiveFetcher,
 │                         git/GitSourceFetcher + GitCommand (ProcessBuilder, fixed argv, sanitised env),
 │                         LocalSourceReader, PackSourceProperties (charter.pack-sources.*)
-│            infra.storage: PackCommitStore.replaceWhole(...) and create(...); StorageRootLocations.writableLevel
+│            infra.storage: PackCommitStore.replaceWhole(...) and create(...) (both new: the class has only
+│                         commit(pack, ifMatch, artifact, shardText) today); StorageRootLocations.writableLevel
 │            infra.api:   PackRegistrationController (PUT /packs/{packId}, POST /packs, both DELETEs),
 │                         ArchiveBodyAdvice (413/415 before binding), mappers
 ├── activations/
@@ -180,16 +190,19 @@ service/
 │                         PacksSession gain merged() and actionContext(...)
 │            infra.packs: PacksAvailability / ClosureViewSession map MergedClosure and the walk into domain values
 │            infra.api:   ActivationController: four @ReservedOperation marks removed; EffectiveReadMapper
-├── kernel/  RefusalCode gains pack_version_conflict, artifact_referenced, relationship_not_found
+├── kernel/  RefusalCode gains pack_version_conflict, artifact_referenced, relationship_not_found,
+│            relationship_not_registered (IC-06) and the codes of IC-02/IC-14/IC-15
 └── deployable/ HexagonalArchitectureTest (infra.archive is an adapter ring); NetworkCodeBoundaryTest extended to
              ProcessBuilder (only packs.infra.fetch.git); step glue (archive builder, git fixture server)
-contracts/charter/  paths/packs.yaml (new), packs_packId.yaml (new), packs_packId_relationships.yaml (+DELETE),
-                    packs_packId_artifacts_kind_artifactId.yaml (+DELETE), the four effective-read paths;
+contracts/charter/  paths/packs.yaml (new), packs_packId.yaml (new), packs_packId_relationships.yaml (+DELETE,
+                    beside putPackRelationship), packs_packId_artifacts_kind_artifactId.yaml (+DELETE, beside
+                    getPackArtifact), the four effective-read paths; parameters/IfMatch.yaml (extended);
                     schemas PackRegistration, PackSource (new), EffectiveArtifact (+packId, level),
                     EffectiveArtifactReason, SkippedReport (+buckets), EffectiveGraph (+layerOverrides),
                     LayerOverride (new), CharterRefusalCode; scenarios (four files above); changes/ fragments
 contracts/packs/    no change (the archive is the pack directory as authored)
-docs/adr/0065-*.md (new); amendment notes on ADR-0026, ADR-0005, ADR-0019, ADR-0059, ADR-0053 d5;
+docs/adr/0065-*.md (new); amendment notes on ADR-0026, ADR-0005, ADR-0019, ADR-0064 D4, ADR-0063, ADR-0059,
+ADR-0053 d5;
 docs/architecture/{offering-and-activation,resolution-model,logical-model,hexagonal-service}.md;
 docs/guides/{compose-packs,run-in-a-container,service-build}.md; docs/development/http-status-codes.md;
 docs/conformance/divergence-register.md (DIV-209 to DIV-211); README.md (host requirement: git)
@@ -237,6 +250,8 @@ A → B → C.
   - the archive limits.
   - the write coordination of research R-lock: one registry write lock, then the pack's lock, and the in-JVM
     assumption of one replica, to revisit with ADR-0061's cross-process lock item.
+  - PR A stays strict (`DM-01M6TQ67C9ZTNGZB9CY28JS54F`): a registration or `DELETE` whose resulting closures fail to
+    compose or break a rule is refused. ADR-0063's 2026-11-06 amendment (repair writes, #404) is not applied here.
 - **What it supersedes and what it amends:**
   - It supersedes ADR-0026 D2 ("no `DELETE`").
   - It leaves ADR-0030's derived-pack removal untouched: that is a removal across packs, recorded in a policy file,
@@ -244,6 +259,13 @@ A → B → C.
   - It amends ADR-0005 D1: the HTTPS archive, git and filesystem kinds are built, the service-stored kind is
     `PUT /packs/{packId}`, and the published-artifact kind is deferred.
   - It amends ADR-0019 D2's table.
+  - **It amends ADR-0064 D4** ("`putPackRelationship` is the only operation that writes an edge"). A whole-pack `PUT`
+    now writes graph documents (the authored shards and `drg/fragment.yaml`, replaced whole), and a `DELETE` of a
+    relationship removes a registered edge from `registered.graph.yaml`. ADR-0064 D1 and D2 stand: no artifact field
+    mints an edge, and the author's graph documents remain the home of an authored edge (plan delta squad, finding 2,
+    2026-11-07).
+  - **It amends ADR-0063** with the new REMOVE operation of the write gate (ADR-0012 decision 1, ADR-0030 D3: removal
+    is allowed on `open` and `extendable`, refused on `locked`), judged along the closure the written pack builds on.
 - **Scenarios it retires or rewrites:**
   - It rewrites `register-pack.feature` PR-PACK-REGISTER-003 ("two sources claiming one pack id are refused"):
     FR-004 replaces instead.
@@ -252,21 +274,48 @@ A → B → C.
 - **Affected surfaces:** `docs/adr/0065-pack-registration-replaces-the-whole-pack.md`, `docs/adr/README.md`, and
   the amendment notes on ADR-0026, ADR-0005 and ADR-0019.
 - **Sequencing/depends-on:** none.
-- **Risks:** #240 holds 0064 on another branch. If it is abandoned, the numbers stay as they are; nothing renumbers.
+- **Numbering (plan delta squad, 2026-11-07):** ADR-0064 is on `main` (#403), 0065 is free on this branch, on
+  `origin/main` and on the A0 head. WP10 still re-checks open PRs before writing.
 
 ### IC-02 (A) — Contract A and the registration scenarios, red first
 
 - **Purpose:** declare the four new operations and their refusals, and write their failing scenarios.
 - **The operations:**
-  - `PUT /packs/{packId}`: request body `application/gzip` or `application/zip`, raw bytes. It answers `201` or
-    `200` with a `PackRegistration`, `ETag` and `Location`. It takes `If-Match`.
-  - `POST /packs`: request body a `PackSource` (`https-archive`, `git`, `filesystem`). It answers `201` or `200` with
-    `Location`.
+  - `PUT /packs/{packId}`: request body `application/gzip` or `application/zip`, raw bytes. It answers `202` and a
+    `PackRegistrationStatus` with `Location` (IC-14); the `PackRegistration` (outcome `created`, `replaced` or
+    `unchanged`) and its `ETag` come with a `succeeded` status. It takes `If-Match`.
+  - `POST /packs`: request body a `PackSource` (`https_archive`, `git`, `filesystem`). Like the `PUT`, it answers
+    `202` and a status URI (IC-14).
   - `DELETE /packs/{packId}/artifacts/{kind}/{artifactId}` and `DELETE /packs/{packId}/relationships?from=&to=`:
-    `204`, `404`, `409`. Like every sub-resource write, they require `If-Match`: absent is `428` and stale is `412`.
-- **Refusal codes:** `pack_version_conflict` (409), `artifact_referenced` (409, with `packs`) and
-  `relationship_not_found` (404) are new. `artifact_not_found`, `registration_conflict`, `validation_failed` and
-  `governance_policy_violation` gain these operations. `413` and `415` answer a plain `Problem`.
+    `204`, `404`, `409`, `422`. They are declared in the existing path files, beside `getPackArtifact`
+    (`packs_packId_artifacts_kind_artifactId.yaml`) and `putPackRelationship` (`packs_packId_relationships.yaml`).
+    Like every sub-resource write, they require `If-Match`: absent is `428` and stale is `412`. There is no
+    `PackIfMatch` parameter in the contract (the pack writes declare `If-Match` inline): the new operations reuse
+    `parameters/IfMatch.yaml`, whose description is extended to cover a pack revision (its pattern already admits the
+    quoted `sha256:` tag). Its `required: false` stays, as on the activation sub-resource writes, and the `428` rule is
+    stated in each operation's description (plan delta squad, finding 14, 2026-11-07).
+- **Refusal codes** (plan delta squad, findings 1 and 9, 2026-11-07):
+  - New: `pack_version_conflict` (409), `artifact_referenced` (409, with `packs`), `relationship_not_found` (404),
+    `relationship_not_registered` (409, IC-06), `registration_not_found` (404), `pack_source_refused` (422),
+    `pack_source_unavailable` (503), `registration_timed_out` (504, the planner's proposal: no earlier text gave it a
+    status; WP11 confirms) and `pack_storage_full` (503), and the five registration
+    relation codes of IC-15 (`override_not_permitted`, `enhances_cycle`, `conflicting_relations`, `self_override`,
+    `override_cycle`, all 422). `registration_timed_out` is the job's end state at the source deadline plus 30 s
+    (NFR-008); `pack_storage_full` is the refusal when less than 2x the archive bound is free (NFR-009). Both appear in
+    WP11's list and are now in this concern and in IC-14.
+  - Existing, marked as such: `kind_not_found` (404, raised; `CharterRefusalCode.yaml` and `RefusalCode.KIND_NOT_FOUND`),
+    `pack_not_found`, `artifact_not_found`, `registration_conflict`, `validation_failed` and
+    `governance_policy_violation`. These gain the new operations in their `x-refusal` text.
+  - **A `409` or `422` from the registration flow is a `refused` registration status, not a synchronous answer of the
+    `PUT` or `POST` (IC-14).** The synchronous answers of `PUT`/`POST /packs` are `202`, `400`, `401`, `403`, `412`
+    (at acceptance), `413`, `415`, `428` (the git branch-ref rule only) and `503`. The `DELETE`s answer `409` and `422`
+    synchronously, because they are synchronous.
+  - **Where the codes are declared (ADR-0056).** The codes a `refused` status carries are returned in the `200` body of
+    `getPackRegistration`, so `getPackRegistration` is the operationId whose `x-refusal.operations` entries state the
+    status each code carries in `problem.status` (for the eleven composition codes, `422` in place of the entry's
+    `500`). `registerPackFromArchive` and `registerPackFromSource` declare only their synchronous answers. This is the
+    planner's recommendation; WP11 may move it, but must state it in the `x-refusal` text.
+  - `413` and `415` answer a plain `Problem`.
 - **Scenarios:**
   - `registration/whole-pack-registration.feature` covers US1 AS1 to AS7 and the edge case of a changed level.
   - `pack-removal.feature` covers US2 AS1 to AS4.
@@ -276,8 +325,8 @@ A → B → C.
   `CharterRefusalCode` `x-refusal` table (ADR-0056 per-operation status), `ReservedRefusalCodesTest`.
 - **Sequencing/depends-on:** IC-01.
 - **Risks:** the generated Spring interface for a binary body is `Resource`. The body limit must hold before Spring
-  buffers the body, so `ArchiveBodyAdvice` reads `Content-Length` and wraps the stream. PR #393's `ProblemHandler`
-  edits may collide.
+  buffers the body, so `ArchiveBodyAdvice` reads `Content-Length` and wraps the stream. (The collision risk with PR #393's
+  `ProblemHandler` edits is dropped: #393 is merged, plan delta squad, 2026-11-07.)
 
 ### IC-03 (A) — The bounded, path-safe archive extractor
 
@@ -342,7 +391,21 @@ A → B → C.
 - **The flow:**
   1. Extract to staging (IC-03), outside the locks.
   2. `WholePackStore.load(staging)`. A read violation, an unmodelled file or an unreadable graph is `422` with its
-     violations.
+     violations. Plan delta squad, finding 3, 2026-11-07: the load also refuses each of the following, and the
+     registration answers `422 validation_failed`, never `500`:
+     - a `registered.graph.yaml` without the registration stamp (`generated_by: charter-registration`) is a reserved
+       shard and is refused (`FileSystemPackInspector.shard`, ~643, through `RelationshipShard.isWrittenByRegistration`).
+       A stamped one is accepted, and the replace drops every registered edge the archive leaves out, as it drops any
+       other absent content (SC-003);
+     - a removed field is refused as an unknown field (ADR-0064 D5): a directive's `references`, `procedures` or
+       `relationships`, for example. Every pack file is closed by its schema;
+     - a preset with `activated_kinds` (A7, no kind gate), and a preset item id outside the id grammar
+       `^[A-Za-z0-9][A-Za-z0-9_/.-]*$` (d5bcf030, `contracts/packs/schemas/preset.schema.json`). On a stored pack the
+       grammar breach is `500 pack_unreadable` at read; in an upload it is a `422` violation;
+     - `PACK_UNREADABLE` thrown by the load itself: `WholePackStore.load` ~175 (a directory with no parent) and
+       `FilesystemPackStore.read` ~649-656 (no readable `pack.yaml`). On a staging directory the registration maps
+       it to `422`, since the fault is in the upload. (`WholePackStore` ~540 and ~544 are companion refusals of the
+       write path, `putArtifact`, not of `load`.)
   3. Check the identity:
      - `pack_level` must be org or project, else `409 registration_conflict` (built-in is read-only);
      - on a replace, it must equal the stored pack's level, else `422`. The shared `<config-root>/packs` directory
@@ -357,19 +420,35 @@ A → B → C.
   6. Check `If-Match` against the stored revision (`412`), or `If-None-Match: *` against the pack's existence (`412`
      when it exists). Because step 5 comes first, an identical archive is a `200` no-op even under a stale
      `If-Match`.
-  7. Run the write gate over the diff of artifacts added, changed and removed, along the new pack's closure
-     (ADR-0063 D3): a removal or change the level does not allow is `409 governance_policy_violation`.
+  7. Run the write gate over the diff of artifacts added (`REGISTER`), changed (`REPLACE`) and removed (`REMOVE`),
+     along the staged pack's own closure (ADR-0063 D3): an operation the level does not allow is `409
+     governance_policy_violation`. Plan delta squad, finding 5, 2026-11-07:
+     - `WritePolicyGate.Operation` has only `REGISTER`, `REPLACE` and `RELATIONSHIP` (`WritePolicyGate.java` ~16-23).
+       It gains `REMOVE`, and `MutabilityLevel.permits` gains `REMOVE -> this != LOCKED` (ADR-0012 decision 1,
+       ADR-0030 D3);
+     - `PackMutabilityPolicy.authorize(pack, operation, target)` composes the live closure of `pack.id()`
+       (`rootOf(catalog, descriptors, pack)`). That is wrong for a staged `depends_on`, and a create gives
+       `PACK_NOT_FOUND` because the pack is not configured yet. The registration therefore needs a gate variant that
+       judges over the closure composed with the staged pack in place. `judgingOf(ComposedClosure, root)` already
+       works over a given closure; the new entry point takes it as an argument (the name is WP14's);
+     - after B8/A15 a pack's own policy never binds it, and a lock covers only the artifacts of the packs it builds on,
+       so the gate refuses only when an ancestor of the written pack (a pack of its closure other than itself) holds the id,
+       or builds on a pack that holds it, and locks it (or makes it `extendable`, for a `REPLACE`). A pack that
+       registers its own artifact is never refused by its own policy.
   8. Check the inbound references of every removed artifact, with IC-06's scan run against the staged tree
      (FR-036): a reference from another pack refuses the replace with `409 artifact_referenced` (operator, Q3),
      listing the referrers. The scan runs before the compose, so a removal of a referenced artifact is answered
-     `409`, not a composition `422`.
+     `409`, not a composition `422`. The scan is built as IC-06 step 3 says: from `edges()`, preset items and
+     descriptor `overrides`, never from `PackCompositionFacts.references`.
   9. The impact check (IC-15): compose every closure the staged pack joins. A refusal answers `422` with its code,
-     naming the packs.
-  10. Commit: `PackCommitStore.replaceWhole`, the staging swapped in by the two-rename swap. A new pack goes through
-      `create`. The write generation is odd for the duration of the swap.
+     naming the packs. PR A stays strict: a replace whose resulting closures fail to compose or break a rule is
+     refused, and #404's repair writes are out of scope (`DM-01M6TQ67C9ZTNGZB9CY28JS54F`).
+  10. Commit: `PackCommitStore.replaceWhole` (new), the staging swapped in by the two-rename swap. A new pack goes
+      through `create` (new). The write generation is odd for the duration of the swap.
 - **The registry lock on the existing writes.** `RegistryWriteLock` is introduced here for every pack write: the
-  per-artifact registrations, `putPackRelationship` (so `ComposedRelationshipTargetCheck` cannot race a `DELETE`),
-  the new registrations and both `DELETE`s.
+  per-kind artifact writes (`registerPack{Directive,Paradigm,Styleguide,Toolguide}` and
+  `putPack{Directive,Paradigm,Styleguide,Toolguide}`; there is no `putPackArtifact`), `putPackRelationship` (so
+  `ComposedRelationshipTargetCheck` cannot race a `DELETE`), the new registrations and both `DELETE`s.
 - **The answer:** the job ends `succeeded` with the `PackRegistration` and the revision as its `ETag`, plus the
   floor and lock notices (FR-027). The `(pack_version, revision)` pair is appended to the version history (IC-16).
 - **Relevant requirements:** FR-001, FR-002, FR-003, FR-007, NFR-006, SC-003.
@@ -382,7 +461,9 @@ A → B → C.
   - NFR-006: a mixed answer fails, and a `stale_input` answer passes (operator, Q7). The guarantee comes from the
     write generation and the retry (IC-07).
   - One replica only: the locks and the generation are in-JVM. Revisit with ADR-0061's cross-process lock item.
-  - PR #377 and PR #390 collide on `PackCommitStore` and `FilesystemPackStore`; rebase in order.
+  - (The collision risk of PR #377 and PR #390 on `PackCommitStore` and `FilesystemPackStore` is dropped: both are
+    merged, plan delta squad, 2026-11-07.) `PackCommitStore` has only `commit(pack, ifMatch, artifact, shardText)`
+    (`PackCommitStore.java` ~152). `replaceWhole` and `create` are new methods, not existing ones.
 
 ### IC-05 (A) — `POST /packs` sources: HTTPS archive, git, local path
 
@@ -448,36 +529,83 @@ A → B → C.
 
 ### IC-06 (A) — `DELETE` of an artifact and of a relationship
 
-- **Purpose:** remove one artifact or one edge from a pack without re-sending it (FR-005, FR-006, FR-007).
+- **Purpose:** remove one artifact or one registered edge from a pack without re-sending it (FR-005, FR-006, FR-007).
+- **Folded 2026-11-07** (phase A delta squad; decisions `DM-01M6TQ62HXYF362GAFS2BZ3PGF` and
+  `DM-01M6TQ67C9ZTNGZB9CY28JS54F`).
 - **Locks.** Both `DELETE`s run entirely under `RegistryWriteLock`, then the pack's lock (research R-lock). The
   inbound scan therefore cannot race a relationship `PUT` that adds a reference.
-- **Precondition.** `If-Match` on the pack revision is required (`PackIfMatch`): `428` when absent, `412` when
-  stale, checked under the locks.
+- **Precondition.** `If-Match` on the pack revision is required: `428` when absent, `412` when stale, checked under
+  the locks. The header is `parameters/IfMatch.yaml`, extended to cover a pack revision; there is no `PackIfMatch`
+  parameter (IC-02).
 - **Activations.** A `DELETE` does not consult activations. A saved selection of the removed artifact reads as
   stale, and is dropped on the next write.
+- **PR A stays strict (`DM-01M6TQ67C9ZTNGZB9CY28JS54F`).** A `DELETE` whose resulting closures fail to compose or break
+  a rule is refused with `422` and the composition or relation code of IC-15 (an enhancer that loses its route to a
+  non-enhancer, a settled sibling conflict that loses its winner, and so on), naming the packs. #404 (repair writes
+  under ADR-0063's 2026-11-06 amendment) is out of scope for PR A; the `DELETE` never accepts a result that is already
+  broken because it repairs one.
+- **Author files are never rewritten by a `DELETE` of a graph edge (`DM-01M6TQ62HXYF362GAFS2BZ3PGF`).** A `DELETE`
+  touches `registered.graph.yaml`, the shard `putPackRelationship` writes, and nothing the author wrote in a source
+  shard or `drg/fragment.yaml`.
 - **Artifact `DELETE`:**
   1. Load the pack.
-  2. `404` when it does not hold the artifact.
-  3. Scan for inbound references (`InboundReferences`, research R6). Every configured pack other than this one
-     whose reference resolves to this pack's artifact makes the delete `409 artifact_referenced`, naming the packs.
-     Another artifact of the same pack that references it answers `409 artifact_referenced` too, naming that
-     artifact (operator, Q2).
-  4. Run the write gate: a removal of a `locked` target answers `409 governance_policy_violation` (ADR-0030 D3).
+  2. `404` when it does not hold the artifact (`pack_not_found`, `kind_not_found`, `artifact_not_found`).
+  3. Scan for inbound references (`InboundReferences`, new, research R6; plan delta squad, finding 4). The scan is
+     built from the `edges()` of `PackCompositionFacts` of every configured pack, the pack being edited included,
+     with each edge attributed to its source artifact and to the pack whose graph documents hold it; from the
+     presets of every configured pack; and from the descriptor `overrides` entries (`PackDescriptor.overrides()`, as
+     `PackCompositionResolver` reads them). It is **not** built from `PackCompositionFacts.references`: since ADR-0064
+     that list holds both ends of every edge with no source attached (`DomainRepositoryService` ~494-501), and
+     `CharterArtifact.writtenReferences()` now holds derived relations only (`CharterArtifact.java` ~74), so neither
+     can say who refers. A reference counts when it resolves to the removed artifact through
+     `PackCompositionResolver.holderOf` (~389) over the referring pack's closure as it will be after the change (B3):
+     - an edge held by another pack, whose source or target resolves to it: `409 artifact_referenced`, naming the
+       packs and each source artifact;
+     - an edge of the edited pack whose target is the artifact, from another artifact of the same pack: the same
+       `409`, naming that artifact (operator, Q2). An edge whose source is the removed artifact goes with it (step 5)
+       and does not count;
+     - a preset item of another pack that names it (A10), and a descriptor `overrides` entry that names it;
+     - **the data-only fields of ADR-0064 D11 do not count**: an agent profile's `directive-references` and its other
+       references, a skill's `enhances` and `overrides`, a mission step's delegations and a glossary term's `see_also`
+       say nothing about how two artifacts relate and are not inbound references.
+  4. Run the write gate with the new `REMOVE` operation (IC-04 step 7 sets out the operation, `MutabilityLevel.permits`
+     and the staged-closure gate variant). After B8/A15 a pack's own policy never binds it and a lock covers only the
+     artifacts of the packs the edited pack builds on, so "a removal of a `locked` target answers
+     `409 governance_policy_violation`" (ADR-0030 D3) fires only when an ancestor holds the id and locks it. A pack
+     removes its own artifact freely.
   5. Mutate the staging copy:
      - remove the artifact file and its companions;
-     - remove its outgoing edges from the registered shard and the graph documents, and its graph node;
-     - remove every preset item naming it (an emptied key reads as not listed).
-  6. Revalidate the whole aggregate.
+     - remove its outgoing edges from `registered.graph.yaml`;
+     - remove every preset item naming it. Every preset list has `minItems: 1`
+       (`contracts/packs/schemas/preset.schema.json`), so "an emptied key reads as not listed" means the key is
+       **deleted** from the preset file. Writing `[]` would make the pack unreadable.
+  6. Revalidate the whole aggregate, then run IC-15's impact check over every closure containing the pack as it will
+     be (strict: `422` on a failure, see above).
   7. Commit with the atomic swap.
-- **Relationship `DELETE`.**
-  - It removes the one edge of the unordered `{from, to}` pair from the registered shard or a graph document.
-  - An edge that is a field of an artifact's own body is `409 registration_conflict`: re-register the artifact
-    without it.
-  - `404 relationship_not_found` when the pack holds no such edge.
-- **Relevant requirements:** FR-005, FR-006, FR-007.
+  - **Decision `DM-01M6TR1KDAJ64GMJD6AYNZKT59`.** The ruling states that a `DELETE` never rewrites author
+    files. The plan applies it to the artifact `DELETE` too: when a source shard or `drg/fragment.yaml` writes an edge
+    from the artifact, or declares its node, the `DELETE` answers `409 registration_conflict` with the fixed reason
+    "written in the pack's graph documents: register the whole pack". The preset items of step 5 are still removed
+    (FR-005, A10), as before.
+- **Relationship `DELETE`** (`DM-01M6TQ62HXYF362GAFS2BZ3PGF`, replacing the old "an edge that is a field of an
+  artifact's own body is `409 registration_conflict`" case, which can no longer happen: ADR-0064 D1 and D2 dropped the
+  edge-minting fields).
+  - It removes the one edge of the unordered `{from, to}` pair **only from `registered.graph.yaml`**, and answers `204`.
+  - `404 relationship_not_found` when no graph document of the pack holds an edge on the pair and no derived relation
+    joins it.
+  - **`409 relationship_not_registered`** (new, precise code) when the pack holds an edge on the pair but not in
+    `registered.graph.yaml`: the author wrote it in a source shard or `drg/fragment.yaml`, or it is a derived relation
+    (a guard's `implemented_by`, ADR-0064 D7). The fixed reason says to register the whole pack. Nothing is rewritten.
+    The `409` is the same code in contract-delta, WP11 (T049) and WP19 (T095).
+  - When the pair is held both in `registered.graph.yaml` and in an author-written document, the `DELETE` answers
+    `409 relationship_not_registered` and changes nothing: the author wrote it (decision `DM-01M6TR1KDAJ64GMJD6AYNZKT59`); a `204` that left
+    the edge in force would mislead.
+  - Strict as above: a removal that leaves a closure broken is `422`.
+- **Relevant requirements:** FR-005, FR-006, FR-007, FR-036.
 - **Affected surfaces:** `ArtifactRemovalService`, `RelationshipRemovalService`, `InboundReferences`,
-  `RelationshipShard`, `GraphShardWriter`, `PresetFiles`, `PackCommitStore`, `PackRegistrationController`.
-- **Sequencing/depends-on:** IC-02, IC-04 (the commit path).
+  `RelationshipShard`, `GraphShardWriter`, `PresetFiles`, `PackCommitStore`, `WritePolicyGate`, `MutabilityLevel`,
+  `PackRegistrationController`.
+- **Sequencing/depends-on:** IC-02, IC-04 (the commit path), IC-15 (the impact check).
 - **Risks:** the scan reads every configured pack once per delete. Deletes are rare, so the cost is accepted, as
   ADR-0063 accepted the write gate's compose.
 
@@ -504,6 +632,9 @@ A → B → C.
   generation, so a read recomposes only what changed.
 - **The cascade (FR-038).** Once the merge exists, the write cascade walks the merged `EdgeIndex` (decision
   `DM-01M6R4W1H9P3451V89KHP97XKM`), so it never follows an edge of an overridden artifact.
+- **`self_override` again (A12, plan delta squad, 2026-11-07).** IC-15 judges an `overrides` edge that resolves to its
+  own source on the `holderOf` resolution at registration. The layer re-pointing exists only here, so the merge judges
+  it a second time on the merged `EdgeIndex` (FR-010) and refuses the read with `pack_unreadable`.
 - **Facts.** `PackCompositionFacts` gains `languages` (each held URN's `applies_to_languages`), read in the same
   assembly. `ClosureView.merged()` builds the merge lazily from the read it already holds (NFR-007), so the writes
   and `/offering` do not change (FR-023, SC-004).
@@ -747,6 +878,12 @@ IC-03 to IC-09 above and into the concerns below.
   would have answered). Status is kept in memory for 1 hour after it ends, at most 1,000 entries (one replica,
   ADR-0061). The client polls the URI; there is no outbound callback (SSRF).
 - **Identical re-send.** Ends `succeeded` with outcome `unchanged`.
+- **Refusal codes of the job (plan delta squad, finding 9, 2026-11-07).** The `409` and `422` answers of IC-04 and
+  IC-05 are the `problem` of a `refused` status, never a synchronous answer (IC-02). The job also ends `refused` with
+  `registration_timed_out` (504; NFR-008: at the source deadline plus 30 s, pinned by a fake-clock test) or
+  `pack_storage_full` (503; NFR-009: less than 2x the archive bound free, checked before anything is written). Both
+  are declared in IC-02's list and in contract-delta. `getPackRegistration` is the operation whose `x-refusal.operations`
+  entries carry them (IC-02).
 - **`DELETE`s stay synchronous**: they read no source and do one bounded compose.
 - **Relevant requirements:** FR-001, FR-004, FR-024, NFR-008, NFR-009.
 - **Affected surfaces:** `packs.application.RegistrationJobs` (new), `PackRegistrationController`, the contract
@@ -758,25 +895,44 @@ IC-03 to IC-09 above and into the concerns below.
 ### IC-15 (A) — The registration impact check and the registration-time refusals
 
 - **Purpose:** FR-025 and the registration half of FR-027 (A5, A6, A8, A11, A12, B4).
+- **Which closures** (plan delta squad, finding 7, 2026-11-07). An activation's closure has several roots
+  (`AvailablePacks.session(Optional<List<String>> packIds)`, `AvailablePacks.java` ~19), so a reverse `depends_on`
+  index alone misses a sibling conflict between packs that are only listed together in one activation: `a` and `b`
+  each compose, and conflict together. The check therefore composes two sets: (1) the closures found from the
+  reverse `depends_on`/lineage index, rooted at each pack whose closure holds the staged pack; (2) the root set of
+  each **stored activation** whose closure holds the staged pack (an activation without `packs` roots at every
+  configured pack), asked through the `ActivationImpact` port and composed once per distinct root set. This keeps
+  FR-025's promise: no activation turns into a `500` after the fact. The port is declared in PR A with
+  `activationRoots()`; its `activations.infra` adapter ships in PR A with that one method, and PR B adds the
+  affected-activations notice (below) to the same adapter.
 - **What it judges,** over every closure that contains the staged pack (not one global compose; ruleset G8), with the
-  staged pack in place:
+  staged pack in place. The same check runs for a `DELETE` over the pack as it will be after the removal (IC-06).
+  **PR A stays strict (`DM-01M6TQ67C9ZTNGZB9CY28JS54F`):** a registration or `DELETE` whose resulting closures fail to
+  compose or break a rule is refused. ADR-0063's 2026-11-06 repair-write amendment (refuse only new violations, #404) is
+  out of scope for PR A, so a pack that is already broken cannot be repaired by a write that leaves a closure broken.
   - the compose rules (C17–C21) and the mutability rules, with the lock scope of FR-033;
   - an `overrides` edge onto a target that is not `open` (A6): `422 override_not_permitted`;
   - an `enhances` cycle, or an enhancer with no route to a non-enhancer (A8): `422 enhances_cycle`;
   - an artifact that both enhances and overrides one target (A11): `422 conflicting_relations`;
-  - an `overrides` edge that resolves to its own source after the layer re-pointing (A12): `422 self_override`;
+  - an `overrides` edge that resolves to its own source (A12): `422 self_override`. The layer re-pointing is IC-07
+    (PR B), so PR A judges the edge on the `holderOf` resolution (`PackCompositionResolver.holderOf`, ~389), and PR B
+    judges it again on the merged index (FR-010). Every relation check of this list reads `EdgeIndex` or the facts'
+    `edges()`, never `GraphWalk`, which sees only derived relations (#397);
   - an `overrides` cycle (C28): `422 override_cycle`.
   Each violation names the closure's root pack and the packs involved.
 - **Notices (B4).** On success, the status lists the must-have items and locks added and removed. The activations
-  whose in-force set changes are listed from PR B on, through an `ActivationImpact` port that `packs` declares and
-  `activations.infra` implements, so the dependency direction is kept (C-002).
+  whose in-force set changes are listed from PR B on, through the `ActivationImpact` port that `packs` declares and
+  `activations.infra` implements, so the dependency direction is kept (C-002). The port's `activationRoots()` is used
+  from PR A (above); its notice method is a no-op in PR A.
 - **Read side.** Stored packs registered before this rule are not re-judged; a read that meets one of these shapes
   answers `500 pack_unreadable` naming the pack, as today. The startup census logs them.
 - **Relevant requirements:** FR-025, FR-027.
 - **Affected surfaces:** `packs.application.RegistrationImpact` (new), `PackCompositionResolver`, `CharterRefusalCode`.
 - **Sequencing/depends-on:** IC-04.
-- **Risks:** the check composes every closure containing the pack under the registry lock; the closures are found
-  from the reverse `depends_on` index, and NFR-009's lock budget bounds it.
+- **Risks:** the check composes every closure containing the pack under the registry lock, and each distinct root set
+  of a stored activation; the closures are found from the reverse `depends_on` index and from `activationRoots()`, and
+  NFR-009's lock budget bounds it. WP25's `ActivationImpactAdapter` file is created in PR A by WP15 (a one-line
+  hand-off to WP25's prompt, which this fold does not edit).
 
 ### IC-16 (A) — The version→digest history
 
@@ -798,10 +954,18 @@ IC-03 to IC-09 above and into the concerns below.
 ### IC-18 (A) — Registration access, flags and audit
 
 - **Purpose:** FR-037, NFR-010 (post-plan security squad 8).
-- **Rules.** Registration and `DELETE` require an authenticated principal (`401`); `charter.registration.enabled`
-  (default `false`) and `charter.pack-sources.<kind>.enabled` gate them (`503 pack_source_unavailable` when off);
-  the git allowlist is empty by default. Every attempt writes one audit record through an `AuditLog` port
-  (structured log by default).
+- **Rules (restated, plan delta squad, finding 11, 2026-11-07).** There is no "principal" in this service. Every
+  request already needs the worktree bearer token, which `WorktreeGuard` checks before routing and answers `401`
+  (`responses/Unauthorized.yaml`) for a missing, malformed or wrong credential, also for a path the service does not
+  have; a `401` is never the registration's own answer. Registration (and the two `DELETE`s) therefore requires the
+  token **plus** `charter.registration.enabled` (default `false`) **plus** the source kind's own flag
+  `charter.pack-sources.<kind>.enabled` (`503 pack_source_unavailable` when a flag is off); the git allowlist is empty
+  by default. Under the development flag no token is configured and the guard passes every request: the flags still gate
+  registration, and the audit record says the request carried no token.
+- **Audit.** Every attempt writes one audit record through an `AuditLog` port (structured log by default). The record
+  names the worktree identity the guard knows (`ServiceInfoQuery.worktree()`, the `Charter-Worktree` value) and not a
+  principal: the code exposes no caller identity beyond the worktree token's own, and the plan invents none. The other
+  fields are as NFR-010 lists them.
 - **Sequencing/depends-on:** IC-02.
 
 ### IC-19 (A0) — The ruling changes to #399's built behaviour
@@ -933,7 +1097,9 @@ own PR stacked on #399 before PR A (decision `DM-01M6RFGB9NVD9MDWZ6AP0PBYH7`), u
 ### Contract findings folded (post-plan contract squad)
 
 - `GET /packs/{packId}` (`getPack`) is declared, so `Location` and `_links.self` point at a declared read (FR-039).
-- `PackIfMatch` is declared `required: false`; the `DELETE`s use a separate `PackIfMatchRequired`.
+- (Superseded 2026-11-07, plan delta squad finding 14: there is no `PackIfMatch` parameter in the contract. The new
+  operations reuse `parameters/IfMatch.yaml`, extended to cover a pack revision; it stays `required: false` and each
+  `DELETE` states its `428` rule in its description. `PackIfMatchRequired` is dropped.)
 - Each removal `404` carries its own code: `pack_not_found`, `kind_not_found`, `artifact_not_found`,
   `relationship_not_found`.
 - New source codes: `pack_source_refused` (422), `pack_source_unavailable` (503), and `502`/`504` for an upstream
@@ -978,6 +1144,40 @@ an org pack overriding, enhancing and holding a preset that shadows a built-in p
 override, a CRG chain `F → E → T`, an enhancer ring, a dual-edge artifact and a self-override (the last three only in
 refused registrations); a pack pinned at 1.0 and re-registered at 2.0; and a corpus of at least 20 hostile archives
 and git trees (NFR-005).
+
+## Fold of the phase A delta squad (2026-11-07)
+
+The plan predates `main`'s #403 (ADR-0064: graph documents are the only source of relationships, D1 to D12), #390 and
+the merge of #377 and #393. The phase A plan-point squad checked it against the A0 head
+(`issue-10-a0-kind-model-and-rulings`, synced with `main`) and the operator ruled on two points. Every code reference
+below was read on that head. Finding numbers are the squad's; the two rulings are findings 1 and 6.
+
+| # | Finding | Disposition | Folded in |
+|---|---|---|---|
+| 1 | The relationship `DELETE` after ADR-0064: one pair can sit in several graph documents | **Ruled, `DM-01M6TQ62HXYF362GAFS2BZ3PGF`.** It removes the edge only from `registered.graph.yaml`; an authored or derived edge answers `409`; author files are never rewritten. The old "edge is a field of an artifact's body" `409` is deleted. Precise code chosen: new `relationship_not_registered` (409); `relationship_not_found` (404) stays. | IC-06, IC-02, contract-delta (`deletePackRelationship`, codes), data-model (RelationshipRemoval), spec (US2 AS3, FR-006), WP11 T047/T049, WP19 T095 |
+| 2 | ADR-0065 must amend ADR-0064 D4; stale numbering | Accepted. ADR-0065 amends ADR-0064 D4 and ADR-0063 (REMOVE); the "#240 holds 0064" text is deleted; 0065 is free on this branch, `origin/main` and the A0 head. | Summary, IC-01, WP10 (context, T044, T045) |
+| 3 | IC-04 step 2 and the `422` list | Accepted, with one correction: `WholePackStore` ~540/~544 are the write path's companion refusals, not `load`'s. The `load`'s own `PACK_UNREADABLE` sites are ~175 and `FilesystemPackStore.read` ~649-656. | IC-04 step 2, contract-delta (`422`), spec (FR-001, FR-003), WP14 T065 |
+| 4 | R6 and `InboundReference` | Accepted. The scan is built from `edges()`, presets and descriptor `overrides`, not from `PackCompositionFacts.references`; the data-only fields of ADR-0064 D11 do not count. | IC-06 step 3, IC-04 step 8, data-model (InboundReference), spec (FR-036), WP14 T067, WP19 T094 |
+| 5 | The write gate | Accepted. `REMOVE` joins `Operation` and `MutabilityLevel.permits` (`!= LOCKED`); a gate variant over the staged closure; the lock wording follows B8/A15. | IC-04 step 7, IC-06 step 4, WP14 (T067, shared files), WP19 T094 |
+| 6 | Repair writes (#404) | **Ruled, `DM-01M6TQ67C9ZTNGZB9CY28JS54F`.** PR A stays strict; #404 is out of scope. | Summary, IC-01, IC-04 step 9, IC-06, IC-15, contract-delta (DELETE `422`), WP15 and WP19 prompts |
+| 7 | Impact check closures | Accepted. The check also composes each stored activation's root set, through `ActivationImpact`, which PR A now implements for `activationRoots()`. FR-025 is kept. | IC-15, WP15 (T070, shared files) |
+| 8 | A12 `self_override` | Accepted. PR A judges on the `holderOf` resolution, PR B again on the merged index; relation checks read `EdgeIndex` or `edges()`, never `GraphWalk` (#397). | IC-15, IC-07, WP15 T072 |
+| 9 | Refusal codes | Accepted. `override_cycle`, `registration_timed_out` and `pack_storage_full` are in contract-delta's list and IC-02/IC-14; `kind_not_found` is marked existing; `https_archive` spelled everywhere; 409/422 are `refused` statuses; the codes are declared on `getPackRegistration`'s `x-refusal`. `registration_timed_out` carries the planner's proposed `504`. | IC-02, IC-14, contract-delta, data-model (PackSourceRecord), WP11 T049 |
+| 10 | Emptied preset keys | Accepted. Every preset list has `minItems: 1`, so the key is deleted; `[]` makes the pack unreadable. | IC-06 step 5, data-model, spec (edge case), WP19 T094 |
+| 11 | No "principal" | Accepted. The worktree bearer token (checked before routing) plus the two flags; the audit record names the worktree identity (`ServiceInfoQuery.worktree()`). | IC-18, spec (FR-037, NFR-010), contract-delta, WP11 T051, WP16 |
+| 12 | #377, #390, #393 merged | Accepted. The collision risks are dropped. All three were checked: #390 on the A0 head, #377 and #393 through the GitHub REST API. | IC-02 and IC-04 risks, WP11, WP14 |
+| 13 | Names | Accepted. `replaceWhole` and `create` are new on `PackCommitStore` (only `commit(pack, ifMatch, artifact, shardText)` exists, ~152); `InboundReferences` is created by WP14; there is no `putPackArtifact` (the per-kind `registerPack*` and `putPack*` operations). | structure tree, IC-04, IC-06, contract-delta, WP14 |
+| 14 | Contract paths | Accepted. The `DELETE`s go into the existing path files; there is no `PackIfMatch` parameter, so `IfMatch.yaml` is reused and extended. WP11's owned files swap the two `PackIfMatch*` files for `IfMatch.yaml`. | IC-02, contract-delta, WP11 T047, "Contract findings folded" |
+
+Open points the squad left to the plan, all marked where they appear:
+
+- the artifact `DELETE` and author-written graph documents (IC-06, "planner's reading"): the plan applies the
+  "never rewrites author files" ruling to the artifact `DELETE` and refuses with `409 registration_conflict`;
+- a pair held both in `registered.graph.yaml` and in an author document: the registered edge is removed and the
+  authored edge stays (IC-06);
+- the status of `registration_timed_out` (`504`, IC-02);
+- WP25's prompt must learn that WP15 creates `ActivationImpactAdapter` in PR A (IC-15); `research.md` (R-numbers and the
+  `PackIfMatch` line near 266) is not amended by this fold and is superseded where it disagrees.
 
 ## Component view (C4, level 3: the charter service, merge and read flow)
 

@@ -1,5 +1,10 @@
 # Contract delta (sketch)
 
+**Folded 2026-11-07 (phase A delta squad):** the relationship `DELETE` removes a registered edge only
+(`DM-01M6TQ62HXYF362GAFS2BZ3PGF`); PR A stays strict (`DM-01M6TQ67C9ZTNGZB9CY28JS54F`); the refusal codes, the
+`If-Match` parameter, the `x-refusal` home of the registration codes and the contract paths are corrected. See
+`plan.md`, "Fold of the phase A delta squad (2026-11-07)".
+
 The authoritative change lands in `contracts/charter/`, with one fragment per PR in `contracts/charter/changes/`,
 before the code that serves it (C-001). This page lists the change so the work packages and the reviewers share one
 view. Every change is on the 0.x line (ADR-0022). A break carries a `### Breaking` entry that says what core's seam
@@ -14,15 +19,17 @@ changes.
     `application/x-tar+gzip`) or `application/zip`, with `type: string, format: binary`. The `Content-Type` picks the
     format.
   - **Headers** (research R-lock):
-    - `If-Match` (`PackIfMatch`) is optional: absent means the last writer wins, and stale answers `412`;
+    - `If-Match` (`parameters/IfMatch.yaml`, extended to cover a pack revision; there is no `PackIfMatch`) is
+      optional: absent means the last writer wins, and stale answers `412`;
     - `If-None-Match: *` makes the request create-only: `412` when the pack exists;
     - an identical archive answers `200` (`unchanged`) even under a stale `If-Match`, because the version rule runs
       first. The description says so, citing RFC 9110 §13.1.1.
   - **Answers (asynchronous, A5; folded 2026-11-06):**
     - `202`: accepted. `PackRegistrationStatus` (`pending`), `Location: /api/v1/pack-registrations/{registrationId}`.
       Every answer below except `400`, `401`, `403`, `412` (at acceptance), `413`, `415` and `503` is now the
-      `problem` of a `refused` status, not a synchronous answer; a `succeeded` status carries the
-      `PackRegistration` (outcome `created`, `replaced` or `unchanged`) and its revision.
+      `problem` of a `refused` status, not a synchronous answer (the `409` and `422` lists below included); a
+      `succeeded` status carries the `PackRegistration` (outcome `created`, `replaced` or `unchanged`) and its revision.
+      The `refused` problem also carries `registration_timed_out` (`504`) and `pack_storage_full` (`503`).
     - `503`: the registration queue is full (`Retry-After`), or registration is disabled
       (`pack_source_unavailable`).
     - `400`: both `If-Match` and `If-None-Match` were sent.
@@ -37,7 +44,11 @@ changes.
     - `415`: another `Content-Type`, or magic bytes that do not match it, as a plain `Problem`.
     - `422`:
       - `validation_failed` with `violations` (at most 100): an archive path or entry type refused, over 10,000
-        entries or 32 MiB expanded, an unmodelled file, an invalid artifact, a changed `pack_level` or `pack_id`;
+        entries or 32 MiB expanded, an unmodelled file, an invalid artifact, a changed `pack_level` or `pack_id`; and,
+        from the load of the staged pack (ADR-0064 D5, A7, d5bcf030): a `registered.graph.yaml` without the registration
+        stamp (a reserved shard; a stamped one is accepted), a removed field refused as an unknown field (a directive's
+        `references`, `procedures` or `relationships`), a preset with `activated_kinds`, a preset item id outside
+        `^[A-Za-z0-9][A-Za-z0-9_/.-]*$`, and a `PACK_UNREADABLE` of the load of a staging directory (never `500`);
       - a composition code: a closure containing this pack no longer composes, naming the packs (the impact check,
         IC-15), under ADR-0056 per-operation status;
       - `override_not_permitted`, `enhances_cycle`, `conflicting_relations`, `self_override`, `override_cycle`
@@ -54,30 +65,55 @@ changes.
       pack_source_unavailable`.
 - **`getPackRegistration`: `GET /pack-registrations/{registrationId}`** (new). `200` with `PackRegistrationStatus`;
   `404 registration_not_found` once forgotten (1 hour after it ends, or after a restart).
+  - **`x-refusal` home of the registration codes (ADR-0056).** The codes a `refused` status returns in its `200` body
+    are declared on this operation: `x-refusal.<code>.operations.getPackRegistration.status` gives the status the
+    `problem` carries (`422` in place of `500` for the eleven composition codes). The two registration operations
+    declare only their synchronous answers. This is the planner's recommendation (plan delta squad, finding 9); WP11
+    may move it, and must state where it put it in the `x-refusal` text.
 - **`getPack`: `GET /packs/{packId}`** (new, FR-039). `200` with the stored pack's `PackRegistration` (outcome
   absent), `ETag`, `_links.self`; `404 pack_not_found`.
 - **`deletePackArtifact`: `DELETE /packs/{packId}/artifacts/{kind}/{artifactId}`** (added to the existing item path).
-  - **Header.** `If-Match` on the pack revision is required, through the new pack-specific parameter
-    `parameters/PackIfMatch.yaml`, not the activations' `IfMatch.yaml`. Absent answers `428`, stale answers `412`,
+  - **Path file.** The existing `paths/packs_packId_artifacts_kind_artifactId.yaml`, beside `getPackArtifact`.
+  - **Header.** `If-Match` on the pack revision is required through `parameters/IfMatch.yaml`, extended to cover a
+    pack revision (there is no `PackIfMatch` parameter; the file stays `required: false`, as on the activation
+    sub-resource writes, and the operation's description states the `428`). Absent answers `428`, stale answers `412`,
     checked under the registry lock (research R-lock).
   - **Answers:**
     - `204`, with `ETag` (the new revision);
-    - `404`: `pack_not_found`, `kind_not_found` or `artifact_not_found`, each its own code;
+    - `404`: `pack_not_found`, `kind_not_found` (existing) or `artifact_not_found`, each its own code;
     - `409`:
       - `artifact_referenced`, whose `packs` member (at most 100) names the referring packs and whose `violations`
-        name every referring artifact, a preset item included (A10, B3). References are judged against the tree after
-        the removal;
-      - `governance_policy_violation` (ADR-0030 D3);
+        name every referring artifact, a preset item or a descriptor `overrides` entry included (A10, B3).
+        References are judged against the tree after the removal, from the edges, presets and descriptor `overrides`
+        of every configured pack (not from `PackCompositionFacts.references`); the data-only fields of ADR-0064 D11
+        do not count;
+      - `governance_policy_violation` (ADR-0030 D3): the new `REMOVE` operation of the write gate, which fires only
+        when an ancestor of the pack holds the id and locks it;
+      - `registration_conflict`: the artifact is written in the pack's author-written graph documents (a source
+        shard or `drg/fragment.yaml`), which a `DELETE` never rewrites (`DM-01M6TQ62HXYF362GAFS2BZ3PGF`, applied by
+        decision `DM-01M6TR1KDAJ64GMJD6AYNZKT59`);
     - `412`, `428`;
+    - `422`: PR A stays strict (`DM-01M6TQ67C9ZTNGZB9CY28JS54F`): the closures after the removal fail to compose or
+      break a rule (a composition code or one of IC-15's relation codes, naming the packs). #404 (repair writes) is out
+      of scope for PR A;
     - `500`.
 - **`deletePackRelationship`: `DELETE /packs/{packId}/relationships?from=&to=`** (added to the existing path).
+  - **Path file.** The existing `paths/packs_packId_relationships.yaml`, beside `putPackRelationship`.
   - **Parameters.** `from` and `to` are required query parameters, each a `PackQualifiedReference`. A URN may hold
-    `/` (`action:<type>/<step>`), so the pair is not a path segment.
+    `/` (`action:<type>/<step>`), so the pair is not a path segment. `If-Match` is as on `deletePackArtifact`.
+  - **What it removes (`DM-01M6TQ62HXYF362GAFS2BZ3PGF`).** The edge of the unordered pair, **only from
+    `registered.graph.yaml`**, the shard `putPackRelationship` writes. A `DELETE` never rewrites an author file.
   - **Answers:**
     - `204` with `ETag`;
-    - `404`: `pack_not_found` or `relationship_not_found` (new);
-    - `409 registration_conflict`: the edge is a field of an artifact's own body;
+    - `404`: `pack_not_found`, or `relationship_not_found` (new) when no graph document of the pack holds an edge on
+      the pair and no derived relation joins it;
+    - `409 relationship_not_registered` (new, precise): the pack holds an edge on the pair but not in
+      `registered.graph.yaml` (the author wrote it in a source shard or `drg/fragment.yaml`), or it is a derived
+      relation (a guard's `implemented_by`, ADR-0064 D7). The fixed reason says to register the whole pack. This
+      replaces the old `409 registration_conflict` "the edge is a field of an artifact's own body", which can no
+      longer happen (ADR-0064 D1 and D2 dropped the edge-minting fields);
     - `412`, `428`;
+    - `422`: PR A stays strict, as for `deletePackArtifact`;
     - `500`.
 
 ### New schemas
@@ -102,9 +138,15 @@ changes.
   - `pack_version_conflict` (409);
   - `artifact_referenced` (409);
   - `relationship_not_found` (404);
+  - `relationship_not_registered` (409; the relationship `DELETE` of an authored or derived edge);
   - `registration_not_found` (404);
   - `pack_source_refused` (422) and `pack_source_unavailable` (503);
-  - `override_not_permitted`, `enhances_cycle`, `conflicting_relations`, `self_override` (422).
+  - `override_not_permitted`, `enhances_cycle`, `conflicting_relations`, `self_override`, `override_cycle` (422);
+  - `registration_timed_out` (a `refused` registration at the source deadline plus 30 s, NFR-008; `504`, the
+    planner's proposal) and `pack_storage_full` (`503`, less than 2x the archive bound free, NFR-009). Both are
+    carried in the `problem` of `getPackRegistration`.
+- **Existing, not added:** `kind_not_found` (404, raised; `CharterRefusalCode.yaml` and `RefusalCode.KIND_NOT_FOUND`).
+  `deletePackArtifact` is added to its text only.
 - **Raised by the new operations,** under ADR-0056's per-operation status (`x-refusal.operations`):
   - `artifact_not_found` (404 on `deletePackArtifact`);
   - `validation_failed` (422);
@@ -115,10 +157,15 @@ changes.
 
 ### Other changes
 
-- **`parameters/PackIfMatch.yaml`** (new, `required: false`) and **`PackIfMatchRequired.yaml`** (new,
-  `required: true`, for the two `DELETE`s): a strong entity tag of the pack revision. OpenAPI cannot override
-  `required` on a `$ref`, so there are two parameters.
-- **The per-artifact registrations' `If-Match` text** (`POST`/`PUT /packs/{packId}/artifacts/<kind>…`): it stays
+- **`parameters/IfMatch.yaml`** (existing, extended, plan delta squad finding 14): there is no `PackIfMatch`
+  parameter, and `putPackRelationship` and the per-kind artifact writes declare `If-Match` inline. The two
+  registrations and the two `DELETE`s reuse `IfMatch.yaml`; its description is extended from an `Activation` answer's
+  tag to also cover a pack revision's strong tag (its pattern already admits the quoted `sha256:` form). It stays
+  `required: false`, as on the activation sub-resource writes, and each `DELETE` states its `428` in its description.
+  `PackIfMatch.yaml` and `PackIfMatchRequired.yaml` are not created.
+- **The per-artifact registrations' `If-Match` text** (`registerPack{Directive,Paradigm,Styleguide,Toolguide}` and
+  `putPack{Directive,Paradigm,Styleguide,Toolguide}`, `POST`/`PUT /packs/{packId}/artifacts/<kind>…`; there is no
+  generic `putPackArtifact`): it stays
   optional, and adds "without it, the write is last-writer-wins on the whole pack". This is a description change
   only.
 - **The relationship `DELETE`'s `If-Match`** is required as above. `putPackRelationship` is unchanged (already
@@ -133,8 +180,8 @@ changes.
     `@WIP`.
   - `scenarios/pack-removal.feature` is new. It covers US2.
   - The lockfile, published-artifact and distribution promises stay `@WIP`.
-- **Fragments.** `### Added` for the four operations, two schemas and three codes, and `### Changed` for the raised
-  codes.
+- **Fragments.** `### Added` for the operations, the schemas and the new codes listed above, and `### Changed` for
+  the raised codes.
 
 ## PR B: the merge, `listEffectiveArtifacts` and the skipped report
 
@@ -244,7 +291,7 @@ changes.
   `requiredNotHeld` and `requiredNotInForce` (B1, A10, the bound and ungrounded floor),
   `PackRegistration.notices.activationsAffected`. `SkippedReport.skippedByScope` stays (the write report of the
   `cascade` scope, always empty at read; `DM-01M6RN5MTWC98PXEVJNFQSRRJX`).
-- **PR A refusal codes (post-tasks squad).** `registration_timed_out` (the job's end state at the source deadline +
+- **PR A refusal codes (post-tasks squad; now also in the "Added" list above, 2026-11-07).** `registration_timed_out` (the job's end state at the source deadline +
   30 s, NFR-008), `pack_storage_full` (`503`, less than 2× the archive bound free, NFR-009), `registration_not_found`
   (`404`). `PUT`/`POST /packs` answer no `428`, except a git source naming a branch ref without a `commit` and without
   `If-Match` (`428`).
