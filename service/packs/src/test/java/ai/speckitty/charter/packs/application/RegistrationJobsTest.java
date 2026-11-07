@@ -504,6 +504,39 @@ class RegistrationJobsTest {
         assertThat(h.rig.packs).isEmptyDirectory();
     }
 
+    @Test
+    void aJobIsNeverSeenEndedBeforeItsAuditEntryIsWritten(@TempDir Path host) throws InterruptedException {
+        Harness h = new Harness(host);
+        CountDownLatch release = new CountDownLatch(1);
+        h.audit.holdWrites(release);
+        java.util.concurrent.atomic.AtomicInteger entriesWhenSeenEnded =
+                new java.util.concurrent.atomic.AtomicInteger(-1);
+        CountDownLatch observed = new CountDownLatch(1);
+        Reservation job = h.jobs.reserve("pack-x", Preconditions.none(), ORIGIN_FOR_ORDER);
+        Thread reader = new Thread(() -> {
+            h.await(() -> h.jobs.status(job.id())
+                    .map(Status::state)
+                    .filter(s -> s == State.SUCCEEDED || s == State.REFUSED)
+                    .isPresent());
+            entriesWhenSeenEnded.set(h.audit.entries().size());
+            observed.countDown();
+        });
+        reader.setDaemon(true);
+        reader.start();
+        job.start(h.stage(h.pack("pack-x", "1.0.0")));
+
+        boolean seenWhileWriteHeld = observed.await(1, TimeUnit.SECONDS);
+        release.countDown();
+        reader.join(TimeUnit.SECONDS.toMillis(20));
+
+        assertThat(seenWhileWriteHeld)
+                .as("the job was reported ended while its audit entry was still being written")
+                .isFalse();
+        assertThat(entriesWhenSeenEnded.get())
+                .as("entries written when the end first became visible")
+                .isEqualTo(1);
+    }
+
     // ---- the audit trail -------------------------------------------------------------------------------------------
 
     @Test
@@ -631,13 +664,27 @@ class RegistrationJobsTest {
         }
     }
 
+    private static final Origin ORIGIN_FOR_ORDER = new Origin(
+            "worktree-7",
+            Credential.NONE,
+            "registerPackFromSource",
+            "https_archive",
+            "https://packs.example.org/a.tgz");
+
     /** An audit log that keeps what it is given. */
     static final class RecordingAudit implements AuditLog {
         private final List<Entry> entries = Collections.synchronizedList(new ArrayList<>());
+        private volatile CountDownLatch hold = new CountDownLatch(0);
 
         @Override
         public void record(Entry entry) {
+            await(hold);
             entries.add(entry);
+        }
+
+        /** Makes every write wait for {@code release}, to pin what a reader may see in the meantime. */
+        void holdWrites(CountDownLatch release) {
+            hold = release;
         }
 
         List<Entry> entries() {
