@@ -1,11 +1,13 @@
 package ai.speckitty.charter.packs.application;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
@@ -14,6 +16,7 @@ import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackPolicy;
+import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.ResolvedEdge;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -120,22 +123,6 @@ public final class OfferingReadService {
      */
     public ConsistentRead.Verified<List<OfferingEntry>> offering() {
         return read.read(STALE, () -> entriesOf(composed()));
-    }
-
-    /**
-     * The closure of a set of configured packs, in the compose's resolved order, with the digest of the inputs they
-     * were read from: the verified rooted counterpart of {@link #offering()}, read as {@link #composed(Collection)}
-     * reads it.
-     *
-     * @param roots the configured identifiers of the packs the closure is rooted at
-     * @return the entries of the closure and the verified fingerprint
-     * @throws CharterRefusal as {@link #composed(Collection)} refuses, or with {@code STALE_INPUT} when the inputs
-     *     changed while the closure was read
-     * @throws IllegalArgumentException when a root names no configured pack
-     */
-    public ConsistentRead.Verified<List<OfferingEntry>> closure(Collection<PackIdentifier> roots) {
-        Objects.requireNonNull(roots, "roots");
-        return read.read(STALE, () -> entriesOf(composed(roots)));
     }
 
     /**
@@ -291,10 +278,37 @@ public final class OfferingReadService {
             refuseTargetOnlyAnUnreadablePackCouldDeclare(reads, closure);
             List<PackUnderResolution> composed = PackCompositionResolver.resolveRooted(members, roots);
             checkReferences(composed, facts);
+            PackCompositionResolver.refusePresetContests(
+                    composed,
+                    pack ->
+                            Objects.requireNonNull(
+                                            facts.get(pack.configured().id().value()), "read above")
+                                    .presets()
+                                    .stream()
+                                    .map(Preset::id)
+                                    .toList());
+            PackCompositionResolver.refuseCaseOnlyMatches(
+                    composed,
+                    pack -> mentionsOf(Objects.requireNonNull(
+                            facts.get(pack.configured().id().value()), "read above")));
             return new ComposedClosure(composed, facts);
         } catch (PackCompositionResolver.Refusal refusal) {
             throw refusal.toCharterRefusal();
         }
+    }
+
+    /** The URNs a pack's presets and policy file name, as written: what must match a held id exactly. */
+    private static List<String> mentionsOf(PackCompositionFacts facts) {
+        List<String> mentions = new ArrayList<>();
+        for (Preset preset : facts.presets()) {
+            preset.artifacts()
+                    .forEach((kind, items) ->
+                            items.forEach(item -> mentions.add(new Urn(NodeKind.of(kind), item.id()).toString())));
+            preset.missionTypes()
+                    .forEach(item -> mentions.add(Urn.missionType(item.id()).toString()));
+        }
+        facts.policy().urnEntries().keySet().forEach(urn -> mentions.add(urn.toString()));
+        return mentions;
     }
 
     /**

@@ -14,6 +14,7 @@ import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -64,10 +65,11 @@ public class ActivationSelectionService {
             @Nullable String ifMatch) {
         StoredActivation loaded = writes.loaded(id, ifMatch);
         ActivationWrites.requireWellFormed(bodyFaults);
-        ArtifactRef target = ActivationWrites.selectable(kind, artifactId);
-        CascadeScope written = ActivationWrites.scope(cascade);
-        CascadeScope scope = target.kind() == ArtifactKind.MISSION_TYPE ? CascadeScope.none() : written;
+        ArtifactRef written = ActivationWrites.selectable(kind, artifactId);
+        CascadeScope asked = ActivationWrites.scope(cascade);
+        CascadeScope scope = written.kind() == ArtifactKind.MISSION_TYPE ? CascadeScope.none() : asked;
         PacksSession session = writes.session(loaded);
+        ArtifactRef target = ActivationWrites.declared(session.snapshot(), written, Set.of());
         ActivationWrites.requireHeld(session.snapshot(), target);
         ActivationDocument before = ActivationWrites.current(loaded, session.snapshot());
         Reach reach =
@@ -80,7 +82,7 @@ public class ActivationSelectionService {
      * Unselects one artifact, or one mission type: it leaves {@code selected} (or {@code missionTypes}), and nothing
      * else changes. One that is not selected is a no-op. An id the closure no longer holds is refused unless the stored
      * document still selects it: then it is dropped as a stale id and reported in {@code dropped} only (ADR-0059
-     * amendment R5).
+     * amendment A5).
      *
      * @param id the activation's id
      * @param kind the path's kind token
@@ -91,8 +93,10 @@ public class ActivationSelectionService {
     public ActivationWrites.Outcome unselect(
             ActivationId id, String kind, String artifactId, @Nullable String ifMatch) {
         StoredActivation loaded = writes.loaded(id, ifMatch);
-        ArtifactRef target = ActivationWrites.selectable(kind, artifactId);
+        ArtifactRef written = ActivationWrites.selectable(kind, artifactId);
         PacksSession session = writes.session(loaded);
+        ArtifactRef target = ActivationWrites.declared(
+                session.snapshot(), written, ActivationWrites.selectedOf(loaded.document(), written));
         ActivationWrites.requireHeldOrStale(
                 session.snapshot(), target, ActivationWrites.selects(loaded.document(), target));
         ActivationDocument before = ActivationWrites.current(loaded, session.snapshot());

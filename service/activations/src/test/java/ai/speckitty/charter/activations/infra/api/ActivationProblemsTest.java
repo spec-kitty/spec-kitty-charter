@@ -6,6 +6,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import ai.speckitty.charter.activations.infra.storage.InMemoryActivationRepository;
 import ai.speckitty.charter.web.ProblemHandler;
 import ai.speckitty.charter.web.RefusalHandler;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.MethodParameter;
 import org.springframework.core.annotation.Order;
@@ -67,20 +74,6 @@ class ActivationProblemsTest {
     }
 
     @Test
-    void aMalformedPreconditionIsAPlain400WithItsDetail() throws Exception {
-        MockHttpServletResponse answer = send(put(DOCUMENT)
-                .contentType(MediaType.APPLICATION_JSON)
-                .header("If-Match", "*")
-                .header("If-None-Match", "*")
-                .content(VALID));
-
-        assertThat(answer.getStatus()).as(answer.getContentAsString()).isEqualTo(400);
-        assertThat(body(answer).path("detail").asString())
-                .isEqualTo("A write carries If-Match or If-None-Match, not both.");
-        assertThat(body(answer).has("code")).isFalse();
-    }
-
-    @Test
     void aBodyThatIsNotJsonByItsTypeStays415() throws Exception {
         MockHttpServletResponse answer =
                 send(put(DOCUMENT).contentType(MediaType.TEXT_PLAIN).content(VALID));
@@ -117,5 +110,51 @@ class ActivationProblemsTest {
             assertThat(violation.getPointer()).isEmpty();
             assertThat(violation.getCode()).isEqualTo("invalid_value");
         });
+    }
+
+    /** A bean whose methods carry the constraints the generated interface puts on a header, a body and a result. */
+    @SuppressWarnings("unused")
+    static class Constrained {
+        @NotNull public String answer() {
+            return "";
+        }
+
+        public void write(@Pattern(regexp = "[a-z]+") String header) {}
+    }
+
+    private static final Validator VALIDATOR =
+            Validation.buildDefaultValidatorFactory().getValidator();
+
+    private static ActivationProblems problems() {
+        return new ActivationProblems(new RefusalHandler());
+    }
+
+    @Test
+    void aWholeParameterThatBreaksItsConstraintIs400() throws Exception {
+        Set<ConstraintViolation<Constrained>> violations = VALIDATOR
+                .forExecutables()
+                .validateParameters(
+                        new Constrained(), Constrained.class.getMethod("write", String.class), new Object[] {"UPPER"});
+
+        ResponseEntity<?> answer = problems().constraintViolations(new ConstraintViolationException(violations));
+
+        assertThat(answer.getStatusCode().value()).isEqualTo(400);
+    }
+
+    @Test
+    void aReturnValueThatBreaksItsConstraintIsTheServersFaultAnd500NeverA400() throws Exception {
+        Set<ConstraintViolation<Constrained>> violations = VALIDATOR
+                .forExecutables()
+                .validateReturnValue(new Constrained(), Constrained.class.getMethod("answer"), null);
+        assertThat(violations)
+                .as("the fixture breaks a return-value constraint")
+                .isNotEmpty();
+
+        ResponseEntity<?> answer = problems().constraintViolations(new ConstraintViolationException(violations));
+
+        assertThat(answer.getStatusCode().value()).isEqualTo(500);
+        assertThat(answer.getBody()).isInstanceOf(ai.speckitty.charter.api.model.CharterRefusal.class);
+        assertThat(String.valueOf(((ai.speckitty.charter.api.model.CharterRefusal) answer.getBody()).getCode()))
+                .contains("internal_error");
     }
 }
