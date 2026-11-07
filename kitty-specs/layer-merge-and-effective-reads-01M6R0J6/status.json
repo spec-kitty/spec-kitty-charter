@@ -1,7 +1,7 @@
 {
-  "event_count": 116,
-  "last_event_id": "01M6TEX2KTKNJTA6ST523HA0WB",
-  "materialized_at": "2026-11-07T07:34:54.330426+00:00",
+  "event_count": 117,
+  "last_event_id": "01M6TEYAW0ZBR4MGKC43B0S28M",
+  "materialized_at": "2026-11-07T07:35:35.552535+00:00",
   "mission_number": "",
   "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
   "mission_type": "",
@@ -12,9 +12,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 0,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 22
   },
   "work_packages": {
@@ -264,15 +264,15 @@
       }
     },
     "WP08": {
-      "actor": "user",
-      "agent": null,
+      "actor": "claude",
+      "agent": "claude",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 2,
       "implementer_of_record": "claude",
-      "lane": "for_review",
-      "last_event_id": "01M6TEX2KTKNJTA6ST523HA0WB",
-      "last_transition_at": "2026-11-07T07:34:54.330426+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M6TEYAW0ZBR4MGKC43B0S28M",
+      "last_transition_at": "2026-11-07T07:35:35.552535+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "Ready for review: remnant 422 validation_failed; droppedPins mapped; replace answers dropped/droppedPins; kind-model un-WIP; ruling-changes.feature (7/8 red on #399 head 8188c996, A10 not observable in A0); client containerDefaultToNull with ActivationRoundTripTest; UndefinedStepGuard. Gate: ./gradlew --max-workers=1 -Dorg.gradle.internal.repository.max.retries=10 -PcontractBaseline=none :kernel:check :packs:check :activations:check :deployable:check :client-java:check :contracts:check -> exit 0 (BUILD SUCCESSFUL). CharterContractSuite 403/403 green; guard probe with an undefined step fails the run (exit 1).",
@@ -287,9 +287,9 @@
         "reviewer": "claude::reviewer-renata",
         "verdict": "changes_requested"
       },
-      "role": "implementer",
-      "shell_pid": 3105,
-      "shell_pid_created_at": "1794035376.44",
+      "role": "reviewer",
+      "shell_pid": 11115,
+      "shell_pid_created_at": "1794036931.04",
       "subtasks": {
         "T034": "done",
         "T035": "done",
