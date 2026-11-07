@@ -570,7 +570,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "verifyAll green on ceadd3c1; POST /packs stays reserved for WP17/WP18",
-        "Cycle 2: review-cycle-1 blocking items plus the agreed non-blocking ones"
+        "Cycle 2: review-cycle-1 blocking items plus the agreed non-blocking ones",
+        "Cycle 2: blocking items 1-2 and non-blocking 3,4,6,7,8 fixed; item 5 (notice kinds) is an open operator decision; verifyAll green on 735cedec"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
