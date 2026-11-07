@@ -80,7 +80,9 @@ changes. A registration of a pack that does not exist yet creates it.
 
 - Any `pack_version` replaces the stored pack, an older one included. The version is a label, not an order.
 - A re-send of the same content (the same revision) is a no-op: the job ends `succeeded` with outcome `unchanged`.
-  This holds under a stale `If-Match`, because the version rule comes before the precondition.
+  This holds for the `If-Match` check under the lock, because the version rule comes before it. A stale `If-Match` is
+  already a synchronous `412` at acceptance (D8), before any job exists, so an identical re-send under a stale
+  `If-Match` is `412`, not `unchanged`.
 - The same `pack_version` with another revision is `409 pack_version_conflict`.
 - `If-Match` against the pack revision, or `If-None-Match: *` against its absence, is checked at acceptance and again
   under the lock (`412` when moved).
@@ -107,7 +109,8 @@ entirely under the registry write lock and then the pack's lock (D12).
   referring pack's closure as it will be; the data-only fields of ADR-0064 decision 11 do not count). It never
   rewrites an author file: when a source shard or `drg/fragment.yaml` writes an edge from the artifact or declares its
   node, the answer is `409 registration_conflict` with the fixed reason "written in the pack's graph documents:
-  register the whole pack" (`DM-01M6TR1KDAJ64GMJD6AYNZKT59`). The preset items are still removed.
+  register the whole pack" (`DM-01M6TR1KDAJ64GMJD6AYNZKT59`). A refused `DELETE` changes nothing: no preset item, edge
+  or file is removed (FR-007).
 - **A relationship `DELETE`** removes the edge of one unordered `{from, to}` pair, **only from
   `registered.graph.yaml`**, and answers `204` (`DM-01M6TQ62HXYF362GAFS2BZ3PGF`). It answers `404
   relationship_not_found` when no graph document of the pack holds an edge on the pair and no derived relation joins
@@ -207,8 +210,8 @@ A `POST /packs` names one source:
   fixed argument list with no shell, hooks off, no submodules and no LFS: a bare `init`, a shallow `fetch` into a
   private refspec, then the tree read with `ls-tree` and `cat-file`. Only regular-file and directory modes are
   accepted. A work tree is never checked out, and JGit is not used. The resolved commit is answered in the
-  registration. The host requirement is the system `git` at version 2.50.1 or later, checked at startup; below it the
-  git source is disabled.
+  registration. The host requirement is the system `git` at version 2.50.1 or later, checked at startup; below 2.50.1 or without the binary the git source is disabled and answers
+  `503 pack_source_unavailable` (NFR-011).
 - **A local path**: relative to `charter.pack-sources.filesystem.root` and confined to it, read without following
   links.
 
@@ -223,10 +226,12 @@ disabled kind answers `503 pack_source_unavailable`.
 Every archive, whatever its source, goes through one bounded, path-safe extractor into a fresh staging directory:
 
 - the body is at most 32 MiB (`413` before reading), the expanded bytes at most 32 MiB, and at most 10,000 entries
-  (`422`), each counted while streaming;
+  (`422`). At most 32 MiB + 64 KiB of decompressed bytes are read before the refusal (NFR-004). The expanded bytes are
+  counted while streaming; the zip entry count is read from the end-of-central-directory record before any entry is
+  read;
 - only regular files and directories are accepted; a symlink, a hard link, a device, a FIFO or a sparse file is
   refused, as is an absolute path, a drive letter, a backslash, a NUL, a `.` or `..` segment, an empty segment, a
-  path over 4,096 bytes, a name that collides with another after NFC and case folding, and an encrypted zip entry;
+  path over 4,096 bytes, a segment outside the grammar `[A-Za-z0-9._-]` (NFR-005), a name that collides with another after NFC and case folding, and an encrypted zip entry;
 - entries are written with `CREATE_NEW` and no link following, files `0600` and directories `0700`;
 - the extractor uses Apache Commons Compress for tar and zip. Its only accepted zip methods are `STORED` and
   `DEFLATED`.
@@ -234,7 +239,7 @@ Every archive, whatever its source, goes through one bounded, path-safe extracto
 ### D12. Write coordination: one registry lock, then the pack's lock
 
 The slow work runs first and outside every lock: the download, the extraction, the staging, the load and the
-revision. The decisive steps (the identity check, the version rule, the precondition, the gate, the inbound scan, the
+revision. A staging sweep leaves no staging directory older than 15 minutes (NFR-009). The decisive steps (the identity check, the version rule, the precondition, the gate, the inbound scan, the
 impact check and the commit) then run under one registry write lock, taken with a 5 second `tryLock` (else `503`),
 and then the pack's own lock, always in that order. Every pack write takes the registry lock: the per-artifact writes,
 `putPackRelationship` (so a relationship check cannot race a `DELETE`), the whole-pack registrations and both
@@ -250,6 +255,10 @@ The service has no caller identity beyond the worktree bearer token, which the w
 and both `DELETE`s need that token, plus `charter.registration.enabled` (default `false`), plus the source kind's own
 flag. Under the development flag no token is configured; the flags still gate registration. Every attempt writes one
 audit record through an `AuditLog` port; the record names the worktree identity the guard knows and not a principal.
+The guard also audits a `401` on the registration and `DELETE` paths (`DM-01M6TR1KDAJ64GMJD6AYNZKT59`, item 5): a
+refused credential leaves a record although the registration never starts. The identity is the service's worktree id
+(`ServiceInfoQuery.worktree()`, configured or derived), which is known with or without a token. Under the development
+flag the record names that worktree id and states that the request carried no token; it never holds a token value.
 
 ## Amends
 
@@ -266,13 +275,15 @@ operator's registration ruling is the authority. Decision 1.1 (register a pack) 
 ### ADR-0005, decision 1: source kinds built
 
 Of the four source kinds, three are built as D10 sets out: an HTTPS archive, a git repository and a filesystem
-location. The service-stored kind is `PUT /packs/{packId}`. The published-artifact kind is deferred. Registration is
-asynchronous (D8), so ADR-0005's registration answer is `202` with a status resource; `201 Created` with a
-`Location` is no longer the answer of a pack registration.
+location. The service-stored kind is `PUT /packs/{packId}`. The published-artifact kind is deferred. ADR-0005 decision 1
+does not decide the registration answer; the old `201 Created` comes from ADR-0019 (see below).
 
-### ADR-0019, decision 2: the table
+### ADR-0019, decisions 2 and 5: the table and the status code
 
-The table of decision 2 is amended: `PUT /packs/{packId}` (replace a whole pack; `202`) and `DELETE
+The old `201 Created` answer comes from ADR-0019: its decision 2 table row for `POST /packs` and its decision 5
+("Registration answers `201 Created` with a `Location` header"). Registration is asynchronous (D8), so a pack
+registration answers `202 Accepted` with a status resource, and `201 Created` is no longer its answer. The table of
+decision 2 is amended: `PUT /packs/{packId}` (replace a whole pack; `202`) and `DELETE
 /packs/{packId}/artifacts/{kind}/{artifactId}` and `DELETE /packs/{packId}/relationships` join it, `POST /packs`
 answers `202 Accepted` and not `201 Created`, and `GET /pack-registrations/{registrationId}` is a new top-level status
 resource that is not a sub-resource of a pack.
@@ -360,9 +371,11 @@ semantics are tracked in #404.
 
 ## References
 
-- [ADR-0005](/adr/0005-service-registers-and-distributes-packs/), decision 1: the source kinds.
+- [ADR-0005](/adr/0005-service-registers-and-distributes-packs/), decision 1: the source kinds (it decides no
+  registration status code).
 - [ADR-0012](/adr/0012-pack-mutability-policy/), decisions 1 and 3: removal and the levels.
-- [ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/), decision 2: the resource map.
+- [ADR-0019](/adr/0019-packs-resource-model-and-hypermedia/), decisions 2 and 5: the resource map and the registration
+  status code.
 - [ADR-0026](/adr/0026-write-surface-is-functional-registration/), decision 2: no `DELETE`.
 - [ADR-0030](/adr/0030-removal-is-distinct-from-deactivation/), decision 3: removal by a derived pack.
 - [ADR-0061](/adr/0061-one-replica-per-deployment/): one replica per deployment.

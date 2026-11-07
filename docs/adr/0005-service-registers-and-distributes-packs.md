@@ -2,7 +2,7 @@
 title: "ADR-0005: The charter offering service registers and distributes packs; built-in is its first catfooding consumer"
 description: The service registers and distributes packs of every level through its OpenAPI API from four source kinds; built-in rides that path as the first catfooding consumer.
 doc_status: active
-updated: 2026-10-19T00:00:00Z
+updated: 2026-11-07T00:00:00Z
 decision_status: Accepted, with Amendments 2026-10-19 and 2026-11-07
 decision_date: '2026-10-18'
 type: ADR
@@ -39,8 +39,8 @@ Decision Moments; the cited DM ids are the authoritative record of each choice.
 annotated where it stands.
 
 **Amendment 2026-11-07**: decision 1 is amended by [ADR-0065](/adr/0065-pack-registration-replaces-the-whole-pack/). The HTTPS archive, git and filesystem source kinds are
-built; the service-stored kind is `PUT /packs/{packId}`; the published-artifact kind is deferred. Registration
-answers `202` with a status resource. The point is annotated where it stands.
+built; the service-stored kind is `PUT /packs/{packId}`; the published-artifact kind is deferred. The point is
+annotated where it stands.
 
 ## Context
 

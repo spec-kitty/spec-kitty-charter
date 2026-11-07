@@ -2,8 +2,8 @@
 title: "ADR-0063: A pack declares its mutability levels in policy.yaml"
 description: "The pack mutability policy file: the mutability_policy key, the closed policy schema, the highest level along the closure, and fail-closed reads."
 doc_status: active
-updated: 2026-11-06T00:00:00Z
-decision_status: Accepted
+updated: 2026-11-07T00:00:00Z
+decision_status: Accepted, with Amendment 2026-11-07 (REMOVE and the staged closure, ADR-0065)
 decision_date: '2026-11-05'
 type: ADR
 kind: ADR

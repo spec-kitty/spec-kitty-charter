@@ -2,8 +2,8 @@
 title: "ADR-0026: The write surface is functional registration of packs, artifacts and relationships, not CRUD over storage"
 description: Why the API's only writes are functional registration of a pack, an artifact or a relationship edge over the Pack aggregate — not CRUD that exposes storage DSOs.
 doc_status: active
-updated: 2026-10-31T00:00:00Z
-decision_status: Accepted; superseded in part by ADR-0030 (2026-10-26)
+updated: 2026-11-07T00:00:00Z
+decision_status: Accepted; superseded in part by ADR-0030 (2026-10-26); decision 2 superseded for DELETE by ADR-0065 (2026-11-07)
 decision_date: '2026-10-25'
 type: ADR
 kind: ADR
