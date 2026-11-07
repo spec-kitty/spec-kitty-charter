@@ -37,6 +37,8 @@ class ActivationSelectionServiceTest {
     private static final ArtifactRef D = new ArtifactRef(ArtifactKind.DIRECTIVE, "D");
     private static final ArtifactRef T = new ArtifactRef(ArtifactKind.TACTIC, "t");
     private static final ArtifactRef X = new ArtifactRef(ArtifactKind.TACTIC, "x");
+    private static final ArtifactRef D2 = new ArtifactRef(ArtifactKind.DIRECTIVE, "D2");
+    private static final ArtifactRef RESEARCH = new ArtifactRef(ArtifactKind.MISSION_TYPE, "research");
     private static final Optional<List<String>> ALL = Optional.of(List.of("all"));
 
     private final CountingRepository repository = new CountingRepository();
@@ -50,8 +52,18 @@ class ActivationSelectionServiceTest {
         packs.walks(ActivationSelectionServiceTest::walk);
     }
 
-    /** D requires t and x: x is stopped at when the plan stops at it, and reached otherwise; e is not reached. */
+    /**
+     * D requires t and x: x is stopped at when the plan stops at it, and reached otherwise; e is not reached. The
+     * mission type research holds a step that requires D2: the step, an action, is left out of the answer as the packs
+     * adapter leaves it out, and D2 is reached from research.
+     */
     private static Reach walk(ReachPlan plan) {
+        if (plan.starts().contains(RESEARCH)) {
+            Map<ArtifactRef, List<Reach.Via>> reached = new LinkedHashMap<>();
+            reached.put(RESEARCH, List.of());
+            reached.put(D2, List.of(new Reach.Via(RESEARCH, RelationType.REQUIRES)));
+            return new Reach(reached, Map.of(), Set.of(), Set.of(), Map.of());
+        }
         if (!plan.starts().contains(D)) {
             return Reach.empty();
         }
@@ -136,15 +148,44 @@ class ActivationSelectionServiceTest {
     }
 
     @Test
-    void aMissionTypeJoinsItsAllowListAndNeverCascades() {
+    void aCascadingSelectOfAMissionTypeSelectsWhatItsStepsReach() {
+        // A7 Q1 (rule W20, W32 withdrawn): the walk from research crosses to its steps like requires.
         StoredActivation before = stored(ActivationDocument.builder());
+
+        ActivationWrites.Outcome outcome =
+                service.select(ID, "mission_type", "research", ALL, false, List.of(), quoted(before));
+
+        assertThat(outcome.change().applied()).containsExactly(D2, RESEARCH);
+        assertThat(now().selected(ArtifactKind.MISSION_TYPE).orElseThrow()).containsExactly("research");
+        assertThat(now().selected(ArtifactKind.DIRECTIVE).orElseThrow()).containsExactly("D2");
+        assertThat(packs.walked())
+                .singleElement()
+                .satisfies(plan -> assertThat(plan.starts()).containsExactly(RESEARCH));
+    }
+
+    @Test
+    void aMissionTypeSelectWithoutACascadeSelectsTheMissionTypeOnly() {
+        StoredActivation before = stored(ActivationDocument.builder());
+
+        ActivationWrites.Outcome outcome =
+                service.select(ID, "mission_type", "research", Optional.empty(), false, List.of(), quoted(before));
+
+        assertThat(outcome.change().applied()).containsExactly(RESEARCH);
+        assertThat(now().selected()).containsOnlyKeys(ArtifactKind.MISSION_TYPE);
+        assertThat(packs.walked()).isEmpty();
+    }
+
+    @Test
+    void includeDeactivatedOnAMissionTypeSelectClearsWhatItsWalkSelects() {
+        StoredActivation before = stored(ActivationDocument.builder()
+                .deactivated(ArtifactKind.DIRECTIVE, List.of("D2"))
+                .deactivated(ArtifactKind.MISSION_TYPE, List.of("research")));
 
         ActivationWrites.Outcome outcome =
                 service.select(ID, "mission_type", "research", ALL, true, List.of(), quoted(before));
 
-        assertThat(outcome.change().applied()).containsExactly(new ArtifactRef(ArtifactKind.MISSION_TYPE, "research"));
-        assertThat(now().selected(ArtifactKind.MISSION_TYPE).orElseThrow()).containsExactly("research");
-        assertThat(packs.walked()).isEmpty();
+        assertThat(outcome.change().cleared()).containsExactly(D2, RESEARCH);
+        assertThat(now().deactivated()).isEmpty();
     }
 
     @Test
