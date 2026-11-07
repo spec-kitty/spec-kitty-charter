@@ -21,3 +21,9 @@
   as the referring artifacts.
 - Where the status answers a pack that is built in: `getPack` answers `404 pack_not_found` for a built-in pack, which is
   read-only and has no registration summary (`PackRegistration.level` is `org` or `project`).
+- The activation writes (`createActivation`, `replaceActivation`, `deleteActivation`, `selectActivationArtifact`,
+  `unselectActivationArtifact`, `deactivateActivationArtifact`, `reactivateActivationArtifact` and
+  `applyActivationPreset`) run under the pack registry's write lock, as the registrations do, so that a document is never
+  judged against a pack set a registration is replacing (the WP15 hand-off). A write that meets the lock for longer than its
+  timeout now answers `503` with `Retry-After` and a plain `Problem`, declared on each operation as the new
+  `RegistryBusy` response; before, an activation write never met the lock.
