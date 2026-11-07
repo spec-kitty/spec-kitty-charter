@@ -1,7 +1,12 @@
 package ai.speckitty.charter.packs.application;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Locale;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The audit trail of registration and {@code DELETE} attempts (NFR-010, IC-18): a port the composition root binds to a
@@ -61,13 +66,17 @@ public interface AuditLog {
             String operation,
             String packId,
             String sourceKind,
-            String locator,
+            @Nullable String locator,
             String outcome,
-            String revisionBefore,
+            @Nullable String revisionBefore,
             String revisionAfter) {
 
         /** The longest value, in UTF-8 bytes, a record carries. */
         public static final int MAX_VALUE_BYTES = 256;
+
+        private static final String INVALID = "invalid";
+        private static final int LINE_SEPARATOR = 0x2028;
+        private static final int PARAGRAPH_SEPARATOR = 0x2029;
 
         /**
          * Checks the fields and cleans the texts.
@@ -104,7 +113,18 @@ public interface AuditLog {
          * @return the cut locator; {@code invalid} when the text is no URL
          */
         public static String locatorOf(String url) {
-            return url;
+            try {
+                URI parsed = new URI(url);
+                String host = parsed.getHost();
+                if (!"https".equals(parsed.getScheme()) || host == null) {
+                    return INVALID;
+                }
+                String port = parsed.getPort() < 0 ? "" : ":" + parsed.getPort();
+                String path = parsed.getRawPath() == null ? "" : parsed.getRawPath();
+                return "https://" + host + port + path;
+            } catch (URISyntaxException notAUrl) {
+                return INVALID;
+            }
         }
 
         /**
@@ -113,8 +133,33 @@ public interface AuditLog {
          * @param raw the text, or null
          * @return the clean text; empty for null
          */
-        public static String clean(String raw) {
-            return raw == null ? "" : raw;
+        public static String clean(@Nullable String raw) {
+            if (raw == null) {
+                return "";
+            }
+            StringBuilder out = new StringBuilder(Math.min(raw.length(), MAX_VALUE_BYTES));
+            int bytes = 0;
+            for (int i = 0; i < raw.length(); ) {
+                int codePoint = raw.codePointAt(i);
+                i += Character.charCount(codePoint);
+                String piece = isEscaped(codePoint)
+                        ? String.format(Locale.ROOT, "\\u%04x", codePoint)
+                        : new String(Character.toChars(codePoint));
+                int width = piece.getBytes(StandardCharsets.UTF_8).length;
+                if (bytes + width > MAX_VALUE_BYTES) {
+                    break;
+                }
+                out.append(piece);
+                bytes += width;
+            }
+            return out.toString();
+        }
+
+        private static boolean isEscaped(int codePoint) {
+            return Character.isISOControl(codePoint)
+                    || codePoint == LINE_SEPARATOR
+                    || codePoint == PARAGRAPH_SEPARATOR
+                    || Character.getType(codePoint) == Character.FORMAT;
         }
     }
 
