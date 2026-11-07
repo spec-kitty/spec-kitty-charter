@@ -172,3 +172,11 @@ Document these, from review-cycle-1 of WP16:
 - A re-send of an archive with the same `pack_version` after a per-artifact `PUT` moved the revision answers `409 pack_version_conflict`, not `412`: the version rule (IC-04 step 5) runs before the precondition (step 6). The 412 race needs a new version.
 - The 90 s registration deadline counts the time a job waits in the queue, not only its run.
 - Known limit, accepted for this mission: a registration slot is reserved before the request body is read, so a slow upload holds a slot for its whole transfer, and a few slow uploads can make other callers get `503` with `Retry-After`. Say so in the operator docs, with the slot counts (2 running, 8 waiting).
+
+## Operator ruling 2026-11-07: notices name activatable kinds only (decision `01M6VXMCDQJWBJXGRQNMF5G6SV`)
+
+`PackRegistrationMapper.kindOf` drops a notice entry whose kind is not an `ActivatableKind` (template, asset, guard, lifecycle). The operator kept the drop. In this WP:
+
+- Say in the contract (the `PackRegistrationNotices` description, as a description change only, with no schema change) that notices name activatable kinds only, and that entries of other kinds are left out. Add an entry under `### Changed` in the registration fragment if the wording changes the documented meaning.
+- Have the mapper log each dropped entry (WARN, naming the URN). Write the unit test first: a notice on a template is not in the response and is logged.
+- Point to #417, which tracks widening the notice kinds.
