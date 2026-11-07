@@ -451,6 +451,9 @@
       "last_event_id": "01M6TZ7JV58FK9MZHJM7J41A28",
       "last_transition_at": "2026-11-07T12:20:15.845503+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Bounded, path-safe extractor (tar.gz strict, zip via EOCD count before entries), commons-compress 1.28.0 with verification entries; corpus 61 hostile + 19 benign; red recorded; PIT adds infra.archive (floor 80), infra.api stays excluded; verifyAll green. Open: OSV/GHSA re-check of 1.28.0 blocked by proxy."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 28186,
