@@ -827,9 +827,6 @@ class PackRegistrationServiceTest {
         /** The packs the activations slice was told were registered, in order. */
         final List<String> registered = new ArrayList<>();
 
-        /** How often the impact check read the composition facts of each pack, by configured name. */
-        final Map<String, Integer> factReads = new java.util.concurrent.ConcurrentHashMap<>();
-
         private final AtomicInteger staged = new AtomicInteger();
 
         /** What the swap does inside the window where the live directory is missing; a test sets it. */
@@ -848,12 +845,8 @@ class PackRegistrationServiceTest {
             ConsistentRead read = new ConsistentRead(new FileSystemPackSources(locations::all), generation);
             WritePolicyGate gate = new PackMutabilityPolicy(
                     new OfferingReadService(repository, repository, repository, read), repository, repository, read);
-            this.impact = new RegistrationImpact(
-                    new StagedPackViewFactory(repository, repository, pack -> {
-                        factReads.merge(pack.value(), 1, Integer::sum);
-                        return repository.compositionFacts(pack);
-                    }),
-                    new ActivationImpact() {
+            this.impact =
+                    new RegistrationImpact(new StagedPackViewFactory(locations, strategy), new ActivationImpact() {
                         @Override
                         public List<Optional<List<String>>> activationRoots() {
                             return List.copyOf(activations);

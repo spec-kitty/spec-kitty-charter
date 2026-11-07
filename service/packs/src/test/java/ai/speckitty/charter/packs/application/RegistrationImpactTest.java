@@ -230,14 +230,24 @@ class RegistrationImpactTest {
                             .directive("D" + i, "N" + i)),
                     Preconditions.none());
         }
-        rig.factReads.clear();
+        Map<String, Integer> factReads = new java.util.concurrent.ConcurrentHashMap<>();
+        ai.speckitty.charter.packs.domain.ConfiguredPack first = rig.repository.configured().stream()
+                .filter(pack -> pack.id().value().equals("chain-0"))
+                .findFirst()
+                .orElseThrow();
+        RegistrationImpact.Replacement same = new RegistrationImpact.Replacement(
+                first, rig.repository.get(first.id()), rig.repository.compositionFacts(first.id()));
 
-        rig.register(
-                "chain-0",
-                rig.stage(org(ulid(0), "chain-0", "1.1.0", "").directive("D0", "Zero, changed")),
-                Preconditions.none());
+        new RegistrationImpact(
+                        new ai.speckitty.charter.packs.infra.storage.StagedPackViewFactory(
+                                rig.repository, rig.repository, pack -> {
+                                    factReads.merge(pack.value(), 1, Integer::sum);
+                                    return rig.repository.compositionFacts(pack);
+                                }),
+                        ActivationImpact.NONE)
+                .check(same);
 
-        assertThat(rig.factReads)
+        assertThat(factReads)
                 .as("ten closures hold chain-0, and no pack's files are read twice for them")
                 .hasSize(10)
                 .allSatisfy((pack, reads) -> assertThat(reads).as(pack).isEqualTo(1));

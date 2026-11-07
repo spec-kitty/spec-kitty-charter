@@ -5,6 +5,7 @@ import ai.speckitty.charter.packs.application.StagedPackViews;
 import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +46,11 @@ public final class StagedPackViewFactory implements StagedPackViews {
         Objects.requireNonNull(locations, "locations");
         Objects.requireNonNull(strategy, "strategy");
         this.sessions = () -> {
-            DomainRepositoryService repository = new DomainRepositoryService(locations, strategy);
+            // The session runs under the registry lock, which every pack write takes, so the listing is taken once:
+            // each
+            // listing parses every pack.yaml, and the repository lists for each pack it reads.
+            List<PackLocation> listed = List.copyOf(locations.all());
+            DomainRepositoryService repository = new DomainRepositoryService(() -> listed, strategy);
             return StagedPacks.stored(repository, repository, repository);
         };
     }
