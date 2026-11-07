@@ -290,7 +290,7 @@ class CascadeRulesDeactivateTest {
                 .reached("mission_type:m", "directive:D", REQUIRES)
                 .build();
         ActivationDocument document = ActivationDocument.builder()
-                .missionTypes(List.of("m"))
+                .selected(MISSION_TYPE, List.of("m"))
                 .selected(DIRECTIVE, List.of("D"))
                 .build()
                 .document();
@@ -299,7 +299,7 @@ class CascadeRulesDeactivateTest {
                 CascadeRules.applyDeactivate(document, D, CascadeScope.all(), own, Reach.empty(), Set.of());
 
         assertThat(change.applied()).containsExactly(D);
-        assertThat(change.after().missionTypes().orElseThrow()).containsExactly("m");
+        assertThat(change.after().selected(MISSION_TYPE).orElseThrow()).containsExactly("m");
         assertThat(change.skipped().skippedByScope()).containsExactly(m);
     }
 
@@ -330,7 +330,7 @@ class CascadeRulesDeactivateTest {
         ActivationChange change = deactivateProfile(selecting("agent_profile:P", "directive:R"));
 
         assertThat(change.applied()).containsExactly(ref("agent_profile:P"), ref("directive:R"));
-        assertThat(change.after().selected(DIRECTIVE).orElseThrow()).isEmpty();
+        assertThat(change.after().selected(DIRECTIVE)).isEmpty();
         assertThat(change.skipped().skippedShared()).isEmpty();
     }
 

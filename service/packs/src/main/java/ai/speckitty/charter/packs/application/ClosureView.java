@@ -21,10 +21,10 @@ import java.util.Set;
  * {@link ConsistentRead}, so they all name the inputs {@link #fingerprint()} digests.
  *
  * @param packs the closure's packs in the offering's shape, in dependency order, each with its resolved edges
- * @param heldIds the ids each pack of the closure holds, per artifact kind
+ * @param heldIds the ids each pack of the closure holds, per artifact kind, mission types included (one kind model,
+ *     IC-20)
  * @param holderOf each held URN with the descriptor {@code pack_id} of the first pack, in the closure's order, that holds
  *     it: the pack a bare reference from outside the holders resolves to
- * @param missionTypes the mission types the closure holds
  * @param floor the must-have items of the closure's governing presets, with the requiring packs. It is built from
  *     {@link #heldPresets()}, so it follows the copy of a preset that wins (ADR-0053 d6): the must-have items of a
  *     copy that loses require nothing
@@ -42,7 +42,6 @@ public record ClosureView(
         List<OfferingReadService.OfferingEntry> packs,
         Map<ArtifactKind, Set<String>> heldIds,
         Map<Urn, String> holderOf,
-        Set<String> missionTypes,
         RequiredFloor floor,
         PerPackPolicy policy,
         List<String> closurePackIds,
@@ -77,7 +76,6 @@ public record ClosureView(
      * @param packs the closure's packs
      * @param heldIds the held ids per kind
      * @param holderOf the holder of each held URN
-     * @param missionTypes the held mission types
      * @param floor the required floor
      * @param policy the per-pack policies
      * @param closurePackIds the closure's {@code pack_id}s
@@ -90,7 +88,6 @@ public record ClosureView(
         packs = List.copyOf(Objects.requireNonNull(packs, "packs"));
         heldIds = copyOfHeld(Objects.requireNonNull(heldIds, "heldIds"));
         holderOf = Collections.unmodifiableMap(new LinkedHashMap<>(Objects.requireNonNull(holderOf, "holderOf")));
-        missionTypes = Set.copyOf(Objects.requireNonNull(missionTypes, "missionTypes"));
         Objects.requireNonNull(floor, "floor");
         Objects.requireNonNull(policy, "policy");
         closurePackIds = List.copyOf(Objects.requireNonNull(closurePackIds, "closurePackIds"));
@@ -106,7 +103,6 @@ public record ClosureView(
      * @param packs the closure's packs
      * @param heldIds the held ids per kind
      * @param holderOf the holder of each held URN
-     * @param missionTypes the held mission types
      * @param floor the required floor
      * @param policy the per-pack policies
      * @param closurePackIds the closure's {@code pack_id}s
@@ -118,7 +114,6 @@ public record ClosureView(
             List<OfferingReadService.OfferingEntry> packs,
             Map<ArtifactKind, Set<String>> heldIds,
             Map<Urn, String> holderOf,
-            Set<String> missionTypes,
             RequiredFloor floor,
             PerPackPolicy policy,
             List<String> closurePackIds,
@@ -129,7 +124,6 @@ public record ClosureView(
                 packs,
                 heldIds,
                 holderOf,
-                missionTypes,
                 floor,
                 policy,
                 closurePackIds,
