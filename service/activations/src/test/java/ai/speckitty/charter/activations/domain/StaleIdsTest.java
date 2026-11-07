@@ -18,15 +18,15 @@ class StaleIdsTest {
             .pack("main", "1.0.0")
             .held(DIRECTIVE, "D")
             .held(TACTIC, "t")
-            .missionTypes("research")
+            .held(MISSION_TYPE, "research")
             .build();
 
     @Test
     void everyIdTheClosureNoLongerDeclaresIsDroppedAndNamed() {
         ActivationDocument stored = ActivationDocument.builder()
                 .packs(List.of(PackRef.pinned("main", "1.0.0")))
-                .activatedKinds(List.of(DIRECTIVE))
-                .missionTypes(List.of("research", "gone-type"))
+                .languages(List.of("java"))
+                .selected(MISSION_TYPE, List.of("research", "gone-type"))
                 .selected(DIRECTIVE, List.of("D", "GONE"))
                 .deactivated(TACTIC, List.of("old"))
                 .build()
@@ -40,16 +40,16 @@ class StaleIdsTest {
                         new ArtifactRef(MISSION_TYPE, "gone-type"),
                         new ArtifactRef(TACTIC, "old"));
         assertThat(dropped.document().selected(DIRECTIVE).orElseThrow()).containsExactly("D");
-        assertThat(dropped.document().missionTypes().orElseThrow()).containsExactly("research");
+        assertThat(dropped.document().selected(MISSION_TYPE).orElseThrow()).containsExactly("research");
         assertThat(dropped.document().deactivated())
                 .as("a deny list the drop empties is left out")
                 .isEmpty();
         assertThat(dropped.document().packs()).isEqualTo(stored.packs());
-        assertThat(dropped.document().activatedKinds()).isEqualTo(stored.activatedKinds());
+        assertThat(dropped.document().languages()).isEqualTo(stored.languages());
     }
 
     @Test
-    void anAllowListTheDropEmptiesStaysAsAnEmptyList() {
+    void anAllowListTheDropEmptiesIsLeftOutAsNoneOfTheKind() {
         ActivationDocument stored = ActivationDocument.builder()
                 .selected(DIRECTIVE, List.of("GONE"))
                 .build()
@@ -57,14 +57,15 @@ class StaleIdsTest {
 
         StaleIds.Dropped dropped = StaleIds.drop(stored, CLOSURE);
 
-        assertThat(dropped.document().selected(DIRECTIVE))
-                .hasValueSatisfying(ids -> assertThat(ids).isEmpty());
+        assertThat(dropped.document().selected(DIRECTIVE)).isEmpty();
+        assertThat(dropped.document())
+                .isEqualTo(ActivationDocument.builder().build().document());
     }
 
     @Test
     void aDocumentTheClosureStillDeclaresIsLeftAsItIs() {
         ActivationDocument stored = ActivationDocument.builder()
-                .missionTypes(List.of("research"))
+                .selected(MISSION_TYPE, List.of("research"))
                 .selected(DIRECTIVE, List.of("D"))
                 .deactivated(TACTIC, List.of("t"))
                 .build()

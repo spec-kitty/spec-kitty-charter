@@ -1,6 +1,5 @@
 package ai.speckitty.charter.activations.domain;
 
-import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -8,10 +7,10 @@ import java.util.TreeSet;
 
 /**
  * The ids of a stored document its closure no longer declares (ADR-0059 amendment A5, operator ruling of 2026-11-06):
- * a pack upgrade removed them. Every per-artifact and preset write drops them first, from {@code selected},
- * {@code deactivated} and {@code missionTypes}, and reports them in {@code ActivationChange.dropped}, instead of
- * refusing the write until a full replace. {@code packs}, {@code activatedKinds} and {@code languages} are left as they
- * are: an unknown pack or a pinned version is still judged by {@link DocumentRules}. A create or a replace is not
+ * a pack upgrade removed them. Every per-artifact and preset write drops them first, from {@code selected} and
+ * {@code deactivated}, of every kind ({@code mission_type} included), and reports them in
+ * {@code ActivationChange.dropped}, instead of refusing the write until a full replace. {@code packs} and
+ * {@code languages} are left as they are: an unknown pack or a pinned version is still judged by {@link DocumentRules}. A create or a replace is not
  * dropped from: an unknown id in a body the client sent is refused.
  */
 public final class StaleIds {
@@ -21,8 +20,8 @@ public final class StaleIds {
     /**
      * A document without its stale ids, and the ids dropped.
      *
-     * @param document the document less every stale id; a list it empties stays, as {@code []}, and a deny list it
-     *     empties is dropped, as the per-artifact writes treat them
+     * @param document the document less every stale id; an allow list or a deny list it empties is dropped, as the
+     *     per-artifact writes treat them
      * @param dropped the ids dropped, sorted
      */
     public record Dropped(ActivationDocument document, List<ArtifactRef> dropped) {
@@ -59,12 +58,6 @@ public final class StaleIds {
             if (!snapshot.held(ref.kind()).contains(ref.id())) {
                 document = document.withoutDeny(ref.kind(), ref.id());
                 dropped.add(ref);
-            }
-        }
-        for (String id : stored.missionTypes().orElseGet(TreeSet::new)) {
-            if (!snapshot.missionTypes().contains(id)) {
-                document = document.withoutSelected(ArtifactKind.MISSION_TYPE, id);
-                dropped.add(new ArtifactRef(ArtifactKind.MISSION_TYPE, id));
             }
         }
         return new Dropped(document, List.copyOf(new TreeSet<>(dropped)));
