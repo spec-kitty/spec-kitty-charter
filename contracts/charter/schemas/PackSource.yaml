@@ -40,7 +40,6 @@ properties:
         - the request body
   url:
     type: string
-    format: uri
     pattern: '^https://'
     maxLength: 2048
     description: >-
