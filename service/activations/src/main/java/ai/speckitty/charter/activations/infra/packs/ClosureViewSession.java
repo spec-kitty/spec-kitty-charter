@@ -23,7 +23,7 @@ import java.util.TreeSet;
  * A {@link PacksSession} over one {@link ClosureView}: the snapshot copied from the view, and every walk answered by the
  * same view, so the request reads the packs once (NFR-007). The adapter maps the activation domain's
  * {@link ReachPlan} to the packs slice's {@link ReachRequest} ({@code specializes_from} passing {@code requires} and
- * {@code scope} through when the plan follows the lineage) and its {@link ReachResult} back to a {@link Reach}; a node
+ * {@code scope} through when the plan follows the lineage, and the plan's {@code suggests} bound) and its {@link ReachResult} back to a {@link Reach}; a node
  * that is no artifact (an action) is left out of the answer, and so is a way it was reached by.
  */
 final class ClosureViewSession implements PacksSession {
@@ -64,7 +64,8 @@ final class ClosureViewSession implements PacksSession {
                 urns(plan.starts()),
                 plan.relations(),
                 stops::contains,
-                plan.lineage() ? Optional.of(ReachRequest.Lineage.specializesFrom()) : Optional.empty());
+                plan.lineage() ? Optional.of(ReachRequest.Lineage.specializesFrom()) : Optional.empty(),
+                plan.suggestsBound());
     }
 
     /**
@@ -79,7 +80,8 @@ final class ClosureViewSession implements PacksSession {
                 vias(result.stopped()),
                 refs(result.behindStopped()),
                 refs(result.ancestorsPassed()),
-                vias(result.ancestry()));
+                vias(result.ancestry()),
+                refs(result.beyondBound()));
     }
 
     private static Map<ArtifactRef, List<Reach.Via>> vias(Map<Urn, List<ReachResult.Via>> byUrn) {
