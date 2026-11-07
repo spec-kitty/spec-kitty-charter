@@ -22,8 +22,9 @@ changes.
     - `If-Match` (`parameters/IfMatch.yaml`, extended to cover a pack revision; there is no `PackIfMatch`) is
       optional: absent means the last writer wins, and stale answers `412`;
     - `If-None-Match: *` makes the request create-only: `412` when the pack exists;
-    - an identical archive answers `200` (`unchanged`) even under a stale `If-Match`, because the version rule runs
-      first. The description says so, citing RFC 9110 §13.1.1.
+    - an identical archive is an `unchanged` no-op for the `If-Match` check under the lock, because the version rule
+      runs first; a stale `If-Match` is a synchronous `412` at acceptance, before any job exists (spec US1 AS6). The
+      description says so, citing RFC 9110 §13.1.1.
   - **Answers (asynchronous, A5; folded 2026-11-06):**
     - `202`: accepted. `PackRegistrationStatus` (`pending`), `Location: /api/v1/pack-registrations/{registrationId}`.
       Every answer below except `400`, `401`, `403`, `412` (at acceptance), `413`, `415` and `503` is now the

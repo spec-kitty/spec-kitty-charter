@@ -418,8 +418,9 @@ A → B → C.
      - the same `pack_version` with another revision: `409 pack_version_conflict`;
      - any other version: proceed.
   6. Check `If-Match` against the stored revision (`412`), or `If-None-Match: *` against the pack's existence (`412`
-     when it exists). Because step 5 comes first, an identical archive is a `200` no-op even under a stale
-     `If-Match`.
+     when it exists). Because step 5 comes first, an identical archive is a `200` no-op for this check under the lock.
+     A stale `If-Match` is already a synchronous `412` at acceptance (the controller's check above; spec US1 AS6), so
+     an identical re-send under a stale `If-Match` never reaches the job.
   7. Run the write gate over the diff of artifacts added (`REGISTER`), changed (`REPLACE`) and removed (`REMOVE`),
      along the staged pack's own closure (ADR-0063 D3): an operation the level does not allow is `409
      governance_policy_violation`. Plan delta squad, finding 5, 2026-11-07:
@@ -585,8 +586,8 @@ A → B → C.
   - **Decision `DM-01M6TR1KDAJ64GMJD6AYNZKT59`.** The ruling states that a `DELETE` never rewrites author
     files. The plan applies it to the artifact `DELETE` too: when a source shard or `drg/fragment.yaml` writes an edge
     from the artifact, or declares its node, the `DELETE` answers `409 registration_conflict` with the fixed reason
-    "written in the pack's graph documents: register the whole pack". The preset items of step 5 are still removed
-    (FR-005, A10), as before.
+    "written in the pack's graph documents: register the whole pack". A refused `DELETE` changes nothing: the preset
+    items of step 5 are removed only when the `DELETE` is accepted (FR-005, FR-007, A10).
 - **Relationship `DELETE`** (`DM-01M6TQ62HXYF362GAFS2BZ3PGF`, replacing the old "an edge that is a field of an
   artifact's own body is `409 registration_conflict`" case, which can no longer happen: ADR-0064 D1 and D2 dropped the
   edge-minting fields).
@@ -1173,8 +1174,9 @@ Open points the squad left to the plan, all marked where they appear:
 
 - the artifact `DELETE` and author-written graph documents (IC-06, "planner's reading"): the plan applies the
   "never rewrites author files" ruling to the artifact `DELETE` and refuses with `409 registration_conflict`;
-- a pair held both in `registered.graph.yaml` and in an author document: the registered edge is removed and the
-  authored edge stays (IC-06);
+- a pair held both in `registered.graph.yaml` and in an author document: the first reading removed the registered
+  edge and kept the authored edge. Decision `DM-01M6TR1KDAJ64GMJD6AYNZKT59` overruled it: the answer is
+  `409 relationship_not_registered` and nothing changes (IC-06);
 - the status of `registration_timed_out` (`504`, IC-02);
 - WP25's prompt must learn that WP15 creates `ActivationImpactAdapter` in PR A (IC-15); `research.md` (R-numbers and the
   `PackIfMatch` line near 266) is not amended by this fold and is superseded where it disagrees.
@@ -1285,7 +1287,7 @@ C4Component
 
 - **Why a binary.** The operator ruled out JGit. `git` 2.50.1 or later must be on `PATH`, or named by the absolute
   path in `charter.pack-sources.git.executable`. It is resolved once and checked with `git --version`. Without it,
-  the git source answers `422` and nothing else changes. README.md and `docs/guides/run-in-a-container.md` state the
+  the git source answers `503 pack_source_unavailable` (NFR-011) and nothing else changes. README.md and `docs/guides/run-in-a-container.md` state the
   requirement, and the container image must carry it.
 - **The threat model of running it.**
   - **Argument injection through the ref or URL.** The ref and URL are validated before any process starts
