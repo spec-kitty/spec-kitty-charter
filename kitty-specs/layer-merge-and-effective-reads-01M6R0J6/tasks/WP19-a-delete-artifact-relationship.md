@@ -177,3 +177,17 @@ Service and controller unit tests, `RemovalConcurrencyTest`, `pack-removal.featu
 - Check each behaviour against the plan IC and the rule ids cited, not against core's Python answers (C-004).
 - Check the red-first evidence (the commit order or the run log) and that no test was weakened to pass.
 - Check that nothing outside `owned_files` changed beyond the listed shared-file edits.
+
+## Operator ruling 2026-11-07: the per-artifact writes run the impact check
+
+Decision `01M6VG6GC40AKYYFRR35SV8HVW` (plan IC-15). Beside the `DELETE` check, the per-artifact writes
+(`PUT`/`POST /packs/{packId}/artifacts/...` and the relationship writes) run IC-15's impact check over the pack as it
+will be after the write, under the registry lock, reusing WP15's `RegistrationImpact` (one listing and one descriptor
+resolution per check). A refusal answers as a registration's does (`422` with the IC-15 code, or the composition
+code), naming the closure's root and the packs involved.
+- Red first: WP15's review case (a `PUT` of `OPEN_ONE` into `mid`, an org pack built on `base`, also org, leaves two
+  packs of one level defining one id: refused with the sibling-conflict composition code), plus one relation-rule
+  case (an `overrides` edge onto a non-open target through the relationship write) and a control that still succeeds.
+- Contract: declare the impact-check responses on the per-artifact paths, with a `### Changed` fragment (a write that
+  was accepted may now be refused; record it as `### Breaking` if a previously documented success becomes a refusal).
+- Existing scenarios that wrote such a closure must change their expectation; name each in the commit body.
