@@ -636,8 +636,8 @@ Feature: The compose resolves the configured packs' dependency graph
     And the field at "/packs/1/packId" is "two"
 
   Scenario: Two siblings changing one artifact, unsettled, refuse the compose
-    WP01's contest (FR-012): left and right, both at org, each declare an enhances edge on the same
-    directive in their graphs, and no pack of the compose declares an overrides edge settling it. A
+    WP01's contest (FR-012): left and right, both at org, each declare an overrides edge on the same
+    directive in their graphs (an enhances edge is additive and contests nothing, A14), and no pack of the compose declares an overrides edge settling it. A
     conflict must be a decision, not load order, so the compose is refused (500, like every composition refusal) naming both packs
     and the artifact.
     Given the org pack "left" with the file "pack.yaml":
@@ -662,7 +662,7 @@ Feature: The compose resolves the configured packs' dependency graph
       edges:
       - source: action:software-dev/implement
         target: directive:software-dev/test-first
-        relation: enhances
+        relation: overrides
       """
     And the org pack "right" with the file "pack.yaml":
       """
@@ -686,7 +686,7 @@ Feature: The compose resolves the configured packs' dependency graph
       edges:
       - source: action:software-dev/implement
         target: directive:software-dev/test-first
-        relation: enhances
+        relation: overrides
       """
     When I GET "/offering"
     Then the response status is 500
@@ -726,7 +726,7 @@ Feature: The compose resolves the configured packs' dependency graph
       edges:
       - source: action:software-dev/implement
         target: directive:software-dev/test-first
-        relation: enhances
+        relation: overrides
       """
     And the org pack "right" with the file "pack.yaml":
       """
@@ -750,7 +750,7 @@ Feature: The compose resolves the configured packs' dependency graph
       edges:
       - source: action:software-dev/implement
         target: directive:software-dev/test-first
-        relation: enhances
+        relation: overrides
       """
     And the org pack "settler" with the file "pack.yaml":
       """

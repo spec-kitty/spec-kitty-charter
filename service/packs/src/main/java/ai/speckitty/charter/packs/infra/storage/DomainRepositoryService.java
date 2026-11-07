@@ -486,8 +486,8 @@ public final class DomainRepositoryService
     }
 
     /**
-     * What one graph document's edges tell the compose: the targets of its {@code enhances} and {@code overrides}
-     * relations into {@code changed}, both endpoints of every edge into {@code references}; a self-loop is refused.
+     * What one graph document's edges tell the compose: the targets of its {@code overrides} relations into
+     * {@code changed}, both endpoints of every edge into {@code references}; a self-loop is refused.
      */
     private static void edgeFacts(
             PackIdentifier pack, String packName, GraphDocument document, Set<String> changed, Set<String> references) {
@@ -554,10 +554,12 @@ public final class DomainRepositoryService
         return assembled;
     }
 
-    /** Whether a relation changes its target: a field-merge into it ({@code enhances}) or a full replacement of it. */
+    /**
+     * Whether a relation changes its target: a full replacement of it ({@code overrides}). An {@code enhances} relation
+     * is additive and changes nothing, so two sibling enhancers are no conflict (A14, rule C14).
+     */
     private static boolean refines(String relation) {
-        return RelationType.ENHANCES.token().equals(relation)
-                || RelationType.OVERRIDES.token().equals(relation);
+        return RelationType.OVERRIDES.token().equals(relation);
     }
 
     // ---- PackRepository --------------------------------------------------------------------
