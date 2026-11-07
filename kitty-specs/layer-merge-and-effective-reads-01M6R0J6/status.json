@@ -1,7 +1,7 @@
 {
-  "event_count": 128,
-  "last_event_id": "01M6TK3KQ9EP3P2EJEQPPPW6WT",
-  "materialized_at": "2026-11-07T08:48:22.761850+00:00",
+  "event_count": 130,
+  "last_event_id": "01M6TK547B8PDC1K1FY1V6TD57",
+  "materialized_at": "2026-11-07T08:49:12.421815+00:00",
   "mission_number": "",
   "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
   "mission_type": "",
@@ -13,9 +13,9 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 21
+    "planned": 20
   },
   "work_packages": {
     "WP01": {
@@ -309,9 +309,9 @@
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
       "implementer_of_record": "claude:sonnet:scribe-sally",
-      "lane": "planned",
-      "last_event_id": "01M6TK3KQ9EP3P2EJEQPPPW6WT",
-      "last_transition_at": "2026-11-07T08:48:22.761850+00:00",
+      "lane": "in_progress",
+      "last_event_id": "01M6TK547B8PDC1K1FY1V6TD57",
+      "last_transition_at": "2026-11-07T08:49:12.421815+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "PR A0 docs: ADR-0020/0042/0050/0059 amendments (2026-11-07, incl. #408 depth), DIV-209..215 + DIV-203/206/501 updated, changelog with core hand-over, ruleset scenario trace (A0 rows verified against lane scenario files), rules page flipped to built. Docs checks clean."
@@ -324,7 +324,7 @@
         "reviewer": "claude:opus:reviewer-renata",
         "verdict": "changes_requested"
       },
-      "role": "reviewer",
+      "role": "implementer",
       "shell_pid": null,
       "shell_pid_created_at": null,
       "subtasks": {
