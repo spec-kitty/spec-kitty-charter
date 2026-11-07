@@ -60,6 +60,7 @@ class RegistrationConcurrencyTest {
 
     private final ConcurrentLinkedQueue<String> failures = new ConcurrentLinkedQueue<>();
     private final AtomicInteger reads = new AtomicInteger();
+    private final AtomicInteger staleAfterRetries = new AtomicInteger();
 
     @Test
     @Timeout(240)
@@ -78,6 +79,11 @@ class RegistrationConcurrencyTest {
                 .as("a mixed answer, a failed upload or a stored pack that is no upload")
                 .isEmpty();
         assertThat(reads.get()).as("the readers did get answers").isGreaterThan(RUNS);
+        assertThat(staleAfterRetries.get())
+                .as(
+                        "a read still stale_input after its retries (which passes: Q7), of %d snapshots",
+                        reads.get() + staleAfterRetries.get())
+                .isLessThanOrEqualTo((reads.get() + staleAfterRetries.get()) / 10);
     }
 
     private void replaceEightTimesWithReaders(Rig rig, ConsistentRead read, int run) throws Exception {
@@ -126,8 +132,12 @@ class RegistrationConcurrencyTest {
                 }
                 return;
             } catch (CharterRefusal refused) {
-                if (refused.code() != RefusalCode.STALE_INPUT || retry >= 3) {
+                if (refused.code() != RefusalCode.STALE_INPUT) {
                     failures.add("run " + run + ": a read was refused " + refused.code());
+                    return;
+                }
+                if (retry >= 3) {
+                    staleAfterRetries.incrementAndGet();
                     return;
                 }
                 read.awaitWrites(Duration.ofMillis(250));

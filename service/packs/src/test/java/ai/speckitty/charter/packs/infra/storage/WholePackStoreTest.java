@@ -760,9 +760,11 @@ class WholePackStoreTest {
                             .extracting(violation -> violation.pointer())
                             .contains("notes/readme.txt", BROKEN_FILE);
                 });
-        assertThat(store.loadStored(pack).pack().violations())
-                .as("loading a stored pack stays partial-tolerant")
-                .isNotEmpty();
+        assertThatThrownBy(() -> store.loadStored(pack))
+                .as("a stored pack that cannot be read is refused as the reads refuse it, not as an upload")
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
     }
 
     private static WholePackStore.LoadedPack with(WholePackStore.LoadedPack loaded, Template template) {

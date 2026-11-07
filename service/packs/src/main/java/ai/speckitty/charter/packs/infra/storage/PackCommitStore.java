@@ -13,6 +13,7 @@ import ai.speckitty.charter.packs.application.WholePackWriteStore;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -24,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
@@ -254,24 +256,166 @@ public final class PackCommitStore implements WholePackWriteStore {
 
     @Override
     public void requireWritableLocation(String packId) {
-        Objects.requireNonNull(registryLock, "registryLock");
-        Objects.requireNonNull(generation, "generation");
-        // skeleton
+        Path root = writableRoot();
+        Path entry = root.resolve(packId);
+        if (!Files.exists(entry, LinkOption.NOFOLLOW_LINKS)) {
+            if (Files.isSymbolicLink(entry)) {
+                throw invalidLocation(packId, "is a link that does not resolve");
+            }
+            return; // nothing stored there: a create takes the entry
+        }
+        if (Files.isSymbolicLink(entry) || !Files.isDirectory(entry, LinkOption.NOFOLLOW_LINKS)) {
+            throw invalidLocation(packId, "is not a plain directory of the pack domain");
+        }
+        try {
+            if (!entry.toRealPath().equals(root.toRealPath().resolve(packId))) {
+                throw invalidLocation(packId, "does not resolve to the entry of that name in the pack domain");
+            }
+        } catch (IOException unresolved) {
+            throw new CharterRefusal(
+                    RefusalCode.PACK_UNREADABLE, "cannot resolve the pack directory " + packId, unresolved);
+        }
+    }
+
+    private static CharterRefusal invalidLocation(String packId, String why) {
+        return new CharterRefusal(
+                RefusalCode.VALIDATION_FAILED,
+                "The pack directory " + packId + " " + why + "; a pack is stored at <config-root>/packs/<packId>.");
+    }
+
+    /** The one directory packs are written into; a fixed set of locations has none, and cannot take a registration. */
+    private Path writableRoot() {
+        if (locations instanceof StorageRootLocations storage) {
+            return storage.writableRoot();
+        }
+        throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "the pack domain has no writable root");
     }
 
     @Override
     public <T> T exclusively(String packId, Supplier<T> work) {
-        return work.get(); // skeleton
+        // The registry lock first, then the pack's own, as every pack write does (R-lock); the pack's lock is that of
+        // the
+        // entry whether or not a pack is stored there yet, so a create and a replace of one name exclude each other.
+        return registryLock.exclusively(() -> underPackLock(writableRoot().resolve(packId), work));
+    }
+
+    private static <T> T underPackLock(Path entry, Supplier<T> work) {
+        ReentrantLock lock = PackWriteLocks.of(entry);
+        lock.lock();
+        try {
+            // A swap a crash interrupted is repaired before the work reads the pack (#281), as on a listing.
+            missingLiveDirectory(entry).ifPresent(PackCommitStore::restoreInterruptedSwap);
+            return work.get();
+        } finally {
+            lock.unlock();
+        }
     }
 
     @Override
     public PackRevision replaceWhole(PackIdentifier pack, StagedPack staged) {
-        return revisionOf(staged); // skeleton
+        Path liveDir = DomainRepositoryService.writableRealDirectory(locations, resolve(pack).directory, pack);
+        Path parent = requireParent(liveDir);
+        hideStaleAsides(liveDir); // so a stale aside copy is never restored over this pack later (#281)
+        @Nullable Path copy = null;
+        try {
+            // The tree is copied beside the pack, on its filesystem, so that the swap is a rename; the staging root may
+            // be on another one.
+            copy = Files.createTempDirectory(parent, ".pack-commit-");
+            copyTree(staged.directory(), copy);
+            PackRevision revision = revisionOf(copy, pack);
+            swapBracketed(pack.value(), copy, liveDir);
+            copy = null; // swapped into place; there is nothing left to clean up
+            return revision;
+        } catch (CharterRefusal refusal) {
+            deleteTree(copy);
+            throw refusal;
+        } catch (IOException | RuntimeException failure) {
+            deleteTree(copy);
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "cannot replace pack " + pack.value(), failure);
+        }
+    }
+
+    /** The write generation is odd for the swap alone: the copy and the revision, which are slow, run outside it. */
+    private void swapBracketed(String name, Path staging, Path live) throws IOException {
+        generation.begin(name);
+        try {
+            rename.swap(staging, live);
+        } finally {
+            generation.end(name);
+        }
     }
 
     @Override
     public PackRevision create(String packId, StagedPack staged) {
-        return revisionOf(staged); // skeleton
+        Path root = writableRoot();
+        Path destination = root.resolve(packId);
+        @Nullable Path staging = null;
+        try {
+            Files.createDirectories(root);
+            staging = Files.createTempDirectory(root, ".pack-write-");
+            copyTree(staged.directory(), staging);
+            PackRevision revision = revisionOf(staging, new PackIdentifier(packId));
+            placeBracketed(packId, staging, destination);
+            staging = null; // moved into place; nothing left to clean up
+            return revision;
+        } catch (CharterRefusal refusal) {
+            deleteTree(staging);
+            throw refusal;
+        } catch (IOException | RuntimeException failure) {
+            deleteTree(staging);
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "cannot create pack " + packId, failure);
+        }
+    }
+
+    /**
+     * Reserves the destination with one atomic step, which fails when anything is there, and renames the staged tree
+     * over it, with the write generation odd for that alone: the reserved directory is empty, and a read in that
+     * instant must be told to retry.
+     */
+    private void placeBracketed(String name, Path staging, Path destination) throws IOException {
+        generation.begin(name);
+        try {
+            Path reserved = reserve(destination);
+            try {
+                moveOver(staging, reserved);
+            } catch (IOException | RuntimeException failed) {
+                release(reserved);
+                throw failed;
+            }
+        } finally {
+            generation.end(name);
+        }
+    }
+
+    private static Path reserve(Path destination) throws IOException {
+        try {
+            return Files.createDirectory(destination);
+        } catch (FileAlreadyExistsException taken) {
+            throw new CharterRefusal(
+                    RefusalCode.REGISTRATION_CONFLICT, "The pack " + destination.getFileName() + " already exists.");
+        }
+    }
+
+    /** Renames a staged tree over the empty directory a write reserved. */
+    static void moveOver(Path staging, Path reserved) throws IOException {
+        try {
+            Files.move(staging, reserved, StandardCopyOption.ATOMIC_MOVE);
+        } catch (AtomicMoveNotSupportedException notAtomic) {
+            Files.delete(reserved);
+            Files.move(staging, reserved);
+        }
+    }
+
+    /** Removes a reserved target if it is still the empty directory the write created. */
+    static void release(@Nullable Path reserved) {
+        if (reserved == null) {
+            return;
+        }
+        try {
+            Files.deleteIfExists(reserved);
+        } catch (IOException ignored) {
+            // the original failure is the one worth reporting
+        }
     }
 
     /**

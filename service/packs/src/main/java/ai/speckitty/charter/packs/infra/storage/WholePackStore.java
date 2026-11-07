@@ -3,9 +3,12 @@ package ai.speckitty.charter.packs.infra.storage;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
+import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.application.WholePackWriteStore;
 import ai.speckitty.charter.packs.domain.AssetFile;
@@ -17,11 +20,9 @@ import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.Template;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -219,17 +220,124 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
                 pack, new PackLayout(places), graphs.documents(), unmodelled(packDir, modelled, key), manifest, policy);
     }
 
+    /**
+     * Reads a staged tree for a registration, refusing everything that makes the upload wrong with
+     * {@code validation_failed} (IC-04 step 2): what {@link #load} refuses ({@code pack_unreadable}, a graph that breaks
+     * its schema, an aggregate invariant) and what it tolerates, which a registration may not: a read violation, a file
+     * nothing models, and a {@value RelationshipShard#SHARD_PATH} without the registration stamp, which is a reserved
+     * shard. Each fault is a violation of the refusal, so an author sees every one at once.
+     */
     @Override
     public WholePackWriteStore.Contents loadStaged(StagedPack staged) {
-        return loadStored(staged.directory()); // skeleton
+        Path directory = staged.directory();
+        LoadedPack loaded = loadRefusingAsInvalid(directory);
+        List<RefusalViolation> violations = new ArrayList<>();
+        loaded.pack()
+                .violations()
+                .forEach(violation ->
+                        violations.add(violationOf(violation.file(), violation.kind(), violation.reason())));
+        loaded.unmodelled()
+                .forEach(file -> violations.add(violationOf(
+                        file,
+                        "unmodelled",
+                        "no pack file kind models this file; a registration holds only modelled files")));
+        reservedShard(directory).ifPresent(violations::add);
+        if (!violations.isEmpty()) {
+            throw CharterRefusal.withViolations(
+                    RefusalCode.VALIDATION_FAILED,
+                    "The pack cannot be registered: " + violations.size() + " fault(s), the first at "
+                            + violations.getFirst().pointer() + ".",
+                    violations);
+        }
+        return contentsOf(directory, loaded);
     }
 
     @Override
     public WholePackWriteStore.Contents loadStored(Path directory) {
-        return new WholePackWriteStore.Contents(
-                load(directory).pack(),
-                ai.speckitty.charter.packs.domain.PackCompositionFacts.NONE,
-                Map.of()); // skeleton
+        return contentsOf(directory, load(directory));
+    }
+
+    /** {@link #load} with each fault of the tree, which in an upload is the author's, answered {@code validation_failed}. */
+    private LoadedPack loadRefusingAsInvalid(Path directory) {
+        try {
+            return load(directory);
+        } catch (CharterRefusal refusal) {
+            throw CharterRefusal.withViolations(
+                    RefusalCode.VALIDATION_FAILED,
+                    "The pack cannot be registered: " + refusal.getMessage(),
+                    List.of(violationOf("pack", refusal.code().token(), String.valueOf(refusal.getMessage()))));
+        }
+    }
+
+    /** A violation of the refusal; a kind that is no snake-case token is told as {@code invalid}. */
+    private static RefusalViolation violationOf(String pointer, String code, String detail) {
+        return new RefusalViolation(pointer, code.matches("[a-z][a-z0-9_]*") ? code : "invalid", detail);
+    }
+
+    /** The reserved shard, when the tree holds one that no registration wrote. */
+    private static Optional<RefusalViolation> reservedShard(Path directory) {
+        Path shard = directory.resolve(RelationshipShard.SHARD_PATH);
+        if (!Files.isRegularFile(shard, LinkOption.NOFOLLOW_LINKS)) {
+            return Optional.empty();
+        }
+        boolean stamped;
+        try {
+            stamped = RelationshipShard.isWrittenByRegistration(Files.readString(shard, StandardCharsets.UTF_8));
+        } catch (IOException | RuntimeException unreadable) {
+            stamped = false;
+        }
+        return stamped
+                ? Optional.empty()
+                : Optional.of(violationOf(
+                        RelationshipShard.SHARD_PATH,
+                        "reserved_shard",
+                        RelationshipShard.SHARD_PATH
+                                + " is reserved for the registered relationships; a file of this name"
+                                + " without generated_by: charter-registration is refused. Register the edges in a shard of"
+                                + " your own."));
+    }
+
+    /** What the registration judges of a loaded tree: the aggregate, the facts the compose reads, and each artifact's digest. */
+    private WholePackWriteStore.Contents contentsOf(Path directory, LoadedPack loaded) {
+        Path packDir = directory.toAbsolutePath().normalize();
+        PackIdentifier key = new PackIdentifier(String.valueOf(packDir.getFileName()));
+        PackLevel level = loaded.pack().descriptor().declaredLevel().orElse(PackLevel.ORG);
+        // The facts are read the way the compose reads a stored pack, through a repository that lists only this tree.
+        DomainRepositoryService single =
+                new DomainRepositoryService(() -> List.of(new PackLocation(key.value(), level, packDir)), strategy);
+        return new WholePackWriteStore.Contents(loaded.pack(), single.compositionFacts(key), digestsOf(loaded.pack()));
+    }
+
+    /** A digest of each file-backed artifact as {@link #write} would write it, its companions included. */
+    private Map<Urn, String> digestsOf(Pack pack) {
+        Map<Urn, String> digests = new HashMap<>();
+        for (CharterArtifact artifact : pack.artifacts()) {
+            digests.put(artifact.urn(), digestOf(artifact));
+        }
+        return digests;
+    }
+
+    private String digestOf(CharterArtifact artifact) {
+        List<byte[]> parts = new ArrayList<>();
+        if (artifact instanceof Template template) {
+            parts.add(TemplateBinding.INSTANCE.payloadOf(template).bytes());
+        } else {
+            KindBinding<?, ?> kind = bindings.stream()
+                    .filter(binding -> binding.kind() == artifact.kind())
+                    .findFirst()
+                    .orElseThrow(
+                            () -> new IllegalArgumentException("cannot digest a " + artifact.kind() + " artefact"));
+            digestParts(kind, artifact, parts);
+        }
+        return PackRevision.computeOverBytes(parts).token();
+    }
+
+    private <D> void digestParts(KindBinding<D, ?> kind, CharterArtifact artifact, List<byte[]> parts) {
+        D dso = kind.dsoOf(artifact);
+        parts.add(utf8(strategy.write(kind, dso)));
+        for (KindBinding.Companion companion : kind.companions(dso)) {
+            companion.content().ifPresent(content -> parts.add(utf8(Companions.text(content))));
+        }
     }
 
     /**
@@ -383,16 +491,16 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
             reserved = reserve(destination, pack);
             staging = Files.createTempDirectory(parent, ".pack-write-");
             putContents(staging, loaded);
-            moveOver(staging, reserved);
+            PackCommitStore.moveOver(staging, reserved);
             staging = null; // moved into place; nothing left to clean up
             reserved = null;
         } catch (CharterRefusal refusal) {
             PackCommitStore.deleteTree(staging);
-            release(reserved);
+            PackCommitStore.release(reserved);
             throw refusal;
         } catch (IOException | RuntimeException failure) {
             PackCommitStore.deleteTree(staging);
-            release(reserved);
+            PackCommitStore.release(reserved);
             throw new CharterRefusal(
                     RefusalCode.PACK_UNREADABLE,
                     "cannot write pack " + pack.id().value(),
@@ -497,28 +605,6 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
             throw new CharterRefusal(
                     RefusalCode.PACK_UNREADABLE,
                     "refusing to write pack " + pack.id().value() + " over an existing " + destination.getFileName());
-        }
-    }
-
-    /** Renames the staged pack over the empty directory this write reserved. */
-    private static void moveOver(Path staging, Path reserved) throws IOException {
-        try {
-            Files.move(staging, reserved, StandardCopyOption.ATOMIC_MOVE);
-        } catch (AtomicMoveNotSupportedException notAtomic) {
-            Files.delete(reserved);
-            Files.move(staging, reserved);
-        }
-    }
-
-    /** Removes the reserved target if it is still the empty directory this write created. */
-    private static void release(@Nullable Path reserved) {
-        if (reserved == null) {
-            return;
-        }
-        try {
-            Files.deleteIfExists(reserved);
-        } catch (IOException ignored) {
-            // the original failure is the one worth reporting
         }
     }
 

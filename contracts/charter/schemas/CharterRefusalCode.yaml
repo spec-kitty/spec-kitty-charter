@@ -75,7 +75,9 @@ description: >-
 
   Fourteen codes belong to the whole-pack registration and the two DELETEs (ADR-0065, FR-001 to FR-006, FR-024,
   FR-025; PR A of the layer merge mission). Their operations are reserved until the services that raise them are built
-  (ADR-0020 D8), so each is raised: false for now and the serving work packages flip it with the service that raises it.
+  (ADR-0020 D8), so each is raised: false until the service that raises it is built, and the work package that builds the
+  service flips it. pack_version_conflict is raised by the whole-pack registration service (the same pack_version sent
+  with another revision), whose two operations stay reserved until their controller and job are built.
   pack_version_conflict (409): the same pack_version was registered with another revision. artifact_referenced (409):
   another artifact or pack still refers to the artifact a DELETE or a replace removes; its packs member names the
   referring packs (at most 100) and its violations name every referring artifact. relationship_not_found (404): no
@@ -408,7 +410,7 @@ x-refusal:
   pack_version_conflict:
     status: 409
     retryable: false
-    raised: false
+    raised: true
     description: the same pack_version was registered with another revision
   artifact_referenced:
     status: 409
