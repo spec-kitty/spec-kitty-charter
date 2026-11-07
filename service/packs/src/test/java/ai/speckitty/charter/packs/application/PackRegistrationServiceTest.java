@@ -18,6 +18,7 @@ import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import ai.speckitty.charter.packs.domain.WritePolicyGate.Operation;
 import ai.speckitty.charter.packs.infra.storage.CommitStorePackWriteStore;
 import ai.speckitty.charter.packs.infra.storage.DomainRepositoryService;
+import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
 import ai.speckitty.charter.packs.infra.storage.PackCommitStore;
 import ai.speckitty.charter.packs.infra.storage.RelationshipShard;
 import ai.speckitty.charter.packs.infra.storage.StorageRootLocations;
@@ -390,6 +391,162 @@ class PackRegistrationServiceTest {
         assertThat(MutabilityLevel.LOCKED.permits(Operation.REMOVE)).isFalse();
     }
 
+    // ---- step 7: the write gate over the staged closure (ADR-0065 D5, ADR-0063 D3) ---------------------------------
+
+    private static final String BASE_ID = ulid('C');
+    private static final String DERIVED_ID = ulid('D');
+    private static final String DEPENDS_ON_BASE = "depends_on:\n  - pack_id: " + BASE_ID + "\n    range: '>=1.0'\n";
+    private static final String POLICY =
+            "schema_version: 1\nartifacts:\n  directive:LOCKED_ONE: locked\n  directive:EXT_ONE: extendable\n";
+
+    /** The pack the others build on: it locks one of its directives and makes another extendable. */
+    private static Packs base(String version, String lockedTitle) {
+        return Packs.of(BASE_ID, "base", version, "org", "mutability_policy: policy.yaml\n")
+                .file("policy.yaml", POLICY)
+                .directive("LOCKED_ONE", lockedTitle)
+                .directive("EXT_ONE", "Extendable")
+                .directive("OPEN_ONE", "Open");
+    }
+
+    private static Packs derived(String version) {
+        return Packs.of(DERIVED_ID, "derived", version, "project", DEPENDS_ON_BASE)
+                .directive("DERIVED_ONE", "Own");
+    }
+
+    private static String shard(String... sources) {
+        StringBuilder text = new StringBuilder("schema_version: '1.0'\ngenerated_at: STATIC\nnodes: []\nedges:\n");
+        for (String source : sources) {
+            text.append("- source: directive:")
+                    .append(source)
+                    .append("\n  target: directive:DERIVED_ONE\n  relation: requires\n");
+        }
+        return text.toString();
+    }
+
+    private Rig rigWithBase(Path host) {
+        Rig rig = new Rig(host);
+        assertThat(rig.register("base", rig.stage(base("1.0.0", "Locked")), Preconditions.none())
+                        .outcome())
+                .isEqualTo(Outcome.CREATED);
+        return rig;
+    }
+
+    @Test
+    void aPacksOwnPolicyNeverBindsIt(@TempDir Path host) {
+        Rig rig = rigWithBase(host);
+
+        RegistrationOutcome outcome =
+                rig.register("base", rig.stage(base("2.0.0", "Locked, changed")), Preconditions.none());
+
+        assertThat(outcome.outcome())
+                .as("base locks LOCKED_ONE for the packs built on it, not for itself (B8)")
+                .isEqualTo(Outcome.REPLACED);
+    }
+
+    @Test
+    void aNewPackThatRegistersALockedArtifactOfItsAncestorIsRefusedOverTheStagedClosure(@TempDir Path host) {
+        Rig rig = rigWithBase(host);
+        StagedPack locked = rig.stage(derived("1.0.0").directive("LOCKED_ONE", "Mine"));
+
+        assertThat(refusalOf(() -> rig.register("derived", locked, Preconditions.none())))
+                .isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
+        assertThat(rig.packs.resolve("derived")).as("nothing was created").doesNotExist();
+
+        assertThat(rig.register("derived", rig.stage(derived("1.0.0")), Preconditions.none())
+                        .outcome())
+                .as("the control: the same pack without the locked id")
+                .isEqualTo(Outcome.CREATED);
+    }
+
+    @Test
+    void anExtendableArtifactOfTheAncestorMayBeRegisteredButNotReplaced(@TempDir Path host) {
+        Rig rig = rigWithBase(host);
+        assertThat(rig.register(
+                                "derived",
+                                rig.stage(derived("1.0.0").directive("EXT_ONE", "First")),
+                                Preconditions.none())
+                        .outcome())
+                .as("REGISTER is within extendable")
+                .isEqualTo(Outcome.CREATED);
+        Map<String, String> before = rig.filesOf(rig.packs.resolve("derived"));
+        StagedPack replaced = rig.stage(derived("2.0.0").directive("EXT_ONE", "Second"));
+
+        assertThat(refusalOf(() -> rig.register("derived", replaced, Preconditions.none())))
+                .isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
+        assertThat(rig.filesOf(rig.packs.resolve("derived"))).isEqualTo(before);
+
+        StagedPack kept = rig.stage(derived("2.0.0").directive("EXT_ONE", "First"));
+        assertThat(rig.register("derived", kept, Preconditions.none()).outcome())
+                .as("the control: EXT_ONE kept as it was")
+                .isEqualTo(Outcome.REPLACED);
+    }
+
+    @Test
+    void aRemovalIsAllowedOnAnExtendableArtifactAndRefusedOnALockedOne(@TempDir Path host) {
+        Rig rig = rigWithBase(host);
+        rig.install("derived", derived("1.0.0").directive("LOCKED_ONE", "Mine").directive("EXT_ONE", "Mine"));
+        StagedPack dropsExtendable = rig.stage(derived("2.0.0").directive("LOCKED_ONE", "Mine"));
+
+        assertThat(rig.register("derived", dropsExtendable, Preconditions.none())
+                        .outcome())
+                .as("REMOVE is within extendable")
+                .isEqualTo(Outcome.REPLACED);
+        Map<String, String> before = rig.filesOf(rig.packs.resolve("derived"));
+
+        assertThat(refusalOf(() -> rig.register("derived", rig.stage(derived("3.0.0")), Preconditions.none())))
+                .isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
+        assertThat(rig.filesOf(rig.packs.resolve("derived")))
+                .as("nothing changed")
+                .isEqualTo(before);
+    }
+
+    @Test
+    void anEdgeAddedFromALockedArtifactIsGatedAndOneFromAnOpenArtifactIsNot(@TempDir Path host) {
+        Rig rig = rigWithBase(host);
+        rig.register("derived", rig.stage(derived("1.0.0")), Preconditions.none());
+        StagedPack fromLocked = rig.stage(derived("2.0.0").file("edges.graph.yaml", shard("LOCKED_ONE")));
+
+        assertThat(refusalOf(() -> rig.register("derived", fromLocked, Preconditions.none())))
+                .isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
+
+        StagedPack fromOpen = rig.stage(derived("2.0.0").file("edges.graph.yaml", shard("OPEN_ONE")));
+        assertThat(rig.register("derived", fromOpen, Preconditions.none()).outcome())
+                .as("the control: the edge's source is open")
+                .isEqualTo(Outcome.REPLACED);
+    }
+
+    @Test
+    void anEdgeRemovedFromALockedArtifactIsGatedAndOneFromAnOpenArtifactIsNot(@TempDir Path host) {
+        Rig rig = rigWithBase(host);
+        rig.install("derived", derived("1.0.0").file("edges.graph.yaml", shard("LOCKED_ONE", "OPEN_ONE")));
+        StagedPack dropsOpen = rig.stage(derived("2.0.0").file("edges.graph.yaml", shard("LOCKED_ONE")));
+
+        assertThat(rig.register("derived", dropsOpen, Preconditions.none()).outcome())
+                .as("the control: the dropped edge's source is open")
+                .isEqualTo(Outcome.REPLACED);
+
+        StagedPack dropsLocked = rig.stage(derived("3.0.0"));
+        assertThat(refusalOf(() -> rig.register("derived", dropsLocked, Preconditions.none())))
+                .isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
+    }
+
+    @Test
+    void aStoredPackThatCannotBeReadIsReplacedByAFixedUpload(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.install(
+                "pack-x",
+                Packs.of(ORG_PACK, "pack-x", "1.0.0", "org")
+                        .file(
+                                "directives/DIRECTIVE_001.directive.yaml",
+                                Packs.directiveText("DIRECTIVE_001", "One") + "references:\n  - directive:X\n"));
+        StagedPack fixed =
+                rig.stage(Packs.of(ORG_PACK, "pack-x", "2.0.0", "org").directive("DIRECTIVE_001", "One"));
+
+        assertThat(rig.register("pack-x", fixed, Preconditions.none()).outcome())
+                .as("a whole-pack replace is how an unreadable pack is repaired")
+                .isEqualTo(Outcome.REPLACED);
+    }
+
     // ---- helpers -------------------------------------------------------------------------------------------------
 
     static RefusalCode refusalOf(Runnable action) {
@@ -413,8 +570,12 @@ class PackRegistrationServiceTest {
         private final Map<String, String> files = new LinkedHashMap<>();
 
         static Packs of(String packId, String name, String version, String level) {
+            return of(packId, name, version, level, "");
+        }
+
+        static Packs of(String packId, String name, String version, String level, String extraDescriptor) {
             Packs packs = new Packs();
-            packs.files.put("pack.yaml", descriptorText(packId, name, version, level, ""));
+            packs.files.put("pack.yaml", descriptorText(packId, name, version, level, extraDescriptor));
             return packs;
         }
 
@@ -487,10 +648,6 @@ class PackRegistrationServiceTest {
         private final AtomicInteger staged = new AtomicInteger();
 
         Rig(Path host) {
-            this(host, new PackMutabilityPolicy());
-        }
-
-        Rig(Path host, WritePolicyGate gate) {
             this.host = host;
             this.packs = host.resolve("packs");
             this.staging = host.resolve("staging");
@@ -499,6 +656,9 @@ class PackRegistrationServiceTest {
             this.repository = new DomainRepositoryService(locations, strategy);
             this.commits = new PackCommitStore(locations, strategy, lock, generation);
             this.writeStore = new CommitStorePackWriteStore(locations, strategy, commits, lock, generation);
+            ConsistentRead read = new ConsistentRead(new FileSystemPackSources(locations::all), generation);
+            WritePolicyGate gate = new PackMutabilityPolicy(
+                    new OfferingReadService(repository, repository, repository, read), repository, repository, read);
             this.service = new PackRegistrationService(
                     new WholePackStore(strategy),
                     commits,
