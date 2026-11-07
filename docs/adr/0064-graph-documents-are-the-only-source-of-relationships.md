@@ -243,6 +243,10 @@ such pair. Several later records kept their reference fields "until #189 rules o
 
 ## Interaction with ADR-0059
 
+*Note 2026-11-07 (ADR-0059 amendment, A7 Q1):* the cascade from a mission type to its steps is not a relationship
+this record forbids. A step's containment comes structurally from the id hierarchy (`action:<M>/<step>`); it is neither
+an authored edge (decisions 1 to 6) nor a derived relation (decision 7), so no graph document carries it.
+
 [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) (merged from [PR #376](https://github.com/spec-kitty/spec-kitty-charter/pull/376)): its D2 cascade
 follows `requires`, `suggests` and the other listed relations. After this record those relations are
 found only in the graph documents, so the cascade reaches only graph edges. Its open question 4 asks
