@@ -250,6 +250,27 @@
       "parallel_group": 4
     },
     {
+      "lane_id": "lane-|",
+      "wp_ids": [
+        "WP30"
+      ],
+      "write_scope": [
+        "contracts/charter/changes/2026-11-07-a0-cascade-depth.md",
+        "contracts/charter/scenarios/activation-cascade-depth.feature",
+        "contracts/charter/schemas/ExclusionRequest.yaml",
+        "contracts/charter/schemas/SelectionRequest.yaml",
+        "service/activations/src/test/java/ai/speckitty/charter/activations/domain/CascadeRulesDepthTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-h"
+      ],
+      "parallel_group": 5
+    },
+    {
       "lane_id": "lane-planning",
       "wp_ids": [
         "WP09",
@@ -273,9 +294,10 @@
         "planning"
       ],
       "depends_on_lanes": [
-        "lane-h"
+        "lane-h",
+        "lane-|"
       ],
-      "parallel_group": 5
+      "parallel_group": 6
     },
     {
       "lane_id": "lane-i",
@@ -311,7 +333,7 @@
       "depends_on_lanes": [
         "lane-planning"
       ],
-      "parallel_group": 6
+      "parallel_group": 7
     },
     {
       "lane_id": "lane-j",
@@ -342,7 +364,7 @@
       "depends_on_lanes": [
         "lane-planning"
       ],
-      "parallel_group": 6
+      "parallel_group": 7
     },
     {
       "lane_id": "lane-k",
@@ -364,7 +386,7 @@
       "depends_on_lanes": [
         "lane-i"
       ],
-      "parallel_group": 7
+      "parallel_group": 8
     },
     {
       "lane_id": "lane-s",
@@ -393,7 +415,7 @@
         "lane-g",
         "lane-j"
       ],
-      "parallel_group": 7
+      "parallel_group": 8
     },
     {
       "lane_id": "lane-l",
@@ -424,7 +446,7 @@
         "lane-j",
         "lane-k"
       ],
-      "parallel_group": 8
+      "parallel_group": 9
     },
     {
       "lane_id": "lane-t",
@@ -457,7 +479,7 @@
       "depends_on_lanes": [
         "lane-s"
       ],
-      "parallel_group": 8
+      "parallel_group": 9
     },
     {
       "lane_id": "lane-u",
@@ -478,7 +500,7 @@
       "depends_on_lanes": [
         "lane-s"
       ],
-      "parallel_group": 8
+      "parallel_group": 9
     },
     {
       "lane_id": "lane-m",
@@ -502,7 +524,7 @@
       "depends_on_lanes": [
         "lane-l"
       ],
-      "parallel_group": 9
+      "parallel_group": 10
     },
     {
       "lane_id": "lane-v",
@@ -532,7 +554,7 @@
         "lane-t",
         "lane-u"
       ],
-      "parallel_group": 9
+      "parallel_group": 10
     },
     {
       "lane_id": "lane-y",
@@ -554,7 +576,7 @@
       "depends_on_lanes": [
         "lane-u"
       ],
-      "parallel_group": 9
+      "parallel_group": 10
     },
     {
       "lane_id": "lane-n",
@@ -586,7 +608,7 @@
       "depends_on_lanes": [
         "lane-m"
       ],
-      "parallel_group": 10
+      "parallel_group": 11
     },
     {
       "lane_id": "lane-w",
@@ -614,7 +636,7 @@
         "lane-m",
         "lane-v"
       ],
-      "parallel_group": 10
+      "parallel_group": 11
     },
     {
       "lane_id": "lane-o",
@@ -641,7 +663,7 @@
       "depends_on_lanes": [
         "lane-n"
       ],
-      "parallel_group": 11
+      "parallel_group": 12
     },
     {
       "lane_id": "lane-q",
@@ -670,7 +692,7 @@
         "lane-l",
         "lane-n"
       ],
-      "parallel_group": 11
+      "parallel_group": 12
     },
     {
       "lane_id": "lane-x",
@@ -691,7 +713,7 @@
       "depends_on_lanes": [
         "lane-w"
       ],
-      "parallel_group": 11
+      "parallel_group": 12
     },
     {
       "lane_id": "lane-z",
@@ -719,7 +741,7 @@
         "lane-w",
         "lane-y"
       ],
-      "parallel_group": 11
+      "parallel_group": 12
     },
     {
       "lane_id": "lane-p",
@@ -742,7 +764,7 @@
       "depends_on_lanes": [
         "lane-o"
       ],
-      "parallel_group": 12
+      "parallel_group": 13
     },
     {
       "lane_id": "lane-{",
@@ -766,7 +788,7 @@
         "lane-x",
         "lane-z"
       ],
-      "parallel_group": 12
+      "parallel_group": 13
     },
     {
       "lane_id": "lane-r",
@@ -790,14 +812,14 @@
         "lane-p",
         "lane-q"
       ],
-      "parallel_group": 13
+      "parallel_group": 14
     }
   ],
-  "computed_at": "2026-11-06T14:53:29.276554+00:00",
+  "computed_at": "2026-11-07T07:14:49.521368+00:00",
   "computed_from": "dependency_graph+ownership",
   "planning_artifact_wps": [
     "WP09",
     "WP10"
   ],
-  "planning_commit_sha": "c82b883b684881c9a7d1a654cc934adaac53e159"
+  "planning_commit_sha": "66edc21f6238cc9f8f06c5b801e5bdaf37f382c7"
 }

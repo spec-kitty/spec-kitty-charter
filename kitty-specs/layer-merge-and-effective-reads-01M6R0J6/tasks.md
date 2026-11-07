@@ -8,7 +8,8 @@ letter. Subtask rows below are references; completion is recorded with
 
 ## Phases
 
-- **PR A0 (WP01–WP09):** the ruling changes to #399's built behaviour (IC-19) and the A7 kind model (IC-20).
+- **PR A0 (WP01–WP09, WP30):** the ruling changes to #399's built behaviour (IC-19), the A7 kind model (IC-20) and
+  the cascade depth of #408 (IC-21, WP30, added 2026-11-07).
 - **PR A (WP10–WP20):** ADR-0065, asynchronous whole-pack registration with the impact check and history, sources
   (HTTPS archive, git, local path), `DELETE`s, the write generation and read retry, access and audit, docs.
 - **PR B (WP21–WP26):** the layer merge, in-force resolution, the effective list and skipped report, write warnings,
@@ -177,6 +178,12 @@ model the reads are built on.
 | T150 | Mutation scope: the new packages and the excluded tags | WP13 | |
 | T151 | Staging sweep and the free-space refusal (NFR-009) | WP16 | |
 | T152 | Fake git shim and the dedicated CI job | WP18 | |
+| T153 | Contract: `depth` on the cascade requests | WP30 | |
+| T154 | Red scenarios | WP30 | |
+| T155 | Domain and plan | WP30 | |
+| T156 | The packs walk honours the bound | WP30 | |
+| T157 | API glue and the client | WP30 | |
+| T158 | ADR-0059 D2 amendment and divergence for the #408 rulings | WP09 | |
 
 ## Work packages
 
@@ -289,7 +296,7 @@ T148 Suite guard: an undefined or pending step fails the run (WP08)
 
 - **Prompt:** [tasks/WP09-a0-docs-adrs-divergences.md](tasks/WP09-a0-docs-adrs-divergences.md)
 - **PR:** A0
-- **Dependencies:** WP08
+- **Dependencies:** WP08, WP30
 - **Subtasks:**
 
 T040 ADR-0020 and ADR-0042 amendments (WP09)
@@ -297,6 +304,20 @@ T041 ADR-0050 and ADR-0059 amendments (WP09)
 T042 Divergence register (WP09)
 T043 Docs changelog and core hand-over text (WP09)
 T149 Ruleset scenario trace (SC-002, SC-005) (WP09)
+T158 ADR-0059 D2 amendment and divergence for the #408 rulings (WP09)
+
+### WP30 — A0 · Cascade depth: suggests hops on a cascading select and deactivate (#408)
+
+- **Prompt:** [tasks/WP30-a0-cascade-depth.md](tasks/WP30-a0-cascade-depth.md)
+- **PR:** A0
+- **Dependencies:** WP08
+- **Subtasks:**
+
+T153 Contract: `depth` on the cascade requests (WP30)
+T154 Red scenarios (WP30)
+T155 Domain and plan (WP30)
+T156 The packs walk honours the bound (WP30)
+T157 API glue and the client (WP30)
 
 ### WP10 — A · ADR-0065: registration replaces the whole pack
 

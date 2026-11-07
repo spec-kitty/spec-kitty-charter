@@ -3,6 +3,7 @@ work_package_id: WP09
 title: 'A0 · Docs: ADR amendments, divergences and the core hand-over for A0'
 dependencies:
 - WP08
+- WP30
 requirement_refs:
 - FR-040
 - FR-041
@@ -19,6 +20,7 @@ subtasks:
 - T042
 - T043
 - T149
+- T158
 phase: PR A0
 history:
 - timestamp: '2026-11-06T00:00:00Z'
@@ -135,6 +137,15 @@ DIV-203, DIV-501 updated; the new DIV for `activated_kinds` narrowing; check eve
 - In the same file (or a section the PR description can quote), the core hand-over: regenerate the strict DTOs;
   `activatedKinds`/`missionTypes` are refused; mission types are selected under `selected.mission_type`;
   `activated_kinds` narrowing is gone. Nothing is edited or filed in core.
+
+### T158: ADR-0059 D2 amendment and divergence for the #408 rulings
+
+A dated amendment under ADR-0059's amendment list (style of A2–A5) recording the operator's #408 rulings of
+2026-11-07: (1) the write cascade keeps its relations with no default limit and gains `depth`, counting `suggests` hops
+(decision `DM-01M6TDH0SY5Q224GX709DXWG8K`, built by WP30); (2) the language filter applies at read only, and a read
+with no activation applies no filtering; (3) a `suggests` edge's `when` surfaces as conditional in the effective reads.
+Mark (2) and (3) planned for PR B and C (FR-013, FR-017, FR-019). A divergence entry: core has no write-cascade depth.
+Source: `research/rulings-2026-11-07.md`.
 
 ### T149: Ruleset scenario trace (SC-002, SC-005)
 
