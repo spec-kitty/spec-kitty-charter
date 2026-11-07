@@ -60,6 +60,12 @@ public record ArchiveViolation(Code code, String path) {
         ZIP_EXTRA_FIELD,
         /** A zip entry's declared size differs from the bytes it holds. */
         ZIP_SIZE_MISMATCH,
+        /** The end record's entry count differs from the central-directory headers the archive holds. */
+        ZIP_COUNT_MISMATCH,
+        /** A zip header carries more than 1,024 bytes of extra fields. */
+        ZIP_EXTRA_FIELD_TOO_LARGE,
+        /** A tar PAX or GNU long-name header is larger than 64 KiB. */
+        HEADER_TOO_LARGE,
         /** The archive is truncated or malformed. */
         ARCHIVE_UNREADABLE;
 

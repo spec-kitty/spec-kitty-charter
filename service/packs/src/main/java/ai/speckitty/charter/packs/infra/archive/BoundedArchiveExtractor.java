@@ -18,6 +18,7 @@ import java.nio.file.Path;
 public final class BoundedArchiveExtractor implements PackArchiveReader {
 
     private final ArchiveLimits limits;
+    private final ZipReader.ZipOpener opener;
 
     /** An extractor with the contract's limits. */
     public BoundedArchiveExtractor() {
@@ -30,7 +31,13 @@ public final class BoundedArchiveExtractor implements PackArchiveReader {
      * @param limits the bounds
      */
     public BoundedArchiveExtractor(ArchiveLimits limits) {
+        this(limits, ZipReader::openLibrary);
+    }
+
+    /** An extractor whose zip opener is replaced, so a test can see when the library is opened and make it fail. */
+    BoundedArchiveExtractor(ArchiveLimits limits, ZipReader.ZipOpener opener) {
         this.limits = limits;
+        this.opener = opener;
     }
 
     @Override
@@ -50,7 +57,7 @@ public final class BoundedArchiveExtractor implements PackArchiveReader {
             if (format == ArchiveFormat.TAR_GZ) {
                 new TarGzReader(limits).read(body, tree);
             } else {
-                new ZipReader(limits).read(body, tree, stagingRoot);
+                new ZipReader(limits, opener).read(body, tree, stagingRoot);
             }
         } catch (ArchiveLimitException e) {
             tree.violation(e.code(), e.path());

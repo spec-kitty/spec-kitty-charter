@@ -34,10 +34,30 @@ final class ZipReader {
     private static final ZipShort UNICODE_PATH = new ZipShort(0x7075);
     private static final ZipShort UNICODE_COMMENT = new ZipShort(0x6375);
 
+    /** How the library's {@link ZipFile} is opened; the tests replace it to see when, and whether, it is. */
+    @FunctionalInterface
+    interface ZipOpener {
+        ZipFile open(FileChannel channel) throws IOException;
+    }
+
     private final ArchiveLimits limits;
+    private final ZipOpener opener;
 
     ZipReader(ArchiveLimits limits) {
+        this(limits, ZipReader::openLibrary);
+    }
+
+    ZipReader(ArchiveLimits limits, ZipOpener opener) {
         this.limits = limits;
+        this.opener = opener;
+    }
+
+    static ZipFile openLibrary(FileChannel channel) throws IOException {
+        return ZipFile.builder()
+                .setSeekableByteChannel(channel)
+                .setUseUnicodeExtraFields(false)
+                .setIgnoreLocalFileHeader(true)
+                .get();
     }
 
     /** One entry that passed inspection and will be written. */
@@ -73,11 +93,7 @@ final class ZipReader {
         if (ZipEndRecord.entryCount(channel) > limits.maxEntries()) {
             throw new ArchiveLimitException(Code.TOO_MANY_ENTRIES, "");
         }
-        try (ZipFile zip = ZipFile.builder()
-                .setSeekableByteChannel(channel)
-                .setUseUnicodeExtraFields(false)
-                .setIgnoreLocalFileHeader(true)
-                .get()) {
+        try (ZipFile zip = opener.open(channel)) {
             List<Planned> planned = inspect(zip, channel, tree);
             if (tree.clean()) {
                 for (Planned p : planned) {

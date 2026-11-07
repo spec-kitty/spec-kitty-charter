@@ -6,6 +6,7 @@ import static ai.speckitty.charter.packs.application.ArchiveViolation.Code.COMPR
 import static ai.speckitty.charter.packs.application.ArchiveViolation.Code.ENCRYPTED;
 import static ai.speckitty.charter.packs.application.ArchiveViolation.Code.ENTRY_TYPE;
 import static ai.speckitty.charter.packs.application.ArchiveViolation.Code.EXPANDED_TOO_LARGE;
+import static ai.speckitty.charter.packs.application.ArchiveViolation.Code.HEADER_TOO_LARGE;
 import static ai.speckitty.charter.packs.application.ArchiveViolation.Code.PATH_ABSOLUTE;
 import static ai.speckitty.charter.packs.application.ArchiveViolation.Code.PATH_BACKSLASH;
 import static ai.speckitty.charter.packs.application.ArchiveViolation.Code.PATH_CHARACTER;
@@ -17,7 +18,9 @@ import static ai.speckitty.charter.packs.application.ArchiveViolation.Code.PATH_
 import static ai.speckitty.charter.packs.application.ArchiveViolation.Code.PATH_TOO_LONG;
 import static ai.speckitty.charter.packs.application.ArchiveViolation.Code.PATH_TRAVERSAL;
 import static ai.speckitty.charter.packs.application.ArchiveViolation.Code.TOO_MANY_ENTRIES;
+import static ai.speckitty.charter.packs.application.ArchiveViolation.Code.ZIP_COUNT_MISMATCH;
 import static ai.speckitty.charter.packs.application.ArchiveViolation.Code.ZIP_EXTRA_FIELD;
+import static ai.speckitty.charter.packs.application.ArchiveViolation.Code.ZIP_EXTRA_FIELD_TOO_LARGE;
 import static ai.speckitty.charter.packs.application.ArchiveViolation.Code.ZIP_NAME_ENCODING;
 import static ai.speckitty.charter.packs.application.ArchiveViolation.Code.ZIP_NAME_MISMATCH;
 import static ai.speckitty.charter.packs.application.ArchiveViolation.Code.ZIP_OVERLAP;
@@ -164,6 +167,36 @@ class HostileArchiveCorpusTest {
                         tarOf(t -> t.paxPath("a/".repeat(2_100)).file("ok.txt", "x")),
                         v(PATH_TOO_LONG, "a/".repeat(128))),
                 tar(
+                        "tar PAX x header over 64 KiB",
+                        tarOf(t -> t.pax(Map.of("comment", "a".repeat(65 * 1024))).file("ok.txt", "x")),
+                        v(HEADER_TOO_LARGE, "")),
+                tar(
+                        "tar PAX global header over 64 KiB",
+                        tarOf(t -> t.entry("GlobalHead/0", (byte) 'g', new byte[64 * 1024 + 1], "")
+                                .file("ok.txt", "x")),
+                        v(HEADER_TOO_LARGE, "")),
+                tar(
+                        "tar GNU long name header over 64 KiB",
+                        tarOf(t -> t.gnuLongName("pack/" + "a".repeat(70_000)).file("short", "x")),
+                        v(HEADER_TOO_LARGE, "")),
+                tar(
+                        "tar GNU long link header over 64 KiB",
+                        tarOf(t -> t.entry("././@LongLink", (byte) 'K', new byte[64 * 1024 + 1], "")
+                                .file("short", "x")),
+                        v(HEADER_TOO_LARGE, "")),
+                tar(
+                        "tar PAX path starting with a slash",
+                        tarOf(t -> t.paxPath("/abs/evil").file("ignored", "x")),
+                        v(PATH_ABSOLUTE, "/abs/evil")),
+                tar(
+                        "tar PAX global path starting with a slash",
+                        tarOf(t -> t.globalPaxPath("/abs/evil").file("ignored", "x")),
+                        v(PATH_ABSOLUTE, "/abs/evil")),
+                tar(
+                        "tar GNU long name starting with a slash",
+                        tarOf(t -> t.gnuLongName("/abs/evil").file("short", "x")),
+                        v(PATH_ABSOLUTE, "/abs/evil")),
+                tar(
                         "tar bomb, one entry",
                         () -> RawTar.gzBombOfZeros("pack/big.bin", 64 * MIB),
                         v(EXPANDED_TOO_LARGE, "pack/big.bin")),
@@ -217,6 +250,25 @@ class HostileArchiveCorpusTest {
                         "zip with 10,001 central entries",
                         HostileArchiveCorpusTest::zipTenThousandAndOne,
                         v(TOO_MANY_ENTRIES, "")),
+                zip(
+                        "zip end record claims fewer entries than the headers hold",
+                        zipOf(z -> {
+                            z.file("pack/a.txt", "x");
+                            z.file("pack/b.txt", "x");
+                            z.declaredCount(1);
+                        }),
+                        v(ZIP_COUNT_MISMATCH, "")),
+                zip(
+                        "zip end record claims more entries than the headers hold",
+                        zipOf(z -> {
+                            z.file("pack/a.txt", "x");
+                            z.declaredCount(2);
+                        }),
+                        v(ZIP_COUNT_MISMATCH, "")),
+                zip(
+                        "zip with an honest count and over 1,024 bytes of central extra fields",
+                        zipOf(z -> z.file("pack/a.txt", "x").extra(unknownExtra(1_025))),
+                        v(ZIP_EXTRA_FIELD_TOO_LARGE, "pack/a.txt")),
                 zip(
                         "zip local and central names differ",
                         zipOf(z -> z.file("pack/a.txt", "x").localName("pack/b.txt")),
@@ -342,6 +394,23 @@ class HostileArchiveCorpusTest {
     }
 
     @Test
+    void aHugeMetaHeaderIsRefusedBeforeItsBodyIsReadOrParsed() throws IOException {
+        byte[] tar = new RawTar()
+                .entry("PaxHeader/0", (byte) 'x', new byte[28 * (int) MIB], "")
+                .file("ok.txt", "x")
+                .gz();
+        Path staging = Files.createDirectory(work.resolve("staging"));
+
+        Throwable thrown = org.assertj.core.api.Assertions.catchThrowable(() -> new BoundedArchiveExtractor()
+                .extract(new ByteArrayInputStream(tar), ArchiveFormat.TAR_GZ, staging));
+
+        assertThat(thrown).isInstanceOf(ArchiveRefusal.class);
+        ArchiveRefusal refusal = (ArchiveRefusal) thrown;
+        assertThat(refusal.violations()).containsExactly(v(HEADER_TOO_LARGE, ""));
+        assertThat(refusal.decompressedBytes()).isLessThanOrEqualTo(1_024);
+    }
+
+    @Test
     void aBodyOverTheLimitIsTheOneRefusalAnsweredAsTooLarge() throws IOException {
         Hostile row = hostileZips()
                 .filter(h -> h.id().equals("zip body over 32 MiB"))
@@ -407,10 +476,15 @@ class HostileArchiveCorpusTest {
                         tarOf(t -> t.paxPath("pack.yaml").file("PaxHeader-name", "name: p\n")),
                         plain),
                 new Benign(
-                        "tar PAX absolute path, which the library makes relative before the name check",
+                        "tar PAX header of exactly 64 KiB",
                         ArchiveFormat.TAR_GZ,
-                        tarOf(t -> t.paxPath("/abs/evil").file("ignored", "x").file("pack.yaml", "name: p\n")),
-                        Map.of("abs/evil", "x", "pack.yaml", "name: p\n")),
+                        tarOf(t -> t.pax(Map.of("comment", "a".repeat(65_521))).file("pack.yaml", "name: p\n")),
+                        plain),
+                new Benign(
+                        "zip with exactly 1,024 bytes of central extra fields",
+                        ArchiveFormat.ZIP,
+                        zipOf(z -> z.file("pack.yaml", "name: p\n").extra(unknownExtra(1_024))),
+                        plain),
                 new Benign(
                         "tar GNU long name that is safe",
                         ArchiveFormat.TAR_GZ,
@@ -564,6 +638,14 @@ class HostileArchiveCorpusTest {
         RawTar tar = new RawTar();
         IntStream.rangeClosed(0, 10_000).forEach(i -> tar.file("pack/f" + i + ".txt", ""));
         return tar.gz();
+    }
+
+    private static byte[] unknownExtra(int total) {
+        return java.nio.ByteBuffer.allocate(total)
+                .order(java.nio.ByteOrder.LITTLE_ENDIAN)
+                .putShort((short) 0xCAFE)
+                .putShort((short) (total - 4))
+                .array();
     }
 
     private static byte[] zipTenThousandAndOne() {

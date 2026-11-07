@@ -247,6 +247,13 @@ class BoundedArchiveExtractorTest {
     }
 
     @Test
+    void bidiAndOtherFormatCharactersAreEscapedLikeControls() {
+        assertThat(new ArchiveViolation(Code.PATH_CHARACTER, "a\u202eb\u200bc\ufeffd\u2066e").path())
+                .isEqualTo("a\\u202eb\\u200bc\\ufeffd\\u2066e");
+        assertThat(new ArchiveViolation(Code.PATH_CHARACTER, "caf\u00e9").path()).isEqualTo("caf\u00e9");
+    }
+
+    @Test
     void aValueIsCutOnACharacterBoundaryNotInsideOne() {
         String path = "€".repeat(100);
 
