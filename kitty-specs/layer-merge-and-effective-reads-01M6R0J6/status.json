@@ -380,6 +380,9 @@
       "last_event_id": "01M6TV5KEZRQWNFZA7RRD6AAGY",
       "last_transition_at": "2026-11-07T11:09:16.639594+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Contract A declared: 7 reserved operations (tag Registration, x-reserved pack-registration), PackRegistration/PackRegistrationStatus/PackSource schemas, 14 refusal codes (raised:false until served), IfMatch extension, 3 fragments, 2 @WIP feature files. Gate green (contracts, deployable, client-java, packs checks)."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 19164,
