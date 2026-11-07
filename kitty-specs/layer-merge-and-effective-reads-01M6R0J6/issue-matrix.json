@@ -157,7 +157,7 @@
       "wp": null
     },
     "#405": {
-      "evidence_ref": "https://github.com/spec-kitty/spec-kitty-open-packs/issues/131 (operator steer 2026-11-07, decision DM-01M6TDH5BSMNZMFJBY1NPBZYTK)",
+      "evidence_ref": "Follow-up: spec-kitty/spec-kitty-open-packs#131 (edges), then the charter pin bump and guard test (operator steer 2026-11-07, DM-01M6TDH5BSMNZMFJBY1NPBZYTK)",
       "fr": null,
       "nfr": null,
       "repo": null,
