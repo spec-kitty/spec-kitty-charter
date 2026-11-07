@@ -813,7 +813,7 @@ class PackRegistrationServiceTest {
         final Path packs;
         final Path staging;
         final PackWriteGeneration generation = new PackWriteGeneration();
-        final RegistryWriteLock lock = new RegistryWriteLock(Duration.ofSeconds(30));
+        final RegistryWriteLock lock;
         final StorageRootLocations locations;
         final DomainRepositoryService repository;
         final PackCommitStore commits;
@@ -833,7 +833,13 @@ class PackRegistrationServiceTest {
         volatile Runnable midSwap = () -> {};
 
         Rig(Path host) {
+            this(host, Duration.ofSeconds(30));
+        }
+
+        /** A rig whose registry lock gives up after {@code lockTimeout}, so a contention test does not wait 5 s. */
+        Rig(Path host, Duration lockTimeout) {
             this.host = host;
+            this.lock = new RegistryWriteLock(lockTimeout);
             this.packs = host.resolve("packs");
             this.staging = host.resolve("staging");
             YamlSerializationStrategy strategy = new YamlSerializationStrategy();
@@ -920,7 +926,7 @@ class PackRegistrationServiceTest {
             }
         }
 
-        private static void write(Path file, String text) {
+        static void write(Path file, String text) {
             try {
                 Files.createDirectories(file.getParent());
                 Files.writeString(file, text, StandardCharsets.UTF_8);
