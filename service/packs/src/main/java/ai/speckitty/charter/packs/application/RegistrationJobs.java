@@ -32,6 +32,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
@@ -600,6 +601,7 @@ public final class RegistrationJobs implements AutoCloseable {
         private Phase phase = Phase.RESERVED;
         private @Nullable Instant finishedAt;
         private @Nullable Ending ending;
+        private final AtomicBoolean slotHeld = new AtomicBoolean(true);
         private @Nullable Future<?> task;
         private @Nullable Thread worker;
         private @Nullable Stager stager;
@@ -685,7 +687,7 @@ public final class RegistrationJobs implements AutoCloseable {
                 }
             }
             if (released) {
-                owner.inFlight.decrementAndGet();
+                releaseSlot();
                 deleteDirectory();
                 synchronized (owner.jobs) {
                     owner.jobs.remove(id);
@@ -707,6 +709,7 @@ public final class RegistrationJobs implements AutoCloseable {
                     end(result, false);
                 }
                 clearWorker();
+                releaseSlot();
             }
         }
 
@@ -727,6 +730,17 @@ public final class RegistrationJobs implements AutoCloseable {
             } catch (RuntimeException | Error failure) {
                 LOG.log(System.Logger.Level.WARNING, "A registration job failed unexpectedly.", failure);
                 return new Refused(Kind.FAILED, null, INTERNAL_DETAIL);
+            }
+        }
+
+        /**
+         * Gives the admission slot back, once. A job ended while its worker is still on an executor thread keeps the
+         * slot until the worker leaves {@code run()}, so the executor never holds more than two running and eight
+         * waiting however late a stager answers.
+         */
+        private void releaseSlot() {
+            if (slotHeld.compareAndSet(true, false)) {
+                owner.inFlight.decrementAndGet();
             }
         }
 
@@ -803,6 +817,9 @@ public final class RegistrationJobs implements AutoCloseable {
                 Future<?> queued = task;
                 if (queued != null) {
                     queued.cancel(false);
+                    if (queued instanceof Runnable waiting) {
+                        owner.executor.remove(waiting);
+                    }
                 }
             }
         }
@@ -832,11 +849,11 @@ public final class RegistrationJobs implements AutoCloseable {
                 // Under the job's own lock, so a reader that sees the end sees the attempt's entry too.
                 record(now, result);
             }
-            owner.inFlight.decrementAndGet();
             if (unlessCommitting && active != null) {
                 active.interrupt();
             }
             if (idle) {
+                releaseSlot();
                 deleteDirectory();
             }
             return true;
