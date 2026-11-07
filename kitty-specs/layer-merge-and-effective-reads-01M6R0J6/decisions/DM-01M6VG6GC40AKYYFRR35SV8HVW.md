@@ -4,9 +4,10 @@
 - **Origin flow:** `plan`
 - **Slot key:** `per-artifact-impact`
 - **Input key:** `per-artifact-impact-check`
-- **Status:** `deferred`
+- **Status:** `resolved`
 - **Created:** `2026-11-07T17:16:46.340960+00:00`
-- **Resolved:** `2026-11-07T17:16:51.382453+00:00`
+- **Resolved:** `2026-11-07T17:39:37.718193+00:00`
+- **Resolved by:** `operator-stijn`
 - **Opened by:** `claude-runner`
 - **Other answer:** `false`
 
@@ -21,13 +22,13 @@ Should the per-artifact writes (PUT/POST /packs/{packId}/artifacts/...) also run
 
 ## Final answer
 
-_(none)_
+Yes: the per-artifact writes (PUT/POST /packs/{packId}/artifacts/..., and the relationship writes) run IC-15's impact check too, in PR A.
 
 ## Rationale
 
-Widens PR A's scope beyond IC-15 (registration and DELETE); the operator decides. Raised in PR A's open decisions.
+Operator ruling 2026-11-07 (chat): a per-artifact write must not leave a closure that no longer composes or breaks a relation rule.
 
 ## Change log
 
 - `2026-11-07T17:16:46.340960+00:00` - opened
-- `2026-11-07T17:16:51.382453+00:00` - deferred
+- `2026-11-07T17:39:37.718193+00:00` - resolved (final_answer="Yes: the per-artifact writes (PUT/POST /packs/{packId}/artifacts/..., and the relationship writes) run IC-15's impact check too, in PR A.")

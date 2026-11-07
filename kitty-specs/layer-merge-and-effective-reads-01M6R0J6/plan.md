@@ -908,6 +908,10 @@ IC-03 to IC-09 above and into the concerns below.
   affected-activations notice (below) to the same adapter.
 - **What it judges,** over every closure that contains the staged pack (not one global compose; ruleset G8), with the
   staged pack in place. The same check runs for a `DELETE` over the pack as it will be after the removal (IC-06).
+  **The per-artifact writes too (operator, 2026-11-07, decision `01M6VG6GC40AKYYFRR35SV8HVW`):** a `PUT`/`POST` of one
+  artifact or relationship (`/packs/{packId}/artifacts/...`) runs the same check over the pack as it will be after the
+  write, under the registry lock, so a per-artifact write can no longer leave a closure that fails to compose (for
+  example two packs of one level defining one id) or breaks a relation rule. Built in WP19, beside the `DELETE` check.
   **PR A stays strict (`DM-01M6TQ67C9ZTNGZB9CY28JS54F`):** a registration or `DELETE` whose resulting closures fail to
   compose or break a rule is refused. ADR-0063's 2026-11-06 repair-write amendment (refuse only new violations, #404) is
   out of scope for PR A, so a pack that is already broken cannot be repaired by a write that leaves a closure broken.
