@@ -460,6 +460,9 @@
       "last_event_id": "01M6THRM1SSBT9ZBP5W1726RYR",
       "last_transition_at": "2026-11-07T08:24:54.073057+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Cascade depth (#408 ruling 1): contract + 16-scenario feature (red 10/16, then green), domain plan/report (CascadeRulesDepthTest), layered 0-1 BFS in Reachability (18 tests), API glue + client round trip; gate green (packs 2972, activations 554, deployable 1007, client-java 19)."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 15869,
