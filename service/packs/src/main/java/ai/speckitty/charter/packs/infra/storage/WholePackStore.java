@@ -287,12 +287,13 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         PackIdentifier key = new PackIdentifier(name);
         FilesystemPackStore store = new FilesystemPackStore(parent, strategy, companionRules);
         Salvage salvage = new Salvage();
+        PackFileSet.Listing listing = PackFileSet.listing(packDir); // the pack is listed once
         for (KindBinding<?, ?> binding : bindings) {
-            for (String file : PackFileSet.files(packDir, binding.kind())) {
+            for (String file : listing.files(binding.kind())) {
                 salvageFile(store, key, packDir, binding, file, salvage);
             }
         }
-        PackFileSet.templates(packDir).forEach(file -> salvageTemplate(packDir, file, salvage));
+        listing.templates().forEach(file -> salvageTemplate(packDir, file, salvage));
         List<Path> graphs = new ArrayList<>(PackFileSet.rootShards(packDir, name));
         if (Files.isRegularFile(packDir.resolve(PackFileSet.FRAGMENT))) {
             graphs.add(packDir.resolve(PackFileSet.FRAGMENT));
@@ -312,15 +313,30 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         Optional<String> declared = plainText(packDir.resolve(file)).flatMap(text -> declaredId(text, binding.idKey()));
         urnOf(binding, declared.orElse(stem)).ifPresent(out.defined::add);
         urnOf(binding, stem).ifPresent(out.defined::add);
-        declared.ifPresent(id -> readEntity(store, key, binding, id, out));
+        readEntity(store, key, packDir, binding, file, out);
     }
 
+    /** The listed file itself, never a lookup by id: two files declaring one id each contribute their own read. */
     private <D, E extends CharterArtifact> void readEntity(
-            FilesystemPackStore store, PackIdentifier key, KindBinding<D, E> binding, String id, Salvage out) {
+            FilesystemPackStore store,
+            PackIdentifier key,
+            Path packDir,
+            KindBinding<D, E> binding,
+            String file,
+            Salvage out) {
         try {
-            store.readOne(key, binding, id).ifPresent(dso -> {
+            store.readListed(packDir, file, binding).ifPresent(dso -> {
                 E entity = binding.toEntity(key, dso);
-                out.digests.put(entity.urn(), digestOf(entity));
+                // An id declared by two files has no one digest: the two are combined, so that no upload's copy equals
+                // it.
+                out.digests.merge(
+                        entity.urn(),
+                        digestOf(entity),
+                        (first, second) -> PackRevision.computeOverBytes(List.of(
+                                        first.getBytes(StandardCharsets.UTF_8),
+                                        second.getBytes(StandardCharsets.UTF_8)))
+                                .token());
+
                 out.edges.addAll(entity.derivedRelationships());
             });
         } catch (RuntimeException readFault) {

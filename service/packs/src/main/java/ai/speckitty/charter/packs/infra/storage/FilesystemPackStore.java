@@ -598,19 +598,34 @@ final class FilesystemPackStore {
      */
     <D> Optional<D> readOne(PackIdentifier id, KindBinding<D, ?> kind, String elementId) {
         Path directory = existingDirectory(id);
-        return locate(directory, kind, elementId).flatMap(file -> {
-            String name = directory
-                    .relativize(file)
-                    .toString()
-                    .replace(file.getFileSystem().getSeparator(), "/");
-            return switch (readFile(file, name, text -> strategy.read(kind, text, name))) {
-                case FileRead.Read<D> good ->
-                    withCompanions(
-                            companionRules, directory, name, kind, good.value(), new ArrayList<>(), new HashSet<>());
-                case FileRead.Unreadable<D> bad -> Optional.empty();
-                case FileRead.Absent<D> absent -> Optional.empty();
-            };
-        });
+        return locate(directory, kind, elementId)
+                .flatMap(file -> readListed(
+                        directory,
+                        directory
+                                .relativize(file)
+                                .toString()
+                                .replace(file.getFileSystem().getSeparator(), "/"),
+                        kind));
+    }
+
+    /**
+     * Reads one file that was listed, as its kind, with its companions: the one way a single file is read, shared by the
+     * lookup by id ({@link #readOne}) and by a bulk read that has the listing ({@code WholePackStore#salvageStored}),
+     * which must not look each file up again.
+     *
+     * @param directory the pack directory
+     * @param name the file's pack-relative path
+     * @param kind the kind's binding
+     * @param <D> the kind's persistence shape
+     * @return the element, or empty when the file cannot be read as the kind or a companion is refused
+     */
+    <D> Optional<D> readListed(Path directory, String name, KindBinding<D, ?> kind) {
+        return switch (readFile(directory.resolve(name), name, text -> strategy.read(kind, text, name))) {
+            case FileRead.Read<D> good ->
+                withCompanions(companionRules, directory, name, kind, good.value(), new ArrayList<>(), new HashSet<>());
+            case FileRead.Unreadable<D> bad -> Optional.empty();
+            case FileRead.Absent<D> absent -> Optional.empty();
+        };
     }
 
     /**
