@@ -60,9 +60,11 @@ public final class GlobalAddressResolverProvider extends InetAddressResolverProv
 
     static void installRequiringGuard(GuideAllowlist allowlist, BooleanSupplier guardIsTheJvmResolver) {
         if (!allowlist.hosts().isEmpty() && !guardIsTheJvmResolver.getAsBoolean()) {
-            throw new IllegalStateException("charter.guide-fetch.allowed-hosts is set, but the JVM did not install the"
-                    + " guide-fetch resolver guard (META-INF/services/java.net.spi.InetAddressResolverProvider);"
-                    + " refusing to fetch guides without DNS-rebinding protection");
+            throw new IllegalStateException("an allowlist names a host (charter.guide-fetch.allowed-hosts,"
+                    + " charter.pack-sources.https.allowed-hosts or charter.pack-sources.git.allowed-hosts), but the JVM"
+                    + " did not install the fetch resolver guard"
+                    + " (META-INF/services/java.net.spi.InetAddressResolverProvider); refusing to fetch without"
+                    + " DNS-rebinding protection");
         }
         install(allowlist);
     }

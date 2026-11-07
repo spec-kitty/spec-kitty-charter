@@ -20,7 +20,21 @@ public interface HttpsExchange {
      * @param maxBytes the largest body accepted
      * @param accept the {@code Accept} header value of the request
      */
-    record BodyPolicy(long maxBytes, String accept) {}
+    record BodyPolicy(long maxBytes, String accept) {
+
+        /**
+         * Checks the cap.
+         *
+         * @param maxBytes the largest body accepted; positive and below 2 GiB
+         * @param accept the {@code Accept} header value of the request
+         * @throws IllegalArgumentException when the cap is not positive or is 2 GiB or more
+         */
+        public BodyPolicy {
+            if (maxBytes <= 0 || maxBytes > Integer.MAX_VALUE - 8) {
+                throw new IllegalArgumentException("the body size cap must be positive and below 2 GiB");
+            }
+        }
+    }
 
     /** A successful exchange: where the body came from, its headers and its bytes. */
     final class Fetched {
