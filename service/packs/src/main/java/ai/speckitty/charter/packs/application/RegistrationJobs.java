@@ -832,17 +832,22 @@ public final class RegistrationJobs implements AutoCloseable {
                 phase = Phase.ENDED;
                 finishedAt = now;
                 ending = result;
+                // Under the job's own lock, so a reader that sees the end sees the attempt's entry too.
+                record(now, result);
             }
             owner.inFlight.decrementAndGet();
+            if (idle) {
+                deleteDirectory();
+            }
+            return true;
+        }
+
+        private void record(Instant now, Ending result) {
             try {
                 owner.dependencies.audit().record(auditEntry(now, result));
             } catch (RuntimeException lost) {
                 LOG.log(System.Logger.Level.ERROR, "The audit entry of a registration could not be written.", lost);
             }
-            if (idle) {
-                deleteDirectory();
-            }
-            return true;
         }
 
         private AuditLog.Entry auditEntry(Instant now, Ending result) {
