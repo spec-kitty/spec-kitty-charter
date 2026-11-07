@@ -194,21 +194,28 @@ final class RawZip {
 
     private static byte[] local(Entry e) {
         byte[] name = e.localName != null ? e.localName : e.name;
-        ByteBuffer b = ByteBuffer.allocate(30 + name.length + e.localExtra.length).order(ByteOrder.LITTLE_ENDIAN);
+        ByteBuffer b =
+                ByteBuffer.allocate(30 + name.length + e.localExtra.length).order(ByteOrder.LITTLE_ENDIAN);
         b.putInt(0x04034b50).putShort((short) 20).putShort((short) e.flags).putShort((short) e.method);
         b.putShort((short) 0).putShort((short) 0x21).putInt(e.crc);
         b.putInt((int) compressed(e)).putInt((int) size(e));
-        b.putShort((short) name.length).putShort((short) e.localExtra.length).put(name).put(e.localExtra);
+        b.putShort((short) name.length)
+                .putShort((short) e.localExtra.length)
+                .put(name)
+                .put(e.localExtra);
         return b.array();
     }
 
     private static byte[] central(Entry e, int offset) {
-        ByteBuffer b = ByteBuffer.allocate(46 + e.name.length + e.centralExtra.length).order(ByteOrder.LITTLE_ENDIAN);
+        ByteBuffer b =
+                ByteBuffer.allocate(46 + e.name.length + e.centralExtra.length).order(ByteOrder.LITTLE_ENDIAN);
         int madeBy = e.unixMode != 0 ? (3 << 8) | 20 : 20;
         b.putInt(0x02014b50).putShort((short) madeBy).putShort((short) 20).putShort((short) e.flags);
         b.putShort((short) e.method).putShort((short) 0).putShort((short) 0x21).putInt(e.crc);
         b.putInt((int) compressed(e)).putInt((int) size(e));
-        b.putShort((short) e.name.length).putShort((short) e.centralExtra.length).putShort((short) 0);
+        b.putShort((short) e.name.length)
+                .putShort((short) e.centralExtra.length)
+                .putShort((short) 0);
         b.putShort((short) 0).putShort((short) 0).putInt(e.unixMode << 16).putInt(offset);
         b.put(e.name).put(e.centralExtra);
         return b.array();
@@ -216,7 +223,11 @@ final class RawZip {
 
     private static byte[] end(int count, int centralSize, int centralStart) {
         ByteBuffer b = ByteBuffer.allocate(22).order(ByteOrder.LITTLE_ENDIAN);
-        b.putInt(0x06054b50).putShort((short) 0).putShort((short) 0).putShort((short) count).putShort((short) count);
+        b.putInt(0x06054b50)
+                .putShort((short) 0)
+                .putShort((short) 0)
+                .putShort((short) count)
+                .putShort((short) count);
         b.putInt(centralSize).putInt(centralStart).putShort((short) 0);
         return b.array();
     }

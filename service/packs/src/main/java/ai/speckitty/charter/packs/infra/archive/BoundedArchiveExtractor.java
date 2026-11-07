@@ -47,9 +47,10 @@ public final class BoundedArchiveExtractor implements PackArchiveReader {
 
     private void read(InputStream body, ArchiveFormat format, PackTree tree, Path stagingRoot) {
         try {
-            switch (format) {
-                case TAR_GZ -> new TarGzReader(limits).read(body, tree);
-                case ZIP -> new ZipReader(limits).read(body, tree, stagingRoot);
+            if (format == ArchiveFormat.TAR_GZ) {
+                new TarGzReader(limits).read(body, tree);
+            } else {
+                new ZipReader(limits).read(body, tree, stagingRoot);
             }
         } catch (ArchiveLimitException e) {
             tree.violation(e.code(), e.path());

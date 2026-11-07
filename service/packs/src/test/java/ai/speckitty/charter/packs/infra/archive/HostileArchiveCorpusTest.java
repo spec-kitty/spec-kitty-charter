@@ -1,5 +1,7 @@
 package ai.speckitty.charter.packs.infra.archive;
 
+import static ai.speckitty.charter.packs.application.ArchiveViolation.Code.ARCHIVE_UNREADABLE;
+import static ai.speckitty.charter.packs.application.ArchiveViolation.Code.BODY_TOO_LARGE;
 import static ai.speckitty.charter.packs.application.ArchiveViolation.Code.COMPRESSION_METHOD;
 import static ai.speckitty.charter.packs.application.ArchiveViolation.Code.ENCRYPTED;
 import static ai.speckitty.charter.packs.application.ArchiveViolation.Code.ENTRY_TYPE;
@@ -20,8 +22,6 @@ import static ai.speckitty.charter.packs.application.ArchiveViolation.Code.ZIP_N
 import static ai.speckitty.charter.packs.application.ArchiveViolation.Code.ZIP_NAME_MISMATCH;
 import static ai.speckitty.charter.packs.application.ArchiveViolation.Code.ZIP_OVERLAP;
 import static ai.speckitty.charter.packs.application.ArchiveViolation.Code.ZIP_SIZE_MISMATCH;
-import static ai.speckitty.charter.packs.application.ArchiveViolation.Code.ARCHIVE_UNREADABLE;
-import static ai.speckitty.charter.packs.application.ArchiveViolation.Code.BODY_TOO_LARGE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -45,7 +45,6 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
@@ -107,10 +106,7 @@ class HostileArchiveCorpusTest {
                         tarOf(t -> t.file("pack/../../evil", "x")),
                         v(PATH_TRAVERSAL, "pack/../../evil")),
                 tar("tar absolute path", tarOf(t -> t.file("/etc/passwd", "x")), v(PATH_ABSOLUTE, "/etc/passwd")),
-                tar(
-                        "tar symlink",
-                        tarOf(t -> t.special("pack/link", '2', "/etc/passwd")),
-                        v(ENTRY_TYPE, "pack/link")),
+                tar("tar symlink", tarOf(t -> t.special("pack/link", '2', "/etc/passwd")), v(ENTRY_TYPE, "pack/link")),
                 tar(
                         "tar hardlink to a target outside the pack",
                         tarOf(t -> t.special("pack/hard", '1', "../../../etc/shadow")),
@@ -143,7 +139,10 @@ class HostileArchiveCorpusTest {
                 tar("tar backslash", tarOf(t -> t.file("pack\\evil", "x")), v(PATH_BACKSLASH, "pack\\evil")),
                 tar("tar drive letter", tarOf(t -> t.file("C:/evil", "x")), v(PATH_DRIVE_LETTER, "C:/evil")),
                 tar("tar dot segment", tarOf(t -> t.file("pack/./a", "x")), v(PATH_DOT_SEGMENT, "pack/./a")),
-                tar("tar non-ASCII name", tarOf(t -> t.file("pack/caf\u00e9.txt", "x")), v(PATH_CHARACTER, "pack/caf\u00e9.txt")),
+                tar(
+                        "tar non-ASCII name",
+                        tarOf(t -> t.file("pack/caf\u00e9.txt", "x")),
+                        v(PATH_CHARACTER, "pack/caf\u00e9.txt")),
                 tar(
                         "tar control character in a name",
                         tarOf(t -> t.file("pack/a\nb", "x")),
@@ -160,10 +159,19 @@ class HostileArchiveCorpusTest {
                         "tar bomb, one entry",
                         () -> RawTar.gzBombOfZeros("pack/big.bin", 64 * MIB),
                         v(EXPANDED_TOO_LARGE, "pack/big.bin")),
-                tar("tar bomb, many entries", HostileArchiveCorpusTest::manyMebibyteEntries, v(EXPANDED_TOO_LARGE, "pack/f32.bin")),
+                tar(
+                        "tar bomb, many entries",
+                        HostileArchiveCorpusTest::manyMebibyteEntries,
+                        v(EXPANDED_TOO_LARGE, "pack/f32.bin")),
                 tar("tar with 10,001 entries", HostileArchiveCorpusTest::tenThousandAndOne, v(TOO_MANY_ENTRIES, "")),
-                tar("tar truncated gzip", () -> truncated(new RawTar().file("pack/a", "x").gz()), v(ARCHIVE_UNREADABLE, "")),
-                tar("tar not gzip", () -> "not an archive at all".getBytes(StandardCharsets.UTF_8), v(ARCHIVE_UNREADABLE, "")));
+                tar(
+                        "tar truncated gzip",
+                        () -> truncated(new RawTar().file("pack/a", "x").gz()),
+                        v(ARCHIVE_UNREADABLE, "")),
+                tar(
+                        "tar not gzip",
+                        () -> "not an archive at all".getBytes(StandardCharsets.UTF_8),
+                        v(ARCHIVE_UNREADABLE, "")));
     }
 
     private static final String LONG_DOTDOT = "pack/" + "d/".repeat(60) + "../x";
@@ -172,8 +180,14 @@ class HostileArchiveCorpusTest {
         return Stream.of(
                 zip("zip zip-slip", zipOf(z -> z.file("../evil.txt", "x")), v(PATH_TRAVERSAL, "../evil.txt")),
                 zip("zip absolute path", zipOf(z -> z.file("/etc/passwd", "x")), v(PATH_ABSOLUTE, "/etc/passwd")),
-                zip("zip symlink", zipOf(z -> z.file("pack/link", "/etc/passwd").unixMode(0120777)), v(ENTRY_TYPE, "pack/link")),
-                zip("zip character device", zipOf(z -> z.file("pack/null", "").unixMode(020666)), v(ENTRY_TYPE, "pack/null")),
+                zip(
+                        "zip symlink",
+                        zipOf(z -> z.file("pack/link", "/etc/passwd").unixMode(0120777)),
+                        v(ENTRY_TYPE, "pack/link")),
+                zip(
+                        "zip character device",
+                        zipOf(z -> z.file("pack/null", "").unixMode(020666)),
+                        v(ENTRY_TYPE, "pack/null")),
                 zip("zip FIFO", zipOf(z -> z.file("pack/pipe", "").unixMode(010644)), v(ENTRY_TYPE, "pack/pipe")),
                 zip("zip socket", zipOf(z -> z.file("pack/sock", "").unixMode(0140755)), v(ENTRY_TYPE, "pack/sock")),
                 zip(
@@ -191,7 +205,10 @@ class HostileArchiveCorpusTest {
                             z.declaredCount(10_001);
                         }),
                         v(TOO_MANY_ENTRIES, "")),
-                zip("zip with 10,001 central entries", HostileArchiveCorpusTest::zipTenThousandAndOne, v(TOO_MANY_ENTRIES, "")),
+                zip(
+                        "zip with 10,001 central entries",
+                        HostileArchiveCorpusTest::zipTenThousandAndOne,
+                        v(TOO_MANY_ENTRIES, "")),
                 zip(
                         "zip local and central names differ",
                         zipOf(z -> z.file("pack/a.txt", "x").localName("pack/b.txt")),
@@ -214,8 +231,7 @@ class HostileArchiveCorpusTest {
                         v(PATH_CHARACTER, "pack/caf\u00e9.txt")),
                 zip(
                         "zip Unicode Path extra field carrying ../ under a benign name",
-                        zipOf(z -> z.file("pack/ok.txt", "x")
-                                .extra(RawZip.unicodePathExtra("pack/ok.txt", "../evil"))),
+                        zipOf(z -> z.file("pack/ok.txt", "x").extra(RawZip.unicodePathExtra("pack/ok.txt", "../evil"))),
                         v(ZIP_EXTRA_FIELD, "pack/ok.txt")),
                 zip(
                         "zip bomb with honest sizes",
@@ -227,7 +243,8 @@ class HostileArchiveCorpusTest {
                         v(EXPANDED_TOO_LARGE, "pack/big.bin")),
                 zip(
                         "zip entry smaller than its declared size",
-                        zipOf(z -> z.file("pack/a.txt", "x".repeat(100)).deflated().declaredSize(5)),
+                        zipOf(z ->
+                                z.file("pack/a.txt", "x".repeat(100)).deflated().declaredSize(5)),
                         v(ZIP_SIZE_MISMATCH, "pack/a.txt")),
                 zip(
                         "zip duplicate after case folding",
@@ -245,7 +262,10 @@ class HostileArchiveCorpusTest {
                         zipOf(z -> z.file("a/".repeat(2_100), "x")),
                         v(PATH_TOO_LONG, "a/".repeat(128))),
                 zip("zip body over 32 MiB", HostileArchiveCorpusTest::bigZipBody, v(BODY_TOO_LARGE, "")),
-                zip("zip not a zip", () -> "PK but not really".getBytes(StandardCharsets.UTF_8), v(ARCHIVE_UNREADABLE, "")));
+                zip(
+                        "zip not a zip",
+                        () -> "PK but not really".getBytes(StandardCharsets.UTF_8),
+                        v(ARCHIVE_UNREADABLE, "")));
     }
 
     static Stream<Hostile> corpus() {
@@ -269,22 +289,30 @@ class HostileArchiveCorpusTest {
 
         ArchiveRefusal refusal = refuse(row, staging);
 
-        assertThat(refusal.violations())
-                .as("violations of '%s'", row.id())
-                .containsExactlyElementsOf(row.expected());
+        assertThat(refusal.violations()).as("violations of '%s'", row.id()).containsExactlyElementsOf(row.expected());
         assertThat(refusal.decompressedBytes()).isLessThanOrEqualTo(READ_BOUND);
-        assertThat(ArchiveFixtures.listing(staging)).as("staging after a refusal").isEmpty();
+        assertThat(ArchiveFixtures.listing(staging))
+                .as("staging after a refusal")
+                .isEmpty();
         assertThat(ArchiveFixtures.listing(parent)).as("the staging parent").isEqualTo(parentBefore);
         assertThat(ArchiveFixtures.listing(work)).containsExactly("parent");
     }
 
     @Test
     void aBodyOverTheLimitIsTheOneRefusalAnsweredAsTooLarge() throws IOException {
-        Hostile row = hostileZips().filter(h -> h.id().equals("zip body over 32 MiB")).findFirst().orElseThrow();
+        Hostile row = hostileZips()
+                .filter(h -> h.id().equals("zip body over 32 MiB"))
+                .findFirst()
+                .orElseThrow();
         Path staging = Files.createDirectory(work.resolve("staging"));
 
         assertThat(refuse(row, staging).bodyTooLarge()).isTrue();
-        assertThat(refuse(hostileZips().filter(h -> h.id().equals("zip zip-slip")).findFirst().orElseThrow(), staging)
+        assertThat(refuse(
+                                hostileZips()
+                                        .filter(h -> h.id().equals("zip zip-slip"))
+                                        .findFirst()
+                                        .orElseThrow(),
+                                staging)
                         .bodyTooLarge())
                 .isFalse();
     }
@@ -301,16 +329,21 @@ class HostileArchiveCorpusTest {
         Map<String, String> plain = Map.of("pack.yaml", "name: p\n");
         Map<String, String> nested = Map.of("agents/", "", "agents/a.yaml", "a: 1\n", "pack.yaml", "name: p\n");
         return Stream.of(
-                new Benign("tar regular file", ArchiveFormat.TAR_GZ, tarOf(t -> t.file("pack.yaml", "name: p\n")), plain),
+                new Benign(
+                        "tar regular file", ArchiveFormat.TAR_GZ, tarOf(t -> t.file("pack.yaml", "name: p\n")), plain),
                 new Benign(
                         "tar nested directory",
                         ArchiveFormat.TAR_GZ,
-                        tarOf(t -> t.file("pack.yaml", "name: p\n").dir("agents/").file("agents/a.yaml", "a: 1\n")),
+                        tarOf(t ->
+                                t.file("pack.yaml", "name: p\n").dir("agents/").file("agents/a.yaml", "a: 1\n")),
                         nested),
                 new Benign(
                         "tar ./ prefix and a root directory entry",
                         ArchiveFormat.TAR_GZ,
-                        tarOf(t -> t.dir("./").file("./pack.yaml", "name: p\n").dir("./agents/").file("./agents/a.yaml", "a: 1\n")),
+                        tarOf(t -> t.dir("./")
+                                .file("./pack.yaml", "name: p\n")
+                                .dir("./agents/")
+                                .file("./agents/a.yaml", "a: 1\n")),
                         nested),
                 new Benign(
                         "tar one shared leading directory",
@@ -338,7 +371,8 @@ class HostileArchiveCorpusTest {
                 new Benign(
                         "tar GNU long name that is safe",
                         ArchiveFormat.TAR_GZ,
-                        tarOf(t -> t.gnuLongName("pack/" + "d/".repeat(60) + "x.txt").file("short", "x")),
+                        tarOf(t -> t.gnuLongName("pack/" + "d/".repeat(60) + "x.txt")
+                                .file("short", "x")),
                         longNameTree()),
                 new Benign(
                         "tar names differing beyond case",
@@ -411,8 +445,8 @@ class HostileArchiveCorpusTest {
         Path parent = Files.createDirectory(work.resolve("parent"));
         Path staging = Files.createDirectory(parent.resolve("staging"));
 
-        StagedPack staged =
-                new BoundedArchiveExtractor().extract(new ByteArrayInputStream(row.archive().get()), row.format(), staging);
+        StagedPack staged = new BoundedArchiveExtractor()
+                .extract(new ByteArrayInputStream(row.archive().get()), row.format(), staging);
 
         assertThat(ArchiveFixtures.tree(staged.directory()))
                 .containsExactlyInAnyOrderEntriesOf(expectedWithParents(row.tree()));
@@ -434,8 +468,12 @@ class HostileArchiveCorpusTest {
     @Test
     void theBenignControlsCoverEveryShapeTheCorpusAttacks() {
         assertThat(benign().map(Benign::id))
-                .contains("tar regular file", "tar nested directory", "tar ./ prefix and a root directory entry",
-                        "tar one shared leading directory", "zip EFS-flagged ASCII name");
+                .contains(
+                        "tar regular file",
+                        "tar nested directory",
+                        "tar ./ prefix and a root directory entry",
+                        "tar one shared leading directory",
+                        "zip EFS-flagged ASCII name");
         assertThat(benign().count()).isGreaterThanOrEqualTo(10);
     }
 
@@ -482,7 +520,10 @@ class HostileArchiveCorpusTest {
     @Test
     void anExtractorThatIsGivenAnUnusableStagingRootFailsLoudly() {
         assertThatThrownBy(() -> new BoundedArchiveExtractor()
-                        .extract(new ByteArrayInputStream(new RawTar().file("a", "b").gz()), ArchiveFormat.TAR_GZ,
+                        .extract(
+                                new ByteArrayInputStream(
+                                        new RawTar().file("a", "b").gz()),
+                                ArchiveFormat.TAR_GZ,
                                 work.resolve("does-not-exist")))
                 .isInstanceOf(IllegalArgumentException.class);
     }

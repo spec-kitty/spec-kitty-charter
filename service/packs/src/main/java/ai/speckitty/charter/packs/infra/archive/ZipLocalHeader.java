@@ -34,7 +34,8 @@ final class ZipLocalHeader {
         if (offset + FIXED_SIZE + nameLength + extraLength > channel.size()) {
             return null;
         }
-        byte[] name = ZipEndRecord.read(channel, offset + FIXED_SIZE, nameLength).array();
+        byte[] name =
+                ZipEndRecord.read(channel, offset + FIXED_SIZE, nameLength).array();
         return new ZipLocalHeader(name, offset + FIXED_SIZE + nameLength + extraLength);
     }
 

@@ -84,7 +84,8 @@ public record ArchiveViolation(Code code, String path) {
         for (int i = 0; i < raw.length(); ) {
             int cp = raw.codePointAt(i);
             i += Character.charCount(cp);
-            String piece = isControl(cp) ? String.format(Locale.ROOT, "\\u%04x", cp) : new String(Character.toChars(cp));
+            String piece =
+                    isControl(cp) ? String.format(Locale.ROOT, "\\u%04x", cp) : new String(Character.toChars(cp));
             int width = piece.getBytes(StandardCharsets.UTF_8).length;
             if (bytes + width > MAX_VALUE_BYTES) {
                 break;

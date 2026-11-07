@@ -62,7 +62,8 @@ class BoundedArchiveExtractorTest {
         ArchiveLimits small = new ArchiveLimits(2_000, 1_000_000, 100, 64 * 1024, 4_096);
         byte[] noise = new byte[8_000];
         new java.util.Random(3).nextBytes(noise);
-        byte[] tar = RawTar.gzip(new RawTar().entry("pack/a.bin", (byte) '0', noise, "").tar());
+        byte[] tar = RawTar.gzip(
+                new RawTar().entry("pack/a.bin", (byte) '0', noise, "").tar());
         byte[] zip = zipOf("pack/a.bin", noise);
 
         assertThat(refused(small, tar, ArchiveFormat.TAR_GZ).violations())
@@ -77,8 +78,8 @@ class BoundedArchiveExtractorTest {
         byte[] zip = zipOf("a.txt", "x".getBytes(StandardCharsets.UTF_8));
         ArchiveLimits exact = new ArchiveLimits(zip.length, 1_000, 10, 1_000, 4_096);
 
-        StagedPack staged = new BoundedArchiveExtractor(exact)
-                .extract(new ByteArrayInputStream(zip), ArchiveFormat.ZIP, staging);
+        StagedPack staged =
+                new BoundedArchiveExtractor(exact).extract(new ByteArrayInputStream(zip), ArchiveFormat.ZIP, staging);
 
         assertThat(ArchiveFixtures.tree(staged.directory())).containsEntry("a.txt", "x");
     }
@@ -98,10 +99,11 @@ class BoundedArchiveExtractorTest {
     @Test
     void anEntryThatFillsTheExpandedLimitExactlyIsAccepted() throws Exception {
         ArchiveLimits limits = new ArchiveLimits(1_000_000, 1_000, 10, 64 * 1024, 4_096);
-        byte[] tar = new RawTar().entry("a.bin", (byte) '0', new byte[1_000], "").gz();
+        byte[] tar =
+                new RawTar().entry("a.bin", (byte) '0', new byte[1_000], "").gz();
 
-        StagedPack staged =
-                new BoundedArchiveExtractor(limits).extract(new ByteArrayInputStream(tar), ArchiveFormat.TAR_GZ, staging);
+        StagedPack staged = new BoundedArchiveExtractor(limits)
+                .extract(new ByteArrayInputStream(tar), ArchiveFormat.TAR_GZ, staging);
 
         assertThat(Files.size(staged.directory().resolve("a.bin"))).isEqualTo(1_000);
     }
@@ -109,7 +111,8 @@ class BoundedArchiveExtractorTest {
     @Test
     void oneByteOverTheExpandedLimitIsRefused() {
         ArchiveLimits limits = new ArchiveLimits(1_000_000, 1_000, 10, 64 * 1024, 4_096);
-        byte[] tar = new RawTar().entry("a.bin", (byte) '0', new byte[1_001], "").gz();
+        byte[] tar =
+                new RawTar().entry("a.bin", (byte) '0', new byte[1_001], "").gz();
 
         assertThat(refused(limits, tar, ArchiveFormat.TAR_GZ).violations())
                 .extracting(ArchiveViolation::code)
@@ -119,7 +122,12 @@ class BoundedArchiveExtractorTest {
     @Test
     void theEntryLimitCountsEveryEntryOfEitherKind() {
         ArchiveLimits limits = new ArchiveLimits(1_000_000, 1_000_000, 3, 64 * 1024, 4_096);
-        byte[] four = new RawTar().dir("a/").file("a/1", "x").file("a/2", "x").file("a/3", "x").gz();
+        byte[] four = new RawTar()
+                .dir("a/")
+                .file("a/1", "x")
+                .file("a/2", "x")
+                .file("a/3", "x")
+                .gz();
         byte[] three = new RawTar().dir("a/").file("a/1", "x").file("a/2", "x").gz();
 
         assertThat(refused(limits, four, ArchiveFormat.TAR_GZ).violations())
@@ -155,7 +163,12 @@ class BoundedArchiveExtractorTest {
 
     @Test
     void filesAreOwnerReadWriteOnlyAndDirectoriesOwnerOnly() throws Exception {
-        byte[] tar = new RawTar().dir("p/").dir("p/sub/").file("p/sub/a.txt", "a").file("p/b.txt", "b").gz();
+        byte[] tar = new RawTar()
+                .dir("p/")
+                .dir("p/sub/")
+                .file("p/sub/a.txt", "a")
+                .file("p/b.txt", "b")
+                .gz();
 
         StagedPack staged = extract(tar, ArchiveFormat.TAR_GZ);
 
@@ -218,7 +231,10 @@ class BoundedArchiveExtractorTest {
 
     @Test
     void everyPathAValueCarriesIsEscapedAndCutTo256Bytes() {
-        byte[] tar = new RawTar().paxPath("pack/" + "é".repeat(300) + "\n").file("ok", "x").gz();
+        byte[] tar = new RawTar()
+                .paxPath("pack/" + "é".repeat(300) + "\n")
+                .file("ok", "x")
+                .gz();
 
         ArchiveViolation violation = refused(ArchiveLimits.DEFAULTS, tar, ArchiveFormat.TAR_GZ)
                 .violations()
@@ -243,7 +259,8 @@ class BoundedArchiveExtractorTest {
     @Test
     void theBodyIsReadButNeverClosed() throws Exception {
         AtomicBoolean closed = new AtomicBoolean();
-        InputStream body = new FilterInputStream(new ByteArrayInputStream(new RawTar().file("a", "b").gz())) {
+        InputStream body = new FilterInputStream(
+                new ByteArrayInputStream(new RawTar().file("a", "b").gz())) {
             @Override
             public void close() throws IOException {
                 closed.set(true);
@@ -262,7 +279,8 @@ class BoundedArchiveExtractorTest {
         Path other = Files.createDirectory(work.resolve("other"));
 
         StagedPack first = extract(tar, ArchiveFormat.TAR_GZ);
-        StagedPack second = new BoundedArchiveExtractor().extract(new ByteArrayInputStream(tar), ArchiveFormat.TAR_GZ, other);
+        StagedPack second =
+                new BoundedArchiveExtractor().extract(new ByteArrayInputStream(tar), ArchiveFormat.TAR_GZ, other);
 
         assertThat(first.directory()).isNotEqualTo(second.directory());
         assertThat(ArchiveFixtures.tree(second.directory())).containsEntry("a.txt", "a");

@@ -30,8 +30,7 @@ final class TarGzReader {
 
     /** Reads the archive into the tree; the body is read once and not closed. */
     void read(InputStream body, PackTree tree) throws IOException {
-        LimitedInputStream compressed =
-                new LimitedInputStream(body, limits.maxBodyBytes(), Code.BODY_TOO_LARGE, true);
+        LimitedInputStream compressed = new LimitedInputStream(body, limits.maxBodyBytes(), Code.BODY_TOO_LARGE, true);
         try (GZIPInputStream gzip = new GZIPInputStream(compressed)) {
             LimitedInputStream plain =
                     new LimitedInputStream(gzip, limits.maxDecompressedRead(), Code.EXPANDED_TOO_LARGE, false);
