@@ -1,7 +1,7 @@
 {
-  "event_count": 211,
-  "last_event_id": "01M6VXK2JGAE8WC7KCRW3HJWAZ",
-  "materialized_at": "2026-11-07T21:10:49.680395+00:00",
+  "event_count": 212,
+  "last_event_id": "01M6VXMYSSVHHE0MH5JT65QDA5",
+  "materialized_at": "2026-11-07T21:11:51.353309+00:00",
   "mission_number": "",
   "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
   "mission_type": "",
@@ -12,9 +12,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 0,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 13
   },
   "work_packages": {
@@ -559,14 +559,14 @@
     },
     "WP16": {
       "actor": "claude",
-      "agent": "claude:sonnet:java-jenny",
+      "agent": "claude:opus:reviewer-renata",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
       "implementer_of_record": "claude",
-      "lane": "for_review",
-      "last_event_id": "01M6VXK2JGAE8WC7KCRW3HJWAZ",
-      "last_transition_at": "2026-11-07T21:10:49.680395+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M6VXMYSSVHHE0MH5JT65QDA5",
+      "last_transition_at": "2026-11-07T21:11:51.353309+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "verifyAll green on ceadd3c1; POST /packs stays reserved for WP17/WP18",
@@ -581,9 +581,9 @@
         "reviewer": "claude:opus:reviewer-renata",
         "verdict": "changes_requested"
       },
-      "role": "implementer",
-      "shell_pid": null,
-      "shell_pid_created_at": null,
+      "role": "reviewer",
+      "shell_pid": 30189,
+      "shell_pid_created_at": "1794085907.5",
       "subtasks": {
         "T076": "done",
         "T077": "done",
