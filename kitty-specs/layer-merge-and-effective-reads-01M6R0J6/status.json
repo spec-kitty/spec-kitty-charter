@@ -571,7 +571,8 @@
       "notes": [
         "verifyAll green on ceadd3c1; POST /packs stays reserved for WP17/WP18",
         "Cycle 2: review-cycle-1 blocking items plus the agreed non-blocking ones",
-        "Cycle 2: blocking items 1-2 and non-blocking 3,4,6,7,8 fixed; item 5 (notice kinds) is an open operator decision; verifyAll green on 735cedec"
+        "Cycle 2: blocking items 1-2 and non-blocking 3,4,6,7,8 fixed; item 5 (notice kinds) is an open operator decision; verifyAll green on 735cedec",
+        "Review passed (cycle 2, 735cedec): both blockers fixed with red/green tests; verifyAll green; packs 3359/0, deployable 1087/0."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
