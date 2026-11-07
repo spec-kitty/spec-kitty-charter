@@ -1270,6 +1270,26 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-07T07:38:19.848744Z",
+      "decision_id": "01M6TF3BA808JMW0W0A0CPXBNW",
+      "final_answer": "No: the shared walk stays unlimited. A candidate another active artifact still reaches over any number of suggests hops is kept (skippedShared). A cascading deactivate at depth N therefore removes no more than a select at depth N reached, but may keep an artifact the select did not add when another active artifact suggests it; ExclusionRequest's round-trip text says so, and a scenario pins the case.",
+      "input_key": "cascade_depth_shared_walk",
+      "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",
+      "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
+      "opened_by": "claude-runner",
+      "options": [],
+      "origin_flow": "plan",
+      "other_answer": true,
+      "question": "A bounded cascading deactivate: is the shared walk (what other active artifacts still reach) bounded by the same depth?",
+      "rationale": "Plan squad finding 3 (2026-11-07). The write never drops an artifact another active artifact still reaches; the same gap exists today for a non-cascading select. Bounding the shared walk would make what is kept depend on the request's depth rather than on the document.",
+      "resolved_at": "2026-11-07T07:38:22.315772Z",
+      "resolved_by": "claude-runner",
+      "slot_key": "plan.ruling-408.shared-walk",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",

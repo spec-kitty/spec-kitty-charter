@@ -879,13 +879,16 @@ IC-03 to IC-09 above and into the concerns below.
   step by step (FR-043). Absent means unlimited, as ADR-0059 D2 rules (core parity).
 - **Meaning (decision `DM-01M6TDH0SY5Q224GX709DXWG8K`):** `depth` counts `suggests` hops, as ADR-0018 D4's `depth`
   does. `requires`, the other hard relations, `enhances` and the lineage pass-through are walked in full; `depth: 0`
-  follows no `suggests` edge. The walk state is the pair (artifact, `suggests` hops used); an artifact first reached
-  over more hops is reached again when a later path uses fewer.
+  follows no `suggests` edge. The walk is layered by `suggests` hops (a 0-1 BFS): each place is expanded once, in its
+  lowest layer, and pass-through and step places inherit their producer's hop count (plan squad, 2026-11-07).
 - **Contract.** `depth` (integer, minimum 0) on `SelectionRequest` and `ExclusionRequest`; a `### Added` fragment; a
   scenario pinning depth 0 and 1 against the unlimited walk, and the round trip of a cascading deactivate at the same
   depth. A negative or non-integer `depth` is `422 validation_failed`.
-- **Code.** `ReachPlan` carries the bound; the packs walk honours it; the deactivate's shared walk (the other active
-  artifacts) stays unlimited, so a kept candidate is never dropped by the bound.
+- **Code.** `ReachPlan` carries the bound; `Reachability` honours it, before entering a place and in the behind-stop
+  walk; the deactivate's shared walk stays unlimited (decision `DM-01M6TF3BA808JMW0W0A0CPXBNW`), so a kept candidate
+  is never dropped by the bound, and the round trip is exact only in what it removes. The skipped report gains an
+  optional `skippedByDepth` (the next `suggests` frontier) when `depth` was sent. Refusals use the body advice's
+  `422 activation_invalid` (`unreadable_body`, and a new minimum check).
 - **Read side.** The language filter at read (ruling 2) and the conditional `suggests` entries (ruling 3) are folded
   into FR-013, FR-017 and FR-019, for PR B and C.
 - **Sequencing/depends-on:** WP08 (the shared scenario glue and the request mapping).
