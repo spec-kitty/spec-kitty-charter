@@ -276,7 +276,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "Ready for review: remnant 422 validation_failed; droppedPins mapped; replace answers dropped/droppedPins; kind-model un-WIP; ruling-changes.feature (7/8 red on #399 head 8188c996, A10 not observable in A0); client containerDefaultToNull with ActivationRoundTripTest; UndefinedStepGuard. Gate: ./gradlew --max-workers=1 -Dorg.gradle.internal.repository.max.retries=10 -PcontractBaseline=none :kernel:check :packs:check :activations:check :deployable:check :client-java:check :contracts:check -> exit 0 (BUILD SUCCESSFUL). CharterContractSuite 403/403 green; guard probe with an undefined step fails the run (exit 1).",
-        "Unchanged resubmit (identity-only cycle, #368 precedent)"
+        "Unchanged resubmit (identity-only cycle, #368 precedent)",
+        "Cycle 3: review-cycle-2 fixes in 84ded572 and a1662214; gate green (activations 523, deployable 991, client-java 15, contracts 251)."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
