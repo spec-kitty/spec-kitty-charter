@@ -123,8 +123,7 @@ class PackRegistrationScaleTest {
                 new WholePackStore(strategy),
                 rig.commits,
                 rig.writeStore,
-                repository,
-                repository,
+                new StagedPackViewFactory(counting, strategy),
                 gate,
                 new InboundReferences(repository, repository, repository),
                 impact);

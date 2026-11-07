@@ -10,7 +10,6 @@ import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
-import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import java.nio.file.Path;
@@ -136,8 +135,7 @@ public final class PackRegistrationService {
     private final WholePackWriteStore.Loader loader;
     private final WholePackWriteStore store;
     private final PackRevisions revisions;
-    private final PackCatalogRepository catalog;
-    private final PackDescriptorRepository descriptors;
+    private final StagedPackViews views;
     private final WritePolicyGate gate;
     private final InboundReferences inbound;
     private final RegistrationImpact impact;
@@ -148,8 +146,8 @@ public final class PackRegistrationService {
      * @param loader reads a staged tree
      * @param store locks, swaps and creates
      * @param revisions the revision of a stored pack
-     * @param catalog the configured packs
-     * @param descriptors their descriptors
+     * @param views the stored packs, read through one session per registration: each session lists the configured
+     *     locations once, however many packs the identity checks look at
      * @param gate the mutability gate
      * @param inbound the inbound scan
      * @param impact the impact check of step 9
@@ -159,16 +157,14 @@ public final class PackRegistrationService {
             WholePackWriteStore.Loader loader,
             WholePackWriteStore store,
             PackRevisions revisions,
-            PackCatalogRepository catalog,
-            PackDescriptorRepository descriptors,
+            StagedPackViews views,
             WritePolicyGate gate,
             InboundReferences inbound,
             RegistrationImpact impact) {
         this.loader = Objects.requireNonNull(loader, "loader");
         this.store = Objects.requireNonNull(store, "store");
         this.revisions = Objects.requireNonNull(revisions, "revisions");
-        this.catalog = Objects.requireNonNull(catalog, "catalog");
-        this.descriptors = Objects.requireNonNull(descriptors, "descriptors");
+        this.views = Objects.requireNonNull(views, "views");
         this.gate = Objects.requireNonNull(gate, "gate");
         this.inbound = Objects.requireNonNull(inbound, "inbound");
         this.impact = Objects.requireNonNull(impact, "impact");
@@ -256,23 +252,26 @@ public final class PackRegistrationService {
                     RefusalCode.REGISTRATION_CONFLICT,
                     "A built-in pack is read-only; only org and project packs are registered.");
         }
-        List<ConfiguredPack> configured = catalog.configured();
+        // One session for the whole identity step: every listing of the locations parses every pack.yaml, so a read per
+        // pack looked at would make the step, and the registration, grow with the square of the stored packs (NFR-009).
+        StagedPackViews.View stored = views.session().stored();
+        List<ConfiguredPack> configured = stored.catalog().configured();
         requireNoCaseTwin(upload.packId(), configured);
         Optional<ConfiguredPack> named = configured.stream()
                 .filter(candidate -> candidate.id().value().equals(upload.packId()))
                 .findFirst();
         if (named.isEmpty()) {
-            requireFreePackId(upload, configured);
-            requireFreeName(upload, configured, Optional.empty());
+            requireFreePackId(upload, configured, stored.descriptors());
+            requireFreeName(upload, configured, Optional.empty(), stored.descriptors());
             return Optional.empty();
         }
-        Stored stored = new Stored(
+        Stored replaced = new Stored(
                 named.get(),
-                descriptors.get(named.get().id()),
+                stored.descriptors().get(named.get().id()),
                 revisions.currentRevision(named.get().id()));
-        requireSameIdentity(upload, stored);
-        requireFreeName(upload, configured, Optional.of(named.get()));
-        return Optional.of(stored);
+        requireSameIdentity(upload, replaced);
+        requireFreeName(upload, configured, Optional.of(named.get()), stored.descriptors());
+        return Optional.of(replaced);
     }
 
     /** An id that folds to another stored id would be one directory on a file system that folds case. */
@@ -305,9 +304,10 @@ public final class PackRegistrationService {
     }
 
     /** A new pack may not take the {@code pack_id} of a pack that is stored. */
-    private void requireFreePackId(Upload upload, List<ConfiguredPack> configured) {
+    private static void requireFreePackId(
+            Upload upload, List<ConfiguredPack> configured, PackDescriptorRepository descriptors) {
         for (ConfiguredPack other : configured) {
-            Optional<PackDescriptor> held = descriptorOf(other);
+            Optional<PackDescriptor> held = descriptorOf(descriptors, other);
             if (held.isPresent()
                     && held.get().packId().equals(upload.descriptor().packId())) {
                 throw conflict("The pack_id " + held.get().packId() + " is held by the stored pack "
@@ -317,9 +317,13 @@ public final class PackRegistrationService {
     }
 
     /** A pack, new or replaced, may not take the name of another stored pack. */
-    private void requireFreeName(Upload upload, List<ConfiguredPack> configured, Optional<ConfiguredPack> replaced) {
+    private static void requireFreeName(
+            Upload upload,
+            List<ConfiguredPack> configured,
+            Optional<ConfiguredPack> replaced,
+            PackDescriptorRepository descriptors) {
         for (ConfiguredPack other : configured) {
-            Optional<PackDescriptor> held = descriptorOf(other);
+            Optional<PackDescriptor> held = descriptorOf(descriptors, other);
             if (!replaced.filter(other::equals).isPresent()
                     && held.isPresent()
                     && held.get().name().equals(upload.descriptor().name())) {
@@ -330,7 +334,7 @@ public final class PackRegistrationService {
     }
 
     /** A stored pack whose descriptor cannot be read holds no identity this check can compare. */
-    private Optional<PackDescriptor> descriptorOf(ConfiguredPack stored) {
+    private static Optional<PackDescriptor> descriptorOf(PackDescriptorRepository descriptors, ConfiguredPack stored) {
         try {
             return descriptors.find(stored.id());
         } catch (CharterRefusal unreadable) {

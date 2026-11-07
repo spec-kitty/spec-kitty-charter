@@ -861,8 +861,7 @@ class PackRegistrationServiceTest {
                     new WholePackStore(strategy),
                     commits,
                     writeStore,
-                    repository,
-                    repository,
+                    new StagedPackViewFactory(locations, strategy),
                     gate,
                     new InboundReferences(repository, repository, repository),
                     impact);
