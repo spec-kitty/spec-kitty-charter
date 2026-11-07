@@ -29,6 +29,9 @@ dependencies {
     // re2j runs the patterns a pack writes into a config_schema in linear time (no backtracking).
     implementation(catalog.lib("re2j"))
     implementation(catalog.lib("jackson-databind"))
+    // infra.archive: the tar and zip readers of the bounded pack archive extractor (IC-03, DIRECTIVE_051). Only the
+    // JDK-backed STORED and DEFLATED paths run; the optional codecs are not on the classpath.
+    implementation(catalog.lib("commons-compress"))
     implementation(catalog.lib("slf4j-api"))
 
     // infra.api: the inbound REST adapter implements the generated contract interfaces.
