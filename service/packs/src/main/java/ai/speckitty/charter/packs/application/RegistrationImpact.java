@@ -18,12 +18,11 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.stereotype.Component;
 
 /**
@@ -45,7 +44,7 @@ import org.springframework.stereotype.Component;
 @Component
 public final class RegistrationImpact {
 
-    private static final Logger LOG = LoggerFactory.getLogger(RegistrationImpact.class);
+    private static final LogAccessor LOG = new LogAccessor(RegistrationImpact.class);
 
     /**
      * The floor and lock changes of a registration (FR-027, B4), over every closure the write joined: the must-have
@@ -251,13 +250,12 @@ public final class RegistrationImpact {
     @EventListener(ApplicationReadyEvent.class)
     public void logCensus() {
         try {
-            census().forEach(finding -> LOG.warn(
-                    "The stored pack {} would be refused by the registration impact check ({}): {}",
-                    finding.pack(),
-                    finding.code().token(),
-                    finding.detail()));
+            census().forEach(finding -> LOG.warn("The stored pack " + finding.pack()
+                    + " would be refused by the registration impact check ("
+                    + finding.code().token() + "): "
+                    + finding.detail()));
         } catch (RuntimeException unreadable) {
-            LOG.warn("The census of the stored packs could not run: {}", unreadable.getMessage());
+            LOG.warn("The census of the stored packs could not run: " + unreadable.getMessage());
         }
     }
 
