@@ -251,3 +251,9 @@ NFR-008 latency in `timingBudgets`, report-only.
   is judged against the old packs, and the registration's impact check does not see it. Make activation writes take the
   registry write lock (they are rare), with a test that interleaves the two.
 - From WP15's review: leftover `.history/*.tmp-*` files belong in the same sweep as the commit leftovers.
+- From WP15's review (must land in PR A): registration time grows with the square of the number of stored packs in
+  WP14's path. Creating one unrelated pack takes 0.63 s with 100 stored packs, 2.7 s with 200 and 13.7 s with 400,
+  past NFR-009's 5 s at about 300. The step-3 identity scan (`requireFreePackId`, `requireFreeName`), and plausibly
+  `InboundReferences` and the staged gate, list and parse every stored pack per pack. Take the location listing once
+  per registration session (as WP15's `StagedPackViewFactory` does) and pin it with a test that counts listings or
+  descriptor parses, red first.

@@ -163,3 +163,4 @@ Divergence-register entries (core merges per artifact; PR A replaces the whole p
   warns) are divergences to register. The start-up census WARNs for stored packs that would now be refused.
 - From WP15's review: under the strict rule (DM-01M6TQ67C9ZTNGZB9CY28JS54F), one stored dependent that cannot be read
   makes every registration of its ancestor fail `pack_unreadable`; say so, with the repair (fix or remove the dependent).
+- From WP15's review: a history entry restored by the heal carries the time of the heal, not of the lost registration.
