@@ -304,7 +304,7 @@
     },
     "WP09": {
       "actor": "claude",
-      "agent": "claude:opus:reviewer-renata",
+      "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -317,6 +317,7 @@
         "PR A0 docs: ADR-0020/0042/0050/0059 amendments (2026-11-07, incl. #408 depth), DIV-209..215 + DIV-203/206/501 updated, changelog with core hand-over, ruleset scenario trace (A0 rows verified against lane scenario files), rules page flipped to built. Docs checks clean."
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/layer-merge-and-effective-reads-01M6R0J6-coord/kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP09-a0-docs-adrs-divergences/review-cycle-1.md",
         "reference": "review-cycle://layer-merge-and-effective-reads-01M6R0J6/WP09-a0-docs-adrs-divergences/review-cycle-1.md",
@@ -324,15 +325,15 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 18469,
-      "shell_pid_created_at": "1794041073.95",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T040": "done",
-        "T041": "done",
-        "T042": "done",
-        "T043": "done",
-        "T149": "done",
-        "T158": "done"
+        "T040": "planned",
+        "T041": "planned",
+        "T042": "planned",
+        "T043": "planned",
+        "T149": "planned",
+        "T158": "planned"
       }
     },
     "WP10": {
