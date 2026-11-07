@@ -455,7 +455,8 @@
         "Bounded, path-safe extractor (tar.gz strict, zip via EOCD count before entries), commons-compress 1.28.0 with verification entries; corpus 61 hostile + 19 benign; red recorded; PIT adds infra.archive (floor 80), infra.api stays excluded; verifyAll green. Open: OSV/GHSA re-check of 1.28.0 blocked by proxy.",
         "Cycle 2: zip central-directory walk (count, extra-field caps), tar meta-header 64 KiB guard, absolute PAX/GNU names, RuntimeException -> 422, nits. Out-of-map: ArchiveViolation.java (codes, Cf escaping), pit-targets.init.gradle (stale comment). verifyAll green.",
         "cycle 3: ZIP64 locator bypass",
-        "Cycle 3: ZIP64 locator always followed as the library does; EOCD/ZIP64 disagreement refused zip_count_mismatch. verifyAll green."
+        "Cycle 3: ZIP64 locator always followed as the library does; EOCD/ZIP64 disagreement refused zip_count_mismatch. verifyAll green.",
+        "Review passed (cycle 3). verifyAll green on 5140954b with -PopenPacksDir 22c14b2, packs tests rerun: 3,096 tests, 0 failures. The ZIP64 locator bypass is fixed: the 600,000-header probe is refused zip_count_mismatch before ZipFile opens. Red-first holds: 8c447410 before 5140954b. Nits: the endAt == 20 boundary is harmless; the extra-field merge can still take about 2.7 s in the worst case. OSV re-check of commons-compress 1.28.0 done by the runner earlier (0 vulns). Shared files: HexagonalArchitectureTest badfixtures, ArchiveViolation.java and pit-targets.init.gradle as accepted out-of-map edits."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
