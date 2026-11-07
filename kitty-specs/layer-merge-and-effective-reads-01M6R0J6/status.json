@@ -396,6 +396,9 @@
       "last_event_id": "01M6TT7W9TQ6Z2CRSXEWD83Q2V",
       "last_transition_at": "2026-11-07T10:53:02.650997+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Registry write lock (fair, 5 s tryLock), per-pack write generation (seqlock), read retry; gate green (kernel 2769, packs 2968/4 skipped, activations 563, deployable 1017); MixedReadConcurrencyTest 3/3; lane synced with main after PR A0 landed."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 5474,
