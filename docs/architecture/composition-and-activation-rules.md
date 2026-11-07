@@ -300,13 +300,13 @@ A preset with at least one must-have item governs; nothing else declares it.
 *Source:* ADR-0031 d1–d2; ADR-0042 §2. **Built.**
 
 **C31 Required set.** `Req₀(C) = ⋃ {must(π) | π ∈ Pre(p), p ∈ C, gov(π)}` over **every** copy of each preset id;
-`Req(C) = Req₀(C) ∩ H(C)`; `Unheld(C) = Req₀(C) ∖ Req(C)` is reported, never put in force. Never stored.
+`Req(C) = Req₀(C) ∩ H(C)`; `Unheld(C) = Req₀(C) ∖ Req(C)` is never put in force; reported to clients only from PR B. Never stored.
 The requirement is the union of the must-have items of every governing preset of the closure, so a later copy of a
 preset can only tighten it; a must-have item no pack holds is dropped from the floor and reported.
 *Source:* ADR-0031 d2; DIV-205; decision `DM-01M6R0TK6F4CC0Z00CZTS21V72` (ratifies DIV-205); `ClosureQueries`
 (`RequiredFloor.of(byHolder(closurePackIds, winningPresets(composed)))`), `RequiredFloor.of`; A1, decision
-`DM-01M6RA7FHRC5K8QPX7KN5FZ4S8`; A10, decision `DM-01M6RA8MG55V8C2V9PXWDTRNQS`. **Partly built:** the floor restricts to held ids and
-reports the rest (A10; built, PR A0); the union over every governing copy (A1) reads the winning copies only and is ruled, planned (layer-merge PR B).
+`DM-01M6RA7FHRC5K8QPX7KN5FZ4S8`; A10, decision `DM-01M6RA8MG55V8C2V9PXWDTRNQS`. **Partly built:** the floor restricts to held ids (A10; built, PR A0). Reporting the rest to clients
+(`requiredNotHeld`, A10; its scenario is still `@WIP`) is ruled, planned (layer-merge PR B), and so is the union over every governing copy (A1), which reads the winning copies only.
 DIV-205 stays open until the reads are built.
 
 **C32 Floor at write.** `Fl(C) = Req(C) ∪ Lk(C)`.
@@ -978,7 +978,7 @@ activations it affects (G20), and every stored deny entry that the floor overrid
 | C28 Override cycle | spec FR-016; A2 | Ruled, planned (PR B at registration, PR C at read) |
 | C29 Winning preset | ADR-0053 d6 | Built |
 | C30 Governing preset | ADR-0031; ADR-0042 §2 | Built |
-| C31 Required set | ADR-0031; DIV-205; `DM-01M6R0TK6F`; A1, A10 | Partly built; held-only built (PR A0), the union (A1) ruled, planned (PR B) |
+| C31 Required set | ADR-0031; DIV-205; `DM-01M6R0TK6F`; A1, A10 | Partly built; held-only built (PR A0); the report (`requiredNotHeld`) and the union (A1) ruled, planned (PR B) |
 | C32 Floor at write | ADR-0012 d7 | Built |
 | C33 Offering stays a catalog | ADR-0020 D1; FR-023 | Built; the merge half ruled, not built |
 | C34 Same-level preset conflict | operator 2026-11-06; `refusePresetContests` | Built |

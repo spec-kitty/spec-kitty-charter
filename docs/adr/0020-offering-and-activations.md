@@ -686,7 +686,7 @@ the [divergence register](/conformance/divergence-register/).
    (`409 artifact_required`, `artifact_locked`).
 4. **Q3, presets (decision `DM-01M6RCY40CQQTHC130RWF43W0D`).** A preset may name any kind. ADR-0042 decision 2
    carries the note.
-5. **Q4, refuse now (decision `DM-01M6RCY8MYNGNPJ247M2Y4880N`).** `activatedKinds` and `missionTypes` on any write are
+5. **Q4, refuse now (decision `DM-01M6RCY8MYNGNPJ247M2Y4880N`).** `activatedKinds` and `missionTypes` on a create or replace are
    `422 validation_failed`, one violation per member naming its replacement. There is no deprecation window; core
    regenerates its strict DTOs first.
 6. **Storage (decisions `DM-01M6RFGMDH859CJP3RHHF9YC3H`, `DM-01M6RMJHDKNTXAM055Q8WR6SDN`).** `schemaVersion` is `2`

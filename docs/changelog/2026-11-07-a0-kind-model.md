@@ -23,7 +23,7 @@ amendments to ADR-0020, ADR-0042 and ADR-0050. Contract: the `2026-11-07-a0-*.md
 DIV-215, with DIV-203, DIV-206 and DIV-501 updated ([register](/conformance/divergence-register/)).
 
 - **No kind gate.** The document is `packs`, `selected`, `deactivated` and `languages`. `activatedKinds` and
-  `missionTypes` are refused (`422`, `removed_member`). Mission types are selected under `selected.mission_type` and
+  `missionTypes` are refused on a create or replace (`422`, `removed_member`). Mission types are selected under `selected.mission_type` and
   denied unless required or locked; a cascade from one selects what its steps reach. Presets name any kind and carry
   no `activated_kinds`.
 - **Storage version 2.** A version 1 document reads as its upgrade and is stored as version 2 on the next write, so
@@ -31,8 +31,7 @@ DIV-215, with DIV-203, DIV-206 and DIV-501 updated ([register](/conformance/dive
 - **A replace drops** an id or a version pin no pack holds, reported in `dropped` and `droppedPins`, and judges the
   floor only on the deny entries it adds. `includeDeactivated` keeps the deny entry of a lineage ancestor it passes.
 - **`depth`** on a cascading select or deactivate counts `suggests` hops only (`0` follows none; absent is
-  unlimited), and `skippedByDepth` lists the next frontier. A bad `depth` is `422` at `/depth` (`unreadable_body`,
-  `below_minimum`, `above_maximum`). A deactivate undoes a select at the same depth only in what it removes.
+  unlimited), and `skippedByDepth` lists the next frontier. A bad `depth` is `422` at `/depth`.
 
 ## Hand-over to core
 
@@ -43,3 +42,5 @@ Nothing is edited or filed in core (C-003). For the pull request description:
 3. `activated_kinds` narrowing is gone: a narrowing project sees a larger effective set.
 4. Read `dropped` and `droppedPins` on a replace instead of handling a `422`; expect one `412` per activation.
 5. The client's optional-list getters return `null` when a list is absent (`containerDefaultToNull`); keep it.
+6. A cascading select or deactivate takes an optional `depth` (counts `suggests` hops; absent is unlimited);
+   `skippedByDepth` reports the next frontier when it is sent. An older server answers `422 unknown_member`.

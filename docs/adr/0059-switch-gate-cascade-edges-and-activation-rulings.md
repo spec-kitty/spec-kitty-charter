@@ -284,7 +284,7 @@ replace round trip, where A4 above is `enhances`. The contract changes are the `
   no inverse that puts it back. The target and every artifact the walk reaches within the `cascade` scope are still
   cleared, and a denied artifact outside the scope still stops the walk and keeps its entry. DIV-206 carries the
   change.
-- **A4. A replace is judged against the document it replaces.** Decision `DM-01M6RA7XC5HC8915GZT2R3H83W`. It refines
+- **Ruleset A4. A replace is judged against the document it replaces.** Decision `DM-01M6RA7XC5HC8915GZT2R3H83W`. It refines
   D4's write rule. `replaceActivation` judges the floor only on the deny entries it adds, so a deny entry the replaced
   document already held is kept when a pack now requires or locks it, and a `GET` then `PUT` of one body is never
   refused without a pack change. It also drops what the packs no longer hold: an id of the body that the closure no
@@ -292,7 +292,7 @@ replace round trip, where A4 above is `enhances`. The contract changes are the `
   `422 unknown_artifact`. An unknown id the replaced document did not name is still `422`, and so is any unknown id
   in a create. A replace without `If-Match` is judged again from a fresh read when another writer changes the
   activation in between, up to eight times, and answers `412` with nothing stored when every attempt loses. DIV-209.
-- **B1. A write drops a version pin no pack holds.** Decisions `DM-01M6RA9BKJY7X9BFV93QW1KM1T`,
+- **Ruleset B1. A write drops a version pin no pack holds.** Decisions `DM-01M6RA9BKJY7X9BFV93QW1KM1T`,
   `DM-01M6RN5Y406SB4KA13QYMQ2P8J`. It refines A5 above, which left a pin to `422 version_not_held` for a full `PUT`
   to recover. `replaceActivation`, the four per-artifact writes and `applyActivationPreset` drop a pin no pack of the
   closure holds and report it in `droppedPins` (`ActivationChange.droppedPins`, and `Activation.droppedPins` on a
@@ -304,7 +304,7 @@ replace round trip, where A4 above is `enhances`. The contract changes are the `
   It supersedes the kind gate that D2.2 bounded the pull by, and refines D2 and D6.
   - The document is `packs`, `selected`, `deactivated` and `languages`. Mission types, steps and agent profiles are
     ordinary kinds of it: nothing is in force because its kind is "activated", and a select brings its artifact into
-    force. `activatedKinds` and `missionTypes` are refused on any write, `422 validation_failed` with one violation
+    force. `activatedKinds` and `missionTypes` are refused on a create or replace, `422 validation_failed` with one violation
     per member (`removed_member`) naming its replacement; there is no deprecation window (Q4). DIV-212.
   - **The mission-type cascade (Q1; D2.2 step targets, W32 withdrawn).** Selecting a mission type with a cascade
     crosses to the steps it holds like `requires` and selects what they reach, and a cascading deactivate of one

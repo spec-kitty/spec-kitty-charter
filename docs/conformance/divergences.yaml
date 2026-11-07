@@ -798,7 +798,7 @@
     A project may narrow activated_kinds, and only the kinds it lists are in force.
   service: >-
     Nothing is in force because its kind is activated: there is no kind gate, and a select brings its
-    artifact into force. activatedKinds is not a member of the document, and a write that sends it is
+    artifact into force. activatedKinds is not a member of the document, and a create or replace that sends it is
     422 validation_failed (removed_member) naming selected.<kind>. A core project that narrows
     activated_kinds sees a larger effective set from the service.
   rationale: >-

@@ -97,12 +97,14 @@ on the operator's rulings of 2026-11-06 (A7, decision `DM-01M6RA8BJ0FZV9BHFJ1MV4
   amendment of 2026-11-05 built it (DIV-203). A mission type is an ordinary kind, so an absent
   `selected.mission_type` means none, the same as `[]`; there is no `missionTypes` list left to read otherwise.
 - **The cascade source (Q1).** Selecting a mission type with a cascade crosses to the steps it holds like `requires`,
-  and what the steps reach is selected; a step, and any artifact bound to the mission type, is in force only while the
-  mission type is. The earlier rule that a mission type never cascades (W32) is withdrawn.
+  and what the steps reach is selected. PR A0 built the selection, the cascade and the deny of mission types like any
+  other kind, and the cascade to steps. That a step, and any artifact bound to the mission type, is in force only while
+  the mission type is, is binding rule E6: ruled, not built, planned for PR B with the effective reads (FR-022, US3
+  AS4). The earlier rule that a mission type never cascades (W32) is withdrawn.
 - **Deny and listing (Q2).** A mission type is denied under `deactivated.mission_type` unless it is required or locked
   (`409 artifact_required`, `artifact_locked`). `mission_type` joins `ActivatableKind`, `SelectedArtifacts`,
   `DeactivatedArtifacts` and `CascadeKind`, and the `{kind}` segment of the selections and exclusions paths.
-- **`activatedKinds` and `missionTypes` are refused** on any activation write (`422 validation_failed`), and the
+- **`activatedKinds` and `missionTypes` are refused** on a create or replace (`422 validation_failed`), and the
   stored document is `schemaVersion` 2 (Q4).
 - **Divergences.** DIV-501 is updated, and DIV-203, DIV-210, DIV-212, DIV-213 and DIV-214 record the rest.
 
