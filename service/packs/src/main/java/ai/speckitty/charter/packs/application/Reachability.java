@@ -214,6 +214,11 @@ public final class Reachability {
         @Override
         public Descent onNode(DrgNode node) {
             Place here = Objects.requireNonNull(pending, "a walk starts at a place");
+            if (!here.urn().equals(node.urn())) {
+                throw new IllegalStateException(
+                        "the walk visited " + node.urn() + " but the last crossed relationship led to " + here.urn()
+                                + ": GraphWalk no longer visits a relationship's target right after crossing it");
+            }
             if (!expanded.add(here)) {
                 return Descent.SKIP;
             }

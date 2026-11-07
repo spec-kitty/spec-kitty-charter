@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * The YAML form of {@code presets/<id>.yaml} (ADR-0042): how a {@link PresetDso} is written from scratch and read back
@@ -44,6 +45,20 @@ final class PresetYaml {
      */
     static String keyOf(ArtifactKind kind) {
         return ACTIVATED + kind.plural();
+    }
+
+    /**
+     * The kind of an activation-list key, the inverse of {@link #keyOf(ArtifactKind)}.
+     *
+     * @param key an {@code activated_<plural>} key
+     * @return the kind
+     * @throws IllegalStateException when the key is no activation-list key of a kind
+     */
+    static ArtifactKind kindOf(String key) {
+        return Optional.of(key)
+                .filter(candidate -> candidate.startsWith(ACTIVATED))
+                .flatMap(candidate -> ArtifactKind.fromPlural(candidate.substring(ACTIVATED.length())))
+                .orElseThrow(() -> new IllegalStateException("'" + key + "' passed the preset schema but is no kind"));
     }
 
     /**

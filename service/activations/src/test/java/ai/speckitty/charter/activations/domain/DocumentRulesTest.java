@@ -357,6 +357,38 @@ class DocumentRulesTest {
     }
 
     @Test
+    void a4AStoredDenyEntryInAnotherSpellingOfARequiredArtifactIsNotAddedByAGetThenPut() {
+        ClosureSnapshot closure = snapshot()
+                .held(DIRECTIVE, "dir-001")
+                .held(TACTIC, "T1")
+                .requiredBy("directive:dir-001", "PID-org-a")
+                .build();
+        ActivationDocument stored = ActivationDocument.builder()
+                .deactivated(DIRECTIVE, List.of("DIR-001"))
+                .build()
+                .document();
+        ActivationDocument.Built body = DocumentRules.normalize(
+                ActivationDocument.builder()
+                        .deactivated(DIRECTIVE, List.of("DIR-001"))
+                        .build(),
+                closure);
+
+        assertThat(DocumentRules.checkReplace(body, stored, closure))
+                .as("the stored deny entry, spelled otherwise, is the same entry")
+                .isEmpty();
+        assertThat(DocumentRules.checkWrite(stored, body.document().withSelected(TACTIC, "T1"), closure))
+                .as("a per-artifact write of another id keeps tolerating it")
+                .isEmpty();
+        ActivationDocument urnStored = ActivationDocument.builder()
+                .deactivated(DIRECTIVE, List.of("directive:DIR-001"))
+                .build()
+                .document();
+        assertThat(DocumentRules.checkReplace(body, urnStored, closure))
+                .as("a stored URN spelling is the same entry too")
+                .isEmpty();
+    }
+
+    @Test
     void aReplaceJudgesTheFloorOnEveryDenyEntryItAdds() {
         ActivationDocument stored = ActivationDocument.builder()
                 .deactivated(DIRECTIVE, List.of("D1"))

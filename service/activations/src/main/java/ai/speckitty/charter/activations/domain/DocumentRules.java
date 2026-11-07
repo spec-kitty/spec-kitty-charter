@@ -123,7 +123,7 @@ public final class DocumentRules {
         if (refusal.isEmpty() || !refusal.orElseThrow().violations().isEmpty()) {
             return refusal;
         }
-        return floorRefusal(addedDenies(before, after), snapshot);
+        return floorRefusal(addedDenies(before, after, snapshot), snapshot);
     }
 
     /**
@@ -148,7 +148,7 @@ public final class DocumentRules {
         }
         ActivationDocument kept =
                 snapshot.resolved() ? StaleIds.drop(built.document(), snapshot).document() : built.document();
-        return floorRefusal(addedDenies(stored, kept), snapshot);
+        return floorRefusal(addedDenies(stored, kept, snapshot), snapshot);
     }
 
     /**
@@ -179,20 +179,33 @@ public final class DocumentRules {
 
     /**
      * The document's packs and the deny entries {@code after} holds and {@code before} does not
-     * ({@code Den(D') \ Den(D)}): the deny entries a write is judged on the floor for.
+     * ({@code Den(D') \ Den(D)}): the deny entries a write is judged on the floor for. The stored document is not
+     * re-normalized, so a stored entry is compared in the declared spelling the closure holds for it (as
+     * {@link ArtifactSpellings} resolves it): a stored deny in another spelling of the same artifact is not added.
      */
-    static ActivationDocument addedDenies(ActivationDocument before, ActivationDocument after) {
+    static ActivationDocument addedDenies(
+            ActivationDocument before, ActivationDocument after, ClosureSnapshot snapshot) {
         ActivationDocument.Builder added = ActivationDocument.builder();
         after.packs().ifPresent(added::packs);
         after.deactivated().forEach((kind, ids) -> {
+            Set<String> held = snapshot.held(kind);
+            Set<String> stored = new HashSet<>();
+            before.deactivated(kind).forEach(id -> stored.add(declared(kind, id, held)));
             List<String> adding = ids.stream()
-                    .filter(id -> !before.deactivated(kind).contains(id))
+                    .filter(id -> !stored.contains(declared(kind, id, held)))
                     .toList();
             if (!adding.isEmpty()) {
                 added.deactivated(kind, adding);
             }
         });
         return added.build().document();
+    }
+
+    /** The declared id the closure holds for a spelled id; the spelling itself when it resolves to none. */
+    private static String declared(ArtifactKind kind, String id, Set<String> held) {
+        return ArtifactSpellings.resolve(kind, id, held) instanceof ArtifactSpellings.Resolution.Declared(String found)
+                ? found
+                : id;
     }
 
     private static CharterRefusal invalid(List<RefusalViolation> violations) {

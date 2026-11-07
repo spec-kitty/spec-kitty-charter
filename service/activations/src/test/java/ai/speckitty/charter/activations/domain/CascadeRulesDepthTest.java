@@ -266,4 +266,17 @@ class CascadeRulesDepthTest {
 
         assertThat(change.skipped().skippedByDepth()).contains(List.of());
     }
+
+    @Test
+    void aDeactivateReportsNoFrontierOnTheFloorBecauseNoDeeperWalkWouldRemoveIt() {
+        ActivationDocument document = selecting("directive:T", "directive:FLOOR", "directive:PAST");
+        Reach own = withBeyond(reach().start("directive:T").build(), "directive:FLOOR", "directive:PAST");
+
+        ActivationChange change = CascadeRules.applyDeactivate(
+                document, T, CascadeScope.all(), OptionalInt.of(0), own, Reach.empty(), Set.of(ref("directive:FLOOR")));
+
+        assertThat(change.skipped().skippedByDepth())
+                .as("a floor artifact is never a candidate, at any depth")
+                .contains(List.of(ref("directive:PAST")));
+    }
 }

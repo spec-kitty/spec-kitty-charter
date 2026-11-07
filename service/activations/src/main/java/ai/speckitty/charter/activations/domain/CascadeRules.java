@@ -314,7 +314,11 @@ public final class CascadeRules {
                 document,
                 after,
                 reportedByDepth(
-                        skipped, scope, depth, own, ref -> scope.admits(ref.kind()) && activeBefore.contains(ref)));
+                        skipped,
+                        scope,
+                        depth,
+                        own,
+                        ref -> scope.admits(ref.kind()) && activeBefore.contains(ref) && !floor.contains(ref)));
     }
 
     // Select steps.
@@ -322,7 +326,7 @@ public final class CascadeRules {
     /**
      * The report with {@code skippedByDepth} when a cascade ran under a depth: the {@code suggests} targets one hop past
      * the bound that a reference can name and that a deeper walk would act on, as {@code worthReporting} says (a select
-     * would select it, a deactivate would remove it). Without a cascade and a depth there was no bound to cut at, so the
+     * would select it, a deactivate would remove it, so never a floor artifact). Without a cascade and a depth there was no bound to cut at, so the
      * report is left as it is.
      */
     private static SkippedReport reportedByDepth(
