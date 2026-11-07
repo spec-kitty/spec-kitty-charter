@@ -333,6 +333,12 @@ public final class PackCommitStore implements WholePackWriteStore {
     }
 
     @Override
+    public java.util.List<ai.speckitty.charter.packs.application.PackVersionHistory.Entry> versionHistory(
+            String packId) {
+        return java.util.List.of();
+    }
+
+    @Override
     public PackRevision replaceWhole(PackIdentifier pack, StagedPack staged) {
         Path liveDir = DomainRepositoryService.writableRealDirectory(locations, resolve(pack).directory, pack);
         Path parent = requireParent(liveDir);
