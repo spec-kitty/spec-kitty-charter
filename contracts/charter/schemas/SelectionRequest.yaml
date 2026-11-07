@@ -25,3 +25,22 @@ properties:
     x-source:
       path: docs/adr/0020-offering-and-activations.md
       symbol: D6
+  depth:
+    type: integer
+    format: int32
+    minimum: 0
+    description: >-
+      How many suggests hops a cascade may cross (IC-21, FR-043; issue #408 ruling 1, decision
+      DM-01M6TDH0SY5Q224GX709DXWG8K). Only suggests is counted, as ADR-0018 D4's depth counts it on the action-context
+      walk: requires, the other hard relations (refines, scope, instantiates), enhances, the specializes_from lineage
+      pass-through and a mission type's steps are walked in full. 0 follows no suggests edge; 1 follows one, and so
+      on. An artifact the walk reaches over requires is selected at any depth, even when a suggests path also reaches
+      it. A pass-through or step place inherits the hop count of the place that produced it, and the lineage never
+      carries suggests. Absent means unlimited, exactly as without this member (ADR-0059 D2). With depth, the skipped
+      report adds skippedByDepth: the suggests targets one hop past the bound. depth without cascade is accepted
+      and has no effect: there is no walk. A depth below 0, or past the int32 range, is 422 activation_invalid with a
+      violation at /depth; a depth that is not an integer is 422 activation_invalid with unreadable_body at /depth. Unlike
+      ADR-0018 D4's read depth, this one has no default and no maximum.
+    x-source:
+      path: docs/adr/0020-offering-and-activations.md
+      symbol: D6

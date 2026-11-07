@@ -9,9 +9,28 @@ properties:
     - $ref: CascadeScope.yaml
     description: >-
       The kinds the deactivation cascades into; absent means no cascade. A cascading deactivate walks as a cascading
-      select does, the specializes_from lineage included, so the two round-trip. It removes the reached artifacts from
+      select does, the specializes_from lineage included, so the two round-trip in what they reach, and in what the
+      deactivate removes when no other active artifact keeps a candidate. It removes the reached artifacts from
       selected, records a deny entry only for the named artifact, and keeps an artifact another active one still
       references.
+    x-source:
+      path: docs/adr/0020-offering-and-activations.md
+      symbol: D6
+  depth:
+    type: integer
+    format: int32
+    minimum: 0
+    description: >-
+      How many suggests hops the target's own walk may cross (IC-21, FR-043; issue #408 ruling 1, decision
+      DM-01M6TDH0SY5Q224GX709DXWG8K), counted as SelectionRequest.depth counts them. A cascading deactivate at depth N
+      undoes a cascading select at depth N in what it removes. The walk of the other active artifacts, which decides
+      what is kept, stays unlimited (decision DM-01M6TF3BA808JMW0W0A0CPXBNW): the bound never drops a candidate
+      another active artifact still reaches. So the round trip is not exact when another active artifact reaches a
+      candidate over suggests: with O selected at depth 0 (O suggests H) and T selected at depth 0 (T requires H), a
+      deactivate of T at depth 0 keeps H in skippedShared, referencedBy O. Absent means unlimited. With depth, the
+      skipped report adds skippedByDepth: the suggests targets one hop past the bound. depth without cascade is
+      accepted and has no effect. A depth below 0, or past the int32 range, is 422 activation_invalid with a violation
+      at /depth; a depth that is not an integer is 422 activation_invalid with unreadable_body at /depth.
     x-source:
       path: docs/adr/0020-offering-and-activations.md
       symbol: D6
