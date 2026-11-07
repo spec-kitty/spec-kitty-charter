@@ -62,7 +62,7 @@ class SkillTest {
                 .as("side effects do not force model_invocable off: absent stays absent")
                 .isEmpty();
         assertThat(skill.tools()).as("no default is filled in").isEmpty();
-        assertThat(skill.relationships()).isEmpty();
+        assertThat(skill.derivedRelationships()).isEmpty();
     }
 
     @Test

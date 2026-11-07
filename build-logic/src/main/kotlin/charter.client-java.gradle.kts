@@ -72,6 +72,11 @@ fun GenerateTask.client(dir: Provider<Directory>) {
         "annotationLibrary" to "none",
         "documentationProvider" to "none",
         "serializableModel" to "false",
+        // An optional list the answer left out stays null, so a fetched document is sent back as it was read (FR-042,
+        // decision DM-01M6RN62PPCMSH6M54D2HXYZEQ): without it an absent languages went back as [], "keep only
+        // untagged artifacts" instead of "no filter" (ActivationRoundTripTest). The server could not repair it,
+        // since absent and [] differ for languages and packs; for a selected kind the two already register alike.
+        "containerDefaultToNull" to "true",
     )
 }
 

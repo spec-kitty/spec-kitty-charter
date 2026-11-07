@@ -1,0 +1,2317 @@
+{
+ "part_b_when": [
+  {
+   "pack": "event-driven",
+   "doc": "packs/event-driven/drg/fragment.yaml",
+   "source": "directive:EVD_001",
+   "target": "tactic:evd-event-versioning-and-upcasting",
+   "when": "when a contract has to change"
+  },
+  {
+   "pack": "event-driven",
+   "doc": "packs/event-driven/drg/fragment.yaml",
+   "source": "directive:EVD_001",
+   "target": "styleguide:evd-event-naming-and-payload",
+   "when": "when deciding what goes in the envelope and what in the payload"
+  },
+  {
+   "pack": "event-driven",
+   "doc": "packs/event-driven/drg/fragment.yaml",
+   "source": "directive:EVD_002",
+   "target": "tactic:evd-event-bridge-port",
+   "when": "when wiring producers to the writer"
+  },
+  {
+   "pack": "event-driven",
+   "doc": "packs/event-driven/drg/fragment.yaml",
+   "source": "directive:EVD_003",
+   "target": "styleguide:evd-event-naming-and-payload",
+   "when": "when naming an event or shaping its payload"
+  },
+  {
+   "pack": "event-driven",
+   "doc": "packs/event-driven/drg/fragment.yaml",
+   "source": "directive:EVD_003",
+   "target": "built-in::tactic:domain-event-capture",
+   "when": "when deciding which state changes deserve an event at all"
+  },
+  {
+   "pack": "event-driven",
+   "doc": "packs/event-driven/drg/fragment.yaml",
+   "source": "directive:EVD_004",
+   "target": "directive:EVD_001",
+   "when": "the version this rule depends on"
+  },
+  {
+   "pack": "event-driven",
+   "doc": "packs/event-driven/drg/fragment.yaml",
+   "source": "directive:EVD_004",
+   "target": "tactic:evd-event-versioning-and-upcasting",
+   "when": "when writing the upcaster chain"
+  },
+  {
+   "pack": "event-driven",
+   "doc": "packs/event-driven/drg/fragment.yaml",
+   "source": "directive:EVD_005",
+   "target": "tactic:evd-event-bridge-port",
+   "when": "when separating the pure core from adapters"
+  },
+  {
+   "pack": "event-driven",
+   "doc": "packs/event-driven/drg/fragment.yaml",
+   "source": "directive:EVD_005",
+   "target": "tactic:evd-idempotent-consumer",
+   "when": "when writing the consumer that performs the effect"
+  },
+  {
+   "pack": "event-driven",
+   "doc": "packs/event-driven/drg/fragment.yaml",
+   "source": "directive:EVD_006",
+   "target": "styleguide:evd-event-naming-and-payload",
+   "when": "when writing the published contract"
+  },
+  {
+   "pack": "event-driven",
+   "doc": "packs/event-driven/drg/fragment.yaml",
+   "source": "directive:EVD_006",
+   "target": "built-in::tactic:anti-corruption-layer",
+   "when": "when a consumer must translate a foreign contract into its own model"
+  },
+  {
+   "pack": "event-driven",
+   "doc": "packs/event-driven/drg/fragment.yaml",
+   "source": "tactic:evd-event-bridge-port",
+   "target": "tactic:evd-idempotent-consumer",
+   "when": "when writing the subscribers that perform effects"
+  },
+  {
+   "pack": "event-driven",
+   "doc": "packs/event-driven/drg/fragment.yaml",
+   "source": "tactic:evd-event-bridge-port",
+   "target": "built-in::tactic:reference-architectural-patterns",
+   "when": "when deciding whether ports-and-adapters fits the system at all"
+  },
+  {
+   "pack": "event-driven",
+   "doc": "packs/event-driven/drg/fragment.yaml",
+   "source": "tactic:evd-event-versioning-and-upcasting",
+   "target": "tactic:evd-projection-replay",
+   "when": "to prove the change against real history"
+  },
+  {
+   "pack": "event-driven",
+   "doc": "packs/event-driven/drg/fragment.yaml",
+   "source": "tactic:evd-projection-replay",
+   "target": "directive:EVD_005",
+   "when": "when separating replay from live delivery"
+  },
+  {
+   "pack": "event-driven",
+   "doc": "packs/event-driven/drg/fragment.yaml",
+   "source": "tactic:evd-projection-replay",
+   "target": "tactic:evd-idempotent-consumer",
+   "when": "when a projection is also fed by live, possibly redelivered, events"
+  },
+  {
+   "pack": "internal",
+   "doc": "packs/internal/drg/fragment.yaml",
+   "source": "tactic:spec-kitty-ratchet-cost",
+   "target": "built-in::tactic:frozen-baseline-shrink-only-ratchet",
+   "when": "The repository-agnostic mechanics this tactic prices."
+  },
+  {
+   "pack": "internal",
+   "doc": "packs/internal/drg/fragment.yaml",
+   "source": "tactic:tracker-backlog-iterative-deepening",
+   "target": "procedure:tracker-organisation-workflow",
+   "when": "Sequencing the tracker-wide organisation sweep into widening rings."
+  },
+  {
+   "pack": "internal",
+   "doc": "packs/internal/drg/fragment.yaml",
+   "source": "tactic:tracker-backlog-iterative-deepening",
+   "target": "built-in::tactic:moscow-scoping-lens",
+   "when": "Scoping what an emergent epic must, should, could, or won't carry once a ring surfaces it."
+  },
+  {
+   "pack": "qa",
+   "doc": "packs/qa/drg/fragment.yaml",
+   "source": "tactic:qa-boundary-equivalence-partitioning",
+   "target": "directive:QA_004",
+   "when": "when the exit criteria frozen before execution require boundary/equivalence-partition coverage of a requirement's input domain, so the partitioned test-case set must be fully derived before that freeze point"
+  },
+  {
+   "pack": "qa",
+   "doc": "packs/qa/drg/fragment.yaml",
+   "source": "tactic:qa-exploratory-charter-writing",
+   "target": "directive:QA_006",
+   "when": "when writing a charter before a timeboxed exploratory session"
+  },
+  {
+   "pack": "qa",
+   "doc": "packs/qa/drg/fragment.yaml",
+   "source": "tactic:qa-flaky-test-quarantine",
+   "target": "directive:QA_003",
+   "when": "when a flaky test's false-fail result would otherwise corrupt a run's recomputed verdict"
+  },
+  {
+   "pack": "qa",
+   "doc": "packs/qa/drg/fragment.yaml",
+   "source": "tactic:qa-pairwise-test-reduction",
+   "target": "directive:QA_004",
+   "when": "when the exit criteria frozen before execution require pairwise parameter coverage, so the covering set must be generated before that freeze point"
+  },
+  {
+   "pack": "qa",
+   "doc": "packs/qa/drg/fragment.yaml",
+   "source": "tactic:qa-promise-elicitation",
+   "target": "styleguide:qa-promise-page",
+   "when": "when writing the page for each candidate"
+  },
+  {
+   "pack": "qa",
+   "doc": "packs/qa/drg/fragment.yaml",
+   "source": "tactic:qa-regression-suite-selection",
+   "target": "directive:QA_001",
+   "when": "when selecting, for a specific change, exactly the regression tests that trace to the requirements the change could affect"
+  },
+  {
+   "pack": "qa",
+   "doc": "packs/qa/drg/fragment.yaml",
+   "source": "tactic:qa-risk-based-test-prioritization",
+   "target": "directive:QA_005",
+   "when": "when ranking test cases by risk before a time-boxed execution pass"
+  },
+  {
+   "pack": "qa",
+   "doc": "packs/qa/drg/fragment.yaml",
+   "source": "tactic:qa-test-data-minimization",
+   "target": "directive:QA_003",
+   "when": "when a minimized test case's re-run result must be verified rather than assumed, so reduced test data cannot silently produce a false-pass result that reads as preserved coverage"
+  }
+ ],
+ "reason_merged": [
+  {
+   "pack": "built-in",
+   "doc": "packs/built-in/procedure.graph.yaml",
+   "source": "procedure:bdd-scenario-lifecycle",
+   "target": "styleguide:given-when-then-authoring",
+   "key": "reason",
+   "value": "Gherkin scenarios (step 1) are authored per this styleguide's Given/When/Then conventions.\n"
+  },
+  {
+   "pack": "internal",
+   "doc": "packs/internal/drg/fragment.yaml",
+   "source": "procedure:charter-offering-scenario-extraction",
+   "target": "styleguide:feature-and-scenario-authoring",
+   "key": "reason",
+   "value": "The consumer-first authoring rules, the litmus, the tag contract and the worked exemplars every scenario follows."
+  },
+  {
+   "pack": "internal",
+   "doc": "packs/internal/drg/fragment.yaml",
+   "source": "procedure:charter-offering-scenario-extraction",
+   "target": "directive:NO_FULL_HEAVY_SUITES_IN_MISSION",
+   "key": "reason",
+   "value": "The e2e and charter tests are read as evidence; verification runs the named scenarios, never whole heavy suites."
+  },
+  {
+   "pack": "internal",
+   "doc": "packs/internal/drg/fragment.yaml",
+   "source": "procedure:charter-offering-scenario-extraction",
+   "target": "built-in::procedure:adversarial-squad-deployment",
+   "key": "reason",
+   "value": "How to run promise-extraction and litmus review as bounded, profile-loaded lenses."
+  },
+  {
+   "pack": "internal",
+   "doc": "packs/internal/drg/fragment.yaml",
+   "source": "procedure:charter-offering-scenario-extraction",
+   "target": "built-in::styleguide:test-desiderata-and-boundaries",
+   "key": "reason",
+   "value": "Non-vacuity \u2014 a scenario must go red when the promise it names is broken, and assert observable behaviour, not the call graph."
+  },
+  {
+   "pack": "internal",
+   "doc": "packs/internal/drg/fragment.yaml",
+   "source": "procedure:cloud-session-dispatch",
+   "target": "built-in::directive:DIRECTIVE_025",
+   "key": "reason",
+   "value": "Tidy-first / enabler sequencing for structural dispatches."
+  },
+  {
+   "pack": "internal",
+   "doc": "packs/internal/drg/fragment.yaml",
+   "source": "procedure:cloud-session-dispatch",
+   "target": "built-in::directive:RECONCILE_CHANGE_SCOPE_TENSIONS",
+   "key": "reason",
+   "value": "The tidy-first carve-out that separates the preparatory step from the functional change."
+  },
+  {
+   "pack": "internal",
+   "doc": "packs/internal/drg/fragment.yaml",
+   "source": "procedure:cloud-session-dispatch",
+   "target": "built-in::procedure:refactoring",
+   "key": "reason",
+   "value": "Behaviour-preserving refactoring workflow for tidy-first runs."
+  },
+  {
+   "pack": "internal",
+   "doc": "packs/internal/drg/fragment.yaml",
+   "source": "procedure:cloud-session-dispatch",
+   "target": "built-in::procedure:test-first-bug-fixing",
+   "key": "reason",
+   "value": "Red-first workflow for bugfix dispatches."
+  },
+  {
+   "pack": "internal",
+   "doc": "packs/internal/drg/fragment.yaml",
+   "source": "procedure:cloud-session-dispatch",
+   "target": "procedure:test-suite-quality-assessment",
+   "key": "reason",
+   "value": "Workflow for test-quality dispatches."
+  },
+  {
+   "pack": "internal",
+   "doc": "packs/internal/drg/fragment.yaml",
+   "source": "procedure:cloud-session-dispatch",
+   "target": "directive:NO_FULL_HEAVY_SUITES_IN_MISSION",
+   "key": "reason",
+   "value": "The runner targets specific gate files and never runs the full heavy suites."
+  },
+  {
+   "pack": "internal",
+   "doc": "packs/internal/drg/fragment.yaml",
+   "source": "procedure:semi-auto-delivery",
+   "target": "directive:NO_FULL_HEAVY_SUITES_IN_MISSION",
+   "key": "reason",
+   "value": "In-mission runs are bounded to the calibrated blast radius and specific gate files; CI owns the heavy and full suites."
+  },
+  {
+   "pack": "internal",
+   "doc": "packs/internal/drg/fragment.yaml",
+   "source": "procedure:semi-auto-delivery",
+   "target": "directive:OPERATOR_SIGNAL_CONTRACT",
+   "key": "reason",
+   "value": "A deciding path must also signal \u2014 every escalation-class decision surfaces on an operator-visible surface, never resolved silently."
+  },
+  {
+   "pack": "internal",
+   "doc": "packs/internal/drg/fragment.yaml",
+   "source": "procedure:semi-auto-delivery",
+   "target": "built-in::procedure:mission-wrap-up-sequence",
+   "key": "reason",
+   "value": "The canonical accept, verdict, aggregate-review, consolidate, compact and rebase closeout for a Mission-shaped run."
+  },
+  {
+   "pack": "internal",
+   "doc": "packs/internal/drg/fragment.yaml",
+   "source": "procedure:semi-auto-delivery",
+   "target": "built-in::procedure:test-first-bug-fixing",
+   "key": "reason",
+   "value": "The red-first workflow the brownfield standing orders require for a bugfix."
+  },
+  {
+   "pack": "internal",
+   "doc": "packs/internal/drg/fragment.yaml",
+   "source": "procedure:semi-auto-delivery",
+   "target": "built-in::procedure:adversarial-squad-deployment",
+   "key": "reason",
+   "value": "The pre-PR review squad the closeout runs before opening the draft PR."
+  },
+  {
+   "pack": "internal",
+   "doc": "packs/internal/drg/fragment.yaml",
+   "source": "procedure:semi-auto-delivery",
+   "target": "built-in::tactic:clean-linear-commit-history",
+   "key": "reason",
+   "value": "The commit-history shape the closeout aims for \u2014 coherent, reviewable commits, bookkeeping compressed."
+  },
+  {
+   "pack": "internal",
+   "doc": "packs/internal/drg/fragment.yaml",
+   "source": "procedure:test-suite-quality-assessment",
+   "target": "built-in::styleguide:test-desiderata-and-boundaries",
+   "key": "reason",
+   "value": "The twelve desiderata, the shift-left detector map and the harness anti-patterns the review applies."
+  },
+  {
+   "pack": "internal",
+   "doc": "packs/internal/drg/fragment.yaml",
+   "source": "procedure:test-suite-quality-assessment",
+   "target": "built-in::styleguide:testing-principles",
+   "key": "reason",
+   "value": "The good-test rubric (truthful, minimal, specific, realistic, isolated) the verdicts are judged against."
+  },
+  {
+   "pack": "internal",
+   "doc": "packs/internal/drg/fragment.yaml",
+   "source": "procedure:test-suite-quality-assessment",
+   "target": "built-in::directive:DIRECTIVE_041",
+   "key": "reason",
+   "value": "Tests are scaffold, not friction; a green test that stays green on a regression gives no coverage."
+  },
+  {
+   "pack": "internal",
+   "doc": "packs/internal/drg/fragment.yaml",
+   "source": "procedure:test-suite-quality-assessment",
+   "target": "built-in::procedure:development-assist-test-cleanup",
+   "key": "reason",
+   "value": "The KEEP, RETIRE and SPLIT-BY-KIND classification for Mission-scaffold tests."
+  },
+  {
+   "pack": "internal",
+   "doc": "packs/internal/drg/fragment.yaml",
+   "source": "procedure:test-suite-quality-assessment",
+   "target": "built-in::procedure:adversarial-squad-deployment",
+   "key": "reason",
+   "value": "How to run the domain review squads as bounded, profile-loaded lenses."
+  },
+  {
+   "pack": "internal",
+   "doc": "packs/internal/drg/fragment.yaml",
+   "source": "procedure:test-suite-quality-assessment",
+   "target": "toolguide:test-quality-triage",
+   "key": "reason",
+   "value": "How to run the static triage asset and read its outputs."
+  },
+  {
+   "pack": "internal",
+   "doc": "packs/internal/drg/fragment.yaml",
+   "source": "procedure:test-suite-quality-assessment",
+   "target": "directive:NO_FULL_HEAVY_SUITES_IN_MISSION",
+   "key": "reason",
+   "value": "Verification runs named test files only, never whole heavy suites."
+  },
+  {
+   "pack": "internal",
+   "doc": "packs/internal/drg/fragment.yaml",
+   "source": "procedure:tracker-organisation-workflow",
+   "target": "tactic:tracker-backlog-iterative-deepening",
+   "key": "reason",
+   "value": "Sequences the backlog sweep in widening time windows so emergent groupings become epics before later rings reach them."
+  },
+  {
+   "pack": "internal",
+   "doc": "packs/internal/drg/fragment.yaml",
+   "source": "procedure:tracker-organisation-workflow",
+   "target": "built-in::tactic:moscow-scoping-lens",
+   "key": "reason",
+   "value": "Provides the scoping lens for negotiating what each bucket or slice must, should, could, or won't carry, distinct from the priority label taxonomy."
+  },
+  {
+   "pack": "internal",
+   "doc": "packs/internal/drg/fragment.yaml",
+   "source": "procedure:tracker-organisation-workflow",
+   "target": "built-in::procedure:issue-triage-state-machine",
+   "key": "reason",
+   "value": "Per-ticket triage \u2014 one category and one state with durable handoff or rejection context \u2014 feeding this tracker-wide organisation pass."
+  },
+  {
+   "pack": "internal",
+   "doc": "packs/internal/drg/fragment.yaml",
+   "source": "procedure:tracker-organisation-workflow",
+   "target": "built-in::styleguide:planning-and-tracking",
+   "key": "reason",
+   "value": "Defines the epic/meta-tracker hierarchy, issue-type, priority, and triage conventions this workflow enforces while organising the tracker."
+  },
+  {
+   "pack": "internal",
+   "doc": "packs/internal/drg/fragment.yaml",
+   "source": "procedure:tracker-organisation-workflow",
+   "target": "built-in::toolguide:github-tracker",
+   "key": "reason",
+   "value": "Supplies the gh CLI + GraphQL mechanics (sub-issues, types, parent walks) used to read and re-home tickets during the organisation pass."
+  },
+  {
+   "pack": "qa",
+   "doc": "packs/qa/drg/fragment.yaml",
+   "source": "procedure:qa-description-to-acceptance-ci",
+   "target": "directive:QA_007",
+   "key": "reason",
+   "value": "The chain this procedure maintains and the lint that checks it."
+  },
+  {
+   "pack": "qa",
+   "doc": "packs/qa/drg/fragment.yaml",
+   "source": "procedure:qa-description-to-acceptance-ci",
+   "target": "directive:QA_008",
+   "key": "reason",
+   "value": "The release gate this procedure feeds."
+  }
+ ],
+ "edges_added": [
+  {
+   "pack": "cave-kitty",
+   "doc": "packs/cave-kitty/drg/fragment.yaml",
+   "source": "mission_type:cave-dev",
+   "target": "directive:CAVE_001",
+   "relation": "scope",
+   "when": null,
+   "reason": null,
+   "from": "packs/cave-kitty/missions/cave-dev/cave-dev.mission-type.yaml references"
+  },
+  {
+   "pack": "cave-kitty",
+   "doc": "packs/cave-kitty/drg/fragment.yaml",
+   "source": "mission_type:cave-dev",
+   "target": "styleguide:cave-sty-001-communication",
+   "relation": "scope",
+   "when": null,
+   "reason": null,
+   "from": "packs/cave-kitty/missions/cave-dev/cave-dev.mission-type.yaml references"
+  },
+  {
+   "pack": "event-driven",
+   "doc": "packs/event-driven/drg/fragment.yaml",
+   "source": "tactic:evd-projection-replay",
+   "target": "directive:EVD_005",
+   "relation": "suggests",
+   "when": null,
+   "reason": null,
+   "from": "packs/event-driven/tactics/evd-projection-replay.tactic.yaml references"
+  },
+  {
+   "pack": "internal",
+   "doc": "packs/internal/drg/fragment.yaml",
+   "source": "styleguide:executive-debrief",
+   "target": "tactic:branded-deliverable",
+   "relation": "suggests",
+   "when": null,
+   "reason": null,
+   "from": "packs/internal/styleguides/executive-debrief.styleguide.yaml references"
+  },
+  {
+   "pack": "internal",
+   "doc": "packs/internal/drg/fragment.yaml",
+   "source": "styleguide:executive-debrief",
+   "target": "toolguide:branded-document-generation",
+   "relation": "suggests",
+   "when": null,
+   "reason": null,
+   "from": "packs/internal/styleguides/executive-debrief.styleguide.yaml references"
+  },
+  {
+   "pack": "internal",
+   "doc": "packs/internal/drg/fragment.yaml",
+   "source": "styleguide:report-writing",
+   "target": "built-in::styleguide:planning-and-tracking",
+   "relation": "suggests",
+   "when": null,
+   "reason": null,
+   "from": "packs/internal/styleguides/report-writing.styleguide.yaml references"
+  },
+  {
+   "pack": "qa",
+   "doc": "packs/qa/drg/fragment.yaml",
+   "source": "mission_type:qa",
+   "target": "directive:QA_001",
+   "relation": "scope",
+   "when": null,
+   "reason": null,
+   "from": "packs/qa/missions/qa/qa.mission-type.yaml references"
+  },
+  {
+   "pack": "qa",
+   "doc": "packs/qa/drg/fragment.yaml",
+   "source": "mission_type:qa",
+   "target": "directive:QA_002",
+   "relation": "scope",
+   "when": null,
+   "reason": null,
+   "from": "packs/qa/missions/qa/qa.mission-type.yaml references"
+  },
+  {
+   "pack": "qa",
+   "doc": "packs/qa/drg/fragment.yaml",
+   "source": "mission_type:qa",
+   "target": "directive:QA_003",
+   "relation": "scope",
+   "when": null,
+   "reason": null,
+   "from": "packs/qa/missions/qa/qa.mission-type.yaml references"
+  },
+  {
+   "pack": "qa",
+   "doc": "packs/qa/drg/fragment.yaml",
+   "source": "mission_type:qa",
+   "target": "directive:QA_004",
+   "relation": "scope",
+   "when": null,
+   "reason": null,
+   "from": "packs/qa/missions/qa/qa.mission-type.yaml references"
+  },
+  {
+   "pack": "qa",
+   "doc": "packs/qa/drg/fragment.yaml",
+   "source": "mission_type:qa",
+   "target": "directive:QA_005",
+   "relation": "scope",
+   "when": null,
+   "reason": null,
+   "from": "packs/qa/missions/qa/qa.mission-type.yaml references"
+  },
+  {
+   "pack": "qa",
+   "doc": "packs/qa/drg/fragment.yaml",
+   "source": "mission_type:qa",
+   "target": "directive:QA_006",
+   "relation": "scope",
+   "when": null,
+   "reason": null,
+   "from": "packs/qa/missions/qa/qa.mission-type.yaml references"
+  },
+  {
+   "pack": "qa",
+   "doc": "packs/qa/drg/fragment.yaml",
+   "source": "procedure:qa-coverage-gap-analysis",
+   "target": "directive:QA_001",
+   "relation": "suggests",
+   "when": null,
+   "reason": "This analysis's coverage-item-to-test mapping operationalises traceability between the test basis and the suite that exercises it.\n",
+   "from": "packs/qa/procedures/qa-coverage-gap-analysis.procedure.yaml references"
+  },
+  {
+   "pack": "qa",
+   "doc": "packs/qa/drg/fragment.yaml",
+   "source": "procedure:qa-defect-triage-ritual",
+   "target": "directive:QA_002",
+   "relation": "suggests",
+   "when": null,
+   "reason": "This ritual's severity/priority classification step feeds defect report quality by ensuring every reported defect carries an agreed classification.\n",
+   "from": "packs/qa/procedures/qa-defect-triage-ritual.procedure.yaml references"
+  },
+  {
+   "pack": "qa",
+   "doc": "packs/qa/drg/fragment.yaml",
+   "source": "procedure:qa-description-to-acceptance-ci",
+   "target": "directive:QA_003",
+   "relation": "suggests",
+   "when": null,
+   "reason": "No result in the gating run may read greener than it was.",
+   "from": "packs/qa/procedures/qa-description-to-acceptance-ci.procedure.yaml references"
+  },
+  {
+   "pack": "qa",
+   "doc": "packs/qa/drg/fragment.yaml",
+   "source": "procedure:qa-description-to-acceptance-ci",
+   "target": "tactic:qa-promise-elicitation",
+   "relation": "suggests",
+   "when": null,
+   "reason": "How the first promise set is seeded and ratified.",
+   "from": "packs/qa/procedures/qa-description-to-acceptance-ci.procedure.yaml references"
+  },
+  {
+   "pack": "qa",
+   "doc": "packs/qa/drg/fragment.yaml",
+   "source": "procedure:qa-description-to-acceptance-ci",
+   "target": "styleguide:qa-promise-page",
+   "relation": "suggests",
+   "when": null,
+   "reason": "The shape of a promise page.",
+   "from": "packs/qa/procedures/qa-description-to-acceptance-ci.procedure.yaml references"
+  },
+  {
+   "pack": "qa",
+   "doc": "packs/qa/drg/fragment.yaml",
+   "source": "procedure:qa-description-to-acceptance-ci",
+   "target": "toolguide:qa-promise-trace-lint-guide",
+   "relation": "suggests",
+   "when": null,
+   "reason": "The CI check for the chain.",
+   "from": "packs/qa/procedures/qa-description-to-acceptance-ci.procedure.yaml references"
+  },
+  {
+   "pack": "qa",
+   "doc": "packs/qa/drg/fragment.yaml",
+   "source": "procedure:qa-go-no-go-readiness-review",
+   "target": "directive:QA_004",
+   "relation": "suggests",
+   "when": null,
+   "reason": "This review's exit-criteria status check operationalises the requirement that exit criteria are agreed before, and evaluated against, execution rather than invented at review time.\n",
+   "from": "packs/qa/procedures/qa-go-no-go-readiness-review.procedure.yaml references"
+  },
+  {
+   "pack": "qa",
+   "doc": "packs/qa/drg/fragment.yaml",
+   "source": "procedure:qa-test-plan-review-workshop",
+   "target": "directive:QA_001",
+   "relation": "suggests",
+   "when": null,
+   "reason": "This workshop's traceability step operationalises requirement-to-plan traceability before execution begins.\n",
+   "from": "packs/qa/procedures/qa-test-plan-review-workshop.procedure.yaml references"
+  },
+  {
+   "pack": "qa",
+   "doc": "packs/qa/drg/fragment.yaml",
+   "source": "tactic:qa-boundary-equivalence-partitioning",
+   "target": "directive:QA_004",
+   "relation": "suggests",
+   "when": null,
+   "reason": null,
+   "from": "packs/qa/tactics/qa-boundary-equivalence-partitioning.tactic.yaml references"
+  },
+  {
+   "pack": "qa",
+   "doc": "packs/qa/drg/fragment.yaml",
+   "source": "tactic:qa-exploratory-charter-writing",
+   "target": "directive:QA_006",
+   "relation": "suggests",
+   "when": null,
+   "reason": null,
+   "from": "packs/qa/tactics/qa-exploratory-charter-writing.tactic.yaml references"
+  },
+  {
+   "pack": "qa",
+   "doc": "packs/qa/drg/fragment.yaml",
+   "source": "tactic:qa-flaky-test-quarantine",
+   "target": "directive:QA_003",
+   "relation": "suggests",
+   "when": null,
+   "reason": null,
+   "from": "packs/qa/tactics/qa-flaky-test-quarantine.tactic.yaml references"
+  },
+  {
+   "pack": "qa",
+   "doc": "packs/qa/drg/fragment.yaml",
+   "source": "tactic:qa-pairwise-test-reduction",
+   "target": "directive:QA_004",
+   "relation": "suggests",
+   "when": null,
+   "reason": null,
+   "from": "packs/qa/tactics/qa-pairwise-test-reduction.tactic.yaml references"
+  },
+  {
+   "pack": "qa",
+   "doc": "packs/qa/drg/fragment.yaml",
+   "source": "tactic:qa-promise-elicitation",
+   "target": "styleguide:qa-promise-page",
+   "relation": "suggests",
+   "when": null,
+   "reason": null,
+   "from": "packs/qa/tactics/qa-promise-elicitation.tactic.yaml references"
+  },
+  {
+   "pack": "qa",
+   "doc": "packs/qa/drg/fragment.yaml",
+   "source": "tactic:qa-regression-suite-selection",
+   "target": "directive:QA_001",
+   "relation": "suggests",
+   "when": null,
+   "reason": null,
+   "from": "packs/qa/tactics/qa-regression-suite-selection.tactic.yaml references"
+  },
+  {
+   "pack": "qa",
+   "doc": "packs/qa/drg/fragment.yaml",
+   "source": "tactic:qa-risk-based-test-prioritization",
+   "target": "directive:QA_005",
+   "relation": "suggests",
+   "when": null,
+   "reason": null,
+   "from": "packs/qa/tactics/qa-risk-based-test-prioritization.tactic.yaml references"
+  },
+  {
+   "pack": "qa",
+   "doc": "packs/qa/drg/fragment.yaml",
+   "source": "tactic:qa-test-data-minimization",
+   "target": "directive:QA_003",
+   "relation": "suggests",
+   "when": null,
+   "reason": null,
+   "from": "packs/qa/tactics/qa-test-data-minimization.tactic.yaml references"
+  }
+ ],
+ "when_merged": [],
+ "subsumed_reverse": [
+  {
+   "pack": "built-in",
+   "field_ref": "styleguide:plain-language -> mission_type:documentation",
+   "from": "packs/built-in/styleguides/plain-language.styleguide.yaml",
+   "graph": [
+    "mission_type:documentation -scope-> styleguide:plain-language"
+   ]
+  },
+  {
+   "pack": "event-driven",
+   "field_ref": "tactic:evd-event-bridge-port -> directive:EVD_002",
+   "from": "packs/event-driven/tactics/evd-event-bridge-port.tactic.yaml",
+   "graph": [
+    "directive:EVD_002 -requires-> tactic:evd-event-bridge-port"
+   ]
+  },
+  {
+   "pack": "event-driven",
+   "field_ref": "tactic:evd-event-bridge-port -> directive:EVD_005",
+   "from": "packs/event-driven/tactics/evd-event-bridge-port.tactic.yaml",
+   "graph": [
+    "directive:EVD_005 -requires-> tactic:evd-event-bridge-port"
+   ]
+  },
+  {
+   "pack": "event-driven",
+   "field_ref": "tactic:evd-event-versioning-and-upcasting -> directive:EVD_001",
+   "from": "packs/event-driven/tactics/evd-event-versioning-and-upcasting.tactic.yaml",
+   "graph": [
+    "directive:EVD_001 -requires-> tactic:evd-event-versioning-and-upcasting"
+   ]
+  },
+  {
+   "pack": "event-driven",
+   "field_ref": "tactic:evd-event-versioning-and-upcasting -> directive:EVD_004",
+   "from": "packs/event-driven/tactics/evd-event-versioning-and-upcasting.tactic.yaml",
+   "graph": [
+    "directive:EVD_004 -requires-> tactic:evd-event-versioning-and-upcasting"
+   ]
+  },
+  {
+   "pack": "event-driven",
+   "field_ref": "tactic:evd-idempotent-consumer -> directive:EVD_005",
+   "from": "packs/event-driven/tactics/evd-idempotent-consumer.tactic.yaml",
+   "graph": [
+    "directive:EVD_005 -requires-> tactic:evd-idempotent-consumer"
+   ]
+  },
+  {
+   "pack": "event-driven",
+   "field_ref": "tactic:evd-idempotent-consumer -> tactic:evd-projection-replay",
+   "from": "packs/event-driven/tactics/evd-idempotent-consumer.tactic.yaml",
+   "graph": [
+    "tactic:evd-projection-replay -suggests-> tactic:evd-idempotent-consumer"
+   ]
+  },
+  {
+   "pack": "event-driven",
+   "field_ref": "tactic:evd-projection-replay -> tactic:evd-event-versioning-and-upcasting",
+   "from": "packs/event-driven/tactics/evd-projection-replay.tactic.yaml",
+   "graph": [
+    "tactic:evd-event-versioning-and-upcasting -suggests-> tactic:evd-projection-replay"
+   ]
+  },
+  {
+   "pack": "qa",
+   "field_ref": "tactic:qa-promise-elicitation -> directive:QA_007",
+   "from": "packs/qa/tactics/qa-promise-elicitation.tactic.yaml",
+   "graph": [
+    "directive:QA_007 -suggests-> tactic:qa-promise-elicitation"
+   ]
+  }
+ ],
+ "relation_differs": [
+  {
+   "pack": "built-in",
+   "ref": "directive:DIRECTIVE_025 -> directive:DIRECTIVE_024",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "directive:DIRECTIVE_025 -> directive:DIRECTIVE_030",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "directive:DIRECTIVE_025 -> directive:DIRECTIVE_040",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "directive:DIRECTIVE_031 -> directive:DIRECTIVE_001",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "directive:DIRECTIVE_032 -> directive:DIRECTIVE_031",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "directive:DIRECTIVE_036 -> directive:DIRECTIVE_030",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "directive:DIRECTIVE_036 -> directive:DIRECTIVE_034",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "directive:DIRECTIVE_039 -> directive:DIRECTIVE_001",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "directive:DIRECTIVE_039 -> directive:DIRECTIVE_030",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "directive:DIRECTIVE_039 -> directive:DIRECTIVE_034",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "directive:DIRECTIVE_041 -> directive:DIRECTIVE_034",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "directive:DIRECTIVE_046 -> directive:DIRECTIVE_045",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "directive:DIRECTIVE_047 -> directive:DIRECTIVE_042",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "directive:DIRECTIVE_048 -> directive:DIRECTIVE_037",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "directive:DIRECTIVE_048 -> directive:DIRECTIVE_018",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "directive:DIRECTIVE_049 -> directive:DIRECTIVE_003",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "directive:DIRECTIVE_051 -> directive:DIRECTIVE_001",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "paradigm:behaviour-driven-development -> tactic:bdd-scenario-formulation",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "paradigm:behaviour-driven-development -> procedure:bdd-scenario-lifecycle",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "paradigm:brownfield-onboarding -> tactic:forensic-repository-audit",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "paradigm:brownfield-onboarding -> procedure:legacy-codebase-triage",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "paradigm:brownfield-onboarding -> tactic:delete-the-assertion-not-the-test",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "paradigm:brownfield-onboarding -> procedure:adversarial-squad-deployment",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:adversarial-squad-deployment -> tactic:code-review-incremental",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:bdd-scenario-lifecycle -> procedure:example-mapping-workshop",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:bdd-scenario-lifecycle -> tactic:bdd-scenario-formulation",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:bdd-scenario-lifecycle -> styleguide:given-when-then-authoring",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:bdd-scenario-lifecycle -> tactic:acceptance-test-first",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:bdd-scenario-lifecycle -> directive:DIRECTIVE_034",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:bdd-scenario-lifecycle -> directive:DIRECTIVE_037",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:development-assist-test-cleanup -> directive:DIRECTIVE_041",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:development-assist-test-cleanup -> directive:DIRECTIVE_025",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:development-assist-test-cleanup -> tactic:delete-the-assertion-not-the-test",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:development-assist-test-cleanup -> procedure:mission-tracer-files",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:disciplined-defect-diagnosis -> procedure:test-first-bug-fixing",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:disciplined-defect-diagnosis -> tactic:testing-select-appropriate-level",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:disciplined-defect-diagnosis -> directive:DIRECTIVE_030",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:domain-aware-decision-interview -> tactic:glossary-curation-interview",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:domain-aware-decision-interview -> tactic:language-driven-design",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:domain-aware-decision-interview -> tactic:adr-drafting-workflow",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:domain-aware-decision-interview -> procedure:situational-assessment",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:drill-down-documentation -> directive:DIRECTIVE_001",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:drill-down-documentation -> directive:DIRECTIVE_003",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:event-storming-discovery -> tactic:bounded-context-identification",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:event-storming-discovery -> tactic:aggregate-boundary-design",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:event-storming-discovery -> tactic:domain-event-capture",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:example-mapping-workshop -> directive:DIRECTIVE_037",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:example-mapping-workshop -> tactic:acceptance-test-first",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:example-mapping-workshop -> tactic:usage-examples-sync",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:example-mapping-workshop -> procedure:event-storming-discovery",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:example-mapping-workshop -> tactic:atdd-adversarial-acceptance",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:example-mapping-workshop -> tactic:reverse-speccing",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:glossary-maintenance-workflow -> tactic:glossary-curation-interview",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:glossary-maintenance-workflow -> tactic:terminology-extraction-mapping",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:glossary-maintenance-workflow -> tactic:context-boundary-inference",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:glossary-maintenance-workflow -> directive:DIRECTIVE_032",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:issue-triage-state-machine -> procedure:disciplined-defect-diagnosis",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:issue-triage-state-machine -> procedure:test-first-bug-fixing",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:issue-triage-state-machine -> tactic:requirements-validation-workflow",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:legacy-codebase-triage -> tactic:forensic-repository-audit",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:legacy-codebase-triage -> tactic:strategic-domain-classification",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:legacy-codebase-triage -> tactic:eisenhower-prioritisation",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:legacy-codebase-triage -> tactic:connascence-analysis",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:legacy-codebase-triage -> tactic:premortem-risk-identification",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:legacy-codebase-triage -> procedure:situational-assessment",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:legacy-codebase-triage -> directive:DIRECTIVE_028",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:legacy-codebase-triage -> directive:DIRECTIVE_001",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:meeting-minutes-pipeline -> directive:DIRECTIVE_003",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:meeting-minutes-pipeline -> directive:DIRECTIVE_047",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:meeting-minutes-pipeline -> directive:DIRECTIVE_050",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:meeting-minutes-pipeline -> directive:ACTION_ITEM_ATTRIBUTION",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:meeting-minutes-pipeline -> directive:MINUTES_STAND_ALONE",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:migrate-project-guidance-to-spec-kitty-charter -> procedure:glossary-maintenance-workflow",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:migrate-project-guidance-to-spec-kitty-charter -> directive:DIRECTIVE_003",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:migrate-project-guidance-to-spec-kitty-charter -> directive:DIRECTIVE_010",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:migrate-project-guidance-to-spec-kitty-charter -> directive:DIRECTIVE_018",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:mission-wrap-up-sequence -> procedure:adversarial-squad-deployment",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:mission-wrap-up-sequence -> procedure:post-merge-arch-gate-adjudication",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:mission-wrap-up-sequence -> procedure:mission-tracer-files",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:mission-wrap-up-sequence -> procedure:development-assist-test-cleanup",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:mission-wrap-up-sequence -> tactic:clean-linear-commit-history",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:mission-wrap-up-sequence -> directive:DIRECTIVE_045",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:onboard-external-agent-to-pack -> directive:DIRECTIVE_003",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:onboard-external-agent-to-pack -> directive:DIRECTIVE_018",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:onboard-external-agent-to-pack -> directive:DIRECTIVE_032",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:post-merge-arch-gate-adjudication -> directive:DIRECTIVE_043",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:post-merge-arch-gate-adjudication -> tactic:architectural-gate-non-vacuity",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:refactoring -> tactic:change-apply-smallest-viable-diff",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:refactoring -> tactic:refactoring-change-function-declaration",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:refactoring -> tactic:refactoring-combine-functions-into-transform",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:refactoring -> tactic:refactoring-consolidate-conditional-expression",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:refactoring -> tactic:refactoring-extract-class-by-responsibility-split",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:refactoring -> tactic:refactoring-inline-temp",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:refactoring -> tactic:refactoring-introduce-null-object",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:refactoring -> tactic:refactoring-replace-magic-number-with-symbolic-constant",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:refactoring -> tactic:refactoring-replace-temp-with-query",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:refactoring -> tactic:refactoring-retry-pattern",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:situational-assessment -> directive:DIRECTIVE_001",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:situational-assessment -> tactic:stakeholder-alignment",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:situational-assessment -> tactic:problem-decomposition",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:situational-assessment -> tactic:safe-to-fail-experiment",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:situational-assessment -> tactic:ammerse-impact-analysis",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:situational-assessment -> tactic:premortem-risk-identification",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:situational-assessment -> tactic:eisenhower-prioritisation",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:spike-timebox-policy -> directive:DIRECTIVE_003",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:spike-timebox-policy -> tactic:safe-to-fail-experiment",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:test-first-bug-fixing -> tactic:tdd-red-green-refactor",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:test-first-bug-fixing -> tactic:test-boundaries-by-responsibility",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:test-first-bug-fixing -> directive:DIRECTIVE_030",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:test-first-bug-fixing -> directive:DIRECTIVE_034",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:test-first-bug-fixing -> directive:RED_MAIN_RELEASE_DISCIPLINE",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "procedure:test-first-bug-fixing -> directive:DIRECTIVE_025",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "styleguide:testing-principles -> styleguide:quadruple-a-test-format",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "built-in",
+   "ref": "tactic:bdd-scenario-formulation -> styleguide:given-when-then-authoring",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "event-driven",
+   "ref": "directive:EVD_001 -> tactic:evd-event-versioning-and-upcasting",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "event-driven",
+   "ref": "directive:EVD_002 -> tactic:evd-event-bridge-port",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "event-driven",
+   "ref": "directive:EVD_003 -> styleguide:evd-event-naming-and-payload",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "event-driven",
+   "ref": "directive:EVD_004 -> directive:EVD_001",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "event-driven",
+   "ref": "directive:EVD_004 -> tactic:evd-event-versioning-and-upcasting",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "event-driven",
+   "ref": "directive:EVD_005 -> tactic:evd-event-bridge-port",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "event-driven",
+   "ref": "directive:EVD_005 -> tactic:evd-idempotent-consumer",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "event-driven",
+   "ref": "paradigm:evd-event-sourced-design -> directive:EVD_001",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "event-driven",
+   "ref": "paradigm:evd-event-sourced-design -> directive:EVD_002",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "event-driven",
+   "ref": "paradigm:evd-event-sourced-design -> directive:EVD_003",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "event-driven",
+   "ref": "paradigm:evd-event-sourced-design -> directive:EVD_004",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "event-driven",
+   "ref": "paradigm:evd-event-sourced-design -> directive:EVD_005",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "event-driven",
+   "ref": "paradigm:evd-event-sourced-design -> directive:EVD_006",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "event-driven",
+   "ref": "paradigm:evd-event-sourced-design -> styleguide:evd-event-naming-and-payload",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "internal",
+   "ref": "procedure:charter-offering-scenario-extraction -> styleguide:feature-and-scenario-authoring",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "internal",
+   "ref": "procedure:charter-offering-scenario-extraction -> directive:NO_FULL_HEAVY_SUITES_IN_MISSION",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "internal",
+   "ref": "procedure:cloud-session-dispatch -> directive:NO_FULL_HEAVY_SUITES_IN_MISSION",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "internal",
+   "ref": "procedure:semi-auto-delivery -> directive:NO_FULL_HEAVY_SUITES_IN_MISSION",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "internal",
+   "ref": "procedure:semi-auto-delivery -> directive:OPERATOR_SIGNAL_CONTRACT",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "internal",
+   "ref": "procedure:test-suite-quality-assessment -> toolguide:test-quality-triage",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "internal",
+   "ref": "procedure:test-suite-quality-assessment -> directive:NO_FULL_HEAVY_SUITES_IN_MISSION",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "internal",
+   "ref": "procedure:tracker-organisation-workflow -> tactic:tracker-backlog-iterative-deepening",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "internal",
+   "ref": "procedure:tracker-organisation-workflow -> built-in::tactic:moscow-scoping-lens",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "internal",
+   "ref": "procedure:tracker-organisation-workflow -> built-in::procedure:issue-triage-state-machine",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "internal",
+   "ref": "styleguide:executive-debrief -> styleguide:report-writing",
+   "field": "suggests",
+   "graph": "refines"
+  },
+  {
+   "pack": "internal",
+   "ref": "tactic:spec-kitty-ratchet-cost -> built-in::tactic:frozen-baseline-shrink-only-ratchet",
+   "field": "suggests",
+   "graph": "refines"
+  },
+  {
+   "pack": "qa",
+   "ref": "procedure:qa-description-to-acceptance-ci -> directive:QA_007",
+   "field": "suggests",
+   "graph": "requires"
+  },
+  {
+   "pack": "qa",
+   "ref": "procedure:qa-description-to-acceptance-ci -> directive:QA_008",
+   "field": "suggests",
+   "graph": "requires"
+  }
+ ],
+ "citations_dropped": [
+  {
+   "file": "packs/built-in/styleguides/common-docs.styleguide.yaml",
+   "citation": "packs/built-in/assets/docs_structural_lint.config.yaml"
+  },
+  {
+   "file": "packs/built-in/styleguides/deployable-skill-authoring.styleguide.yaml",
+   "citation": "docs/host-surface-parity.md"
+  },
+  {
+   "file": "packs/built-in/styleguides/deployable-skill-authoring.styleguide.yaml",
+   "citation": "docs/adr/3.x/2026-04-14-2-agent-skills-renderer-for-codex-and-vibe.md"
+  },
+  {
+   "file": "packs/built-in/styleguides/divio-type-discipline.styleguide.yaml",
+   "citation": "packs/built-in/missions/documentation/templates/divio/tutorial-template.md"
+  },
+  {
+   "file": "packs/built-in/styleguides/divio-type-discipline.styleguide.yaml",
+   "citation": "packs/built-in/missions/documentation/templates/divio/howto-template.md"
+  },
+  {
+   "file": "packs/built-in/styleguides/divio-type-discipline.styleguide.yaml",
+   "citation": "packs/built-in/missions/documentation/templates/divio/reference-template.md"
+  },
+  {
+   "file": "packs/built-in/styleguides/divio-type-discipline.styleguide.yaml",
+   "citation": "packs/built-in/missions/documentation/templates/divio/explanation-template.md"
+  },
+  {
+   "file": "packs/built-in/styleguides/drupal-conventions.styleguide.yaml",
+   "citation": "amazee.io drupal-agents-md, Vanilla variant: https://github.com/amazeeio/drupal-agents-md/blob/main/Vanilla/AGENTS.md"
+  },
+  {
+   "file": "packs/built-in/styleguides/drupal-conventions.styleguide.yaml",
+   "citation": "Drupal coding standards: https://www.drupal.org/docs/develop/standards"
+  },
+  {
+   "file": "packs/built-in/styleguides/drupal-conventions.styleguide.yaml",
+   "citation": "See also, for the security- and performance-specific treatment: Drupal Security and Performance Styleguide."
+  },
+  {
+   "file": "packs/built-in/styleguides/drupal-conventions.styleguide.yaml",
+   "citation": "packs/built-in/agent_profiles/drupal-dries.agent.yaml"
+  },
+  {
+   "file": "packs/built-in/styleguides/drupal-security-performance.styleguide.yaml",
+   "citation": "amazee.io drupal-agents-md (Vanilla variant), Security & Performance Guidelines / Caching Strategies / Anti-Patterns #3, #6, #7, #10, #11 -- https://github.com/amazeeio/drupal-agents-md/blob/main/Vanilla/AGENTS.md"
+  },
+  {
+   "file": "packs/built-in/styleguides/drupal-security-performance.styleguide.yaml",
+   "citation": "Drupal.org: entity query access checking change record -- https://www.drupal.org/node/3201242 -- authoritative for the accessCheck entry above; the amazee.io source states this incorrectly at its line 701 (claims Drupal 10.2/warning-only/mandatory-in-12) and this file deliberately does not follow it -- deprecated in 9.2.0, error thrown from 10.0.0."
+  },
+  {
+   "file": "packs/built-in/styleguides/drupal-security-performance.styleguide.yaml",
+   "citation": "See also, for the general coding-convention treatment this file cross-references: Drupal Conventions Styleguide."
+  },
+  {
+   "file": "packs/built-in/styleguides/drupal-security-performance.styleguide.yaml",
+   "citation": "packs/built-in/agent_profiles/drupal-dries.agent.yaml"
+  },
+  {
+   "file": "packs/built-in/styleguides/java-conventions.styleguide.yaml",
+   "citation": "packs/built-in/agent_profiles/java-jenny.agent.yaml"
+  },
+  {
+   "file": "packs/built-in/styleguides/planning-and-tracking.styleguide.yaml",
+   "citation": ".kittify/glossaries/planning-and-tracking.yaml"
+  },
+  {
+   "file": "packs/built-in/styleguides/test-desiderata-and-boundaries.styleguide.yaml",
+   "citation": "https://testdesiderata.com/"
+  },
+  {
+   "file": "packs/built-in/styleguides/test-desiderata-and-boundaries.styleguide.yaml",
+   "citation": "https://patterns.sddevelopment.be/practices/define_test_boundaries/"
+  },
+  {
+   "file": "packs/built-in/styleguides/writing/kitty-glossary-writing.styleguide.yaml",
+   "citation": "glossary/README.md"
+  },
+  {
+   "file": "packs/built-in/styleguides/writing/kitty-glossary-writing.styleguide.yaml",
+   "citation": "docs/context/"
+  },
+  {
+   "file": "packs/built-in/toolguides/drupal-review-checks.toolguide.yaml",
+   "citation": "amazee.io drupal-agents-md, Vanilla variant: https://github.com/amazeeio/drupal-agents-md/blob/main/Vanilla/AGENTS.md"
+  },
+  {
+   "file": "packs/cave-kitty/styleguides/cave-sty-001-communication.styleguide.yaml",
+   "citation": "https://github.com/JuliusBrussee/caveman"
+  },
+  {
+   "file": "packs/internal/styleguides/executive-debrief.styleguide.yaml",
+   "citation": "docs/development/reporting/debrief-styleguide.md"
+  },
+  {
+   "file": "packs/internal/styleguides/feature-and-scenario-authoring.styleguide.yaml",
+   "citation": "tests/scenarios/README.md"
+  },
+  {
+   "file": "packs/internal/styleguides/feature-and-scenario-authoring.styleguide.yaml",
+   "citation": "docs/development/testing/acceptance-scenarios.md"
+  }
+ ],
+ "when_differs": [
+  {
+   "pack": "built-in",
+   "source": "procedure:bdd-scenario-lifecycle",
+   "target": "procedure:example-mapping-workshop",
+   "graph_reason": "The Discovery phase that produces the validated examples this procedure begins with.",
+   "field_reason": "The Discovery phase that produces the validated examples this procedure begins with.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "procedure:bdd-scenario-lifecycle",
+   "target": "tactic:bdd-scenario-formulation",
+   "graph_reason": "The technique tactic for writing individual Given/When/Then scenarios; used throughout steps 1-3 of this procedure.",
+   "field_reason": "The technique tactic for writing individual Given/When/Then scenarios; used throughout steps 1-3 of this procedure.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "procedure:bdd-scenario-lifecycle",
+   "target": "toolguide:gherkin",
+   "graph_reason": "Scenarios are expressed in the Gherkin DSL this toolguide documents.",
+   "field_reason": "Scenarios are expressed in the Gherkin DSL this toolguide documents.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "procedure:bdd-scenario-lifecycle",
+   "target": "tactic:acceptance-test-first",
+   "graph_reason": "Canonical examples from step 1 hand off into executable acceptance checks in step 4.",
+   "field_reason": "Canonical examples from step 1 hand off into executable acceptance checks in step 4.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "procedure:bdd-scenario-lifecycle",
+   "target": "directive:DIRECTIVE_034",
+   "graph_reason": "BDD scenarios are the failing acceptance tests in the test-first cycle \u2014 red before green.",
+   "field_reason": "BDD scenarios are the failing acceptance tests in the test-first cycle \u2014 red before green.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "procedure:bdd-scenario-lifecycle",
+   "target": "directive:DIRECTIVE_037",
+   "graph_reason": "Published scenario reports are living documentation governed by the Living Documentation Sync directive.",
+   "field_reason": "Published scenario reports are living documentation governed by the Living Documentation Sync directive.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "procedure:development-assist-test-cleanup",
+   "target": "directive:DIRECTIVE_041",
+   "graph_reason": "This procedure applies DIRECTIVE_041's keep-vs-delete axis and its duplicate-test-knowledge-has-one-source rule at a different trigger point \u2014 a proactive wrap-up audit of passing dev-assist tests, versus 041's reactive judgment of a failing test (whose STALE / PATCHWORK / VALID provenance labels are a distinct classification).",
+   "field_reason": "This procedure applies DIRECTIVE_041's keep-vs-delete axis and its duplicate-test-knowledge-has-one-source rule at a different trigger point \u2014 a proactive wrap-up audit of passing dev-assist tests, versus 041's reactive judgment of a failing test (whose STALE / PATCHWORK / VALID provenance labels are a distinct classification).\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "procedure:development-assist-test-cleanup",
+   "target": "directive:DIRECTIVE_025",
+   "graph_reason": "DIRECTIVE_025 (Boy Scout Rule) governs pre-existing debt in a touched area; this procedure governs debt the current mission itself created as scaffolding. The identify step defers to 025 for anything that predates the mission.",
+   "field_reason": "DIRECTIVE_025 (Boy Scout Rule) governs pre-existing debt in a touched area; this procedure governs debt the current mission itself created as scaffolding. The identify step defers to 025 for anything that predates the mission.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "procedure:development-assist-test-cleanup",
+   "target": "tactic:delete-the-assertion-not-the-test",
+   "graph_reason": "The execute step retires spent assertions and folds duplicates into the standing guard following this tactic \u2014 excise the spent assertion, never coverage of a live contract.",
+   "field_reason": "The execute step retires spent assertions and folds duplicates into the standing guard following this tactic \u2014 excise the spent assertion, never coverage of a live contract.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "procedure:development-assist-test-cleanup",
+   "target": "procedure:mission-tracer-files",
+   "graph_reason": "This cleanup fires at the same mission-close point-cut as the tracer-files assess step and feeds the same hand-off summary; both convert mission-local by-products (friction notes; scaffolding tests) into durable outcomes.",
+   "field_reason": "This cleanup fires at the same mission-close point-cut as the tracer-files assess step and feeds the same hand-off summary; both convert mission-local by-products (friction notes; scaffolding tests) into durable outcomes.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "procedure:event-storming-discovery",
+   "target": "tactic:bounded-context-identification",
+   "graph_reason": "Event Storming discovery reveals bounded context boundaries through language clustering.",
+   "field_reason": "Event Storming discovery reveals bounded context boundaries through language clustering.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "procedure:event-storming-discovery",
+   "target": "tactic:aggregate-boundary-design",
+   "graph_reason": "Aggregates discovered during this procedure feed into formal aggregate boundary design.",
+   "field_reason": "Aggregates discovered during this procedure feed into formal aggregate boundary design.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "procedure:event-storming-discovery",
+   "target": "tactic:domain-event-capture",
+   "graph_reason": "Events discovered during this procedure become the basis for domain event modelling.",
+   "field_reason": "Events discovered during this procedure become the basis for domain event modelling.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "procedure:example-mapping-workshop",
+   "target": "directive:DIRECTIVE_037",
+   "graph_reason": "The workshop produces the canonical examples governed by the Living Documentation Sync directive.",
+   "field_reason": "The workshop produces the canonical examples governed by the Living Documentation Sync directive.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "procedure:example-mapping-workshop",
+   "target": "tactic:acceptance-test-first",
+   "graph_reason": "Stable canonical examples should hand off cleanly into executable acceptance checks.",
+   "field_reason": "Stable canonical examples should hand off cleanly into executable acceptance checks.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "procedure:example-mapping-workshop",
+   "target": "tactic:usage-examples-sync",
+   "graph_reason": "Approved examples need an explicit sync step so docs, specs, and verification artifacts do not drift.",
+   "field_reason": "Approved examples need an explicit sync step so docs, specs, and verification artifacts do not drift.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "procedure:example-mapping-workshop",
+   "target": "procedure:event-storming-discovery",
+   "graph_reason": "Use when domain flows, events, and user journeys are not yet understood well enough to frame concrete examples. Event storming surfaces the business narrative that example mapping then tightens into rules and canonical examples.",
+   "field_reason": "Use when domain flows, events, and user journeys are not yet understood well enough to frame concrete examples. Event storming surfaces the business narrative that example mapping then tightens into rules and canonical examples.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "procedure:example-mapping-workshop",
+   "target": "tactic:atdd-adversarial-acceptance",
+   "graph_reason": "Run after a candidate example set is drafted to probe failure modes and promote selected adversarial scenarios into additional canonical examples and rejection rules.",
+   "field_reason": "Run after a candidate example set is drafted to probe failure modes and promote selected adversarial scenarios into additional canonical examples and rejection rules.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "procedure:example-mapping-workshop",
+   "target": "tactic:reverse-speccing",
+   "graph_reason": "Use when approaching a legacy area: reconstructing behaviour from existing tests yields the starting example set that the workshop then validates and curates with stakeholders.",
+   "field_reason": "Use when approaching a legacy area: reconstructing behaviour from existing tests yields the starting example set that the workshop then validates and curates with stakeholders.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "procedure:meeting-minutes-pipeline",
+   "target": "paradigm:extract-then-publish-separation",
+   "graph_reason": "Chat extraction and optional human-operated wiki publish stay separate. Validated Markdown in the originating chat is canonical.",
+   "field_reason": "Chat extraction and optional human-operated wiki publish stay separate. Validated Markdown in the originating chat is canonical.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "procedure:migrate-project-guidance-to-spec-kitty-charter",
+   "target": "procedure:glossary-maintenance-workflow",
+   "graph_reason": "The vocabulary-capture step is an instance of the glossary maintenance workflow applied at migration time, so the source's terms are triaged into the glossary before artifacts that depend on them are drafted.",
+   "field_reason": "The vocabulary-capture step is an instance of the glossary maintenance workflow applied at migration time, so the source's terms are triaged into the glossary before artifacts that depend on them are drafted.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "procedure:mission-tracer-files",
+   "target": "paradigm:brownfield-onboarding",
+   "graph_reason": "Tracer files are naturally seeded during the brownfield ramp-up phase to capture early tooling friction and initial approach decisions before implementation begins.",
+   "field_reason": "Tracer files are naturally seeded during the brownfield ramp-up phase to capture early tooling friction and initial approach decisions before implementation begins.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "procedure:mission-wrap-up-sequence",
+   "target": "procedure:adversarial-squad-deployment",
+   "graph_reason": "The aggregate pre-merge review and the draft-PR review are both instances of the adversarial-squad-deployment procedure applied at the pre-merge point-cut.",
+   "field_reason": "The aggregate pre-merge review and the draft-PR review are both instances of the adversarial-squad-deployment procedure applied at the pre-merge point-cut.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "procedure:mission-wrap-up-sequence",
+   "target": "procedure:post-merge-arch-gate-adjudication",
+   "graph_reason": "When the aggregate review touches architectural gates or cross-base state, the post-merge arch-gate adjudication procedure governs how those findings are weighed before hand-off.",
+   "field_reason": "When the aggregate review touches architectural gates or cross-base state, the post-merge arch-gate adjudication procedure governs how those findings are weighed before hand-off.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "procedure:mission-wrap-up-sequence",
+   "target": "procedure:mission-tracer-files",
+   "graph_reason": "The assess step of the tracer-files procedure feeds this sequence's hand-off: tracer insights are summarised in the retrospective at close-out.",
+   "field_reason": "The assess step of the tracer-files procedure feeds this sequence's hand-off: tracer insights are summarised in the retrospective at close-out.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "procedure:mission-wrap-up-sequence",
+   "target": "procedure:development-assist-test-cleanup",
+   "graph_reason": "The \"retire or split the mission's development-assist tests\" step is an instance of the development-assist-test-cleanup procedure applied at the wrap-up point-cut, so a mission's own scaffolding tests are judged before they land as suite bloat.",
+   "field_reason": "The \"retire or split the mission's development-assist tests\" step is an instance of the development-assist-test-cleanup procedure applied at the wrap-up point-cut, so a mission's own scaffolding tests are judged before they land as suite bloat.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "procedure:mission-wrap-up-sequence",
+   "target": "tactic:clean-linear-commit-history",
+   "graph_reason": "The compact-history and rebase-onto-upstream steps follow the clean-linear-commit-history tactic (non-reordering snapshot chain, rebase over merge).",
+   "field_reason": "The compact-history and rebase-onto-upstream steps follow the clean-linear-commit-history tactic (non-reordering snapshot chain, rebase over merge).\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "procedure:mission-wrap-up-sequence",
+   "target": "directive:DIRECTIVE_045",
+   "graph_reason": "Landing and hand-off obey PRs-only and read-intent: the agent prepares the PR and the operator merges the protected mainline.",
+   "field_reason": "Landing and hand-off obey PRs-only and read-intent: the agent prepares the PR and the operator merges the protected mainline.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "procedure:post-merge-arch-gate-adjudication",
+   "target": "directive:DIRECTIVE_043",
+   "graph_reason": "This procedure operationalises the close-by-construction requirement from DIRECTIVE_043: gate failures that are pre-existing must be tracked and structurally resolved, not ignored; regression failures must be fixed before further merging proceeds.",
+   "field_reason": "This procedure operationalises the close-by-construction requirement from DIRECTIVE_043: gate failures that are pre-existing must be tracked and structurally resolved, not ignored; regression failures must be fixed before further merging proceeds.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "procedure:post-merge-arch-gate-adjudication",
+   "target": "tactic:architectural-gate-non-vacuity",
+   "graph_reason": "The architectural gate non-vacuity tactic describes how to author gates that cannot silently pass; this procedure describes what to do when those gates fire after a merge and the root cause (pre-existing vs. regression) must be determined.",
+   "field_reason": "The architectural gate non-vacuity tactic describes how to author gates that cannot silently pass; this procedure describes what to do when those gates fire after a merge and the root cause (pre-existing vs. regression) must be determined.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "procedure:spike-timebox-policy",
+   "target": "directive:DIRECTIVE_003",
+   "graph_reason": "The spike terminates in a documented decision-or-abandon outcome; the decision-documentation requirement governs how that finding is recorded.",
+   "field_reason": "The spike terminates in a documented decision-or-abandon outcome; the decision-documentation requirement governs how that finding is recorded.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "procedure:spike-timebox-policy",
+   "target": "tactic:safe-to-fail-experiment",
+   "graph_reason": "A timeboxed spike is a safe-to-fail experiment: bounded, reversible, and run in a throwaway space so a failed hypothesis costs only the budget.",
+   "field_reason": "A timeboxed spike is a safe-to-fail experiment: bounded, reversible, and run in a throwaway space so a failed hypothesis costs only the budget.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "tactic:problem-decomposition",
+   "target": "tactic:stakeholder-alignment",
+   "graph_when": "When enumeration of contributing factors reveals that stakeholder concerns or organisational dynamics are a significant source of the problem. Run stakeholder alignment before clustering so that social and political factors are visible in the decomposition.",
+   "field_when": "When enumeration of contributing factors reveals that stakeholder concerns or organisational dynamics are a significant source of the problem. Run stakeholder alignment before clustering so that social and political factors are visible in the decomposition.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "tactic:problem-decomposition",
+   "target": "tactic:review-intent-and-risk-first",
+   "graph_when": "When validating the decomposition \u2014 confirm that the stated intent of the initiative is faithfully reflected in the sub-problem set, and that the highest-risk sub-problems are explicitly identified before prioritisation begins.",
+   "field_when": "When validating the decomposition \u2014 confirm that the stated intent of the initiative is faithfully reflected in the sub-problem set, and that the highest-risk sub-problems are explicitly identified before prioritisation begins.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "tactic:avoid-gold-plating",
+   "target": "tactic:easy-to-change",
+   "graph_when": "After confirming the design is not gold-plated, use easy-to-change to verify that the simpler design still supports anticipated future change.",
+   "field_when": "After confirming the design is not gold-plated, use easy-to-change to verify that the simpler design still supports anticipated future change.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "tactic:avoid-gold-plating",
+   "target": "directive:RECONCILE_CHANGE_SCOPE_TENSIONS",
+   "graph_when": "Once this tactic's evidence gate accepts an added complexity, the SIZE of the resulting change is a separate scope decision reconciled through this directive.",
+   "field_when": "Once this tactic's evidence gate accepts an added complexity, the SIZE of the resulting change is a separate scope decision reconciled through this directive.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "tactic:canonical-source-unification",
+   "target": "directive:DIRECTIVE_044",
+   "graph_when": "Consult to understand the binding rules this tactic operationalizes, including the unification-not-parity rule and the missing-command-is-a-gap rule.",
+   "field_when": "Consult to understand the binding rules this tactic operationalizes, including the unification-not-parity rule and the missing-command-is-a-gap rule.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "tactic:code-review-incremental",
+   "target": "tactic:review-intent-and-risk-first",
+   "graph_when": "Applying the intent-first review philosophy that this tactic adds incremental discipline to",
+   "field_when": "Reading the full change set without commenting, before forming any opinion."
+  },
+  {
+   "pack": "built-in",
+   "source": "tactic:code-review-incremental",
+   "target": "tactic:review-intent-and-risk-first",
+   "graph_when": "Applying the intent-first review philosophy that this tactic adds incremental discipline to",
+   "field_when": "Summarizing apparent intent before assessing risk."
+  },
+  {
+   "pack": "built-in",
+   "source": "tactic:code-review-incremental",
+   "target": "tactic:review-intent-and-risk-first",
+   "graph_when": "Applying the intent-first review philosophy that this tactic adds incremental discipline to",
+   "field_when": "Categorising risk using its taxonomy instead of a second, competing one."
+  },
+  {
+   "pack": "built-in",
+   "source": "tactic:easy-to-change",
+   "target": "directive:RECONCILE_CHANGE_SCOPE_TENSIONS",
+   "graph_when": "Once a recommended structural intervention is accepted, the SIZE of the resulting change is a separate scope decision reconciled through this directive.",
+   "field_when": "Once a recommended structural intervention is accepted, the SIZE of the resulting change is a separate scope decision reconciled through this directive.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "tactic:model-task-routing",
+   "target": "directive:DIRECTIVE_044",
+   "graph_when": "Consult to understand the binding rule this tactic operationalizes: the catalog is the single canonical source for model/task_type routing data \u2014 do not hand-roll a substitute mapping.",
+   "field_when": "Consult to understand the binding rule this tactic operationalizes: the catalog is the single canonical source for model/task_type routing data \u2014 do not hand-roll a substitute mapping.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "tactic:model-task-routing",
+   "target": "tactic:autonomous-operation-protocol",
+   "graph_when": "Consult alongside this tactic when delegating work to a subagent \u2014 model routing decides *which* model runs the delegated work; the autonomous operation protocol decides *how* that agent should behave once dispatched.",
+   "field_when": "Consult alongside this tactic when delegating work to a subagent \u2014 model routing decides *which* model runs the delegated work; the autonomous operation protocol decides *how* that agent should behave once dispatched.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "tactic:occurrence-classification-workflow",
+   "target": "directive:DIRECTIVE_035",
+   "graph_when": "Classifying each matching occurrence by semantic context before a bulk edit, so every change is deliberate rather than a blind sweep.",
+   "field_when": "Classifying each matching occurrence by semantic context before a bulk edit, so every change is deliberate rather than a blind sweep.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "tactic:ownership-map-leeway",
+   "target": "styleguide:planning-and-tracking",
+   "graph_when": "Use when setting up or reviewing task decomposition to understand the ownership-map constraints and leeway principles that govern WP isolation.",
+   "field_when": "Use when setting up or reviewing task decomposition to understand the ownership-map constraints and leeway principles that govern WP isolation.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "tactic:pr-agent-worktree-isolation",
+   "target": "directive:DIRECTIVE_045",
+   "graph_when": "This tactic operationalizes the \u00a77 worktree-isolation and no-version rules that DIRECTIVE_045 makes binding. Consult the directive for the enforcement context and scope; consult this tactic for the procedural how-to.",
+   "field_when": "This tactic operationalizes the \u00a77 worktree-isolation and no-version rules that DIRECTIVE_045 makes binding. Consult the directive for the enforcement context and scope; consult this tactic for the procedural how-to.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "tactic:pr-agent-worktree-isolation",
+   "target": "tactic:clean-linear-commit-history",
+   "graph_when": "Sibling discipline with a `refines`-type scope boundary: history compression after landing is governed by clean-linear-commit-history; worktree isolation and version-prescription restraint are governed here. Refer to that tactic for compress-history steps; refer to this tactic for PR-agent discipline.",
+   "field_when": "Sibling discipline with a `refines`-type scope boundary: history compression after landing is governed by clean-linear-commit-history; worktree isolation and version-prescription restraint are governed here. Refer to that tactic for compress-history steps; refer to this tactic for PR-agent discipline.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "tactic:reviewer-implementer-role-separation",
+   "target": "styleguide:planning-and-tracking",
+   "graph_when": "Use when planning task decomposition to understand the role-separation discipline that governs who reviews each work package.",
+   "field_when": "Use when planning task decomposition to understand the role-separation discipline that governs who reviews each work package.\n"
+  },
+  {
+   "pack": "built-in",
+   "source": "tactic:acceptance-criteria-non-vacuity",
+   "target": "tactic:mutation-testing-workflow",
+   "graph_when": "Proving a compound fix's test suite depends on every independent part of the fix.",
+   "field_when": "Verifying that a compound fix's test suite actually depends on every independent part of the fix."
+  }
+ ],
+ "files_edited": [
+  "packs/built-in/directives/025-boy-scout-rule.directive.yaml",
+  "packs/built-in/directives/028-search-tool-discipline.directive.yaml",
+  "packs/built-in/directives/029-agent-commit-signing-policy.directive.yaml",
+  "packs/built-in/directives/030-test-and-typecheck-quality-gate.directive.yaml",
+  "packs/built-in/directives/031-context-aware-design.directive.yaml",
+  "packs/built-in/directives/032-conceptual-alignment.directive.yaml",
+  "packs/built-in/directives/034-test-first-development.directive.yaml",
+  "packs/built-in/directives/036-black-box-integration-testing.directive.yaml",
+  "packs/built-in/directives/038-structured-prompt-boundary.directive.yaml",
+  "packs/built-in/directives/039-lynn-cole-engineering-culture.directive.yaml",
+  "packs/built-in/directives/041-tests-as-scaffold-not-friction.directive.yaml",
+  "packs/built-in/directives/042-common-docs.directive.yaml",
+  "packs/built-in/directives/043-close-defect-class-by-construction.directive.yaml",
+  "packs/built-in/directives/044-canonical-sources-and-unification.directive.yaml",
+  "packs/built-in/directives/045-prs-only-and-read-intent.directive.yaml",
+  "packs/built-in/directives/046-readable-consistent-prs.directive.yaml",
+  "packs/built-in/directives/047-audience-oriented-writing.directive.yaml",
+  "packs/built-in/directives/048-version-governance.directive.yaml",
+  "packs/built-in/directives/049-agent-declaration-and-self-introduction.directive.yaml",
+  "packs/built-in/directives/050-credential-handling-discipline.directive.yaml",
+  "packs/built-in/directives/051-supply-chain-install-safety.directive.yaml",
+  "packs/built-in/missions/documentation/documentation.mission-type.yaml",
+  "packs/built-in/missions/plan/plan.mission-type.yaml",
+  "packs/built-in/missions/research/research.mission-type.yaml",
+  "packs/built-in/missions/software-dev/software-dev.mission-type.yaml",
+  "packs/built-in/paradigms/behaviour-driven-development.paradigm.yaml",
+  "packs/built-in/paradigms/brownfield-onboarding.paradigm.yaml",
+  "packs/built-in/paradigms/c4-incremental-detail-modeling.paradigm.yaml",
+  "packs/built-in/paradigms/deep-module-design.paradigm.yaml",
+  "packs/built-in/paradigms/domain-driven-design.paradigm.yaml",
+  "packs/built-in/paradigms/execution-lanes.paradigm.yaml",
+  "packs/built-in/paradigms/git-flow.paradigm.yaml",
+  "packs/built-in/paradigms/semantic-compression.paradigm.yaml",
+  "packs/built-in/paradigms/shared-branch-ci.paradigm.yaml",
+  "packs/built-in/paradigms/specification-by-example.paradigm.yaml",
+  "packs/built-in/paradigms/structured-prompt-driven-development.paradigm.yaml",
+  "packs/built-in/paradigms/trunk-based.paradigm.yaml",
+  "packs/built-in/procedures/adversarial-squad-deployment.procedure.yaml",
+  "packs/built-in/procedures/bdd-scenario-lifecycle.procedure.yaml",
+  "packs/built-in/procedures/development-assist-test-cleanup.procedure.yaml",
+  "packs/built-in/procedures/disciplined-defect-diagnosis.procedure.yaml",
+  "packs/built-in/procedures/domain-aware-decision-interview.procedure.yaml",
+  "packs/built-in/procedures/drill-down-documentation.procedure.yaml",
+  "packs/built-in/procedures/event-storming-discovery.procedure.yaml",
+  "packs/built-in/procedures/example-mapping-workshop.procedure.yaml",
+  "packs/built-in/procedures/glossary-maintenance-workflow.procedure.yaml",
+  "packs/built-in/procedures/issue-triage-state-machine.procedure.yaml",
+  "packs/built-in/procedures/legacy-codebase-triage.procedure.yaml",
+  "packs/built-in/procedures/meeting-minutes-pipeline.procedure.yaml",
+  "packs/built-in/procedures/migrate-project-guidance-to-spec-kitty-charter.procedure.yaml",
+  "packs/built-in/procedures/mission-tracer-files.procedure.yaml",
+  "packs/built-in/procedures/mission-wrap-up-sequence.procedure.yaml",
+  "packs/built-in/procedures/onboard-external-agent-to-pack.procedure.yaml",
+  "packs/built-in/procedures/post-merge-arch-gate-adjudication.procedure.yaml",
+  "packs/built-in/procedures/refactoring.procedure.yaml",
+  "packs/built-in/procedures/situational-assessment.procedure.yaml",
+  "packs/built-in/procedures/spike-timebox-policy.procedure.yaml",
+  "packs/built-in/procedures/test-first-bug-fixing.procedure.yaml",
+  "packs/built-in/styleguides/aggregate-design-rules.styleguide.yaml",
+  "packs/built-in/styleguides/boring-code-review.styleguide.yaml",
+  "packs/built-in/styleguides/common-docs.styleguide.yaml",
+  "packs/built-in/styleguides/deployable-skill-authoring.styleguide.yaml",
+  "packs/built-in/styleguides/divio-type-discipline.styleguide.yaml",
+  "packs/built-in/styleguides/docs-accessibility.styleguide.yaml",
+  "packs/built-in/styleguides/docs-freshness-sla.styleguide.yaml",
+  "packs/built-in/styleguides/drupal-conventions.styleguide.yaml",
+  "packs/built-in/styleguides/drupal-security-performance.styleguide.yaml",
+  "packs/built-in/styleguides/java-conventions.styleguide.yaml",
+  "packs/built-in/styleguides/meeting-minutes-format.styleguide.yaml",
+  "packs/built-in/styleguides/mutation-aware-test-design.styleguide.yaml",
+  "packs/built-in/styleguides/plain-language.styleguide.yaml",
+  "packs/built-in/styleguides/planning-and-tracking.styleguide.yaml",
+  "packs/built-in/styleguides/professional-communications.styleguide.yaml",
+  "packs/built-in/styleguides/publication-authority.styleguide.yaml",
+  "packs/built-in/styleguides/python-conventions.styleguide.yaml",
+  "packs/built-in/styleguides/research-citation-discipline.styleguide.yaml",
+  "packs/built-in/styleguides/test-desiderata-and-boundaries.styleguide.yaml",
+  "packs/built-in/styleguides/testing-principles.styleguide.yaml",
+  "packs/built-in/styleguides/tiered-standards.styleguide.yaml",
+  "packs/built-in/styleguides/writing/kitty-glossary-writing.styleguide.yaml",
+  "packs/built-in/tactics/adversarial-qa-handoff.tactic.yaml",
+  "packs/built-in/tactics/analysis/ammerse-impact-analysis.tactic.yaml",
+  "packs/built-in/tactics/analysis/analysis-extract-before-interpret.tactic.yaml",
+  "packs/built-in/tactics/analysis/bounded-context-canvas-fill.tactic.yaml",
+  "packs/built-in/tactics/analysis/bounded-context-identification.tactic.yaml",
+  "packs/built-in/tactics/analysis/code-documentation-analysis.tactic.yaml",
+  "packs/built-in/tactics/analysis/context-boundary-inference.tactic.yaml",
+  "packs/built-in/tactics/analysis/context-mapping-classification.tactic.yaml",
+  "packs/built-in/tactics/analysis/dialectic-research.tactic.yaml",
+  "packs/built-in/tactics/analysis/entity-value-object-classification.tactic.yaml",
+  "packs/built-in/tactics/analysis/forensic-repository-audit.tactic.yaml",
+  "packs/built-in/tactics/analysis/premortem-risk-identification.tactic.yaml",
+  "packs/built-in/tactics/analysis/reverse-speccing.tactic.yaml",
+  "packs/built-in/tactics/analysis/split-brain-authority-detection.tactic.yaml",
+  "packs/built-in/tactics/analysis/strategic-domain-classification.tactic.yaml",
+  "packs/built-in/tactics/analysis/terminology-extraction-mapping.tactic.yaml",
+  "packs/built-in/tactics/architectural-gate-non-vacuity.tactic.yaml",
+  "packs/built-in/tactics/architecture/aggregate-boundary-design.tactic.yaml",
+  "packs/built-in/tactics/architecture/anti-corruption-layer.tactic.yaml",
+  "packs/built-in/tactics/architecture/architecture-diagram-review-checklist.tactic.yaml",
+  "packs/built-in/tactics/architecture/atomic-design-review-checklist.tactic.yaml",
+  "packs/built-in/tactics/architecture/atomic-state-ownership.tactic.yaml",
+  "packs/built-in/tactics/architecture/c4-zoom-in-architecture-documentation.tactic.yaml",
+  "packs/built-in/tactics/architecture/compositional-stream-boundaries.tactic.yaml",
+  "packs/built-in/tactics/architecture/deepening-opportunity-assessment.tactic.yaml",
+  "packs/built-in/tactics/architecture/dependency-hygiene.tactic.yaml",
+  "packs/built-in/tactics/architecture/development-bdd.tactic.yaml",
+  "packs/built-in/tactics/architecture/interface-variation-design.tactic.yaml",
+  "packs/built-in/tactics/architecture/paula-patterns-architecture-scout-review.tactic.yaml",
+  "packs/built-in/tactics/architecture/problem-decomposition.tactic.yaml",
+  "packs/built-in/tactics/architecture/reference-architectural-patterns.tactic.yaml",
+  "packs/built-in/tactics/autonomous-operation-protocol.tactic.yaml",
+  "packs/built-in/tactics/avoid-gold-plating.tactic.yaml",
+  "packs/built-in/tactics/canonical-source-unification.tactic.yaml",
+  "packs/built-in/tactics/code-patterns/chain-of-responsibility-rule-pipeline.tactic.yaml",
+  "packs/built-in/tactics/code-review-incremental.tactic.yaml",
+  "packs/built-in/tactics/common-docs-find.tactic.yaml",
+  "packs/built-in/tactics/common-docs-scaffold.tactic.yaml",
+  "packs/built-in/tactics/common-docs-write.tactic.yaml",
+  "packs/built-in/tactics/communication/adr-drafting-workflow.tactic.yaml",
+  "packs/built-in/tactics/communication/glossary-curation-interview.tactic.yaml",
+  "packs/built-in/tactics/communication/stakeholder-alignment.tactic.yaml",
+  "packs/built-in/tactics/communication/traceable-decisions.tactic.yaml",
+  "packs/built-in/tactics/communication/usage-examples-sync.tactic.yaml",
+  "packs/built-in/tactics/communication/writing-audience-catalog.tactic.yaml",
+  "packs/built-in/tactics/easy-to-change.tactic.yaml",
+  "packs/built-in/tactics/five-paradigm-parallel-debugging.tactic.yaml",
+  "packs/built-in/tactics/focused-function-complexity-check.tactic.yaml",
+  "packs/built-in/tactics/frozen-baseline-shrink-only-ratchet.tactic.yaml",
+  "packs/built-in/tactics/generated-code-stewardship.tactic.yaml",
+  "packs/built-in/tactics/input-validation-fail-fast.tactic.yaml",
+  "packs/built-in/tactics/model-task-routing.tactic.yaml",
+  "packs/built-in/tactics/occurrence-classification-workflow.tactic.yaml",
+  "packs/built-in/tactics/ownership-map-leeway.tactic.yaml",
+  "packs/built-in/tactics/pr-agent-worktree-isolation.tactic.yaml",
+  "packs/built-in/tactics/refactoring/refactoring-encapsulate-record.tactic.yaml",
+  "packs/built-in/tactics/refactoring/refactoring-extract-first-order-concept.tactic.yaml",
+  "packs/built-in/tactics/refactoring/refactoring-guard-clauses-before-polymorphism.tactic.yaml",
+  "packs/built-in/tactics/refactoring/refactoring-move-field.tactic.yaml",
+  "packs/built-in/tactics/refactoring/refactoring-move-method.tactic.yaml",
+  "packs/built-in/tactics/refactoring/refactoring-state-pattern-for-behavior.tactic.yaml",
+  "packs/built-in/tactics/reviewer-implementer-role-separation.tactic.yaml",
+  "packs/built-in/tactics/secure-design-checklist.tactic.yaml",
+  "packs/built-in/tactics/secure-regex-catastrophic-backtracking.tactic.yaml",
+  "packs/built-in/tactics/security/supply-chain-install-safety.tactic.yaml",
+  "packs/built-in/tactics/semantic-compression/semantic-compression-abstraction-extraction.tactic.yaml",
+  "packs/built-in/tactics/semantic-compression/semantic-compression-behavioral-boundary-mapping.tactic.yaml",
+  "packs/built-in/tactics/semantic-compression/semantic-compression-dead-weight-elimination.tactic.yaml",
+  "packs/built-in/tactics/semantic-compression/semantic-compression-equivalence-verification.tactic.yaml",
+  "packs/built-in/tactics/semantic-compression/semantic-compression-redundancy-discovery.tactic.yaml",
+  "packs/built-in/tactics/semantic-compression/semantic-compression-semantic-consolidation.tactic.yaml",
+  "packs/built-in/tactics/testing/acceptance-criteria-non-vacuity.tactic.yaml",
+  "packs/built-in/tactics/testing/acceptance-test-first.tactic.yaml",
+  "packs/built-in/tactics/testing/atdd-adversarial-acceptance.tactic.yaml",
+  "packs/built-in/tactics/testing/bdd-scenario-formulation.tactic.yaml",
+  "packs/built-in/tactics/testing/black-box-integration-testing.tactic.yaml",
+  "packs/built-in/tactics/testing/delete-the-assertion-not-the-test.tactic.yaml",
+  "packs/built-in/tactics/testing/formalized-constraint-testing.tactic.yaml",
+  "packs/built-in/tactics/testing/function-over-form-testing.tactic.yaml",
+  "packs/built-in/tactics/testing/mutation-testing-workflow.tactic.yaml",
+  "packs/built-in/tactics/testing/test-boundaries-by-responsibility.tactic.yaml",
+  "packs/built-in/tactics/testing/test-minimisation.tactic.yaml",
+  "packs/built-in/tactics/testing/test-readability-clarity-check.tactic.yaml",
+  "packs/built-in/tactics/testing/test-scaffolding-as-design-smell.tactic.yaml",
+  "packs/built-in/tactics/testing/test-to-system-reconstruction.tactic.yaml",
+  "packs/built-in/tactics/testing/testing-select-appropriate-level.tactic.yaml",
+  "packs/built-in/tactics/work-package-completion-validation.tactic.yaml",
+  "packs/built-in/toolguides/drupal-review-checks.toolguide.yaml",
+  "packs/built-in/toolguides/git-worktree-pr-workflow.toolguide.yaml",
+  "packs/cave-kitty/missions/cave-dev/cave-dev.mission-type.yaml",
+  "packs/cave-kitty/styleguides/cave-sty-001-communication.styleguide.yaml",
+  "packs/event-driven/directives/evd-001-events-carry-schema-version.directive.yaml",
+  "packs/event-driven/directives/evd-002-one-canonical-writer-per-stream.directive.yaml",
+  "packs/event-driven/directives/evd-003-events-are-immutable-past-tense-facts.directive.yaml",
+  "packs/event-driven/directives/evd-004-producers-emit-latest-consumers-declare-versions.directive.yaml",
+  "packs/event-driven/directives/evd-005-side-effects-live-in-consumers.directive.yaml",
+  "packs/event-driven/directives/evd-006-share-only-published-event-contracts.directive.yaml",
+  "packs/event-driven/paradigms/evd-event-sourced-design.paradigm.yaml",
+  "packs/event-driven/tactics/evd-event-bridge-port.tactic.yaml",
+  "packs/event-driven/tactics/evd-event-versioning-and-upcasting.tactic.yaml",
+  "packs/event-driven/tactics/evd-idempotent-consumer.tactic.yaml",
+  "packs/event-driven/tactics/evd-projection-replay.tactic.yaml",
+  "packs/internal/procedures/charter-offering-scenario-extraction.procedure.yaml",
+  "packs/internal/procedures/cloud-session-dispatch.procedure.yaml",
+  "packs/internal/procedures/semi-auto-delivery.procedure.yaml",
+  "packs/internal/procedures/test-suite-quality-assessment.procedure.yaml",
+  "packs/internal/procedures/tracker-organisation-workflow.procedure.yaml",
+  "packs/internal/styleguides/executive-debrief.styleguide.yaml",
+  "packs/internal/styleguides/feature-and-scenario-authoring.styleguide.yaml",
+  "packs/internal/styleguides/report-writing.styleguide.yaml",
+  "packs/internal/tactics/spec-kitty-ratchet-cost.tactic.yaml",
+  "packs/internal/tactics/tracker-backlog-iterative-deepening.tactic.yaml",
+  "packs/qa/missions/qa/qa.mission-type.yaml",
+  "packs/qa/procedures/qa-coverage-gap-analysis.procedure.yaml",
+  "packs/qa/procedures/qa-defect-triage-ritual.procedure.yaml",
+  "packs/qa/procedures/qa-description-to-acceptance-ci.procedure.yaml",
+  "packs/qa/procedures/qa-go-no-go-readiness-review.procedure.yaml",
+  "packs/qa/procedures/qa-test-plan-review-workshop.procedure.yaml",
+  "packs/qa/tactics/qa-boundary-equivalence-partitioning.tactic.yaml",
+  "packs/qa/tactics/qa-exploratory-charter-writing.tactic.yaml",
+  "packs/qa/tactics/qa-flaky-test-quarantine.tactic.yaml",
+  "packs/qa/tactics/qa-pairwise-test-reduction.tactic.yaml",
+  "packs/qa/tactics/qa-promise-elicitation.tactic.yaml",
+  "packs/qa/tactics/qa-regression-suite-selection.tactic.yaml",
+  "packs/qa/tactics/qa-risk-based-test-prioritization.tactic.yaml",
+  "packs/qa/tactics/qa-test-data-minimization.tactic.yaml"
+ ],
+ "unresolved": [],
+ "manifests_restamped": [
+  "packs/built-in/pack-manifest.yaml"
+ ]
+}

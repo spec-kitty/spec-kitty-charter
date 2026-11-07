@@ -72,7 +72,8 @@ class ActivationConditionalRequestTest {
     void storeOne() throws Exception {
         repository.clear();
         packs.fingerprint("sha256:fixture");
-        MockHttpServletResponse created = putDocument("{\"schemaVersion\": 1, \"missionTypes\": [\"research\"]}");
+        MockHttpServletResponse created =
+                putDocument("{\"schemaVersion\": 2, \"selected\": {\"mission_type\": [\"research\"]}}");
         assertThat(created.getStatus()).isEqualTo(201);
         revision = JSON.readTree(created.getContentAsString()).path("revision").asString();
         assertThat(created.getHeader(HttpHeaders.ETAG)).isEqualTo("\"" + revision + "\"");
@@ -139,7 +140,7 @@ class ActivationConditionalRequestTest {
                 .isEqualTo(200);
 
         packs.fingerprint("sha256:fixture");
-        assertThat(putDocument("{\"schemaVersion\": 1}").getStatus()).isEqualTo(200);
+        assertThat(putDocument("{\"schemaVersion\": 2}").getStatus()).isEqualTo(200);
         assertThat(send(get(DOCUMENT + "/packs").header(HttpHeaders.IF_NONE_MATCH, etag))
                         .getStatus())
                 .isEqualTo(200);
@@ -148,7 +149,7 @@ class ActivationConditionalRequestTest {
     @Test
     void anIfNoneMatchOtherThanStarOnAWriteIs400WithoutACode() throws Exception {
         for (String value : List.of("\"x\"", "W/\"" + revision + "\"", "\"" + revision + "\"")) {
-            MockHttpServletResponse answer = putDocument("{\"schemaVersion\": 1}", HttpHeaders.IF_NONE_MATCH, value);
+            MockHttpServletResponse answer = putDocument("{\"schemaVersion\": 2}", HttpHeaders.IF_NONE_MATCH, value);
 
             assertThat(answer.getStatus()).as(value).isEqualTo(400);
             assertThat(JSON.readTree(answer.getContentAsString()).has("code"))
@@ -163,7 +164,7 @@ class ActivationConditionalRequestTest {
         int reads = packs.reads();
 
         MockHttpServletResponse answer = putDocument(
-                "{\"schemaVersion\": 1}", HttpHeaders.IF_MATCH, "\"" + revision + "\"", HttpHeaders.IF_NONE_MATCH, "*");
+                "{\"schemaVersion\": 2}", HttpHeaders.IF_MATCH, "\"" + revision + "\"", HttpHeaders.IF_NONE_MATCH, "*");
 
         assertThat(answer.getStatus()).isEqualTo(400);
         assertThat(JSON.readTree(answer.getContentAsString()).has("code")).isFalse();
@@ -176,7 +177,7 @@ class ActivationConditionalRequestTest {
     @Test
     void anIfMatchThatIsNotOneQuotedRevisionIs400() throws Exception {
         MockHttpServletResponse answer =
-                putDocument("{\"schemaVersion\": 1}", HttpHeaders.IF_MATCH, "W/\"" + revision + "\"");
+                putDocument("{\"schemaVersion\": 2}", HttpHeaders.IF_MATCH, "W/\"" + revision + "\"");
 
         assertThat(answer.getStatus()).isEqualTo(400);
     }
@@ -184,9 +185,9 @@ class ActivationConditionalRequestTest {
     @Test
     void aStaleIfMatchIs412AndAFreshOneIs200() throws Exception {
         MockHttpServletResponse stale =
-                putDocument("{\"schemaVersion\": 1}", HttpHeaders.IF_MATCH, "\"sha256:" + "0".repeat(64) + "\"");
+                putDocument("{\"schemaVersion\": 2}", HttpHeaders.IF_MATCH, "\"sha256:" + "0".repeat(64) + "\"");
         MockHttpServletResponse fresh =
-                putDocument("{\"schemaVersion\": 1}", HttpHeaders.IF_MATCH, "\"" + revision + "\"");
+                putDocument("{\"schemaVersion\": 2}", HttpHeaders.IF_MATCH, "\"" + revision + "\"");
 
         assertThat(stale.getStatus()).isEqualTo(412);
         assertThat(fresh.getStatus()).isEqualTo(200);

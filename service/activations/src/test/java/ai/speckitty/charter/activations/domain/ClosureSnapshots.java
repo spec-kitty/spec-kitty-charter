@@ -20,7 +20,6 @@ public final class ClosureSnapshots {
 
     private final List<PackEntry> packs = new ArrayList<>();
     private final Map<ArtifactKind, Set<String>> held = new EnumMap<>(ArtifactKind.class);
-    private final Set<String> missionTypes = new HashSet<>();
     private final Map<String, List<String>> requiredBy = new LinkedHashMap<>();
     private final Map<String, String> lockedBy = new LinkedHashMap<>();
     private final Map<String, PresetView> presets = new LinkedHashMap<>();
@@ -46,15 +45,9 @@ public final class ClosureSnapshots {
         return this;
     }
 
-    /** Artifacts of one kind the closure holds. */
+    /** Artifacts of one kind the closure holds, mission types included. */
     public ClosureSnapshots held(ArtifactKind kind, String... ids) {
         held.computeIfAbsent(kind, k -> new HashSet<>()).addAll(List.of(ids));
-        return this;
-    }
-
-    /** Mission types the closure holds. */
-    public ClosureSnapshots missionTypes(String... ids) {
-        missionTypes.addAll(List.of(ids));
         return this;
     }
 
@@ -84,6 +77,6 @@ public final class ClosureSnapshots {
 
     /** The snapshot. */
     public ClosureSnapshot build() {
-        return new ClosureSnapshot(packs, held, missionTypes, requiredBy, lockedBy, presets, fingerprint);
+        return new ClosureSnapshot(packs, held, requiredBy, lockedBy, presets, fingerprint);
     }
 }

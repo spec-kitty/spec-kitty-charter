@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.application;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.Relationship;
@@ -54,9 +55,18 @@ public final class EdgeIndex implements ComposeResolver {
         }
     }
 
-    /** A held artifact as the walk sees it: its place and the indexed edges from it. */
-    private record EdgeNode(PackIdentifier packId, Urn urn, List<Relationship> relationships)
-            implements CharterArtifact {
+    /**
+     * A held artifact as the walk sees it: its place and the indexed edges from it. {@link GraphWalk} follows a
+     * component's {@link CharterArtifact#derivedRelationships()}, so this node answers its indexed graph-document edges
+     * there: it is a walk node, not a stored artifact, and nothing else reads it (ADR-0064; #397 retires or rebases the
+     * walk).
+     */
+    private record EdgeNode(PackIdentifier packId, Urn urn, List<Relationship> edges) implements CharterArtifact {
+
+        @Override
+        public List<Relationship> derivedRelationships() {
+            return edges;
+        }
 
         @Override
         public ArtifactKind kind() {
@@ -148,6 +158,20 @@ public final class EdgeIndex implements ComposeResolver {
         return closure.stream()
                 .filter(pack -> pack.holds(urn.toString()))
                 .map(pack -> new Place(idOf(pack), urn))
+                .toList();
+    }
+
+    /**
+     * The places of a mission type's steps (A7 Q1, rule W20's {@code steps(M)}): every place of the closure, in closure
+     * order, that holds an {@code action:<M>/<step>} node.
+     */
+    List<Place> stepsOf(Urn missionType) {
+        String prefix = missionType.id() + "/";
+        return closure.stream()
+                .flatMap(pack -> pack.definedArtifacts().stream()
+                        .flatMap(defined -> Urn.parse(defined).stream())
+                        .filter(urn -> urn.kind() == NodeKind.ACTION && urn.id().startsWith(prefix))
+                        .map(urn -> new Place(idOf(pack), urn)))
                 .toList();
     }
 

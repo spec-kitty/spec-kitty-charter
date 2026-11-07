@@ -14,10 +14,16 @@ class NodeKindPluralTest {
         assertThat(NodeKind.fromPlural(kind.plural())).contains(kind);
     }
 
+    @ParameterizedTest
+    @EnumSource(ArtifactKind.class)
+    void aNodeKindOfAnArtifactKindTakesItsPluralFromTheRegistry(ArtifactKind kind) {
+        assertThat(NodeKind.of(kind).plural()).isEqualTo(kind.plural());
+    }
+
     @Test
-    void theTwoKindsWithoutAnArtifactKindHaveTheirOwnPlurals() {
+    void onlyTheActionHasAPluralOfItsOwn() {
         assertThat(NodeKind.ACTION.plural()).isEqualTo("actions");
-        assertThat(NodeKind.MISSION_TYPE.plural()).isEqualTo("mission_types");
+        assertThat(NodeKind.MISSION_TYPE.plural()).isEqualTo(ArtifactKind.MISSION_TYPE.plural());
         assertThat(NodeKind.AGENT_PROFILE.plural()).isEqualTo("agent_profiles");
     }
 }

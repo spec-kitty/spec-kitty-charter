@@ -56,13 +56,6 @@
       ],
       "default": null,
       "title": "Last Updated"
-    },
-    "references": {
-      "items": {
-        "type": "string"
-      },
-      "title": "References",
-      "type": "array"
     }
   },
   "required": [

@@ -2,26 +2,6 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://schemas.spec-kitty.ai/charter/packs/procedure.schema.json",
   "$defs": {
-    "ArtifactKind": {
-      "description": "The kernel artifact-kind tokens a reference may name.",
-      "enum": [
-        "directive",
-        "tactic",
-        "styleguide",
-        "toolguide",
-        "paradigm",
-        "procedure",
-        "agent_profile",
-        "mission_step_contract",
-        "template",
-        "asset",
-        "glossary_pack",
-        "anti_pattern",
-        "skill"
-      ],
-      "title": "ArtifactKind",
-      "type": "string"
-    },
     "AntiPatternEntry": {
       "additionalProperties": false,
       "description": "Something to avoid when following the procedure; a value of its procedure, with no identity.",
@@ -83,35 +63,6 @@
       ],
       "title": "ProcedureStep",
       "type": "object"
-    },
-    "Reference": {
-      "additionalProperties": false,
-      "description": "A cross-artifact reference, stored verbatim; a procedure's references are never minted as relationships.",
-      "properties": {
-        "type": {
-          "$ref": "#/$defs/ArtifactKind"
-        },
-        "id": {
-          "minLength": 1,
-          "title": "Id",
-          "type": "string",
-          "pattern": "^([a-z0-9][a-z0-9_-]*::)?[A-Za-z][A-Za-z0-9_-]*$"
-        },
-        "when": {
-          "title": "When",
-          "type": "string"
-        },
-        "reason": {
-          "title": "Reason",
-          "type": "string"
-        }
-      },
-      "required": [
-        "type",
-        "id"
-      ],
-      "title": "Reference",
-      "type": "object"
     }
   },
   "additionalProperties": false,
@@ -161,14 +112,6 @@
       },
       "minItems": 1,
       "title": "Anti Patterns",
-      "type": "array"
-    },
-    "references": {
-      "items": {
-        "$ref": "#/$defs/Reference"
-      },
-      "minItems": 1,
-      "title": "References",
       "type": "array"
     },
     "notes": {

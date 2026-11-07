@@ -20,27 +20,28 @@ audience:
 PR A0 of the layer-merge mission changes what #399 built. Decisions: the
 [ADR-0059 amendment](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/#amendment-2026-11-07) and the
 amendments to ADR-0020, ADR-0042 and ADR-0050. Contract: the `2026-11-07-a0-*.md` fragments. Divergences: DIV-209 to
-DIV-215, with DIV-203, DIV-206 and DIV-501 updated ([register](/conformance/divergence-register/)).
+DIV-215 ([register](/conformance/divergence-register/)).
 
-- **No kind gate.** The document is `packs`, `selected`, `deactivated` and `languages`. `activatedKinds` and
-  `missionTypes` are refused on a create or replace (`422`, `removed_member`). Mission types are selected under `selected.mission_type` and
-  denied unless required or locked; a cascade from one selects what its steps reach. Presets name any kind and carry
-  no `activated_kinds`.
+- **No kind gate.** The document is `packs`, `selected`, `deactivated` and `languages`. Mission types are selected
+  under `selected.mission_type` and denied unless required or locked; a cascade from one selects what its steps reach.
+  Presets name any kind and carry no `activated_kinds`.
 - **Storage version 2.** A version 1 document reads as its upgrade and is stored as version 2 on the next write, so
-  every `ETag` changes once (one `412` per client).
-- **A replace drops** an id or a version pin no pack holds, reported in `dropped` and `droppedPins`, and judges the
-  floor only on the deny entries it adds. `includeDeactivated` keeps the deny entry of a lineage ancestor it passes.
-- **`depth`** on a cascading select or deactivate counts `suggests` hops only (`0` follows none; absent is
-  unlimited), and `skippedByDepth` lists the next frontier. A bad `depth` is `422` at `/depth`.
+  every `ETag` changes once (one `412`). A write with `schemaVersion: 1` is `422`.
+- **A replace drops** an id or a version pin no pack holds, reported in `dropped` and `droppedPins`.
+- **`depth`** on a cascading select or deactivate counts `suggests` hops only (absent is unlimited); a bad one is `422`.
 
 ## Hand-over to core
 
 Nothing is edited or filed in core (C-003). For the pull request description:
 
-1. Regenerate the strict DTOs from this contract; `Activation` is closed and gains `dropped` and `droppedPins`.
-2. `activatedKinds` and `missionTypes` are refused; select mission types under `selected.mission_type`.
+1. Regenerate the strict DTOs; `Activation` is closed and gains `dropped` and `droppedPins`, and
+   `ActivationChange.droppedPins` is required. `SelectableKind` becomes `ActivatableKind`; response kinds can carry
+   `mission_type`.
+2. `activatedKinds` and `missionTypes` are refused on a create or replace, `422 validation_failed`
+   (`removed_member`), not `activation_invalid`. Select mission types under `selected.mission_type`.
 3. `activated_kinds` narrowing is gone: a narrowing project sees a larger effective set.
-4. Read `dropped` and `droppedPins` on a replace instead of handling a `422`; expect one `412` per activation.
-5. The client's optional-list getters return `null` when a list is absent (`containerDefaultToNull`); keep it.
-6. A cascading select or deactivate takes an optional `depth` (counts `suggests` hops; absent is unlimited);
-   `skippedByDepth` reports the next frontier when it is sent. An older server answers `422 unknown_member`.
+4. Read `dropped` and `droppedPins` on a replace instead of handling a `422`. Expect one `412` per activation, and a
+   replace without `If-Match` can get `412` after eight lost attempts: send `If-Match` or handle it.
+5. `containerDefaultToNull` is new to client-java in this PR: getters of absent optional lists change from `[]` to
+   `null` (NPE risk). Keep it, and null-check.
+6. `depth` is optional; `skippedByDepth` reports the next frontier. An older server answers `422 unknown_member`.
