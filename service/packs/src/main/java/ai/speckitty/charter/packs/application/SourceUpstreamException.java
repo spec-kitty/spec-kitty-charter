@@ -12,6 +12,7 @@ public final class SourceUpstreamException extends RuntimeException {
     @Serial
     private static final long serialVersionUID = 1L;
 
+    /** Whether the upstream timed out rather than failed. */
     private final boolean timedOut;
 
     private SourceUpstreamException(String message, boolean timedOut) {
