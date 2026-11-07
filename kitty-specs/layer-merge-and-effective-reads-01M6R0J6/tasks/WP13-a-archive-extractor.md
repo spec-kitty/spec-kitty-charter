@@ -173,3 +173,8 @@ In `service/packs/build.gradle.kts`:
 - Check each behaviour against the plan IC and the rule ids cited, not against core's Python answers (C-004).
 - Check the red-first evidence (the commit order or the run log) and that no test was weakened to pass.
 - Check that nothing outside `owned_files` changed beyond the listed shared-file edits.
+
+## Hand-off from WP12 (2026-11-07)
+
+- Exclude the `stress` JUnit tag from PIT (WP12's `MixedReadConcurrencyTest` and `RegistryLockOrderTest` carry it).
+- Optionally restore one stress case in `MixedReadConcurrencyTest` that calls `ClosureQueries.snapshot` itself, so T057's 'retries end in a version' is pinned end to end (WP12 review cycle 2).
