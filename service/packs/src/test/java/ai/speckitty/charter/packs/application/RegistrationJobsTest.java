@@ -462,6 +462,43 @@ class RegistrationJobsTest {
     }
 
     @Test
+    void aJobEndedByTheDeadlineKeepsItsSlotUntilItsWorkerIsFree(@TempDir Path host) throws Exception {
+        Harness h = new Harness(host);
+        CountDownLatch release = new CountDownLatch(1);
+        Stager stuck = directory -> {
+            // A stager that ignores interrupts, as a read of a slow disk does.
+            boolean interrupted = false;
+            while (release.getCount() > 0) {
+                try {
+                    release.await();
+                } catch (InterruptedException ignored) {
+                    interrupted = true;
+                }
+            }
+            if (interrupted) {
+                Thread.currentThread().interrupt();
+            }
+            return h.stage(h.pack("late", "1.0.0")).stage(directory);
+        };
+        int admitted = RegistrationJobs.RUNNING_LIMIT + RegistrationJobs.WAITING_LIMIT;
+        for (int i = 0; i < admitted; i++) {
+            h.start("held-" + i, Preconditions.none(), stuck);
+        }
+        h.await(() -> h.jobs.owned().size() >= RegistrationJobs.RUNNING_LIMIT);
+        h.clock.advance(RegistrationJobs.DEADLINE.plusSeconds(1));
+        h.jobs.expireOverdue();
+
+        // Two workers are still held by their stagers, so only eight more may wait, never more.
+        for (int i = 0; i < RegistrationJobs.WAITING_LIMIT; i++) {
+            h.start("next-" + i, Preconditions.none(), h.stage(h.pack("next-" + i, "1.0.0")));
+        }
+        assertThatThrownBy(() -> h.jobs.reserve("one-too-many", Preconditions.none(), ORIGIN_FOR_ORDER))
+                .as("two workers still run past the deadline, so the ninth waiting job is refused")
+                .isInstanceOf(RetryLaterException.class);
+        release.countDown();
+    }
+
+    @Test
     void aReservationThatIsNeverStartedExpiresAndFreesItsSlot(@TempDir Path host) {
         Harness h = new Harness(host);
         Reservation leaked = h.jobs.reserve("pack-x", Preconditions.none(), ORIGIN);
