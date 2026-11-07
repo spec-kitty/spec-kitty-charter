@@ -38,8 +38,8 @@ properties:
       it. A pass-through or step place inherits the hop count of the place that produced it, and the lineage never
       carries suggests. Absent means unlimited, exactly as without this member (ADR-0059 D2). With depth, the skipped
       report adds skippedByDepth: the suggests targets one hop past the bound. depth without cascade is accepted
-      and has no effect: there is no walk. A depth below 0, or past the int32 range, is 422 activation_invalid with a
-      violation at /depth; a depth that is not an integer is 422 activation_invalid with unreadable_body at /depth. Unlike
+      and has no effect: there is no walk, and no skippedByDepth. A depth below 0 is 422 activation_invalid with the
+      violation below_minimum at /depth, and one past the int32 range with above_maximum; a depth that is not an integer is 422 activation_invalid with unreadable_body at /depth. Unlike
       ADR-0018 D4's read depth, this one has no default and no maximum.
     x-source:
       path: docs/adr/0020-offering-and-activations.md
