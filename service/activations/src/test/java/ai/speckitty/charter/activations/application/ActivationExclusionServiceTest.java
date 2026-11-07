@@ -167,26 +167,33 @@ class ActivationExclusionServiceTest {
     }
 
     @Test
-    void aMissionTypeHasNoDenyListSoItsKindIs422AtThePath() {
-        StoredActivation before = stored(ActivationDocument.builder());
+    void aMissionTypeIsTakenAtThePathAsAnyKindAndARequiredOneIs409() {
+        // A7 Q2: the path takes kind=mission_type; the deny itself is planned by CascadeRules (WP05, T022).
+        packs.answer(ClosureSnapshots.snapshot()
+                .pack("main", "1.0.0")
+                .held(ArtifactKind.MISSION_TYPE, "research", "software-dev")
+                .requiredBy("mission_type:software-dev", "main")
+                .build());
+        StoredActivation before =
+                stored(ActivationDocument.builder().deactivated(ArtifactKind.MISSION_TYPE, List.of("research")));
 
-        assertThatThrownBy(() -> service.deactivate(ID, "mission_type", "research", ALL, List.of(), quoted(before)))
-                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
-                    assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_INVALID);
-                    assertThat(refusal.violations())
-                            .singleElement()
-                            .satisfies(
-                                    violation -> assertThat(violation.pointer()).isEqualTo("/kind"));
-                });
-        assertThatThrownBy(() -> service.reactivate(ID, "mission_type", "research", quoted(before)))
-                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
-                    assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_INVALID);
-                    assertThat(refusal.violations())
-                            .singleElement()
-                            .satisfies(
-                                    violation -> assertThat(violation.pointer()).isEqualTo("/kind"));
-                });
-        assertThat(packs.calls()).isZero();
+        assertThatThrownBy(() -> service.deactivate(
+                        ID, "mission_type", "software-dev", Optional.empty(), List.of(), quoted(before)))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_REQUIRED));
+        assertThatThrownBy(() ->
+                        service.deactivate(ID, "mission_type", "nope", Optional.empty(), List.of(), quoted(before)))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.MISSION_TYPE_NOT_FOUND));
+        ActivationWrites.Outcome reactivated =
+                service.reactivate(ID, "mission_type", "Mission_Type:Research", quoted(before));
+
+        assertThat(reactivated.change().cleared())
+                .containsExactly(new ArtifactRef(ArtifactKind.MISSION_TYPE, "research"));
+        assertThat(reactivated.stored().document().deactivated()).isEmpty();
+        assertThat(repository.replaces()).isOne();
     }
 
     @Test
