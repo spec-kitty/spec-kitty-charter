@@ -23,7 +23,7 @@ get:
     (a dependency or a parent further from built-in than the pack), pack_name_conflict, pack_duplicate_id,
     pack_sibling_conflict (two packs of one level that change or define one artifact with no
     overrides edge settling it, or that hold one preset id with no parent_pack line between them), pack_reference_unqualified, pack_reference_pack_missing and pack_reference_artifact_missing (a
-    qualified reference to a pack of the closure that does not hold the artifact). Each names the
+    qualified reference to a pack of the closure that does not hold the artifact, or a preset item or policy lock naming a held artifact only by case). Each names the
     violating pack in detail and in the packs member of the body, with the pack_id and name of every pack it
     names. Like every operation it needs the worktree token.
   tags:

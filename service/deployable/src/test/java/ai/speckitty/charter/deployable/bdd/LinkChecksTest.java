@@ -51,10 +51,11 @@ class LinkChecksTest {
         assertThat(get(ITEM, null, """
                         {"_links": {
                           "self": {"href": "/api/v1/packs/qa/artifacts/tactic/rehearse"},
-                          "up": {"href": "/api/v1/packs/{packId}", "templated": true}
+                          "up": {"href": "/api/v1/packs/{packId}/assets", "templated": true}
                         }}"""))
-                .anySatisfy(violation ->
-                        assertThat(violation).contains("/api/v1/packs/{packId}").contains("no GET operation"));
+                .anySatisfy(violation -> assertThat(violation)
+                        .contains("/api/v1/packs/{packId}/assets")
+                        .contains("no GET operation"));
     }
 
     @Test

@@ -17,12 +17,18 @@ import java.util.Set;
 
 /**
  * The lazy, repository-backed DRG walk driver (ADR-0025 Decision 4). It visits a component's effective-origin
- * {@link CharterArtifact#relationships() relationships}, resolving each neighbour on demand through the
+ * {@link CharterArtifact#derivedRelationships() derived relationships}, resolving each neighbour on demand through the
  * {@link ComponentResolver} port, with a visited-URN cycle guard. It never materialises the whole graph: it issues at
  * most one resolver call per distinct reachable component (NFR-001).
  *
  * <p>It lives in the application ring, where the ports exist (ADR-0006). It is plain orchestration over the resolver
  * and a {@link GraphWalker} visitor — no IO, no framework; the composition root constructs it.
+ *
+ * <p><strong>It does not walk authored edges.</strong> Since ADR-0064 a relationship is authored only in a pack's graph
+ * documents, read through {@link ai.speckitty.charter.packs.domain.PackEdgeRepository}; the derived relationships it
+ * follows are a guard's {@code implemented_by} alone. Over a stored artifact it walks almost nothing. The activation
+ * cascade ({@link Reachability}) walks it over an {@link EdgeIndex}, whose nodes answer the closure's graph-document
+ * edges as their relationships; any other caller must do the same, or wait for #397 to retire or rebase the walk.
  */
 public final class GraphWalk {
 
@@ -60,7 +66,7 @@ public final class GraphWalk {
      * none, and is refused as the compose refuses it when it names a pack outside the writer's {@code depends_on}
      * closure.
      *
-     * <p>Reserved for the effective-graph reads: no read of the service constructs a walk across packs yet.
+     * <p>The activation cascade ({@link Reachability}) walks across a closure's packs through an {@link EdgeIndex}.
      *
      * @param resolvers the compose, resolved once for the read the walk serves
      */
@@ -103,7 +109,7 @@ public final class GraphWalk {
         if (nodeDescent == Descent.SKIP) {
             return true;
         }
-        for (Relationship relationship : component.relationships()) {
+        for (Relationship relationship : component.derivedRelationships()) {
             Descent relationshipDescent = visitor.onRelationship(relationship);
             if (relationshipDescent == Descent.STOP) {
                 return false;

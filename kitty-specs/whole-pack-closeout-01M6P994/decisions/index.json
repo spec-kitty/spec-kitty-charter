@@ -1,0 +1,30 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-11-05T16:39:52.692289Z",
+      "decision_id": "01M6P99GKMK38VC2YVES9T3N5D",
+      "final_answer": "kernel move",
+      "input_key": "step_markdown_rules",
+      "mission_id": "01M6P9942WSGA296CT16YHGDH9",
+      "mission_slug": "whole-pack-closeout-01M6P994",
+      "opened_by": "cli",
+      "options": [
+        "kernel move",
+        "ADR-0044 gap record",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "#299: move the line-level Markdown rules into the kernel so StepDocument checks them when built, or record the gap as accepted in ADR-0044?",
+      "rationale": "Operator brief (2026-11-05, parent session) prefers the kernel move if it stays small and keeps MISSIONS_DOMAIN_IS_PURE; grounding found ~10 files, no Gradle or ArchUnit change.",
+      "resolved_at": "2026-11-05T16:39:55.317400Z",
+      "resolved_by": null,
+      "slot_key": "specify.scope.step-markdown-rules",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M6P9942WSGA296CT16YHGDH9",
+  "version": 1
+}

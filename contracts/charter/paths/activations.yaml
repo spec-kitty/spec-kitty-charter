@@ -4,7 +4,7 @@ post:
   description: >-
     Stores the document under a ULID the service mints and answers 201 with the Activation, its Location and its
     ETag (ADR-0020 D3). A client with a stable id of its own uses PUT instead. The document is validated against
-    its closure, the packs it names and their depends_on closure (every configured pack when it names none): an
+    its closure, the packs it names and their depends_on and parent_pack closure (every configured pack when it names none): an
     unknown pack, kind or artifact is 422 activation_invalid with violations, and a deny entry on an artifact a
     pack of the closure requires or locks is 409 artifact_required or artifact_locked naming the pack. A body over
     1 MiB, an unknown member or a null is 422 activation_invalid. A body that sends activatedKinds or missionTypes is

@@ -14,8 +14,8 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * The kinds a cascade walks into (the contract's {@code CascadeScope}): none when the request has no {@code cascade},
- * every activatable kind but {@code mission_type}, which no cascade reaches, for {@code ["all"]}, or the kinds named. {@code all} stands alone:
- * mixed with kinds it is an {@code all_mixed_with_kinds} violation at {@code /cascade} (422).
+ * every activatable kind, {@code mission_type} included (rule W21, A7), for {@code ["all"]}, or the kinds named.
+ * {@code all} stands alone: mixed with kinds it is an {@code all_mixed_with_kinds} violation at {@code /cascade} (422).
  */
 public final class CascadeScope {
 
@@ -24,10 +24,10 @@ public final class CascadeScope {
 
     private static final CascadeScope NONE = new CascadeScope(false, Set.of());
 
-    /** The kinds a cascade walks into: every activatable kind but {@code mission_type}. */
+    /** The kinds a cascade walks into: every activatable kind, {@code mission_type} included. */
     private static final Set<ArtifactKind> CASCADE_KINDS =
             Collections.unmodifiableSet(EnumSet.copyOf(Arrays.stream(ArtifactKind.values())
-                    .filter(kind -> kind.activatable() && kind != ArtifactKind.MISSION_TYPE)
+                    .filter(ArtifactKind::activatable)
                     .toList()));
 
     private final boolean cascades;

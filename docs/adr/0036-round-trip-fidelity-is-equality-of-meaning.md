@@ -2,8 +2,8 @@
 title: "ADR-0036: Round-trip fidelity is equality of meaning, and unknown fields are refused"
 description: What the whole-pack round trip compares per file kind, how an unknown field is refused, the canonical CRG edge, and how pack inconsistencies go upstream.
 doc_status: active
-updated: 2026-10-31T00:00:00Z
-decision_status: Accepted; extended in part by ADR-0039 (2026-10-27); superseded in part by ADR-0040 (2026-10-27, proposed) and ADR-0042 (2026-10-28); per-kind rows added by ADR-0043 (2026-10-29, proposed); mission rows superseded by ADR-0044 (2026-10-30, accepted 2026-10-31)
+updated: 2026-11-05T00:00:00Z
+decision_status: Accepted; extended in part by ADR-0039 (2026-10-27); superseded in part by ADR-0040 (2026-10-27, proposed) and ADR-0042 (2026-10-28); per-kind rows added by ADR-0043 (2026-10-29, proposed); mission rows superseded by ADR-0044 (2026-10-30, accepted 2026-10-31); decision 4 amended by ADR-0064 (2026-11-05)
 decision_date: '2026-10-27'
 type: ADR
 kind: ADR
@@ -125,6 +125,17 @@ schema `mission-type` and compared as YAML; a step's prompt and guidelines
 `mission-step-prompt` and `mission-step-guidelines` and compare by the `markdown` content form's
 model, as `pack.md` does. A mission type's templates are template payloads compared by bytes. The
 decision text below is unchanged, and the rows are annotated where they stand.
+
+### Amendment 2026-11-05 (#240): edges are compared from the graph documents only
+
+The operator ruled on [#240](https://github.com/spec-kitty/spec-kitty-charter/issues/240) on 2026-11-05 that an edge is authored only in a pack's graph documents
+([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/)). It changes decision 4 and no other decision:
+
+- decision 4: the canonical edge set is the graph documents' set. An artifact file carries no edge, so
+  no edge is compared from an artifact field. An org fragment's edge gains `when`, so a fragment edge's
+  value is `when`, `reason` and `impacts`, as a shard edge's is ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decision 9).
+
+The decision text below is unchanged, and decision 4 is annotated where it stands.
 
 ## Context
 
@@ -275,6 +286,8 @@ Status.)*
   (ruling 4), not an edge the reader turns around.
 - **Same identity, different value**: for example, two `requires` edges from A to B with a different
   `when` are a pack inconsistency, not two members.
+
+*Amended 2026-11-05 ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decision 9): edges are compared from the graph documents only (`*.graph.yaml` and `drg/fragment.yaml`); no artifact field carries an edge. A fragment edge's value gains `when`, as a shard edge has.*
 
 ### 5. Filing a pack inconsistency
 
@@ -467,6 +480,9 @@ Asked on #188 and answered by the operator on 2026-10-27:
   comparator or the domain invariant detects two structural edges on a pair) is #187's to design.
 - The gate compares CRG edges and nodes as sets (#187). Whether the domain's graph merge also
   becomes set-based is for #189 to decide; this record only defines comparison.
+  *Edge authority decided by [ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) ([#240](https://github.com/spec-kitty/spec-kitty-charter/issues/240)): the graph documents are an edge's only source, so the
+  merge never combines a field-minted edge with a graph edge. Whether the merge of the graph documents
+  is set-based is not ruled there.*
 
 ### Risks
 

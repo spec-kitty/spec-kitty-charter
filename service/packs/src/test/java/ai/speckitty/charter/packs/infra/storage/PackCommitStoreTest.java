@@ -179,8 +179,7 @@ class PackCommitStoreTest {
         assertThatThrownBy(() -> writeStore.commit(
                         PACK,
                         etag,
-                        Change.artifact(
-                                mutatedWithToolguide(service.load(PACK), "ripgrep"), toolguide("ripgrep"), List.of())))
+                        Change.artifact(mutatedWithToolguide(service.load(PACK), "ripgrep"), toolguide("ripgrep"))))
                 .isInstanceOfSatisfying(
                         PreconditionException.class,
                         e -> assertThat(e.kind()).isEqualTo(PreconditionException.Kind.STALE));
@@ -339,10 +338,11 @@ class PackCommitStoreTest {
      * fixture on {@code main} at 90de8f9, when it still read every digested file as UTF-8 text. Captured by a
      * throwaway test printing {@code currentRevision} on this lane's base before the change (its revision readers
      * and the fixture were byte-identical to 90de8f9's); re-captured on 2026-11-03 from the unchanged revision code after the
-     * fixture's {@code pack_id} became a valid ULID (FR-003); pinned so reading bytes does not move an existing ETag.
+     * fixture's {@code pack_id} became a valid ULID (FR-003), and again on 2026-11-05 after the fixture's tactic lost
+     * its {@code references} (ADR-0064); pinned so reading bytes does not move an existing ETag.
      */
     private static final String PACK_A_REVISION_ON_MAIN =
-            "sha256:453b87b4217d5a74ff81c31c65019d06f2bac46a16c53a2db364b8be69ea0c92";
+            "sha256:f76f94e24cb700573c43190b45432b1374360c4f189ab62405e0f4bde9e83744";
 
     /** A root graph shard, which {@link PackFileSet#digested} covers, written with bytes that are not UTF-8. */
     private static final String NON_UTF8_SHARD = "binary.graph.yaml";

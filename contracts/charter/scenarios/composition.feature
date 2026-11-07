@@ -1357,9 +1357,9 @@ Feature: The compose resolves the configured packs' dependency graph
       | pack_reference_artifact_missing | beta-pack::directive:NOPE | beta   | 01M4P01D5TWB5FKZGNNQG3943S |
 
   Scenario: The references of an artifact are read across packs, each resolved through the compose
-    A composed read (operator ruling of 2026-11-03). Alpha depends on beta, and alpha's directive USE writes
-    beta-pack::SHARE as a typed reference: the read answers it as written, under the relation the artifact mints for
-    it, held by beta, resolved to the bare URN, and its artifact link reads beta's directive. The artifact the
+    A composed read (operator ruling of 2026-11-03). Alpha depends on beta, and alpha's graph document relates its
+    directive USE to beta-pack::SHARE (ADR-0064): the read answers the edge's target as written, under the edge's
+    relation, held by beta, resolved to the bare URN, and its artifact link reads beta's directive. The artifact the
     read is asked for must exist, exactly as for the pack-scoped read.
     Given the org pack "alpha" with the file "pack.yaml":
       """
@@ -1387,9 +1387,16 @@ Feature: The compose resolves the configured packs' dependency graph
       title: Use the shared load
       intent: Use it
       enforcement: required
-      references:
-      - type: directive
-        id: beta-pack::SHARE
+      """
+    And the org pack "alpha" with the file "directive.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: directive:USE
+        target: beta-pack::directive:SHARE
+        relation: suggests
       """
     And the org pack "beta" with the file "directives/SHARE.directive.yaml":
       """
@@ -1414,10 +1421,10 @@ Feature: The compose resolves the configured packs' dependency graph
     And the problem code is "directive_not_found"
 
   Scenario: A bare reference is held by the pack that writes it, which shadows another pack's artifact of that id
-    FR-014: alpha (project) and beta (org) both hold directive SHARE, and alpha's USE writes it bare. The read
-    answers alpha as the holding pack, with no refusal, and its artifact link reads alpha's directive. alpha's own
-    SHARE writes beta-pack::SHARE, a qualified reference to another pack's artifact of the same id: legal (R2), not
-    a self-loop, and it resolves to beta.
+    FR-014: alpha (project) and beta (org) both hold directive SHARE, and alpha's graph document relates USE to it
+    bare. The read answers alpha as the holding pack, with no refusal, and its artifact link reads alpha's directive.
+    alpha's own SHARE is related to beta-pack::SHARE, a qualified reference to another pack's artifact of the same
+    id: legal (R2), not a self-loop, and it resolves to beta.
     Given the org pack "beta" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943S
@@ -1452,9 +1459,6 @@ Feature: The compose resolves the configured packs' dependency graph
       title: Alpha's share
       intent: Share it
       enforcement: required
-      references:
-      - type: directive
-        id: beta-pack::SHARE
       """
     And the project pack "alpha" with the file "directives/USE.directive.yaml":
       """
@@ -1463,9 +1467,19 @@ Feature: The compose resolves the configured packs' dependency graph
       title: Use the shared load
       intent: Use it
       enforcement: required
-      references:
-      - type: directive
-        id: SHARE
+      """
+    And the project pack "alpha" with the file "directive.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: directive:SHARE
+        target: beta-pack::directive:SHARE
+        relation: suggests
+      - source: directive:USE
+        target: directive:SHARE
+        relation: suggests
       """
     When I GET "/packs/alpha/artifacts/directive/USE/references"
     Then the response status is 200
@@ -1499,9 +1513,16 @@ Feature: The compose resolves the configured packs' dependency graph
       title: Use the shared load
       intent: Use it
       enforcement: required
-      references:
-      - type: directive
-        id: ghost-pack::SHARE
+      """
+    And the org pack "alpha" with the file "directive.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: directive:USE
+        target: ghost-pack::directive:SHARE
+        relation: suggests
       """
     When I GET "/packs/alpha/artifacts/directive/USE/references"
     Then the response status is 500
@@ -1512,9 +1533,9 @@ Feature: The compose resolves the configured packs' dependency graph
     When I GET "/packs/alpha/artifacts/directive/USE"
     Then the response status is 200
 
-  Scenario: A bare cross-pack reference in a tactic's typed references is refused naming the holding pack
-    The same refusal as above (FR-015), through the other carrier of a reference: alpha's tactic
-    references directive SHARE bare, and only beta holds it. One check path serves both carriers.
+  Scenario: A bare cross-pack edge from a tactic is refused naming the holding pack
+    The same refusal as above (FR-015), from a tactic: alpha's graph document relates its tactic to directive
+    SHARE bare, and only beta holds it. A graph edge is the one carrier of a reference (ADR-0064).
     Given the org pack "alpha" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943R
@@ -1546,11 +1567,16 @@ Feature: The compose resolves the configured packs' dependency graph
       name: Uses share
       steps:
         - title: Only step
-      references:
-        - name: Share
-          type: directive
-          id: SHARE
-          when: always
+      """
+    And the org pack "alpha" with the file "tactic.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: tactic:uses-share
+        target: directive:SHARE
+        relation: suggests
       """
     When I GET "/offering"
     Then the response status is 500
@@ -1563,8 +1589,8 @@ Feature: The compose resolves the configured packs' dependency graph
     And the field at "/packs/1/packId" is "beta"
     And the field at "/packs/1/name" is "beta-pack"
 
-  Scenario: A pack-qualified typed reference inside the closure resolves
-    The control of the typed carrier (FR-013, FR-017): the same tactic writes the reference
+  Scenario: A pack-qualified edge from a tactic inside the closure resolves
+    The control of the scenario above (FR-013, FR-017): the same tactic is related to the directive
     pack-qualified, and alpha declares depends_on beta, so the compose is served, beta before alpha.
     Given the org pack "alpha" with the file "pack.yaml":
       """
@@ -1600,11 +1626,16 @@ Feature: The compose resolves the configured packs' dependency graph
       name: Uses share
       steps:
         - title: Only step
-      references:
-        - name: Share
-          type: directive
-          id: beta-pack::SHARE
-          when: always
+      """
+    And the org pack "alpha" with the file "tactic.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: tactic:uses-share
+        target: beta-pack::directive:SHARE
+        relation: suggests
       """
     When I GET "/offering"
     Then the response status is 200

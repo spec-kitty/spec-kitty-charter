@@ -24,8 +24,6 @@ final class PresetFiles {
 
     private static final String SUFFIX = ".yaml";
 
-    private static final String ACTIVATED = "activated_";
-
     private PresetFiles() {}
 
     /**
@@ -76,7 +74,7 @@ final class PresetFiles {
         Map<ArtifactKind, List<PresetItem>> artifacts = new EnumMap<>(ArtifactKind.class);
         dso.lists()
                 .forEach((key, items) -> artifacts.put(
-                        kindOf(key.substring(ACTIVATED.length())),
+                        PresetYaml.kindOf(key),
                         items.stream()
                                 .map(item -> new PresetItem(item.id(), item.mustHave()))
                                 .toList()));
@@ -102,11 +100,5 @@ final class PresetFiles {
             }
         }
         return new PresetDso("1.0", preset.id(), preset.description(), lists);
-    }
-
-    private static ArtifactKind kindOf(String plural) {
-        return ArtifactKind.fromPlural(plural)
-                .orElseThrow(
-                        () -> new IllegalStateException("'" + plural + "' passed the preset schema but is no kind"));
     }
 }

@@ -1,0 +1,186 @@
+parameters:
+- name: packId
+  in: path
+  required: true
+  description: >-
+    The identity of the Charter Pack a registration writes to, or that getPack reads: the configured identifier, a
+    lower-case slug of at most 63 characters. A value outside the grammar breaks the parameter's schema and is a 400
+    Problem without a code, before the body is read.
+  schema:
+    type: string
+    pattern: '^[a-z0-9][a-z0-9-]{0,62}$'
+put:
+  operationId: registerPackFromArchive
+  summary: Register a whole Charter Pack from an archive, replacing the pack the service holds.
+  description: >-
+    Registers the pack directory the body archives as one unit, and the service then holds exactly that pack: an
+    artifact, an edge, a preset item or a file the archive does not carry is gone (ADR-0065 D1, SC-003). A pack that
+    does not exist yet is created. The per-artifact and per-relationship registrations stay as helpers for a small
+    change. The body is the raw bytes of a gzip-compressed tar archive (application/gzip, also application/x-gzip and
+    application/x-tar+gzip) or of a zip archive (application/zip); the Content-Type picks the format and the leading
+    bytes must match it. The body is at most 32 MiB (413, answered before the body is read), and only the org and the
+    project level are writable. The registration is asynchronous (A5, FR-024): after the synchronous checks the
+    service answers 202 with a PackRegistrationStatus (pending) and a Location, the URI of GET
+    /pack-registrations/{registrationId}, which the client polls until the state is succeeded or refused. The
+    synchronous checks are access (the worktree bearer token, which the guard checks before routing and answers 401),
+    the registration flag (503), the packId grammar (400), the body size (413), the media type and magic bytes (415) and
+    If-Match / If-None-Match (400 when both are sent, 412 when stale). Every other answer of the flow is the problem of
+    a refused status, never a synchronous answer: the 409 answers (a version already held with other content, a built-in
+    level or a pack_id or name another configured pack uses, a change or removal the pack's level forbids, an artifact
+    another pack still refers to) and the 422 answers (an archive path or entry the extractor refuses, an unmodelled
+    file, an invalid artifact, a changed pack_level or pack_id, a closure that no longer composes, a relation rule
+    broken), the 412 of a revision that moved after the 202, and a timeout or a full disk (the codes are declared on
+    getPackRegistration). The version is a label, not an order: any version replaces, an identical re-send (the same
+    version and the same revision) ends succeeded with outcome unchanged, and the same version with another content is
+    refused. If-Match, a quoted pack revision, is optional: absent means the last writer wins on the whole pack, and a
+    stale one is 412 at acceptance, before any job exists, so an identical re-send under a stale If-Match is 412 and
+    not unchanged (RFC 9110 section 13.1.1); the revision is checked again under the lock. If-None-Match: * makes the
+    request create-only, and an existing pack is 412. There is no 428 here: If-Match is optional on a registration.
+    The operation is reserved until the registration service is built (ADR-0020 D8).
+  tags:
+  - Registration
+  x-reserved:
+    contractSet: pack-registration
+    issue: '#10'
+  parameters:
+  - $ref: ../parameters/IfMatch.yaml
+  - name: If-None-Match
+    in: header
+    required: false
+    description: >-
+      * to create only: when a pack is stored under the packId the answer is 412 (ADR-0065 D2). Any other value is a
+      malformed precondition, answered 400. Sent together with If-Match it is 400.
+    schema:
+      type: string
+      pattern: ^\*$
+  requestBody:
+    required: true
+    description: The pack directory as one archive, the raw bytes.
+    content:
+      application/gzip:
+        schema: &archive
+          type: string
+          format: binary
+      application/x-gzip:
+        schema: *archive
+      application/x-tar+gzip:
+        schema: *archive
+      application/zip:
+        schema: *archive
+  responses:
+    '202':
+      description: >-
+        The registration was accepted and a job will run it. The body is the status, pending, and Location is the URI
+        to poll.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Location:
+          description: The URI of the registration's status, /api/v1/pack-registrations/{registrationId}.
+          required: true
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/PackRegistrationStatus.yaml
+          examples:
+            accepted:
+              $ref: ../examples/PackRegistrationStatus.accepted.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '412':
+      $ref: ../responses/PackPreconditionFailed.yaml
+    '413':
+      description: >-
+        The body is over 32 MiB: 413, a Problem with no code, answered before the body is read (from Content-Length,
+        and from the bytes read when the length is absent or false).
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../../_shared/schemas/Problem.yaml
+    '415':
+      description: >-
+        The Content-Type is none of the four archive types, or the leading bytes of the body do not match the one it
+        names: 415, a Problem with no code.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../../_shared/schemas/Problem.yaml
+    '501':
+      $ref: ../responses/NotImplemented.yaml
+    '503':
+      $ref: ../responses/PackRegistrationUnavailable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml
+get:
+  operationId: getPack
+  summary: Read the Charter Pack the service holds under an identifier.
+  description: >-
+    The stored pack as a PackRegistration (FR-039), without an outcome or notices: its identity, version, level and
+    revision, with an ETag that is the quoted revision (the value an If-Match names on a later write) and _links
+    holding self (this read), edit (the whole-pack PUT) and artifacts (the pack's artifacts). It is the read a
+    registration's Location and a result's self link point at. The identifier is judged as every pack path judges it:
+    one that matches no configured pack, by name or by declared pack_id, is 404 pack_not_found. A configured pack whose
+    directory is missing or that has no readable pack.yaml, or a pack holding a file the fingerprint covers that cannot
+    be read, is 500 pack_unreadable. The answer is verified against the source fingerprint and carries it. The pack
+    collection, GET /packs, is not declared. The operation is reserved until the registration service is built
+    (ADR-0020 D8).
+  tags:
+  - Registration
+  x-reserved:
+    contractSet: pack-registration
+    issue: '#10'
+  responses:
+    '200':
+      description: The stored pack.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+        ETag:
+          description: The pack revision, quoted, for the If-Match of a later write.
+          required: true
+          schema:
+            type: string
+            pattern: ^"sha256:[0-9a-f]{64}"$
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/PackRegistration.yaml
+          examples:
+            stored:
+              $ref: ../examples/PackRegistration.stored.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/PackNotFound.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    '501':
+      $ref: ../responses/NotImplemented.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

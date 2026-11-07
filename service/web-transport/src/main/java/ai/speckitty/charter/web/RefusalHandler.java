@@ -197,8 +197,10 @@ public class RefusalHandler {
 
     /**
      * The HTTP status a refusal code is answered with. A not-found is 404; a validation failure is 422; a conflict or
-     * policy refusal is 409; every other code is 500, {@code stale_input} and {@code internal_error} and the codes of
-     * the pack composition included: the request is fine and the configured packs are not. An operation that declares
+     * policy refusal is 409; the pack registration codes keep the status of their {@code x-refusal} entry (a refused
+     * source or relation rule is 422, an unavailable source or a full disk 503, a timed-out registration 504); every
+     * other code is 500, {@code stale_input} and {@code internal_error} and the codes of the pack composition
+     * included: the request is fine and the configured packs are not. An operation that declares
      * another status for a code in the per-operation statuses of the contract's x-refusal ({@link #STATUS_BY_OPERATION})
      * answers that one. The {@code 412}/{@code 428} preconditions are not refusal codes: {@link #precondition} answers
      * those as plain problem bodies.
@@ -227,10 +229,26 @@ public class RefusalHandler {
                     KIND_NOT_FOUND,
                     ACTIVATION_NOT_FOUND,
                     ARTIFACT_NOT_FOUND,
-                    PRESET_NOT_FOUND -> HttpStatus.NOT_FOUND;
-            case VALIDATION_FAILED, ACTIVATION_INVALID -> HttpStatus.UNPROCESSABLE_CONTENT;
-            case REGISTRATION_CONFLICT, GOVERNANCE_POLICY_VIOLATION, ARTIFACT_REQUIRED, ARTIFACT_LOCKED ->
-                HttpStatus.CONFLICT;
+                    PRESET_NOT_FOUND,
+                    RELATIONSHIP_NOT_FOUND,
+                    REGISTRATION_NOT_FOUND -> HttpStatus.NOT_FOUND;
+            case VALIDATION_FAILED,
+                    ACTIVATION_INVALID,
+                    PACK_SOURCE_REFUSED,
+                    OVERRIDE_NOT_PERMITTED,
+                    ENHANCES_CYCLE,
+                    CONFLICTING_RELATIONS,
+                    SELF_OVERRIDE,
+                    OVERRIDE_CYCLE -> HttpStatus.UNPROCESSABLE_CONTENT;
+            case REGISTRATION_CONFLICT,
+                    GOVERNANCE_POLICY_VIOLATION,
+                    ARTIFACT_REQUIRED,
+                    ARTIFACT_LOCKED,
+                    PACK_VERSION_CONFLICT,
+                    ARTIFACT_REFERENCED,
+                    RELATIONSHIP_NOT_REGISTERED -> HttpStatus.CONFLICT;
+            case PACK_SOURCE_UNAVAILABLE, PACK_STORAGE_FULL -> HttpStatus.SERVICE_UNAVAILABLE;
+            case REGISTRATION_TIMED_OUT -> HttpStatus.GATEWAY_TIMEOUT;
             case PACK_LEVEL_MISMATCH,
                     PACK_UNREADABLE,
                     DRG_SCHEMA_ERROR,

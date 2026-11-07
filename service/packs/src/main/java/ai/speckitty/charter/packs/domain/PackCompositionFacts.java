@@ -18,7 +18,7 @@ import java.util.Objects;
  * @param presets the activation presets the pack holds ({@link Pack#presets()}), from the same assembly; empty when it
  *     holds none
  * @param edges every typed edge the pack writes, as written: the kernel {@link Relationship} with its relation type and
- *     any {@code <pack>::} qualifier of either endpoint, from its graph documents, its components' relationships and its
+ *     any {@code <pack>::} qualifier of either endpoint, from its graph documents, its components' derived relationships and its
  *     registered relationship shard, each (from, relation, to, qualifiers) once, in first-seen order; empty when it
  *     writes none
  */

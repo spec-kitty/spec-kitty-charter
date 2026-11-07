@@ -7,8 +7,9 @@
       "description": "One preset item: the id of an artifact or mission type, optionally marked must-have.",
       "properties": {
         "id": {
-          "description": "The artifact's or mission type's id (never a file stem).",
+          "description": "The artifact's or mission type's id (never a file stem), spelled with the characters a policy.yaml key allows: a letter or digit first, then letters, digits and _ / . -. A URN, a pack-qualified reference or an id with whitespace is not an id.",
           "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_/.-]*$",
           "title": "Id",
           "type": "string"
         },
@@ -27,7 +28,7 @@
     }
   },
   "additionalProperties": false,
-  "description": "An activation preset of a Charter Pack (presets/<id>.yaml), in the sanitized shape of ADR-0042.\n\nA preset selects artifacts of any activatable kind, mission types, skills and glossary packs included (one kind model, IC-20; decision DM-01M6RCY40CQQTHC130RWF43W0D): applying it sets selected.<kind> of the activation document for each kind it lists. Each item may carry the must-have mark; the marked items are the preset's required set (ADR-0031, operator ruling on #195), and a preset with any must-have item is a governing preset. Every activation list holds at least one item: a kind the preset does not select is left out. There is no kind gate: the key activated_kinds is not part of the shape, so a preset carrying it is refused when its pack is registered. Legacy required_<plural> keys are not part of the shape.",
+  "description": "An activation preset of a Charter Pack (presets/<id>.yaml), in the sanitized shape of ADR-0042.\n\nA preset selects artifacts of any activatable kind, mission types, skills and glossary packs included (one kind model, IC-20; decision DM-01M6RCY40CQQTHC130RWF43W0D): applying it sets selected.<kind> of the activation document for each kind it lists. Each item may carry the must-have mark; the marked items are the preset's required set (ADR-0031, operator ruling on #195), and a preset with any must-have item is a governing preset. Every activation list holds at least one item: a kind the preset does not select is left out. There is no kind gate: the key activated_kinds is not part of the shape, so a pack whose preset carries it is refused as unreadable (500 pack_unreadable) when the pack is loaded; a 422 refusal when the pack is registered is planned (PR A). Legacy required_<plural> keys are not part of the shape.",
   "properties": {
     "schema_version": {
       "const": "1.0",

@@ -24,7 +24,6 @@ files:
   - Sha256Digest.yaml
   - Slug.yaml
   - Tactic.yaml
-  - TacticReference.yaml
   - TacticStep.yaml
   - Urn.yaml
   - ActivatableKind.yaml
@@ -60,3 +59,9 @@ files:
   - SharedSkip.yaml
   - SkippedDeactivated.yaml
   - SkippedReport.yaml
+  - PackRegistration.yaml
+  - PackRegistrationStatus.yaml
+  - PackSource.yaml
+  - PackRegistrationNotices.yaml
+  - PackSourceRecord.yaml
+  - PackRegistrationProblem.yaml

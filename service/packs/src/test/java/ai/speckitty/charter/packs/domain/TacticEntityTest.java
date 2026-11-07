@@ -21,19 +21,17 @@ class TacticEntityTest {
                 .packId(PACK)
                 .schemaVersion("1.0")
                 .name("Name of " + id)
-                .step(new TacticStep("Do it", Optional.empty(), List.of(), List.of()));
+                .step(new TacticStep("Do it", Optional.empty(), List.of()));
     }
 
     @Test
     @DisplayName("the builder yields a valid entity carrying everything it was given")
     void builderBuildsValidEntity() {
-        var reference = new TacticReference("ref", "directive", "DIRECTIVE_001", "always");
         Tactic tactic = valid("t-1")
                 .purpose("why")
                 .notes("note")
                 .failureMode("rushing")
                 .appliesToLanguage("java")
-                .reference(reference)
                 .build();
 
         assertThat(tactic.id()).isEqualTo(new TacticIdentifier("t-1"));
@@ -42,7 +40,6 @@ class TacticEntityTest {
         assertThat(tactic.notes()).contains("note");
         assertThat(tactic.failureModes()).containsExactly("rushing");
         assertThat(tactic.appliesToLanguages()).containsExactly("java");
-        assertThat(tactic.references()).containsExactly(reference);
         assertThat(tactic.steps()).hasSize(1);
     }
 
@@ -67,8 +64,8 @@ class TacticEntityTest {
     @Test
     @DisplayName("steps keep authored order and duplicates")
     void stepsKeepOrderAndDuplicates() {
-        var a = new TacticStep("A", Optional.empty(), List.of(), List.of());
-        var b = new TacticStep("B", Optional.empty(), List.of(), List.of());
+        var a = new TacticStep("A", Optional.empty(), List.of());
+        var b = new TacticStep("B", Optional.empty(), List.of());
         Tactic tactic = Tactic.builder()
                 .id(new TacticIdentifier("t"))
                 .packId(PACK)
