@@ -392,18 +392,19 @@ public final class PackRegistrationService {
      * @param digests the digest of each file-backed artifact
      * @param edges the typed edges written, by their key
      */
-    private record Before(Set<String> defined, Map<Urn, String> digests, Map<String, Relationship> edges) {
+    private record Before(
+            Set<String> defined, Map<Urn, String> digests, Map<String, Relationship> edges, Map<String, Urn> loose) {
 
-        static final Before NOTHING = new Before(Set.of(), Map.of(), Map.of());
+        static final Before NOTHING = new Before(Set.of(), Map.of(), Map.of(), Map.of());
 
         static Before of(WholePackWriteStore.Contents contents) {
-            return new Before(heldBy(contents), contents.digests(), edgesOf(contents));
+            return new Before(heldBy(contents), contents.digests(), edgesOf(contents), Map.of());
         }
 
         static Before of(WholePackWriteStore.Remains remains) {
             Map<String, Relationship> edges = new LinkedHashMap<>();
             remains.edges().forEach(edge -> edges.putIfAbsent(edgeKey(edge), edge));
-            return new Before(remains.defined(), remains.digests(), edges);
+            return new Before(remains.defined(), remains.digests(), edges, remains.looseEdges());
         }
     }
 
@@ -461,6 +462,13 @@ public final class PackRegistrationService {
                 writes.add(new WritePolicyGate.Write(WritePolicyGate.Operation.REPLACE, urn));
             }
         });
+        edgeWrites(upload, before, writes);
+        return List.copyOf(writes);
+    }
+
+    /** Each edge the upload adds or drops, on its source; a stored entry that cannot be typed is dropped unless the upload has the pair. */
+    private static void edgeWrites(
+            WholePackWriteStore.Contents upload, Before before, Set<WritePolicyGate.Write> writes) {
         Map<String, Relationship> edges = edgesOf(upload);
         edges.forEach((key, edge) -> {
             if (!before.edges().containsKey(key)) {
@@ -472,7 +480,13 @@ public final class PackRegistrationService {
                 writes.add(new WritePolicyGate.Write(WritePolicyGate.Operation.RELATIONSHIP, edge.from()));
             }
         });
-        return List.copyOf(writes);
+        Set<String> pairs = new TreeSet<>();
+        edges.values().forEach(edge -> pairs.add(edge.fromReference() + "|" + edge.toReference()));
+        before.loose().forEach((pair, source) -> {
+            if (!pairs.contains(pair)) {
+                writes.add(new WritePolicyGate.Write(WritePolicyGate.Operation.RELATIONSHIP, source));
+            }
+        });
     }
 
     private static void write(Set<WritePolicyGate.Write> writes, WritePolicyGate.Operation operation, String urn) {

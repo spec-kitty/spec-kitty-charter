@@ -262,6 +262,20 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         return contentsOf(directory, load(directory));
     }
 
+    /** What a salvage has read so far. */
+    private static final class Salvage {
+        final Set<String> defined = new TreeSet<>();
+        final Map<Urn, String> digests = new HashMap<>();
+        final List<Relationship> edges = new ArrayList<>();
+        final Map<String, Urn> loose = new HashMap<>();
+    }
+
+    /**
+     * Reads what can still be read of a stored pack, every file on its own (ADR-0065, decision 01M6V6N74ER28H8S6TSVZ8ZEY2):
+     * an artifact file by the {@code id} it declares, read as plain YAML, and by the id its path names when that differs
+     * or the key cannot be read, and as an entity when it binds; a graph file as plain YAML, entry by entry. A file that
+     * fails to read costs only itself.
+     */
     @Override
     public WholePackWriteStore.Remains salvageStored(Path directory) {
         Path packDir = directory.toAbsolutePath().normalize();
@@ -269,76 +283,137 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         if (parent == null || packDir.getFileName() == null) {
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "a pack directory needs a parent directory");
         }
-        PackIdentifier key = new PackIdentifier(String.valueOf(packDir.getFileName()));
-        Set<String> defined = new TreeSet<>();
-        Map<Urn, String> digests = new HashMap<>();
-        List<Relationship> edges = new ArrayList<>();
-        Set<String> parsedFiles = new HashSet<>();
+        String name = String.valueOf(packDir.getFileName());
+        PackIdentifier key = new PackIdentifier(name);
         FilesystemPackStore store = new FilesystemPackStore(parent, strategy, companionRules);
-        try {
-            // The artifacts alone, without the graphs and the checks of a whole load, which refuse what is salvaged
-            // here.
-            Map<Urn, String> places = new HashMap<>();
-            Pack pack = DomainRepositoryService.assembly(key, store.read(key, bindings), places)
-                    .build();
-            for (CharterArtifact artifact : pack.artifacts()) {
-                defined.add(artifact.urn().toString());
-                digests.put(artifact.urn(), digestOf(artifact));
-                parsedFiles.add(places.get(artifact.urn()));
-                edges.addAll(artifact.derivedRelationships());
-            }
-        } catch (RuntimeException unreadableWhole) {
-            // The artifacts do not assemble: the files are listed below, each counted by the id its path names.
-        }
-        listedIds(packDir, parsedFiles).forEach(urn -> defined.add(urn));
-        for (GraphDocument document : store.readGraphs(key).documents()) {
-            document.edges().forEach(edge -> typedEdge(edge).ifPresent(edges::add));
-        }
-        return new WholePackWriteStore.Remains(defined, digests, edges);
-    }
-
-    /** The URN each file of a bound kind that did not parse names by its path: its stem, without the kind's token. */
-    private List<String> listedIds(Path packDir, Set<String> parsedFiles) {
-        List<String> ids = new ArrayList<>();
+        Salvage salvage = new Salvage();
         for (KindBinding<?, ?> binding : bindings) {
             for (String file : PackFileSet.files(packDir, binding.kind())) {
-                if (!parsedFiles.contains(file)) {
-                    ids.add(new Urn(NodeKind.of(binding.kind()), stemOf(file, binding.fileToken())).toString());
+                salvageFile(store, key, packDir, binding, file, salvage);
+            }
+        }
+        PackFileSet.templates(packDir).forEach(file -> salvageTemplate(packDir, file, salvage));
+        List<Path> graphs = new ArrayList<>(PackFileSet.rootShards(packDir, name));
+        if (Files.isRegularFile(packDir.resolve(PackFileSet.FRAGMENT))) {
+            graphs.add(packDir.resolve(PackFileSet.FRAGMENT));
+        }
+        graphs.forEach(graph -> salvageGraph(graph, salvage));
+        return new WholePackWriteStore.Remains(salvage.defined, salvage.digests, salvage.edges, salvage.loose);
+    }
+
+    private <D, E extends CharterArtifact> void salvageFile(
+            FilesystemPackStore store,
+            PackIdentifier key,
+            Path packDir,
+            KindBinding<D, E> binding,
+            String file,
+            Salvage out) {
+        String stem = stemOf(file, binding.fileToken());
+        Optional<String> declared = plainText(packDir.resolve(file)).flatMap(text -> declaredId(text, binding.idKey()));
+        urnOf(binding, declared.orElse(stem)).ifPresent(out.defined::add);
+        urnOf(binding, stem).ifPresent(out.defined::add);
+        declared.ifPresent(id -> readEntity(store, key, binding, id, out));
+    }
+
+    private <D, E extends CharterArtifact> void readEntity(
+            FilesystemPackStore store, PackIdentifier key, KindBinding<D, E> binding, String id, Salvage out) {
+        try {
+            store.readOne(key, binding, id).ifPresent(dso -> {
+                E entity = binding.toEntity(key, dso);
+                out.digests.put(entity.urn(), digestOf(entity));
+                out.edges.addAll(entity.derivedRelationships());
+            });
+        } catch (RuntimeException readFault) {
+            // This file's read fault: it is counted by its ids above, and nothing else of it is known.
+        }
+    }
+
+    private static Optional<String> urnOf(KindBinding<?, ?> binding, String id) {
+        try {
+            return Optional.of(new Urn(NodeKind.of(binding.kind()), id).toString());
+        } catch (IllegalArgumentException notAnId) {
+            return Optional.empty();
+        }
+    }
+
+    private static Optional<String> plainText(Path file) {
+        return FilesystemPackStore.readBytes(file).flatMap(FilesystemPackStore::decodeUtf8);
+    }
+
+    /** The {@code id} a file declares, read as plain YAML outside any schema. */
+    private static Optional<String> declaredId(String text, String idKey) {
+        if (ParsedYaml.parse(text, "salvage").document() instanceof Map<?, ?> map
+                && map.get(idKey) instanceof String id
+                && !id.isBlank()) {
+            return Optional.of(id.strip());
+        }
+        return Optional.empty();
+    }
+
+    private static void salvageTemplate(Path packDir, String file, Salvage out) {
+        Urn urn = new Urn(NodeKind.TEMPLATE, PackFileSet.templateId(file));
+        out.defined.add(urn.toString());
+        FilesystemPackStore.readBytes(packDir.resolve(file))
+                .ifPresent(bytes -> out.digests.put(
+                        urn, PackRevision.computeOverBytes(List.of(bytes)).token()));
+    }
+
+    /** A graph file as plain YAML: every entry of {@code edges} whose source can be read; a file that is no YAML adds none. */
+    private static void salvageGraph(Path file, Salvage out) {
+        Optional<String> text = plainText(file);
+        if (text.isPresent()
+                && ParsedYaml.parse(text.get(), "salvage").document() instanceof Map<?, ?> document
+                && document.get("edges") instanceof List<?> entries) {
+            for (Object entry : entries) {
+                if (entry instanceof Map<?, ?> fields) {
+                    salvageEdge(fields, out);
                 }
             }
         }
-        PackFileSet.templates(packDir).stream()
-                .filter(file -> !parsedFiles.contains(file))
-                .forEach(file -> ids.add(new Urn(NodeKind.TEMPLATE, PackFileSet.templateId(file)).toString()));
-        return ids;
+    }
+
+    private static void salvageEdge(Map<?, ?> entry, Salvage out) {
+        Optional<PackQualifiedReference> source = reference(entry.get("source"));
+        if (source.isEmpty() || source.get().asUrn().isEmpty()) {
+            return;
+        }
+        Optional<PackQualifiedReference> target = reference(entry.get("target"));
+        Optional<RelationType> relation =
+                entry.get("relation") instanceof String token ? RelationType.fromToken(token) : Optional.empty();
+        if (target.isPresent() && target.get().asUrn().isPresent() && relation.isPresent()) {
+            try {
+                out.edges.add(new Relationship(
+                        source.get().asUrn().get(),
+                        source.get().packName(),
+                        target.get().asUrn().get(),
+                        target.get().packName(),
+                        relation.get(),
+                        Optional.empty(),
+                        Optional.empty()));
+                return;
+            } catch (IllegalArgumentException selfLoop) {
+                // not a relationship: it is kept loosely below
+            }
+        }
+        out.loose.put(
+                source.get() + "|" + entry.get("target"), source.get().asUrn().get());
+    }
+
+    private static Optional<PackQualifiedReference> reference(@Nullable Object value) {
+        if (!(value instanceof String text)) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(PackQualifiedReference.parse(text));
+        } catch (IllegalArgumentException malformed) {
+            return Optional.empty();
+        }
     }
 
     private static String stemOf(String file, String token) {
         String name = file.substring(file.lastIndexOf('/') + 1);
         String suffix = "." + token + ".yaml";
         return name.endsWith(suffix) ? name.substring(0, name.length() - suffix.length()) : name;
-    }
-
-    /** One graph-document edge as the kernel's typed edge; empty for an endpoint or a relation that is no reference. */
-    private static Optional<Relationship> typedEdge(GraphDocument.Edge edge) {
-        try {
-            PackQualifiedReference source = PackQualifiedReference.parse(edge.source());
-            PackQualifiedReference target = PackQualifiedReference.parse(edge.target());
-            Optional<RelationType> relation = RelationType.fromToken(edge.relation());
-            if (source.asUrn().isEmpty() || target.asUrn().isEmpty() || relation.isEmpty()) {
-                return Optional.empty();
-            }
-            return Optional.of(new Relationship(
-                    source.asUrn().get(),
-                    source.packName(),
-                    target.asUrn().get(),
-                    target.packName(),
-                    relation.get(),
-                    edge.when(),
-                    edge.reason()));
-        } catch (IllegalArgumentException malformed) {
-            return Optional.empty();
-        }
     }
 
     /** {@link #load} with each fault of the tree, which in an upload is the author's, answered {@code validation_failed}. */

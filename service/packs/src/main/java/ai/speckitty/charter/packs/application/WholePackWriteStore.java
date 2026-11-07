@@ -52,10 +52,13 @@ public interface WholePackWriteStore {
      * @param defined the artifacts held, as bare URNs: those that read, and one per file that does not, by the id the
      *     file's path names
      * @param digests the digest of each artifact that reads
-     * @param edges the typed edges of the graph documents that parse, and the derived relations of the artifacts that
-     *     read
+     * @param edges the typed edges that can be read, from every graph file read as plain YAML, and the derived relations
+     *     of the artifacts that read
+     * @param looseEdges the entries of those graph files that cannot be typed (an unknown relation, an endpoint that is
+     *     no reference): each by {@code <source>|<target>} as written, with its source, which is all that is gated
      */
-    record Remains(Set<String> defined, Map<Urn, String> digests, List<Relationship> edges) {
+    record Remains(
+            Set<String> defined, Map<Urn, String> digests, List<Relationship> edges, Map<String, Urn> looseEdges) {
 
         /**
          * Copies the collections.
@@ -63,11 +66,13 @@ public interface WholePackWriteStore {
          * @param defined the artifacts held
          * @param digests the digest of each artifact that reads
          * @param edges the typed edges that can be read
+         * @param looseEdges the entries that cannot be typed, by key, with their source
          */
         public Remains {
             defined = Set.copyOf(defined);
             digests = Map.copyOf(digests);
             edges = List.copyOf(edges);
+            looseEdges = Map.copyOf(looseEdges);
         }
     }
 
@@ -96,8 +101,9 @@ public interface WholePackWriteStore {
         Contents loadStored(Path directory);
 
         /**
-         * Reads what can still be read of a stored pack that {@link #loadStored} refuses: each file on its own, so that
-         * one that cannot be parsed still counts by the id its path names, and each graph document that parses.
+         * Reads what can still be read of a stored pack that {@link #loadStored} refuses: every file on its own, as plain
+         * YAML where it does not bind. An artifact file counts by the {@code id} it declares, and by the id its path
+         * names when that differs or cannot be read; each entry of a graph file whose source can be read is an edge.
          *
          * @param directory the stored pack's directory
          * @return what the pack still holds
