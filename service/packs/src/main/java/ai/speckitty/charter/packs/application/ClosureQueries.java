@@ -5,7 +5,6 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
-import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
@@ -106,8 +105,7 @@ public final class ClosureQueries {
                 OfferingReadService.entriesOf(packs),
                 heldIds,
                 holderOf,
-                heldIds.getOrDefault(ArtifactKind.MISSION_TYPE, Set.of()),
-                RequiredFloor.of(byHolder(closurePackIds, presets)),
+                RequiredFloor.of(byHolder(closurePackIds, presets), holderOf.keySet()),
                 policyOf(composed),
                 closurePackIds,
                 presets,
@@ -172,12 +170,12 @@ public final class ClosureQueries {
         return parents;
     }
 
-    /** The policy of each closure pack, by descriptor {@code pack_id}, from the facts the compose read. */
+    /**
+     * The policy of each closure pack, by descriptor {@code pack_id}, from the facts the compose read, scoped to what
+     * the pack and the packs it builds on hold (A15, {@link PackMutabilityPolicy#scopedPolicies}).
+     */
     private static PerPackPolicy policyOf(OfferingReadService.ComposedClosure composed) {
-        Map<String, MutabilityPolicySource> byPack = new HashMap<>();
-        composed.packs()
-                .forEach(pack -> byPack.put(
-                        pack.descriptor().packId(), composed.factsOf(pack).policy()));
-        return new PerPackPolicy(byPack);
+        return new PerPackPolicy(PackMutabilityPolicy.scopedPolicies(
+                composed.packs(), pack -> composed.factsOf(pack).policy()));
     }
 }

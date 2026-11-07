@@ -34,7 +34,6 @@ class MissionTypeTest {
                 Optional.empty(),
                 Optional.empty(),
                 List.of(),
-                List.of(),
                 List.of());
     }
 
@@ -55,8 +54,7 @@ class MissionTypeTest {
                 Optional.empty(),
                 Optional.empty(),
                 inputs,
-                outputs,
-                List.of());
+                outputs);
     }
 
     private static MissionType.Builder research() {
@@ -82,41 +80,7 @@ class MissionTypeTest {
         assertThat(type.onDemandSteps()).extracting(MissionStep::id).containsExactly("retrospect");
         assertThat(type.step("retrospect")).isPresent();
         assertThat(type.step("absent")).isEmpty();
-        assertThat(type.relationships()).isEmpty();
-    }
-
-    @Test
-    @DisplayName("references are kept in order on the type and its steps, and mint no relationship")
-    void referencesAreKeptNeverMinted() {
-        MissionReference directive =
-                new MissionReference(ArtifactKind.DIRECTIVE, "DIRECTIVE_010", Optional.empty(), Optional.empty());
-        MissionReference tactic =
-                new MissionReference(ArtifactKind.TACTIC, "premortem", Optional.of("always"), Optional.empty());
-        MissionStep scoping = new MissionStep(
-                "scoping",
-                "Scoping",
-                Optional.empty(),
-                Optional.of("researcher"),
-                Optional.empty(),
-                Optional.empty(),
-                List.of(),
-                List.of(),
-                List.of(tactic, directive));
-
-        MissionType type = MissionType.builder()
-                .id(new MissionTypeIdentifier("research"))
-                .packId(PACK)
-                .schemaVersion("1.0")
-                .title("Research")
-                .description("Conduct research.")
-                .reference(tactic)
-                .reference(directive)
-                .step(scoping)
-                .build();
-
-        assertThat(type.references()).containsExactly(tactic, directive);
-        assertThat(type.steps().get(0).references()).containsExactly(tactic, directive);
-        assertThat(type.relationships()).isEmpty();
+        assertThat(type.derivedRelationships()).isEmpty();
     }
 
     @Test
@@ -167,8 +131,7 @@ class MissionTypeTest {
                 Optional.empty(),
                 Optional.empty(),
                 List.of(),
-                List.of(outputs),
-                List.of());
+                List.of(outputs));
     }
 
     @Test
@@ -302,7 +265,6 @@ class MissionTypeTest {
                         Optional.empty(),
                         Optional.empty(),
                         List.of(),
-                        List.of(),
                         List.of()))
                 .isInstanceOf(ConstraintBreachException.class);
         assertThatThrownBy(() -> new MissionStep(
@@ -313,7 +275,6 @@ class MissionTypeTest {
                         Optional.empty(),
                         Optional.empty(),
                         List.of(),
-                        List.of(),
                         List.of()))
                 .isInstanceOf(ConstraintBreachException.class);
         assertThatCode(() -> new MissionStep(
@@ -323,7 +284,6 @@ class MissionTypeTest {
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
-                        List.of(),
                         List.of(),
                         List.of()))
                 .doesNotThrowAnyException();

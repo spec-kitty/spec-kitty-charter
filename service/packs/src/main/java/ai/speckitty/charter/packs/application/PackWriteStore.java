@@ -67,18 +67,6 @@ public interface PackWriteStore extends PackRevisions {
         }
 
         /**
-         * A change that adds or replaces {@code artifact} in {@code revalidated} and persists {@code relationships}.
-         *
-         * @param revalidated the revalidated aggregate holding {@code artifact}
-         * @param artifact the added or replaced artefact
-         * @param relationships the relationship set to persist
-         * @return the change
-         */
-        public static Change artifact(Pack revalidated, CharterArtifact artifact, List<Relationship> relationships) {
-            return new Change(revalidated, Optional.of(artifact), Optional.of(relationships));
-        }
-
-        /**
          * A change that touches no artefact, only the registered relationships.
          *
          * @param current the unchanged aggregate

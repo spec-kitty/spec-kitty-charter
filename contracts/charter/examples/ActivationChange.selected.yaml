@@ -12,6 +12,7 @@ value:
     skippedDeactivated: []
     unreachedBehindDeactivated: []
     skippedShared: []
+  droppedPins: []
   _links:
     up:
       href: /api/v1/activations/a-1

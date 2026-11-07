@@ -92,7 +92,7 @@ Made by the layer-merge mission (`layer-merge-and-effective-reads-01M6R0J6`), PR
 decision 2 carries a note where it changes, and decision 3's "off in `activated_kinds`" no longer has a gate to
 switch a kind off.
 
-- **`activated_kinds` is refused.** A preset carrying it is refused `422` when its pack is registered, in
+- **`activated_kinds` is refused.** A preset carrying it refuses the pack as `500 pack_unreadable`, as the preset item id grammar does; a `422` on registration is planned for PR A, in
   `contracts/packs/schemas/preset.schema.json` and in validate mode. The activation document has no kind gate to set
   (ADR-0020 amendment of 2026-11-07), so a key for it would say nothing.
 - **A preset may name any kind.** The schema gains `activated_skills` and `activated_glossary_packs`, so the

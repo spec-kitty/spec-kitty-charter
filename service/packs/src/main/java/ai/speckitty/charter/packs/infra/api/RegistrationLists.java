@@ -5,15 +5,34 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.web.JsonBodyGuard;
 import ai.speckitty.charter.web.JsonBodyGuard.BodyFault;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.io.ByteArrayInputStream;
+import java.io.InputStreamReader;
 import java.lang.reflect.Modifier;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
+import org.springframework.http.MediaType;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
- * The list members of a registration body, which {@link JsonBodyGuard} looks at for an explicit {@code null} (#292) or
- * a {@code null} item (#309), and the registration's refusal of what the guard finds.
+ * The members of a registration body: the first one the body sends that its schema does not declare (ADR-0064), the
+ * list members {@link JsonBodyGuard} looks at for an explicit {@code null} (#292) or a {@code null} item (#309), and the
+ * registration's refusal of what the guard finds.
+ *
+ * <p>Every registration schema is closed ({@code additionalProperties: false}), but the converter, as Spring Boot
+ * configures it, skips a member the DTO does not declare. So a body that still sends a member the contract removed (a
+ * directive's {@code relationships}, say) would be answered as a success while what it asserted was dropped. The
+ * members a body may send are read off the generated DTO, and any other is refused before the converter reads the
+ * body.
  *
  * <p>The generated DTO reads an absent list and a {@code null} one alike ({@code containerDefaultToNull}), and the
  * controllers read an absent optional list as empty ({@link OptionalLists}). The contract types every list as an
@@ -27,7 +46,86 @@ import java.util.function.Function;
  */
 final class RegistrationLists {
 
+    private static final JsonMapper JSON = JsonMapper.builder().build();
+
+    /** The registration members ADR-0064 removed because they carried relationships, as the wire spells them. */
+    private static final Set<String> REMOVED_EDGE_MEMBERS =
+            Set.of("relationships", "references", "directiveRefs", "procedures");
+
     private RegistrationLists() {}
+
+    /**
+     * The JSON names of every member a generated DTO declares, the members a registration body may send.
+     *
+     * @param dto the generated request DTO
+     * @return the names its {@link JsonProperty} getters carry
+     * @throws IllegalStateException when the DTO shows none, so the check can never be switched off unseen
+     */
+    static Set<String> members(Class<?> dto) {
+        Set<String> members = Arrays.stream(dto.getMethods())
+                .filter(m -> Modifier.isPublic(m.getModifiers()) && m.getParameterCount() == 0)
+                .map(m -> m.getAnnotation(JsonProperty.class))
+                .filter(p -> p != null && !p.value().isEmpty())
+                .map(JsonProperty::value)
+                .collect(Collectors.toUnmodifiableSet());
+        if (members.isEmpty()) {
+            throw new IllegalStateException(dto.getSimpleName() + " shows no member to accept.");
+        }
+        return members;
+    }
+
+    /**
+     * The first top-level member the body sends that is not one of {@code declared}. The body is read as the converter
+     * reads it ({@link JsonBodyGuard#detectsItself}), so the check cannot be stepped around by a declared charset.
+     *
+     * @param body the request body
+     * @param contentType the request's content type, whose charset the body is read in; {@code null} when it has none
+     * @param declared the members the registration's schema declares
+     * @return the first undeclared member; empty when there is none, or the body is not a readable JSON object
+     */
+    static Optional<String> firstUnknown(byte[] body, @Nullable MediaType contentType, Set<String> declared) {
+        try (JsonParser parser = parser(body, contentType)) {
+            if (parser.nextToken() != JsonToken.START_OBJECT) {
+                return Optional.empty();
+            }
+            for (JsonToken token = parser.nextToken(); token == JsonToken.PROPERTY_NAME; token = parser.nextToken()) {
+                String member = parser.currentName();
+                if (!declared.contains(member)) {
+                    return Optional.of(member);
+                }
+                parser.nextToken();
+                parser.skipChildren();
+            }
+        } catch (JacksonException unreadable) {
+            // Not ours to answer: the converter refuses the body as unreadable.
+            return Optional.empty();
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * The refusal detail for a member the registration's schema does not declare. A member that once carried
+     * relationships (ADR-0064) is told where a relationship is written now; any other member, a typo say, is named
+     * only.
+     *
+     * @param registration the registration's kind, as a refusal names it
+     * @param member the undeclared member
+     * @return the detail
+     */
+    static String unknownMemberDetail(String registration, String member) {
+        String detail = "A " + registration + " registration has no member " + member;
+        return REMOVED_EDGE_MEMBERS.contains(member)
+                ? detail + "; a relationship is registered through PUT /packs/{packId}/relationships."
+                : detail + ".";
+    }
+
+    private static JsonParser parser(byte[] body, @Nullable MediaType contentType) {
+        Charset charset = contentType == null ? null : contentType.getCharset();
+        if (charset == null || JsonBodyGuard.detectsItself(charset)) {
+            return JSON.createParser(body);
+        }
+        return JSON.createParser(new InputStreamReader(new ByteArrayInputStream(body), charset));
+    }
 
     /**
      * The JSON names of a generated DTO's list members, sorted.

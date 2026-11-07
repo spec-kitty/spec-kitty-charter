@@ -52,7 +52,7 @@ class StyleguideRegistrationServiceTest {
         assertThat(persisted.title()).isEqualTo(submitted.title());
         assertThat(persisted.scope()).isEqualTo(submitted.scope());
         assertThat(persisted.principles()).isEqualTo(submitted.principles());
-        assertThat(persisted.relationships()).isEmpty();
+        assertThat(persisted.derivedRelationships()).isEmpty();
     }
 
     // ---- FR-008 control: duplicate-id POST refused, distinct id accepted on the same fixture --------------------
