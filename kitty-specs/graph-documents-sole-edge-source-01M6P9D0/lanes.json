@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "mission_slug": "graph-documents-sole-edge-source-01M6P9D0",
+  "mission_id": "01M6P9D0EW24EPHFS7S4TD7DHV",
+  "mission_branch": "kitty/mission-graph-documents-sole-edge-source-01M6P9D0",
+  "target_branch": "claude/240-drop-edge-fields",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "contracts/**",
+        "gradle.properties",
+        "service/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup",
+        "tracker-integration"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-planning",
+      "wp_ids": [
+        "WP01",
+        "WP03",
+        "WP04"
+      ],
+      "write_scope": [
+        "cspell.json",
+        "docs/adr/**",
+        "docs/architecture/**",
+        "docs/changelog/2026-11-05-edges-only-in-graph-documents.md",
+        "docs/context/**",
+        "docs/guides/**",
+        "kitty-specs/graph-documents-sole-edge-source-01M6P9D0/research/**"
+      ],
+      "predicted_surfaces": [
+        "planning"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    }
+  ],
+  "computed_at": "2026-11-05T17:04:39.523460+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [
+    "WP01",
+    "WP03",
+    "WP04"
+  ],
+  "planning_commit_sha": "8241c6ef8850b183427e83c6f635d439d3d91af5"
+}

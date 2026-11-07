@@ -4,7 +4,6 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.packs.domain.Paradigm;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
-import ai.speckitty.charter.packs.domain.ParadigmReference;
 
 /** The {@link KindBinding} of the paradigm: {@link ParadigmDso} to {@link Paradigm} and back. */
 enum ParadigmBinding implements KindBinding<ParadigmDso, Paradigm> {
@@ -39,21 +38,12 @@ enum ParadigmBinding implements KindBinding<ParadigmDso, Paradigm> {
                 .schemaVersion(dso.schemaVersion())
                 .name(dso.name())
                 .summary(dso.summary());
-        dso.directiveRefs().forEach(builder::directiveRef);
-        dso.references().forEach(ref -> builder.reference(new ParadigmReference(ref.type(), ref.id())));
         return builder.build();
     }
 
     @Override
     public ParadigmDso toDso(Paradigm paradigm) {
         return new ParadigmDso(
-                paradigm.id().value(),
-                paradigm.schemaVersion().orElseThrow(),
-                paradigm.name(),
-                paradigm.summary(),
-                paradigm.directiveRefs(),
-                paradigm.references().stream()
-                        .map(ref -> new ParadigmDso.Reference(ref.type(), ref.id()))
-                        .toList());
+                paradigm.id().value(), paradigm.schemaVersion().orElseThrow(), paradigm.name(), paradigm.summary());
     }
 }

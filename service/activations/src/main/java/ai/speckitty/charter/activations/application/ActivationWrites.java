@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.SortedSet;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -44,21 +43,22 @@ import org.springframework.stereotype.Component;
  *       any more;
  *   <li>the path id against that closure, read in any known spelling ({@link #declared}: the declared id, its full
  *       URN, or another case, as {@link ArtifactSpellings} reads an id of the activation document; {@code 422} when it
- *       matches two declared ids that differ only by case; a mission type exactly, as {@code missionTypes} is), then
- *       held or not ({@code 404 artifact_not_found}, or
- *       {@code mission_type_not_found}); an unselect or a re-activate also takes an id the closure no longer holds
+ *       matches two declared ids that differ only by case; a mission type as any kind, A7), then held or not
+ *       ({@code 404 artifact_not_found}, or {@code mission_type_not_found}, the contract's code for a mission type);
+ *       an unselect or a re-activate also takes an id the closure no longer holds
  *       when the stored list it removes the id from still names it, since the drop below removes it (ADR-0059
  *       amendment A5);
- *   <li>the stored document without the ids the closure no longer declares ({@link #current}, {@link StaleIds}): the use
- *       case computes its change from it, and the ids dropped are reported in {@code dropped} (ADR-0059 amendment A5);
+ *   <li>the stored document without the ids the closure no longer declares and the version pins no pack of it holds
+ *       ({@link #current}, {@link StaleIds}): the use case computes its change from it, and the ids and pins dropped
+ *       are reported in {@code dropped} and {@code droppedPins} (ADR-0059 amendment A5; B1, decision
+ *       DM-01M6RN5Y406SB4KA13QYMQ2P8J);
  *   <li>after the use case computed its {@link ActivationChange}: a document equal to the stored one is a no-op, which
- *       answers the stored revision and writes nothing, unless the write dropped a stale id: one that did is never a
- *       no-op, even when the change put the id back (a stale preset member the stored list names); any other is
+ *       answers the stored revision and writes nothing, unless the write dropped a stale id or a pin: one that did is
+ *       never a no-op, even when the change put the id back (a stale preset member the stored list names); any other is
  *       judged by {@link DocumentRules#checkWrite} and written by a compare-and-set at the loaded revision
  *       ({@code 412} when another writer came in between). Every id is judged (FR-017), but the floor only on the deny
  *       entries the write adds: a stored deny entry a pack upgrade put on the floor is tolerated, so it never makes a
- *       write of another id {@code 409}. An unknown pack and a pinned version the closure does not hold are not
- *       dropped: they are still refused {@code 422}.
+ *       write of another id {@code 409}. An unknown pack is not dropped: it is still refused {@code 422}.
  * </ol>
  *
  * <p>A per-artifact write has no body list for a pointer to index, so a {@code 422} that {@link DocumentRules} raises on
@@ -150,8 +150,9 @@ public class ActivationWrites {
     }
 
     /**
-     * The artifact a select or an unselect names: a kind of {@link ActivationDocument#kinds()}, or
-     * {@code mission_type}.
+     * The artifact a per-artifact write names, a select, an unselect, a deactivate or a re-activate: any activatable
+     * kind, {@code mission_type} as any other (A7: one kind model; Q2: a required or locked one is refused on the
+     * floor, as any kind is).
      *
      * @param kind the path's kind token
      * @param artifactId the path's id
@@ -159,28 +160,15 @@ public class ActivationWrites {
      * @throws CharterRefusal with {@code activation_invalid} for any other kind
      */
     static ArtifactRef selectable(String kind, String artifactId) {
-        return new ArtifactRef(kindOf(kind, true), artifactId);
+        return activatable(kind, artifactId);
     }
 
-    /**
-     * The artifact a deactivate or a re-activate names: a kind of {@link ActivationDocument#kinds()}, which has a deny
-     * list ({@code mission_type} has none).
-     *
-     * @param kind the path's kind token
-     * @param artifactId the path's id
-     * @return the reference
-     * @throws CharterRefusal with {@code activation_invalid} for any other kind
-     */
-    static ArtifactRef deniable(String kind, String artifactId) {
-        return new ArtifactRef(kindOf(kind, false), artifactId);
-    }
-
-    private static ArtifactKind kindOf(String token, boolean missionTypes) {
-        return ArtifactKind.fromToken(token)
-                .filter(kind -> ActivationDocument.kinds().contains(kind)
-                        || (missionTypes && kind == ArtifactKind.MISSION_TYPE))
+    private static ArtifactRef activatable(String token, String artifactId) {
+        ArtifactKind kind = ArtifactKind.fromToken(token)
+                .filter(ArtifactKind::activatable)
                 .orElseThrow(() -> invalid(new RefusalViolation(
                         KIND_POINTER, "unknown_kind", "This write takes no '" + token + "' artifacts.")));
+        return new ArtifactRef(kind, artifactId);
     }
 
     /**
@@ -232,8 +220,7 @@ public class ActivationWrites {
      * declared id, as {@link DocumentRules#normalize} reads an id of the document. A spelling the closure holds no id
      * for is read against the stored list the write removes the id from, so a stale id (ADR-0059 amendment A5) is
      * matched the same way. A spelling neither names is kept as written, for {@link #requireHeldOrStale} to refuse.
-     * A mission type is matched exactly, as {@code missionTypes} is in the document, which is not normalized: its path
-     * id is kept as written.
+     * A mission type is read as any kind is (A7).
      *
      * @param snapshot the closure
      * @param target the path's artifact, as written
@@ -243,9 +230,6 @@ public class ActivationWrites {
      *     {@code /artifactId}, when the spelling matches two declared ids that differ only by case
      */
     static ArtifactRef declared(ClosureSnapshot snapshot, ArtifactRef target, Set<String> stored) {
-        if (target.kind() == ArtifactKind.MISSION_TYPE) {
-            return target;
-        }
         ArtifactSpellings.Resolution resolution =
                 ArtifactSpellings.resolve(target.kind(), target.id(), snapshot.held(target.kind()));
         if (resolution instanceof ArtifactSpellings.Resolution.Unknown) {
@@ -267,17 +251,14 @@ public class ActivationWrites {
     }
 
     /**
-     * The ids of the stored list an unselect removes an id from: {@code selected} of its kind, or
-     * {@code missionTypes}.
+     * The ids of the stored list an unselect removes an id from: {@code selected} of its kind.
      *
      * @param document the stored document
      * @param target the artifact
      * @return the ids; empty when the list is absent
      */
     static Set<String> selectedOf(ActivationDocument document, ArtifactRef target) {
-        Optional<SortedSet<String>> ids =
-                target.kind() == ArtifactKind.MISSION_TYPE ? document.missionTypes() : document.selected(target.kind());
-        return ids.<Set<String>>map(set -> set).orElse(Set.of());
+        return document.selected(target.kind()).<Set<String>>map(set -> set).orElse(Set.of());
     }
 
     /**
@@ -303,10 +284,7 @@ public class ActivationWrites {
      */
     static void requireHeldOrStale(ClosureSnapshot snapshot, ArtifactRef target, boolean stored) {
         boolean missionType = target.kind() == ArtifactKind.MISSION_TYPE;
-        boolean held = missionType
-                ? snapshot.missionTypes().contains(target.id())
-                : snapshot.held(target.kind()).contains(target.id());
-        if (!held && !stored) {
+        if (!snapshot.held(target.kind()).contains(target.id()) && !stored) {
             throw new CharterRefusal(
                     missionType ? RefusalCode.MISSION_TYPE_NOT_FOUND : RefusalCode.ARTIFACT_NOT_FOUND,
                     "The activation's packs hold no " + target.kind().token() + " '" + target.id() + "'.");
@@ -314,7 +292,7 @@ public class ActivationWrites {
     }
 
     /**
-     * Whether a document selects an artifact: in {@code selected}, or in {@code missionTypes} for a mission type.
+     * Whether a document selects an artifact: in {@code selected} of its kind.
      *
      * @param document the document
      * @param target the artifact
@@ -337,11 +315,12 @@ public class ActivationWrites {
 
     /**
      * The document a write computes its change from: the stored one without the ids its closure no longer declares
-     * (ADR-0059 amendment A5). {@link #commit} reports those ids in {@code dropped}.
+     * (ADR-0059 amendment A5) and the version pins no pack of it holds (B1). {@link #commit} reports them in
+     * {@code dropped} and {@code droppedPins}.
      *
      * @param loaded the activation as loaded
      * @param snapshot the closure the document names, resolved
-     * @return the stored document less its stale ids
+     * @return the stored document less its stale ids and unheld pins
      */
     static ActivationDocument current(StoredActivation loaded, ClosureSnapshot snapshot) {
         return StaleIds.drop(loaded.document(), snapshot).document();
@@ -360,8 +339,8 @@ public class ActivationWrites {
 
     /**
      * Stores what a write computed from {@link #current}: nothing for a no-op (a computed document equal to the stored
-     * one, with no stale id dropped), otherwise the computed document after the rules, by a compare-and-set at the
-     * loaded revision. The change reports the stale ids dropped from the stored document.
+     * one, with no stale id or pin dropped), otherwise the computed document after the rules, by a compare-and-set at
+     * the loaded revision. The change reports the stale ids and the pins dropped from the stored document.
      *
      * @param loaded the activation as loaded
      * @param computed what the write computed from {@link #current}
@@ -371,10 +350,11 @@ public class ActivationWrites {
      * @throws PreconditionException ({@code STALE}) when another writer came in between
      */
     Outcome commit(StoredActivation loaded, ActivationChange computed, ClosureSnapshot snapshot) {
-        ActivationChange change =
-                computed.withDropped(StaleIds.drop(loaded.document(), snapshot).dropped());
+        ActivationChange change = computed.withDropped(StaleIds.drop(loaded.document(), snapshot));
         ActivationDocument after = change.after();
-        if (after.equals(loaded.document()) && change.dropped().isEmpty()) {
+        if (after.equals(loaded.document())
+                && change.dropped().isEmpty()
+                && change.droppedPins().isEmpty()) {
             return new Outcome(loaded, change);
         }
         DocumentRules.checkWrite(loaded.document(), after, snapshot)

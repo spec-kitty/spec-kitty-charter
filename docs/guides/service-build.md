@@ -87,7 +87,7 @@ until it is.
 Not in `verifyAll`: mutation testing. It runs nightly, against a floor per module, and no pull request runs it; see
 [Mutation testing](#mutation-testing).
 
-Not in `verifyAll` either, yet: the whole-pack round-trip gate (below).
+Not in `verifyAll` either: the whole-pack round-trip gate (below), which CI runs as its own required group.
 
 Not in `verifyAll` by design: the CPU-time budgets, the tests tagged `timing`
 ([#316](https://github.com/spec-kitty/spec-kitty-charter/issues/316)). A budget only means something on a quiet
@@ -280,8 +280,10 @@ Where the gate still differs from ADR-0036, on purpose and only towards false re
   `excluding`), not derived from the schemas; a kind that brings an open map adds it there.
 
 The report, per kind and per file, is written to `service/packs/build/reports/whole-pack/report.md`. CI runs the gate
-in its own workflow, `.github/workflows/whole-pack.yml`, which is not part of `CI gate / gate` and not a required
-check until the gate is green.
+in its own workflow, `.github/workflows/whole-pack.yml`, and requires it: `CI gate / gate` calls the workflow for its
+`wholepack` group whenever a pull request changes `contracts/`, `service/`, the build or the workflow, so every such
+pull request has to keep the packs round-tripping (epic [#186](https://github.com/spec-kitty/spec-kitty-charter/issues/186),
+operator ruling of 2026-11-05).
 
 ### When a shape change refuses the pinned packs
 

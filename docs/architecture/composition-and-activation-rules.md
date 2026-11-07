@@ -1082,7 +1082,7 @@ Decision ids are shortened to their first twelve characters in the table; the fu
   A5), [ADR-0061](/adr/0061-one-replica-per-deployment/), [ADR-0063](/adr/0063-pack-mutability-policy-file/).
 - Design: [Logical model](/architecture/logical-model/), [Resolution model](/architecture/resolution-model/),
   [Offering and activation](/architecture/offering-and-activation/).
-- Divergences: [Divergence register](/conformance/divergence-register/) (DIV-201 to DIV-208).
+- Divergences: [Divergence register](/conformance/divergence-register/) (DIV-201 to DIV-215).
 - Missions: `kitty-specs/activation-register-and-closure-01M6NXBD/` (spec, research) and
   `kitty-specs/layer-merge-and-effective-reads-01M6R0J6/` (spec, the resolved decisions under `decisions/`, plan,
   research, data model).

@@ -1,5 +1,6 @@
 package ai.speckitty.charter.activations.infra.api;
 
+import ai.speckitty.charter.activations.application.ActivationService;
 import ai.speckitty.charter.activations.domain.ActivationDocument;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.activations.domain.PackRef;
@@ -35,7 +36,9 @@ import tools.jackson.databind.json.JsonMapper;
  *       violations. An absent list and {@code []} stay apart: the generated DTO leaves an absent list {@code null}
  *       ({@code containerDefaultToNull}), and only a {@code null} is left unset on the builder.
  *   <li>A stored document becomes its {@link ActivationConfig} in canonical form, through
- *       {@link ActivationDocument#toCanonicalTree()}, whose members and spellings are the schema's own.
+ *       {@link ActivationDocument#toCanonicalTree()}, whose members and spellings are the schema's own: version 2,
+ *       with mission types under {@code selected.mission_type} and {@code deactivated.mission_type} (IC-20). A
+ *       replace's answer adds what the write dropped ({@link #toReplaced}).
  *   <li>A closure becomes an {@link ActivationPackList} of {@link OfferingPack}s, each with the {@code artifacts} link
  *       the offering gives it, built here the same way: activations may not name the packs adapter's link builder.
  * </ul>
@@ -69,11 +72,6 @@ public class ActivationMapper {
                 config.getPacks(),
                 packs -> builder.packs(
                         packs.stream().map(ActivationMapper::packRef).toList()));
-        ifPresent(
-                config.getActivatedKinds(),
-                kinds -> builder.activatedKinds(
-                        kinds.stream().map(kind -> kindOf(kind.getValue())).toList()));
-        ifPresent(config.getMissionTypes(), builder::missionTypes);
         ifPresent(config.getLanguages(), builder::languages);
         kindLists(config.getSelected()).forEach(builder::selected);
         kindLists(config.getDeactivated()).forEach(builder::deactivated);
@@ -100,6 +98,25 @@ public class ActivationMapper {
         String id = stored.id().value();
         return new Activation(
                 id, stored.revision().token(), toConfig(stored.document()), Map.of("self", link(self(id))));
+    }
+
+    /**
+     * The answer of a {@code replaceActivation}: the stored activation, with what the write dropped from the body (A4,
+     * B1). {@code dropped} and {@code droppedPins} are present only when the write dropped one, so a replace that
+     * dropped nothing answers as a read does.
+     *
+     * @param written the write's outcome
+     * @return the answer
+     */
+    public Activation toReplaced(ActivationService.Written written) {
+        Activation answer = toActivation(written.stored());
+        if (!written.dropped().isEmpty()) {
+            answer.setDropped(ActivationChangeMapper.references(written.dropped()));
+        }
+        if (!written.droppedPins().isEmpty()) {
+            answer.setDroppedPins(ActivationChangeMapper.pins(written.droppedPins()));
+        }
+        return answer;
     }
 
     /**

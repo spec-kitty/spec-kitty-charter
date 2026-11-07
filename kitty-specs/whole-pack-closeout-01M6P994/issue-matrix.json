@@ -1,0 +1,65 @@
+{
+  "rows": {
+    "#186": {
+      "evidence_ref": "WP03: whole-pack under CI gate / gate; with #299 (WP01) and #319 (WP02) the epic's closeout ruling is met.",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<auto-classified: context_only>",
+      "verdict": "fixed",
+      "wp": "WP03"
+    },
+    "#197": {
+      "evidence_ref": "Cited for context: the triage note about whole-pack.yml outside every ci.yml group is updated by WP03; actionlint itself is not this mission's work.",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#284": {
+      "evidence_ref": "Cited for context (normalize vs toRealPath keeps a linked root's name); no work owed.",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#299": {
+      "evidence_ref": "WP01 commit e6626dcf: kernel.markdown line rules; StepDocument/StepSection refuse at build; StepDocumentRulesTest.",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "fixed",
+      "wp": "WP01"
+    },
+    "#319": {
+      "evidence_ref": "beb3d788; PackRootSpellingTest red without fix (3/5 'leaves the pack'), green with it",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "fixed",
+      "wp": "WP02"
+    }
+  },
+  "schema_version": 1
+}
