@@ -9,6 +9,7 @@ import ai.speckitty.charter.api.model.PackPin;
 import ai.speckitty.charter.api.model.PresetApplication;
 import ai.speckitty.charter.api.model.SelectedArtifacts;
 import ai.speckitty.charter.api.model.SelectionRequest;
+import ai.speckitty.charter.api.model.SkippedReport;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -50,7 +51,8 @@ public class ActivationJson {
                 .setMixInAnnotation(SelectionRequest.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(ExclusionRequest.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(PresetApplication.class, OmitAbsentMembers.class)
-                .setMixInAnnotation(ActivationChange.class, OmitAbsentMembers.class);
+                .setMixInAnnotation(ActivationChange.class, OmitAbsentMembers.class)
+                .setMixInAnnotation(SkippedReport.class, OmitAbsentMembers.class);
     }
 
     /**

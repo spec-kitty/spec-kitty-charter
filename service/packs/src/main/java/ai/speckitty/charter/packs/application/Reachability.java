@@ -10,6 +10,7 @@ import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.EdgeIndex.Place;
 import ai.speckitty.charter.packs.application.ReachResult.Via;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -29,6 +30,15 @@ import org.jspecify.annotations.Nullable;
  * <p>A mission type's steps are its edges too (A7 Q1, rule W20's step term): a reached mission type {@code M} reaches
  * every held {@code action:M/<step>}, crossed like {@code requires}, so a walk that crosses {@code requires} goes on from
  * the steps.
+ *
+ * <p>The walk is layered by {@code suggests} hops, a 0-1 breadth-first search (IC-21, FR-043). Layer k is the full
+ * closure of the layer-k frontier over every other relation, the lineage pass-through and a mission type's steps; the
+ * {@code suggests} targets not yet reached form layer k+1. A place is expanded once, in its lowest layer, so the answer
+ * does not depend on the order the walk visits places in, and a place the lineage or a step produced has the hop count
+ * of the place it came from. A request's {@link ReachRequest#suggestsBound() bound} is checked before a place is
+ * entered: a {@code suggests} target past it is neither reached nor stopped at, and is reported in
+ * {@link ReachResult#beyondBound()}. Without a bound the layers still run, so {@link ReachResult#hops()} is the same
+ * either way.
  *
  * <p>A walk starts at every closure pack that holds a start, and every piece of state is keyed by {@link Place} (pack,
  * URN), as {@code GraphWalk}'s own visited set is, so two packs holding one URN are two nodes. A node's predecessors are
@@ -64,7 +74,15 @@ public final class Reachability {
                 byUrn(walked.stopped),
                 behind,
                 urnsOf(walked.ancestors.keySet()),
-                byUrn(walked.ancestors));
+                byUrn(walked.ancestors),
+                minimumHops(walked.hops),
+                walked.beyondBound());
+    }
+
+    private static Map<Urn, Integer> minimumHops(Map<Place, Integer> hops) {
+        Map<Urn, Integer> minimum = new LinkedHashMap<>();
+        hops.forEach((place, count) -> minimum.merge(place.urn(), count, Math::min));
+        return minimum;
     }
 
     private static Set<Urn> behind(Cascade walked, Cascade open) {
@@ -106,22 +124,57 @@ public final class Reachability {
         private final Set<Place> expanded = new HashSet<>();
         private final Set<Place> lineageWalked = new HashSet<>();
         private final Set<Place> stepped = new HashSet<>();
+        private final Map<Place, Integer> hops = new HashMap<>();
+        private final Set<Place> deferred = new LinkedHashSet<>();
+        private final Set<Place> beyond = new LinkedHashSet<>();
+        private final List<Place> fresh = new ArrayList<>();
+        private final int bound;
+        private int layer;
         private @Nullable Place pending;
 
         private Cascade(EdgeIndex index, ReachRequest request) {
             this.index = index;
             this.request = request;
+            this.bound = request.suggestsBound().orElse(Integer.MAX_VALUE);
         }
 
         static Cascade run(EdgeIndex index, ReachRequest request) {
             Cascade cascade = new Cascade(index, request);
             List<Place> frontier = cascade.startPlaces();
             while (!frontier.isEmpty()) {
-                frontier.forEach(cascade::walkFrom);
-                frontier = cascade.steps();
-                frontier.addAll(cascade.lineage());
+                cascade.close(frontier);
+                frontier = cascade.nextLayer();
             }
             return cascade;
+        }
+
+        /** The full closure of one layer's frontier over every relation but {@code suggests}, steps and lineage included. */
+        private void close(List<Place> layerFrontier) {
+            List<Place> frontier = layerFrontier;
+            while (!frontier.isEmpty()) {
+                frontier.forEach(this::walkFrom);
+                List<Place> expandedNow = List.copyOf(fresh);
+                fresh.clear();
+                frontier = steps(expandedNow);
+                frontier.addAll(lineage(expandedNow));
+            }
+        }
+
+        /** The {@code suggests} targets entered in this layer that no cheaper path expanded: the next layer. */
+        private List<Place> nextLayer() {
+            layer++;
+            List<Place> next =
+                    deferred.stream().filter(place -> !expanded.contains(place)).toList();
+            deferred.clear();
+            return next;
+        }
+
+        /** The {@code suggests} targets one hop past the bound that the walk reached no other way. */
+        Set<Urn> beyondBound() {
+            Set<Urn> past = urnsOf(beyond);
+            past.removeAll(urnsOf(reached.keySet()));
+            past.removeAll(urnsOf(stopped.keySet()));
+            return past;
         }
 
         private List<Place> startPlaces() {
@@ -142,10 +195,18 @@ public final class Reachability {
             new GraphWalk(index).walk(index.nodeAt(place), this);
         }
 
-        /** Records the place as reached, or as stopped; answers whether the walk may descend into it. */
+        /** Records the place as reached, or as stopped, at this layer; answers whether the walk may descend into it. */
         private boolean enter(Place place, Optional<Via> via) {
+            return enter(place, via, layer);
+        }
+
+        /** Records the place as reached at {@code hop} suggests hops (its minimum so far), or as stopped. */
+        private boolean enter(Place place, Optional<Via> via, int hop) {
             boolean stop = request.stopAt().test(place.urn());
             record(stop ? stopped : reached, place, via);
+            if (!stop) {
+                hops.merge(place, hop, Math::min);
+            }
             return !stop;
         }
 
@@ -153,7 +214,16 @@ public final class Reachability {
         @Override
         public Descent onNode(DrgNode node) {
             Place here = Objects.requireNonNull(pending, "a walk starts at a place");
-            return expanded.add(here) ? Descent.CONTINUE : Descent.SKIP;
+            if (!here.urn().equals(node.urn())) {
+                throw new IllegalStateException(
+                        "the walk visited " + node.urn() + " but the last crossed relationship led to " + here.urn()
+                                + ": GraphWalk no longer visits a relationship's target right after crossing it");
+            }
+            if (!expanded.add(here)) {
+                return Descent.SKIP;
+            }
+            fresh.add(here);
+            return Descent.CONTINUE;
         }
 
         @Override
@@ -162,24 +232,45 @@ public final class Reachability {
                 return Descent.SKIP;
             }
             Optional<Place> target = index.neighbour(relationship).filter(index::holds);
-            Via via = new Via(index.sourceOf(relationship).urn(), relationship.type());
-            if (target.isEmpty() || !enter(target.get(), Optional.of(via))) {
+            if (target.isEmpty()) {
                 return Descent.SKIP;
             }
-            pending = target.get();
+            Via via = new Via(index.sourceOf(relationship).urn(), relationship.type());
+            return relationship.type() == RelationType.SUGGESTS ? suggest(target.get(), via) : cross(target.get(), via);
+        }
+
+        /** A relationship the walk crosses in this layer: descends into the target unless it is stopped. */
+        private Descent cross(Place target, Via via) {
+            if (!enter(target, Optional.of(via))) {
+                return Descent.SKIP;
+            }
+            pending = target;
             return Descent.CONTINUE;
         }
 
         /**
-         * Enters the steps of each reached mission type not stepped yet (W20's step term), crossed like
-         * {@code requires}; answers the steps to walk on from.
+         * A {@code suggests} edge costs a hop: past the bound the target is not entered, only noted; within it the target
+         * is entered now (so its way is kept) and expanded in the next layer, unless a cheaper path expands it first.
          */
-        private List<Place> steps() {
+        private Descent suggest(Place target, Via via) {
+            if (layer >= bound) {
+                beyond.add(target);
+            } else if (enter(target, Optional.of(via), layer + 1)) {
+                deferred.add(target);
+            }
+            return Descent.SKIP;
+        }
+
+        /**
+         * Enters the steps of each mission type expanded since the last call that is not stepped yet (W20's step term),
+         * crossed like {@code requires} and at the mission type's own hop count; answers the steps to walk on from.
+         */
+        private List<Place> steps(List<Place> expandedNow) {
             List<Place> next = new ArrayList<>();
             if (!request.relations().contains(RelationType.REQUIRES)) {
                 return next;
             }
-            for (Place place : List.copyOf(reached.keySet())) {
+            for (Place place : expandedNow) {
                 if (place.urn().kind() == NodeKind.MISSION_TYPE && stepped.add(place)) {
                     Optional<Via> via = Optional.of(new Via(place.urn(), RelationType.REQUIRES));
                     index.stepsOf(place.urn()).stream()
@@ -190,11 +281,14 @@ public final class Reachability {
             return next;
         }
 
-        /** Walks the lineage of each reached place not walked yet; answers the new starts it passed through to. */
-        private List<Place> lineage() {
+        /**
+         * Walks the lineage of each place expanded since the last call that is not walked yet; answers the new starts it
+         * passed through to, each at its descendant's hop count.
+         */
+        private List<Place> lineage(List<Place> expandedNow) {
             List<Place> next = new ArrayList<>();
             request.lineage().ifPresent(lineage -> {
-                for (Place place : List.copyOf(reached.keySet())) {
+                for (Place place : expandedNow) {
                     walkLineage(place, lineage, next);
                 }
             });

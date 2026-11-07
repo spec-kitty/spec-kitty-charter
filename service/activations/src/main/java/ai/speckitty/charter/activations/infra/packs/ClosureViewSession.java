@@ -23,8 +23,9 @@ import java.util.TreeSet;
  * A {@link PacksSession} over one {@link ClosureView}: the snapshot copied from the view, and every walk answered by the
  * same view, so the request reads the packs once (NFR-007). The adapter maps the activation domain's
  * {@link ReachPlan} to the packs slice's {@link ReachRequest} ({@code specializes_from} passing {@code requires} and
- * {@code scope} through when the plan follows the lineage) and its {@link ReachResult} back to a {@link Reach}; a node
- * that is no artifact (an action) is left out of the answer, and so is a way it was reached by.
+ * {@code scope} through when the plan follows the lineage, and the plan's {@code suggests} bound) and its {@link ReachResult} back to a {@link Reach}; a node
+ * that is no artifact (an action) is left out of the answer, and a way it was reached by from a step of a mission type is
+ * kept as that mission type's.
  */
 final class ClosureViewSession implements PacksSession {
 
@@ -64,7 +65,8 @@ final class ClosureViewSession implements PacksSession {
                 urns(plan.starts()),
                 plan.relations(),
                 stops::contains,
-                plan.lineage() ? Optional.of(ReachRequest.Lineage.specializesFrom()) : Optional.empty());
+                plan.lineage() ? Optional.of(ReachRequest.Lineage.specializesFrom()) : Optional.empty(),
+                plan.suggestsBound());
     }
 
     /**
@@ -79,7 +81,8 @@ final class ClosureViewSession implements PacksSession {
                 vias(result.stopped()),
                 refs(result.behindStopped()),
                 refs(result.ancestorsPassed()),
-                vias(result.ancestry()));
+                vias(result.ancestry()),
+                refs(result.beyondBound()));
     }
 
     private static Map<ArtifactRef, List<Reach.Via>> vias(Map<Urn, List<ReachResult.Via>> byUrn) {
@@ -90,9 +93,26 @@ final class ClosureViewSession implements PacksSession {
 
     private static List<Reach.Via> viasOf(List<ReachResult.Via> list) {
         return list.stream()
-                .flatMap(via ->
-                        ArtifactRef.of(via.predecessor()).map(from -> new Reach.Via(from, via.relation())).stream())
+                .flatMap(
+                        via -> writer(via.predecessor())
+                                .flatMap(ArtifactRef::of)
+                                .map(from -> new Reach.Via(from, via.relation()))
+                                .stream())
                 .toList();
+    }
+
+    /**
+     * The node that answers for a relation's predecessor: a step of a mission type ({@code action:<M>/<step>}, which is
+     * no artifact) writes the relation for its mission type, so the via is kept as {@code mission_type:<M>}.
+     */
+    private static Optional<Urn> writer(Urn predecessor) {
+        if (predecessor.kind() != NodeKind.ACTION) {
+            return Optional.of(predecessor);
+        }
+        int slash = predecessor.id().indexOf('/');
+        return slash <= 0
+                ? Optional.empty()
+                : Optional.of(Urn.missionType(predecessor.id().substring(0, slash)));
     }
 
     private static Set<Urn> urns(Set<ArtifactRef> refs) {
