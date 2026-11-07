@@ -4,6 +4,8 @@
 plugins {
     id("charter.spring-conventions")
     id("charter.hand-written")
+    // The nightly mutation floor (#239, ADR-0062 as amended 2026-11-06).
+    id("charter.mutation-conventions")
 }
 
 dependencies {
@@ -44,4 +46,18 @@ tasks.register<Test>("timingBudgets") {
     mustRunAfter(tasks.test)
     doNotTrackState("a budget measured on another run says nothing about this one (#316)")
     testLogging { showStandardStreams = true }
+}
+
+// The nightly mutation floor (#239): one group for the whole module, ruled at 85 by the operator on 2026-11-06
+// (a trial run scored 91.4 %); raised by PR once the score clears it by 5.
+mutationFloors {
+    group("activations") {
+        packages.add("ai.speckitty.charter.activations")
+        floor = 85
+    }
+}
+
+// PIT runs the unit tests as `test` does: the timing budgets above stay out of it.
+pitest {
+    excludedGroups = setOf("timing")
 }

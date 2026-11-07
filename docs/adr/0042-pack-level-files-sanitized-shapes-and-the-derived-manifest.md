@@ -2,8 +2,8 @@
 title: "ADR-0042: Pack-level files: sanitized storage shapes, presets with must-have items, and the derived manifest"
 description: How presets, pack.yaml and pack-manifest.yaml are stored, read and written; how a preset marks its must-have items; and how the manifest's hashes are derived.
 doc_status: active
-updated: 2026-11-03T00:00:00Z
-decision_status: 'Accepted; extended in part by ADR-0043 (2026-10-29, proposed: S1 to S8 applied to artifact kinds, S9 to S16 added); decision 2 superseded in part by ADR-0050 and decision 4 by ADR-0048 (2026-11-02)'
+updated: 2026-11-07T00:00:00Z
+decision_status: 'Accepted; extended in part by ADR-0043 (2026-10-29, proposed: S1 to S8 applied to artifact kinds, S9 to S16 added); decision 2 superseded in part by ADR-0050 and decision 4 by ADR-0048 (2026-11-02); decision 2 amended 2026-11-07 (the kind gate removed from presets, any kind listed)'
 decision_date: '2026-10-28'
 type: ADR
 kind: ADR
@@ -84,6 +84,26 @@ was reserved for #195 (`DM-01M60HM8BV7CE17HYE1QS829K4`) before the numbers chang
   prose the author writes; nothing ties it to `pack.yaml`'s `name`, and the service checks neither
   against the other.
 
+### Amendment 2026-11-07: a preset names any kind and carries no kind gate
+
+Made by the layer-merge mission (`layer-merge-and-effective-reads-01M6R0J6`), PR A0, on the operator's rulings of
+2026-11-06 for the one kind model (A7, decision `DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY`; Q3, decision
+`DM-01M6RCY40CQQTHC130RWF43W0D`; Q4, decision `DM-01M6RCY8MYNGNPJ247M2Y4880N`). The decision text below is unchanged;
+decision 2 carries a note where it changes, and decision 3's "off in `activated_kinds`" no longer has a gate to
+switch a kind off.
+
+- **`activated_kinds` is refused.** A preset carrying it is refused `422` when its pack is registered, in
+  `contracts/packs/schemas/preset.schema.json` and in validate mode. The activation document has no kind gate to set
+  (ADR-0020 amendment of 2026-11-07), so a key for it would say nothing.
+- **A preset may name any kind.** The schema gains `activated_skills` and `activated_glossary_packs`, so the
+  exclusion of `skill` and `glossary_pack` (a core leftover) is gone and one kind registry serves activations, presets,
+  packs and the contract.
+- **`activated_mission_types` is a plain member list.** It is applied as `selected.mission_type`, like the list of any
+  other kind, and a must-have mission type is on the required floor, as `MISSION_TYPE` is requirable.
+  `requiredMissionTypes()` and the separate `Preset.missionTypes` slot go, as ADR-0050 already said.
+- **Divergence.** DIV-211 of the [divergence register](/conformance/divergence-register/): core's preset may carry
+  `activated_kinds` and excludes skills and glossary packs.
+
 ## Context
 
 Issue #195 asks the whole-pack round trip to cover the four files that describe a pack as a whole:
@@ -149,11 +169,12 @@ A preset is `presets/<id>.yaml`, validated by the closed schema
 - `id`: required, `^[a-z][a-z0-9]*(-[a-z0-9]+)*$`, at most 64 characters, equal to the file stem;
 - `description`: required, not empty;
 - `activated_kinds`: optional, the kind gate. It holds kind plurals from the 13 kinds, each once,
-  at least one;
+  at least one; *(amended 2026-11-07: refused, there is no kind gate)*;
 - ten optional lists: `activated_directives`, `activated_tactics`, `activated_styleguides`,
   `activated_toolguides`, `activated_paradigms`, `activated_procedures`,
   `activated_agent_profiles`, `activated_mission_step_contracts`, `activated_anti_patterns` and
-  `activated_mission_types`. Each holds at least one item;
+  `activated_mission_types` *(amended 2026-11-07: and `activated_skills` and `activated_glossary_packs`; a preset may
+  name any kind)*. Each holds at least one item;
 - an item is a closed object: `id` (required, not empty) and `must_have` (optional, `const: true`).
 
 The kind gate and the selection lists are independent fields: a preset may gate a kind it lists no

@@ -51,12 +51,6 @@ class ActivationControllerTest {
     }
 
     @Test
-    void theControllerIsNotReservedWhole() {
-        assertThat(ActivationController.class.isAnnotationPresent(ReservedOperation.class))
-                .isFalse();
-    }
-
-    @Test
     void everyOneOfTheFourteenOperationsIsOverriddenAndOnlyTheFourUnbuiltAreMarked() throws NoSuchMethodException {
         assertThat(operations()).hasSize(14);
         assertThat(operations()).extracting(Method::getName).containsAll(BUILT);

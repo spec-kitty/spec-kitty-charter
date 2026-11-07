@@ -5,9 +5,11 @@ import ai.speckitty.charter.api.model.CharterRefusal;
 import ai.speckitty.charter.api.model.Problem;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
+import ai.speckitty.charter.web.Problems;
 import ai.speckitty.charter.web.RefusalHandler;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.ElementKind;
 import jakarta.validation.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -16,8 +18,11 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -57,6 +62,7 @@ import tools.jackson.core.JacksonException;
 @Order(Ordered.LOWEST_PRECEDENCE - 1)
 public class ActivationProblems {
 
+    private static final Logger LOG = LoggerFactory.getLogger(ActivationProblems.class);
     private static final Pattern INDEX = Pattern.compile("\\[(\\d+)]");
     private static final Pattern DOT = Pattern.compile("\\.");
     private static final Pattern UPPER = Pattern.compile("([A-Z])");
@@ -82,8 +88,18 @@ public class ActivationProblems {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<CharterRefusal> unreadable(HttpMessageNotReadableException unreadable) {
         String pointer = unreadable.getCause() instanceof JacksonException jackson ? pointerOf(jackson.getPath()) : "";
-        return invalid(List.of(new RefusalViolation(
-                pointer, "unreadable_body", "The body is not JSON of the request's schema at '" + pointer + "'.")));
+        return invalid(List.of(unreadableAt(pointer)));
+    }
+
+    /**
+     * The violation of a body that cannot be bound at a pointer.
+     *
+     * @param pointer the RFC 6901 pointer of the bad value; {@code ""} for the whole body
+     * @return the violation, code {@code unreadable_body}
+     */
+    static RefusalViolation unreadableAt(String pointer) {
+        return new RefusalViolation(
+                pointer, "unreadable_body", "The body is not JSON of the request's schema at '" + pointer + "'.");
     }
 
     /**
@@ -122,13 +138,19 @@ public class ActivationProblems {
     /**
      * Answers a request whose parameters the generated interface's method validation refuses, as Spring's
      * {@code MethodValidationPostProcessor} reports it: a violation inside a parameter (a member of the body) is a
-     * {@code 422} with its pointer, and one of a whole parameter (a header or the path's id) is a {@code 400}.
+     * {@code 422} with its pointer, and one of a whole parameter (a header or the path's id) is a {@code 400}. A
+     * violation of the return value is no request's fault: any other violation stays a {@code 500}.
      *
      * @param invalid the validation failure
      * @return {@code 400} or {@code 422 activation_invalid}
      */
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<?> constraintViolations(ConstraintViolationException invalid) {
+        if (breaksAReturnValue(invalid)) {
+            // The service's own answer broke the contract's constraint: no request is at fault, so it is a 500.
+            LOG.error("An activation answer breaks the contract's constraints", invalid);
+            return Problems.of(HttpStatus.INTERNAL_SERVER_ERROR, HttpHeaders.EMPTY);
+        }
         List<RefusalViolation> violations = new ArrayList<>();
         for (ConstraintViolation<?> violation : invalid.getConstraintViolations()) {
             List<String> path = nodes(violation.getPropertyPath());
@@ -141,6 +163,22 @@ public class ActivationProblems {
         }
         violations.sort(Comparator.comparing(RefusalViolation::pointer));
         return invalid(violations);
+    }
+
+    /**
+     * Whether a violation is not on a request parameter, as the shared {@code ProblemHandler} judges it (#268): a
+     * return value, for one, is the service's own failure. A violation inside a parameter (a header, the path's id, a
+     * member of the body) is the request's.
+     */
+    private static boolean breaksAReturnValue(ConstraintViolationException invalid) {
+        return invalid.getConstraintViolations().stream().anyMatch(violation -> {
+            for (Path.Node node : violation.getPropertyPath()) {
+                if (node.getKind() == ElementKind.PARAMETER || node.getKind() == ElementKind.CROSS_PARAMETER) {
+                    return false;
+                }
+            }
+            return true;
+        });
     }
 
     /** The segments of a validation path, an indexed one written {@code name[i]}; a container element node left out. */
