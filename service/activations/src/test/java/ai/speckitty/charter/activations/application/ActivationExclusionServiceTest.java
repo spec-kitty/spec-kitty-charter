@@ -323,7 +323,7 @@ class ActivationExclusionServiceTest {
 
     @Test
     void aReactivateDropsTheStoredIdsTheClosureNoLongerDeclares() {
-        // ADR-0059 amendment R5: GONE and old are stale; the write drops them and names them.
+        // ADR-0059 amendment A5: GONE and old are stale; the write drops them and names them.
         StoredActivation before = stored(ActivationDocument.builder()
                 .selected(ArtifactKind.DIRECTIVE, List.of("GONE"))
                 .deactivated(ArtifactKind.TACTIC, List.of("old", "t")));
@@ -367,6 +367,30 @@ class ActivationExclusionServiceTest {
         assertThat(outcome.stored().revision()).isNotEqualTo(before.revision());
         assertThat(now().deactivated(ArtifactKind.TACTIC)).containsExactly("t");
         assertThat(repository.replaces()).isEqualTo(1);
+    }
+
+    @Test
+    void aDeactivateAndAReactivateInAnotherSpellingWriteTheDeclaredId() {
+        // ADR-0020 D4 (operator ruling of 2026-11-06): the path id is read as a document's id is.
+        StoredActivation before = stored(ActivationDocument.builder());
+
+        ActivationWrites.Outcome denied =
+                service.deactivate(ID, "directive", "directive:d2", Optional.empty(), List.of(), quoted(before));
+        ActivationWrites.Outcome cleared = service.reactivate(ID, "directive", "d2", quoted(denied.stored()));
+
+        assertThat(denied.change().applied()).containsExactly(D2);
+        assertThat(cleared.change().applied()).containsExactly(D2);
+        assertThat(now().deactivated(ArtifactKind.DIRECTIVE)).isEmpty();
+    }
+
+    @Test
+    void aReactivateOfAStaleIdInAnotherSpellingDropsIt() {
+        StoredActivation before = stored(ActivationDocument.builder().deactivated(ArtifactKind.TACTIC, List.of("old")));
+
+        ActivationWrites.Outcome outcome = service.reactivate(ID, "tactic", "tactic:OLD", quoted(before));
+
+        assertThat(outcome.change().dropped()).containsExactly(new ArtifactRef(ArtifactKind.TACTIC, "old"));
+        assertThat(now().deactivated()).isEmpty();
     }
 
     @Test

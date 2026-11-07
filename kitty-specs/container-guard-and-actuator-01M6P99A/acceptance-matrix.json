@@ -1,0 +1,209 @@
+{
+  "mission_slug": "container-guard-and-actuator-01M6P99A",
+  "mission_number": "",
+  "mission_type": "",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/WorktreeGuardTest.java (aListedHostPasses..., anUnlistedHostIsForbidden...); service/deployable/src/test/java/ai/speckitty/charter/deployable/GuardWiringTest.java underTheContainerProfileTheGuardAcceptsTheConfiguredHostsOnly",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:53:59.941163+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/WorktreeGuardTest.java underAListARequestWithoutAHostHeaderIsForbidden",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:54:04.990311+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/WorktreeGuardTest.java pre-existing cases unchanged and green; GuardPolicyTest loopback",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:54:09.925001+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/GuardPolicy.java constructor injection; service/deployable/src/test/java/ai/speckitty/charter/deployable/HexagonalArchitectureTest.java 45/45",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:54:14.772318+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/deployable/src/test/java/ai/speckitty/charter/deployable/ContainerPropertiesTest.java underTheContainerProfileAMalformedEntryFailsTheStartNamingTheProperty",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:54:19.841471+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/WorktreeGuardTest.java underAListABrowserHeaderIsStillForbidden + browser cases",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:54:24.835567+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "review",
+      "evidence": "contracts/charter/responses/Forbidden.yaml, openapi.yaml, changes/2026-11-05-forbidden-configured-hosts.md; :contracts:check green",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:54:29.710827+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/deployable/src/test/java/ai/speckitty/charter/deployable/ContainerHealthTest.java (other endpoints 404, JMX off); service/deployable/src/test/java/ai/speckitty/charter/deployable/ExposureStartupCheckTest.java jmx",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:54:34.558859+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Verify FR-009 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/packs/src/test/java/ai/speckitty/charter/packs/infra/api/WorktreeGuardTest.java near-miss cases; service/deployable/src/test/java/ai/speckitty/charter/deployable/ContainerHealthTest.java near misses 401",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:54:39.593660+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "Verify FR-010 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/deployable/src/test/java/ai/speckitty/charter/deployable/ContainerHealthTest.java withoutTheProfileTheHealthCheckNeedsTheTokenLikeEveryPath",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:54:44.481933+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-011",
+      "description": "Verify FR-011 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/deployable/src/test/java/ai/speckitty/charter/deployable/ExposureStartupCheckTest.java management rules",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:54:49.427594+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-012",
+      "description": "Verify FR-012 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/deployable/src/test/java/ai/speckitty/charter/deployable/ExposureStartupCheckTest.java withoutTheContainerProfileANonLoopbackAddressFailsTheStart...",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:54:55.038583+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-013",
+      "description": "Verify FR-013 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/deployable/src/test/java/ai/speckitty/charter/deployable/ExposureStartupCheckTest.java underTheContainerProfileAnyAddressBinds",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:54:59.856909+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-014",
+      "description": "Verify FR-014 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/deployable/src/test/java/ai/speckitty/charter/deployable/ProfileDefaultsTest.java noShippedFileNamesADefaultActiveOrIncludedProfile + start without profile",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:55:04.836390+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-015",
+      "description": "Verify FR-015 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/deployable/src/test/java/ai/speckitty/charter/deployable/ProfileDefaultsTest.java underTheContainerProfileAMissingTokenFailsTheStartNamingBothForms",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:55:09.830289+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-016",
+      "description": "Verify FR-016 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/deployable/src/test/java/ai/speckitty/charter/deployable/ExposureStartupCheckTest.java request-detail logging; service/deployable/src/test/java/ai/speckitty/charter/deployable/ContainerHealthTest.java forwarded host",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:55:14.655985+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-017",
+      "description": "Verify FR-017 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/deployable/src/test/java/ai/speckitty/charter/deployable/ContainerHealthTest.java theTokenNeverReachesTheOutputEvenWithDebugLogging",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:55:19.525020+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-018",
+      "description": "Verify FR-018 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "service/deployable/src/test/java/ai/speckitty/charter/deployable/ValidationProblemTest.java; artifacts.feature pageSize 400",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:55:24.313099+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-019",
+      "description": "Verify FR-019 is satisfied",
+      "proof_type": "review",
+      "evidence": "docs/adr/0060-one-replica-per-deployment.md; docs/guides/run-in-a-container.md Single replica",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:55:29.289003+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-020",
+      "description": "Verify FR-020 is satisfied",
+      "proof_type": "review",
+      "evidence": "docs/guides/run-in-a-container.md, deploy/compose/*; check_docs, markdownlint, cspell green",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:55:34.139652+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}

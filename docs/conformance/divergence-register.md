@@ -2,7 +2,7 @@
 title: Divergence register
 description: The single register of every deliberate difference between the charter service and core, each with a stable id, the ruling behind it and the case or evidence that pins it.
 doc_status: draft
-updated: 2026-11-06T00:00:00Z
+updated: 2026-11-07T00:00:00Z
 type: API
 kind: Reference
 related:
@@ -35,8 +35,8 @@ Entries are grouped by block, one block per mission, so that two missions never 
 - **Pack schemas (DIV-001..025, ADR-0017)** is below, after the context-read block. DIV-001 and
   DIV-002 are withdrawn: they described the same differences as DIV-101 and DIV-102 and are
   recorded there.
-- **Activation (DIV-201..208, ADR-0020)** is below. DIV-201 and DIV-202 are proposed, because the effective reads
-  they concern are not built yet; DIV-203 to DIV-208 are open, because the register, the closure read and the
+- **Activation (DIV-201..207, ADR-0020)** is below. DIV-201 and DIV-202 are proposed, because the effective reads
+  they concern are not built yet; DIV-203 to DIV-207 are open, because the register, the closure read and the
   per-artifact writes are built.
 - **Pack-level files (DIV-301..399, ADR-0042)** is after the activation block.
 - **Procedures and toolguide guides (DIV-401..499, ADR-0043)** is after the pack-level files block.
@@ -426,7 +426,7 @@ entry from the contract scenario that pins it. Add it to
 [`divergences.yaml`](https://github.com/spec-kitty/spec-kitty-charter/blob/main/docs/conformance/divergences.yaml)
 too, with the same id and status.
 
-## Activation (DIV-201..208, ADR-0020)
+## Activation (DIV-201..215, ADR-0020)
 
 DIV-201 and DIV-202 were proposed with [ADR-0020](/adr/0020-offering-and-activations/) on #123, and agreed with
 core's activation ledger mission on 2026-10-20. Core's conformance-case table carries the same entries (core
@@ -449,16 +449,28 @@ D2 as amended on 2026-11-06. They are `open`: `contracts/charter/scenarios/activ
 The 2026-11-06 amendment replaced the `enhances` pull of D2.2 with `enhances` as one more cascade relation, and ruled
 that a read returns an enhancement only when it is itself active; the reads get their own entry when they are built.
 
+DIV-209 to DIV-215 were added on 2026-11-07 by the same mission's PR A0: the rulings that change what #399 built (a
+replace that drops what the packs no longer hold, the kind model, and a `depth` on the cascade). They are `open`:
+`activation-ruling-changes.feature`, `activation-kind-model.feature` and `activation-cascade-depth.feature` pin them.
+DIV-208 was recorded and withdrawn on 2026-11-06, before it landed (a write normalizes every known spelling of an id),
+so its id stays taken and the new entries start at DIV-209.
+
 | Id | The charter answers | Core answers | Ruling | Corpus case |
 |---|---|---|---|---|
 | DIV-201 | A required or locked artifact is active on read, even under an explicit allow list that omits it (ADR-0020 D7) | Does not add it under such an allow list; doctor and list warn | ADR-0020 | `required-under-allow-list` |
 | DIV-202 | The required floor is derived from the packs at read time and never stored (ADR-0020 D4) | Promotes org `required_*` into the allow list at write time | ADR-0020 | `required-promoted-at-write` |
-| DIV-203 | An absent `selected.<kind>`, `activatedKinds` or `missionTypes` means none, the same as `[]`. This holds for `skill` too, which loses its "only the required skills" default. An absent `packs` still means every configured pack | A per-kind default when the key is absent: every available artifact, or only the required skills for `skill` | ADR-0053 d10; decision `DM-01M6NXQJ61D2GSFJFK02XW6F9N`. Holds until core's named-packs split ([ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/)) | `absent-kind-means-none` |
+| DIV-203 | An absent `selected.<kind>` (a mission type included) means none, the same as `[]`; `activatedKinds` and `missionTypes` are no longer members (DIV-212, DIV-214). This holds for `skill` too, which loses its "only the required skills" default. An absent `packs` still means every configured pack | A per-kind default when the key is absent: every available artifact, or only the required skills for `skill` | ADR-0053 d10; decision `DM-01M6NXQJ61D2GSFJFK02XW6F9N`. Holds until core's named-packs split ([ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/)) | `absent-kind-means-none` |
 | DIV-204 | A create or replace whose deny list names a required or locked artifact, or a deactivate that adds such an entry, is refused `409` (`artifact_required`, `artifact_locked`), naming the pack, and nothing is stored; a stored entry is tolerated by the other per-artifact writes | Accepts the entry and ignores it, or warns | ADR-0020 D9; ADR-0059 D4 | `deny-required-refused-at-write` |
-| DIV-205 | The required floor is the must-have items of every governing preset in the activation's closure | The org packs' `required_*` lists | Decision `DM-01M6PCWSA65497T9A7J80K6V56`: an assumed default, flagged to the operator as open review item 1 | `floor-closure-scoped` |
-| DIV-206 | A cascade passes through every `specializes_from` ancestor of a profile it reaches, up the whole chain, following only `requires` and `scope` from each ancestor. An ancestor passed through is neither put in force nor reported. A denied ancestor stops the pass-through and is reported in `skippedDeactivated`; what lies only behind it is in `unreachedBehindDeactivated`. With `includeDeactivated` a denied ancestor of a kind in the `cascade` scope is passed through and its deny entry cleared, never selected; one outside the scope stops the pass-through. `requiredBy` never names an ancestor passed through; it leads back to the descendant. A cascading deactivate's own walk passes through the lineage as a select's does, so the two round-trip, but stops at no deny entry: it crosses a denied ancestor a select would stop at, as it crosses a denied artifact on the forward relations | Does not follow `specializes_from` in its cascade | ADR-0059 D2.4 and its 2026-11-06 amendment | `cascade-lineage-pass-through` |
-| DIV-207 | The write cascade walks `enhances` as one of its relations, from the enhancer to what it enhances: a cascading select of an enhancer selects its target, a select of the target selects no enhancer, and a cascading deactivate of an enhancer unselects its target unless another active artifact needs it (`skippedShared`). There is no `enhances` pull, at write or at read | Does not follow `enhances` in its cascade | ADR-0059 D2 as amended on 2026-11-06 (R4) | `cascade-enhances-relation` |
-| DIV-208 | An artifact id is matched exactly as declared; another spelling of it is an unknown id (`422 activation_invalid` in a document, `404 artifact_not_found` in a per-artifact write's path). The normalization ADR-0020 D4 rules is not built | Accepts another known spelling, and the allow list can mix spellings | ADR-0020 D4 | `id-matched-as-declared` |
+| DIV-205 | The required floor is the must-have items of every governing preset in the activation's closure | The org packs' `required_*` lists | Operator ruling of 2026-11-06, which confirms the closure scope that decision `DM-01M6PCWSA65497T9A7J80K6V56` had assumed | `floor-closure-scoped` |
+| DIV-206 | A cascade passes through every `specializes_from` ancestor of a profile it reaches, up the whole chain, following only `requires` and `scope` from each ancestor. An ancestor passed through is neither put in force nor reported. A denied ancestor stops the pass-through and is reported in `skippedDeactivated`; what lies only behind it is in `unreachedBehindDeactivated`. With `includeDeactivated` a denied ancestor of a kind in the `cascade` scope is passed through and never selected, and its deny entry is kept, because `includeDeactivated` clears only the deny entries of what the walk reaches and selects (B5, 2026-11-07); one outside the scope stops the pass-through. `requiredBy` never names an ancestor passed through; it leads back to the descendant. A cascading deactivate's own walk passes through the lineage as a select's does, so the two round-trip, but stops at no deny entry: it crosses a denied ancestor a select would stop at, as it crosses a denied artifact on the forward relations | Does not follow `specializes_from` in its cascade | ADR-0059 D2.4, its 2026-11-06 amendment and its 2026-11-07 amendment (B5) | `cascade-lineage-pass-through` |
+| DIV-207 | The write cascade walks `enhances` as one of its relations, from the enhancer to what it enhances: a cascading select of an enhancer selects its target, a select of the target selects no enhancer, and a cascading deactivate of an enhancer unselects its target unless another active artifact needs it (`skippedShared`). There is no `enhances` pull, at write or at read | Does not follow `enhances` in its cascade | ADR-0059 D2 as amended on 2026-11-06 (A4) | `cascade-enhances-relation` |
+| DIV-209 | `replaceActivation` drops an id of the body that the closure no longer holds and that the replaced document named, and lists it in `dropped`; an unknown id the replaced document did not name is still `422`. A replace, the four per-artifact writes and `applyActivationPreset` drop a version pin no pack of the closure holds and list it in `droppedPins`, where they answered `422 version_not_held`; `createActivation` keeps that `422` for a pin in its own body. A replace judges the floor only on the deny entries it adds, so a GET then PUT of one body is never refused without a pack change | No stored document to replace: its seam drops a stale deny entry at export and keeps no pack version pin | ADR-0059 amendment of 2026-11-07 (ruleset A4 and B1); decisions `DM-01M6RA7XC5HC8915GZT2R3H83W`, `DM-01M6RA9BKJY7X9BFV93QW1KM1T`, `DM-01M6RN5Y406SB4KA13QYMQ2P8J` | `replace-drops-stale` |
+| DIV-210 | A mission type id is read in any spelling (the declared id, its full URN or another case) in a path and in a document, and stored as the declared id. A document that names one the closure does not hold is `422 unknown_artifact` at `/selected/mission_type/<i>`; `unknown_mission_type` is gone | A mission type is not an artifact kind (DIV-501), so its id is matched as the mission-tier path spells it | ADR-0020 D4 note of 2026-11-06; decisions `DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY`, `DM-01M6RCXZ9HSHT4K3443YYZ8ZFC` | `mission-type-id-spellings` |
+| DIV-211 | A preset carrying `activated_kinds` is refused `422` when its pack is registered. A preset may name any kind, `skill` and `glossary_pack` included (`activated_skills`, `activated_glossary_packs`), and `activated_mission_types` is a plain member list applied as `selected.mission_type` | A preset may carry `activated_kinds`, the kind gate, and its member lists exclude skill and glossary pack | Decisions `DM-01M6RCY40CQQTHC130RWF43W0D` (Q3), `DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY`; ADR-0042 D2 note of 2026-11-07 | `preset-any-kind` |
+| DIV-212 | Core's `activated_kinds` narrowing is not honoured: nothing is in force because its kind is activated, a select brings its artifact into force, and `activatedKinds` is refused on a write. A core project that narrows it sees a larger effective set | A project narrows `activated_kinds`, and only the kinds it lists are in force | Decisions `DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY` (A7), `DM-01M6RCY8MYNGNPJ247M2Y4880N` (Q4) | `activated-kinds-narrowing` |
+| DIV-213 | A document stored at `schemaVersion` 1 is answered as its version 2 upgrade (`missionTypes` become `selected.mission_type`, every selection is kept, `activatedKinds` is discarded). A read upgrades in memory; the next write stores version 2, so every `ETag` changes once | No stored document of this shape and no version to upgrade | Decisions `DM-01M6RMJHDKNTXAM055Q8WR6SDN`, `DM-01M6RFGMDH859CJP3RHHF9YC3H` | `v1-upgraded-on-read` |
+| DIV-214 | A mission type is selected under `selected.mission_type` and denied under `deactivated.mission_type` unless it is required or locked (`409 artifact_required`, `artifact_locked`). Selecting one with a cascade crosses to its steps like `requires` and selects what they reach (W20); a cascading deactivate unselects what only it kept (W23) | Mission types are a plain `mission_type_activations` list with no deny list (ADR-0020 D4 table); selecting one does not put what its steps reach into `activated_<plural>` | Decisions `DM-01M6RCXTS0SMDNTWZ8G7GJ2P5S` (Q1), `DM-01M6RCXZ9HSHT4K3443YYZ8ZFC` (Q2); #410 | `mission-type-selected-like-any-kind` |
+| DIV-215 | A cascading select and a cascading deactivate take an optional `depth` that counts `suggests` hops only: every other relation, the lineage pass-through and a mission type's steps are walked in full, `0` follows no `suggests` edge, and absent is unlimited. `skippedByDepth` lists the next `suggests` frontier. The deactivate's own walk honours it and the shared walk does not, so a deactivate at depth N undoes a select at depth N only in what it removes | No write-cascade depth; the activation cascade is unlimited | Operator ruling on #408 of 2026-11-07; decisions `DM-01M6TDH0SY5Q224GX709DXWG8K`, `DM-01M6TF3BA808JMW0W0A0CPXBNW` | `cascade-depth` |
 
 Core's seam, to switch: read an absent list as none and write the default it means explicitly (DIV-203); clean a
 deny entry on a required or locked artifact out of a document before writing it (DIV-204); and take the required set
@@ -466,9 +478,21 @@ from the closure's governing presets, not from `required_*` (DIV-205). A project
 `requires` or `scope`s more (DIV-206), or with an artifact that enhances another (DIV-207), sees a different write
 cascade after the switch; core's seam takes the service's answer, `applied`, `cleared` and `skipped`, as it is.
 
-DIV-208 was added on 2026-11-06: ADR-0020 D4 rules that a write may spell an id another known way and is normalized
-to the declared id, and the register matches ids exactly as declared instead. Core's seam already sends declared ids,
-so it needs no change; the divergence closes when the normalization is built or the ruling is withdrawn.
+For PR A0, core's seam regenerates its strict DTOs from the contract and then: reads `dropped` and `droppedPins` on a
+replace answer instead of handling a `422` (DIV-209); sends mission type ids in any spelling (DIV-210); registers no
+preset with `activated_kinds` (DIV-211); sends neither `activatedKinds` nor `missionTypes`, each of which is refused,
+and expects a larger effective set where a project narrowed `activated_kinds` (DIV-212); expects one `412` per
+activation after the storage upgrade (DIV-213); selects mission types under `selected.mission_type` (DIV-214); and may
+send `depth` (DIV-215). The generated client's optional-list getters return `null` when a list is absent
+(`containerDefaultToNull`), so a GET then PUT through it leaves the stored document and its revision unchanged. Nothing is
+edited in core (C-003).
+
+Some A0 rulings change what #399 built and have no counterpart in core's seam, so they are no divergence: a pack's
+policy locks only the artifacts of the pack and of the packs it builds on (A15), a pack's own policy never refuses its
+own write (B8), the required floor holds only the must-have items a pack of the closure holds (A10), and two packs that
+`enhances` one artifact compose (A14). The changes fragment `2026-11-07-a0-ruling-changes.md` records them.
+
+A pack pinned in a `createActivation` body to a version other than the one the service holds is refused `422 activation_invalid` (`version_not_held`, naming both versions), by operator ruling of 2026-11-06, so a pin is never recorded for a version the closure does not hold. Since 2026-11-07 every other write drops such a pin and reports it in `droppedPins` (DIV-209).
 
 `getActivation` and `listActivationPacks` declare no `Charter-Source-Fingerprint` on their `200`. The document read
 depends only on the stored document ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) D5),
@@ -482,8 +506,9 @@ Not divergences, because the contract matches core:
 - preset `--force` (`{"force": true}`);
 - derived `languages`, which core's seam does not send.
 
-Unknown and stale deny entries are refused by `createActivation` and `replaceActivation` and dropped by core's seam
-at export. That is an export rule, not a divergence. The per-artifact and preset writes drop the stale ids of a
+An unknown id in the body of `createActivation`, and one in the body of `replaceActivation` that the replaced document did not
+name, are refused and core's seam drops stale deny entries at export. That is an export rule, not a divergence; what a
+replace drops of a stored document is DIV-209. The per-artifact and preset writes drop the stale ids of a
 stored document themselves and report them in `ActivationChange.dropped` (ADR-0059 amendment of 2026-11-06), which
 core's seam reads as part of the service's answer.
 
@@ -559,7 +584,7 @@ over to the service. Core paths are at spec-kitty `c678037c`.
 ### DIV-501: A mission type is an artifact kind
 
 - **Core:** `mission-type` is a charter kind token but not an `ArtifactKind`: `ArtifactKind.from_operator_token` raises `MissionTypeNotAnArtifactKind` for it, and callers route it to the mission-tier handling path (`offering/artifact_kinds.py:53-61`, `:325-329`).
-- **Service:** `mission_type` is an artifact kind (`ArtifactKind.MISSION_TYPE`, plural `mission_types`; activatable, neither org-requirable nor selection-overlayable, all in force when its key is absent), bound in the kind registry and a pack-manifest constituent kind. Its node kind is artifact-backed. A pack holds one file per type, `missions/<id>/<id>.mission-type.yaml`, whose steps are sub-items of `steps` and `on_demand_steps`; a mission step is a domain type, not an artifact kind, and has no fragment plural (DIV-011 is unchanged).
+- **Service:** `mission_type` is an artifact kind (`ArtifactKind.MISSION_TYPE`, plural `mission_types`; activatable like any kind: selected under `selected.mission_type`, deniable unless required or locked, and none in force when absent, DIV-203 and DIV-214, updated 2026-11-07), bound in the kind registry and a pack-manifest constituent kind. Its node kind is artifact-backed. A pack holds one file per type, `missions/<id>/<id>.mission-type.yaml`, whose steps are sub-items of `steps` and `on_demand_steps`; a mission step is a domain type, not an artifact kind, and has no fragment plural (DIV-011 is unchanged).
 - **Rationale:** A mission type is offered and activated like an artifact and has its own domain model, the shape #148 asks for; every binding, `CharterArtifact.kind()` and the pack aggregate are keyed by `ArtifactKind` (ADR-0037).
 - **Ruling:** operator rulings on #194 (2026-10-28, 2026-10-30); #186 "as if core does not exist"
 - **Status:** open, since 2026-10-30

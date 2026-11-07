@@ -9,8 +9,8 @@ description: >-
   document registers unchanged. Nothing is in force by default. packs and languages keep their own absent: every
   configured pack, and no language filter. null is never a value.
 
-  Canonical form, which the service stores and answers: ids in their declared spelling (an id is matched exactly as
-  declared; another spelling is not normalized, DIV-208); id and token lists deduplicated
+  Canonical form, which the service stores and answers: ids in their declared spelling (a write may spell an id as its
+  full URN or in another case, and is normalized to the declared id, ADR-0020 D4); id and token lists deduplicated
   and sorted, except packs, which keeps merge order; an empty selected or deactivated object left out, while selected.<kind>:
   [] is kept; lists sorted by Unicode code point; members in the order of this schema. An empty deny list is refused
   (422), never stored. The activation's revision is sha256: and the hex SHA-256 of the RFC 8785 (JCS) serialization

@@ -276,6 +276,90 @@ class ActivationSelectionServiceTest {
     }
 
     @Test
+    void aPathIdInAnyKnownSpellingSelectsAndUnselectsTheDeclaredId() {
+        // ADR-0020 D4 (operator ruling of 2026-11-06): the path id is read as a document's id is.
+        StoredActivation before = stored(ActivationDocument.builder());
+
+        ActivationWrites.Outcome selected =
+                service.select(ID, "directive", "directive:d", Optional.empty(), false, List.of(), quoted(before));
+        ActivationWrites.Outcome again =
+                service.select(ID, "directive", "d", Optional.empty(), false, List.of(), quoted(selected.stored()));
+
+        assertThat(selected.change().applied()).containsExactly(D);
+        assertThat(again.stored().revision())
+                .as("another spelling is a no-op")
+                .isEqualTo(selected.stored().revision());
+        assertThat(now().selected(ArtifactKind.DIRECTIVE).orElseThrow()).containsExactly("D");
+
+        ActivationWrites.Outcome unselected = service.unselect(ID, "directive", "directive:d", quoted(again.stored()));
+
+        assertThat(unselected.change().applied()).containsExactly(D);
+        assertThat(now().selected(ArtifactKind.DIRECTIVE).orElseThrow()).isEmpty();
+    }
+
+    @Test
+    void aMissionTypePathIdIsMatchedExactlyAsMissionTypesIs() {
+        // missionTypes is not normalized on a PUT, so its path id is not either: only the exact id names it.
+        StoredActivation before = stored(ActivationDocument.builder().missionTypes(List.of("gone-type")));
+
+        for (String spelled : List.of("RESEARCH", "mission_type:research")) {
+            assertThatThrownBy(() -> service.select(
+                            ID, "mission_type", spelled, Optional.empty(), false, List.of(), quoted(before)))
+                    .as(spelled)
+                    .isInstanceOfSatisfying(
+                            CharterRefusal.class,
+                            refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.MISSION_TYPE_NOT_FOUND));
+        }
+        assertThatThrownBy(() -> service.unselect(ID, "mission_type", "GONE-TYPE", quoted(before)))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.MISSION_TYPE_NOT_FOUND));
+        assertThat(repository.replaces()).isZero();
+
+        ActivationWrites.Outcome exact =
+                service.select(ID, "mission_type", "research", Optional.empty(), false, List.of(), quoted(before));
+
+        assertThat(exact.change().applied()).containsExactly(new ArtifactRef(ArtifactKind.MISSION_TYPE, "research"));
+    }
+
+    @Test
+    void aUrnOfAnotherKindIs404AndASpellingOfTwoDeclaredIdsIs422AtThePath() {
+        packs = new FakeAvailablePacks(
+                closure().held(ArtifactKind.DIRECTIVE, "Ab", "AB").build());
+        service = new ActivationSelectionService(new ActivationWrites(repository, packs));
+        StoredActivation before = stored(ActivationDocument.builder());
+
+        assertThatThrownBy(() ->
+                        service.select(ID, "directive", "tactic:D", Optional.empty(), false, List.of(), quoted(before)))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_NOT_FOUND));
+        assertThatThrownBy(
+                        () -> service.select(ID, "directive", "ab", Optional.empty(), false, List.of(), quoted(before)))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_INVALID);
+                    assertThat(refusal.violations()).singleElement().satisfies(violation -> {
+                        assertThat(violation.pointer()).isEqualTo("/artifactId");
+                        assertThat(violation.code()).isEqualTo("ambiguous_artifact");
+                    });
+                });
+        ActivationWrites.Outcome exact =
+                service.select(ID, "directive", "AB", Optional.empty(), false, List.of(), quoted(before));
+        assertThat(exact.change().applied()).containsExactly(new ArtifactRef(ArtifactKind.DIRECTIVE, "AB"));
+    }
+
+    @Test
+    void anUnselectOfAStaleIdInAnotherSpellingDropsIt() {
+        StoredActivation before =
+                stored(ActivationDocument.builder().selected(ArtifactKind.DIRECTIVE, List.of("GONE")));
+
+        ActivationWrites.Outcome outcome = service.unselect(ID, "directive", "directive:gone", quoted(before));
+
+        assertThat(outcome.change().dropped()).containsExactly(new ArtifactRef(ArtifactKind.DIRECTIVE, "GONE"));
+        assertThat(now().selected(ArtifactKind.DIRECTIVE).orElseThrow()).isEmpty();
+    }
+
+    @Test
     void aPackNoLongerConfiguredIs422AtTheWholeRequest() {
         StoredActivation before = stored(ActivationDocument.builder());
         packs.answer(ClosureSnapshot.unresolved(Set.of("main")));
@@ -319,7 +403,7 @@ class ActivationSelectionServiceTest {
                         refused -> assertThat(refused.kind()).isEqualTo(PreconditionException.Kind.STALE));
     }
 
-    // Stale ids are dropped on write (ADR-0059 amendment R5, operator ruling of 2026-11-06).
+    // Stale ids are dropped on write (ADR-0059 amendment A5, operator ruling of 2026-11-06).
 
     @Test
     void aSelectDropsTheStoredIdsTheClosureNoLongerDeclaresAndReportsThem() {
