@@ -88,6 +88,46 @@ abstract class ActivationRepositoryContract {
                 .document();
     }
 
+    // ---- listing: the registration impact check asks which packs the stored activations root at (IC-15) ----------
+
+    @Test
+    void anEmptyRepositoryListsNothing() {
+        assertThat(repository.list()).isEmpty();
+    }
+
+    @Test
+    void everyStoredActivationIsListed() {
+        repository.create(ID, document(1));
+        repository.create(OTHER, document(2));
+
+        assertThat(repository.list())
+                .containsExactlyInAnyOrder(
+                        StoredActivation.of(ID, document(1)), StoredActivation.of(OTHER, document(2)));
+    }
+
+    @Test
+    void aVersionOneDocumentIsListedAsItsUpgrade() {
+        storeBytes(repository, ID, VERSION_ONE);
+
+        assertThat(repository.list()).containsExactly(StoredActivation.of(ID, document(1)));
+    }
+
+    @Test
+    void aDocumentThatDoesNotReadIsLeftOutAndTheOthersAreListed() {
+        repository.create(OTHER, document(2));
+        storeBytes(repository, ID, "not an activation".getBytes(StandardCharsets.UTF_8));
+
+        assertThat(repository.list()).containsExactly(StoredActivation.of(OTHER, document(2)));
+    }
+
+    @Test
+    void aDeletedActivationIsNoLongerListed() {
+        repository.create(ID, document(1));
+        repository.delete(ID, Optional.empty());
+
+        assertThat(repository.list()).isEmpty();
+    }
+
     @Test
     void aVersionOneDocumentReadsAsItsUpgradeAndTheReadsNeverWrite() {
         storeBytes(repository, ID, VERSION_ONE);

@@ -145,6 +145,11 @@ public final class FileActivationRepository implements ActivationRepository {
     }
 
     @Override
+    public List<StoredActivation> list() {
+        return List.of();
+    }
+
+    @Override
     public Optional<StoredActivation> find(ActivationId id) {
         return underLock(id, () -> read(id));
     }

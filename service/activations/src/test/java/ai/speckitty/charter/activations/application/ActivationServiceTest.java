@@ -288,6 +288,11 @@ class ActivationServiceTest {
         int[] attempts = {0};
         ActivationRepository alwaysLosing = new ActivationRepository() {
             @Override
+            public List<StoredActivation> list() {
+                return repository.list();
+            }
+
+            @Override
             public Optional<StoredActivation> find(ActivationId id) {
                 return repository.find(id);
             }
@@ -352,6 +357,11 @@ class ActivationServiceTest {
         stored(denying("D1"));
         ActivationRepository racing = new ActivationRepository() {
             private boolean raced;
+
+            @Override
+            public List<StoredActivation> list() {
+                return repository.list();
+            }
 
             @Override
             public Optional<StoredActivation> find(ActivationId id) {

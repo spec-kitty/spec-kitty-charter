@@ -155,4 +155,14 @@ class FileActivationRepositoryTest extends ActivationRepositoryContract {
                 .isInstanceOf(ActivationStorageException.class)
                 .hasMessageContaining(ID.value());
     }
+
+    @Test
+    void anEntryOfTheRootThatIsNoActivationIsNotListed() throws IOException {
+        repository().create(ID, document(1));
+        Files.createDirectories(root().resolve("notes"));
+        Files.writeString(root().resolve("notes").resolve("activation.json"), "{}");
+        Files.writeString(root().resolve("stray-file"), "x");
+
+        assertThat(repository().list()).extracting(StoredActivation::id).containsExactly(ID);
+    }
 }

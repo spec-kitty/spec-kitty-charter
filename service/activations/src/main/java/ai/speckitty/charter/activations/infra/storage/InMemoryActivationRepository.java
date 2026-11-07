@@ -5,6 +5,7 @@ import ai.speckitty.charter.activations.domain.ActivationId;
 import ai.speckitty.charter.activations.domain.ActivationRepository;
 import ai.speckitty.charter.activations.domain.Revision;
 import ai.speckitty.charter.activations.domain.StoredActivation;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -25,6 +26,11 @@ public final class InMemoryActivationRepository implements ActivationRepository 
 
     /** An empty repository. */
     public InMemoryActivationRepository() {}
+
+    @Override
+    public List<StoredActivation> list() {
+        return List.of();
+    }
 
     @Override
     public Optional<StoredActivation> find(ActivationId id) {
