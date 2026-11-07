@@ -132,6 +132,18 @@
       "verdict": "not-applicable",
       "wp": null
     },
+    "#397": {
+      "evidence_ref": "Context only: plan.md IC-15 and WP15 cite #397 (GraphWalk sees only derived relations) as the reason relation checks read EdgeIndex/edges(); no work for #397 in this mission",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
     "#398": {
       "evidence_ref": "Cited for context: #374 is a closed input analysis; #398/#399 are the base PRs this mission stacks on",
       "fr": null,
