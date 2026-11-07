@@ -1,7 +1,7 @@
 {
-  "event_count": 137,
-  "last_event_id": "01M6TR8Y2RMDPMF12B3ASX02B5",
-  "materialized_at": "2026-11-07T10:18:40.082125+00:00",
+  "event_count": 138,
+  "last_event_id": "01M6TRCXM1RNCX6TT228JYMRG8",
+  "materialized_at": "2026-11-07T10:20:50.689648+00:00",
   "mission_number": "",
   "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
   "mission_type": "",
@@ -12,8 +12,8 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 0,
-    "in_progress": 2,
+    "for_review": 1,
+    "in_progress": 1,
     "in_review": 0,
     "planned": 18
   },
@@ -345,14 +345,19 @@
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude:sonnet:architect-alphonso",
-      "lane": "in_progress",
-      "last_event_id": "01M6TR78VEC30PAWVJZS6GNBV2",
-      "last_transition_at": "2026-11-07T10:17:45.574143+00:00",
+      "lane": "for_review",
+      "last_event_id": "01M6TRCXM1RNCX6TT228JYMRG8",
+      "last_transition_at": "2026-11-07T10:20:50.689648+00:00",
       "model": "__resolved_model_absent__",
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 4941,
-      "shell_pid_created_at": "1794046662.16"
+      "shell_pid_created_at": "1794046662.16",
+      "subtasks": {
+        "T044": "done",
+        "T045": "done",
+        "T046": "done"
+      }
     },
     "WP11": {
       "actor": "finalize-tasks",
