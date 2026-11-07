@@ -163,7 +163,7 @@ The four operations on the generated interface; `Location` and `_links`; `PackRe
 
 ### T079: Access, flags and properties
 
-`RegistrationProperties` (`charter.registration.*`, `charter.pack-sources.*`); `503` paths (the `401` is the worktree guard's, before routing); `RegistrationWiring` in deployable. Add `/pack-registrations/{registrationId}` to the fingerprint lint rule's exemption list: the status is not derived from the pack sources, so its `200` carries no `Charter-Source-Fingerprint` (decision `DM-01M6TV6VDNHNCVWRHHC74WATV0`). The `packId` path variable is checked against `^[a-z0-9][a-z0-9-]{0,62}$` before the body is read (synchronous `400`, decision `DM-01M6TV6VDNHNCVWRHHC74WATV0`), table-tested with WP14's hostile ids.
+`RegistrationProperties` (`charter.registration.*`, `charter.pack-sources.*`); `503` paths (the `401` is the worktree guard's, before routing); `RegistrationWiring` in deployable. Replace WP11's reserved `RegistrationApi` handlers for the operations this WP serves, and bind the IC-15 impact and version-conflict scenarios WP11 marked `# bound by: WP16` (decision `DM-01M6TVMGH94ZF07KSWSCANEASV`). The status `200` carries no `Charter-Source-Fingerprint` (WP11 removed it, decision `DM-01M6TV6VDNHNCVWRHHC74WATV0`). The `packId` path variable is checked against `^[a-z0-9][a-z0-9-]{0,62}$` before the body is read (synchronous `400`, decision `DM-01M6TV6VDNHNCVWRHHC74WATV0`), table-tested with WP14's hostile ids.
 
 ### T080: Audit
 

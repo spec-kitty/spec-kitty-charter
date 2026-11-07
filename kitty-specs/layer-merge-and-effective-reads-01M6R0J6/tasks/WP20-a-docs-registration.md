@@ -145,3 +145,7 @@ README.md (requirements section) and `run-in-a-container.md`: git ≥ 2.50.1 on 
 - Check each behaviour against the plan IC and the rule ids cited, not against core's Python answers (C-004).
 - Check the red-first evidence (the commit order or the run log) and that no test was weakened to pass.
 - Check that nothing outside `owned_files` changed beyond the listed shared-file edits.
+
+## Added by the runner (2026-11-07)
+
+- `contracts/charter/schemas/Link.yaml` still says a pack write is never `DELETE`; reword it for the two `DELETE`s of PR A (decision `DM-01M6TVMGH94ZF07KSWSCANEASV`), and update the `edit` relation row in `docs/architecture/hypermedia-hateoas.md` (WP11 hand-off).
