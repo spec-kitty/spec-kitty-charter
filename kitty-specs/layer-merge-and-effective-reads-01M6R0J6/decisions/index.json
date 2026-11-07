@@ -1373,6 +1373,26 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-07T11:09:57.557630Z",
+      "decision_id": "01M6TV6VDNHNCVWRHHC74WATV0",
+      "final_answer": "(1) getPackRegistration's 200 carries no Charter-Source-Fingerprint: the registration status is not derived from the pack sources; WP16 adds the status path to the lint rule's exemption list when it serves the operation. (2) A malformed packId or PackSource body answers a synchronous 400 (plain Problem), as contract-delta and WP11's contract say; WP16 T079's '422' is corrected to 400.",
+      "input_key": "wp11_contract_calls",
+      "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",
+      "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
+      "opened_by": "claude-runner",
+      "options": [],
+      "origin_flow": "plan",
+      "other_answer": true,
+      "question": "WP11 contract calls: Charter-Source-Fingerprint on getPackRegistration's 200, and 400 vs 422 for a malformed packId or PackSource body",
+      "rationale": "Raised by WP11's implementer; keeps the contract and the serving WP consistent.",
+      "resolved_at": "2026-11-07T11:10:00.045453Z",
+      "resolved_by": "claude-runner",
+      "slot_key": "plan.phase-a.wp11-contract-calls",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",
