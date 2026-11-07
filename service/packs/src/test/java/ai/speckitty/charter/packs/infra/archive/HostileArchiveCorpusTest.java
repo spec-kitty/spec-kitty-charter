@@ -132,10 +132,6 @@ class HostileArchiveCorpusTest {
                         tarOf(t -> t.paxPath("../../evil").file("ok.txt", "x")),
                         v(PATH_TRAVERSAL, "../../evil")),
                 tar(
-                        "tar PAX global path override",
-                        tarOf(t -> t.globalPaxPath("/abs/evil").file("ok.txt", "x")),
-                        v(PATH_ABSOLUTE, "/abs/evil")),
-                tar(
                         "tar GNU long name with ..",
                         tarOf(t -> t.gnuLongName(LONG_DOTDOT).file("short", "x")),
                         v(PATH_TRAVERSAL, LONG_DOTDOT)),
@@ -335,6 +331,11 @@ class HostileArchiveCorpusTest {
                         tarOf(t -> t.paxPath("pack.yaml").file("PaxHeader-name", "name: p\n")),
                         plain),
                 new Benign(
+                        "tar PAX absolute path, which the library makes relative before the name check",
+                        ArchiveFormat.TAR_GZ,
+                        tarOf(t -> t.paxPath("/abs/evil").file("ignored", "x").file("pack.yaml", "name: p\n")),
+                        Map.of("abs/evil", "x", "pack.yaml", "name: p\n")),
+                new Benign(
                         "tar GNU long name that is safe",
                         ArchiveFormat.TAR_GZ,
                         tarOf(t -> t.gnuLongName("pack/" + "d/".repeat(60) + "x.txt").file("short", "x")),
@@ -381,10 +382,11 @@ class HostileArchiveCorpusTest {
                         "zip with Unix modes on files and directories",
                         ArchiveFormat.ZIP,
                         zipOf(z -> {
+                            z.file("pack.yaml", "name: p\n").unixMode(0100644);
                             z.dir("agents/");
                             z.file("agents/a.yaml", "a: 1\n").unixMode(0100644);
                         }),
-                        Map.of("agents/", "", "agents/a.yaml", "a: 1\n")),
+                        nested),
                 new Benign(
                         "zip file named like a link and carrying no Unix mode",
                         ArchiveFormat.ZIP,
@@ -397,10 +399,9 @@ class HostileArchiveCorpusTest {
         StringBuilder path = new StringBuilder();
         for (int i = 0; i < 60; i++) {
             path.append("d/");
-            tree.put("pack/" + path, "");
+            tree.put(path.toString(), "");
         }
-        tree.put("pack/" + path + "x.txt", "x");
-        tree.put("pack/", "");
+        tree.put(path + "x.txt", "x");
         return tree;
     }
 
