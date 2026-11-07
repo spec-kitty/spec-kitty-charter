@@ -415,7 +415,8 @@
       "last_transition_at": "2026-11-07T11:22:58.878783+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Registry write lock (fair, 5 s tryLock), per-pack write generation (seqlock), read retry; gate green (kernel 2769, packs 2968/4 skipped, activations 563, deployable 1017); MixedReadConcurrencyTest 3/3; lane synced with main after PR A0 landed."
+        "Registry write lock (fair, 5 s tryLock), per-pack write generation (seqlock), read retry; gate green (kernel 2769, packs 2968/4 skipped, activations 563, deployable 1017); MixedReadConcurrencyTest 3/3; lane synced with main after PR A0 landed.",
+        "Cycle 2: MixedReadConcurrencyTest reads marker content through ConsistentRead and pins A-B-A deterministically (abaInsideOneReadIsStale; red with the generation check removed: answered marker-A/marker-B under A's digest). Gate green: kernel 2769, packs 2969/4 skipped, activations 565, deployable 1017."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
