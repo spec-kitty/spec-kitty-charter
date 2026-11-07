@@ -3,6 +3,8 @@ package ai.speckitty.charter.packs.application;
 import ai.speckitty.charter.kernel.domain.Descent;
 import ai.speckitty.charter.kernel.domain.DrgNode;
 import ai.speckitty.charter.kernel.domain.GraphWalker;
+import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.EdgeIndex.Place;
@@ -24,6 +26,10 @@ import org.jspecify.annotations.Nullable;
  * {@link EdgeIndex}, never a walker of its own. It supplies the mechanism; the caller supplies the policy (the relations,
  * the deny set, the lineage).
  *
+ * <p>A mission type's steps are its edges too (A7 Q1, rule W20's step term): a reached mission type {@code M} reaches
+ * every held {@code action:M/<step>}, crossed like {@code requires}, so a walk that crosses {@code requires} goes on from
+ * the steps.
+ *
  * <p>A walk starts at every closure pack that holds a start, and every piece of state is keyed by {@link Place} (pack,
  * URN), as {@code GraphWalk}'s own visited set is, so two packs holding one URN are two nodes. A node's predecessors are
  * recorded in {@link GraphWalker#onRelationship}, before {@code GraphWalk}'s visited guard can pass over a second one.
@@ -34,7 +40,9 @@ public final class Reachability {
 
     /**
      * Walks forward from the starts over the request's relations, stopping at what the request stops at, and passes the
-     * lineage through when the request asks for it.
+     * lineage through when the request asks for it. When the request crosses {@code requires}, a reached mission type
+     * also reaches its steps, each by a {@link Via} from the mission type with {@code requires}; a start may be a
+     * mission type.
      *
      * <p>The lineage is a walk of its own (J4): one walk cannot visit a node once as an ancestor and once in force.
      * For each reached node it walks the ancestry chain, passing only the pass-through relations of each ancestor; their
@@ -97,6 +105,7 @@ public final class Reachability {
         private final Map<Place, Set<Via>> ancestors = new LinkedHashMap<>();
         private final Set<Place> expanded = new HashSet<>();
         private final Set<Place> lineageWalked = new HashSet<>();
+        private final Set<Place> stepped = new HashSet<>();
         private @Nullable Place pending;
 
         private Cascade(EdgeIndex index, ReachRequest request) {
@@ -109,7 +118,8 @@ public final class Reachability {
             List<Place> frontier = cascade.startPlaces();
             while (!frontier.isEmpty()) {
                 frontier.forEach(cascade::walkFrom);
-                frontier = cascade.lineage();
+                frontier = cascade.steps();
+                frontier.addAll(cascade.lineage());
             }
             return cascade;
         }
@@ -158,6 +168,26 @@ public final class Reachability {
             }
             pending = target.get();
             return Descent.CONTINUE;
+        }
+
+        /**
+         * Enters the steps of each reached mission type not stepped yet (W20's step term), crossed like
+         * {@code requires}; answers the steps to walk on from.
+         */
+        private List<Place> steps() {
+            List<Place> next = new ArrayList<>();
+            if (!request.relations().contains(RelationType.REQUIRES)) {
+                return next;
+            }
+            for (Place place : List.copyOf(reached.keySet())) {
+                if (place.urn().kind() == NodeKind.MISSION_TYPE && stepped.add(place)) {
+                    Optional<Via> via = Optional.of(new Via(place.urn(), RelationType.REQUIRES));
+                    index.stepsOf(place.urn()).stream()
+                            .filter(step -> enter(step, via) && !expanded.contains(step))
+                            .forEach(next::add);
+                }
+            }
+            return next;
         }
 
         /** Walks the lineage of each reached place not walked yet; answers the new starts it passed through to. */
