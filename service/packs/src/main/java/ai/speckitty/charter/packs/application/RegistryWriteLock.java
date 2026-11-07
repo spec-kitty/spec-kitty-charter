@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.application;
 
+import ai.speckitty.charter.kernel.transport.RetryLaterException;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -72,7 +73,7 @@ public final class RegistryWriteLock {
      * @return the timeout rounded up to a whole second, at least 1
      */
     public int retryAfterSeconds() {
-        return 0;
+        return (int) Math.max(1, (timeout.toMillis() + 999) / 1000);
     }
 
     /**
@@ -96,20 +97,24 @@ public final class RegistryWriteLock {
     private void acquire() {
         try {
             if (!lock.tryLock(timeout.toNanos(), TimeUnit.NANOSECONDS)) {
-                throw new RegistryBusyException("The pack registry is busy with another write; try again shortly.");
+                throw new RegistryBusyException(
+                        "The pack registry is busy with another write; try again shortly.", retryAfterSeconds());
             }
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
-            RegistryBusyException busy = new RegistryBusyException("Interrupted while waiting for the pack registry.");
+            RegistryBusyException busy =
+                    new RegistryBusyException("Interrupted while waiting for the pack registry.", retryAfterSeconds());
             busy.initCause(interrupted);
             throw busy;
         }
     }
 
     /**
-     * The registry lock was not free in time (NFR-009). The registration job ends {@code refused} with {@code 503}.
+     * The registry lock was not free in time (NFR-009): a {@link RetryLaterException}, so the transport answers it
+     * {@code 503} with {@code Retry-After} whichever write met it, and the registration job ends {@code refused} with
+     * the same answer.
      */
-    public static final class RegistryBusyException extends RuntimeException {
+    public static final class RegistryBusyException extends RetryLaterException {
 
         private static final long serialVersionUID = 1L;
 
@@ -119,7 +124,7 @@ public final class RegistryWriteLock {
          * @param message the detail sentence
          */
         public RegistryBusyException(String message) {
-            super(message);
+            this(message, 1);
         }
 
         /**
@@ -129,7 +134,7 @@ public final class RegistryWriteLock {
          * @param retryAfterSeconds the {@code Retry-After} value
          */
         public RegistryBusyException(String message, int retryAfterSeconds) {
-            super(message);
+            super(message, retryAfterSeconds);
         }
     }
 }

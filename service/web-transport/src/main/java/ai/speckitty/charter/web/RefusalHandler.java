@@ -14,6 +14,7 @@ import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -150,9 +151,14 @@ public class RefusalHandler {
      */
     @ExceptionHandler(RetryLaterException.class)
     public ResponseEntity<Problem> retryLater(RetryLaterException busy) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+        LOGGER.info("Retry later (" + busy.retryAfterSeconds() + " s): " + busy.getMessage());
+        Problem problem =
+                new Problem(HttpStatus.SERVICE_UNAVAILABLE.getReasonPhrase(), HttpStatus.SERVICE_UNAVAILABLE.value());
+        problem.setDetail(busy.getMessage());
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .header(HttpHeaders.RETRY_AFTER, Integer.toString(busy.retryAfterSeconds()))
                 .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-                .body(new Problem(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(), 500));
+                .body(problem);
     }
 
     /**
