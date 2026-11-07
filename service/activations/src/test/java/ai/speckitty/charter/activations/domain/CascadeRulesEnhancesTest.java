@@ -78,7 +78,7 @@ class CascadeRulesEnhancesTest {
         ActivationChange change = deactivate(selecting("tactic:E", "tactic:T"), E);
 
         assertThat(change.applied()).containsExactly(E, T);
-        assertThat(change.after().selected(TACTIC).orElseThrow()).isEmpty();
+        assertThat(change.after().selected(TACTIC)).isEmpty();
         assertThat(change.after().deactivated(TACTIC)).containsExactly("E");
     }
 

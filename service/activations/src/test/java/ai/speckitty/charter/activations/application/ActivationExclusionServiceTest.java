@@ -278,7 +278,7 @@ class ActivationExclusionServiceTest {
         ActivationWrites.Outcome outcome = chained.deactivate(ID, "directive", "D", ALL, List.of(), quoted(before));
 
         assertThat(now().selected(ArtifactKind.TACTIC).orElseThrow()).containsExactly("c", "c3", "c4");
-        assertThat(now().selected(ArtifactKind.DIRECTIVE).orElseThrow()).isEmpty();
+        assertThat(now().selected(ArtifactKind.DIRECTIVE)).isEmpty();
         assertThat(now().deactivated(ArtifactKind.DIRECTIVE)).containsExactly("D");
         assertThat(outcome.change().applied()).containsExactly(D, c5);
         assertThat(outcome.change().skipped().skippedShared())
@@ -336,7 +336,7 @@ class ActivationExclusionServiceTest {
         assertThat(outcome.change().cleared()).containsExactly(T);
         assertThat(outcome.change().applied()).containsExactly(T);
         assertThat(now().deactivated()).isEmpty();
-        assertThat(now().selected(ArtifactKind.DIRECTIVE).orElseThrow()).isEmpty();
+        assertThat(now().selected(ArtifactKind.DIRECTIVE)).isEmpty();
     }
 
     @Test

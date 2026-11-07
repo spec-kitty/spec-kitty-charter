@@ -19,7 +19,6 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class ActivationMapperTest {
@@ -27,31 +26,27 @@ class ActivationMapperTest {
     private final ActivationMapper mapper = new ActivationMapper("/api/v1/");
 
     @Test
-    void anAbsentListAndAnEmptyOneStayApart() {
-        ActivationConfig config =
-                new ActivationConfig(1).missionTypes(List.of()).selected(new SelectedArtifacts().directive(List.of()));
+    void anEmptyAllowListIsNoneOfTheKindAsAnAbsentOneIs() {
+        ActivationConfig config = new ActivationConfig(2)
+                .selected(new SelectedArtifacts().directive(List.of()).missionType(List.of()));
 
         ActivationDocument document = mapper.toDocument(config).document();
 
-        assertThat(document.missionTypes()).contains(new java.util.TreeSet<>());
-        assertThat(document.activatedKinds()).isEmpty();
         assertThat(document.languages()).isEmpty();
         assertThat(document.packs()).isEmpty();
-        assertThat(document.selected()).containsOnlyKeys(ArtifactKind.DIRECTIVE);
-        assertThat(document.selected(ArtifactKind.TACTIC)).isEmpty();
-        assertThat(document.selected(ArtifactKind.DIRECTIVE))
-                .hasValueSatisfying(ids -> assertThat(ids).isEmpty());
+        assertThat(document.selected()).isEmpty();
+        assertThat(document)
+                .isEqualTo(mapper.toDocument(new ActivationConfig(2)).document());
     }
 
     @Test
     void everyMemberReachesTheDocument() {
-        ActivationConfig config = new ActivationConfig(1)
+        ActivationConfig config = new ActivationConfig(2)
                 .packs(List.of(new PackPin("beta"), new PackPin("alpha").version("1.0.0")))
-                .activatedKinds(List.of(
-                        ActivationConfig.ActivatedKindsEnum.TACTIC, ActivationConfig.ActivatedKindsEnum.AGENT_PROFILE))
-                .missionTypes(List.of("software-dev"))
                 .languages(List.of("java"))
-                .selected(new SelectedArtifacts().agentProfile(List.of("p2", "p1")))
+                .selected(new SelectedArtifacts()
+                        .agentProfile(List.of("p2", "p1"))
+                        .missionType(List.of("software-dev")))
                 .deactivated(new DeactivatedArtifacts().tactic(List.of("T1")));
 
         ActivationDocument.Built built = mapper.toDocument(config);
@@ -59,9 +54,7 @@ class ActivationMapperTest {
         assertThat(built.violations()).isEmpty();
         ActivationDocument document = built.document();
         assertThat(document.packs()).contains(List.of(PackRef.of("beta"), PackRef.pinned("alpha", "1.0.0")));
-        assertThat(document.activatedKinds().orElseThrow())
-                .containsExactly(ArtifactKind.TACTIC, ArtifactKind.AGENT_PROFILE);
-        assertThat(document.missionTypes().orElseThrow()).containsExactly("software-dev");
+        assertThat(document.selected(ArtifactKind.MISSION_TYPE).orElseThrow()).containsExactly("software-dev");
         assertThat(document.languages().orElseThrow()).containsExactly("java");
         assertThat(document.selected(ArtifactKind.AGENT_PROFILE).orElseThrow()).containsExactly("p1", "p2");
         assertThat(document.deactivated(ArtifactKind.TACTIC)).containsExactly("T1");
@@ -70,7 +63,7 @@ class ActivationMapperTest {
     @Test
     void anEmptyDenyListIsAShapeViolation() {
         ActivationDocument.Built built =
-                mapper.toDocument(new ActivationConfig(1).deactivated(new DeactivatedArtifacts().directive(List.of())));
+                mapper.toDocument(new ActivationConfig(2).deactivated(new DeactivatedArtifacts().directive(List.of())));
 
         assertThat(built.violations()).singleElement().satisfies(violation -> {
             assertThat(violation.pointer()).isEqualTo("/deactivated/directive");
@@ -80,25 +73,28 @@ class ActivationMapperTest {
 
     @Test
     void aConfigRoundTripsThroughTheDocumentInCanonicalForm() {
-        ActivationConfig config = new ActivationConfig(1)
+        ActivationConfig config = new ActivationConfig(2)
                 .packs(List.of(new PackPin("beta"), new PackPin("alpha").version("1.0.0")))
-                .missionTypes(List.of("b", "a", "b"))
-                .selected(new SelectedArtifacts().directive(List.of("D2", "D1")).skill(List.of()))
+                .selected(new SelectedArtifacts()
+                        .directive(List.of("D2", "D1"))
+                        .skill(List.of())
+                        .missionType(List.of("b", "a", "b")))
                 .deactivated(new DeactivatedArtifacts().antiPattern(List.of("X")));
 
         ActivationConfig canonical = mapper.toConfig(mapper.toDocument(config).document());
 
-        assertThat(canonical.getSchemaVersion()).isEqualTo(1);
+        assertThat(canonical.getSchemaVersion()).isEqualTo(2);
         assertThat(canonical.getPacks())
                 .extracting(PackPin::getPackId, PackPin::getVersion)
                 .containsExactly(
                         org.assertj.core.groups.Tuple.tuple("beta", null),
                         org.assertj.core.groups.Tuple.tuple("alpha", "1.0.0"));
-        assertThat(canonical.getMissionTypes()).containsExactly("a", "b");
-        assertThat(canonical.getActivatedKinds()).isNull();
+        assertThat(canonical.getSelected().getMissionType()).containsExactly("a", "b");
         assertThat(canonical.getLanguages()).isNull();
         assertThat(canonical.getSelected().getDirective()).containsExactly("D1", "D2");
-        assertThat(canonical.getSelected().getSkill()).isEmpty();
+        assertThat(canonical.getSelected().getSkill())
+                .as("an empty allow list is left out (FR-042)")
+                .isNull();
         assertThat(canonical.getSelected().getTactic()).isNull();
         assertThat(canonical.getDeactivated().getAntiPattern()).containsExactly("X");
         assertThat(mapper.toDocument(canonical).document())
@@ -132,7 +128,6 @@ class ActivationMapperTest {
                                 "2.0.0",
                                 List.of(new ClosureSnapshot.Dependency("PID-B", ">=1.0", "1.0.0")))),
                 Map.of(),
-                Set.of(),
                 Map.of(),
                 Map.of(),
                 Map.of(),

@@ -99,9 +99,11 @@ class PacksAvailabilityTest {
         Preset governing = new Preset(
                 "governing",
                 "D2 is required.",
-                List.of(ArtifactKind.DIRECTIVE),
-                Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("D2"), PresetItem.of("D1"))),
-                List.of(PresetItem.of("software-dev")));
+                Map.of(
+                        ArtifactKind.DIRECTIVE,
+                        List.of(PresetItem.mustHave("D2"), PresetItem.of("D1")),
+                        ArtifactKind.MISSION_TYPE,
+                        List.of(PresetItem.of("software-dev"))));
         return new ClosureView(
                 List.of(
                         new OfferingEntry(
@@ -115,7 +117,6 @@ class PacksAvailabilityTest {
                                 List.of(new ResolvedEdge(ALPHA, BETA, ">=1.0", "1.0.0")))),
                 held,
                 holderOf,
-                Set.of("software-dev"),
                 new RequiredFloor(Map.of(d2, List.of(ALPHA))),
                 new PerPackPolicy(Map.of(
                         ALPHA,
@@ -156,7 +157,7 @@ class PacksAvailabilityTest {
         assertThat(snapshot.pack("beta").orElseThrow().parentPackId()).isEmpty();
         assertThat(snapshot.extendsChain("alpha", "beta")).contains(List.of("alpha"));
         assertThat(snapshot.held(ArtifactKind.DIRECTIVE)).containsExactlyInAnyOrder("D1", "D2");
-        assertThat(snapshot.missionTypes()).containsExactly("software-dev");
+        assertThat(snapshot.held(ArtifactKind.MISSION_TYPE)).containsExactly("software-dev");
         assertThat(snapshot.fingerprint()).isEqualTo("sha256:fingerprint");
     }
 
@@ -185,16 +186,16 @@ class PacksAvailabilityTest {
     }
 
     @Test
-    void thePresetsAreCopiedWithTheirMustHaveItemsAmongTheMembers() {
+    void thePresetsAreCopiedWithTheirMustHaveItemsAndMissionTypesAmongTheMembers() {
         closures.answers(Optional.empty(), view());
 
         ClosureSnapshot.PresetView preset =
                 adapter.snapshot(Optional.empty()).presets().get("governing");
 
         assertThat(preset.id()).isEqualTo("governing");
-        assertThat(preset.activatedKinds()).containsExactly(ArtifactKind.DIRECTIVE);
+        assertThat(preset.members()).containsOnlyKeys(ArtifactKind.DIRECTIVE, ArtifactKind.MISSION_TYPE);
         assertThat(preset.members().get(ArtifactKind.DIRECTIVE)).containsExactlyInAnyOrder("D1", "D2");
-        assertThat(preset.missionTypes()).containsExactly("software-dev");
+        assertThat(preset.members().get(ArtifactKind.MISSION_TYPE)).containsExactly("software-dev");
     }
 
     @Test
