@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpHeaders;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 /**
@@ -265,6 +266,14 @@ public class PackRegistrationSteps {
                 .as("the field %s was remembered", field)
                 .isNotNull();
         assertThat(JSON.readTree(http.body()).at(pointer).asString()).isEqualTo(charter.remembered(field));
+    }
+
+    /** The count as the scenarios write it, with the literal {@code (s)}: the vocabulary's own step takes item or items. */
+    @Then("the field at {string} holds exactly {int} item\\(s)")
+    public void holdsExactly(String pointer, int count) throws Exception {
+        JsonNode field = JSON.readTree(http.body()).at(pointer);
+        assertThat(field.isArray()).as("%s is a list: %s", pointer, http.body()).isTrue();
+        assertThat(field.size()).as("the items of %s", pointer).isEqualTo(count);
     }
 
     private String bodyOrEmpty() {

@@ -49,7 +49,8 @@ public class CharterSteps {
      * through its {@code ETag}, over the revision and the closure's digest. The registration status is read from the
      * registration jobs, not from a pack file, so it carries none (decision DM-01M6TV6VDNHNCVWRHHC74WATV0).
      */
-    private static final Pattern UNFINGERPRINTED = Pattern.compile("/activations/[^/]+(/packs)?|/pack-registrations/[^/]+");
+    private static final Pattern UNFINGERPRINTED =
+            Pattern.compile("/activations/[^/]+(/packs)?|/pack-registrations/[^/]+");
 
     private static final String BODY = "#body";
     private static final String HEADER = "#header:";
