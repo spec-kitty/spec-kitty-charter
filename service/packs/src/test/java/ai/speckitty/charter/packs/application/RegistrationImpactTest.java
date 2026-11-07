@@ -351,7 +351,7 @@ class RegistrationImpactTest {
 
     private static final String ACME_ID = PackRegistrationServiceTest.ulid('Q');
 
-    private static String graph(String... edges) {
+    static String graph(String... edges) {
         return "schema_version: '1.0'\ngenerated_at: STATIC\nnodes: []\nedges:\n"
                 + String.join(
                         "",
@@ -438,7 +438,7 @@ class RegistrationImpactTest {
         Rig rig = new Rig(host);
         rig.register("base", rig.stage(base("1.0.0")), Preconditions.none());
         String shadow =
-                "{source: 'base::directive:OPEN_ONE', target: 'directive:OPEN_ONE', relation: " + relation + "}";
+                "{source: 'base::directive:OPEN_ONE', target: 'base::directive:OPEN_ONE', relation: " + relation + "}";
         String other =
                 "{source: 'base::directive:OPEN_ONE', target: 'directive:DERIVED_ONE', relation: " + relation + "}";
 
@@ -446,7 +446,7 @@ class RegistrationImpactTest {
                         "derived",
                         rig.stage(derived("1.0.0").file("relations.graph.yaml", graph(shadow))),
                         Preconditions.none())))
-                .as("a bare OPEN_ONE written in derived, which holds none, is base's, and base's is the source")
+                .as("both ends name base's OPEN_ONE, so the target is the source, though derived writes the edge")
                 .isEqualTo(code);
         assertThat(rig.packs.resolve("derived")).doesNotExist();
 
@@ -493,7 +493,8 @@ class RegistrationImpactTest {
     }
 
     private static String overridesFrom(String target) {
-        return graph("{source: 'directive:DERIVED_ONE', target: 'directive:" + target + "', relation: overrides}");
+        return graph(
+                "{source: 'directive:DERIVED_ONE', target: 'base::directive:" + target + "', relation: overrides}");
     }
 
     @Test

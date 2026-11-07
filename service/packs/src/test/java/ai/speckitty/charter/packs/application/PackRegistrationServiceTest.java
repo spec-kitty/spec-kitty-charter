@@ -23,6 +23,7 @@ import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
 import ai.speckitty.charter.packs.infra.storage.PackCommitStore;
 import ai.speckitty.charter.packs.infra.storage.RelationshipShard;
 import ai.speckitty.charter.packs.infra.storage.SlowSwapCommitStores;
+import ai.speckitty.charter.packs.infra.storage.StagedPackViewFactory;
 import ai.speckitty.charter.packs.infra.storage.StorageRootLocations;
 import ai.speckitty.charter.packs.infra.storage.WholePackStore;
 import ai.speckitty.charter.packs.infra.storage.YamlSerializationStrategy;
@@ -420,7 +421,7 @@ class PackRegistrationServiceTest {
     private static String shard(String... sources) {
         StringBuilder text = new StringBuilder("schema_version: '1.0'\ngenerated_at: STATIC\nnodes: []\nedges:\n");
         for (String source : sources) {
-            text.append("- source: directive:")
+            text.append("- source: base::directive:")
                     .append(source)
                     .append("\n  target: directive:DERIVED_ONE\n  relation: requires\n");
         }
@@ -852,12 +853,10 @@ class PackRegistrationServiceTest {
                     gate,
                     new InboundReferences(repository, repository, repository),
                     new RegistrationImpact(
-                            repository,
-                            repository,
-                            pack -> {
+                            new StagedPackViewFactory(repository, repository, pack -> {
                                 factReads.merge(pack.value(), 1, Integer::sum);
                                 return repository.compositionFacts(pack);
-                            },
+                            }),
                             new ActivationImpact() {
                                 @Override
                                 public List<Optional<List<String>>> activationRoots() {

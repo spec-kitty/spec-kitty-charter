@@ -91,8 +91,8 @@ class InboundReferencesTest {
 
     @Test
     void anEdgeOfAnotherPackOntoARemovedArtifactRefusesTheReplace(@TempDir Path host) {
-        Rig rig =
-                rigWith(host, derived("1.0.0", "").file("refs.graph.yaml", edge("directive:D_ONE", "directive:A_ONE")));
+        Rig rig = rigWith(
+                host, derived("1.0.0", "").file("refs.graph.yaml", edge("directive:D_ONE", "base::directive:A_ONE")));
 
         assertRemovalOfAIsRefusedAndOfBIsNot(rig, "directive:D_ONE");
     }
@@ -280,7 +280,7 @@ class InboundReferencesTest {
                 .as("the %s is selection or cross-reference data, not an edge", field.label())
                 .isEqualTo(Outcome.REPLACED);
 
-        Packs withEdge = withField.file("refs.graph.yaml", edge("directive:D_ONE", field.target()));
+        Packs withEdge = withField.file("refs.graph.yaml", edge("directive:D_ONE", "base::" + field.target()));
         Rig control = rigWith(host.resolve("control"), withEdge);
         assertThat(refusal(() -> control.register("base", control.stage(withoutTarget), Preconditions.none()))
                         .code())
@@ -292,8 +292,8 @@ class InboundReferencesTest {
 
     @Test
     void aStoredPackThatCannotBeReadStillHasItsRemovedArtifactScanned(@TempDir Path host) throws IOException {
-        Rig rig =
-                rigWith(host, derived("1.0.0", "").file("refs.graph.yaml", edge("directive:D_ONE", "directive:A_ONE")));
+        Rig rig = rigWith(
+                host, derived("1.0.0", "").file("refs.graph.yaml", edge("directive:D_ONE", "base::directive:A_ONE")));
         Files.writeString(
                 rig.packs.resolve("base/directives/KEEP.directive.yaml"),
                 Packs.directiveText("KEEP", "Keep") + "references:\n  - directive:X\n");
@@ -316,7 +316,7 @@ class InboundReferencesTest {
     void anArtifactFileThatDoesNotBindCountsByTheIdItDeclaresForTheScan(@TempDir Path host) throws IOException {
         Rig rig = rigWith(
                 host.resolve("a"),
-                derived("1.0.0", "").file("refs.graph.yaml", edge("directive:D_ONE", "directive:A_ONE")));
+                derived("1.0.0", "").file("refs.graph.yaml", edge("directive:D_ONE", "base::directive:A_ONE")));
         Files.delete(rig.packs.resolve("base").resolve(A_FILE));
         Files.writeString(
                 rig.packs.resolve("base/directives/DECOY.directive.yaml"),
@@ -330,7 +330,7 @@ class InboundReferencesTest {
 
         Rig control = rigWith(
                 host.resolve("b"),
-                derived("1.0.0", "").file("refs.graph.yaml", edge("directive:D_ONE", "directive:A_ONE")));
+                derived("1.0.0", "").file("refs.graph.yaml", edge("directive:D_ONE", "base::directive:A_ONE")));
         Files.writeString(
                 control.packs.resolve("base/directives/DECOY.directive.yaml"),
                 Packs.directiveText("FREE_ONE", "Free") + "references:\n  - directive:X\n");
@@ -353,9 +353,10 @@ class InboundReferencesTest {
                 .isEqualTo(RefusalCode.ARTIFACT_REFERENCED);
 
         Packs renamedWithA = renamedWithoutA.directive("A_ONE", "A");
-        assertThat(rig.register("base", rig.stage(renamedWithA), Preconditions.none())
-                        .outcome())
-                .as("the control: the rename alone breaks nothing the scan judges")
-                .isEqualTo(Outcome.REPLACED);
+        assertThat(refusal(() -> rig.register("base", rig.stage(renamedWithA), Preconditions.none()))
+                        .code())
+                .as("the scan has nothing to refuse once A_ONE stays; the impact check refuses the rename, since"
+                        + " derived's qualified references name base")
+                .isEqualTo(RefusalCode.PACK_REFERENCE_PACK_MISSING);
     }
 }
