@@ -569,7 +569,8 @@
       "last_transition_at": "2026-11-07T20:31:46.746225+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "verifyAll green on ceadd3c1; POST /packs stays reserved for WP17/WP18"
+        "verifyAll green on ceadd3c1; POST /packs stays reserved for WP17/WP18",
+        "Cycle 2: review-cycle-1 blocking items plus the agreed non-blocking ones"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
