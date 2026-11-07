@@ -6,6 +6,7 @@ import ai.speckitty.charter.activations.domain.ActivationRepository;
 import ai.speckitty.charter.activations.domain.Revision;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.AccessDeniedException;
@@ -16,6 +17,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
@@ -146,7 +148,31 @@ public final class FileActivationRepository implements ActivationRepository {
 
     @Override
     public List<StoredActivation> list() {
-        return List.of();
+        List<StoredActivation> listed = new ArrayList<>();
+        for (ActivationId id : storedIds()) {
+            try {
+                find(id).ifPresent(listed::add);
+            } catch (ActivationStorageException unreadable) {
+                // Left out: its own read answers the fault, and a listing that stopped at it would hide the others.
+            }
+        }
+        return List.copyOf(listed);
+    }
+
+    /** The ids of the directories of the root that are named as an activation's; any other entry is not one. */
+    private List<ActivationId> storedIds() {
+        if (!Files.isDirectory(root)) {
+            return List.of();
+        }
+        try (Stream<Path> children = Files.list(root)) {
+            return children.filter(Files::isDirectory)
+                    .map(child -> ActivationDirectoryName.tryDecode(
+                            child.getFileName().toString()))
+                    .flatMap(Optional::stream)
+                    .toList();
+        } catch (IOException e) {
+            throw new UncheckedIOException("the activation store cannot be listed", e);
+        }
     }
 
     @Override
