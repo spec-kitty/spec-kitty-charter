@@ -50,13 +50,14 @@ rules:
   # A read answers 200, a registration answers 200 (replace) or 201 (create) with the resource and an ETag
   # (ADR-0018 D10 as amended 2026-10-25, reconciling with ADR-0026's write surface), and a removal answers 204
   # with no body (ADR-0020 D9, which supersedes ADR-0018 D10's "200 only"); every non-success answer (every
-  # 4xx/5xx and the shared default) is a problem. A 304 Not Modified has no body (RFC 9110, section 15.4.5), so it
-  # is not a problem either (ADR-0018 D10 amendment 2026-10-28). not-modified-has-no-body and
-  # no-content-has-no-body hold the 304 and the 204 to having no body.
+  # 4xx/5xx and the shared default) is a problem. A whole-pack registration answers 202 Accepted with its status
+  # resource (ADR-0065 D8), a success whose body is the status, not a problem. A 304 Not Modified has no body
+  # (RFC 9110, section 15.4.5), so it is not a problem either (ADR-0018 D10 amendment 2026-10-28).
+  # not-modified-has-no-body and no-content-has-no-body hold the 304 and the 204 to having no body.
   error-responses-are-problems:
-    description: Every response other than the 200/201/204 successes and a 304 is served as application/problem+json only, with the shared Problem or a schema whose first allOf part is the Problem.
+    description: Every response other than the 200/201/202/204 successes and a 304 is served as application/problem+json only, with the shared Problem or a schema whose first allOf part is the Problem.
     severity: error
-    given: "$.paths[*][*].responses[?(@property != '200' && @property != '201' && @property != '204' && @property != '304')]"
+    given: "$.paths[*][*].responses[?(@property != '200' && @property != '201' && @property != '202' && @property != '204' && @property != '304')]"
     then:
       - field: content
         function: truthy

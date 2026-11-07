@@ -22,8 +22,9 @@ import org.snakeyaml.engine.v2.api.LoadSettings;
  * The 501 pins of {@code activations.feature} and the operations the contract marks {@code x-reserved} are one to
  * one (ADR-0020 D8): every reserved operation is pinned by a scenario that calls it, and every pin calls a reserved
  * operation. A reserved operation without a pin, or a pin whose operation was built (its {@code x-reserved} removed)
- * but whose scenario was not, fails here. Only the request lines of the {@code @reserved} scenarios count: a scenario
- * of the file that is not a pin may call a built operation.
+ * but whose scenario was not, fails here. Only the operations of the activation set (contract set {@code activation})
+ * are judged: the whole-pack registration operations are reserved under their own contract set. Only the request
+ * lines of the {@code @reserved} scenarios count: a scenario of the file that is not a pin may call a built operation.
  */
 class ReservedOperationCoverageTest {
 
@@ -80,10 +81,22 @@ class ReservedOperationCoverageTest {
                 contract.operation(method, concrete)
                         .filter(operation -> operation.pathTemplate().equals(template))
                         .filter(ContractConformance.DeclaredOperation::reserved)
+                        .filter(ReservedOperationCoverageTest::isActivationSet)
                         .ifPresent(operation -> reserved.put(key(method, operation.pathTemplate()), operation));
             }
         }
         return reserved;
+    }
+
+    /**
+     * Whether the reserved operation belongs to the activation set. The 501 pins of {@code activations.feature} cover
+     * that set only: the whole-pack registration operations (contract set {@code pack-registration}) are reserved until
+     * their services are built, and the scenarios of {@code registration/} and {@code pack-removal.feature} pin them
+     * when they are bound.
+     */
+    private static boolean isActivationSet(ContractConformance.DeclaredOperation operation) {
+        return operation.node().get("x-reserved") instanceof Map<?, ?> marker
+                && "activation".equals(marker.get("contractSet"));
     }
 
     private Set<String> pinnedOperations() {
