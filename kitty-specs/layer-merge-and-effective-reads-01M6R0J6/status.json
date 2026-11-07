@@ -522,7 +522,7 @@
     },
     "WP15": {
       "actor": "claude",
-      "agent": "claude:opus:reviewer-renata",
+      "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -535,6 +535,7 @@
         "T070-T075 and WP14 hand-offs done; verifyAll green."
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/layer-merge-and-effective-reads-01M6R0J6-coord/kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP15-a-impact-check-history/review-cycle-1.md",
         "reference": "review-cycle://layer-merge-and-effective-reads-01M6R0J6/WP15-a-impact-check-history/review-cycle-1.md",
@@ -542,15 +543,15 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 22930,
-      "shell_pid_created_at": "1794068834.29",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T070": "done",
-        "T071": "done",
-        "T072": "done",
-        "T073": "done",
-        "T074": "done",
-        "T075": "done"
+        "T070": "planned",
+        "T071": "planned",
+        "T072": "planned",
+        "T073": "planned",
+        "T074": "planned",
+        "T075": "planned"
       }
     },
     "WP16": {
