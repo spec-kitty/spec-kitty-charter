@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.infra.archive;
 
+import ai.speckitty.charter.packs.application.ArchiveViolation.Code;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -8,7 +9,8 @@ import java.nio.channels.FileChannel;
 /**
  * Where a zip's central directory is and how many entries it declares, read from its end-of-central-directory record
  * (and the ZIP64 record it points to) before any entry is touched (NFR-004). The search takes the last signature in the
- * final 64 KiB, as the library does.
+ * final 64 KiB, as the library does. When the ZIP64 locator signature sits just before it, the ZIP64 record decides where
+ * the directory is, as in the library, and an end record that disagrees is refused.
  */
 final class ZipEndRecord {
 
@@ -47,9 +49,7 @@ final class ZipEndRecord {
                 Short.toUnsignedInt(tail.getShort(at + 10)),
                 Integer.toUnsignedLong(tail.getInt(at + 16)),
                 Integer.toUnsignedLong(tail.getInt(at + 12)));
-        boolean overflow =
-                end.count() == COUNT_OVERFLOW || end.offset() == FIELD_OVERFLOW || end.size() == FIELD_OVERFLOW;
-        return overflow ? zip64(channel, tailStart + at, end) : end;
+        return zip64(channel, tailStart + at, end);
     }
 
     private static int lastSignature(ByteBuffer tail) {
@@ -61,14 +61,19 @@ final class ZipEndRecord {
         return -1;
     }
 
-    private static Location zip64(FileChannel channel, long endAt, Location fallback) throws IOException {
+    /**
+     * The ZIP64 record's location when the locator signature sits just before the end record, whatever the end record's
+     * fields say, which is how the library decides (it then takes the directory's offset from that record). The
+     * end-record fields that are not overflow values must agree with it.
+     */
+    private static Location zip64(FileChannel channel, long endAt, Location end) throws IOException {
         long locatorAt = endAt - LOCATOR_SIZE;
         if (locatorAt < 0) {
-            return fallback;
+            return end;
         }
         ByteBuffer locator = read(channel, locatorAt, LOCATOR_SIZE);
         if (locator.getInt(0) != LOCATOR_SIGNATURE) {
-            return fallback;
+            return end;
         }
         long recordAt = locator.getLong(8);
         if (recordAt < 0 || recordAt + ZIP64_END_SIZE > channel.size()) {
@@ -79,7 +84,17 @@ final class ZipEndRecord {
             throw new IOException("ZIP64 end record has a bad signature");
         }
         long total = record.getLong(32);
-        return new Location(total < 0 ? Long.MAX_VALUE : total, record.getLong(48), record.getLong(40));
+        Location wide = new Location(total < 0 ? Long.MAX_VALUE : total, record.getLong(48), record.getLong(40));
+        if (disagree(end.count(), COUNT_OVERFLOW, wide.count())
+                || disagree(end.offset(), FIELD_OVERFLOW, wide.offset())
+                || disagree(end.size(), FIELD_OVERFLOW, wide.size())) {
+            throw new ArchiveLimitException(Code.ZIP_COUNT_MISMATCH, "");
+        }
+        return wide;
+    }
+
+    private static boolean disagree(long narrow, long overflow, long wide) {
+        return narrow != overflow && narrow != wide;
     }
 
     static ByteBuffer read(FileChannel channel, long position, int length) throws IOException {
