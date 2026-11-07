@@ -26,6 +26,7 @@ import org.junit.jupiter.api.io.TempDir;
  * The version history of IC-16 (FR-026, B1): a pack name's registered {@code (pack_version, revision)} pairs. The judge
  * is a pure function of the history; the service tests run over the real filesystem adapters.
  */
+@org.junit.jupiter.api.extension.ExtendWith(org.springframework.boot.test.system.OutputCaptureExtension.class)
 class PackVersionHistoryTest {
 
     private static final String PACK = PackRegistrationServiceTest.ORG_PACK;
@@ -187,6 +188,65 @@ class PackVersionHistoryTest {
         assertThat(refusalOf(() -> rig.register("pack-x", rig.stage(pack("2.0.0", "Second")), Preconditions.none())))
                 .isEqualTo(RefusalCode.PACK_UNREADABLE);
         assertThat(rig.filesOf(rig.packs.resolve("pack-x"))).isEqualTo(before);
+    }
+
+    // ---- a publish lost after the swap heals on the next registration (cycle 2, issue 2)
+    // -----------------------------
+
+    @Test
+    void aVersionWhoseHistoryEntryWasLostAfterTheSwapIsStillTakenOnceTheNextRegistrationHasHealedIt(@TempDir Path host)
+            throws IOException {
+        Rig rig = new Rig(host);
+        rig.register("pack-x", rig.stage(pack("1.0.0", "First")), Preconditions.none());
+        String afterFirst = Files.readString(historyFile(rig));
+        rig.register("pack-x", rig.stage(pack("2.0.0", "Second")), Preconditions.none());
+        Files.writeString(historyFile(rig), afterFirst); // the process died between the swap and the publish
+        rig.register("pack-x", rig.stage(pack("3.0.0", "Third")), Preconditions.none());
+
+        assertThat(rig.commits.versionHistory("pack-x"))
+                .extracting(Entry::packVersion)
+                .as("staging 3.0.0 put back the pair the stored 2.0.0 had, before its own")
+                .containsExactly("1.0.0", "2.0.0", "3.0.0");
+        assertThat(refusalOf(() -> rig.register("pack-x", rig.stage(pack("2.0.0", "Other")), Preconditions.none())))
+                .isEqualTo(RefusalCode.PACK_VERSION_CONFLICT);
+
+        assertThat(rig.register("pack-x", rig.stage(pack("2.0.0", "Second")), Preconditions.none())
+                        .outcome())
+                .as("the control: the content 2.0.0 had")
+                .isEqualTo(Outcome.REPLACED);
+    }
+
+    @Test
+    void aPublishThatFailsAfterTheSwapIsAWarningAndTheRegistrationIsStillReplaced(
+            @TempDir Path host, org.springframework.boot.test.system.CapturedOutput output) throws IOException {
+        Rig rig = new Rig(host);
+        rig.register("pack-x", rig.stage(pack("1.0.0", "First")), Preconditions.none());
+        rig.midSwap = () -> deleteStagedHistory(rig);
+
+        PackRegistrationService.RegistrationOutcome[] answered = new PackRegistrationService.RegistrationOutcome[1];
+        StagedPack second = rig.stage(pack("2.0.0", "Second"));
+
+        assertThatCode(() -> answered[0] = rig.register("pack-x", second, Preconditions.none()))
+                .as("the pack was replaced, so the client is not told it failed")
+                .doesNotThrowAnyException();
+        assertThat(answered[0].outcome()).isEqualTo(Outcome.REPLACED);
+        assertThat(rig.filesOf(rig.packs.resolve("pack-x")).get("pack.yaml")).contains("pack_version: 2.0.0");
+        assertThat(output.getAll()).contains("WARN").contains("pack-x").contains("history");
+        assertThat(rig.commits.versionHistory("pack-x"))
+                .extracting(Entry::packVersion)
+                .as("the lost entry is not there; the next registration puts it back")
+                .containsExactly("1.0.0");
+    }
+
+    private static void deleteStagedHistory(Rig rig) {
+        try (Stream<Path> files = Files.list(rig.packs.resolve(".history"))) {
+            for (Path file : files.filter(path -> path.getFileName().toString().contains(".tmp-"))
+                    .toList()) {
+                Files.delete(file);
+            }
+        } catch (IOException failure) {
+            throw new UncheckedIOException(failure);
+        }
     }
 
     private static void deleteTree(Path directory) {
