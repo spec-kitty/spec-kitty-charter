@@ -758,10 +758,10 @@ class RegistrationImpactTest {
 
         assertThat(refusalOf(() -> puts.registerDirective(derivedPack, directiveOf("EXT_ONE"), false, null)))
                 .isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
-        assertThat(rig.filesOf(rig.packs.resolve("derived"))).doesNotContainKey("directives/EXT_ONE.directive.yaml");
+        assertThat(rig.filesOf(rig.packs.resolve("derived"))).doesNotContainKey("EXT_ONE.directive.yaml");
 
         puts.registerDirective(derivedPack, directiveOf("OPEN_ONE"), false, null);
-        assertThat(rig.filesOf(rig.packs.resolve("derived"))).containsKey("directives/OPEN_ONE.directive.yaml");
+        assertThat(rig.filesOf(rig.packs.resolve("derived"))).containsKey("OPEN_ONE.directive.yaml");
     }
 
     private static ai.speckitty.charter.packs.domain.Directive directiveOf(String id) {
