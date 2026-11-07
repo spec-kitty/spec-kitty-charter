@@ -185,3 +185,6 @@ At startup, run the relation checks over stored packs and log (WARN) each pack t
   `parent_pack` names a pack that is not stored or cannot be read; add that case.
 - Dropping a dependency frees the pack from the ancestor's lock (judged along the new closure, ADR-0063 D3). This is
   intended; keep a test that pins it.
+- WP14 review cycle 4 follow-up (q4b): when one id is declared by two stored files and one of them fails to read, the
+  salvage keeps the readable copy's digest, so keeping that copy byte-identical is not a replace. Poison the digest
+  whenever any file declaring the id fails to read, so no upload matches it (as for two readable twins). Red test first.
