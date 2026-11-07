@@ -493,7 +493,8 @@
       "notes": [
         "T064-T069 done; verifyAll green. Open items handed to WP16/WP20 (5222fcce, 7e839ea8).",
         "cycle 2",
-        "Cycle 2 per DM-01M6V4WMF8CD8NBN7A065E9ZQ5; verifyAll green."
+        "Cycle 2 per DM-01M6V4WMF8CD8NBN7A065E9ZQ5; verifyAll green.",
+        "cycle 3"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
