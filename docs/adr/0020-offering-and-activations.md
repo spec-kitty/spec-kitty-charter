@@ -2,8 +2,8 @@
 title: "ADR-0020: The offering and activations are separate resources, and the service stores activations"
 description: Proposes /offering for what can be used and /activations for active charters the service stores, activation writes reserved before 1.0.0, and a hosted-first contract.
 doc_status: active
-updated: 2026-11-05T00:00:00Z
-decision_status: Accepted; superseded in part by ADR-0033 (2026-10-26); amended 2026-10-31 (#125); the `packs` row and amendment ruling 7 superseded in part by ADR-0048, and `missionTypes` and the amendment's mission-type rules by ADR-0050 (2026-11-02); open questions 4 to 7 ruled, and the cascade relations settled, by ADR-0059 (2026-11-04)
+updated: 2026-11-07T00:00:00Z
+decision_status: Accepted; superseded in part by ADR-0033 (2026-10-26); amended 2026-10-31 (#125); the `packs` row and amendment ruling 7 superseded in part by ADR-0048, and `missionTypes` and the amendment's mission-type rules by ADR-0050 (2026-11-02); open questions 4 to 7 ruled, and the cascade relations settled, by ADR-0059 (2026-11-04); the activation document's kind model amended 2026-11-07 (`activatedKinds` and `missionTypes` removed, `schemaVersion` 2)
 decision_date: '2026-10-24'
 type: ADR
 kind: ADR
@@ -68,6 +68,10 @@ This record supersedes or amends, point by point:
   which this record splits into `/offering` and `/activations`.
 
 Superseded in part by [ADR-0033](/adr/0033-local-active-charter-is-source-of-truth/) (2026-10-26): local `activation.yaml` wins visibly on a cold-start divergence (D5).
+
+Amended 2026-11-07 (the layer-merge mission, PR A0): the document loses `activatedKinds` and `missionTypes`, a mission
+type is an ordinary kind of `selected` and `deactivated`, and a stored document is `schemaVersion` 2. See
+[Amendment 2026-11-07](#amendment-2026-11-07-one-kind-model-in-the-activation-document).
 
 Amended 2026-10-31 (operator rulings on #125): the activation set is declared in the contract and reserved; its open
 questions 1 and 2 are ruled. See [Amendment 2026-10-31](#amendment-2026-10-31-the-activation-set-is-declared-125).
@@ -193,10 +197,10 @@ holds `{packId, version?}` objects, and the last two rows are left out of the do
 
 | Field | Meaning | Core's key today |
 |---|---|---|
-| `schemaVersion` | `1` | — |
+| `schemaVersion` | `1` *(amended 2026-11-07: `2`)* | — |
 | `packs` | Pack ids in merge order; a later pack wins over an earlier one. Absent means the service's offering (D1) | `charter_packs` in `config.yaml` |
-| `activatedKinds` | Kind list; absent means every kind | `activated_kinds` |
-| `missionTypes` | Mission types in force; absent means **none** | `mission_type_activations` |
+| `activatedKinds` | Kind list; absent means every kind *(removed 2026-11-07: there is no kind gate)* | `activated_kinds` |
+| `missionTypes` | Mission types in force; absent means **none** *(removed 2026-11-07: a mission type is selected under `selected.mission_type`)* | `mission_type_activations` |
 | `selected` | Map from kind to an id list; a kind that is absent takes its default (all, except `skill`: org-required only) | `activated_<plural>` |
 | `deactivated` | Map from a known kind to a non-empty id list: the user's deny list | `deactivated_<plural>` (core branch) |
 | `languages` | Language list, as authored; core's derived languages are not sent | `catalog.languages` |
@@ -208,6 +212,10 @@ holds `{packId, version?}` objects, and the last two rows are left out of the do
 **Three states, exactly as core has them** (core response, 2026-10-20): for `activatedKinds`,
 `missionTypes`, `languages` and each `selected.<kind>`, an absent key is the default, `[]` is
 empty, and a list is that set. `null` is not a value.
+*Amended 2026-11-05 and 2026-11-07: an absent `selected.<kind>` means none, the same as `[]` (DIV-203), and
+`activatedKinds` and `missionTypes` are no longer members, so the three states remain for `languages` and for
+`packs`, where absent means every configured pack. See the
+[amendment](#amendment-2026-11-07-one-kind-model-in-the-activation-document).*
 
 **Content alignment, not file shape (ruled, 2026-10-20, on the core side).** Core keeps its own
 file layout: `.kittify/charter/activation.yaml` holds the activation keys, while `packs`,
@@ -276,7 +284,7 @@ without it the write is last-writer-wins, because core's content is what it mean
    | Deactivate, with optional cascade | `PUT …/exclusions/{kind}/{artifactId}`, body `{"cascade": "<scope>"}` |
    | Re-activate | `DELETE …/exclusions/{kind}/{artifactId}` |
    | Apply a preset | `PUT …/presets/{presetId}`, body `{"force": false}` |
-   | Change a scalar field (`languages`, `missionTypes`, `activatedKinds`) | A read-modify-write `PUT` of the whole document with `If-Match` |
+   | Change a scalar field (`languages`; *`missionTypes` and `activatedKinds` until 2026-11-07*) | A read-modify-write `PUT` of the whole document with `If-Match` |
 
    **The operations carry core's verbs (ruled, 2026-10-20).** Each one is a single write with
    one new revision:
@@ -344,6 +352,11 @@ flag):
 
 Each effective answer carries the activation's `revision` beside `governanceFingerprint`, so a
 cached answer is tied to both the document and the offering.
+
+*Amended 2026-11-07 (PR A0): the reads' precedence loses the kind gate. The reason `kind_not_activated`, and
+`kind_default` with it, are dropped when the reads are built (PR B, FR-022), because nothing is in force or out of
+force by its kind: an artifact is in force when selected, required or locked, and not denied (a required or locked
+one stays in force whatever the document says, above).*
 
 **Required and locked artifacts are a floor at read time (default).** An artifact a pack requires
 or locks (ADR-0012 D7) is active whatever the document says, and writing a document that
@@ -553,7 +566,8 @@ list above (questions 4 to 7 are referenced by number in the follow-ups):
 6. **What a preset sets.** Core's presets replace the keys they list, `activated_kinds` and
    `mission_type_activations` included. Does `applyActivationPreset` replace or unite each member, and does it set
    `activatedKinds` and `missionTypes` (which `ActivationChange.applied` would then report)?
-   *Ruled 2026-11-04: [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) decision 6.*
+   *Ruled 2026-11-04: [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) decision 6.
+   Amended 2026-11-07: a preset sets neither, because the document has neither.*
 7. **Conditional reads.** `getActivation` and the effective reads send a strong `ETag` but declare no
    `If-None-Match` or `304`. A success status added after 1.0.0 is breaking (D8).
    *Ruled 2026-11-04: [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) decision 5.*
@@ -595,10 +609,12 @@ change.
    of the governing presets derive (ADR-0031, ADR-0042). `missionTypes` absent and `[]` both mean none in force; the
    two stay distinct on the wire, so a fetched document registers unchanged.
    *(Superseded in part by [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/), accepted 2026-11-02: a mission type is an ordinary kind, so absent means all.)*
+   *(Superseded 2026-11-07: `missionTypes` is gone, and a mission type is selected under `selected.mission_type`, where absent means none as for every kind, DIV-203. See the [amendment of 2026-11-07](#amendment-2026-11-07-one-kind-model-in-the-activation-document).)*
 5. **Kinds.** `selected` and `deactivated` hold one member per activatable artifact kind: every artifact kind except
    `template` and `asset`, and except `mission_type`, which `missionTypes` holds (11; the snake_case tokens of
    `NodeKind`). They align with the charter schema's `activated_<plural>` keys, which a test checks.
    *(Superseded in part by [ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/), accepted 2026-11-02: `mission_type` joins `selected` and `deactivated` like any other kind. Its `mission_type` spelling in the `selections/{kind}` segment is superseded if ADR-0050 open question 9 is ruled as recommended.)*
+   *(Built 2026-11-07: `selected` and `deactivated` hold one member per activatable kind, `mission_type` included, and `ActivatableKind` is the one enum of the document, the selections and exclusions paths and `ArtifactReference`. The `{kind}` segment of the selections and exclusions paths is `mission_type`.)*
 6. **Cascade.** `cascade` is a non-empty array of kinds, or exactly `["all"]`; absent means no cascade, as core's
    `CascadeScope` is either "all" or a set of kinds. `all` beside kinds is a semantic `422`.
 7. **Packs** are `{packId, version?}`, in merge order (ADR-0033 D6); `version` absent means the version the service
@@ -635,6 +651,8 @@ change.
   not a framework `400`.
 - **`mission_type` is a `{kind}` under `selections/` only**: mission types have no deny list, so an exclusion of one
   would not be the inverse of its `DELETE`. An unknown mission type is `mission_type_not_found`.
+  *Superseded 2026-11-07 (A7 Q2): a mission type is deniable unless it is required or locked, so `exclusions/` accepts
+  `mission_type` too.*
 - **The 501 comes before binding.** A `@ReservedOperation` controller and an interceptor answer before the request is
   read, so a reserved operation answers `501` whatever its request holds. The controller lives in
   `packs.infra.api`, the one adapter allowed to name the generated types; the built activation set becomes a slice
@@ -647,6 +665,36 @@ change.
   members on activation bodies refused (`422`, never dropped); a body that fails bean validation answered
   `422 activation_invalid` with `violations`; `containerDefaultToNull` and the `NON_NULL` mix-in keep absent apart
   from `[]` (already in place).
+
+## Amendment 2026-11-07: one kind model in the activation document
+
+**Operator rulings of 2026-11-06 (A7, Q1 to Q4) on the layer-merge mission, built by its PR A0.** The ruleset
+review's labels are used here (`research/ruleset-review-2026-11-06.md` of the mission), with decision ids. The
+decisions above carry a note where they change; the contract change is
+`contracts/charter/changes/2026-11-07-a0-one-kind-model.md`, and the divergences are DIV-203 and DIV-211 to DIV-214 of
+the [divergence register](/conformance/divergence-register/).
+
+1. **One kind model (A7, decision `DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY`).** `ActivationConfig` is `packs`, `selected`,
+   `deactivated` and `languages`. `activatedKinds`, the kind gate, was a core remnant with no observable effect in the
+   service, and `missionTypes` was a second list for one kind. Mission types, steps and agent profiles follow the same
+   activation, override and enhancement rules as any artifact. `ActivatableKind` gains `mission_type`,
+   `SelectableKind` is removed, and `SelectedArtifacts`, `DeactivatedArtifacts` and `CascadeKind` gain `mission_type`.
+2. **Q1, the mission-type cascade (decision `DM-01M6RCXTS0SMDNTWZ8G7GJ2P5S`).** Selecting a mission type with a
+   cascade crosses to the steps it holds like `requires`; the steps stay bound to it.
+3. **Q2, deny (decision `DM-01M6RCXZ9HSHT4K3443YYZ8ZFC`).** A mission type is denied under
+   `deactivated.mission_type` unless it is required or locked, where the floor and the locks apply as for any kind
+   (`409 artifact_required`, `artifact_locked`).
+4. **Q3, presets (decision `DM-01M6RCY40CQQTHC130RWF43W0D`).** A preset may name any kind. ADR-0042 decision 2
+   carries the note.
+5. **Q4, refuse now (decision `DM-01M6RCY8MYNGNPJ247M2Y4880N`).** `activatedKinds` and `missionTypes` on any write are
+   `422 validation_failed`, one violation per member naming its replacement. There is no deprecation window; core
+   regenerates its strict DTOs first.
+6. **Storage (decisions `DM-01M6RFGMDH859CJP3RHHF9YC3H`, `DM-01M6RMJHDKNTXAM055Q8WR6SDN`).** `schemaVersion` is `2`
+   (`minimum` and `maximum` `2`). A version 1 document is answered as its upgrade on read, never written by a read, and
+   stored as version 2 on the next write; every `ETag` changes once.
+
+The version stays on the 0.x line ([ADR-0022](/adr/0022-contract-versions-start-at-0-x/)): no `contract-charter-v*`
+baseline exists, so the break is allowed.
 
 ## References
 

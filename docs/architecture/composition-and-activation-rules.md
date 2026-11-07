@@ -2,7 +2,7 @@
 title: Composition and activation rules
 description: Every composition, registration, activation-write and effective-read rule as sets, relations, closures and invariants, each with its source and build status.
 doc_status: draft
-updated: 2026-11-06T00:00:00Z
+updated: 2026-11-07T00:00:00Z
 type: Architecture
 kind: Reference
 related:
@@ -49,7 +49,8 @@ read and carries a **⚠ Unclear** note. The prose pages remain the design: [Log
 > **Planned, not built**: the design of the layer-merge mission (`kitty-specs/layer-merge-and-effective-reads-01M6R0J6/`,
 > plan, research and data model), derived from rulings but not itself a ruling. **Partly built**: the rule holds in
 > part, and the note says which part. **Ruled, planned** names where a ruling is to be built: a layer-merge pull
-> request (PR A, B or C of the plan) or a #399 follow-up.
+> request (PR A, B or C of the plan) or a #399 follow-up. **Built (PR A0)** marks a rule the layer-merge mission's
+> first pull request built on 2026-11-07, stacked on #399.
 >
 > **Rulings of 2026-11-06.** The operator's answers to the ruleset consistency review (layer-merge mission,
 > `research/ruleset-review-2026-11-06.md`, items A1–A15 and B1–B8) are folded into the rules and cite their decision ids (`DM-01M6RA…`, under the layer-merge mission's `decisions/`).
@@ -200,8 +201,7 @@ line), and that pack must hold the artifact.
 Two packs at one level that both define, or both override, one artifact conflict; a definer and an enhancer do not,
 and two enhancers do not.
 *Source:* ADR-0048 d9; ADR-0053 d5 (amended 2026-11-03), d21; A14, decision `DM-01M6RA92BS6GGCYTRCFQDYYY5S`.
-**Partly built:** the built `changedArtifacts` still counts `enhances` (two sibling enhancers are refused); dropping it
-is ruled, planned (layer-merge PR A).
+**Built (PR A0):** `changedArtifacts` no longer counts `enhances`, so two sibling enhancers compose, and a settlement names exactly one winner.
 
 **C15 Sibling settlement.** Let `Win(u, S) = {m ∈ {pid(s) | s ∈ S} | ∃p ∈ C. {artifact: u, member: m} ∈ ovr(p)}`. A
 conflict on `u` among siblings `S` is settled iff `|Win(u, S)| = 1`; then that `m`'s version of `u` is the one in force
@@ -251,7 +251,7 @@ A target's level is the strictest any pack of the closure declares, whatever the
 only for what it or a pack it builds on holds (notation, A15): a pack may lock the artifacts of the packs it builds on
 (an enterprise pack enforcing a built-in practice), not those of an unrelated pack that shares the closure.
 *Source:* ADR-0063 D3; ADR-0012 d3; `PerPackPolicy.levelIn`; A15, decision `DM-01M6RA97220XBR7RR447FE2JXD`.
-**Partly built:** the strictest level is built; the scope limit is ruled, planned (#399 follow-up).
+**Built (PR A0):** the strictest level, and the scope limit: a `kind_defaults` entry locks only the artifacts of the pack and of the packs it builds on.
 
 **C23 Tighten, never loosen.** `S ⊆ S' ⇒ μ_S(u) ≤ μ_{S'}(u)`.
 Adding a pack to a closure can raise a target's mutability, never relax it. (A consequence of C22.)
@@ -268,8 +268,8 @@ need not `locked`.
 The per-artifact registrations obey the level the packs `p` builds on declare; `p`'s own policy protects its artifacts
 from other packs and does not bind `p` itself (B8, as C21 excludes the winning pack).
 *Source:* ADR-0012 d1, d9; ADR-0026 D4; ADR-0063 D3; `PackMutabilityPolicy`, `MutabilityLevel.permits`; B8, decision
-`DM-01M6RAA6Y7NVVGKVKQV05GZYES`. **Partly built:** the gate is built over `C({p})`, `p` included; excluding `p` is
-ruled, planned (#399 follow-up).
+`DM-01M6RAA6Y7NVVGKVKQV05GZYES`. **Built (PR A0):** the gate is built over `C({p}) ∖ {p}`; `p`'s own policy never
+refuses its own write.
 
 **C26 Removal by a derived pack.** A derived pack's pack-wide removal of `u` is allowed iff `μ(u) ≠ locked`.
 `open` and `extendable` artifacts may be removed by a pack built on them; `locked` ones may not.
@@ -305,8 +305,8 @@ The requirement is the union of the must-have items of every governing preset of
 preset can only tighten it; a must-have item no pack holds is dropped from the floor and reported.
 *Source:* ADR-0031 d2; DIV-205; decision `DM-01M6R0TK6F4CC0Z00CZTS21V72` (ratifies DIV-205); `ClosureQueries`
 (`RequiredFloor.of(byHolder(closurePackIds, winningPresets(composed)))`), `RequiredFloor.of`; A1, decision
-`DM-01M6RA7FHRC5K8QPX7KN5FZ4S8`; A10, decision `DM-01M6RA8MG55V8C2V9PXWDTRNQS`. **Partly built:** the built floor
-reads the winning copies only and does not restrict to held ids; both changes are ruled, planned (#399 follow-up).
+`DM-01M6RA7FHRC5K8QPX7KN5FZ4S8`; A10, decision `DM-01M6RA8MG55V8C2V9PXWDTRNQS`. **Partly built:** the floor restricts to held ids and
+reports the rest (A10; built, PR A0); the union over every governing copy (A1) reads the winning copies only and is ruled, planned (layer-merge PR B).
 DIV-205 stays open until the reads are built.
 
 **C32 Floor at write.** `Fl(C) = Req(C) ∪ Lk(C)`.
@@ -492,8 +492,8 @@ type or more than 1 MiB is `422 activation_invalid`.
 **W2 Absent means none.** `⟦⊥⟧ = ∅` for `sel(k)`, `mission_type` included; `packs = ⊥` means `P`; `⊥` and `∅` stay
 distinct on the wire.
 An absent list puts nothing of its kind in force, `skill` included.
-*Source:* ADR-0053 d10; ADR-0013 d2 and ADR-0020 D6 (amended 2026-11-05); DIV-203; A7. **Built** for `sel`, `kinds`
-and `mts`; the single `sel` form is ruled (A7), planned (layer-merge; PR A0).
+*Source:* ADR-0053 d10; ADR-0013 d2 and ADR-0020 D6 (amended 2026-11-05); DIV-203; A7. **Built** for `sel`, which
+holds every kind, `mission_type` included (A7; built, PR A0): the document has no `kinds` or `mts`.
 > ⚠ **Unclear:** `langs` does not follow W2 at read. Research R2 of the layer-merge mission has an absent `languages`
 > filter nothing and `[]` filter every tagged artifact, while ADR-0053 d10 says an absent activation key means none.
 
@@ -501,7 +501,7 @@ and `mts`; the single `sel` form is ruled (A7), planned (layer-merge; PR A0).
 stored as the declared id; ids are stored sorted and once; `packs` keeps its order; `rev(D) =
 "sha256:" + hex(SHA-256(JCS(D)))`, which is the `ETag`. A spelling that matches two held ids differing only by case is
 `422 activation_invalid` (`ambiguous_artifact`); an unknown spelling is kept as written for W5 to refuse. A mission
-type id is normalized like any other id (A7); the built code still matches it exactly, as it did `missionTypes`.
+type id is normalized like any other id (A7; built, PR A0).
 Two equivalent documents have one revision, so `GET` is byte-stable.
 *Source:* ADR-0020 D4; activation mission FR-005, research R3; operator ruling of 2026-11-06 (DIV-208 withdrawn);
 `DocumentRules.normalize`, `ArtifactSpellings.resolve`. **Built.**
@@ -511,9 +511,10 @@ list removes the key.
 *Source:* ADR-0020 D4; activation mission FR-006, US1 AS7. **Built.**
 
 **W5 Ids in the closure.** `⋃_k ⟦sel(k)⟧ ∪ ⟦deny(k)⟧ ⊆ held_k(C)` over every `k ∈ Kₐ`, each pinned version `= ver`, no
-duplicate pack; else `422` (`unknown_artifact`, `unknown_mission_type`, `unknown_pack`, `version_not_held`,
+duplicate pack; else `422` (`unknown_artifact`, `unknown_pack`, `version_not_held`,
 `duplicate_pack`), after W3's normalization and, for a replace, after W6's stale drop.
-A document names only what its own closure holds.
+A document names only what its own closure holds. A mission type is judged as any artifact is: `unknown_artifact` at
+`/selected/mission_type/<i>` or `/deactivated/mission_type/<i>`, where `unknown_mission_type` was (PR A0).
 *Source:* ADR-0020 D9; activation mission FR-006, FR-010; `DocumentRules.check` (`version_not_held`,
 `ambiguous_artifact`), `ActivationWrites`. **Built.**
 
@@ -524,8 +525,7 @@ reports them in `dropped`; any other id the closure does not hold is still `422`
 A create never denies a locked or required artifact; a replace is judged only on the deny entries it adds, so a
 `GET` → `PUT` of the stored document is never refused for the floor or a stale id. Locked is judged first.
 *Source:* ADR-0012 d7; ADR-0013 d5; ADR-0020 D7, D9, D10; DIV-204; `DocumentRules.floorRefusal`; A4, decision
-`DM-01M6RA7XC5HC8915GZT2R3H83W`. **Partly built:** the whole-document refusal is built; judging only added entries and
-the replace's stale drop are ruled, planned (#399 follow-up). Relaxed by W26.
+`DM-01M6RA7XC5HC8915GZT2R3H83W`. **Built (PR A0):** the whole-document refusal, judging only the added entries and the replace's stale drop. Relaxed by W26.
 
 ### Preconditions and order
 
@@ -557,18 +557,17 @@ A write only sees its closure, but may still remove a stale id the document hold
 
 **W11 Stale drop.** `stale(D, C) = (Sel(D) ∪ Den(D)) ∖ H(C)`; `deadPins(D, C) = {(cid, v) ∈ packs | v ≠ ⊥,
 v ≠ ver(cid)}`; the write computes from `D₀ = D ∖ stale(D, C)`, with each dead pin's version removed (its pack kept),
-and reports both in `dropped`.
+and reports them: the ids in `dropped`, the pins in `droppedPins`.
 Every per-artifact and preset write first removes the ids the closure no longer declares and the version pins it no
 longer holds, and reports them. Dropping is eager: any write drops every stale id, not only the one it names.
 *Source:* operator ruling A5 (formerly R5, ADR-0059 amendment of 2026-11-06); DIV-204 notes; `StaleIds.drop`,
 `ActivationWrites.current`; B1, decision `DM-01M6RA9BKJY7X9BFV93QW1KM1T`; B2, decision `DM-01M6RA9G56DTA5GFY5Z28S0DB1`.
-**Partly built:** stale ids are built; dead pins are ruled, planned (#399 follow-up).
+**Built (PR A0):** stale ids and dead pins. A create keeps `422 version_not_held` for a pin in its own body.
 
 **W12 Stale drop scope.** W11 leaves `langs` and the `cid`s of `packs` alone; an unknown pack still makes
 every per-artifact write `422`; a create drops nothing; a replace drops only what W6 says.
-*Source:* ADR-0059 amendment A5; activation mission FR-017; A4 and B1 (decisions above). **Partly built:** until the
-W6 and W11 follow-ups, a dead pin still makes every per-artifact write `422 version_not_held` and a replace drops
-nothing.
+*Source:* ADR-0059 amendment A5; activation mission FR-017; A4 and B1 (decisions above). **Built (PR A0):** a dead pin no longer
+makes a per-artifact write `422 version_not_held`, and a replace drops what W6 says.
 
 ### The five writes
 
@@ -594,8 +593,8 @@ included): `sel'(k) = π[k] ∖ ⟦deny(k)⟧` without `force`, `= π[k]` with `
 A preset replaces each kind list it names, any kind included; `force` clears only the deny entries of its members. A
 preset no longer sets a kind gate or a separate mission-type list.
 *Source:* ADR-0059 D6; ADR-0020 D6; activation mission FR-016, open review item 4; `PresetRules.apply`; A7, decisions
-`DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY`, `DM-01M6RCY40CQQTHC130RWF43W0D`. **Built** with the kind gate (`kinds' = π.kinds` without `skill` and `glossary_pack`) and `mts' = π.mts`;
-the uniform form is ruled (A7), planned (layer-merge; PR A0).
+`DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY`, `DM-01M6RCY40CQQTHC130RWF43W0D`. **Built (PR A0)** in the uniform form: every kind a preset names, `skill`, `glossary_pack` and `mission_type`
+included; the kind gate (`kinds' = π.kinds`) and `mts' = π.mts` are gone.
 
 **W18 A preset walks nothing and denies nothing.** The preset write's `skipped` is empty, and `Den(D') ⊆ Den(D₀)`.
 A preset member the closure does not hold is selected and then refused by W5 (`422 unknown_artifact`).
@@ -622,22 +621,22 @@ No other relation (`overrides`, `replaces`, `rejects`, `delegates_to`, `vocabula
 The cascade is the closure of the targets over the six relations, the lineage pass-through and a mission type's
 steps (crossed like `requires`), stopping at the stops.
 *Source:* ADR-0059 D2.1, D2.3, D2.4; activation mission FR-012, FR-014; `Reachability.reach`, `ReachRequest.Lineage`;
-A7 Q1, decision `DM-01M6RCXTS0SMDNTWZ8G7GJ2P5S`. **Built** without the step term; the step term is ruled (A7), planned (layer-merge; PR A0).
+A7 Q1, decision `DM-01M6RCXTS0SMDNTWZ8G7GJ2P5S`. **Built (PR A0)**, the step term included.
 
 **W21 Stops and scope.** Select: `Σ = Den(D₀) ∖ {t}`. Deactivate, own walk: `Σ = ∅` (A2). Deactivate, shared walk:
 `Σ = Den(D₀) ∪ {t}`. `Scope ⊆ Kₐ` or `all = Kₐ`, `mission_type` included; no `cascade` means `Reach = {t}`.
 A select stops at deny entries, a deactivate's own walk stops nowhere, and the shared walk stops at the target and the
 deny entries.
 *Source:* ADR-0013 d4; ADR-0020 D6 and amendment ruling 6; ADR-0059 D2.4 and operator ruling A2; activation mission
-FR-012, finding F8; `CascadeRules.planSelect`, `planDeactivate`, `planShared`. **Built** with `mission_type ∉ Scope`;
-dropping that exclusion is ruled (A7), planned (layer-merge; PR A0).
+FR-012, finding F8; `CascadeRules.planSelect`, `planDeactivate`, `planShared`. **Built (PR A0)**, with `mission_type`
+in `Scope`.
 
 **W22 `includeDeactivated`.** `Σ = (Den(D₀) ∖ {t}) ∖ {u | kind(u) ∈ Scope}`; `Clr = (Reached ∪ Passed) ∩ Den(D₀) ∩
 {u | kind(u) ∈ Scope}`.
 It clears only the in-scope deny entries the walk passes through; an out-of-scope denied artifact still stops the walk
 and keeps its entry.
 *Source:* operator ruling A3 (formerly R3, ADR-0059 amendment of 2026-11-06); ADR-0013 d4; DIV-206;
-`CascadeRules.walkedThrough`. **Built** as stated. **Ruled, planned (#399 follow-up):** B5 (decision
+`CascadeRules.walkedThrough`. **Built (PR A0):** B5 (decision
 `DM-01M6RA9XQSH3E07C7VCPCVD6R4`) narrows it to `Clr = Reached ∩ Den(D₀) ∩ {u | kind(u) ∈ Scope}`: a lineage ancestor the
 walk passes through and does not select keeps its deny entry.
 
@@ -699,7 +698,7 @@ Only the user's explicit choice adds or removes a deny entry.
 **W32 Mission types in a write.** *Withdrawn* (A7). A mission type is selected, denied and cascaded like any kind
 (W13–W24); a select of `M` cascades to `steps(M)` (W20); a deny of `M` is refused only when `M ∈ Fl(C)` (W25).
 *Source:* A7, decisions `DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY`, `DM-01M6RCXTS0SMDNTWZ8G7GJ2P5S`, `DM-01M6RCXZ9HSHT4K3443YYZ8ZFC`. Formerly: ADR-0020 amendment 2026-10-31; activation mission US3 AS7, finding
-F8. **Built** as the withdrawn rule (`mts`, no cascade, no deny list); the withdrawal is ruled (A7), planned (layer-merge; PR A0).
+F8. The withdrawal is **built (PR A0)**: selection, deny and cascade treat a mission type as any kind.
 
 **W33 Write warnings.** The change report carries `warnings`, one per artifact of `Sel(D') ∖ Sel(D₀)` that `Eff(D', M)`
 leaves out, with the E9 reason that decides it (for example `enhanced_target_not_in_force`,
@@ -709,12 +708,11 @@ A write that will not bring what it selected into force says so; it is still app
 with W26).
 
 **W34 Withdrawn keys refused.** A create, replace or preset body carrying `activatedKinds` or `missionTypes` is
-`422 activation_invalid`, with no deprecation window; core regenerates its DTOs first. A stored version-1 document is
+`422 validation_failed`, one violation per member (`removed_member`), with no deprecation window; core regenerates its DTOs first. A stored version-1 document is
 upgraded on read to `schemaVersion: 2`: its `missionTypes` move to `selected.mission_type`, its kind gate is dropped
 and every selection is kept (decision `DM-01M6RMJHDKNTXAM055Q8WR6SDN`; the gate was never enforced), and nothing observable changes (locks and the floor were never gated).
 Each stored document's `ETag` changes once.
-*Source:* A7 Q4, decision `DM-01M6RCY8MYNGNPJ247M2Y4880N`; research `a7-kind-model-2026-11-06.md` (proposed revision, items 2–3). **Ruled, not
-built** (PR A0).
+*Source:* A7 Q4, decision `DM-01M6RCY8MYNGNPJ247M2Y4880N`; research `a7-kind-model-2026-11-06.md` (proposed revision, items 2–3). **Built (PR A0).**
 
 ## 5. Read rules
 
@@ -963,7 +961,7 @@ activations it affects (G20), and every stored deny entry that the floor overrid
 | C11 Pack identity | ADR-0053 d6, d7 | Built |
 | C12 Qualified reference | ADR-0053 d7; `dependsOnClosure` | Built |
 | C13 Bare reference | ADR-0053 d7 | Built |
-| C14 Sibling conflict | ADR-0048 d9; ADR-0053 d5, d21; A14 | Partly built; dropping `enhances` ruled, planned (PR A) |
+| C14 Sibling conflict | ADR-0048 d9; ADR-0053 d5, d21; A14 | Built (PR A0) |
 | C15 Sibling settlement | ADR-0053 d5; spec FR-012; A14 | Partly built: exactly one winner built; in force #357, #358 |
 | C16 Artifact identity per level | ADR-0053 d6 | Built |
 | C17 Layer winner | ADR-0053 d6; ADR-0059 D3 | Ruled, not built |
@@ -971,16 +969,16 @@ activations it affects (G20), and every stored deny entry that the floor overrid
 | C19 Edges from a loser | ADR-0059 D3 | Ruled, not built |
 | C20 Edges to a loser | ADR-0059 D3; A12 | Ruled, not built |
 | C21 Override gate | ADR-0012 d1, d8; ADR-0059 D3; FR-011 | Ruled, not built |
-| C22 Mutability along the closure | ADR-0063 D3; A15 | Partly built; the scope ruled, planned (#399 follow-up) |
+| C22 Mutability along the closure | ADR-0063 D3; A15 | Built (PR A0) |
 | C23 Tighten, never loosen | ADR-0012 d3 | Built |
 | C24 Unreadable policy | ADR-0063 D4 | Built |
-| C25 Registration gate | ADR-0012 d1, d9; ADR-0026 D4; B8 | Partly built; excluding the own policy ruled, planned (#399 follow-up) |
+| C25 Registration gate | ADR-0012 d1, d9; ADR-0026 D4; B8 | Built (PR A0) |
 | C26 Removal by a derived pack | ADR-0030 d1 to d3 | Ruled, not built |
 | C27 CRG overrides at read | `DM-01M6R0TGX3`, `DM-01M6R2X2SW`; R11; A6 | Ruled, planned (PR C; the registration refusal PR B) |
 | C28 Override cycle | spec FR-016; A2 | Ruled, planned (PR B at registration, PR C at read) |
 | C29 Winning preset | ADR-0053 d6 | Built |
 | C30 Governing preset | ADR-0031; ADR-0042 §2 | Built |
-| C31 Required set | ADR-0031; DIV-205; `DM-01M6R0TK6F`; A1, A10 | Partly built; union and held-only ruled, planned (#399 follow-up) |
+| C31 Required set | ADR-0031; DIV-205; `DM-01M6R0TK6F`; A1, A10 | Partly built; held-only built (PR A0), the union (A1) ruled, planned (PR B) |
 | C32 Floor at write | ADR-0012 d7 | Built |
 | C33 Offering stays a catalog | ADR-0020 D1; FR-023 | Built; the merge half ruled, not built |
 | C34 Same-level preset conflict | operator 2026-11-06; `refusePresetContests` | Built |
@@ -1008,27 +1006,27 @@ activations it affects (G20), and every stored deny entry that the floor overrid
 | G20 Impact report | B4 | Ruled, planned (PR B) |
 | G21 Repair writes | ADR-0063 amendment 2026-11-06; #404 | Ruled, not built |
 | W1 Closed body | ADR-0020 D4, D9 | Built |
-| W2 Absent means none | ADR-0053 d10; DIV-203; A7 | Built; one `sel` form A7 ruled, planned (layer-merge; PR A0) |
+| W2 Absent means none | ADR-0053 d10; DIV-203; A7 | Built; one `sel` form built (PR A0) |
 | W3 Canonical form | ADR-0020 D4; operator 2026-11-06; `ArtifactSpellings` | Built (spellings normalized; DIV-208 withdrawn) |
 | W4 No empty deny list | ADR-0020 D4 | Built |
-| W5 Ids in the closure | ADR-0020 D9; `DocumentRules.check` | Built |
-| W6 Floor refusal, whole document | ADR-0012 d7; ADR-0013 d5; ADR-0020 D9; DIV-204; A4 | Partly built; A4 ruled, planned (#399 follow-up); relaxed by W26 |
+| W5 Ids in the closure | ADR-0020 D9; `DocumentRules.check` | Built; `unknown_artifact` for a mission type (PR A0) |
+| W6 Floor refusal, whole document | ADR-0012 d7; ADR-0013 d5; ADR-0020 D9; DIV-204; A4 | Built (PR A0); relaxed by W26 |
 | W7 Precondition order | ADR-0020 D6, D9 | Built |
 | W8 Create and replace order | ADR-0020 D3, D6, D9 | Built |
 | W9 One snapshot | activation mission NFR-007 | Built |
 | W10 Path id | activation mission FR-010; A5; `ActivationWrites.declared` | Built |
-| W11 Stale drop | operator ruling A5; B1, B2 | Partly built; dead pins ruled, planned (#399 follow-up) |
-| W12 Stale drop scope | A5; FR-017; A4, B1 | Partly built (as W6, W11) |
+| W11 Stale drop | operator ruling A5; B1, B2 | Built (PR A0) |
+| W12 Stale drop scope | A5; FR-017; A4, B1 | Built (PR A0) |
 | W13 Select | ADR-0020 D6; ADR-0013 d3 | Built |
 | W14 Unselect | ADR-0020 D6 | Built |
 | W15 Deactivate | ADR-0013 d3; ADR-0020 D6 | Built |
 | W16 Re-activate | ADR-0013 d3; ADR-0020 D6 | Built |
-| W17 Apply a preset | ADR-0059 D6; ADR-0020 D6; A7 | Built with the kind gate; A7 ruled, planned (layer-merge; PR A0) |
+| W17 Apply a preset | ADR-0059 D6; ADR-0020 D6; A7 | Built (PR A0) |
 | W18 A preset walks nothing | ADR-0013 d2 | Built |
 | W19 Cascade relations | ADR-0059 D2, A4; DIV-207 | Built |
-| W20 Reach as a least fixed point | ADR-0059 D2.1, D2.3, D2.4; DIV-206; A7 Q1 | Built; the step term A7 ruled, planned (layer-merge; PR A0) |
-| W21 Stops and scope | ADR-0013 d4; ADR-0059 A2; A7 | Built; `mission_type` in scope A7 ruled, planned (layer-merge; PR A0) |
-| W22 `includeDeactivated` | operator ruling A3; B5 | Built; B5 narrowing ruled, planned (#399 follow-up) |
+| W20 Reach as a least fixed point | ADR-0059 D2.1, D2.3, D2.4; DIV-206; A7 Q1 | Built; the step term built (PR A0) |
+| W21 Stops and scope | ADR-0013 d4; ADR-0059 A2; A7 | Built; `mission_type` in scope built (PR A0) |
+| W22 `includeDeactivated` | operator ruling A3; B5 | Built; B5 narrowing built (PR A0) |
 | W23 Deactivate candidates | ADR-0059 A2; finding F2 | Built |
 | W24 The shared-walk keep set | ADR-0059 A2, A4 | Built |
 | W25 Floor refusal on a write | ADR-0059 D4; DIV-204 | Built; relaxed by W26 |
@@ -1038,9 +1036,9 @@ activations it affects (G20), and every stored deny entry that the floor overrid
 | W29 No-op | FR-011; A5 | Built |
 | W30 Compare-and-set | ADR-0020 D6, D9 | Built |
 | W31 Who changes a deny entry | ADR-0013 d2, d3 | Built |
-| W32 Mission types in a write | A7 | Withdrawn; still built, A7 ruled, planned (layer-merge; PR A0) |
+| W32 Mission types in a write | A7 | Withdrawn; the withdrawal built (PR A0) |
 | W33 Write warnings | B6, B7 | Ruled, planned (PR C) |
-| W34 Withdrawn keys refused | A7 Q4 | Ruled, not built (PR A0) |
+| W34 Withdrawn keys refused | A7 Q4 | Built (PR A0) |
 | E1 Stale ids | ADR-0059 D4; FR-017; B1 | Ruled, not built (the stored document is served: built) |
 | E2 Candidates | ADR-0020 D7; ADR-0053 d10; FR-013; A7 | Planned, not built |
 | E3 Base set | ADR-0012 d7; ADR-0020 D7; Q6 | Ruled, not built |
