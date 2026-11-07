@@ -371,7 +371,7 @@
     },
     "WP11": {
       "actor": "claude",
-      "agent": "claude:opus:reviewer-renata",
+      "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -384,6 +384,7 @@
         "Contract A declared: 7 reserved operations (tag Registration, x-reserved pack-registration), PackRegistration/PackRegistrationStatus/PackSource schemas, 14 refusal codes (raised:false until served), IfMatch extension, 3 fragments, 2 @WIP feature files. Gate green (contracts, deployable, client-java, packs checks)."
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/layer-merge-and-effective-reads-01M6R0J6-coord/kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP11-a-contract-registration/review-cycle-1.md",
         "reference": "review-cycle://layer-merge-and-effective-reads-01M6R0J6/WP11-a-contract-registration/review-cycle-1.md",
@@ -391,15 +392,15 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 24367,
-      "shell_pid_created_at": "1794049841.73",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T047": "done",
-        "T048": "done",
-        "T049": "done",
-        "T050": "done",
-        "T051": "done",
-        "T052": "done"
+        "T047": "planned",
+        "T048": "planned",
+        "T049": "planned",
+        "T050": "planned",
+        "T051": "planned",
+        "T052": "planned"
       }
     },
     "WP12": {
