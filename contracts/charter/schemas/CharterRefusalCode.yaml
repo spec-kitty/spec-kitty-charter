@@ -44,7 +44,8 @@ description: >-
   activation_not_found (404), an activation no document is stored under; artifact_not_found (404), a per-artifact
   write whose path names an artifact the activation's closure does not hold; preset_not_found (404), a preset
   application whose path names a preset no pack of the activation's closure holds; activation_invalid (422), a
-  document or body the service refuses, each refused part listed in violations; artifact_required and
+  document or body the service refuses, each refused part listed in violations (a document carrying a removed member, activatedKinds or missionTypes, is
+  validation_failed, not activation_invalid); artifact_required and
   artifact_locked (409), a deactivation a pack requires or locks, whose refusal names every requiring pack in
   requiredBy. Only the four effective reads of an activation stay reserved (ADR-0020 D8), and the one code they
   will raise again, action_not_found, is not raised (above). A unit test of the service fails when any main class

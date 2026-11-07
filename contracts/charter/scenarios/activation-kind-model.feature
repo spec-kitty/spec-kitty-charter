@@ -179,6 +179,32 @@ Feature: One kind model on the activation document
       """
     And the response body has no field at "/config/missionTypes"
 
+  Scenario: A denied directive a step requires is reported as required by the mission type
+    Q1, rule W20: the via from the step of software-dev to SD is the mission type's own, so SD, denied, stays denied and
+    is reported in skippedDeactivated as required by software-dev, not as a plain suggestion.
+    Given the activation "a-1" holds:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "deactivated": {"directive": ["SD"]}}
+      """
+    When I PUT "/activations/a-1/selections/mission_type/software-dev" with the stored ETag and the body:
+      """
+      {"cascade": ["all"]}
+      """
+    Then the response status is 200
+    And the field at "/applied" holds exactly the ids:
+      """
+      mission_type:software-dev
+      """
+    And the field at "/skipped/skippedDeactivated" holds exactly the ids:
+      """
+      directive:SD
+      """
+    And the field at "/skipped/skippedDeactivated/0/viaRequires" is true
+    And the field at "/skipped/skippedDeactivated/0/requiredBy" holds exactly the ids:
+      """
+      mission_type:software-dev
+      """
+
   Scenario: Selecting a mission type without a cascade selects the mission type alone
     The negative control of the cascade: no cascade means the walk reaches the target only (rule W21).
     Given the activation "a-1" holds:

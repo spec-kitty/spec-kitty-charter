@@ -5,6 +5,7 @@ import ai.speckitty.charter.kernel.domain.Urn;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -18,9 +19,16 @@ import java.util.function.Predicate;
  *     {@code requires}, a reached mission type also reaches its steps ({@link Reachability#reach}, A7 Q1)
  * @param stopAt the nodes the walk does not descend into (the caller's deny set): they are reported, never reached
  * @param lineage the lineage pass-through, when the walk follows one
+ * @param suggestsBound the number of {@code suggests} hops the walk may cross (IC-21, FR-043); empty for no bound. Only
+ *     {@code suggests} is counted: every other relation, the lineage pass-through and a mission type's steps are walked
+ *     in full, and a place they produce inherits the hop count of the place that produced it
  */
 public record ReachRequest(
-        Set<Urn> starts, Set<RelationType> relations, Predicate<Urn> stopAt, Optional<Lineage> lineage) {
+        Set<Urn> starts,
+        Set<RelationType> relations,
+        Predicate<Urn> stopAt,
+        Optional<Lineage> lineage,
+        OptionalInt suggestsBound) {
 
     /**
      * The lineage pass-through (ADR-0059 D2.4): up the whole {@code ancestry} chain of every reached node, the
@@ -60,20 +68,40 @@ public record ReachRequest(
      * @param relations the relations crossed
      * @param stopAt the stop predicate
      * @param lineage the lineage, when followed
+     * @param suggestsBound the {@code suggests} hops the walk may cross; empty for no bound
+     * @throws IllegalArgumentException when the bound is negative
      */
     public ReachRequest {
         starts = Set.copyOf(Objects.requireNonNull(starts, "starts"));
         relations = Set.copyOf(Objects.requireNonNull(relations, "relations"));
         Objects.requireNonNull(stopAt, "stopAt");
         Objects.requireNonNull(lineage, "lineage");
+        if (Objects.requireNonNull(suggestsBound, "suggestsBound").isPresent() && suggestsBound.getAsInt() < 0) {
+            throw new IllegalArgumentException(
+                    "A walk crosses no fewer than 0 suggests hops, not " + suggestsBound.getAsInt());
+        }
     }
 
     /**
-     * The same walk with no stop: what lies behind a stop is what this one reaches and the stopped one does not.
+     * A request with no bound on the {@code suggests} hops.
+     *
+     * @param starts the starts
+     * @param relations the relations crossed
+     * @param stopAt the stop predicate
+     * @param lineage the lineage, when followed
+     */
+    public ReachRequest(
+            Set<Urn> starts, Set<RelationType> relations, Predicate<Urn> stopAt, Optional<Lineage> lineage) {
+        this(starts, relations, stopAt, lineage, OptionalInt.empty());
+    }
+
+    /**
+     * The same walk with no stop: what lies behind a stop is what this one reaches and the stopped one does not. The
+     * bound is kept, so nothing past it counts as behind a stop.
      *
      * @return this request, stopping nowhere
      */
     ReachRequest withoutStops() {
-        return new ReachRequest(starts, relations, urn -> false, lineage);
+        return new ReachRequest(starts, relations, urn -> false, lineage, suggestsBound);
     }
 }
