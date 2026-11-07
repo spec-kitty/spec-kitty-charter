@@ -158,3 +158,6 @@ Divergence-register entries (core merges per artifact; PR A replaces the whole p
 - `REMOVE` joins the write gate, and edges are gated as `RELATIONSHIP` writes on their source.
 - A stored pack that cannot be read is repaired by a whole-pack replace (the diff treats every uploaded artifact as a
   replace and removes nothing).
+- From WP15: the version history (IC-16: a downgrade is refused, the history is written inside the swap) and the strict
+  impact check (a registration whose resulting closures fail to compose or break a relation rule is refused; core
+  warns) are divergences to register. The start-up census WARNs for stored packs that would now be refused.
