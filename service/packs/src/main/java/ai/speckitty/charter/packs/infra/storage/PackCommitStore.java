@@ -6,6 +6,10 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
 import ai.speckitty.charter.packs.application.PackRevision;
+import ai.speckitty.charter.packs.application.PackWriteGeneration;
+import ai.speckitty.charter.packs.application.RegistryWriteLock;
+import ai.speckitty.charter.packs.application.StagedPack;
+import ai.speckitty.charter.packs.application.WholePackWriteStore;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
@@ -20,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,7 +67,7 @@ import org.springframework.stereotype.Service;
  * goes load &rarr; mutate &rarr; revalidate the whole aggregate in memory &rarr; commit the delta here.
  */
 @Service
-public final class PackCommitStore {
+public final class PackCommitStore implements WholePackWriteStore {
 
     /**
      * The failure-injection seam: the atomic swap of the fully staged directory into the live directory's place. The
@@ -105,6 +110,8 @@ public final class PackCommitStore {
     private final DomainRepositoryService.Locations locations;
     private final SerializationStrategy strategy;
     private final DirectoryRename rename;
+    private final RegistryWriteLock registryLock;
+    private final PackWriteGeneration generation;
 
     /**
      * A commit store that swaps directories atomically.
@@ -114,7 +121,24 @@ public final class PackCommitStore {
      */
     @Autowired
     public PackCommitStore(DomainRepositoryService.Locations locations, SerializationStrategy strategy) {
-        this(locations, strategy, MOVE_ASIDE);
+        this(locations, strategy, MOVE_ASIDE, RegistryWriteLock.shared(), PackWriteGeneration.shared());
+    }
+
+    /**
+     * A commit store over an explicit registry lock and write generation; a test injects a short lock timeout and a
+     * generation of its own.
+     *
+     * @param locations the configured pack locations
+     * @param strategy the serialization format
+     * @param registryLock the lock a whole-pack registration takes before the pack's own
+     * @param generation the write generation a whole-pack swap is bracketed with
+     */
+    public PackCommitStore(
+            DomainRepositoryService.Locations locations,
+            SerializationStrategy strategy,
+            RegistryWriteLock registryLock,
+            PackWriteGeneration generation) {
+        this(locations, strategy, MOVE_ASIDE, registryLock, generation);
     }
 
     /**
@@ -126,9 +150,29 @@ public final class PackCommitStore {
      */
     PackCommitStore(
             DomainRepositoryService.Locations locations, SerializationStrategy strategy, DirectoryRename rename) {
+        this(locations, strategy, rename, RegistryWriteLock.shared(), PackWriteGeneration.shared());
+    }
+
+    /**
+     * A commit store with an injected swap step, lock and generation.
+     *
+     * @param locations the configured pack locations
+     * @param strategy the serialization format
+     * @param rename the directory-swap step
+     * @param registryLock the lock a whole-pack registration takes before the pack's own
+     * @param generation the write generation a whole-pack swap is bracketed with
+     */
+    PackCommitStore(
+            DomainRepositoryService.Locations locations,
+            SerializationStrategy strategy,
+            DirectoryRename rename,
+            RegistryWriteLock registryLock,
+            PackWriteGeneration generation) {
         this.locations = Objects.requireNonNull(locations, "locations");
         this.strategy = Objects.requireNonNull(strategy, "strategy");
         this.rename = Objects.requireNonNull(rename, "rename");
+        this.registryLock = Objects.requireNonNull(registryLock, "registryLock");
+        this.generation = Objects.requireNonNull(generation, "generation");
     }
 
     /**
@@ -188,6 +232,46 @@ public final class PackCommitStore {
             deleteTree(staging);
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "cannot commit pack " + pack.value(), failure);
         }
+    }
+
+    // ---- whole-pack registration (ADR-0065) ------------------------------------------------------------------------
+
+    @Override
+    public PackRevision revisionOf(StagedPack staged) {
+        try {
+            return revisionOf(
+                    staged.directory(),
+                    new PackIdentifier(String.valueOf(staged.directory().getFileName())));
+        } catch (IOException failure) {
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "cannot read the staged pack", failure);
+        }
+    }
+
+    @Override
+    public Path liveDirectory(PackIdentifier pack) {
+        return resolve(pack).directory;
+    }
+
+    @Override
+    public void requireWritableLocation(String packId) {
+        Objects.requireNonNull(registryLock, "registryLock");
+        Objects.requireNonNull(generation, "generation");
+        // skeleton
+    }
+
+    @Override
+    public <T> T exclusively(String packId, Supplier<T> work) {
+        return work.get(); // skeleton
+    }
+
+    @Override
+    public PackRevision replaceWhole(PackIdentifier pack, StagedPack staged) {
+        return revisionOf(staged); // skeleton
+    }
+
+    @Override
+    public PackRevision create(String packId, StagedPack staged) {
+        return revisionOf(staged); // skeleton
     }
 
     /**

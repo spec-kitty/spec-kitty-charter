@@ -6,6 +6,8 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
+import ai.speckitty.charter.packs.application.StagedPack;
+import ai.speckitty.charter.packs.application.WholePackWriteStore;
 import ai.speckitty.charter.packs.domain.AssetFile;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
@@ -30,6 +32,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 /**
  * Loads a whole pack from a directory into the {@link Pack} aggregate, and writes an aggregate to a new directory
@@ -57,7 +61,8 @@ import org.jspecify.annotations.Nullable;
  * and a pack with read violations: writing it would drop content without a word. A {@code pack.yaml} with an undeclared
  * key never loads (its schema is closed, ADR-0036 decision 3), so the descriptor written is the whole of the file read.
  */
-public final class WholePackStore {
+@Service
+public final class WholePackStore implements WholePackWriteStore.Loader {
 
     /**
      * A loaded pack and what is stored beside the aggregate.
@@ -140,6 +145,7 @@ public final class WholePackStore {
      *
      * @param strategy the serialization format
      */
+    @Autowired
     public WholePackStore(SerializationStrategy strategy) {
         this(strategy, KindBindings.all(), Companions.Rules.bundled());
     }
@@ -211,6 +217,19 @@ public final class WholePackStore {
         namedPolicy.ifPresent(modelled::add);
         return new LoadedPack(
                 pack, new PackLayout(places), graphs.documents(), unmodelled(packDir, modelled, key), manifest, policy);
+    }
+
+    @Override
+    public WholePackWriteStore.Contents loadStaged(StagedPack staged) {
+        return loadStored(staged.directory()); // skeleton
+    }
+
+    @Override
+    public WholePackWriteStore.Contents loadStored(Path directory) {
+        return new WholePackWriteStore.Contents(
+                load(directory).pack(),
+                ai.speckitty.charter.packs.domain.PackCompositionFacts.NONE,
+                Map.of()); // skeleton
     }
 
     /**

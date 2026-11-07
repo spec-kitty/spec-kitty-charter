@@ -335,4 +335,9 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
             return false;
         }
     }
+
+    @Override
+    public void authorizeStaged(Pack staged, List<Write> writes) {
+        // skeleton: the staged-closure judgement lands in the next commit
+    }
 }

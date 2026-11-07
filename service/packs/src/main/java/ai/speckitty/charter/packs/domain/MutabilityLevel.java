@@ -69,6 +69,7 @@ public enum MutabilityLevel {
             case REGISTER -> this != LOCKED;
             case REPLACE -> this == OPEN;
             case RELATIONSHIP -> this == OPEN || this == EXTENDABLE;
+            case REMOVE -> true; // skeleton: the level table is applied in the next commit
         };
     }
 

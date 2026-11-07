@@ -11,6 +11,8 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.application.StagedPack;
+import ai.speckitty.charter.packs.application.WholePackWriteStore;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.Skill;
@@ -707,6 +709,60 @@ class WholePackStoreTest {
                 .hasMessage("path templates/x.tactic.yaml is a pack file of kind tactic, not a template");
         assertThat(host.resolve("out")).doesNotExist();
         assertThat(stagingLeftovers(host)).isEmpty();
+    }
+
+    // ---- the staged load of a registration (IC-04 step 2) -----------------------------------------------------------
+
+    @Test
+    @DisplayName(
+            "loadStaged digests each artifact as it would be written, so a changed artifact is told from a kept one")
+    void loadStagedDigestsEachArtifactAsItWouldBeWritten(@TempDir Path host) throws IOException {
+        Path pack = richPack(host);
+        Urn alpha = new Urn(NodeKind.TACTIC, "alpha-tactic");
+        Urn gamma = new Urn(NodeKind.TACTIC, "gamma-tactic");
+        WholePackWriteStore.Contents before = store.loadStaged(new StagedPack(pack));
+        write(
+                pack,
+                PackFixtures.ALPHA_FILE,
+                Files.readString(pack.resolve(PackFixtures.ALPHA_FILE), UTF_8)
+                        .replace("Alpha tactic", "Alpha, changed"));
+
+        WholePackWriteStore.Contents after = store.loadStaged(new StagedPack(pack));
+
+        assertThat(before.digests()).containsKeys(alpha, gamma);
+        assertThat(after.digests().get(alpha)).isNotEqualTo(before.digests().get(alpha));
+        assertThat(after.digests().get(gamma)).isEqualTo(before.digests().get(gamma));
+    }
+
+    @Test
+    @DisplayName("loadStaged hands the compose what the pack holds and the typed edges it writes")
+    void loadStagedHandsOverTheFactsOfThePack(@TempDir Path host) throws IOException {
+        Path pack = richPack(host);
+
+        WholePackWriteStore.Contents contents = store.loadStaged(new StagedPack(pack));
+
+        assertThat(contents.facts().defined())
+                .contains("tactic:alpha-tactic", "tactic:gamma-tactic", "directive:DIRECTIVE_043");
+        assertThat(contents.pack().descriptor().packId()).isEqualTo("01M5DEH8R0VNDTR1PF1XTVRE0A");
+    }
+
+    @Test
+    @DisplayName("loadStaged refuses with validation_failed and one violation per fault, never a pack_unreadable")
+    void loadStagedRefusesWithOneViolationPerFault(@TempDir Path host) throws IOException {
+        Path pack = richPack(host);
+        write(pack, "notes/readme.txt", "stray");
+        write(pack, BROKEN_FILE, "id: [unclosed");
+
+        assertThatThrownBy(() -> store.loadStaged(new StagedPack(pack)))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
+                    assertThat(refusal.violations())
+                            .extracting(violation -> violation.pointer())
+                            .contains("notes/readme.txt", BROKEN_FILE);
+                });
+        assertThat(store.loadStored(pack).pack().violations())
+                .as("loading a stored pack stays partial-tolerant")
+                .isNotEmpty();
     }
 
     private static WholePackStore.LoadedPack with(WholePackStore.LoadedPack loaded, Template template) {
