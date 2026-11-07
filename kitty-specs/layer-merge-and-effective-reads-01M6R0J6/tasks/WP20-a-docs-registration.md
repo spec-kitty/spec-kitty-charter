@@ -161,3 +161,5 @@ Divergence-register entries (core merges per artifact; PR A replaces the whole p
 - From WP15: the version history (IC-16: a downgrade is refused, the history is written inside the swap) and the strict
   impact check (a registration whose resulting closures fail to compose or break a relation rule is refused; core
   warns) are divergences to register. The start-up census WARNs for stored packs that would now be refused.
+- From WP15's review: under the strict rule (DM-01M6TQ67C9ZTNGZB9CY28JS54F), one stored dependent that cannot be read
+  makes every registration of its ancestor fail `pack_unreadable`; say so, with the repair (fix or remove the dependent).

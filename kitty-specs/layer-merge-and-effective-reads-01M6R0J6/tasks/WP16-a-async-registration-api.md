@@ -247,3 +247,7 @@ NFR-008 latency in `timingBudgets`, report-only.
   into the job's status body as the contract's notices.
 - The start-up census logs one WARN per stored pack whose closure the impact check would now refuse (decision 01M6VD94VEVPSC1JXQ1RA7YYHQ covers
   C21 through the staged gate).
+- From WP15's review: activation writes do not take the registry lock, so an activation stored while a registration runs
+  is judged against the old packs, and the registration's impact check does not see it. Make activation writes take the
+  registry write lock (they are rare), with a test that interleaves the two.
+- From WP15's review: leftover `.history/*.tmp-*` files belong in the same sweep as the commit leftovers.
