@@ -1,7 +1,7 @@
 {
-  "event_count": 147,
-  "last_event_id": "01M6TV8AA8XH0FK8Q28HDK0YQ3",
-  "materialized_at": "2026-11-07T11:10:45.576643+00:00",
+  "event_count": 148,
+  "last_event_id": "01M6TVK57BWQH9Z7MAF64N5E4W",
+  "materialized_at": "2026-11-07T11:16:40.811532+00:00",
   "mission_number": "",
   "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
   "mission_type": "",
@@ -14,8 +14,8 @@
     "done": 0,
     "for_review": 0,
     "in_progress": 0,
-    "in_review": 1,
-    "planned": 18
+    "in_review": 0,
+    "planned": 19
   },
   "work_packages": {
     "WP01": {
@@ -374,16 +374,22 @@
       "agent": "claude:opus:reviewer-renata",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
-      "force_count": 0,
+      "force_count": 1,
       "implementer_of_record": "claude:sonnet:java-jenny",
-      "lane": "in_review",
-      "last_event_id": "01M6TV8AA8XH0FK8Q28HDK0YQ3",
-      "last_transition_at": "2026-11-07T11:10:45.576643+00:00",
+      "lane": "planned",
+      "last_event_id": "01M6TVK57BWQH9Z7MAF64N5E4W",
+      "last_transition_at": "2026-11-07T11:16:40.811532+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "Contract A declared: 7 reserved operations (tag Registration, x-reserved pack-registration), PackRegistration/PackRegistrationStatus/PackSource schemas, 14 refusal codes (raised:false until served), IfMatch extension, 3 fragments, 2 @WIP feature files. Gate green (contracts, deployable, client-java, packs checks)."
       ],
       "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/layer-merge-and-effective-reads-01M6R0J6-coord/kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP11-a-contract-registration/review-cycle-1.md",
+        "reference": "review-cycle://layer-merge-and-effective-reads-01M6R0J6/WP11-a-contract-registration/review-cycle-1.md",
+        "reviewer": "claude:opus:reviewer-renata",
+        "verdict": "changes_requested"
+      },
       "role": "reviewer",
       "shell_pid": 24367,
       "shell_pid_created_at": "1794049841.73",
