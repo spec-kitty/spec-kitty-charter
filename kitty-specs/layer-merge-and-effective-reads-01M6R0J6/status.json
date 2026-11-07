@@ -1,7 +1,7 @@
 {
-  "event_count": 206,
-  "last_event_id": "01M6VTWGDDJ0B4Z3RHG62VZA22",
-  "materialized_at": "2026-11-07T20:23:33.037089+00:00",
+  "event_count": 207,
+  "last_event_id": "01M6VTY82Y0QT1KMG7E9K495SP",
+  "materialized_at": "2026-11-07T20:24:30.046435+00:00",
   "mission_number": "",
   "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
   "mission_type": "",
@@ -12,9 +12,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 0,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 13
   },
   "work_packages": {
@@ -559,22 +559,22 @@
     },
     "WP16": {
       "actor": "claude",
-      "agent": "claude:sonnet:java-jenny",
+      "agent": "claude:opus:reviewer-renata",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude",
-      "lane": "for_review",
-      "last_event_id": "01M6VTWGDDJ0B4Z3RHG62VZA22",
-      "last_transition_at": "2026-11-07T20:23:33.037089+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M6VTY82Y0QT1KMG7E9K495SP",
+      "last_transition_at": "2026-11-07T20:24:30.046435+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "verifyAll green on ceadd3c1; POST /packs stays reserved for WP17/WP18"
       ],
       "provider": "__resolved_provider_absent__",
-      "role": "implementer",
-      "shell_pid": 13416,
-      "shell_pid_created_at": "1794071845.69",
+      "role": "reviewer",
+      "shell_pid": 10065,
+      "shell_pid_created_at": "1794083065.96",
       "subtasks": {
         "T076": "done",
         "T077": "done",
