@@ -444,4 +444,94 @@ class WorktreeGuardTest {
     void theLoopbackPolicyExemptsNothing() throws Exception {
         assertUnauthorized(run(at("GET", HEALTH, "localhost")));
     }
+
+    // ---- the audit of a registration or DELETE attempt the guard refuses (NFR-010)
+    // -------------------------------------
+
+    private final java.util.List<ai.speckitty.charter.packs.application.AuditLog.Entry> audited =
+            new java.util.ArrayList<>();
+    private final WorktreeGuard auditing = new WorktreeGuard(
+            WorktreeToken.of(TOKEN), GuardPolicy.loopback(), info, () -> mapper, audited::add, "/api/v1");
+
+    private MockHttpServletRequest attempt(String method, String uri) {
+        MockHttpServletRequest request = new MockHttpServletRequest(method, uri);
+        request.setServerName("localhost");
+        return request;
+    }
+
+    @Test
+    void aRegistrationWithoutTheTokenIsEnteredOnceAsRefused401() throws Exception {
+        assertUnauthorized(run(auditing, attempt("PUT", "/api/v1/packs/acme")));
+
+        assertThat(audited).singleElement().satisfies(entry -> {
+            assertThat(entry.outcome()).isEqualTo("refused:401");
+            assertThat(entry.operation()).isEqualTo("registerPackFromArchive");
+            assertThat(entry.packId()).isEqualTo("acme");
+            assertThat(entry.worktree()).isEqualTo("wt-1");
+            assertThat(entry.credential()).isEqualTo(ai.speckitty.charter.packs.application.AuditLog.Credential.NONE);
+        });
+    }
+
+    @Test
+    void aWrongTokenOnADeleteIsEnteredAsARejectedCredential() throws Exception {
+        MockHttpServletRequest request = attempt("DELETE", "/api/v1/packs/acme/artifacts/directive/A");
+        request.addHeader("Authorization", "Bearer not-the-token");
+
+        assertUnauthorized(run(auditing, request));
+
+        assertThat(audited).singleElement().satisfies(entry -> {
+            assertThat(entry.operation()).isEqualTo("deletePackArtifact");
+            assertThat(entry.credential())
+                    .isEqualTo(ai.speckitty.charter.packs.application.AuditLog.Credential.REJECTED);
+        });
+    }
+
+    @Test
+    void aBrowserRequestToARegistrationPathIsEnteredAsRefused403() throws Exception {
+        MockHttpServletRequest request = attempt("POST", "/api/v1/packs");
+        request.addHeader("Origin", "https://evil.example");
+
+        run(auditing, request);
+
+        assertThat(audited).singleElement().satisfies(entry -> {
+            assertThat(entry.outcome()).isEqualTo("refused:403");
+            assertThat(entry.operation()).isEqualTo("registerPackFromSource");
+        });
+    }
+
+    @Test
+    void aRefusedReadOrAnUnknownPathIsNotEntered() throws Exception {
+        assertUnauthorized(run(auditing, attempt("GET", "/api/v1/packs/acme")));
+        assertUnauthorized(run(auditing, attempt("PUT", "/api/v1/packs/acme/artifacts/directive/A")));
+        assertUnauthorized(run(auditing, attempt("GET", "/api/v1/nowhere")));
+
+        assertThat(audited).isEmpty();
+    }
+
+    @Test
+    void anAcceptedRequestIsLeftToTheEdgeAndNamesWhatItCarried() throws Exception {
+        MockHttpServletRequest request = attempt("PUT", "/api/v1/packs/acme");
+        request.addHeader("Authorization", "Bearer " + TOKEN);
+
+        Outcome outcome = run(auditing, request);
+
+        assertThat(outcome.passed()).isTrue();
+        assertThat(audited)
+                .as("the audit filter and the job enter an accepted attempt, not the guard")
+                .isEmpty();
+        assertThat(request.getAttribute("ai.speckitty.charter.credential"))
+                .isEqualTo(ai.speckitty.charter.packs.application.AuditLog.Credential.WORKTREE_TOKEN);
+    }
+
+    @Test
+    void underTheDevelopmentFlagTheRequestIsRecordedAsCarryingNoToken() throws Exception {
+        WorktreeGuard open =
+                new WorktreeGuard(null, GuardPolicy.loopback(), info, () -> mapper, audited::add, "/api/v1");
+        MockHttpServletRequest request = attempt("PUT", "/api/v1/packs/acme");
+
+        assertThat(run(open, request).passed()).isTrue();
+
+        assertThat(request.getAttribute("ai.speckitty.charter.credential"))
+                .isEqualTo(ai.speckitty.charter.packs.application.AuditLog.Credential.NONE);
+    }
 }

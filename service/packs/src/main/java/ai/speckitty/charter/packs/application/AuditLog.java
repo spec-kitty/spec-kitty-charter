@@ -23,8 +23,10 @@ public interface AuditLog {
     enum Credential {
         /** The request carried the worktree bearer token the guard checked. */
         WORKTREE_TOKEN("worktree-token"),
-        /** The guard runs without a token (the development flag), so the request carried none. */
-        NONE("none");
+        /** The guard runs without a token (the development flag), or the request carried none. */
+        NONE("none"),
+        /** The request presented a credential and the guard refused it. */
+        REJECTED("rejected");
 
         private final String wire;
 

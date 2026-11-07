@@ -278,6 +278,13 @@ public final class RegistrationJobs implements AutoCloseable {
          * @return the pending status the {@code 202} answers
          */
         Status status();
+
+        /**
+         * The stored revision when the slot was taken.
+         *
+         * @return the revision token; empty when no pack was stored under the name
+         */
+        String revisionBefore();
     }
 
     /**
@@ -624,6 +631,11 @@ public final class RegistrationJobs implements AutoCloseable {
         @Override
         public Path directory() {
             return directory;
+        }
+
+        @Override
+        public String revisionBefore() {
+            return revisionBefore;
         }
 
         @Override

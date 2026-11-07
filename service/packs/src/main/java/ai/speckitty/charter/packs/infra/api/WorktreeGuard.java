@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.infra.api;
 
 import ai.speckitty.charter.api.model.Problem;
+import ai.speckitty.charter.packs.application.AuditLog;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
 import ai.speckitty.charter.web.Problems;
 import jakarta.servlet.FilterChain;
@@ -8,6 +9,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
@@ -59,6 +61,8 @@ public class WorktreeGuard extends OncePerRequestFilter {
     private final GuardPolicy policy;
     private final ServiceInfoQuery info;
     private final Supplier<ObjectMapper> mapper;
+    private final AuditLog audit;
+    private final RegistrationPaths paths;
 
     /**
      * A guard for the worktree {@code info} names.
@@ -85,23 +89,72 @@ public class WorktreeGuard extends OncePerRequestFilter {
      */
     public WorktreeGuard(
             @Nullable WorktreeToken token, GuardPolicy policy, ServiceInfoQuery info, Supplier<ObjectMapper> mapper) {
+        this(token, policy, info, mapper, entry -> {}, "/api/v1");
+    }
+
+    /**
+     * A guard that also writes the audit entry of a registration or {@code DELETE} attempt it refuses (NFR-010, decision
+     * DM-01M6TR1KDAJ64GMJD6AYNZKT59): a {@code 401} or {@code 403} is answered here, before the controller, so the guard
+     * is the only place that can enter it.
+     *
+     * @param token the worktree token, or {@code null} to enforce none (the development flag)
+     * @param policy the host names accepted and the paths a {@code GET} may reach without the token
+     * @param info the use case that knows the worktree id
+     * @param mapper the application's JSON mapper
+     * @param audit the audit log
+     * @param basePath the API base path, which tells a registration path from any other
+     */
+    public WorktreeGuard(
+            @Nullable WorktreeToken token,
+            GuardPolicy policy,
+            ServiceInfoQuery info,
+            Supplier<ObjectMapper> mapper,
+            AuditLog audit,
+            String basePath) {
         this.token = token;
         this.policy = policy;
         this.info = info;
         this.mapper = mapper;
+        this.audit = audit;
+        this.paths = new RegistrationPaths(basePath);
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
         if (!fromAcceptedName(request) || sentByBrowser(request)) {
+            auditRefusal(request, HttpStatus.FORBIDDEN);
             refuse(response, HttpStatus.FORBIDDEN);
         } else if (token != null && !policy.exemptsFromToken(request) && !bearsToken(request, token)) {
+            auditRefusal(request, HttpStatus.UNAUTHORIZED);
             response.setHeader(HttpHeaders.WWW_AUTHENTICATE, BEARER);
             refuse(response, HttpStatus.UNAUTHORIZED);
         } else {
+            request.setAttribute(
+                    AuditContext.CREDENTIAL_ATTRIBUTE,
+                    token != null && !policy.exemptsFromToken(request)
+                            ? AuditLog.Credential.WORKTREE_TOKEN
+                            : AuditLog.Credential.NONE);
             chain.doFilter(request, response);
         }
+    }
+
+    /** The entry of a registration or DELETE attempt the guard refuses: the controller never sees it. */
+    private void auditRefusal(HttpServletRequest request, HttpStatus status) {
+        paths.classify(request.getMethod(), request.getRequestURI()).ifPresent(attempt -> {
+            boolean presented = request.getHeaders(HttpHeaders.AUTHORIZATION).hasMoreElements();
+            audit.record(new AuditLog.Entry(
+                    Instant.now(),
+                    info.worktree(),
+                    presented ? AuditLog.Credential.REJECTED : AuditLog.Credential.NONE,
+                    attempt.operation(),
+                    attempt.packId(),
+                    attempt.sourceKind(),
+                    "",
+                    "refused:" + status.value(),
+                    "",
+                    ""));
+        });
     }
 
     private static boolean sentByBrowser(HttpServletRequest request) {

@@ -1,5 +1,6 @@
 package ai.speckitty.charter.deployable;
 
+import ai.speckitty.charter.packs.application.AuditLog;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
 import ai.speckitty.charter.packs.infra.api.GuardPolicy;
 import ai.speckitty.charter.packs.infra.api.WorktreeGuard;
@@ -12,6 +13,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -78,6 +80,8 @@ public class GuardWiring {
      * @param container the container profile's settings, bound before the guard is built; empty without the profile
      * @param info the use case that knows the worktree id the refusals report
      * @param mapper the application's JSON mapper, resolved when a refusal is first written
+     * @param audit the audit log, in which the guard enters the registration and DELETE attempts it refuses
+     * @param basePath the API base path, which tells a registration path from any other
      * @return the registration of the guard at the highest precedence, for request dispatches only
      * @throws IllegalStateException when the token is missing, blank, too short or from the command line or a system
      *     property; the message names the property and never the token
@@ -87,9 +91,11 @@ public class GuardWiring {
             ConfigurableEnvironment environment,
             ContainerWiring container,
             ServiceInfoQuery info,
-            ObjectProvider<ObjectMapper> mapper) {
-        FilterRegistrationBean<WorktreeGuard> registration = new FilterRegistrationBean<>(
-                new WorktreeGuard(configuredToken(environment), policy(container), info, mapper::getObject));
+            ObjectProvider<ObjectMapper> mapper,
+            AuditLog audit,
+            @Value("${charter.api.base-path:/api/v1}") String basePath) {
+        FilterRegistrationBean<WorktreeGuard> registration = new FilterRegistrationBean<>(new WorktreeGuard(
+                configuredToken(environment), policy(container), info, mapper::getObject, audit, basePath));
         registration.setName("worktreeGuard");
         registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
         registration.setDispatcherTypes(EnumSet.of(DispatcherType.REQUEST));
