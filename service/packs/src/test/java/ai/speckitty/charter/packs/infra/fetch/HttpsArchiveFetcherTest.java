@@ -215,7 +215,11 @@ class HttpsArchiveFetcherTest {
         assertThat(reader.calls).isEqualTo(1);
 
         String wrong = "0".repeat(63) + "f";
-        assertThat(refusedWith(request(URL, wrong))).isEqualTo(SourceRefusal.DIGEST_MISMATCH);
+        Path another = Files.createDirectory(directory.resolve("another-job"));
+        assertThatThrownBy(() -> fetcher().fetch(request(URL, wrong), another))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.getMessage()).startsWith("digest_mismatch: "));
         assertThat(reader.calls).isEqualTo(1);
     }
 
