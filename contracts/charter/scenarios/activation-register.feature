@@ -294,6 +294,36 @@ Feature: The activation register and the packs an activation builds on
     When I GET "/activations/a-1"
     Then the response status is 404
 
+  Scenario Outline: A preset item whose id is outside the id grammar refuses the pack as pack_unreadable (<spelling>)
+    The operator ruling of 2026-11-07: an item id is spelled with the characters a policy key allows, never as a URN,
+    a pack-qualified reference or with stray whitespace. Such an item would match no held id, so a must-have one put
+    nothing on the floor and a deny entry on DIRECTIVE_001 answered 201; the preset file is refused instead.
+    Given the org pack "alpha" with the file "presets/governing.yaml":
+      """
+      schema_version: '1.0'
+      id: governing
+      description: An item spelled outside the id grammar.
+      activated_directives:
+        - id: "<id>"
+          must_have: <must>
+      """
+    When I PUT "/activations/a-1" with the body:
+      """
+      {"schemaVersion": 1, "deactivated": {"directive": ["DIRECTIVE_001"]}}
+      """
+    Then the response status is 500
+    And the problem code is "pack_unreadable"
+    When I GET "/offering"
+    Then the response status is 500
+    And the problem code is "pack_unreadable"
+
+    Examples:
+      | spelling       | id                        | must  |
+      | URN            | directive:DIRECTIVE_001   | true  |
+      | URN upper case | DIRECTIVE:directive_001   | true  |
+      | trailing space | DIRECTIVE_001\x20           | true  |
+      | qualified      | alpha-pack::DIRECTIVE_001 | false |
+
   Scenario: A policy lock that names a held id only by case refuses the closure
     Given the org pack "alpha" with the file "pack.yaml":
       """

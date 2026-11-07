@@ -7,8 +7,9 @@
       "description": "One preset item: the id of an artifact or mission type, optionally marked must-have.",
       "properties": {
         "id": {
-          "description": "The artifact's or mission type's id (never a file stem).",
+          "description": "The artifact's or mission type's id (never a file stem), spelled with the characters a policy.yaml key allows: a letter or digit first, then letters, digits and _ / . -. A URN, a pack-qualified reference or an id with whitespace is not an id.",
           "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_/.-]*$",
           "title": "Id",
           "type": "string"
         },
