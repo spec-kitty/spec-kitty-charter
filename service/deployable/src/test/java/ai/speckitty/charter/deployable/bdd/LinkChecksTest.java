@@ -178,6 +178,31 @@ class LinkChecksTest {
     }
 
     @Test
+    void theLocationOfA202IsItsSelfAndNotThePathOfTheRequest() {
+        String accepted = "{\"registrationId\": \"01M6TQ62HXYF362GAFS2BZ3PGF\", \"state\": \"pending\","
+                + " \"packId\": \"qa\", \"acceptedAt\": \"2026-11-07T10:00:00Z\", \"_links\": {"
+                + "\"self\": {\"href\": \"/api/v1/pack-registrations/01M6TQ62HXYF362GAFS2BZ3PGF\"}}}";
+        assertThat(check(
+                        "put",
+                        "/packs/qa",
+                        null,
+                        202,
+                        "/api/v1/pack-registrations/01M6TQ62HXYF362GAFS2BZ3PGF",
+                        accepted))
+                .as("the status is the resource a 202 answers, so the Location is its self")
+                .isEmpty();
+        assertThat(check(
+                        "put",
+                        "/packs/qa",
+                        null,
+                        202,
+                        "/api/v1/pack-registrations/01M6TQ62HXYF362GAFS2BZ3PGG",
+                        accepted))
+                .as("a Location that is not the self is reported")
+                .anySatisfy(violation -> assertThat(violation).contains("Location"));
+    }
+
+    @Test
     void aLinkWithAMethodIsResolvedAgainstThatMethod() {
         String body = "{"
                 + ITEM_LINKS.replace(
