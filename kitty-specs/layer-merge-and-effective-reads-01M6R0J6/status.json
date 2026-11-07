@@ -1,7 +1,7 @@
 {
-  "event_count": 118,
-  "last_event_id": "01M6TFBZDC68ZHPHRFQFNS5RD0",
-  "materialized_at": "2026-11-07T07:43:02.572230+00:00",
+  "event_count": 120,
+  "last_event_id": "01M6TFF2PFH0441GM5H6YFJVEA",
+  "materialized_at": "2026-11-07T07:44:44.233172+00:00",
   "mission_number": "",
   "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
   "mission_type": "",
@@ -13,9 +13,9 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 22
+    "planned": 21
   },
   "work_packages": {
     "WP01": {
@@ -450,11 +450,15 @@
       "last_transition_at": "2026-11-06T13:21:11.181625+00:00"
     },
     "WP30": {
-      "actor": "finalize-tasks",
+      "actor": "claude:sonnet:java-jenny",
+      "agent": "claude:sonnet:java-jenny",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M6TDP48KFHV9B73XY2PX5VKQ",
-      "last_transition_at": "2026-11-07T07:13:38.067365+00:00"
+      "implementer_of_record": "claude:sonnet:java-jenny",
+      "lane": "in_progress",
+      "last_event_id": "01M6TFF2PFH0441GM5H6YFJVEA",
+      "last_transition_at": "2026-11-07T07:44:44.233172+00:00",
+      "shell_pid": 15869,
+      "shell_pid_created_at": "1794037476.57"
     }
   }
 }
