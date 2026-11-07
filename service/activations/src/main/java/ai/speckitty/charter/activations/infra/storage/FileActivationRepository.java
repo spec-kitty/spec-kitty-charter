@@ -6,6 +6,7 @@ import ai.speckitty.charter.activations.domain.ActivationRepository;
 import ai.speckitty.charter.activations.domain.Revision;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.AccessDeniedException;
@@ -16,6 +17,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
@@ -33,8 +35,11 @@ import org.jspecify.annotations.Nullable;
  * canonical bytes of {@link ActivationFileCodec}. The directory is named by {@link ActivationDirectoryName}, a
  * reversible encoding that keeps ids differing only in case apart on a case-insensitive file system. The file
  * holds the document alone, not its id, since its bytes are the bytes its revision hashes (FR-005); a read checks
- * instead that the directory's name decodes to the id asked for ({@link #checkedName}). No register was released
- * before this layout, so nothing is migrated. Decision {@code DM-01M6P92QKYFZW9KDGGQGX9H9VS}: an atomic move under an in-process
+ * instead that the directory's name decodes to the id asked for ({@link #checkedName}). A file at
+ * {@code schemaVersion: 1} is answered as its version 2 upgrade, at the upgrade's revision, and is left as it is: a
+ * read never writes, and the id's next write stores version 2 (decision {@code DM-01M6RFGMDH859CJP3RHHF9YC3H}). A
+ * client holding the revision of the version 1 bytes is answered {@code Stale} once. Decision
+ * {@code DM-01M6P92QKYFZW9KDGGQGX9H9VS}: an atomic move under an in-process
  * per-id lock, for one replica (ADR-0061); several processes over one root are out of scope (#349).
  *
  * <p><b>A write</b> creates the id's directory, writes {@code activation.json.tmp-<uuid>} beside the target through a
@@ -142,6 +147,35 @@ public final class FileActivationRepository implements ActivationRepository {
     }
 
     @Override
+    public List<StoredActivation> list() {
+        List<StoredActivation> listed = new ArrayList<>();
+        for (ActivationId id : storedIds()) {
+            try {
+                find(id).ifPresent(listed::add);
+            } catch (ActivationStorageException unreadable) {
+                // Left out: its own read answers the fault, and a listing that stopped at it would hide the others.
+            }
+        }
+        return List.copyOf(listed);
+    }
+
+    /** The ids of the directories of the root that are named as an activation's; any other entry is not one. */
+    private List<ActivationId> storedIds() {
+        if (!Files.isDirectory(root)) {
+            return List.of();
+        }
+        try (Stream<Path> children = Files.list(root)) {
+            return children.filter(Files::isDirectory)
+                    .map(child -> ActivationDirectoryName.tryDecode(
+                            child.getFileName().toString()))
+                    .flatMap(Optional::stream)
+                    .toList();
+        } catch (IOException e) {
+            throw new UncheckedIOException("the activation store cannot be listed", e);
+        }
+    }
+
+    @Override
     public Optional<StoredActivation> find(ActivationId id) {
         return underLock(id, () -> read(id));
     }
@@ -238,6 +272,7 @@ public final class FileActivationRepository implements ActivationRepository {
         } catch (IOException e) {
             throw new ActivationStorageException(id, "cannot be read", e);
         }
+        // The revision is the decoded document's: for a version 1 file, its upgrade's, which the next write stores.
         return Optional.of(StoredActivation.of(id, ActivationFileCodec.decode(id, bytes)));
     }
 

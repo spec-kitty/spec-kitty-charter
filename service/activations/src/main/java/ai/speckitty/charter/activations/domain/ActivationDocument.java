@@ -4,12 +4,10 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
-import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -26,15 +24,19 @@ import org.jspecify.annotations.Nullable;
  * active charter, held in its canonical form (FR-005). Immutable; equal by content.
  *
  * <ul>
- *   <li>Three states: {@code activatedKinds}, {@code missionTypes}, {@code languages} and each {@code selected} kind
- *       are absent, {@code []} or a set, and absent and {@code []} stay distinct in the canonical form (FR-008). For
- *       {@code activatedKinds} both mean that no kind is in force (ADR-0053 decision 10).
+ *   <li>The document is {@code ⟨packs, selected, deactivated, languages⟩} at {@code schemaVersion} 2 (one kind model,
+ *       IC-20): its kinds are the {@linkplain ArtifactKind#activatable() activatable} ones, {@code mission_type}
+ *       included, which is selected and denied like any other kind. There is no kind gate and no separate mission type
+ *       set.
+ *   <li>An allow list absent and an allow list {@code []} both mean none of the kind (rule W2, ADR-0053 decision 10),
+ *       and they are one document: an emptied or empty allow list is left out of the canonical form, so a client that
+ *       sends {@code []} for a kind it read as absent keeps the revision (FR-042, decision
+ *       {@code DM-01M6RN62PPCMSH6M54D2HXYZEQ}). {@code languages} keeps absent (no filter) and {@code []} (no language)
+ *       apart.
  *   <li>Allow lists and deny lists are sorted by code point and deduplicated; {@code packs} keeps its written (merge)
  *       order, each pack once. Absent {@code packs} means every configured pack.
  *   <li>A deny list is never empty: the builder refuses an empty one with a violation, and {@link #withoutDeny} drops
  *       a list it empties. An empty {@code selected} or {@code deactivated} object is left out of the canonical form.
- *   <li>The kinds are {@link #kinds()}: the activatable kinds less {@code mission_type}, which {@code missionTypes}
- *       holds.
  * </ul>
  *
  * <p>The document is built by {@link Builder}, the one place shape violations are made, so the inbound adapter and
@@ -42,22 +44,14 @@ import org.jspecify.annotations.Nullable;
  */
 public final class ActivationDocument {
 
-    /** The one document shape version this service reads and writes. */
-    public static final int SCHEMA_VERSION = 1;
+    /** The document shape version this service writes; a stored version 1 document is upgraded on read. */
+    public static final int SCHEMA_VERSION = 2;
 
     /** Lists sort by Unicode code point, as the contract's canonical form says. */
     public static final Comparator<String> CODE_POINT_ORDER = ActivationDocument::compareCodePoints;
 
-    private static final Set<ArtifactKind> KINDS =
-            Collections.unmodifiableSet(EnumSet.copyOf(Arrays.stream(ArtifactKind.values())
-                    .filter(ArtifactKind::activatable)
-                    .filter(k -> k != ArtifactKind.MISSION_TYPE)
-                    .toList()));
-
     private final int schemaVersion;
     private final Optional<List<PackRef>> packs;
-    private final Optional<SortedSet<ArtifactKind>> activatedKinds;
-    private final Optional<SortedSet<String>> missionTypes;
     private final Optional<SortedSet<String>> languages;
     private final Map<ArtifactKind, SortedSet<String>> selected;
     private final Map<ArtifactKind, SortedSet<String>> deactivated;
@@ -65,25 +59,13 @@ public final class ActivationDocument {
     private ActivationDocument(Builder builder) {
         this.schemaVersion = builder.schemaVersion;
         this.packs = builder.packs.map(List::copyOf);
-        this.activatedKinds = builder.activatedKinds.map(k -> Collections.unmodifiableSortedSet(new TreeSet<>(k)));
-        this.missionTypes = builder.missionTypes.map(ActivationDocument::frozen);
         this.languages = builder.languages.map(ActivationDocument::frozen);
-        this.selected = frozenLists(builder.selected);
+        this.selected = frozenLists(withoutEmpty(builder.selected));
         this.deactivated = frozenLists(builder.deactivated);
     }
 
     /**
-     * The kinds a document selects, deactivates or activates: {@link ArtifactKind#activatable()} less
-     * {@code mission_type} (the contract's {@code ActivatableKind}).
-     *
-     * @return the kinds, unmodifiable
-     */
-    public static Set<ArtifactKind> kinds() {
-        return KINDS;
-    }
-
-    /**
-     * A builder of the minimal document, {@code {"schemaVersion":1}}.
+     * A builder of the minimal document, {@code {"schemaVersion":2}}.
      *
      * @return the builder
      */
@@ -110,34 +92,6 @@ public final class ActivationDocument {
     }
 
     /**
-     * The kinds in force.
-     *
-     * @return the kinds, in kind order; empty when absent, which means none, as {@code []} does
-     */
-    public Optional<SortedSet<ArtifactKind>> activatedKinds() {
-        return activatedKinds;
-    }
-
-    /**
-     * Whether a kind is in force: only when {@code activatedKinds} names it (absent means none).
-     *
-     * @param kind the kind
-     * @return {@code true} when the document activates the kind
-     */
-    public boolean inForce(ArtifactKind kind) {
-        return activatedKinds.map(k -> k.contains(kind)).orElse(false);
-    }
-
-    /**
-     * The mission types in force, by id.
-     *
-     * @return the ids; empty when absent, which means none, as {@code []} does
-     */
-    public Optional<SortedSet<String>> missionTypes() {
-        return missionTypes;
-    }
-
-    /**
      * The project's languages.
      *
      * @return the tokens; empty when absent, which means no language filter
@@ -147,7 +101,7 @@ public final class ActivationDocument {
     }
 
     /**
-     * The allow lists: a kind present holds its list, {@code []} included; a kind missing is absent.
+     * The allow lists: a kind present holds its ids, never none; a kind missing selects none of the kind.
      *
      * @return the allow lists by kind, unmodifiable
      */
@@ -159,7 +113,7 @@ public final class ActivationDocument {
      * One kind's allow list.
      *
      * @param kind the kind
-     * @return the ids; empty when the kind's list is absent
+     * @return the ids, never none; empty when the document selects none of the kind
      */
     public Optional<SortedSet<String>> selected(ArtifactKind kind) {
         return Optional.ofNullable(selected.get(kind));
@@ -187,7 +141,7 @@ public final class ActivationDocument {
     /**
      * The document with one more deny entry.
      *
-     * @param kind a kind of {@link #kinds()}
+     * @param kind an activatable kind
      * @param id the artifact's declared id
      * @return the new document
      */
@@ -216,7 +170,7 @@ public final class ActivationDocument {
     /**
      * The document with one more allow entry; an absent allow list becomes the list of that one id.
      *
-     * @param kind a kind of {@link #kinds()}
+     * @param kind an activatable kind
      * @param id the artifact's declared id
      * @return the new document
      */
@@ -229,19 +183,15 @@ public final class ActivationDocument {
     }
 
     /**
-     * The document without one allow entry (unselect): the id leaves its kind's allow list, or {@code missionTypes}
-     * for {@code mission_type}. A list it empties stays, as {@code []}; an absent list stays absent.
+     * The document without one allow entry (unselect): the id leaves its kind's allow list, and a list it empties is
+     * left out, as an absent one is (none of the kind either way).
      *
-     * @param kind a kind of {@link #kinds()}, or {@code mission_type}
+     * @param kind an activatable kind
      * @param id the artifact's declared id
      * @return the new document
      */
     public ActivationDocument withoutSelected(ArtifactKind kind, String id) {
         Builder builder = toBuilder();
-        if (kind == ArtifactKind.MISSION_TYPE) {
-            builder.missionTypes = builder.missionTypes.map(
-                    ids -> ids.stream().filter(held -> !held.equals(id)).toList());
-        }
         Optional.ofNullable(builder.selected.get(kind)).ifPresent(ids -> ids.remove(id));
         return new ActivationDocument(builder);
     }
@@ -272,8 +222,9 @@ public final class ActivationDocument {
     }
 
     /**
-     * The canonical form as a value tree for {@link Jcs}: members in the schema's order, absent members left out,
-     * {@code []} kept, and an empty {@code selected} or {@code deactivated} object left out.
+     * The canonical form as a value tree for {@link Jcs}: members in the schema's order, absent members left out, an
+     * empty allow list and an empty {@code selected} or {@code deactivated} object left out, and {@code []}
+     * {@code languages} kept.
      *
      * @return the tree, unmodifiable
      */
@@ -282,8 +233,6 @@ public final class ActivationDocument {
         tree.put("schemaVersion", schemaVersion);
         packs.ifPresent(
                 p -> tree.put("packs", p.stream().map(PackRef::toCanonicalTree).toList()));
-        activatedKinds.ifPresent(k -> tree.put("activatedKinds", tokens(k)));
-        missionTypes.ifPresent(m -> tree.put("missionTypes", List.copyOf(m)));
         putKindLists(tree, "selected", selected);
         putKindLists(tree, "deactivated", deactivated);
         languages.ifPresent(l -> tree.put("languages", List.copyOf(l)));
@@ -318,16 +267,10 @@ public final class ActivationDocument {
     private Builder toBuilder() {
         Builder builder = new Builder();
         builder.packs = packs;
-        builder.activatedKinds = activatedKinds.map(k -> new TreeSet<>(k));
-        builder.missionTypes = missionTypes.map(List::copyOf);
         builder.languages = languages.map(List::copyOf);
         selected.forEach((kind, ids) -> builder.selected.put(kind, new TreeSet<>(ids)));
         deactivated.forEach((kind, ids) -> builder.deactivated.put(kind, new TreeSet<>(ids)));
         return builder;
-    }
-
-    private static List<String> tokens(Collection<ArtifactKind> kinds) {
-        return kinds.stream().map(ArtifactKind::token).sorted(CODE_POINT_ORDER).toList();
     }
 
     private static void putKindLists(
@@ -346,6 +289,16 @@ public final class ActivationDocument {
         TreeSet<String> sorted = new TreeSet<>(CODE_POINT_ORDER);
         sorted.addAll(ids);
         return Collections.unmodifiableSortedSet(sorted);
+    }
+
+    private static Map<ArtifactKind, SortedSet<String>> withoutEmpty(Map<ArtifactKind, SortedSet<String>> lists) {
+        Map<ArtifactKind, SortedSet<String>> kept = new EnumMap<>(ArtifactKind.class);
+        lists.forEach((kind, ids) -> {
+            if (!ids.isEmpty()) {
+                kept.put(kind, ids);
+            }
+        });
+        return kept;
     }
 
     private static Map<ArtifactKind, SortedSet<String>> frozenLists(Map<ArtifactKind, SortedSet<String>> lists) {
@@ -410,13 +363,11 @@ public final class ActivationDocument {
      * {@link DocumentRules} checks against the closure.
      *
      * @param packs the packs as written, a repeated pack included; empty when absent
-     * @param missionTypes the mission type ids as written; empty when absent
      * @param selected the allow lists as written, per kind the document keeps
      * @param deactivated the deny lists as written, per kind the document keeps
      */
     public record Written(
             List<PackRef> packs,
-            List<String> missionTypes,
             Map<ArtifactKind, List<String>> selected,
             Map<ArtifactKind, List<String>> deactivated) {
 
@@ -424,13 +375,11 @@ public final class ActivationDocument {
          * Copies every list.
          *
          * @param packs the packs
-         * @param missionTypes the mission types
          * @param selected the allow lists
          * @param deactivated the deny lists
          */
         public Written {
             packs = List.copyOf(packs);
-            missionTypes = List.copyOf(missionTypes);
             selected = copyOfLists(selected);
             deactivated = copyOfLists(deactivated);
         }
@@ -444,7 +393,6 @@ public final class ActivationDocument {
         public static Written canonical(ActivationDocument document) {
             return new Written(
                     document.packs().orElse(List.of()),
-                    document.missionTypes().map(List::copyOf).orElse(List.of()),
                     copyOfLists(document.selected()),
                     copyOfLists(document.deactivated()));
         }
@@ -459,9 +407,10 @@ public final class ActivationDocument {
 
     /**
      * Builds a document, one method per member, collecting shape violations rather than throwing on them:
-     * {@code unknown_kind} for a kind outside {@link #kinds()}, {@code duplicate_pack} for a pack named twice and
-     * {@code empty_deny_list} for a deny list written empty. Shapes the contract's schema already refuses
-     * ({@code schemaVersion} other than 1, an empty {@code packs} list) are programming errors here and throw.
+     * {@code unknown_kind} for a kind that is not {@linkplain ArtifactKind#activatable() activatable},
+     * {@code duplicate_pack} for a pack named twice and {@code empty_deny_list} for a deny list written empty. Shapes
+     * the contract's schema already refuses ({@code schemaVersion} other than 2, an empty {@code packs} list) are
+     * programming errors here and throw.
      * Every pointer indexes the body as written; {@link Built#written()} keeps the written lists for
      * {@link DocumentRules}.
      */
@@ -469,8 +418,6 @@ public final class ActivationDocument {
 
         private int schemaVersion = SCHEMA_VERSION;
         private Optional<List<PackRef>> packs = Optional.empty();
-        private Optional<SortedSet<ArtifactKind>> activatedKinds = Optional.empty();
-        private Optional<List<String>> missionTypes = Optional.empty();
         private Optional<List<String>> languages = Optional.empty();
         private final Map<ArtifactKind, SortedSet<String>> selected = new EnumMap<>(ArtifactKind.class);
         private final Map<ArtifactKind, SortedSet<String>> deactivated = new EnumMap<>(ArtifactKind.class);
@@ -490,7 +437,8 @@ public final class ActivationDocument {
          */
         public Builder schemaVersion(int version) {
             if (version != SCHEMA_VERSION) {
-                throw new IllegalArgumentException("The activation document shape version is 1, not " + version + ".");
+                throw new IllegalArgumentException(
+                        "The activation document shape version is " + SCHEMA_VERSION + ", not " + version + ".");
             }
             this.schemaVersion = version;
             return this;
@@ -529,35 +477,6 @@ public final class ActivationDocument {
         }
 
         /**
-         * The kinds in force; a kind outside {@link #kinds()} is an {@code unknown_kind} violation and left out.
-         *
-         * @param written the kinds as written
-         * @return this builder
-         */
-        public Builder activatedKinds(List<ArtifactKind> written) {
-            SortedSet<ArtifactKind> kept = new TreeSet<>();
-            for (int i = 0; i < written.size(); i++) {
-                ArtifactKind kind = written.get(i);
-                if (knownKind(kind, "/activatedKinds/" + i)) {
-                    kept.add(kind);
-                }
-            }
-            this.activatedKinds = Optional.of(kept);
-            return this;
-        }
-
-        /**
-         * The mission types in force.
-         *
-         * @param ids the mission type ids as written
-         * @return this builder
-         */
-        public Builder missionTypes(Collection<String> ids) {
-            this.missionTypes = Optional.of(List.copyOf(ids));
-            return this;
-        }
-
-        /**
          * The project's languages.
          *
          * @param tokens the language tokens as written
@@ -569,7 +488,9 @@ public final class ActivationDocument {
         }
 
         /**
-         * One kind's allow list; a kind outside {@link #kinds()} is an {@code unknown_kind} violation and left out.
+         * One kind's allow list; a kind that is not activatable is an {@code unknown_kind} violation and left out. An
+         * empty list is none of the kind, as an absent one is, and is left out of the document (it stays in the
+         * written form, which only indexes ids).
          *
          * @param kind the kind
          * @param ids the ids as written; empty for {@code []}
@@ -584,8 +505,8 @@ public final class ActivationDocument {
         }
 
         /**
-         * One kind's deny list; an empty one is an {@code empty_deny_list} violation, and a kind outside
-         * {@link #kinds()} an {@code unknown_kind} one; either is left out.
+         * One kind's deny list; an empty one is an {@code empty_deny_list} violation, and a kind that is not
+         * activatable an {@code unknown_kind} one; either is left out.
          *
          * @param kind the kind
          * @param ids the ids as written
@@ -601,7 +522,7 @@ public final class ActivationDocument {
         }
 
         private boolean knownKind(ArtifactKind kind, String pointer) {
-            if (KINDS.contains(kind)) {
+            if (kind.activatable()) {
                 return true;
             }
             violations.add(new RefusalViolation(
@@ -624,8 +545,7 @@ public final class ActivationDocument {
          * @return the built document
          */
         public Built build() {
-            Written written =
-                    new Written(writtenPacks, missionTypes.orElse(List.of()), writtenSelected, writtenDeactivated);
+            Written written = new Written(writtenPacks, writtenSelected, writtenDeactivated);
             return new Built(new ActivationDocument(this), violations, written);
         }
     }

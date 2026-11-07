@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -52,6 +53,15 @@ public final class OfferingReadService {
     private final PackDescriptorRepository descriptors;
     private final PackArtifactRepository packArtifacts;
     private final ConsistentRead read;
+    private final Supplier<Resolution> resolution;
+
+    /**
+     * The configured packs and each one's descriptor, read and judged: what every compose starts from.
+     *
+     * @param configured the configured packs, in catalog order
+     * @param reads each one's descriptor or the refusal reading it gave
+     */
+    private record Resolution(List<ConfiguredPack> configured, List<DescriptorRead> reads) {}
 
     /**
      * One configured pack as the offering names it.
@@ -111,6 +121,38 @@ public final class OfferingReadService {
         this.descriptors = Objects.requireNonNull(descriptors, "descriptors");
         this.packArtifacts = Objects.requireNonNull(packArtifacts, "packArtifacts");
         this.read = Objects.requireNonNull(read, "read");
+        this.resolution = this::resolveNow;
+    }
+
+    private OfferingReadService(OfferingReadService source, Supplier<Resolution> resolution) {
+        this.catalog = source.catalog;
+        this.descriptors = source.descriptors;
+        this.packArtifacts = source.packArtifacts;
+        this.read = source.read;
+        this.resolution = resolution;
+    }
+
+    /**
+     * An offering that reads the configured packs and judges their descriptors once, on its first compose, and starts
+     * every later compose from that. Each compose of this service re-reads and re-judges every descriptor of the catalog;
+     * a caller that composes many closures over inputs it knows cannot change (the registration impact check, under the
+     * registry lock) pins the resolution so that the work of a compose is that of its closure, not of the catalog.
+     *
+     * @return an offering over the same ports whose catalog and descriptors are resolved once
+     */
+    public OfferingReadService pinned() {
+        Resolution[] kept = new Resolution[1];
+        return new OfferingReadService(this, () -> {
+            if (kept[0] == null) {
+                kept[0] = resolveNow();
+            }
+            return kept[0];
+        });
+    }
+
+    private Resolution resolveNow() {
+        List<ConfiguredPack> configured = catalog.configured();
+        return new Resolution(configured, readDescriptors(configured));
     }
 
     /**
@@ -228,8 +270,9 @@ public final class OfferingReadService {
      * @throws CharterRefusal as {@link #composed()} refuses
      */
     public ComposedClosure composedWithFacts() {
-        List<ConfiguredPack> configured = catalog.configured();
-        return composed(configured, configured.stream().map(ConfiguredPack::id).toList());
+        Resolution resolved = resolution.get();
+        return composed(
+                resolved, resolved.configured().stream().map(ConfiguredPack::id).toList());
     }
 
     /**
@@ -243,7 +286,7 @@ public final class OfferingReadService {
      */
     public ComposedClosure composedWithFacts(Collection<PackIdentifier> roots) {
         Objects.requireNonNull(roots, "roots");
-        return composed(catalog.configured(), roots);
+        return composed(resolution.get(), roots);
     }
 
     /**
@@ -269,9 +312,9 @@ public final class OfferingReadService {
         return composedWithFacts(roots).packs();
     }
 
-    private ComposedClosure composed(List<ConfiguredPack> configured, Collection<PackIdentifier> roots) {
+    private ComposedClosure composed(Resolution resolved, Collection<PackIdentifier> roots) {
         try {
-            List<DescriptorRead> reads = readDescriptors(configured);
+            List<DescriptorRead> reads = resolved.reads();
             Set<String> closure = closureMembers(reads, roots);
             Map<String, PackCompositionFacts> facts = new HashMap<>();
             List<PackUnderResolution> members = withFacts(reads, Set.copyOf(roots), closure, facts);
@@ -304,8 +347,6 @@ public final class OfferingReadService {
             preset.artifacts()
                     .forEach((kind, items) ->
                             items.forEach(item -> mentions.add(new Urn(NodeKind.of(kind), item.id()).toString())));
-            preset.missionTypes()
-                    .forEach(item -> mentions.add(Urn.missionType(item.id()).toString()));
         }
         facts.policy().urnEntries().keySet().forEach(urn -> mentions.add(urn.toString()));
         return mentions;

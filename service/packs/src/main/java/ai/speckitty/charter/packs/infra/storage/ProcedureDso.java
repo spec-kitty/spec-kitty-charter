@@ -17,7 +17,6 @@ import java.util.Optional;
  * @param exitCondition the {@code exit_condition}
  * @param steps the {@code steps}, in authored order
  * @param antiPatterns the {@code anti_patterns}, in authored order
- * @param references the {@code references}, in authored order with duplicates kept
  * @param notes the {@code notes}, when stated
  * @param appliesToLanguages the {@code applies_to_languages}, in authored order
  */
@@ -30,7 +29,6 @@ record ProcedureDso(
         String exitCondition,
         List<Step> steps,
         List<AntiPattern> antiPatterns,
-        List<Reference> references,
         Optional<String> notes,
         List<String> appliesToLanguages) {
 
@@ -45,7 +43,6 @@ record ProcedureDso(
      * @param exitCondition the exit condition
      * @param steps the steps
      * @param antiPatterns the anti-patterns
-     * @param references the references
      * @param notes the notes
      * @param appliesToLanguages the languages
      */
@@ -59,7 +56,6 @@ record ProcedureDso(
         Objects.requireNonNull(notes, "notes");
         steps = List.copyOf(steps);
         antiPatterns = List.copyOf(antiPatterns);
-        references = List.copyOf(references);
         appliesToLanguages = List.copyOf(appliesToLanguages);
     }
 
@@ -119,31 +115,6 @@ record ProcedureDso(
             Objects.requireNonNull(content, "content");
             Objects.requireNonNull(badExample, "badExample");
             Objects.requireNonNull(goodExample, "goodExample");
-        }
-    }
-
-    /**
-     * One reference, carried verbatim.
-     *
-     * @param type the artifact-kind token, as plain text
-     * @param id the referenced id
-     * @param when the {@code when} text, when stated
-     * @param reason the {@code reason} text, when stated
-     */
-    record Reference(String type, String id, Optional<String> when, Optional<String> reason) {
-        /**
-         * Checks that every component is present.
-         *
-         * @param type the type
-         * @param id the id
-         * @param when the when text
-         * @param reason the reason text
-         */
-        Reference {
-            Objects.requireNonNull(type, "type");
-            Objects.requireNonNull(id, "id");
-            Objects.requireNonNull(when, "when");
-            Objects.requireNonNull(reason, "reason");
         }
     }
 }

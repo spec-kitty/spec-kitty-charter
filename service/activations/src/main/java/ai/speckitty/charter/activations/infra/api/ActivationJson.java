@@ -1,5 +1,6 @@
 package ai.speckitty.charter.activations.infra.api;
 
+import ai.speckitty.charter.api.model.Activation;
 import ai.speckitty.charter.api.model.ActivationChange;
 import ai.speckitty.charter.api.model.ActivationConfig;
 import ai.speckitty.charter.api.model.DeactivatedArtifacts;
@@ -8,6 +9,7 @@ import ai.speckitty.charter.api.model.PackPin;
 import ai.speckitty.charter.api.model.PresetApplication;
 import ai.speckitty.charter.api.model.SelectedArtifacts;
 import ai.speckitty.charter.api.model.SelectionRequest;
+import ai.speckitty.charter.api.model.SkippedReport;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -41,6 +43,7 @@ public class ActivationJson {
     @Bean
     public JacksonModule activationJsonModule() {
         return new SimpleModule("charter-activation-json")
+                .setMixInAnnotation(Activation.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(ActivationConfig.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(PackPin.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(SelectedArtifacts.class, OmitAbsentMembers.class)
@@ -48,7 +51,8 @@ public class ActivationJson {
                 .setMixInAnnotation(SelectionRequest.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(ExclusionRequest.class, OmitAbsentMembers.class)
                 .setMixInAnnotation(PresetApplication.class, OmitAbsentMembers.class)
-                .setMixInAnnotation(ActivationChange.class, OmitAbsentMembers.class);
+                .setMixInAnnotation(ActivationChange.class, OmitAbsentMembers.class)
+                .setMixInAnnotation(SkippedReport.class, OmitAbsentMembers.class);
     }
 
     /**

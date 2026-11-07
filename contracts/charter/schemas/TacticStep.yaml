@@ -2,7 +2,7 @@ title: TacticStep
 description: One step of a tactic.
 type: object
 additionalProperties: false
-required: [title, description, examples, references]
+required: [title, description, examples]
 properties:
   title:
     type: string
@@ -24,11 +24,3 @@ properties:
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/TacticStep.java
       symbol: TacticStep.examples
-  references:
-    type: array
-    description: The artifacts the step points at; empty when none are declared.
-    items:
-      $ref: TacticReference.yaml
-    x-source:
-      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/TacticStep.java
-      symbol: TacticStep.references

@@ -11,12 +11,6 @@ expected_output_artifacts:
 - artifact_key: evidence.sources.research
   artifact_class: evidence
   path_pattern: research/source-register.csv
-references:
-- type: directive
-  id: DIRECTIVE_010
-  when: always
-- type: tactic
-  id: premortem-risk-identification
 steps:
 - id: scoping
   title: Research Scoping
@@ -33,11 +27,6 @@ steps:
     artifact_class: output
     path_pattern: spec.md
     blocking: true
-  references:
-  - type: tactic
-    id: requirements-validation-workflow
-  - type: directive
-    id: DIRECTIVE_003
 - id: methodology
   title: Methodology
   role: researcher

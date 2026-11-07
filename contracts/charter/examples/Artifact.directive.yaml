@@ -10,12 +10,9 @@ value:
     intent: Guard it.
     enforcement: required
     scope: null
-    procedures: []
     integrityRules: []
     validationCriteria: []
     explicitAllowances: []
-    references: []
-    relationships: []
   _links:
     self:
       href: /api/v1/packs/qa/artifacts/directive/GUARD
