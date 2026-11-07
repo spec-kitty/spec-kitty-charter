@@ -28,8 +28,8 @@ class ActivationMapperTest {
 
     @Test
     void anAbsentListAndAnEmptyOneStayApart() {
-        ActivationConfig config =
-                new ActivationConfig(1).missionTypes(List.of()).selected(new SelectedArtifacts().directive(List.of()));
+        ActivationConfig config = new ActivationConfig(1)
+                .selected(new SelectedArtifacts().directive(List.of()).missionType(List.of()));
 
         ActivationDocument document = mapper.toDocument(config).document();
 
@@ -47,11 +47,10 @@ class ActivationMapperTest {
     void everyMemberReachesTheDocument() {
         ActivationConfig config = new ActivationConfig(1)
                 .packs(List.of(new PackPin("beta"), new PackPin("alpha").version("1.0.0")))
-                .activatedKinds(List.of(
-                        ActivationConfig.ActivatedKindsEnum.TACTIC, ActivationConfig.ActivatedKindsEnum.AGENT_PROFILE))
-                .missionTypes(List.of("software-dev"))
                 .languages(List.of("java"))
-                .selected(new SelectedArtifacts().agentProfile(List.of("p2", "p1")))
+                .selected(new SelectedArtifacts()
+                        .agentProfile(List.of("p2", "p1"))
+                        .missionType(List.of("software-dev")))
                 .deactivated(new DeactivatedArtifacts().tactic(List.of("T1")));
 
         ActivationDocument.Built built = mapper.toDocument(config);
@@ -59,8 +58,7 @@ class ActivationMapperTest {
         assertThat(built.violations()).isEmpty();
         ActivationDocument document = built.document();
         assertThat(document.packs()).contains(List.of(PackRef.of("beta"), PackRef.pinned("alpha", "1.0.0")));
-        assertThat(document.activatedKinds().orElseThrow())
-                .containsExactly(ArtifactKind.TACTIC, ArtifactKind.AGENT_PROFILE);
+        assertThat(document.activatedKinds()).isEmpty();
         assertThat(document.missionTypes().orElseThrow()).containsExactly("software-dev");
         assertThat(document.languages().orElseThrow()).containsExactly("java");
         assertThat(document.selected(ArtifactKind.AGENT_PROFILE).orElseThrow()).containsExactly("p1", "p2");
@@ -82,8 +80,10 @@ class ActivationMapperTest {
     void aConfigRoundTripsThroughTheDocumentInCanonicalForm() {
         ActivationConfig config = new ActivationConfig(1)
                 .packs(List.of(new PackPin("beta"), new PackPin("alpha").version("1.0.0")))
-                .missionTypes(List.of("b", "a", "b"))
-                .selected(new SelectedArtifacts().directive(List.of("D2", "D1")).skill(List.of()))
+                .selected(new SelectedArtifacts()
+                        .directive(List.of("D2", "D1"))
+                        .skill(List.of())
+                        .missionType(List.of("b", "a", "b")))
                 .deactivated(new DeactivatedArtifacts().antiPattern(List.of("X")));
 
         ActivationConfig canonical = mapper.toConfig(mapper.toDocument(config).document());
@@ -94,8 +94,7 @@ class ActivationMapperTest {
                 .containsExactly(
                         org.assertj.core.groups.Tuple.tuple("beta", null),
                         org.assertj.core.groups.Tuple.tuple("alpha", "1.0.0"));
-        assertThat(canonical.getMissionTypes()).containsExactly("a", "b");
-        assertThat(canonical.getActivatedKinds()).isNull();
+        assertThat(canonical.getSelected().getMissionType()).containsExactly("a", "b");
         assertThat(canonical.getLanguages()).isNull();
         assertThat(canonical.getSelected().getDirective()).containsExactly("D1", "D2");
         assertThat(canonical.getSelected().getSkill()).isEmpty();

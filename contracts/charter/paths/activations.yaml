@@ -7,7 +7,13 @@ post:
     its closure, the packs it names and their depends_on and parent_pack closure (every configured pack when it names none): an
     unknown pack, kind or artifact is 422 activation_invalid with violations, and a deny entry on an artifact a
     pack of the closure requires or locks is 409 artifact_required or artifact_locked naming the pack. A body over
-    1 MiB, an unknown member or a null is 422 activation_invalid. Nothing is stored on a refusal.
+    1 MiB, an unknown member or a null is 422 activation_invalid. A body that sends activatedKinds or missionTypes is
+    422 validation_failed, with one violation per member at its pointer naming its replacement (selected.mission_type
+    for missionTypes; selected.<kind> for activatedKinds): the two members are not part of the document since the one
+    kind model (IC-20), and no deprecation window applies. A pack pinned to a version no pack of the
+    closure holds is 422 activation_invalid (version_not_held): the create keeps the refusal for a pin in its own
+    body, while the other writes drop such a pin (ActivationChange.droppedPins). A deny entry on a mission type is
+    judged as on any kind: on a required or locked one it is 409. Nothing is stored on a refusal.
   tags:
   - Activation
   requestBody:

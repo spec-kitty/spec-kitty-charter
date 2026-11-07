@@ -48,6 +48,7 @@ public class ActivationChangeMapper {
                 references(change.applied()),
                 references(change.cleared()),
                 skipped(change.skipped()),
+                List.of(),
                 Map.of("up", new Link(activations.self(outcome.stored().id().value()))));
         if (!change.dropped().isEmpty()) {
             answer.setDropped(references(change.dropped()));

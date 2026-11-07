@@ -54,7 +54,6 @@ files:
   - LanguageToken.yaml
   - PackPin.yaml
   - PresetApplication.yaml
-  - SelectableKind.yaml
   - SelectedArtifacts.yaml
   - SelectionRequest.yaml
   - SharedSkip.yaml

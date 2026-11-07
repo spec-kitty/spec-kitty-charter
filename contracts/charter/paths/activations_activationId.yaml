@@ -55,12 +55,18 @@ put:
     that deactivates a required or locked artifact is 409 and nothing is stored; an unknown pack, kind or artifact
     is 422 with violations. Both If-Match and If-None-Match on one request is 400, and so is an If-None-Match other
     than * (a malformed precondition); so is an If-Match that is neither a quoted revision nor *, and an id outside the
-    declared pattern. A body over 1 MiB, an unknown member or a null is 422 activation_invalid. A
+    declared pattern. A body over 1 MiB, an unknown member or a null is 422 activation_invalid. A body that sends
+    activatedKinds or missionTypes is 422 validation_failed, with one violation per member at its pointer naming its
+    replacement (selected.mission_type for missionTypes; selected.<kind> for activatedKinds): the two members are not
+    part of the document since the one kind model (IC-20), and no deprecation window applies. A deny entry
+    on a mission type is judged as on any kind: on a required or locked one it is 409. A pack pinned to a version no
+    pack of the closure holds is not refused: the pin is dropped (B1, decision DM-01M6RN5Y406SB4KA13QYMQ2P8J), and the
+    answer's config is the stored document without it. A
     stored document an offering change made stale is served on read and refused on write (ADR-0059 D4): a write
     that still names an id the closure no longer holds is 422, and one that denies an id now required or locked is
     409, whatever the stored document held. A per-artifact or preset write instead drops the stored ids the closure
     no longer holds and reports them in its dropped (ADR-0059 amendment of 2026-11-06); this write never drops an
-    id the client sent. A storage 500 may follow a committed change; read before retrying.
+    artifact id the client sent. A storage 500 may follow a committed change; read before retrying.
   tags:
   - Activation
   parameters:
