@@ -17,3 +17,7 @@ Expected until then: `check_docs.py adr` reports a numbering gap at 0064 on the 
 
 The gate runs `verifyAll` (and targeted module checks during implementation). It does not run per-target-environment builds (native or per-OS service builds) or the timing checks (`:packs:timingBudgets`, `:activations:timingBudgets`). This applies to PR A and to the B/C runner.
 The whole-pack round trip (`:packs:wholePackRoundTrip`) runs only at closeout, not in the per-WP gate.
+
+## Supply chain re-check (DIRECTIVE_051), 2026-11-07
+
+OSV (api.osv.dev, which aggregates GHSA) reports 0 known vulnerabilities for org.apache.commons:commons-compress 1.28.0, commons-codec:commons-codec 1.21.0 and commons-io:commons-io 2.20.0 (WP13's new dependencies). Put this in the PR A supply-chain section.
