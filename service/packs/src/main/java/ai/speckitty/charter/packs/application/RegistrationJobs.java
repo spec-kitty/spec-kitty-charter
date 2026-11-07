@@ -670,7 +670,7 @@ public final class RegistrationJobs implements AutoCloseable {
             try {
                 task = owner.executor.submit(this::run);
             } catch (RejectedExecutionException stopped) {
-                end(new Refused(Kind.BUSY, null, STOPPING_DETAIL));
+                end(new Refused(Kind.BUSY, null, STOPPING_DETAIL), false);
             }
         }
 
@@ -704,7 +704,7 @@ public final class RegistrationJobs implements AutoCloseable {
             } finally {
                 deleteDirectory();
                 if (result != null) {
-                    end(result);
+                    end(result, false);
                 }
                 clearWorker();
             }
@@ -799,19 +799,11 @@ public final class RegistrationJobs implements AutoCloseable {
         }
 
         private void endUnlessCommitting(Refused refusal) {
-            Thread active;
-            synchronized (this) {
-                if (phase == Phase.COMMITTING || phase == Phase.ENDED) {
-                    return;
+            if (end(refusal, true)) {
+                Future<?> queued = task;
+                if (queued != null) {
+                    queued.cancel(false);
                 }
-                active = worker;
-            }
-            if (end(refusal) && active != null) {
-                active.interrupt();
-            }
-            Future<?> queued = task;
-            if (queued != null) {
-                queued.cancel(false);
             }
         }
 
@@ -819,16 +811,21 @@ public final class RegistrationJobs implements AutoCloseable {
          * Ends the job with {@code result} if it has not ended: the one end, whoever reaches it, and the one audit entry
          * of the attempt. A job whose worker is not running owns its directory no longer.
          *
+         * @param result how the job ends
+         * @param unlessCommitting whether a job that began its commit is left alone, which the check makes in the same
+         *     critical section as the end, so a commit that begins meanwhile is never overwritten
          * @return whether this call ended it
          */
-        private boolean end(Ending result) {
+        private boolean end(Ending result, boolean unlessCommitting) {
             Instant now = owner.clock.instant();
             boolean idle;
+            Thread active;
             synchronized (this) {
-                if (phase == Phase.ENDED) {
+                if (phase == Phase.ENDED || (unlessCommitting && phase == Phase.COMMITTING)) {
                     return false;
                 }
-                idle = worker == null;
+                active = worker;
+                idle = active == null;
                 phase = Phase.ENDED;
                 finishedAt = now;
                 ending = result;
@@ -836,6 +833,9 @@ public final class RegistrationJobs implements AutoCloseable {
                 record(now, result);
             }
             owner.inFlight.decrementAndGet();
+            if (unlessCommitting && active != null) {
+                active.interrupt();
+            }
             if (idle) {
                 deleteDirectory();
             }
