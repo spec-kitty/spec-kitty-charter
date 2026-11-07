@@ -4,7 +4,7 @@ artifact_type: spec-kitty.analysis-report
 command: /spec-kitty.analyze
 mission_slug: layer-merge-and-effective-reads-01M6R0J6
 mission_id: 01M6R0J642MF7F33XVMMPSBSAT
-generated_at: '2026-11-07T10:30:37.473691+00:00'
+generated_at: '2026-11-07T11:39:11.260868+00:00'
 analyzer_agent: unknown
 input_artifacts:
   spec.md:
@@ -12,7 +12,7 @@ input_artifacts:
     sha256: 86546e93a0ba9421297cc85c70042eef21092e77b691bc23759ffe48d0b60d94
   plan.md:
     path: kitty-specs/layer-merge-and-effective-reads-01M6R0J6/plan.md
-    sha256: 2b3843853f5b02e40e9cde148ca3d7ec995a01f43ad6f8706cd1ef1796b01774
+    sha256: d43b98935b1da06c19491ea51b071e1a6829f88aeb9dc5f1edb515f00f1baee7
   tasks.md:
     path: kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks.md
     sha256: 521629a48b49c0af6e484f673af42ced1e51fa73204c00adcc47cb8c3354850d
@@ -21,10 +21,10 @@ input_artifacts:
     sha256: 4294d3d4acf870b61bc424ac17d3d34708093d4dbc6126f5b1f72941b23497cc
 verdict: ready
 issue_counts:
-  critical: 0
-  low: 6
   medium: 0
+  critical: 0
   high: 0
+  low: 6
   info: 0
 findings:
 - id: C1

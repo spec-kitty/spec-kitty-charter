@@ -550,7 +550,7 @@ A → B → C.
   shard or `drg/fragment.yaml`.
 - **Artifact `DELETE`:**
   1. Load the pack.
-  2. `404` when it does not hold the artifact (`pack_not_found`, `kind_not_found`, `artifact_not_found`).
+  2. `404` when it does not hold the artifact (`pack_not_found`, `kind_not_found`, or the per-kind not-found code, as `getPackArtifact` answers on the same path (`directive_not_found`, ...; decision `DM-01M6TWVNN6EXVYWVVM9M2GZP3C`)).
   3. Scan for inbound references (`InboundReferences`, new, research R6; plan delta squad, finding 4). The scan is
      built from the `edges()` of `PackCompositionFacts` of every configured pack, the pack being edited included,
      with each edge attributed to its source artifact and to the pack whose graph documents hold it; from the
@@ -1101,7 +1101,7 @@ own PR stacked on #399 before PR A (decision `DM-01M6RFGB9NVD9MDWZ6AP0PBYH7`), u
 - (Superseded 2026-11-07, plan delta squad finding 14: there is no `PackIfMatch` parameter in the contract. The new
   operations reuse `parameters/IfMatch.yaml`, extended to cover a pack revision; it stays `required: false` and each
   `DELETE` states its `428` rule in its description. `PackIfMatchRequired` is dropped.)
-- Each removal `404` carries its own code: `pack_not_found`, `kind_not_found`, `artifact_not_found`,
+- Each removal `404` carries its own code: `pack_not_found`, `kind_not_found`, the per-kind artifact code (decision `DM-01M6TWVNN6EXVYWVVM9M2GZP3C`),
   `relationship_not_found`.
 - New source codes: `pack_source_refused` (422), `pack_source_unavailable` (503), and `502`/`504` for an upstream
   failure or timeout, as plain `Problem`s.

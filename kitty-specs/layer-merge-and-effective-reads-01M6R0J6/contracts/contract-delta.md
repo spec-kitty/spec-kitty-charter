@@ -81,7 +81,7 @@ changes.
     checked under the registry lock (research R-lock).
   - **Answers:**
     - `204`, with `ETag` (the new revision);
-    - `404`: `pack_not_found`, `kind_not_found` (existing) or `artifact_not_found`, each its own code;
+    - `404`: `pack_not_found`, `kind_not_found` (existing) or the per-kind not-found code, as `getPackArtifact` answers on the same path (`directive_not_found`, ...; decision `DM-01M6TWVNN6EXVYWVVM9M2GZP3C`), each its own code;
     - `409`:
       - `artifact_referenced`, whose `packs` member (at most 100) names the referring packs and whose `violations`
         name every referring artifact, a preset item or a descriptor `overrides` entry included (A10, B3).
@@ -149,7 +149,6 @@ changes.
 - **Existing, not added:** `kind_not_found` (404, raised; `CharterRefusalCode.yaml` and `RefusalCode.KIND_NOT_FOUND`).
   `deletePackArtifact` is added to its text only.
 - **Raised by the new operations,** under ADR-0056's per-operation status (`x-refusal.operations`):
-  - `artifact_not_found` (404 on `deletePackArtifact`);
   - `validation_failed` (422);
   - `registration_conflict` (409);
   - `governance_policy_violation` (409);
