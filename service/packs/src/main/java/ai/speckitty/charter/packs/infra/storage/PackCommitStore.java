@@ -2,14 +2,17 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
 import ai.speckitty.charter.packs.application.PackRevision;
+import ai.speckitty.charter.packs.application.PackVersionHistory;
 import ai.speckitty.charter.packs.application.PackWriteGeneration;
 import ai.speckitty.charter.packs.application.RegistryWriteLock;
 import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.application.WholePackWriteStore;
+import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
@@ -21,6 +24,7 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -333,9 +337,47 @@ public final class PackCommitStore implements WholePackWriteStore {
     }
 
     @Override
-    public java.util.List<ai.speckitty.charter.packs.application.PackVersionHistory.Entry> versionHistory(
-            String packId) {
-        return java.util.List.of();
+    public List<PackVersionHistory.Entry> versionHistory(String packId) {
+        return new VersionHistoryStore(writableRoot()).read(packId);
+    }
+
+    /**
+     * The version history's next state for a tree about to be stored, written beside its file before the swap and
+     * published right after it (IC-16): a write that fails does so before the pack changes, and the rename that
+     * publishes it cannot meet a full disk.
+     */
+    private record HistoryWrite(VersionHistoryStore store, String packId, Path staged) {
+
+        static HistoryWrite stage(Path writableRoot, String packId, Path tree, PackRevision revision)
+                throws IOException {
+            VersionHistoryStore store = new VersionHistoryStore(writableRoot);
+            PackVersionHistory.Entry entry =
+                    new PackVersionHistory.Entry(packVersionOf(tree), revision.token(), Instant.now());
+            List<PackVersionHistory.Entry> next = PackVersionHistory.appended(store.read(packId), entry);
+            return new HistoryWrite(store, packId, store.stage(packId, next));
+        }
+
+        void publish() {
+            store.publish(packId, staged);
+        }
+
+        void discard() {
+            store.discard(staged);
+        }
+
+        private static String packVersionOf(Path tree) throws IOException {
+            String text = Files.readString(tree.resolve("pack.yaml"), StandardCharsets.UTF_8);
+            if (PackDescriptorReader.read(text) instanceof FileRead.Read<PackDescriptor> read) {
+                return read.value().packVersion();
+            }
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "the tree to store has no readable pack.yaml");
+        }
+    }
+
+    private static void discard(@Nullable HistoryWrite history) {
+        if (history != null) {
+            history.discard();
+        }
     }
 
     @Override
@@ -344,20 +386,25 @@ public final class PackCommitStore implements WholePackWriteStore {
         Path parent = requireParent(liveDir);
         hideStaleAsides(liveDir); // so a stale aside copy is never restored over this pack later (#281)
         @Nullable Path copy = null;
+        @Nullable HistoryWrite history = null;
         try {
             // The tree is copied beside the pack, on its filesystem, so that the swap is a rename; the staging root may
             // be on another one.
             copy = Files.createTempDirectory(parent, ".pack-commit-");
             copyTree(staged.directory(), copy);
             PackRevision revision = revisionOf(copy, pack);
+            history = HistoryWrite.stage(writableRoot(), pack.value(), copy, revision);
             swapBracketed(pack.value(), copy, liveDir);
             copy = null; // swapped into place; there is nothing left to clean up
+            history.publish();
             return revision;
         } catch (CharterRefusal refusal) {
             deleteTree(copy);
+            discard(history);
             throw refusal;
         } catch (IOException | RuntimeException failure) {
             deleteTree(copy);
+            discard(history);
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "cannot replace pack " + pack.value(), failure);
         }
     }
@@ -377,19 +424,24 @@ public final class PackCommitStore implements WholePackWriteStore {
         Path root = writableRoot();
         Path destination = root.resolve(packId);
         @Nullable Path staging = null;
+        @Nullable HistoryWrite history = null;
         try {
             Files.createDirectories(root);
             staging = Files.createTempDirectory(root, ".pack-write-");
             copyTree(staged.directory(), staging);
             PackRevision revision = revisionOf(staging, new PackIdentifier(packId));
+            history = HistoryWrite.stage(root, packId, staging, revision);
             placeBracketed(packId, staging, destination);
             staging = null; // moved into place; nothing left to clean up
+            history.publish();
             return revision;
         } catch (CharterRefusal refusal) {
             deleteTree(staging);
+            discard(history);
             throw refusal;
         } catch (IOException | RuntimeException failure) {
             deleteTree(staging);
+            discard(history);
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "cannot create pack " + packId, failure);
         }
     }

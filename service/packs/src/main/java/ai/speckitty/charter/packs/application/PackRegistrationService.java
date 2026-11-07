@@ -345,22 +345,29 @@ public final class PackRegistrationService {
 
     /**
      * The same revision is a no-op, whatever the precondition says; the same version with another revision is a
-     * conflict; any other version goes on.
+     * conflict, and so is a version the name was registered at before with another revision, stored or not (IC-16);
+     * any other version goes on.
      */
     private Optional<RegistrationOutcome> applyVersionRule(Upload upload, Optional<Stored> stored) {
-        if (stored.isEmpty()) {
-            return Optional.empty();
-        }
-        if (stored.get().revision().equals(upload.revision())) {
+        if (stored.isPresent() && stored.get().revision().equals(upload.revision())) {
             return Optional.of(outcome(Outcome.UNCHANGED, upload, upload.revision()));
         }
-        if (stored.get().descriptor().packVersion().equals(upload.descriptor().packVersion())) {
+        if (stored.isPresent()
+                && stored.get()
+                        .descriptor()
+                        .packVersion()
+                        .equals(upload.descriptor().packVersion())) {
             throw new CharterRefusal(
                     RefusalCode.PACK_VERSION_CONFLICT,
                     "The pack " + upload.packId() + " is stored at pack_version "
                             + upload.descriptor().packVersion()
                             + " with another revision; send a new pack_version, or the content that is stored.");
         }
+        PackVersionHistory.requireNotReused(
+                upload.packId(),
+                store.versionHistory(upload.packId()),
+                upload.descriptor().packVersion(),
+                upload.revision());
         return Optional.empty();
     }
 

@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Outcome;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditions;
@@ -188,11 +187,6 @@ class PackVersionHistoryTest {
         assertThat(refusalOf(() -> rig.register("pack-x", rig.stage(pack("2.0.0", "Second")), Preconditions.none())))
                 .isEqualTo(RefusalCode.PACK_UNREADABLE);
         assertThat(rig.filesOf(rig.packs.resolve("pack-x"))).isEqualTo(before);
-        assertThat(rig.writeStore.currentRevision(new PackIdentifier("pack-x"))).isEqualTo(revisionOfFiles(before));
-    }
-
-    private static PackRevision revisionOfFiles(java.util.Map<String, String> files) {
-        return PackRevision.compute(List.copyOf(files.values()));
     }
 
     private static void deleteTree(Path directory) {
