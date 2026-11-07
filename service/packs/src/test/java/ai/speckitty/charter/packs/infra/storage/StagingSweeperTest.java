@@ -51,10 +51,11 @@ class StagingSweeperTest {
     @Test
     void aDirectoryWithFilesInsideIsRemovedWhole(@TempDir Path host) throws IOException {
         Path staging = Files.createDirectories(host.resolve("staging"));
-        Path orphan = directoryAged(staging, "orphan", Duration.ofMinutes(20));
+        Path orphan = Files.createDirectories(staging.resolve("orphan"));
         Files.createDirectories(orphan.resolve("tree/directives"));
         Files.writeString(orphan.resolve("tree/directives/A.directive.yaml"), "x");
         Files.writeString(orphan.resolve("archive"), "bytes");
+        Files.setLastModifiedTime(orphan, FileTime.from(NOW.minus(Duration.ofMinutes(20))));
 
         sweeper(staging, host.resolve("packs"), Set.of(), new RegistryWriteLock(Duration.ofSeconds(1)))
                 .sweep();
@@ -153,8 +154,12 @@ class StagingSweeperTest {
                 return null;
             }
         }) {
-            sweeper(staging, host.resolve("packs"), Set.of(), new RegistryWriteLock(Duration.ofSeconds(1)))
+            Object repeating = sweeper(
+                            staging, host.resolve("packs"), Set.of(), new RegistryWriteLock(Duration.ofSeconds(1)))
                     .start(recording);
+            assertThat(repeating)
+                    .as("the repeating run, which the recording scheduler does not make")
+                    .isNull();
         }
 
         assertThat(orphan).as("the startup sweep ran before start returned").doesNotExist();

@@ -70,8 +70,11 @@ public final class FreeSpaceCheck implements RegistrationJobs.StorageRoom {
             throw new CharterRefusal(
                     RefusalCode.PACK_UNREADABLE, "cannot read the free space of the pack volume", failure);
         }
-        if (usable >= REQUIRED_BYTES) {
-            return;
+        if (usable < REQUIRED_BYTES) {
+            throw new CharterRefusal(
+                    RefusalCode.PACK_STORAGE_FULL,
+                    "The pack volume has " + usable / MIB + " MiB free; a registration needs " + REQUIRED_BYTES / MIB
+                            + " MiB, twice the " + ARCHIVE_BOUND_BYTES / MIB + " MiB archive bound.");
         }
     }
 }
