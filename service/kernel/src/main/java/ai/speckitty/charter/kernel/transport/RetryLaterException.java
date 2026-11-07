@@ -10,6 +10,7 @@ public class RetryLaterException extends RuntimeException {
 
     private static final long serialVersionUID = 1L;
 
+    /** The seconds a client waits before it sends the request again; at least 1. */
     private final int retryAfterSeconds;
 
     /**
