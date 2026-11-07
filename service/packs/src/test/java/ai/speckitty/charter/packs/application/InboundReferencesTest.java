@@ -6,31 +6,15 @@ import static ai.speckitty.charter.packs.application.PackRegistrationServiceTest
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
-import ai.speckitty.charter.kernel.domain.NodeKind;
-import ai.speckitty.charter.kernel.domain.PackDependency;
-import ai.speckitty.charter.kernel.domain.PackDescriptor;
-import ai.speckitty.charter.kernel.domain.PackIdentifier;
-import ai.speckitty.charter.kernel.domain.PackLevel;
-import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
-import ai.speckitty.charter.kernel.domain.RelationType;
-import ai.speckitty.charter.kernel.domain.Relationship;
-import ai.speckitty.charter.kernel.domain.Urn;
-import ai.speckitty.charter.packs.application.InboundReferences.Referrer;
-import ai.speckitty.charter.packs.application.InboundReferences.StagedTree;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Outcome;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditions;
 import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Packs;
 import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Rig;
-import ai.speckitty.charter.packs.domain.ConfiguredPack;
-import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
-import ai.speckitty.charter.packs.domain.PackCompositionFacts;
-import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -56,7 +40,8 @@ class InboundReferencesTest {
         return Packs.of(BASE_ID, "base", version, "org")
                 .directive("A_ONE", "A")
                 .directive("B_ONE", "B")
-                .directive("KEEP", "Keep");
+                .directive("KEEP", "Keep")
+                .tactic("t-one");
     }
 
     private static Packs derived(String version, String extraDescriptor) {
@@ -74,8 +59,13 @@ class InboundReferencesTest {
 
     private static Rig rigWith(Path host, Packs dependent) {
         Rig rig = new Rig(host);
-        rig.register("base", rig.stage(base("1.0.0")), Preconditions.none());
-        rig.register("derived", rig.stage(dependent), Preconditions.none());
+        assertThat(rig.register("base", rig.stage(base("1.0.0")), Preconditions.none())
+                        .outcome())
+                .isEqualTo(Outcome.CREATED);
+        assertThat(rig.register("derived", rig.stage(dependent), Preconditions.none())
+                        .outcome())
+                .as("the dependent pack is a sound upload")
+                .isEqualTo(Outcome.CREATED);
         return rig;
     }
 
@@ -205,80 +195,139 @@ class InboundReferencesTest {
                 .isEqualTo(Outcome.REPLACED);
     }
 
-    // ---- the data-only fields that the facts keep only as references --------------------------------------------
+    // ---- the data-only fields of ADR-0064 decision 11, each as a real pack file
+    // ---------------------------------------
 
-    private static final Urn A_ONE = new Urn(NodeKind.DIRECTIVE, "A_ONE");
-
-    private static PackDescriptor descriptor(String packId, String name, List<PackDependency> dependencies) {
-        return new PackDescriptor(
-                packId,
-                "1.0.0",
-                Optional.empty(),
-                name,
-                Optional.of(PackLevel.PROJECT),
-                Optional.empty(),
-                PackPaths.none(),
-                dependencies);
+    /** One data-only field: a real file of the dependent pack that names {@code target}, and the artifact it names. */
+    record NearMiss(String label, String file, String text, String removedFile, String target) {
+        @Override
+        public String toString() {
+            return label;
+        }
     }
 
-    /** The referrers of A_ONE when "derived" builds on the staged "base" and its facts are {@code derivedFacts}. */
-    private static List<Referrer> scanWith(PackCompositionFacts derivedFacts) {
-        PackDescriptor baseDescriptor = descriptor(BASE_ID, "base", List.of());
-        PackDescriptor derivedDescriptor =
-                descriptor(DERIVED_ID, "derived", List.of(new PackDependency(BASE_ID, ">=1.0")));
-        PackIdentifier derivedId = new PackIdentifier("derived");
-        PackDescriptorRepository descriptors = new PackDescriptorRepository() {
-            @Override
-            public PackDescriptor get(PackIdentifier pack) {
-                return derivedDescriptor;
-            }
+    private static final String T_FILE = "tactics/t-one.tactic.yaml";
+    private static final String PROFILE = """
+            profile-id: prof
+            name: Prof
+            roles: [implementer]
+            purpose: x
+            specialization:
+              primary-focus: f
+            """;
 
-            @Override
-            public Optional<PackDescriptor> find(PackIdentifier pack) {
-                return Optional.of(derivedDescriptor);
-            }
+    private static final String GLOSSARY = """
+            id: g
+            provenance: org
+            terms:
+            - surface: term
+              definition: d
+              confidence: 1.0
+              status: active
+              see_also: [A_ONE, directive:A_ONE]
+            """;
 
-            @Override
-            public void save(PackIdentifier pack, PackDescriptor descriptor) {
-                throw new UnsupportedOperationException("the scan only reads");
-            }
-        };
-        InboundReferences scan = new InboundReferences(
-                () -> List.of(new ConfiguredPack(derivedId, PackLevel.PROJECT)), descriptors, pack -> derivedFacts);
-        StagedTree staged =
-                new StagedTree(Optional.of(new PackIdentifier("base")), baseDescriptor, PackCompositionFacts.NONE);
-        return scan.scan(staged, Set.of(A_ONE));
-    }
+    private static final String CONTRACT = """
+            id: c
+            schema_version: '1.0'
+            action: plan
+            mission: m
+            steps:
+            - id: first
+              description: d
+              delegates_to:
+                kind: directive
+                candidates: [A_ONE]
+            """;
 
-    static Stream<String> dataOnlyFields() {
+    static Stream<NearMiss> nearMisses() {
         return Stream.of(
-                "agent-profile directive-references",
-                "agent-profile tactic, toolguide and styleguide references",
-                "glossary see_also",
-                "mission-step-contract delegations");
+                new NearMiss(
+                        "agent-profile directive-references",
+                        "agent_profiles/prof.agent.yaml",
+                        PROFILE + "directive-references:\n  - code: A_ONE\n    name: A\n    rationale: r\n",
+                        A_FILE,
+                        "directive:A_ONE"),
+                new NearMiss(
+                        "agent-profile tactic-references",
+                        "agent_profiles/prof.agent.yaml",
+                        PROFILE + "tactic-references:\n  - id: t-one\n    rationale: r\n",
+                        T_FILE,
+                        "tactic:t-one"),
+                new NearMiss(
+                        "glossary see_also",
+                        "glossary_packs/g.glossary-pack.yaml",
+                        GLOSSARY,
+                        A_FILE,
+                        "directive:A_ONE"),
+                new NearMiss(
+                        "mission-step-contract delegation",
+                        "mission_step_contracts/c.step-contract.yaml",
+                        CONTRACT,
+                        A_FILE,
+                        "directive:A_ONE"));
     }
 
-    @ParameterizedTest(name = "{0} names the removed artifact")
-    @MethodSource("dataOnlyFields")
-    void aDataOnlyFieldTheFactsKeepAsAReferenceIsNotInbound(String field) {
-        PackCompositionFacts keepsItAsAReference =
-                new PackCompositionFacts(List.of(), List.of("directive:D_ONE"), List.of("directive:A_ONE"));
-        Relationship edge = Relationship.of(new Urn(NodeKind.DIRECTIVE, "D_ONE"), A_ONE, RelationType.REQUIRES);
-        PackCompositionFacts writesAnEdge = new PackCompositionFacts(
-                List.of(),
-                List.of("directive:D_ONE"),
-                List.of("directive:A_ONE"),
-                MutabilityPolicySource.empty(),
-                List.of(),
-                List.of(edge));
+    @ParameterizedTest(name = "{0} naming the removed artifact")
+    @MethodSource("nearMisses")
+    void aDataOnlyFieldIsNotInboundButAnEdgeOntoTheSameArtifactIs(NearMiss field, @TempDir Path host) {
+        Packs withField = derived("1.0.0", "").file(field.file(), field.text());
+        Rig near = rigWith(host.resolve("near"), withField);
+        Packs withoutTarget = base("2.0.0").with(field.removedFile(), null);
 
-        assertThat(scanWith(keepsItAsAReference)).as(field).isEmpty();
-        assertThat(scanWith(writesAnEdge))
-                .as("the control: the same pack writing an edge onto it")
-                .singleElement()
-                .satisfies(referrer -> {
-                    assertThat(referrer.referrer()).isEqualTo("directive:D_ONE");
-                    assertThat(referrer.removed()).isEqualTo(A_ONE);
-                });
+        assertThat(near.register("base", near.stage(withoutTarget), Preconditions.none())
+                        .outcome())
+                .as("the %s is selection or cross-reference data, not an edge", field.label())
+                .isEqualTo(Outcome.REPLACED);
+
+        Packs withEdge = withField.file("refs.graph.yaml", edge("directive:D_ONE", field.target()));
+        Rig control = rigWith(host.resolve("control"), withEdge);
+        assertThat(refusal(() -> control.register("base", control.stage(withoutTarget), Preconditions.none()))
+                        .code())
+                .as("the control: the same pack with an edge onto the same artifact")
+                .isEqualTo(RefusalCode.ARTIFACT_REFERENCED);
+    }
+
+    // ---- an unreadable stored pack, and a rename (DM-01M6V4WMF8CD8NBN7A065E9ZQ5) ---------------------------------
+
+    @Test
+    void aStoredPackThatCannotBeReadStillHasItsRemovedArtifactScanned(@TempDir Path host) throws IOException {
+        Rig rig =
+                rigWith(host, derived("1.0.0", "").file("refs.graph.yaml", edge("directive:D_ONE", "directive:A_ONE")));
+        Files.writeString(
+                rig.packs.resolve("base/directives/KEEP.directive.yaml"),
+                Packs.directiveText("KEEP", "Keep") + "references:\n  - directive:X\n");
+        Packs withoutA = base("2.0.0").with(A_FILE, null);
+
+        CharterRefusal refused = refusal(() -> rig.register("base", rig.stage(withoutA), Preconditions.none()));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.ARTIFACT_REFERENCED);
+        assertThat(rig.filesOf(rig.packs.resolve("base")))
+                .as("A_ONE is still there")
+                .containsKey(A_FILE);
+
+        Packs keepsA = base("2.0.0");
+        assertThat(rig.register("base", rig.stage(keepsA), Preconditions.none()).outcome())
+                .as("the control: the fixed upload keeps every referenced id and repairs the pack")
+                .isEqualTo(Outcome.REPLACED);
+    }
+
+    @Test
+    void aQualifiedReferenceToTheOldNameStillBlocksARenamingReplace(@TempDir Path host) {
+        Rig rig = rigWith(
+                host, derived("1.0.0", "").file("refs.graph.yaml", edge("directive:D_ONE", "base::directive:A_ONE")));
+        Packs renamedWithoutA = Packs.of(BASE_ID, "base2", "2.0.0", "org")
+                .directive("B_ONE", "B")
+                .directive("KEEP", "Keep");
+
+        assertThat(refusal(() -> rig.register("base", rig.stage(renamedWithoutA), Preconditions.none()))
+                        .code())
+                .isEqualTo(RefusalCode.ARTIFACT_REFERENCED);
+
+        Packs renamedWithA = renamedWithoutA.directive("A_ONE", "A");
+        assertThat(rig.register("base", rig.stage(renamedWithA), Preconditions.none())
+                        .outcome())
+                .as("the control: the rename alone breaks nothing the scan judges")
+                .isEqualTo(Outcome.REPLACED);
     }
 }

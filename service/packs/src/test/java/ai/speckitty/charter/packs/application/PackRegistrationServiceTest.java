@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
@@ -21,6 +22,7 @@ import ai.speckitty.charter.packs.infra.storage.DomainRepositoryService;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
 import ai.speckitty.charter.packs.infra.storage.PackCommitStore;
 import ai.speckitty.charter.packs.infra.storage.RelationshipShard;
+import ai.speckitty.charter.packs.infra.storage.SlowSwapCommitStores;
 import ai.speckitty.charter.packs.infra.storage.StorageRootLocations;
 import ai.speckitty.charter.packs.infra.storage.WholePackStore;
 import ai.speckitty.charter.packs.infra.storage.YamlSerializationStrategy;
@@ -547,6 +549,85 @@ class PackRegistrationServiceTest {
                 .isEqualTo(Outcome.REPLACED);
     }
 
+    // ---- an unreadable stored pack is diffed by what can still be read (DM-01M6V4WMF8CD8NBN7A065E9ZQ5) --------------
+
+    /** A directive that still carries a field ADR-0064 D5 removed: the pack that holds it cannot be read whole. */
+    private static final String LEGACY_DIRECTIVE =
+            Packs.directiveText("DERIVED_ONE", "Own") + "references:\n  - directive:X\n";
+
+    private static Packs unreadableDerived(String version) {
+        return derived(version).file("directives/DERIVED_ONE.directive.yaml", LEGACY_DIRECTIVE);
+    }
+
+    @Test
+    void aStoredPackThatCannotBeReadStillGatesTheRemovalOfALockedArtifact(@TempDir Path host) {
+        Rig rig = rigWithBase(host);
+        rig.install("derived", unreadableDerived("1.0.0").directive("LOCKED_ONE", "Mine"));
+        Map<String, String> before = rig.filesOf(rig.packs.resolve("derived"));
+
+        assertThat(refusalOf(() -> rig.register("derived", rig.stage(derived("2.0.0")), Preconditions.none())))
+                .isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
+        assertThat(rig.filesOf(rig.packs.resolve("derived")))
+                .as("nothing changed")
+                .isEqualTo(before);
+
+        StagedPack keeps = rig.stage(derived("2.0.0").directive("LOCKED_ONE", "Mine"));
+        assertThat(rig.register("derived", keeps, Preconditions.none()).outcome())
+                .as("the control: the fixed upload keeps the locked artifact and repairs the pack")
+                .isEqualTo(Outcome.REPLACED);
+    }
+
+    @Test
+    void aStoredPackThatCannotBeReadStillGatesTheDroppedEdgeOfALockedSource(@TempDir Path host) {
+        Rig rig = rigWithBase(host);
+        rig.install("derived", unreadableDerived("1.0.0").file("edges.graph.yaml", shard("LOCKED_ONE")));
+
+        assertThat(refusalOf(() -> rig.register("derived", rig.stage(derived("2.0.0")), Preconditions.none())))
+                .isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
+
+        StagedPack keeps = rig.stage(derived("2.0.0").file("edges.graph.yaml", shard("LOCKED_ONE")));
+        assertThat(rig.register("derived", keeps, Preconditions.none()).outcome())
+                .as("the control: the fixed upload keeps the edge")
+                .isEqualTo(Outcome.REPLACED);
+    }
+
+    @Test
+    void aReplaceMayNotTakeTheNameOfAnotherStoredPack(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("pack-x", rig.stage(Packs.of(ORG_PACK, "pack-x", "1.0.0", "org")), Preconditions.none());
+        rig.register("other", rig.stage(Packs.of(OTHER_PACK, "other", "1.0.0", "org")), Preconditions.none());
+        Map<String, String> before = rig.filesOf(rig.packs.resolve("pack-x"));
+
+        assertThat(refusalOf(() -> rig.register(
+                        "pack-x", rig.stage(Packs.of(ORG_PACK, "other", "2.0.0", "org")), Preconditions.none())))
+                .isEqualTo(RefusalCode.REGISTRATION_CONFLICT);
+        assertThat(rig.filesOf(rig.packs.resolve("pack-x"))).isEqualTo(before);
+
+        assertThat(rig.register(
+                                "pack-x",
+                                rig.stage(Packs.of(ORG_PACK, "renamed", "2.0.0", "org")),
+                                Preconditions.none())
+                        .outcome())
+                .as("the control: a name nothing holds")
+                .isEqualTo(Outcome.REPLACED);
+    }
+
+    @Test
+    void anEmptyDirectoryAnInterruptedCreateLeftDoesNotWedgeThePackId(@TempDir Path host) throws IOException {
+        Rig rig = new Rig(host);
+        Files.createDirectories(rig.packs.resolve("newpack"));
+
+        StagedPack upload = rig.stage(Packs.of(ORG_PACK, "newpack", "1.0.0", "org"));
+        RegistrationOutcome[] answered = new RegistrationOutcome[1];
+
+        assertThatCode(() -> answered[0] = rig.register("newpack", upload, Preconditions.createOnly()))
+                .as("an empty entry is no pack: the create takes it, even create-only")
+                .doesNotThrowAnyException();
+        assertThat(answered[0]).isNotNull();
+        assertThat(answered[0].outcome()).isEqualTo(Outcome.CREATED);
+        assertThat(rig.filesOf(rig.packs.resolve("newpack"))).containsKey("pack.yaml");
+    }
+
     // ---- helpers -------------------------------------------------------------------------------------------------
 
     static RefusalCode refusalOf(Runnable action) {
@@ -647,6 +728,9 @@ class PackRegistrationServiceTest {
         final PackRegistrationService service;
         private final AtomicInteger staged = new AtomicInteger();
 
+        /** What the swap does inside the window where the live directory is missing; a test sets it. */
+        volatile Runnable midSwap = () -> {};
+
         Rig(Path host) {
             this.host = host;
             this.packs = host.resolve("packs");
@@ -654,7 +738,8 @@ class PackRegistrationServiceTest {
             YamlSerializationStrategy strategy = new YamlSerializationStrategy();
             this.locations = new StorageRootLocations(packs);
             this.repository = new DomainRepositoryService(locations, strategy);
-            this.commits = new PackCommitStore(locations, strategy, lock, generation);
+            this.commits =
+                    SlowSwapCommitStores.pausingMidSwap(locations, strategy, live -> midSwap.run(), lock, generation);
             this.writeStore = new CommitStorePackWriteStore(locations, strategy, commits, lock, generation);
             ConsistentRead read = new ConsistentRead(new FileSystemPackSources(locations::all), generation);
             WritePolicyGate gate = new PackMutabilityPolicy(

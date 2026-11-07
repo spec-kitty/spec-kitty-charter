@@ -61,11 +61,13 @@ class RegistrationConcurrencyTest {
     private final ConcurrentLinkedQueue<String> failures = new ConcurrentLinkedQueue<>();
     private final AtomicInteger reads = new AtomicInteger();
     private final AtomicInteger staleAfterRetries = new AtomicInteger();
+    private final AtomicInteger overlapped = new AtomicInteger();
 
     @Test
     @Timeout(240)
     void everyReadSeesOneCompleteVersionWhileEightUploadsReplaceThePack(@TempDir Path host) throws Exception {
         Rig rig = new Rig(host);
+        rig.midSwap = () -> pause(1);
         assertThat(rig.register(PACK, rig.stage(version(0, 0, "m-initial")), Preconditions.none())
                         .outcome())
                 .isEqualTo(Outcome.CREATED);
@@ -79,6 +81,9 @@ class RegistrationConcurrencyTest {
                 .as("a mixed answer, a failed upload or a stored pack that is no upload")
                 .isEmpty();
         assertThat(reads.get()).as("the readers did get answers").isGreaterThan(RUNS);
+        assertThat(overlapped.get())
+                .as("reads were taken while the generation was odd, so the readers did overlap a swap")
+                .isGreaterThan(0);
         assertThat(staleAfterRetries.get())
                 .as(
                         "a read still stale_input after its retries (which passes: Q7), of %d snapshots",
@@ -123,6 +128,9 @@ class RegistrationConcurrencyTest {
     private void readOnce(Rig rig, ConsistentRead read, int run) {
         PackIdentifier pack = new PackIdentifier(PACK);
         for (int retry = 0; ; retry++) {
+            if (PackWriteGeneration.isSwapping(rig.generation.registry())) {
+                overlapped.incrementAndGet();
+            }
             try {
                 String markers = read.read("stale", () -> markersOf(rig, pack)).value();
                 reads.incrementAndGet();
@@ -142,6 +150,14 @@ class RegistrationConcurrencyTest {
                 }
                 read.awaitWrites(Duration.ofMillis(250));
             }
+        }
+    }
+
+    private static void pause(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -210,6 +226,54 @@ class RegistrationConcurrencyTest {
                 .anyMatch(upload -> rig.filesOf(upload.directory()).equals(rig.filesOf(rig.packs.resolve(name))));
         if (!winnerStored) {
             failures.add(name + ": the stored pack is none of the uploaded trees");
+        }
+    }
+
+    @Test
+    @Timeout(240)
+    void ofEightCreateOnlyRegistrationsOfOneNameOneIsCreatedAndTheRestFailThePrecondition(@TempDir Path host)
+            throws Exception {
+        Rig rig = new Rig(host);
+
+        for (int run = 0; run < CREATE_RUNS; run++) {
+            raceCreateOnly(rig, "only-" + run, run);
+        }
+
+        assertThat(failures)
+                .as("a create-only race that was not one creation and seven 412s")
+                .isEmpty();
+    }
+
+    private void raceCreateOnly(Rig rig, String name, int run) throws Exception {
+        List<StagedPack> uploads = new ArrayList<>();
+        for (int upload = 0; upload < UPLOADS; upload++) {
+            // distinct versions: only If-None-Match: * can tell a loser from a replace
+            uploads.add(rig.stage(Packs.of("01M6R0WP14" + "%016d".formatted(run), "only-" + run, "1.0." + upload, "org")
+                    .directive("DIRECTIVE_D", "m-" + upload)));
+        }
+        CyclicBarrier start = new CyclicBarrier(UPLOADS);
+        List<Callable<Object>> tasks = new ArrayList<>();
+        for (StagedPack upload : uploads) {
+            tasks.add(() -> {
+                start.await(30, TimeUnit.SECONDS);
+                try {
+                    return rig.register(name, upload, Preconditions.createOnly());
+                } catch (PreconditionException stale) {
+                    return stale.kind();
+                }
+            });
+        }
+        List<Object> answers = invokeAll(tasks);
+        long created = answers.stream()
+                .filter(RegistrationOutcome.class::isInstance)
+                .map(RegistrationOutcome.class::cast)
+                .filter(outcome -> outcome.outcome() == Outcome.CREATED)
+                .count();
+        long failed = answers.stream()
+                .filter(answer -> answer == PreconditionException.Kind.STALE)
+                .count();
+        if (created != 1 || failed != UPLOADS - 1) {
+            failures.add(name + ": answers " + answers);
         }
     }
 
