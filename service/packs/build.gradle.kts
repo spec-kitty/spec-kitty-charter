@@ -251,15 +251,15 @@ tasks.test {
 tasks.check { dependsOn(openPacksRoundTrip) }
 
 // The nightly mutation floor (#239; operator rulings of 2026-11-05). PIT mutates domain, application, infra.storage
-// (infra.storage.config included), infra.fetch, and since WP13 infra.archive and infra.api (the archive extractor and the
-// REST adapter, which carry the upload's safety rules; they sit in no floor group), but never the Spring wiring
-// (application.config, infra.fetch.config), and runs only the unit tests of those packages: the Spring-wired tests
+// (infra.storage.config included), infra.fetch, and since WP13 infra.archive (the archive extractor, which carries the upload's
+// safety rules; floor group infra.archive), but never the Spring wiring (application.config, infra.fetch.config) nor the
+// inbound REST adapter (infra.api), and runs only the unit tests of those packages: the Spring-wired tests
 // (*WiredTest, the only @SpringBootTest among them) and the tagged suites that `test` leaves out (open-packs,
 // whole-pack, timing, git-host, and stress for PIT alone) stay out of PIT too. pit-targets.init.gradle narrows this scope further for a run of
 // one work package's classes.
 val packsPackage = "ai.speckitty.charter.packs"
 val mutatedPackages =
-    listOf("domain", "application", "infra.storage", "infra.fetch", "infra.archive", "infra.api")
+    listOf("domain", "application", "infra.storage", "infra.fetch", "infra.archive")
         .map { "$packsPackage.$it.*" }
         .toSet()
 pitest {
@@ -267,6 +267,7 @@ pitest {
     excludedClasses = setOf(
         "$packsPackage.application.config.*",
         "$packsPackage.infra.fetch.config.*",
+        "$packsPackage.infra.api.*",
     )
     targetTests = mutatedPackages
     excludedTestClasses = setOf("*WiredTest")
