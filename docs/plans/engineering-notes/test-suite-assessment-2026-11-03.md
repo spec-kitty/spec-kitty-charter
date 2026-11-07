@@ -252,7 +252,8 @@ It fails closed, it honors `pr:pause-ci`, and per
 report as the `coverage` artifact. A `verify` run on `main` takes about 5 minutes.
 
 *Clarified 2026-11-04:* since 2026-11-04 ([ADR-0057](/adr/0057-performance-budgets-never-block-a-pull-request/))
-the `timingBudgets` step is report-only and runs each budget in its own JVM.
+the `timingBudgets` step is report-only and runs each budget in its own JVM. *Clarified 2026-11-07:* the budgets moved
+to the nightly `timing-nightly.yml` workflow; `service.yml` now proceeds from `verifyAll` to its artifact uploads.
 
 | Gate family | Present today | Blocking |
 | --- | --- | --- |

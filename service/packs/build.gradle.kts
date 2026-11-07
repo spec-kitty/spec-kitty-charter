@@ -171,9 +171,9 @@ tasks.register<Test>("wholePackRoundTrip") {
 // The CPU-time budgets (#316): tests tagged `timing` hold a piece of work to a CPU-time budget, which only means
 // something on a quiet machine. Under verifyAll every module's tests run at once, and that load pushed the generated-tree
 // checks, then in PackFileSetExactnessTest, past their budget (13.1 s of a 10 s budget on a merge-queue runner) although
-// nothing in them had changed. So they are not part of `test` or `check`: this task runs them in one test JVM, and CI
-// runs it as a step of its own after verifyAll (.github/workflows/service.yml). The correctness of the same work stays in
-// `test` (PackFileSetExactnessTest). Run it in an invocation of its own, as the only task named:
+// nothing in them had changed. So they are not part of `test` or `check`: this task runs them in one test JVM, and the
+// nightly CI workflow runs the packs and activations budgets with --no-parallel. The correctness of the same work stays
+// in `test` (PackFileSetExactnessTest). Run it in an invocation of its own, as the only task named:
 //
 //   ./gradlew :packs:timingBudgets
 tasks.register<Test>("timingBudgets") {
