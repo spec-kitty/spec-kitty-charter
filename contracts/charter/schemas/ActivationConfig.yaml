@@ -7,8 +7,8 @@ description: >-
   The document is packs, selected, deactivated and languages (one kind model, IC-20): mission types, steps and agent
   profiles are ordinary kinds of selected and deactivated. There is no kind gate: the former activatedKinds and
   missionTypes members are not part of the shape, and a write that sends either is refused 422 validation_failed with
-  one violation per member naming its replacement (selected.mission_type for missionTypes; selected.<kind> for
-  activatedKinds). A document stored at schemaVersion 1 is answered as its version 2 upgrade: its missionTypes become
+  one violation per member, code removed_member, naming its replacement (selected.mission_type for missionTypes;
+  selected.<kind> for activatedKinds); any other fault of the body is listed beside them. A document stored at schemaVersion 1 is answered as its version 2 upgrade: its missionTypes become
   selected.mission_type, every selection is kept, and activatedKinds is discarded; the upgrade is stored on the next
   write, so its revision and ETag change once.
 

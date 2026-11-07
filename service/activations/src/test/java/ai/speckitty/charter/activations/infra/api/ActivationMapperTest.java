@@ -2,14 +2,17 @@ package ai.speckitty.charter.activations.infra.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.activations.application.ActivationService;
 import ai.speckitty.charter.activations.domain.ActivationDocument;
 import ai.speckitty.charter.activations.domain.ActivationId;
+import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.api.model.Activation;
 import ai.speckitty.charter.api.model.ActivationConfig;
 import ai.speckitty.charter.api.model.ActivationPackList;
+import ai.speckitty.charter.api.model.ArtifactReference;
 import ai.speckitty.charter.api.model.DeactivatedArtifacts;
 import ai.speckitty.charter.api.model.OfferingPack;
 import ai.speckitty.charter.api.model.PackPin;
@@ -113,6 +116,29 @@ class ActivationMapperTest {
         assertThat(activation.getLinks()).containsOnlyKeys("self");
         assertThat(activation.getLinks().get("self").getHref()).isEqualTo("/api/v1/activations/A-1");
         assertThat(mapper.self("a b")).isEqualTo("/api/v1/activations/a%20b");
+    }
+
+    @Test
+    void aReplaceAnswersWhatItDroppedAndOnlyWhenItDroppedSomething() {
+        ActivationDocument document = ActivationDocument.builder().build().document();
+        StoredActivation stored = StoredActivation.of(new ActivationId("a-1"), document);
+
+        Activation plain = mapper.toReplaced(new ActivationService.Written(stored, false, List.of(), List.of()));
+        Activation dropping = mapper.toReplaced(new ActivationService.Written(
+                stored,
+                false,
+                List.of(new ArtifactRef(ArtifactKind.MISSION_TYPE, "research")),
+                List.of(PackRef.pinned("alpha", "2.0.0"))));
+
+        assertThat(plain).isEqualTo(mapper.toActivation(stored));
+        assertThat(plain.getDropped()).isNull();
+        assertThat(plain.getDroppedPins()).isNull();
+        assertThat(dropping.getDropped())
+                .containsExactly(new ArtifactReference(ArtifactReference.KindEnum.MISSION_TYPE, "research"));
+        assertThat(dropping.getDroppedPins())
+                .extracting(PackPin::getPackId, PackPin::getVersion)
+                .containsExactly(org.assertj.core.groups.Tuple.tuple("alpha", "2.0.0"));
+        assertThat(dropping.getConfig()).isEqualTo(plain.getConfig());
     }
 
     @Test

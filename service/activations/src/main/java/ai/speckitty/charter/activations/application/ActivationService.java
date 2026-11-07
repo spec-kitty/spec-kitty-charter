@@ -201,7 +201,8 @@ public class ActivationService {
     /** Replaces a stored document at its revision; empty when another writer came in between. */
     private Optional<Written> replaced(
             StoredActivation current, ActivationDocument.Built normalized, ClosureSnapshot snapshot) {
-        StaleIds.Dropped drops = judged(normalized, current.document(), snapshot);
+        StaleIds.Dropped drops =
+                judged(DocumentRules.normalize(normalized, snapshot, current.document()), current.document(), snapshot);
         return switch (repository.replace(current.id(), Optional.of(current.revision()), drops.document())) {
             case CasResult.Written written -> Optional.of(new Written(written, drops));
             case CasResult.Stale _, CasResult.Missing _ -> Optional.empty();

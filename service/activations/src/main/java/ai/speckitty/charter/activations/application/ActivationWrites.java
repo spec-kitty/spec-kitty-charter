@@ -150,7 +150,9 @@ public class ActivationWrites {
     }
 
     /**
-     * The artifact a select or an unselect names: any activatable kind, as {@link #deniable} (A7: one kind model).
+     * The artifact a per-artifact write names, a select, an unselect, a deactivate or a re-activate: any activatable
+     * kind, {@code mission_type} as any other (A7: one kind model; Q2: a required or locked one is refused on the
+     * floor, as any kind is).
      *
      * @param kind the path's kind token
      * @param artifactId the path's id
@@ -158,19 +160,6 @@ public class ActivationWrites {
      * @throws CharterRefusal with {@code activation_invalid} for any other kind
      */
     static ArtifactRef selectable(String kind, String artifactId) {
-        return activatable(kind, artifactId);
-    }
-
-    /**
-     * The artifact a deactivate or a re-activate names: any activatable kind, {@code mission_type} as any other (A7 Q2;
-     * a required or locked one is refused on the floor, as any kind is).
-     *
-     * @param kind the path's kind token
-     * @param artifactId the path's id
-     * @return the reference
-     * @throws CharterRefusal with {@code activation_invalid} for any other kind
-     */
-    static ArtifactRef deniable(String kind, String artifactId) {
         return activatable(kind, artifactId);
     }
 

@@ -75,16 +75,6 @@ public record ActivationChange(
     }
 
     /**
-     * The same change, reporting the stale ids the write dropped before it computed it.
-     *
-     * @param stale the dropped ids
-     * @return the change
-     */
-    public ActivationChange withDropped(List<ArtifactRef> stale) {
-        return new ActivationChange(after, applied, cleared, skipped, stale, droppedPins);
-    }
-
-    /**
      * The same change, reporting what the write dropped from the stored document before it computed it: the stale ids
      * and the unheld pins.
      *
