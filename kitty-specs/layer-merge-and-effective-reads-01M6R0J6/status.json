@@ -1,7 +1,7 @@
 {
-  "event_count": 150,
-  "last_event_id": "01M6TVPQAEQTT0H6H6F31QADTN",
-  "materialized_at": "2026-11-07T11:18:37.634411+00:00",
+  "event_count": 151,
+  "last_event_id": "01M6TVYH508NS2GSM05TKXD58D",
+  "materialized_at": "2026-11-07T11:22:53.472471+00:00",
   "mission_number": "",
   "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
   "mission_type": "",
@@ -10,12 +10,12 @@
     "approved": 11,
     "blocked": 0,
     "canceled": 0,
-    "claimed": 0,
+    "claimed": 1,
     "done": 0,
     "for_review": 0,
     "in_progress": 1,
     "in_review": 0,
-    "planned": 18
+    "planned": 17
   },
   "work_packages": {
     "WP01": {
@@ -405,14 +405,14 @@
     },
     "WP12": {
       "actor": "claude",
-      "agent": null,
+      "agent": "claude:sonnet:java-jenny",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
       "implementer_of_record": "claude:sonnet:java-jenny",
-      "lane": "planned",
-      "last_event_id": "01M6TTR0AB9PP8W5P75EPXZ3VY",
-      "last_transition_at": "2026-11-07T11:01:51.051486+00:00",
+      "lane": "claimed",
+      "last_event_id": "01M6TVYH508NS2GSM05TKXD58D",
+      "last_transition_at": "2026-11-07T11:22:53.472471+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "Registry write lock (fair, 5 s tryLock), per-pack write generation (seqlock), read retry; gate green (kernel 2769, packs 2968/4 skipped, activations 563, deployable 1017); MixedReadConcurrencyTest 3/3; lane synced with main after PR A0 landed."
@@ -425,15 +425,15 @@
         "reviewer": "claude:opus:reviewer-renata",
         "verdict": "changes_requested"
       },
-      "role": "reviewer",
+      "role": "implementer",
       "shell_pid": null,
       "shell_pid_created_at": null,
       "subtasks": {
-        "T053": "planned",
-        "T054": "planned",
-        "T055": "planned",
-        "T056": "planned",
-        "T057": "planned"
+        "T053": "done",
+        "T054": "done",
+        "T055": "done",
+        "T056": "done",
+        "T057": "done"
       }
     },
     "WP13": {
