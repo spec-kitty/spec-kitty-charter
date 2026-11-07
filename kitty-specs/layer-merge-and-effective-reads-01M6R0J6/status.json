@@ -313,6 +313,9 @@
       "last_event_id": "01M6TJTMZMQCJHPQ07DDXCWBXT",
       "last_transition_at": "2026-11-07T08:43:29.140296+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "PR A0 docs: ADR-0020/0042/0050/0059 amendments (2026-11-07, incl. #408 depth), DIV-209..215 + DIV-203/206/501 updated, changelog with core hand-over, ruleset scenario trace (A0 rows verified against lane scenario files), rules page flipped to built. Docs checks clean."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 12343,
