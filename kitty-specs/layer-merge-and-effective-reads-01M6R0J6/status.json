@@ -497,7 +497,8 @@
         "cycle 3",
         "Cycle 3 per 01M6V6N74ER28H8S6TSVZ8ZEY2; verifyAll green.",
         "cycle 4: linear salvage",
-        "Cycle 4: linear salvage; verifyAll green."
+        "Cycle 4: linear salvage; verifyAll green.",
+        "Review passed (cycle 4, 362bf3fc). verifyAll green; :packs:test --rerun 3204/0 failed. All cycle-1-3 probes refused on the right operation. Salvage is linear: 1500/3000/10000 files with a legacy file take 1.5/2.5/7.9 s (were 45 s and 157 s). Package-private LongAdder lookupParses() accepted. Follow-ups: q4b digest of a twin-declared id where one copy is legacy; the edge cases accepted under ruling 01M6V6N74ER28H8S6TSVZ8ZEY2; out-of-WP items per runner decision. Shared files named in commit trailers."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
