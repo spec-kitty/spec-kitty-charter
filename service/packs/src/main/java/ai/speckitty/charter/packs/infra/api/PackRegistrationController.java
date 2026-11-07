@@ -51,25 +51,45 @@ public class PackRegistrationController implements RegistrationApi {
     private final PackSummaryQuery summaries;
     private final PackArchiveReader archives;
     private final PackRegistrationMapper mapper;
+    private final PackSourceIntake intake;
 
     /**
-     * A controller over the registration jobs and the stored packs.
+     * A controller over the registration jobs and the stored packs, with no source of a registration built.
      *
      * @param jobs the registration jobs
      * @param summaries the stored-pack read
      * @param archives the archive extractor
      * @param mapper the contract shapes
      */
-    @Autowired
     PackRegistrationController(
             RegistrationJobs jobs,
             PackSummaryQuery summaries,
             PackArchiveReader archives,
             PackRegistrationMapper mapper) {
+        this(jobs, summaries, archives, mapper, PackSourceIntake.none());
+    }
+
+    /**
+     * A controller over the registration jobs, the stored packs and the sources a registration may name.
+     *
+     * @param jobs the registration jobs
+     * @param summaries the stored-pack read
+     * @param archives the archive extractor
+     * @param mapper the contract shapes
+     * @param intake what takes a registration from a source
+     */
+    @Autowired
+    PackRegistrationController(
+            RegistrationJobs jobs,
+            PackSummaryQuery summaries,
+            PackArchiveReader archives,
+            PackRegistrationMapper mapper,
+            PackSourceIntake intake) {
         this.jobs = Objects.requireNonNull(jobs, "jobs");
         this.summaries = Objects.requireNonNull(summaries, "summaries");
         this.archives = Objects.requireNonNull(archives, "archives");
         this.mapper = Objects.requireNonNull(mapper, "mapper");
+        this.intake = Objects.requireNonNull(intake, "intake");
     }
 
     @Override
@@ -128,7 +148,7 @@ public class PackRegistrationController implements RegistrationApi {
     @ReservedOperation
     public ResponseEntity<PackRegistrationStatus> registerPackFromSource(
             PackSource packSource, @Nullable String ifMatch, @Nullable String ifNoneMatch) {
-        throw notBuilt();
+        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED, "not built yet: " + intake.worktree());
     }
 
     private static ArchiveBody archiveOf(Resource body) {

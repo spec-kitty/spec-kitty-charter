@@ -23,7 +23,9 @@ import org.springframework.test.web.servlet.MockMvc;
             "charter.worktree-id=scenario-worktree",
             "charter.worktree-token=" + ScenarioHttp.TOKEN,
             // The registration staging directory is under the temporary directory, never the user's home.
-            "charter.registration.staging-dir=${java.io.tmpdir}/charter-scenario-staging"
+            "charter.registration.staging-dir=${java.io.tmpdir}/charter-scenario-staging",
+            // The filesystem source reads under a directory of the scenarios' own, never the user's home.
+            "charter.pack-sources.filesystem.root=${java.io.tmpdir}/charter-scenario-sources"
         })
 @AutoConfigureMockMvc
 public class CucumberSpringConfiguration {
@@ -73,6 +75,13 @@ public class CucumberSpringConfiguration {
         @Primary
         StubGuideFetcher stubGuideFetcher() {
             return new StubGuideFetcher();
+        }
+
+        /** The https exchange every archive source goes through: armed per scenario, it opens no socket. */
+        @Bean
+        @Primary
+        StubArchiveExchange stubArchiveExchange() {
+            return new StubArchiveExchange();
         }
 
         /** The packs the steps wrote and the pack domain a whole-pack registration writes to (ScenarioLocations). */

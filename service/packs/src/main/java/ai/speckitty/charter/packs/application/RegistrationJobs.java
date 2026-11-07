@@ -102,7 +102,11 @@ public final class RegistrationJobs implements AutoCloseable {
         /** The registry lock was not free in time, or the service is stopping ({@code 503}, a plain problem). */
         BUSY,
         /** The job failed in a way no refusal names: the answer is the service's own internal error, and it is logged. */
-        FAILED
+        FAILED,
+        /** The source's upstream failed ({@code 502}, a plain problem). */
+        UPSTREAM_FAILED,
+        /** The source's upstream did not answer in time ({@code 504}, a plain problem). */
+        UPSTREAM_TIMEOUT
     }
 
     /**
@@ -892,6 +896,7 @@ public final class RegistrationJobs implements AutoCloseable {
                 case STALE -> "refused:precondition_failed";
                 case BUSY -> "refused:registry_busy";
                 case FAILED -> "failed:internal_error";
+                case UPSTREAM_FAILED, UPSTREAM_TIMEOUT -> throw new UnsupportedOperationException("not built yet");
                 case CODED ->
                     "refused:"
                             + Objects.requireNonNull(refused.refusal()).code().token();

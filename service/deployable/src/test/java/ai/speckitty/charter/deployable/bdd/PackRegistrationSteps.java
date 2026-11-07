@@ -83,6 +83,15 @@ public class PackRegistrationSteps {
         this.clock = clock;
     }
 
+    /**
+     * The archives of the scenario, which the source steps serve.
+     *
+     * @return the archives
+     */
+    ScenarioArchives archives() {
+        return archives;
+    }
+
     /** Before the scenario's packs are deleted (a higher order runs first): a job may still be writing into them. */
     @After(order = 20000)
     public void putTheSeamsBack() {

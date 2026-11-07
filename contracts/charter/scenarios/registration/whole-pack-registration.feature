@@ -544,7 +544,7 @@ Feature: Registering a whole pack replaces the pack the service holds
     Then the response status is 201
 
   # bound by: WP17 (US1 AS7, https_archive; PR-PACK-REGISTER-001)
-  @WIP @promise:PR-PACK-REGISTER-001
+  @promise:PR-PACK-REGISTER-001
   Scenario: A pack fetched from an allowlisted https archive is registered and its source recorded
     Given the https host "packs.example.org" is allowed
     And the https host "packs.example.org" serves "https://packs.example.org/acme.tar.gz" with the archive "v1"
@@ -562,7 +562,6 @@ Feature: Registering a whole pack replaces the pack the service holds
     Then the response status is 200
 
   # bound by: WP17 (https_archive refusals, each with the control of the same source)
-  @WIP
   Scenario Outline: A source the service refuses ends the registration refused with pack_source_refused
     Given the https host "packs.example.org" is allowed
     And the https host "packs.example.org" serves "https://packs.example.org/acme.tar.gz" with the archive "v1"
@@ -591,7 +590,7 @@ Feature: Registering a whole pack replaces the pack the service holds
       | {"kind": "https_archive", "packId": "acme", "url": "https://packs.example.org/acme.tar.gz", "path": "packs/acme"}                                                              |
 
   # bound by: WP17 (filesystem source; PR-PACK-REGISTER-001)
-  @WIP @promise:PR-PACK-REGISTER-001
+  @promise:PR-PACK-REGISTER-001
   Scenario: A pack read from a path under the configured root is registered, and a path that is not there is refused
     Given the filesystem source root holds the directory "packs/acme" with the archive "v1"
     When I POST "/packs" as JSON with the body:
@@ -612,7 +611,6 @@ Feature: Registering a whole pack replaces the pack the service holds
     And the field at "/problem/code" is "pack_source_refused"
 
   # bound by: WP17 (a path that leaves the root breaks the PackSource schema)
-  @WIP
   Scenario: A path with a parent segment is a malformed source, and a path under the root is not
     Given the filesystem source root holds the directory "packs/acme" with the archive "v1"
     When I POST "/packs" as JSON with the body:
@@ -628,7 +626,6 @@ Feature: Registering a whole pack replaces the pack the service holds
     Then the response status is 202
 
   # bound by: WP17 (a source kind that is switched off)
-  @WIP
   Scenario: A source kind that is switched off answers 503 pack_source_unavailable
     Given the filesystem source root holds the directory "packs/acme" with the archive "v1"
     And the filesystem source is switched off

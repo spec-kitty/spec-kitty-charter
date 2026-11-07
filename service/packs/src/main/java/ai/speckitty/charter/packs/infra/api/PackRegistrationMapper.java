@@ -147,6 +147,7 @@ final class PackRegistrationMapper {
             case BUSY -> plain(HttpStatus.SERVICE_UNAVAILABLE, refused.detail());
             case FAILED ->
                 refusals.registrationProblem(new CharterRefusal(RefusalCode.INTERNAL_ERROR, refused.detail()));
+            case UPSTREAM_FAILED, UPSTREAM_TIMEOUT -> throw new UnsupportedOperationException("not built yet");
         };
     }
 
