@@ -2,10 +2,14 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
+import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.application.PackRevision;
@@ -31,6 +35,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -255,6 +260,85 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
     @Override
     public WholePackWriteStore.Contents loadStored(Path directory) {
         return contentsOf(directory, load(directory));
+    }
+
+    @Override
+    public WholePackWriteStore.Remains salvageStored(Path directory) {
+        Path packDir = directory.toAbsolutePath().normalize();
+        Path parent = packDir.getParent();
+        if (parent == null || packDir.getFileName() == null) {
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "a pack directory needs a parent directory");
+        }
+        PackIdentifier key = new PackIdentifier(String.valueOf(packDir.getFileName()));
+        Set<String> defined = new TreeSet<>();
+        Map<Urn, String> digests = new HashMap<>();
+        List<Relationship> edges = new ArrayList<>();
+        Set<String> parsedFiles = new HashSet<>();
+        FilesystemPackStore store = new FilesystemPackStore(parent, strategy, companionRules);
+        try {
+            // The artifacts alone, without the graphs and the checks of a whole load, which refuse what is salvaged
+            // here.
+            Map<Urn, String> places = new HashMap<>();
+            Pack pack = DomainRepositoryService.assembly(key, store.read(key, bindings), places)
+                    .build();
+            for (CharterArtifact artifact : pack.artifacts()) {
+                defined.add(artifact.urn().toString());
+                digests.put(artifact.urn(), digestOf(artifact));
+                parsedFiles.add(places.get(artifact.urn()));
+                edges.addAll(artifact.derivedRelationships());
+            }
+        } catch (RuntimeException unreadableWhole) {
+            // The artifacts do not assemble: the files are listed below, each counted by the id its path names.
+        }
+        listedIds(packDir, parsedFiles).forEach(urn -> defined.add(urn));
+        for (GraphDocument document : store.readGraphs(key).documents()) {
+            document.edges().forEach(edge -> typedEdge(edge).ifPresent(edges::add));
+        }
+        return new WholePackWriteStore.Remains(defined, digests, edges);
+    }
+
+    /** The URN each file of a bound kind that did not parse names by its path: its stem, without the kind's token. */
+    private List<String> listedIds(Path packDir, Set<String> parsedFiles) {
+        List<String> ids = new ArrayList<>();
+        for (KindBinding<?, ?> binding : bindings) {
+            for (String file : PackFileSet.files(packDir, binding.kind())) {
+                if (!parsedFiles.contains(file)) {
+                    ids.add(new Urn(NodeKind.of(binding.kind()), stemOf(file, binding.fileToken())).toString());
+                }
+            }
+        }
+        PackFileSet.templates(packDir).stream()
+                .filter(file -> !parsedFiles.contains(file))
+                .forEach(file -> ids.add(new Urn(NodeKind.TEMPLATE, PackFileSet.templateId(file)).toString()));
+        return ids;
+    }
+
+    private static String stemOf(String file, String token) {
+        String name = file.substring(file.lastIndexOf('/') + 1);
+        String suffix = "." + token + ".yaml";
+        return name.endsWith(suffix) ? name.substring(0, name.length() - suffix.length()) : name;
+    }
+
+    /** One graph-document edge as the kernel's typed edge; empty for an endpoint or a relation that is no reference. */
+    private static Optional<Relationship> typedEdge(GraphDocument.Edge edge) {
+        try {
+            PackQualifiedReference source = PackQualifiedReference.parse(edge.source());
+            PackQualifiedReference target = PackQualifiedReference.parse(edge.target());
+            Optional<RelationType> relation = RelationType.fromToken(edge.relation());
+            if (source.asUrn().isEmpty() || target.asUrn().isEmpty() || relation.isEmpty()) {
+                return Optional.empty();
+            }
+            return Optional.of(new Relationship(
+                    source.asUrn().get(),
+                    source.packName(),
+                    target.asUrn().get(),
+                    target.packName(),
+                    relation.get(),
+                    edge.when(),
+                    edge.reason()));
+        } catch (IllegalArgumentException malformed) {
+            return Optional.empty();
+        }
     }
 
     /** {@link #load} with each fault of the tree, which in an upload is the author's, answered {@code validation_failed}. */

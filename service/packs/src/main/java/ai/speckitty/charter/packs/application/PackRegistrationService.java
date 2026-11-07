@@ -13,6 +13,7 @@ import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.WritePolicyGate;
+import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -225,7 +226,7 @@ public final class PackRegistrationService {
             return unchanged.get();
         }
         checkPreconditions(upload.preconditions(), stored);
-        Before before = beforeOf(upload, stored);
+        Before before = beforeOf(stored);
         gate.authorizeStaged(upload.contents().pack(), writesOf(upload.contents(), before));
         requireNoInboundReference(upload, stored, before);
         return commit(upload, stored);
@@ -256,7 +257,8 @@ public final class PackRegistrationService {
                 .filter(candidate -> candidate.id().value().equals(upload.packId()))
                 .findFirst();
         if (named.isEmpty()) {
-            requireNewIdentity(upload, configured);
+            requireFreePackId(upload, configured);
+            requireFreeName(upload, configured, Optional.empty());
             return Optional.empty();
         }
         Stored stored = new Stored(
@@ -264,6 +266,7 @@ public final class PackRegistrationService {
                 descriptors.get(named.get().id()),
                 revisions.currentRevision(named.get().id()));
         requireSameIdentity(upload, stored);
+        requireFreeName(upload, configured, Optional.of(named.get()));
         return Optional.of(stored);
     }
 
@@ -296,8 +299,8 @@ public final class PackRegistrationService {
         }
     }
 
-    /** A new pack may not take the {@code pack_id} or the name of a pack that is stored. */
-    private void requireNewIdentity(Upload upload, List<ConfiguredPack> configured) {
+    /** A new pack may not take the {@code pack_id} of a pack that is stored. */
+    private void requireFreePackId(Upload upload, List<ConfiguredPack> configured) {
         for (ConfiguredPack other : configured) {
             Optional<PackDescriptor> held = descriptorOf(other);
             if (held.isPresent()
@@ -305,7 +308,16 @@ public final class PackRegistrationService {
                 throw conflict("The pack_id " + held.get().packId() + " is held by the stored pack "
                         + other.id().value() + ".");
             }
-            if (held.isPresent() && held.get().name().equals(upload.descriptor().name())) {
+        }
+    }
+
+    /** A pack, new or replaced, may not take the name of another stored pack. */
+    private void requireFreeName(Upload upload, List<ConfiguredPack> configured, Optional<ConfiguredPack> replaced) {
+        for (ConfiguredPack other : configured) {
+            Optional<PackDescriptor> held = descriptorOf(other);
+            if (!replaced.filter(other::equals).isPresent()
+                    && held.isPresent()
+                    && held.get().name().equals(upload.descriptor().name())) {
                 throw conflict("The name " + held.get().name() + " is held by the stored pack "
                         + other.id().value() + ".");
             }
@@ -372,8 +384,9 @@ public final class PackRegistrationService {
 
     /**
      * What the stored pack held, to diff the upload against: the artifacts it defined, the digest of each and the edges
-     * it wrote. A stored pack that cannot be read is not diffed: it is taken as holding every artifact the upload does,
-     * unchanged in nothing, so that each is judged as a replace, the strictest write, and nothing is judged removed.
+     * it wrote. A stored pack that cannot be read whole is diffed by what can still be read of it
+     * ({@link WholePackWriteStore.Loader#salvageStored}): the gate and the inbound scan never switch off for a pack
+     * that is unreadable, and a pack whose artifacts cannot be told at all is refused.
      *
      * @param defined the artifacts held, as bare URNs
      * @param digests the digest of each file-backed artifact
@@ -387,22 +400,31 @@ public final class PackRegistrationService {
             return new Before(heldBy(contents), contents.digests(), edgesOf(contents));
         }
 
-        /** An unreadable stored pack: every artifact of the upload is taken as held, with a digest nothing matches. */
-        static Before unreadable(WholePackWriteStore.Contents upload) {
-            return new Before(heldBy(upload), Map.of(), Map.of());
+        static Before of(WholePackWriteStore.Remains remains) {
+            Map<String, Relationship> edges = new LinkedHashMap<>();
+            remains.edges().forEach(edge -> edges.putIfAbsent(edgeKey(edge), edge));
+            return new Before(remains.defined(), remains.digests(), edges);
         }
     }
 
-    private Before beforeOf(Upload upload, Optional<Stored> stored) {
+    private Before beforeOf(Optional<Stored> stored) {
         if (stored.isEmpty()) {
             return Before.NOTHING;
         }
+        Path directory = store.liveDirectory(stored.get().configured().id());
         try {
-            return Before.of(loader.loadStored(
-                    store.liveDirectory(stored.get().configured().id())));
+            return Before.of(loader.loadStored(directory));
         } catch (CharterRefusal unreadable) {
-            return Before.unreadable(upload.contents());
+            return Before.of(loader.salvageStored(directory));
         }
+    }
+
+    private static String edgeKey(Relationship edge) {
+        return String.join(
+                "|",
+                edge.fromReference().toString(),
+                edge.type().token(),
+                edge.toReference().toString());
     }
 
     private static Set<String> heldBy(WholePackWriteStore.Contents contents) {
@@ -414,13 +436,7 @@ public final class PackRegistrationService {
     private static Map<String, Relationship> edgesOf(WholePackWriteStore.Contents contents) {
         Map<String, Relationship> edges = new LinkedHashMap<>();
         for (Relationship edge : contents.facts().edges()) {
-            edges.putIfAbsent(
-                    String.join(
-                            "|",
-                            edge.fromReference().toString(),
-                            edge.type().token(),
-                            edge.toReference().toString()),
-                    edge);
+            edges.putIfAbsent(edgeKey(edge), edge);
         }
         return edges;
     }
@@ -476,6 +492,7 @@ public final class PackRegistrationService {
         List<InboundReferences.Referrer> referrers = inbound.scan(
                 new InboundReferences.StagedTree(
                         Optional.of(stored.get().configured().id()),
+                        Optional.of(stored.get().descriptor().name()),
                         upload.descriptor(),
                         upload.contents().facts()),
                 removed);

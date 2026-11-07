@@ -53,11 +53,16 @@ public final class InboundReferences {
      * The staged tree standing in for the stored pack.
      *
      * @param replacing the configured identifier of the stored pack the tree replaces; empty for a new pack
+     * @param replacedName the name the stored pack had, which other packs may have qualified a reference with, since a
+     *     replace can rename the pack; empty for a new pack
      * @param descriptor the staged pack's descriptor
      * @param facts the staged pack's composition facts
      */
     public record StagedTree(
-            Optional<PackIdentifier> replacing, PackDescriptor descriptor, PackCompositionFacts facts) {}
+            Optional<PackIdentifier> replacing,
+            Optional<String> replacedName,
+            PackDescriptor descriptor,
+            PackCompositionFacts facts) {}
 
     private final PackCatalogRepository catalog;
     private final PackDescriptorRepository descriptors;
@@ -186,9 +191,17 @@ public final class InboundReferences {
             return urn;
         }
         boolean resolvesToStaged = target.qualified()
-                ? target.packName().filter(staged.descriptor().name()::equals).isPresent()
+                ? target.packName()
+                        .filter(name -> namesStagedPack(name, staged))
+                        .isPresent()
                 : bareResolvesToStaged(urn.get(), closure);
         return resolvesToStaged ? urn : Optional.empty();
+    }
+
+    /** A qualifier names the staged pack by the name it is uploaded with, or the one the stored pack had. */
+    private static boolean namesStagedPack(String name, StagedTree staged) {
+        return name.equals(staged.descriptor().name())
+                || staged.replacedName().filter(name::equals).isPresent();
     }
 
     /** A bare id is read in the closure of the pack that writes it: the staged pack's when nothing else holds it. */

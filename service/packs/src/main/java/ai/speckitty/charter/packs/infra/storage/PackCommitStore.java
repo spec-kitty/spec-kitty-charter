@@ -305,9 +305,30 @@ public final class PackCommitStore implements WholePackWriteStore {
         try {
             // A swap a crash interrupted is repaired before the work reads the pack (#281), as on a listing.
             missingLiveDirectory(entry).ifPresent(PackCommitStore::restoreInterruptedSwap);
+            reclaimInterruptedCreate(entry);
             return work.get();
         } finally {
             lock.unlock();
+        }
+    }
+
+    /**
+     * Removes an empty directory at the entry: the reserved directory of a create that a crash interrupted between its
+     * reservation and its move. The reservation exists only while the registry lock and the pack's lock are held, which
+     * the caller does, so an empty entry is never a create in flight; left alone it would be served as a pack with no
+     * {@code pack.yaml} and wedge the name.
+     */
+    private static void reclaimInterruptedCreate(Path entry) {
+        if (!Files.isDirectory(entry, LinkOption.NOFOLLOW_LINKS)) {
+            return;
+        }
+        try (Stream<Path> children = Files.list(entry)) {
+            if (children.findAny().isEmpty()) {
+                Files.delete(entry);
+            }
+        } catch (IOException failure) {
+            throw new CharterRefusal(
+                    RefusalCode.PACK_UNREADABLE, "cannot inspect the pack directory " + entry.getFileName(), failure);
         }
     }
 

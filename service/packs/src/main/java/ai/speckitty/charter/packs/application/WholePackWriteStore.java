@@ -1,12 +1,15 @@
 package ai.speckitty.charter.packs.application;
 
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Supplier;
 
 /**
@@ -42,6 +45,32 @@ public interface WholePackWriteStore {
         }
     }
 
+    /**
+     * What can still be read of a stored pack that cannot be read whole: the artifacts it held, the digest of each one
+     * that reads, and the edges of every graph document that parses.
+     *
+     * @param defined the artifacts held, as bare URNs: those that read, and one per file that does not, by the id the
+     *     file's path names
+     * @param digests the digest of each artifact that reads
+     * @param edges the typed edges of the graph documents that parse, and the derived relations of the artifacts that
+     *     read
+     */
+    record Remains(Set<String> defined, Map<Urn, String> digests, List<Relationship> edges) {
+
+        /**
+         * Copies the collections.
+         *
+         * @param defined the artifacts held
+         * @param digests the digest of each artifact that reads
+         * @param edges the typed edges that can be read
+         */
+        public Remains {
+            defined = Set.copyOf(defined);
+            digests = Map.copyOf(digests);
+            edges = List.copyOf(edges);
+        }
+    }
+
     /** Reads a whole pack directory. {@code WholePackStore} is the one implementation. */
     interface Loader {
 
@@ -65,6 +94,17 @@ public interface WholePackWriteStore {
          * @throws ai.speckitty.charter.kernel.domain.CharterRefusal {@code PACK_UNREADABLE} when it cannot be read
          */
         Contents loadStored(Path directory);
+
+        /**
+         * Reads what can still be read of a stored pack that {@link #loadStored} refuses: each file on its own, so that
+         * one that cannot be parsed still counts by the id its path names, and each graph document that parses.
+         *
+         * @param directory the stored pack's directory
+         * @return what the pack still holds
+         * @throws ai.speckitty.charter.kernel.domain.CharterRefusal {@code PACK_UNREADABLE} when the set of artifacts
+         *     cannot be determined at all, for example when the directory cannot be listed; it is never taken as empty
+         */
+        Remains salvageStored(Path directory);
     }
 
     /**
@@ -121,6 +161,8 @@ public interface WholePackWriteStore {
 
     /**
      * Creates the pack from the staged tree: the directory is reserved with one atomic step and the tree moved in.
+     * A failure leaves nothing behind; a crash between the reservation and the move leaves an empty directory, which the
+     * next registration of the name reclaims under the locks ({@link #exclusively}).
      *
      * @param packId the name the pack is stored under
      * @param staged the extracted upload

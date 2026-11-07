@@ -767,6 +767,36 @@ class WholePackStoreTest {
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
     }
 
+    @Test
+    @DisplayName(
+            "salvageStored keeps what can be read of a pack that does not read whole: ids by path, edges that parse")
+    void salvageStoredCountsAnUnparsableFileByItsPathAndKeepsTheEdgesThatParse(@TempDir Path host) throws IOException {
+        Path pack = richPack(host);
+        write(pack, BROKEN_FILE, "id: [unclosed");
+        write(pack, "good.graph.yaml", """
+                schema_version: '1.0'
+                generated_at: STATIC
+                nodes: []
+                edges:
+                - source: tactic:alpha-tactic
+                  target: tactic:gamma-tactic
+                  relation: requires
+                """);
+        write(pack, "bad.graph.yaml", "edges: [unclosed");
+
+        WholePackWriteStore.Remains remains = store.salvageStored(pack);
+
+        assertThat(remains.defined())
+                .contains("tactic:alpha-tactic", "tactic:broken-tactic", "directive:DIRECTIVE_043");
+        assertThat(remains.digests()).containsKey(new Urn(NodeKind.TACTIC, "alpha-tactic"));
+        assertThat(remains.edges()).extracting(edge -> edge.from().toString()).contains("tactic:alpha-tactic");
+        assertThatThrownBy(() -> store.salvageStored(host.resolve("nowhere")))
+                .as("a pack whose artifacts cannot be told is refused, never taken as empty")
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+    }
+
     private static WholePackStore.LoadedPack with(WholePackStore.LoadedPack loaded, Template template) {
         return new WholePackStore.LoadedPack(
                 loaded.pack().with(template), loaded.layout(), loaded.graphs(), loaded.unmodelled());
