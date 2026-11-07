@@ -227,6 +227,18 @@
       "title": null,
       "verdict": "in-mission",
       "wp": "WP05"
+    },
+    "#417": {
+      "evidence_ref": "decision 01M6VXMCDQJWBJXGRQNMF5G6SV: operator kept the notice drop; #417 tracks widening after this mission",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
+      "wp": "WP20"
     }
   },
   "schema_version": 1
