@@ -162,7 +162,7 @@ before writing it down:
    - **#360:** confirm the acceptance re-point made in PR A (the closure read), and that the writes see only the
      closure (FR-010).
    - **Open review items:** the closure-scoped floor (DIV-205), pins refused rather than served side by side,
-     ADR-0059 open questions 1 and 4, and WP14's "listed key" decision.
+     and WP14's "listed key" decision.
 2. Docs gates:
    ```bash
    python3 scripts/docs/check_docs.py all
