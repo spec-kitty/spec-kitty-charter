@@ -67,6 +67,15 @@ public final class RegistryWriteLock {
     }
 
     /**
+     * The seconds a refused caller is told to wait.
+     *
+     * @return the timeout rounded up to a whole second, at least 1
+     */
+    public int retryAfterSeconds() {
+        return 0;
+    }
+
+    /**
      * Whether the current thread holds the lock.
      *
      * @return true inside {@link #exclusively}
@@ -110,6 +119,16 @@ public final class RegistryWriteLock {
          * @param message the detail sentence
          */
         public RegistryBusyException(String message) {
+            super(message);
+        }
+
+        /**
+         * A refusal to wait longer, with the seconds a client waits.
+         *
+         * @param message the detail sentence
+         * @param retryAfterSeconds the {@code Retry-After} value
+         */
+        public RegistryBusyException(String message, int retryAfterSeconds) {
             super(message);
         }
     }

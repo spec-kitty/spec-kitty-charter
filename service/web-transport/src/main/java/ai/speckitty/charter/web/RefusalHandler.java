@@ -7,6 +7,7 @@ import ai.speckitty.charter.api.model.RefusalViolation;
 import ai.speckitty.charter.api.model.RequiringPack;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
+import ai.speckitty.charter.kernel.transport.RetryLaterException;
 import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -139,6 +140,19 @@ public class RefusalHandler {
         return ResponseEntity.status(status)
                 .contentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .body(problem);
+    }
+
+    /**
+     * Answers a request the service cannot take now.
+     *
+     * @param busy the refusal
+     * @return the {@code application/problem+json} response
+     */
+    @ExceptionHandler(RetryLaterException.class)
+    public ResponseEntity<Problem> retryLater(RetryLaterException busy) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .body(new Problem(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(), 500));
     }
 
     /**

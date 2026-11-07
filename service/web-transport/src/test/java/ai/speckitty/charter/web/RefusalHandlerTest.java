@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import ai.speckitty.charter.api.model.CharterRefusal;
+import ai.speckitty.charter.api.model.Problem;
 import ai.speckitty.charter.api.model.RefusalViolation;
 import ai.speckitty.charter.api.model.RequiringPack;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
@@ -185,6 +186,21 @@ class RefusalHandlerTest {
         assertThat(body.getViolations().getLast().getPointer()).isEqualTo("/selected/tactic/99");
         assertThat(body.getDetail())
                 .isEqualTo("The activation names unknown tactics. 150 more violations are not listed.");
+    }
+
+    @Test
+    @DisplayName("a request the service cannot take now is a 503 with Retry-After and no code")
+    void retryLaterIsAServiceUnavailableWithRetryAfter() {
+        ResponseEntity<Problem> response = handler.retryLater(
+                new ai.speckitty.charter.kernel.transport.RetryLaterException("The registry is busy.", 7));
+
+        assertThat(response.getStatusCode().value()).isEqualTo(503);
+        assertThat(response.getHeaders().get("Retry-After")).containsExactly("7");
+        assertThat(response.getHeaders().getContentType()).hasToString("application/problem+json");
+        Problem body = response.getBody();
+        assertThat(body).isNotNull();
+        assertThat(body.getStatus()).isEqualTo(503);
+        assertThat(body.getDetail()).isEqualTo("The registry is busy.");
     }
 
     @Test
