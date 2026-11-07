@@ -59,11 +59,28 @@ public class ActivationService {
      * @param packs the packs, asked once per write and per closure read
      * @param mint the id mint of {@link #create}
      */
-    @Autowired
     public ActivationService(ActivationRepository repository, AvailablePacks packs, ActivationIdMint mint) {
+        this(repository, packs, mint, WriteCoordination.NONE);
+    }
+
+    /**
+     * A service over its ports, whose writes exclude a pack registration.
+     *
+     * @param repository the activation register
+     * @param packs the packs
+     * @param mint the id source
+     * @param coordination what makes a write exclude a pack registration
+     */
+    @Autowired
+    public ActivationService(
+            ActivationRepository repository,
+            AvailablePacks packs,
+            ActivationIdMint mint,
+            WriteCoordination coordination) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.packs = Objects.requireNonNull(packs, "packs");
         this.mint = Objects.requireNonNull(mint, "mint");
+        Objects.requireNonNull(coordination, "coordination");
     }
 
     /**
