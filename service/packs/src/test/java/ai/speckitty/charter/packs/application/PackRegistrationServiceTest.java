@@ -121,6 +121,44 @@ class PackRegistrationServiceTest {
         assertThat(rig.filesOf(rig.packs.resolve("pack-x")).get("pack.yaml")).contains("pack_version: 1.0.0");
     }
 
+    // ---- a fault in the upload is a 422 that names the file, whatever refuses it ---------------------------------
+
+    @Test
+    void anEdgeThatJoinsAnArtifactToItselfIsAValidationFailureThatNamesTheFile(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        StagedPack loop = rig.stage(
+                Packs.of(ORG_PACK, "pack-x", "1.0.0", "org").directive("A", "A").file("loop.graph.yaml", """
+                        schema_version: '1.0'
+                        generated_at: STATIC
+                        nodes: []
+                        edges:
+                        - {source: 'directive:A', target: 'directive:A', relation: overrides}
+                        """));
+
+        CharterRefusal refused = refusal(() -> rig.register("pack-x", loop, Preconditions.none()));
+
+        assertThat(refused.code())
+                .as("the fault is in the upload, so it is a 422 and never a 500 pack_unreadable")
+                .isEqualTo(RefusalCode.VALIDATION_FAILED);
+        assertThat(refused.violations()).isNotEmpty();
+        assertThat(refused.violations().getFirst().detail()).contains("loop.graph.yaml");
+        assertThat(rig.packs.resolve("pack-x")).as("nothing was stored").doesNotExist();
+    }
+
+    @Test
+    void everyViolationOfAnUploadNamesItsFileInItsDetailAsWellAsInItsPointer(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        StagedPack faulty = rig.stage(Packs.of(ORG_PACK, "pack-x", "1.0.0", "org")
+                .directive("A", "A")
+                .file("notes.txt", "a file no pack kind models"));
+
+        CharterRefusal refused = refusal(() -> rig.register("pack-x", faulty, Preconditions.none()));
+
+        assertThat(refused.violations()).isNotEmpty();
+        assertThat(refused.violations())
+                .allSatisfy(violation -> assertThat(violation.detail()).contains(violation.pointer()));
+    }
+
     // ---- the point of no return -----------------------------------------------------------------------------------
 
     @Test
