@@ -27,8 +27,10 @@ import java.util.Set;
  *     it: the pack a bare reference from outside the holders resolves to
  * @param floor the must-have items of the closure's governing presets, with the requiring packs. It is built from
  *     {@link #heldPresets()}, so it follows the copy of a preset that wins (ADR-0053 d6): the must-have items of a
- *     copy that loses require nothing
- * @param policy the mutability policies of the closure's packs, by descriptor {@code pack_id}
+ *     copy that loses require nothing. It holds held ids only: a must-have item no pack of the closure holds is in
+ *     its {@link RequiredFloor#unheld()} report instead (A10)
+ * @param policy the mutability policies of the closure's packs, by descriptor {@code pack_id}, each scoped to what
+ *     the pack and the packs it builds on hold (A15), so a lock never reaches an unrelated pack's artifact
  * @param closurePackIds the closure's descriptor {@code pack_id}s, in closure order
  * @param heldPresets the closure's presets, each id once with its holding pack. When two packs of the closure hold one
  *     preset id, the last in merge order wins, the rule ADR-0053 d6 applies to layer overrides; {@link #presets()} is

@@ -247,7 +247,7 @@ class ClosureQueriesTest {
                 "org",
                 PackLevel.ORG,
                 descriptor("org", "1.0.0"),
-                holding(List.of(), MutabilityPolicySource.empty(), governing));
+                holding(List.of("directive:D1"), MutabilityPolicySource.empty(), governing));
 
         ClosureView view = queries().allConfigured();
 
@@ -275,7 +275,7 @@ class ClosureQueriesTest {
                 "org",
                 PackLevel.ORG,
                 descriptor("org", "1.0.0"),
-                holding(List.of(), MutabilityPolicySource.empty(), later));
+                holding(List.of("directive:B"), MutabilityPolicySource.empty(), later));
 
         ClosureView view = queries().allConfigured();
 
@@ -331,6 +331,77 @@ class ClosureQueriesTest {
         assertThat(view.isLocked(new Urn(NodeKind.DIRECTIVE, "DIRECTIVE_001"))).isFalse();
     }
 
+    // ---- A15 (FR-033, DM-01M6RA97220XBR7RR447FE2JXD, rule C22): a pack's lock reaches what it builds on only -------
+
+    @Test
+    void a15AProjectPacksKindDefaultLockDoesNotLockTheDirectivesOfAnUnrelatedOrgPackInTheSameClosure() {
+        MutabilityPolicySource locksDirectives = MutabilityPolicySource.builder()
+                .kindDefault(NodeKind.DIRECTIVE, MutabilityLevel.LOCKED)
+                .build();
+        pack("p", PackLevel.PROJECT, descriptor("p", "1.0.0"), holding(List.of("directive:P1"), locksDirectives));
+        pack("q", PackLevel.ORG, descriptor("q", "1.0.0"), holding("directive:Q1"));
+
+        ClosureView view = queries().allConfigured();
+
+        assertThat(view.isLocked(new Urn(NodeKind.DIRECTIVE, "P1")))
+                .as("p locks what p holds")
+                .isTrue();
+        assertThat(view.isLocked(new Urn(NodeKind.DIRECTIVE, "Q1")))
+                .as("q is unrelated to p: p's lock does not reach q's directive")
+                .isFalse();
+        assertThat(view.lockOf(new Urn(NodeKind.DIRECTIVE, "Q1"))).isEqualTo(PerPackPolicy.Level.OPEN);
+        assertThat(view.isRequired(new Urn(NodeKind.DIRECTIVE, "Q1"))).isFalse();
+    }
+
+    @Test
+    void a15APackLocksTheDirectiveOfThePackItDependsOnAsAnEnterprisePackEnforcesABuiltInPractice() {
+        MutabilityPolicySource locksDirectives = MutabilityPolicySource.builder()
+                .kindDefault(NodeKind.DIRECTIVE, MutabilityLevel.LOCKED)
+                .build();
+        pack("b", PackLevel.BUILT_IN, descriptor("b", "1.0.0"), holding("directive:B1"));
+        pack(
+                "e",
+                PackLevel.ORG,
+                descriptor("e", "1.0.0", new PackDependency("b", ">=1.0")),
+                holding(List.of("directive:E1"), locksDirectives));
+
+        ClosureView view = queries().snapshot(roots("e"));
+
+        assertThat(view.lockOf(new Urn(NodeKind.DIRECTIVE, "B1")))
+                .isEqualTo(new PerPackPolicy.Level(MutabilityLevel.LOCKED, Optional.of("e")));
+        assertThat(view.isLocked(new Urn(NodeKind.DIRECTIVE, "E1"))).isTrue();
+        assertThat(view.isLocked(new Urn(NodeKind.DIRECTIVE, "UNHELD")))
+                .as("an id no pack of e's closure holds is not locked by a kind default")
+                .isFalse();
+    }
+
+    // ---- A10 (FR-028, DM-01M6RA8MG55V8C2V9PXWDTRNQS, rule C31): the floor holds held ids only, unheld is reported ---
+
+    @Test
+    void a10APresetMustHaveItemNoPackHoldsIsNotOnTheFloorAndIsReportedUnheld() {
+        Urn z = new Urn(NodeKind.DIRECTIVE, "Z");
+        Preset governing = new Preset(
+                "governing",
+                "governs",
+                Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("Z"), PresetItem.mustHave("D1"))));
+        pack(
+                "org",
+                PackLevel.ORG,
+                descriptor("org", "1.0.0"),
+                holding(List.of("directive:D1"), MutabilityPolicySource.empty(), governing));
+
+        ClosureView view = queries().allConfigured();
+
+        assertThat(view.floor().isRequired(z))
+                .as("no pack of the closure holds directive:Z")
+                .isFalse();
+        assertThat(view.isRequired(z)).isFalse();
+        assertThat(view.floor().unheld()).containsOnlyKeys(z).containsEntry(z, List.of("org"));
+        assertThat(view.floor().requiringPacks(DIRECTIVE_D1))
+                .as("same fixture: the held must-have item stays on the floor")
+                .containsExactly("org");
+    }
+
     @Test
     void absentRootsOfAServiceWithNoConfiguredPackGiveAnEmptyClosure() {
         ClosureView view = queries().allConfigured();
@@ -352,7 +423,7 @@ class ClosureQueriesTest {
                 "a-child",
                 PackLevel.ORG,
                 extending("a-child", "z-parent"),
-                holding(List.of(), MutabilityPolicySource.empty(), overriding));
+                holding(List.of("directive:FROM-CHILD"), MutabilityPolicySource.empty(), overriding));
         pack(
                 "z-parent",
                 PackLevel.ORG,

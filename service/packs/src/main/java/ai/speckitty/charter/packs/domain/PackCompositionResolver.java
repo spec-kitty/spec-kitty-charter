@@ -57,8 +57,8 @@ public final class PackCompositionResolver {
      *
      * @param configured the configured pack and its level
      * @param descriptor what its {@code pack.yaml} states
-     * @param changedArtifacts the artifacts its graph documents say it changes (an {@code enhances} or
-     *     {@code overrides} relation on the artifact); empty when they name none
+     * @param changedArtifacts the artifacts its graph documents say it changes (an {@code overrides} relation on the
+     *     artifact; an {@code enhances} relation is additive and changes nothing, A14); empty when they name none
      * @param definedArtifacts the artifacts the pack itself holds, as bare URNs; empty when it holds none
      */
     public record PackUnderResolution(
@@ -578,8 +578,10 @@ public final class PackCompositionResolver {
     /**
      * Refuses two packs of one configured level that contest an artifact, unless a pack of the compose declares an
      * {@code overrides} edge settling it (FR-012; ADR-0048 decision 9, ADR-0053 decision 5): a conflict must be a
-     * decision, not load order. Two packs contest an artifact when both change it (an {@code enhances} or
-     * {@code overrides} relation on it) or when both define it (each holds an artifact with that id). An edge settles
+     * decision, not load order. Two packs contest an artifact when both change it (an
+     * {@code overrides} relation on it) or when both define it (each holds an artifact with that id); a definer and an
+     * enhancer, or two enhancers, contest nothing (A14, decision {@code DM-01M6RA92BS6GGCYTRCFQDYYY5S}, rule C14), and
+     * a settlement names exactly one winner (rule C15). An edge settles
      * a contest only when its {@code member} is one of the packs contesting that artifact at that level; an edge
      * naming any other member settles nothing and the refusal says so. The edges of the whole compose are read
      * together, so a contest is settled only when they agree on one winner: two packs naming different winners leave
