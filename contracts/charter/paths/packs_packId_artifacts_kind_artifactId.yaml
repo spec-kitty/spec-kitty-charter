@@ -87,13 +87,9 @@ delete:
     composition code or one of override_not_permitted, enhances_cycle, conflicting_relations, self_override and
     override_cycle, naming the packs, and nothing is written. A refused DELETE changes nothing: no file, edge or preset
     item is removed. A DELETE does not consult activations: a saved selection of the removed artifact reads as stale and
-    is dropped on the next write. The version history is kept. The operation is reserved until the removal service is
-    built (ADR-0020 D8).
+    is dropped on the next write. The version history is kept.
   tags:
   - Registration
-  x-reserved:
-    contractSet: pack-registration
-    issue: '#10'
   parameters:
   - $ref: ../parameters/PackId.yaml
   - $ref: ../parameters/ArtifactKind.yaml
@@ -209,7 +205,5 @@ delete:
       $ref: ../responses/PreconditionRequired.yaml
     '500':
       $ref: ../responses/OfferingUnreadable.yaml
-    '501':
-      $ref: ../responses/NotImplemented.yaml
     default:
       $ref: ../../_shared/responses/Problem.yaml

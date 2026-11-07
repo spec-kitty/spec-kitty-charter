@@ -82,8 +82,9 @@ description: >-
   override_not_permitted, enhances_cycle, conflicting_relations, self_override and override_cycle (a registration that
   leaves a closure it joins breaking a relation rule), as the problem of a refused registration status
   (getPackRegistration); registration_not_found, pack_source_unavailable, registration_timed_out and pack_storage_full are
-  raised by the registration job and its admission. pack_source_refused is raised by the source fetchers and
-  relationship_not_found and relationship_not_registered by the two DELETEs, and stay raised: false until those are built.
+  raised by the registration job and its admission; relationship_not_found and relationship_not_registered are raised by
+  the removal of a relationship (deletePackRelationship). pack_source_refused is raised by the source fetchers and stays
+  raised: false until those are built.
   pack_version_conflict (409): the same pack_version was registered with another revision. artifact_referenced (409):
   another artifact or pack still refers to the artifact a DELETE or a replace removes; its packs member names the
   referring packs (at most 100) and its violations name every referring artifact. relationship_not_found (404): no
@@ -621,12 +622,12 @@ x-refusal:
   relationship_not_found:
     status: 404
     retryable: false
-    raised: false
+    raised: true
     description: no graph document of the pack holds an edge on the pair, and no derived relation joins it
   relationship_not_registered:
     status: 409
     retryable: false
-    raised: false
+    raised: true
     description: the pair is held outside registered.graph.yaml (authored or derived), or in both kinds of document
   registration_not_found:
     status: 404

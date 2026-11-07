@@ -249,7 +249,7 @@ that calls it. A run that selects only some scenarios reports the others' operat
   impact check and the load's refusals, each refusal with a control. The file is `@contract` and each scenario is
   `@WIP` until the serving work package binds it (the comment above a scenario names which); see "Registration steps".
 - `pack-removal.feature`: the artifact `DELETE` and the relationship `DELETE` (ADR-0065 D4, FR-005, FR-006), their
-  `404`, `409`, `412`, `422` and `428` answers, each with a control. `@contract`, each scenario `@WIP` until WP19.
+  `404`, `409`, `412`, `422` and `428` answers, each with a control. `@contract`, bound by WP19.
 - `trust/`, `integrity/`, `distribution/`, and the rest of the pack registration and distribution scenarios of
   ADR-0005 and ADR-0019 (#43), every one `@WIP` and none `@contract`. The surface is decided, not built, and
   outside the cutover scope (ADR-0055 D1), so they are not executed, by decision (#374); each file's header says
@@ -314,7 +314,7 @@ vocabulary above.
   `@trust`, `@integrity`, `@distribution`). `profiles.feature` carries `@WIP` alone. The two files of the whole-pack
   registration (`registration/whole-pack-registration.feature` and `pack-removal.feature`) are the exception: they carry
   `@contract` on the feature, as `activation-ruling-changes.feature` does, and tag each scenario `@WIP` until the work
-  package that serves it binds its steps and removes the tag.
+  package that serves it binds its steps and removes the tag (`pack-removal.feature` is bound).
 - `@provisional`: the behavior is not settled yet; the conformance corpus (issue #9) decides
   it. It is still asserted exactly, so a change to it is deliberate, and it matches an
   `x-provisional` part of `../openapi.yaml`.

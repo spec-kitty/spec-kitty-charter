@@ -136,13 +136,9 @@ delete:
     the edge in force would mislead. The fixed reason says to register the whole pack; nothing is written. PR A is
     strict: when a closure that contains the pack, after the removal, no longer composes or breaks a rule, the answer
     is 422 with the composition code or one of override_not_permitted, enhances_cycle, conflicting_relations,
-    self_override and override_cycle, naming the packs, and nothing is written. The version history is kept. The
-    operation is reserved until the removal service is built (ADR-0020 D8).
+    self_override and override_cycle, naming the packs, and nothing is written. The version history is kept.
   tags:
   - Registration
-  x-reserved:
-    contractSet: pack-registration
-    issue: '#10'
   parameters:
   - $ref: ../parameters/PackId.yaml
   - name: from
@@ -254,7 +250,5 @@ delete:
       $ref: ../responses/PreconditionRequired.yaml
     '500':
       $ref: ../responses/OfferingUnreadable.yaml
-    '501':
-      $ref: ../responses/NotImplemented.yaml
     default:
       $ref: ../../_shared/responses/Problem.yaml
