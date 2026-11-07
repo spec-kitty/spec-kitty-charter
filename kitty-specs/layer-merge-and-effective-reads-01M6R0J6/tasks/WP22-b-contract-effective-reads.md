@@ -167,6 +167,14 @@ not listed).
 **SC-005 (PR B items):** A1 (union of every governing copy), A2 (pinned final state, see WP23), A3, A8, A9 (bound and
 ungrounded floor), A13, B1 reads, B4, B6/B7 each have a named scenario. Fixtures authored inline per the plan's
 Fixtures list.
+**A10 report half (from WP08 review cycle 2, 2026-11-06):** `contracts/charter/scenarios/activation-ruling-changes.feature`
+holds the `@WIP` scenario "A10 - the unheld must-have item is in requiredNotHeld", split out for this PR. WP22 keeps its
+text in line with the `requiredNotHeld` bucket it declares; WP25, which serves the skipped report, binds its glue,
+records the red and removes its `@WIP` tag (the WP08 review also asks for floor.unheld() to be surfaced there). Its
+sibling "A10 - an artifact another pack's preset names cannot be deleted" belongs to WP19 (PR A).
+**#408 rulings 2–3 (2026-11-07, `research/rulings-2026-11-07.md`):** scenarios that the language filter applies at
+read only (a read with no `languages` filters nothing; what it filtered is in the language-filtered bucket), and that an
+artifact reached only through `suggests` is listed as a suggestion with its `when` and `reason`.
 
 ## Test strategy
 

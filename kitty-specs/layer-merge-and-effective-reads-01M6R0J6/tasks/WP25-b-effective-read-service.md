@@ -152,6 +152,12 @@ Implements the `packs` port: given the before/after closures, list activation id
 
 ### T130: Scenario glue and timing
 
+Also bind the `@WIP` scenario "A10 - the unheld must-have item is in requiredNotHeld" in
+`contracts/charter/scenarios/activation-ruling-changes.feature` (split out by WP08 review cycle 2; surface
+`floor.unheld()` in the skipped report), record its red and remove its tag. The A14 scenario there checks only the
+pack-scoped listings (WP08 review cycle 3): add the composed control, both enhancers' tactics in the closure's
+effective list.
+
 `EffectiveReadSteps`: bind both feature files of WP22, record the red (assertion failures against the `501`), remove
 their `@WIP`, make them green, and replace the old `501` pins of the two reads.
 **NFR-003 gate** (decision `DM-01M6RN5SG19KXAHH4VGT9QBYA1`): `EffectiveReadOperationBudgetTest` in `check` fails the
