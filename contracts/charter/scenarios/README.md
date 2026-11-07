@@ -288,6 +288,16 @@ vocabulary above.
   held jobs run and eight wait, ADR-0065 D8), `When I release the held
   registration jobs`, `When I release the held registration jobs and hold them while they run` (the job is then
   `running`) and `When the service forgets the ended registrations` (the clock passes the hour the status is kept).
+- `Given the pack registry is held by another write` takes the registry's write lock on a background thread, as a
+  registration or a per-artifact pack write does, and `When the held pack registry is released` frees it (a scenario
+  that ends with it held releases it). A write that meets the held lock waits its five seconds and answers `503` with
+  `Retry-After`: a per-artifact pack write and an activation write alike.
+- `Then the field at "<json-pointer>" holds exactly <n> item(s)` counts the elements of an array in the response body
+  (the literal `item(s)` is the step's wording). A `202`'s `Location` counts as the response's own `self` for the link
+  checks, and a registration status is not fingerprinted.
+- The archives are built with the JDK alone (`tar.gz` and `zip`, no archiver library); `Given the archive "<name>" holds
+  the file` adds a file, a path named twice holds the later text, and an archive is sent as `application/gzip` or, as
+  a zip archive, `application/zip`. The staging directory of the scenarios is a directory of the scenario's own root.
 - One seam per source kind: `Given the https host "<host>" is allowed`, `Given the https host "<host>" serves "<url>" with
   the archive "<name>"` (a stub exchange, never the network); `Given the git host "<host>" is allowed`, `Given the git
   repository "<url>" holds the archive "<name>" at the ref "<ref>"` and `Then the field at "<json-pointer>" is the commit
