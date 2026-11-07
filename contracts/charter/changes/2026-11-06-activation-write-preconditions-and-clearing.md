@@ -20,7 +20,7 @@
   (ADR-0059 D4, "a stored one is tolerated but not applied"): a select, unselect, re-activate or preset of another id
   answers as if it were not there, and keeps it. `createActivation` and `replaceActivation` still judge the whole
   document they are sent.
-- `SelectionRequest.includeDeactivated` says what it clears (operator ruling of 2026-11-06, ADR-0059 amendment R3):
+- `SelectionRequest.includeDeactivated` says what it clears (operator ruling of 2026-11-06, ADR-0059 amendment A3):
   only the deny entries the walk passes through within the cascade's kinds, that is what it reaches within them, each
   lineage ancestor it passes whose kind is among them (cleared, never selected) and the target. A denied artifact
   outside the cascade's kinds keeps its deny entry: the walk stops there and reports it in `skippedDeactivated`, with
@@ -34,7 +34,7 @@
   artifact an `ArtifactReference` can name: a template, an asset, an unselected intermediate or a lineage ancestor on
   the way leads back to the artifact that put it in the walk (for an ancestor, its descendant), as
   `ArtifactReference`'s description and ADR-0059 D2.4 say; among the nearest, the first in code-point order.
-- Stale ids are dropped on write (operator ruling of 2026-11-06, ADR-0059 amendment R5). Every per-artifact and preset
+- Stale ids are dropped on write (operator ruling of 2026-11-06, ADR-0059 amendment A5). Every per-artifact and preset
   write first removes from the stored document each id the activation's closure no longer declares (a pack upgrade
   removed it), in `selected`, `deactivated` and `missionTypes`, and reports them in the new optional
   `ActivationChange.dropped`, an array of `ArtifactReference`, present only when the write dropped one. A dropped id

@@ -161,7 +161,7 @@ class ActivationPresetServiceTest {
 
     @Test
     void aPresetDropsTheStoredIdsTheClosureNoLongerDeclaresAndReportsThem() {
-        // ADR-0059 amendment R5: GONE was selected before a pack upgrade removed it.
+        // ADR-0059 amendment A5: GONE was selected before a pack upgrade removed it.
         StoredActivation before =
                 stored(ActivationDocument.builder().selected(ArtifactKind.DIRECTIVE, List.of("A", "GONE")));
 
