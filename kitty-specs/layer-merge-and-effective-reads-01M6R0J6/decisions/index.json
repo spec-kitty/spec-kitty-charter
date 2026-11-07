@@ -1453,6 +1453,26 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-07T13:59:08.520907Z",
+      "decision_id": "01M6V4WMF8CD8NBN7A065E9ZQ5",
+      "final_answer": "(1) An unreadable stored pack is diffed against what can still be read: the artifact ids from its file listing (each file read on its own; a file that cannot be parsed still counts by the id its path names) and the edges of any graph document that parses. Removed artifacts and dropped edges found that way go through the gate and the inbound scan as usual. If the stored pack's artifact set cannot be determined at all, the registration is refused 500 pack_unreadable (the operator repairs it), never treated as empty. (2) The inbound scan matches qualified references against both the stored pack's name and the uploaded name. (3) A replace that changes the pack's name to a name another stored pack holds is refused with the refusal create uses for a duplicate name.",
+      "input_key": "wp14-review-cycle-1",
+      "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",
+      "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
+      "opened_by": "claude:opus:runner",
+      "options": [],
+      "origin_flow": "plan",
+      "other_answer": true,
+      "question": "WP14 review cycle 1: how does registration treat an unreadable stored pack, a rename, and a replace that takes another pack's name?",
+      "rationale": "Review cycle 1 probes p1a-p1c and p4 showed the gate and the FR-036 scan bypassed through a legacy file or a rename; p3 showed names stop being unique. The repair path stays but can no longer skip locks or referrers. No contract shape changes.",
+      "resolved_at": "2026-11-07T14:00:09.385757Z",
+      "resolved_by": "claude-runner",
+      "slot_key": "wp14-unreadable-rename",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",

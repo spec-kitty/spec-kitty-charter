@@ -230,3 +230,7 @@ NFR-008 latency in `timingBudgets`, report-only.
   reserved handlers, and reword that text if it still says a reserved operation's codes stay `raised: false`.
 - `If-Match` together with `If-None-Match: *` throws `IllegalArgumentException` in `Preconditions`; the controller
   answers it `400`.
+- Crash leftovers: `.pack-commit-*` and `.pack-write-*` folders under the storage root are never removed after a
+  crash. Clean them in the job sweep (or at start-up), under the registry lock.
+- The tree copy in `replaceWhole`/`create` runs under the registry lock; with the 5 s `tryLock` a large pack can make
+  other writers answer `503`. If the job's tests show it, copy before taking the lock.
