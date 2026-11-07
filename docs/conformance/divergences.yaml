@@ -3,7 +3,7 @@
 # one by one, the context-read and activation entries in a table). DivergenceRegisterTest fails
 # when an id is listed twice here or is on one of the two and not the other. The blocks are pack
 # schemas (DIV-001..099, ADR-0017), context read (DIV-101..110, ADR-0018), activation
-# (DIV-201..207, ADR-0020; DIV-201 and DIV-202 proposed), pack-level files (DIV-301..399, ADR-0042), procedures and
+# (DIV-201..215, ADR-0020; DIV-208 withdrawn before it landed, so its id stays taken; DIV-201 and DIV-202 proposed), pack-level files (DIV-301..399, ADR-0042), procedures and
 # toolguide guides (DIV-401..499, ADR-0043) and mission types (DIV-501..599, ADR-0044). Consumers: the
 # conformance gate (#72) and the pack doctor parity test (#115) read this file; a difference from
 # core that is not listed here with status `open` fails them, so a `proposed` entry is not yet
@@ -597,14 +597,15 @@
     - "corpus case: required-promoted-at-write"
 
 - id: DIV-203
-  surface: An absent selected.<kind>, activatedKinds or missionTypes in an activation document
+  surface: An absent selected.<kind> in an activation document (and, in a document stored before 2026-11-07, activatedKinds or missionTypes)
   core: >-
     Applies a per-kind default when the key is absent: every available artifact of the kind, or
     only the org packs' required skills for skill.
   service: >-
     Absent means none, the same as []: nothing of the kind is in force, skill included, which loses
     its "only the required skills" default. The two stay distinct on the wire. An absent packs
-    still means every configured pack.
+    still means every configured pack. activatedKinds and missionTypes are no longer members of
+    the document (DIV-212, DIV-213, DIV-214); a mission type is selected like any kind.
   rationale: >-
     One meaning for an absent list and an empty one removes the per-kind table a client has to
     know, and a selection adds to nothing rather than narrowing a default. Core's seam stops
@@ -667,8 +668,10 @@
     A denied ancestor stops
     the pass-through there and is reported in skippedDeactivated; what lies only behind it is in
     unreachedBehindDeactivated. With includeDeactivated a denied ancestor whose kind is in the
-    cascade scope is passed through and its deny entry cleared, never selected; one outside the scope
-    stops the pass-through as without includeDeactivated. requiredBy never names an ancestor passed through; it leads
+    cascade scope is passed through and never selected, and its deny entry is kept: includeDeactivated
+    clears only the deny entries of what the walk reaches and selects (ruling B5, 2026-11-06, built
+    2026-11-07). One outside the scope stops the pass-through as without includeDeactivated.
+    requiredBy never names an ancestor passed through; it leads
     back to the descendant the ancestor was passed from. A cascading deactivate's own walk passes
     through the lineage as a select's does, so a cascading select and a cascading deactivate of
     the same profile round-trip (operator ruling of 2026-11-06), but it stops at no deny entry: it
@@ -678,12 +681,13 @@
     A specialized profile needs what its parent requires or scopes, but selecting the profile must
     not put the parent in force beside it. Passing only requires and scope keeps the parent's
     recommendations (suggests) and other edges out of the walk.
-  ruling: ADR-0059 D2.4 (as revised 2026-11-05) and its amendment of 2026-11-06 (A2)
+  ruling: ADR-0059 D2.4 (as revised 2026-11-05), its amendment of 2026-11-06 (A2) and its amendment of 2026-11-07 (B5, decision DM-01M6RA9XQSH3E07C7VCPCVD6R4)
   status: open
   since: 2026-11-06
   evidence:
     - "charter: service/packs/src/main/java/ai/speckitty/charter/packs/application/ReachRequest.java (Lineage.specializesFrom passes requires and scope)"
-    - "charter: contracts/charter/scenarios/activation-selections.feature (A cascade passes through a profile's ancestor without putting it in force; A denied ancestor stops the lineage and is reported, with what lies behind it; A cascading deactivate follows the lineage, so it undoes a cascading select)"
+    - "charter: contracts/charter/scenarios/activation-selections.feature (A cascade passes through a profile's ancestor without putting it in force; A denied ancestor stops the lineage and is reported, with what lies behind it; A cascading deactivate follows the lineage, so it undoes a cascading select; includeDeactivated passes through a denied ancestor inside the scope and keeps its deny entry)"
+    - "charter: contracts/charter/scenarios/activation-ruling-changes.feature (B5 - includeDeactivated clears the deny entry of a reached artifact and keeps a passed ancestor's)"
     - "corpus case: cascade-lineage-pass-through"
 
 - id: DIV-207
@@ -713,6 +717,166 @@
     - "charter: service/activations/src/main/java/ai/speckitty/charter/activations/domain/CascadeRules.java (CASCADE_RELATIONS)"
     - "charter: contracts/charter/scenarios/activation-selections.feature (A cascading select of an enhancer selects the artifact it enhances; A cascading select of an enhanced artifact selects no enhancer; A cascading deactivate of an enhancer unselects the artifact it enhances; includeDeactivated clears the deny entries the walk passes through, and no enhancer's)"
     - "corpus case: cascade-enhances-relation"
+
+# Activation: the A0 rulings, the kind model and the cascade depth (DIV-209..215), mission
+# layer-merge-and-effective-reads-01M6R0J6 (PR A0, 2026-11-07). DIV-208 is withdrawn and stays taken.
+- id: DIV-209
+  surface: A replace and the per-artifact writes drop what the packs no longer hold, and report it
+  core: >-
+    Has no stored document to replace: its seam drops a stale deny entry at export and keeps no
+    version pin of a pack.
+  service: >-
+    replaceActivation drops an id of the body that the closure no longer holds and that the replaced
+    document named, and lists it in the answer's dropped; an unknown id the replaced document did not
+    name is still 422 unknown_artifact. replaceActivation, the four per-artifact writes and
+    applyActivationPreset drop a version pin no pack of the closure holds and list it in droppedPins
+    (ActivationChange.droppedPins; Activation.droppedPins on a replace answer), instead of 422
+    version_not_held. createActivation keeps 422 version_not_held for a pin in its own body. A replace
+    judges the floor only on the deny entries it adds, so a GET then PUT of the same body is never
+    refused without a pack change.
+  rationale: >-
+    A document an offering change made stale must still round-trip, and a pin to a version that is
+    gone is as stale as an id. The drop is never silent: dropped and droppedPins report it.
+  ruling: >-
+    ADR-0059 amendment of 2026-11-07 (ruleset A4 and B1; decisions DM-01M6RA7XC5HC8915GZT2R3H83W,
+    DM-01M6RA9BKJY7X9BFV93QW1KM1T, DM-01M6RN5Y406SB4KA13QYMQ2P8J)
+  status: open
+  since: 2026-11-07
+  evidence:
+    - "charter: contracts/charter/changes/2026-11-07-a0-ruling-breaking.md"
+    - "charter: contracts/charter/scenarios/activation-ruling-changes.feature (A4 - a GET then PUT of a body whose deny entry a pack now requires is 200 with the same ETag; A4 - a PUT of the body read before a pack upgrade removed an id drops the id and lists it in dropped; B1 - a per-artifact write drops a pin no pack holds into droppedPins, and a create refuses it)"
+    - "corpus case: replace-drops-stale"
+
+- id: DIV-210
+  surface: A mission type's id in an activation path or document, in any spelling
+  core: >-
+    A mission type is not an artifact kind (DIV-501), so its id is matched as the mission-tier path
+    spells it.
+  service: >-
+    A mission type id is normalized as every kind's is: the declared id, its full URN or another case
+    names it, and the stored document holds the declared id. A match that is ambiguous between two
+    declared ids differing only by case is 422 activation_invalid (ambiguous_artifact). In the
+    document a mission type is judged under the same code as any artifact (unknown_artifact, at
+    /selected/mission_type/<i> or /deactivated/mission_type/<i>); the code unknown_mission_type is gone.
+    The path of the selections and exclusions operations answers 404 mission_type_not_found for a
+    mission type the closure does not hold.
+  rationale: >-
+    One id rule for every kind removes the exact-match exception the old missionTypes member had.
+  ruling: ADR-0020 D4 note of 2026-11-06 (spellings); decisions DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY, DM-01M6RCXZ9HSHT4K3443YYZ8ZFC
+  status: open
+  since: 2026-11-07
+  evidence:
+    - "charter: contracts/charter/scenarios/activation-selections.feature (A mission type path id names it in any known spelling and stores the declared id, as any kind's does)"
+    - "charter: contracts/charter/changes/2026-11-07-a0-ruling-changes.md (ArtifactIdPath)"
+    - "corpus case: mission-type-id-spellings"
+
+- id: DIV-211
+  surface: What a preset may carry
+  core: >-
+    A preset may carry activated_kinds, the kind gate, and its member lists exclude skill and
+    glossary_pack; mission types are named under mission_type_activations.
+  service: >-
+    A preset carrying activated_kinds refuses the pack as 500 pack_unreadable, as the preset item id grammar does; a 422 on registration is planned for PR A. A preset may name
+    any kind: it gains activated_skills and activated_glossary_packs, and activated_mission_types is
+    a plain member list applied as selected.mission_type. applyActivationPreset applies every kind
+    the preset lists and sets no kind gate.
+  rationale: >-
+    With the kind gate gone (DIV-212) a preset has nothing to gate, and one kind registry serves
+    activations, presets, packs and the contract.
+  ruling: decisions DM-01M6RCY40CQQTHC130RWF43W0D (Q3), DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY (A7); ADR-0042 D2 amended 2026-11-07
+  status: open
+  since: 2026-11-07
+  evidence:
+    - "charter: contracts/packs/schemas/preset.schema.json"
+    - "charter: contracts/charter/scenarios/activation-kind-model.feature (A preset naming a skill applies it)"
+    - "charter: contracts/charter/scenarios/activation-presets.feature (A preset that lists mission types replaces selected.mission_type)"
+    - "corpus case: preset-any-kind"
+
+- id: DIV-212
+  surface: Core's activated_kinds narrowing
+  core: >-
+    A project may narrow activated_kinds, and only the kinds it lists are in force.
+  service: >-
+    Nothing is in force because its kind is activated: there is no kind gate, and a select brings its
+    artifact into force. activatedKinds is not a member of the document, and a create or replace that sends it is
+    422 validation_failed (removed_member) naming selected.<kind>. A core project that narrows
+    activated_kinds sees a larger effective set from the service.
+  rationale: >-
+    The gate was a core remnant, not a domain rule. It had no observable effect in the service (reads
+    answered 501, writes ignored it), and selection already says what is in force.
+  ruling: decisions DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY (A7), DM-01M6RCY8MYNGNPJ247M2Y4880N (Q4)
+  status: open
+  since: 2026-11-07
+  note: >-
+    Core's seam must regenerate its strict DTOs and stop sending activatedKinds and missionTypes (each
+    is refused); the migration note is handed over in the pull request and an issue comment, and
+    nothing is edited in core (C-003).
+  evidence:
+    - "charter: contracts/charter/changes/2026-11-07-a0-one-kind-model.md"
+    - "charter: contracts/charter/scenarios/activation-kind-model.feature (activatedKinds in a create body is 422 validation_failed naming selected.<kind>; missionTypes in a create body is 422 validation_failed naming selected.mission_type; A replace that sends both remnant members is 422 with one violation per member and stores nothing)"
+    - "corpus case: activated-kinds-narrowing"
+
+- id: DIV-213
+  surface: A stored activation document of schemaVersion 1
+  core: Has no stored activation document of this shape and no version to upgrade.
+  service: >-
+    A document stored at schemaVersion 1 is answered as its version 2 upgrade: its missionTypes become
+    selected.mission_type, every selection is kept and activatedKinds is discarded. A read upgrades in
+    memory and never writes; the upgrade is stored on the next write, so each activation's revision
+    and ETag change once and a client holding an old ETag gets one 412.
+  rationale: >-
+    The kind gate had no observable effect, so no selection is outside it, and no stored document
+    needs a migration step.
+  ruling: decisions DM-01M6RMJHDKNTXAM055Q8WR6SDN, DM-01M6RFGMDH859CJP3RHHF9YC3H
+  status: open
+  since: 2026-11-07
+  evidence:
+    - "charter: contracts/charter/scenarios/activation-kind-model.feature (A stored version 1 document reads back as its version 2 upgrade; Reads leave a stored version 1 document untouched, and the next conditional write stores version 2)"
+    - "corpus case: v1-upgraded-on-read"
+
+- id: DIV-214
+  surface: A mission type is selected, cascaded and denied like any kind
+  core: >-
+    Holds mission types in mission_type_activations, a plain list with no deny list (ADR-0020 D4
+    table), and selecting one does not put the artifacts its steps reach into activated_<plural>.
+  service: >-
+    A mission type is selected under selected.mission_type and denied under deactivated.mission_type.
+    Selecting one with a cascade crosses to the steps it holds like requires, and what the steps reach
+    is selected (CascadeKind gains mission_type; rule W20); a cascading deactivate of a mission type
+    unselects what only it kept (W23). A deny entry on a required or locked mission type is 409
+    artifact_required or artifact_locked, as for any kind, and a deny on any other is accepted.
+  rationale: >-
+    A mission type follows the same activation, override and enhancement rules as any artifact, and
+    ADR-0050 decision 6 made it an ordinary kind.
+  ruling: decisions DM-01M6RCXTS0SMDNTWZ8G7GJ2P5S (Q1), DM-01M6RCXZ9HSHT4K3443YYZ8ZFC (Q2); #410
+  status: open
+  since: 2026-11-07
+  evidence:
+    - "charter: contracts/charter/scenarios/activation-kind-model.feature (Selecting a mission type with a cascade selects what its steps reach; A cascading deactivate of a mission type unselects what only it kept; A deny entry on a mission type is accepted; A deny entry on a required mission type is 409 artifact_required and stores nothing; A deny entry on a locked mission type is 409 artifact_locked and stores nothing)"
+    - "corpus case: mission-type-selected-like-any-kind"
+
+- id: DIV-215
+  surface: A depth on a cascading select or deactivate
+  core: Has no write-cascade depth; the activation cascade is unlimited.
+  service: >-
+    A cascading select (SelectionRequest) and a cascading deactivate (ExclusionRequest) take an
+    optional depth that counts suggests hops only. requires, the other hard relations, enhances, the
+    specializes_from pass-through and a mission type's steps are walked in full; depth 0 follows no
+    suggests edge; an absent depth is unlimited, as in core. SkippedReport.skippedByDepth lists the next
+    suggests frontier when a depth was sent. A depth that is not an integer is 422 activation_invalid
+    (unreadable_body) at /depth, a negative one below_minimum and one past the int32 range above_maximum.
+    The deactivate honours depth in the target's own walk; the shared walk that decides what is kept
+    is unlimited, so a deactivate at depth N undoes a select at depth N only in what it removes.
+  rationale: >-
+    Iterative deepening of a cascade (#408) needs a bound, and truncating a hard relation would write
+    a selection whose requirements are not selected. One meaning of depth across the contract.
+  ruling: operator ruling on #408 of 2026-11-07; decisions DM-01M6TDH0SY5Q224GX709DXWG8K, DM-01M6TF3BA808JMW0W0A0CPXBNW
+  status: open
+  since: 2026-11-07
+  evidence:
+    - "charter: contracts/charter/changes/2026-11-07-a0-cascade-depth.md"
+    - "charter: contracts/charter/scenarios/activation-cascade-depth.feature (A cascading select at depth 0 selects the target and its hard closure only; A cascading deactivate at depth 1 undoes a cascading select at depth 1; The round trip is not exact when another active artifact suggests a candidate)"
+    - "corpus case: cascade-depth"
 
 # Pack-level files (DIV-301..399), mission pack-level-files-round-trip-01M60H1A (#195, ADR-0042).
 - id: DIV-301
@@ -802,7 +966,9 @@
     (offering/artifact_kinds.py).
   service: >-
     mission_type is an artifact kind (ArtifactKind.MISSION_TYPE, plural mission_types), bound in
-    the kind registry and a pack-manifest constituent kind; its node kind is artifact-backed. One
+    the kind registry and a pack-manifest constituent kind; its node kind is artifact-backed. It is
+    activatable like any kind: selected under selected.mission_type, deniable unless required or
+    locked, and none in force when absent (DIV-203, DIV-214; updated 2026-11-07). One
     file per type, missions/<id>/<id>.mission-type.yaml, holds the steps as sub-items of steps and
     on_demand_steps; a mission step is a domain type with no artifact kind or fragment plural.
   rationale: >-
