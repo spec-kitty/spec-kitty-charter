@@ -4,7 +4,7 @@ artifact_type: spec-kitty.analysis-report
 command: /spec-kitty.analyze
 mission_slug: layer-merge-and-effective-reads-01M6R0J6
 mission_id: 01M6R0J642MF7F33XVMMPSBSAT
-generated_at: '2026-11-07T10:17:23.947599+00:00'
+generated_at: '2026-11-07T10:30:37.473691+00:00'
 analyzer_agent: unknown
 input_artifacts:
   spec.md:
@@ -12,7 +12,7 @@ input_artifacts:
     sha256: 86546e93a0ba9421297cc85c70042eef21092e77b691bc23759ffe48d0b60d94
   plan.md:
     path: kitty-specs/layer-merge-and-effective-reads-01M6R0J6/plan.md
-    sha256: fef7b10162ea9e050fd5989a33f88a84f7fbd985aacb442d6b7cacb2842bab2c
+    sha256: 2b3843853f5b02e40e9cde148ca3d7ec995a01f43ad6f8706cd1ef1796b01774
   tasks.md:
     path: kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks.md
     sha256: 521629a48b49c0af6e484f673af42ced1e51fa73204c00adcc47cb8c3354850d
@@ -21,10 +21,10 @@ input_artifacts:
     sha256: 4294d3d4acf870b61bc424ac17d3d34708093d4dbc6126f5b1f72941b23497cc
 verdict: ready
 issue_counts:
-  medium: 0
-  low: 6
-  high: 0
   critical: 0
+  low: 6
+  medium: 0
+  high: 0
   info: 0
 findings:
 - id: C1
@@ -55,7 +55,7 @@ findings:
 
 ## Specification Analysis Report (re-run, 2026-11-07, phase A delta)
 
-Re-run after the phase A plan delta (commits 983b449d, 64f8d366): the plan predated main's #403 (ADR-0064) and #390.
+Re-run after the phase A plan delta (commits 983b449d, 64f8d366) and the WP10 review fold (IC-04 step 6 and IC-06 wording): the plan predated main's #403 (ADR-0064) and #390.
 Folded: the 14 delta-squad findings, the operator's rulings DM-01M6TQ62HXYF362GAFS2BZ3PGF (a relationship DELETE
 removes only registered edges; `409 relationship_not_registered` otherwise) and DM-01M6TQ67C9ZTNGZB9CY28JS54F (PR A
 stays strict; #404 out of scope), the runner's follow-ups DM-01M6TR1KDAJ64GMJD6AYNZKT59, and the operator's resolution
