@@ -350,7 +350,8 @@
       "last_transition_at": "2026-11-07T10:28:33.888143+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "ADR-0065 written (D1-D13) with Amends notes for ADR-0026, 0005, 0019, 0030, 0063, 0064 D4; amendment notes added to 0005/0019/0026/0063; README untouched (generated index); docs checks clean except expected 0064 numbering gap"
+        "ADR-0065 written (D1-D13) with Amends notes for ADR-0026, 0005, 0019, 0030, 0063, 0064 D4; amendment notes added to 0005/0019/0026/0063; README untouched (generated index); docs checks clean except expected 0064 numbering gap",
+        "Review passed (reviewer-renata). ADR-0065 decides what plan and spec say; rulings DM-01M6TQ62, DM-01M6TQ67 and DM-01M6TR1K reflected exactly; amendment notes merge-safe on the A0 head; docs checks clean apart from the expected 0064 gap on this branch. Nits to fold before PR A merges: D2 stale If-Match wording limited to the check under the lock; D4 'preset items still removed' after a 409 reads as a partial write; D13 add the guard-audited 401 and the dev-flag audit field; Amends credits ADR-0005 instead of ADR-0019 D2/D5 for the old 201; frontmatter updated/decision_status of 0005/0019/0026/0063; NFR-004/005/009/011 bounds missing from D11/D10."
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
