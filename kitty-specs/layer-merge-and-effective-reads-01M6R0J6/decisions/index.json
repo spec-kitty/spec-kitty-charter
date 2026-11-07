@@ -1413,6 +1413,26 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-07T11:38:48.358850Z",
+      "decision_id": "01M6TWVNN6EXVYWVVM9M2GZP3C",
+      "final_answer": "The per-kind code (directive_not_found, tactic_not_found, ...), as getPackArtifact answers on the same path; one path, one not-found vocabulary. Contract A (WP11) already declares it; IC-06, contract-delta and WP19 T094 follow.",
+      "input_key": "artifact_delete_not_found",
+      "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",
+      "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
+      "opened_by": "claude-runner",
+      "options": [],
+      "origin_flow": "plan",
+      "other_answer": true,
+      "question": "Which not-found code does DELETE /packs/{packId}/artifacts/{kind}/{artifactId} answer: artifact_not_found, or the per-kind code getPackArtifact answers on the same path?",
+      "rationale": "WP11 review cycle 2 follow-up 1.",
+      "resolved_at": "2026-11-07T11:38:50.883465Z",
+      "resolved_by": "claude-runner",
+      "slot_key": "plan.phase-a.artifact-delete-404",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",

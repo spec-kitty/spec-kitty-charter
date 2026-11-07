@@ -215,3 +215,4 @@ NFR-008 latency in `timingBudgets`, report-only.
 ## Hand-off from WP12 (2026-11-07)
 
 - The registration job maps `RegistryBusyException` to `refused` `503` with `Retry-After` (WP12 hand-off; coordinate with WP14 so the mapping lives in one place).
+- When binding the AS8 scenario (`override_not_permitted` on a built-in lock), fix its assertion: the pack is created as `main` and named `main-pack`, so assert `/problem/packs/1/packId` is `main` or check `/name` (WP11 review cycle 2).
