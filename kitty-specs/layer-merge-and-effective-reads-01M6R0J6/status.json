@@ -495,7 +495,8 @@
         "cycle 2",
         "Cycle 2 per DM-01M6V4WMF8CD8NBN7A065E9ZQ5; verifyAll green.",
         "cycle 3",
-        "Cycle 3 per 01M6V6N74ER28H8S6TSVZ8ZEY2; verifyAll green."
+        "Cycle 3 per 01M6V6N74ER28H8S6TSVZ8ZEY2; verifyAll green.",
+        "cycle 4: linear salvage"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
