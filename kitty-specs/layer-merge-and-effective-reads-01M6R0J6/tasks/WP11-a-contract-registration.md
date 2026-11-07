@@ -42,8 +42,6 @@ create_intent:
 - contracts/charter/schemas/PackRegistration.yaml
 - contracts/charter/schemas/PackRegistrationStatus.yaml
 - contracts/charter/schemas/PackSource.yaml
-- contracts/charter/parameters/PackIfMatch.yaml
-- contracts/charter/parameters/PackIfMatchRequired.yaml
 - contracts/charter/changes/2026-11-07-a-pack-registration.md
 - contracts/charter/scenarios/registration/whole-pack-registration.feature
 - contracts/charter/scenarios/pack-removal.feature
@@ -56,8 +54,7 @@ owned_files:
 - contracts/charter/schemas/PackRegistration.yaml
 - contracts/charter/schemas/PackRegistrationStatus.yaml
 - contracts/charter/schemas/PackSource.yaml
-- contracts/charter/parameters/PackIfMatch.yaml
-- contracts/charter/parameters/PackIfMatchRequired.yaml
+- contracts/charter/parameters/IfMatch.yaml
 - contracts/charter/changes/2026-11-07-a-pack-registration.md
 - contracts/charter/scenarios/registration/whole-pack-registration.feature
 - contracts/charter/scenarios/pack-removal.feature
@@ -137,13 +134,31 @@ Implementation command:
 
 - `PUT /packs/{packId}`: body `application/gzip` (plus `application/x-gzip`, `application/x-tar+gzip`) or
   `application/zip`, raw bytes; `202` + `Location: /api/v1/pack-registrations/{id}` + `PackRegistrationStatus`;
-  `PackIfMatch` (`required: false`) and `If-None-Match: *`; `401`, `413`, `415`, `412`, `503` (`Retry-After`). No
-  `428` on `PUT`/`POST`: `If-Match` is optional there (the git branch-ref rule of WP18 is the one exception, `428`).
+  `If-Match` through `parameters/IfMatch.yaml` and `If-None-Match: *`; `401`, `413`, `415`, `412`, `503` (`Retry-After`).
+  No `428` on `PUT`/`POST`: `If-Match` is optional there (the git branch-ref rule of WP18 is the one exception, `428`).
+  The `409` and `422` answers of the registration flow are not declared on `PUT`/`POST`: they are the `problem` of a
+  `refused` status (see the `x-refusal` rule in T049).
+- **`If-Match` (plan delta squad, 2026-11-07).** There is no `PackIfMatch` parameter, and the contract's pack writes
+  declare `If-Match` inline. Do not create `PackIfMatch.yaml` or `PackIfMatchRequired.yaml`: reuse
+  `parameters/IfMatch.yaml` and extend its description from an `Activation` answer's tag to also cover a pack
+  revision's strong tag (its pattern already admits the quoted `sha256:` form). It stays `required: false`, as on the
+  activation sub-resource writes, and each `DELETE` states its `428` in its description.
 - `POST /packs`: body `PackSource`; same answers.
 - `GET /packs/{packId}` (`getPack`): the stored pack summary with `_links.self`.
 - `GET /pack-registrations/{registrationId}`: `pending|running|succeeded|refused`, `404` once forgotten.
-- Both `DELETE`s: `PackIfMatchRequired` (`428` absent, `412` stale), `204`, per-kind `404` codes
-  (`pack_not_found`, `kind_not_found`, `artifact_not_found`, `relationship_not_found`), `409`.
+- Both `DELETE`s go into the **existing** path files, beside `getPackArtifact`
+  (`paths/packs_packId_artifacts_kind_artifactId.yaml`) and `putPackRelationship`
+  (`paths/packs_packId_relationships.yaml`). `If-Match` from `IfMatch.yaml` (`428` absent, `412` stale), `204`,
+  per-kind `404` codes (`pack_not_found`, `kind_not_found`, `artifact_not_found`, `relationship_not_found`), `409`
+  and `422` (PR A stays strict: the closures after the removal fail to compose or break a rule,
+  `DM-01M6TQ67C9ZTNGZB9CY28JS54F`; #404's repair writes are out of scope). The `409` codes:
+  - artifact `DELETE`: `artifact_referenced`, `governance_policy_violation` (the new gate operation REMOVE, which fires
+    only when an ancestor holds and locks the id) and `registration_conflict` (the artifact is written in the pack's
+    author-written graph documents, which a `DELETE` never rewrites);
+  - relationship `DELETE`: **`relationship_not_registered`** (new): the edge is authored in a source shard or
+    `drg/fragment.yaml`, or derived (ADR-0064 D7). It removes only from `registered.graph.yaml`
+    (`DM-01M6TQ62HXYF362GAFS2BZ3PGF`). The old `registration_conflict` "the edge is a field of an artifact's own body"
+    case is gone: ADR-0064 D1 and D2 dropped the edge-minting fields.
 
 ### T048: Schemas
 
@@ -158,10 +173,17 @@ Implementation command:
 
 - `CharterRefusalCode.yaml` and `kernel RefusalCode`: `pack_version_conflict` (409), `artifact_referenced` (409,
   with `packs`/referrers), `relationship_not_found` (404), `pack_source_refused` (422), `pack_source_unavailable`
-  (503), `override_not_permitted`, `enhances_cycle`, `conflicting_relations`, `self_override`, `override_cycle` (all
-  422, IC-15), `registration_not_found` (404), `registration_timed_out` (the job's end state at the source deadline
-  + 30 s, NFR-008), `pack_storage_full` (503, less than 2× the archive bound free, NFR-009), and `kind_not_found` (declare it; if `RefusalCode` already has it, keep that entry and add only the
-  contract row). Use the `x-refusal` table format (ADR-0056).
+  (503), `relationship_not_registered` (409), `override_not_permitted`, `enhances_cycle`, `conflicting_relations`,
+  `self_override`, `override_cycle` (all 422, IC-15), `registration_not_found` (404), `registration_timed_out` (the
+  job's end state at the source deadline + 30 s, NFR-008; status `504`, decision `DM-01M6TR1KDAJ64GMJD6AYNZKT59`), `pack_storage_full`
+  (503, less than 2× the archive bound free, NFR-009). `kind_not_found` already exists (`CharterRefusalCode.yaml` ~111
+  and ~192, `RefusalCode.KIND_NOT_FOUND`): do not declare it again, only add `deletePackArtifact` to its text. Use the
+  `x-refusal` table format (ADR-0056).
+- **Where the registration codes are declared (recommendation, plan delta squad finding 9).** A `refused` status
+  returns its `problem` in the `200` body of `getPackRegistration`, so that operation carries the `x-refusal.operations`
+  entries (`422` for the eleven composition codes, in place of `500`). `registerPackFromArchive` and
+  `registerPackFromSource` declare only their synchronous answers. If you place it elsewhere, say so in the
+  `x-refusal` text.
 - `ReservedRefusalCodesTest` updated: these codes are declared and raised by PR A (not reserved).
 
 ### T050: Changelog fragment
@@ -173,12 +195,18 @@ Implementation command:
 - `registration/whole-pack-registration.feature` replaces the `@WIP` `register-pack.feature` (#374; retire the old
   file's scenarios by rewriting them here, then delete the old file — this is a replacement, not a disabled test).
 - US1 AS1–AS7 (create, replace with removals, identical re-send `unchanged`, same version other content `409`,
-  stale `If-Match` `412`, invalid archive `422`, changed level `422`), the status resource, `401` without a
-  principal, `503` when `charter.registration.enabled=false`, `POST` per source kind (with the test seams named in
+  stale `If-Match` `412`, invalid archive `422`, changed level `422`), the status resource, `401` without the
+  worktree token (the guard answers it before routing, so the scenario shows the contract's `401`, not a registration
+  rule), `503` when `charter.registration.enabled=false`, `POST` per source kind (with the test seams named in
   WP17/WP18), and the impact-check refusals of IC-15.
 - The asynchronous race (US1 AS6, second clause): a job held on the `RegistrationJobs` latch seam (WP16), a competing
   write commits, the job is released → the status says `refused` `412`. The status lifecycle: `pending` and `running`
   observed through the same seam, `succeeded`/`refused`, then `404 registration_not_found` once forgotten.
+- The load's `422 validation_failed` refusals (plan delta squad, finding 3), each with a positive control: an archive
+  whose `registered.graph.yaml` has no registration stamp (refused as a reserved shard) against one that carries it
+  (accepted, and the registered edges the archive leaves out are dropped); a directive with a removed field
+  (`references`, `procedures` or `relationships`); a preset with `activated_kinds`; a preset item id outside the id
+  grammar. None is a `500`.
 - Every absence assertion (a removed artifact no longer readable) is paired with a positive control in the same pack
   (the kept artifact present with its new content and version).
 - Commit both files tagged `@WIP`; the serving WPs (WP16, WP17, WP18, WP19) bind the glue, record the red and remove the
@@ -186,7 +214,7 @@ Implementation command:
 
 ### T052: Red scenarios: removal
 
-`pack-removal.feature`: US2 AS1–AS4 (delete, `404` per code, `409 artifact_referenced` naming the referrer, a preset item of another pack as referrer, `428`/`412`), relationship delete, negative controls; tagged `@WIP` until WP19.
+`pack-removal.feature`: US2 AS1–AS4 (delete, `404` per code, `409 artifact_referenced` naming the referrer, a preset item of another pack as referrer, `428`/`412`), relationship delete, negative controls; tagged `@WIP` until WP19. The relationship `DELETE` scenarios (`DM-01M6TQ62HXYF362GAFS2BZ3PGF`): a registered edge is removed (`204`); the same pair authored in a source shard or `drg/fragment.yaml`, and a derived relation, answer `409 relationship_not_registered` and the authored file is byte-identical afterwards; a pair with no edge answers `404 relationship_not_found`. A strictness scenario (`DM-01M6TQ67C9ZTNGZB9CY28JS54F`): a `DELETE` that leaves a closure broken answers `422`.
 
 ## Test strategy
 
@@ -194,7 +222,7 @@ Contract lint and `OpenApiDocumentTest`; the two new feature files red; `Reserve
 
 ## Risks
 
-- PR #393's `ProblemHandler` edits may collide: rebase before review.
+- (The collision risk with PR #393's `ProblemHandler` edits is dropped: #393 is merged.)
 - The generated Spring interface for a binary body is `Resource`; the body limit is enforced before binding by WP16.
 
 ## Definition of Done

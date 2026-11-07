@@ -263,7 +263,8 @@
       ],
       "predicted_surfaces": [
         "api",
-        "artifact-rendering"
+        "artifact-rendering",
+        "legacy-cleanup"
       ],
       "depends_on_lanes": [
         "lane-h"
@@ -284,6 +285,7 @@
         "docs/adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest.md",
         "docs/adr/0050-mission-types-and-lifecycles-as-declared-state-machines.md",
         "docs/adr/0059-switch-gate-cascade-edges-and-activation-rulings.md",
+        "docs/adr/0063-pack-mutability-policy-file.md",
         "docs/adr/0065-pack-registration-replaces-the-whole-pack.md",
         "docs/adr/README.md",
         "docs/changelog/2026-11-07-a0-kind-model.md",
@@ -307,8 +309,7 @@
       "write_scope": [
         "contracts/charter/changes/2026-11-07-a-pack-registration.md",
         "contracts/charter/openapi.yaml",
-        "contracts/charter/parameters/PackIfMatch.yaml",
-        "contracts/charter/parameters/PackIfMatchRequired.yaml",
+        "contracts/charter/parameters/IfMatch.yaml",
         "contracts/charter/paths/pack-registrations_registrationId.yaml",
         "contracts/charter/paths/packs.yaml",
         "contracts/charter/paths/packs_packId.yaml",
@@ -815,11 +816,11 @@
       "parallel_group": 14
     }
   ],
-  "computed_at": "2026-11-07T07:14:49.521368+00:00",
+  "computed_at": "2026-11-07T10:15:42.142695+00:00",
   "computed_from": "dependency_graph+ownership",
   "planning_artifact_wps": [
     "WP09",
     "WP10"
   ],
-  "planning_commit_sha": "66edc21f6238cc9f8f06c5b801e5bdaf37f382c7"
+  "planning_commit_sha": "4921ad2cbce5267683eeb7cd1a7a3f63d55af87d"
 }

@@ -92,9 +92,21 @@ Implementation command:
   policy does not bind the pack, WP07); Q5 (shared `<config-root>/packs`, one writable root).
 - **packId grammar:** `^[a-z0-9][a-z0-9-]{0,62}$`, unique after case folding; the resolved directory's real path has
   that name under the writable root.
+- **Phase A delta (2026-11-07; `plan.md`, "Fold of the phase A delta squad"):** the load's extra `422`s (T065), the
+  edge-based inbound scan (T067), the `REMOVE` gate operation and staged-closure gate (T067), and PR A stays strict
+  (`DM-01M6TQ67C9ZTNGZB9CY28JS54F`: a replace whose resulting closures fail is refused; #404 is out of scope).
 
 - **Read first:** `plan.md` (the IC sections named above, in full), `spec.md` (the FRs above), `data-model.md`, `contracts/contract-delta.md`, `research.md` (R-numbers above), and `docs/architecture/composition-and-activation-rules.md` for the rule ids cited. All paths in this prompt are repo-root relative.
 
+
+### Files shared with other work packages
+
+These files are owned by another WP, or by none, but this WP must make the small edit named. Make only that edit, and record a one-line rationale in the commit message (`out-of-map: <file> — <why>`):
+
+- `service/packs/src/main/java/ai/speckitty/charter/packs/domain/WritePolicyGate.java` — add `Operation.REMOVE` (`WritePolicyGate.java` ~16-23) and the gate variant over a staged closure (owned by no WP)
+- `service/packs/src/main/java/ai/speckitty/charter/packs/domain/MutabilityLevel.java` — `permits(REMOVE)` is `this != LOCKED` (ADR-0012 decision 1, ADR-0030 D3), and the level table in its Javadoc (owned by no WP)
+- `service/packs/src/main/java/ai/speckitty/charter/packs/application/PackMutabilityPolicy.java` — the entry point that judges over an already composed staged closure (`judgingOf(ComposedClosure, root)` exists; `authorize` composes the live closure of `pack.id()` and gives `PACK_NOT_FOUND` on a create) (owned by WP07)
+- `service/packs/src/main/java/ai/speckitty/charter/packs/application/PermissiveWritePolicyGate.java` — accept `REMOVE` and implement the staged-closure variant (owned by no WP)
 
 ## Project constraints (apply to every subtask)
 
@@ -129,7 +141,7 @@ Implementation command:
 
 ### T065: Load and identity (steps 2–3)
 
-`WholePackStore.load(staging)` violations → `422`; `pack_level` org/project only (`409 registration_conflict` for built-in); same level and same `pack_id` on replace (`422`); a new pack's id and name unique (`409`).
+`WholePackStore.load(staging)` violations → `422`. The load also refuses, and the registration answers `422 validation_failed`, never `500` (plan delta squad, finding 3): a `registered.graph.yaml` without the registration stamp (`generated_by: charter-registration`; a reserved shard, `FileSystemPackInspector` ~643; a stamped one is accepted and the replace drops every registered edge the archive leaves out); a removed field (a directive's `references`, `procedures` or `relationships`) as an unknown field (ADR-0064 D5); a preset with `activated_kinds`; a preset item id outside `^[A-Za-z0-9][A-Za-z0-9_/.-]*$` (d5bcf030); and a `CharterRefusal` with `PACK_UNREADABLE` thrown by the load itself (`WholePackStore.load` ~175, `FilesystemPackStore.read` ~649-656), which is mapped to `422` on a staging directory. (`WholePackStore` ~540 and ~544 are the write path's companion refusals, not `load`'s.) A table-driven test with a positive control for each. `pack_level` org/project only (`409 registration_conflict` for built-in); same level and same `pack_id` on replace (`422`); a new pack's id and name unique (`409`).
 - **packId** matches `^[a-z0-9][a-z0-9-]{0,62}$` (`422`), is unique after case folding against every stored pack (`409`), and the resolved directory's real path (`toRealPath(NOFOLLOW_LINKS)`) is `<writable root>/<packId>` exactly (`422` otherwise).
 - `PackIdRulesTest`, table-driven over hostile ids: upper case, a leading `-`, 64 characters, `..`, `a/b`, a NUL, a homoglyph, a case-fold twin of a stored id, and a symlinked pack directory.
 
@@ -139,11 +151,11 @@ Revision of the staged tree (research R4); same revision → `unchanged`, nothin
 
 ### T067: Write gate and inbound scan (steps 7–8)
 
-Diff added/changed/removed artifacts and gate them along the new closure (`409 governance_policy_violation`); `InboundReferences.scan(stagedTree, removed)` over every configured pack, counting artifact references and other packs' preset items, excluding referrers the same request removes → `409 artifact_referenced` listing pack and artifact of each referrer; the scan runs before any compose.
+Diff added/changed/removed artifacts and gate them (`REGISTER`, `REPLACE`, the new `REMOVE`) along the staged pack's own closure (`409 governance_policy_violation`), through the gate variant over the staged closure (the live-closure `authorize` is wrong for a staged `depends_on` and gives `PACK_NOT_FOUND` on a create). After B8/A15 a pack's own policy never binds it, so a refusal fires only when an ancestor holds and locks the id. `InboundReferences` (new, created here) `.scan(stagedTree, removed)` over every configured pack, built from `PackCompositionFacts.edges()` (each edge's target attributed to its source artifact and holding pack), the presets and the descriptor `overrides` entries, excluding referrers the same request removes → `409 artifact_referenced` listing pack and artifact of each referrer; the scan runs before any compose. It is **not** built from `PackCompositionFacts.references` (both ends of every edge, no source: `DomainRepositoryService` ~494-501), and `CharterArtifact.writtenReferences()` holds derived relations only (~74). Edges are gated too (decision `DM-01M6TR1KDAJ64GMJD6AYNZKT59`): every added or removed edge whose source is a locked artifact of an ancestor pack is gated with the `RELATIONSHIP` operation, as `putPackRelationship` is (`409 governance_policy_violation`); test one added and one removed edge, each with a control on an unlocked source. The data-only fields of ADR-0064 D11 (agent-profile references, skill `enhances`/`overrides`, step delegations, glossary `see_also`) are not inbound references; `InboundReferencesTest` pins that with a near-miss each.
 
 ### T068: Commit (step 10)
 
-`PackCommitStore.replaceWhole(packId, staging)` via the two-rename swap and #281 crash repair; `create(...)` via `WholePackStore.write`'s reserve and move; generation odd during the swap (WP12).
+`PackCommitStore.replaceWhole(packId, staging)` (new: the class has only `commit(pack, ifMatch, artifact, shardText)`, ~152) via the two-rename swap and #281 crash repair; `create(...)` (new) via `WholePackStore.write`'s reserve and move; generation odd during the swap (WP12).
 
 ### T069: Concurrency (NFR-006)
 
@@ -155,7 +167,7 @@ Diff added/changed/removed artifacts and gate them along the new closure (`409 g
 
 ## Risks
 
-- PR #377 and #390 collide on `PackCommitStore`/`FilesystemPackStore`: rebase in order before review.
+- (The collision risk of #377 and #390 on `PackCommitStore`/`FilesystemPackStore` is dropped: both are merged.)
 
 ## Definition of Done
 

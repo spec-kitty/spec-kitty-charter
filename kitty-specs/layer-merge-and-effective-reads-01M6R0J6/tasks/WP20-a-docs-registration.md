@@ -115,7 +115,7 @@ README.md (requirements section) and `run-in-a-container.md`: git ≥ 2.50.1 on 
 
 ### T100: Guides
 
-`compose-packs.md`: register (PUT archive, POST source, polling the status URI), remove (DELETE), the version rule, the impact-check refusals, A13.
+`compose-packs.md`: register (PUT archive, POST source, polling the status URI), remove (DELETE; the relationship `DELETE` removes a registered edge only, an authored or derived edge answers `409 relationship_not_registered`), the version rule, the impact-check refusals (PR A is strict: #404's repair writes are not applied), A13.
 
 ### T101: Reference pages
 

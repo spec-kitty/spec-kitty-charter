@@ -98,14 +98,16 @@ Implementation command:
 - **Delivery:** PR A (stacked on PR A0).
 - **Concerns:** IC-14, IC-18, IC-02 (controller). **Requirements:** FR-001, FR-004, FR-024, FR-037, FR-039, NFR-004,
   NFR-008, NFR-009, NFR-010.
-- **Synchronous checks:** access (`401` without an authenticated principal), `charter.registration.enabled` (default
+- **Synchronous checks:** access (there is no principal: every request already needs the worktree bearer token, which `WorktreeGuard` checks before routing and answers `401`, so registration adds no `401` of its own; plan delta squad finding 11), `charter.registration.enabled` (default
   `false`) and `charter.pack-sources.<kind>.enabled` (`503 pack_source_unavailable`), the packId grammar, body size
   (`413` from `Content-Length` before Spring buffers), media type and magic bytes (`415`), `If-Match`/`If-None-Match: *`.
 - **Executor:** 2 running, 8 waiting; the next answers `503` with `Retry-After`. `If-Match` re-checked under the lock;
   moved → `refused` `412`. Status kept 1 h after it ends, at most 1,000 entries (one replica). Identical re-send ends
   `succeeded` with outcome `unchanged`.
-- **Audit (NFR-010):** one record per attempt through an `AuditLog` port (structured log default): principal,
-  `packId`, source kind and locator with the query cut, outcome, revision before/after.
+- **Audit (NFR-010):** one record per attempt through an `AuditLog` port (structured log default): the worktree
+  identity (`ServiceInfoQuery.worktree()`, the `Charter-Worktree` value; no principal exists), `packId`, source kind and
+  locator with the query cut, outcome, revision before/after. Under the development flag the guard runs without a
+  token; the record then says the request carried none.
 
 - **Read first:** `plan.md` (the IC sections named above, in full), `spec.md` (the FRs above), `data-model.md`, `contracts/contract-delta.md`, `research.md` (R-numbers above), and `docs/architecture/composition-and-activation-rules.md` for the rule ids cited. All paths in this prompt are repo-root relative.
 
@@ -161,13 +163,13 @@ The four operations on the generated interface; `Location` and `_links`; `PackRe
 
 ### T079: Access, flags and properties
 
-`RegistrationProperties` (`charter.registration.*`, `charter.pack-sources.*`); `401`/`503` paths; `RegistrationWiring` in deployable. The `packId` path variable is checked against `^[a-z0-9][a-z0-9-]{0,62}$` before the body is read (synchronous `422`), table-tested with WP14's hostile ids.
+`RegistrationProperties` (`charter.registration.*`, `charter.pack-sources.*`); `503` paths (the `401` is the worktree guard's, before routing); `RegistrationWiring` in deployable. The `packId` path variable is checked against `^[a-z0-9][a-z0-9-]{0,62}$` before the body is read (synchronous `422`), table-tested with WP14's hostile ids.
 
 ### T080: Audit
 
 `AuditLog` port + structured-log adapter. Tests assert exactly one record per attempt — accepted, refused (async),
-failed, and each **synchronous** refusal (`401`, `413`, `415`, `422` packId, queue-full `503`), which happen before
-the controller — and that each record carries the NFR-010 fields: principal, `packId`, source kind, locator with the
+failed, and each **synchronous** refusal (`401`, which the guard answers before the controller: the guard writes the audit record for a registration or `DELETE` path (decision `DM-01M6TR1KDAJ64GMJD6AYNZKT59`), `413`, `415`, `422` packId, queue-full `503`), which happen before
+the controller — and that each record carries the NFR-010 fields: the worktree identity, `packId`, source kind, locator with the
 query cut, outcome, revision before and after. (WP19 adds one record per `DELETE` outcome.)
 
 ### T081: Scenario glue and NFR-008

@@ -63,16 +63,21 @@ If no profile is specified, run `spec-kitty agent profile list` and select the b
 
 ## Objective
 
+- **PR A stays strict (`DM-01M6TQ67C9ZTNGZB9CY28JS54F`, 2026-11-07).** A registration or `DELETE` whose resulting
+  closures fail to compose or break a rule is refused. ADR-0063's 2026-11-06 repair-write amendment (refuse only new
+  violations, #404) is out of scope for PR A: do not add a "was it already broken" comparison.
 - **Impact check (FR-025, IC-15):** with the staged pack in place, compose **every closure that contains it** (found
-  from the reverse `depends_on` index), not one global compose, and refuse `422` naming the closure root and the packs
+  from the reverse `depends_on` index) **and the root set of every stored activation whose closure holds it**
+  (plan delta squad, finding 7: an activation's closure has several roots, `AvailablePacks.java` ~19, so the reverse
+  index misses a sibling conflict between packs listed together in one activation), not one global compose, and refuse `422` naming the closure root and the packs
   involved on: a compose failure (C17–C21), a mutability violation with the A15 lock scope, an `overrides` edge onto a
   target that is not `open` (A6, `override_not_permitted`), an `enhances` cycle or an enhancer with no route to a
   non-enhancer (A8, `enhances_cycle`), an artifact that both enhances and overrides one target (A11,
-  `conflicting_relations`), an `overrides` edge that resolves to its own source after layer re-pointing (A12,
-  `self_override`), an `overrides` cycle (C28, `override_cycle`).
+  `conflicting_relations`), an `overrides` edge that resolves to its own source (A12, `self_override`; in PR A judged on the `holderOf`
+  resolution, because the layer re-pointing is PR B's IC-07, which judges it again), an `overrides` cycle (C28, `override_cycle`).
 - **Notices (FR-027, B4):** on success list the must-have items and locks added and removed. The affected
-  activations come through an `ActivationImpact` port that `packs` declares and `activations.infra` implements in PR B
-  (here: a no-op default bean).
+  activations come through the `ActivationImpact` port that `packs` declares and `activations.infra` implements: its
+  `activationRoots()` is real from PR A (above), its notice method a no-op default bean until PR B.
 - **History (FR-026, B1, IC-16):** `<config-root>/packs/.history/<packId>.json`, a list of `(pack_version, revision,
   registeredAt)` written in the same swap as the pack; a version seen with another revision → `409
   pack_version_conflict` whether or not it is the stored one; `DELETE` keeps the history.
@@ -97,6 +102,7 @@ These files are owned by another WP (the no-overlap rule) but this WP must make 
 
 - `service/packs/src/main/java/ai/speckitty/charter/packs/application/PackRegistrationService.java` — call the impact check as step 9 and the history check in step 5 (owned by WP14)
 - `service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/PackCommitStore.java` — write the history file inside the same swap (owned by WP14)
+- `service/activations/src/main/java/ai/speckitty/charter/activations/infra/packs/ActivationImpactAdapter.java` — create it in PR A with the one method `activationRoots()` (the stored activations' `packs` lists; an activation without `packs` roots at every configured pack). It is owned by WP25, which adds the affected-activations notice in PR B and finds the file already present (WP25's prompt is outside this amendment: hand this over)
 
 
 ## Project constraints (apply to every subtask)
@@ -128,7 +134,7 @@ These files are owned by another WP (the no-overlap rule) but this WP must make 
 
 ### T070: Closures containing the pack
 
-A reverse `depends_on`/lineage index over the configured packs plus the staged one; the set of closure roots to compose. Test with a diamond and an unrelated pack (not composed).
+A reverse `depends_on`/lineage index over the configured packs plus the staged one; the set of closure roots to compose. Then, through the `ActivationImpact` port's `activationRoots()`, the distinct root sets of the stored activations whose closure holds the staged pack, composed once each. Test with a diamond, an unrelated pack (not composed), and a sibling conflict that only appears when two packs are listed together in one stored activation (the reverse index alone passes it; the root-set compose refuses it, with a positive control where the two packs are listed apart).
 
 ### T071: Compose and mutability per closure
 
@@ -136,11 +142,11 @@ Run `PackCompositionResolver` per closure with the staged pack; map each refusal
 
 ### T072: Relation refusals (A6, A8, A11, A12, C28)
 
-Pure checks over the staged pack's closure edges, one test per refusal code plus a passing near-miss for each (e.g. an `enhances` chain grounded in a non-enhancer passes).
+Pure checks over the staged pack's closure edges (`EdgeIndex` or the facts' `edges()`, never `GraphWalk`, which sees only derived relations, #397), one test per refusal code plus a passing near-miss for each (e.g. an `enhances` chain grounded in a non-enhancer passes). `self_override` is judged on the `holderOf` resolution (`PackCompositionResolver.holderOf`, ~389).
 
 ### T073: Floor and lock notices (B4)
 
-Diff the floor and lock sets before/after per closure; return them in the outcome; the `ActivationImpact` port with a no-op default bean.
+Diff the floor and lock sets before/after per closure; return them in the outcome; the `ActivationImpact` port (`activationRoots()` real from PR A, the notice method a no-op default until PR B).
 
 ### T074: Version history (B1)
 

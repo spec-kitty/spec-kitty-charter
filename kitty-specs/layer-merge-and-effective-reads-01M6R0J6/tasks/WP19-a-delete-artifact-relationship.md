@@ -82,6 +82,13 @@ Implementation command:
   (other packs' preset items are inbound references).
 - A `DELETE` does not consult activations: a saved selection of the removed artifact reads as stale and drops on the
   next write.
+- **Phase A delta (2026-11-07; `plan.md`, "Fold of the phase A delta squad"; IC-06 as folded):**
+  - `DM-01M6TQ62HXYF362GAFS2BZ3PGF`: the relationship `DELETE` removes the edge only from `registered.graph.yaml`. An
+    edge authored in a source shard or `drg/fragment.yaml`, and a derived relation (a guard's `implemented_by`,
+    ADR-0064 D7), answer `409 relationship_not_registered`. A `DELETE` never rewrites an author file. The old
+    `409 registration_conflict` "edge is a field of an artifact's own body" case no longer exists.
+  - `DM-01M6TQ67C9ZTNGZB9CY28JS54F`: PR A stays strict. A `DELETE` whose resulting closures fail to compose or break a
+    rule is refused (`422`, IC-15's check over the pack as it will be). #404 (repair writes) is out of scope.
 
 - **Read first:** `plan.md` (the IC sections named above, in full), `spec.md` (the FRs above), `data-model.md`, `contracts/contract-delta.md`, `research.md` (R-numbers above), and `docs/architecture/composition-and-activation-rules.md` for the rule ids cited. All paths in this prompt are repo-root relative.
 
@@ -91,7 +98,8 @@ Implementation command:
 These files are owned by another WP (the no-overlap rule) but this WP must make the small edit named. Make only that edit, and record a one-line rationale in the commit message (`out-of-map: <file> — <why>`):
 
 - `service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/PresetFiles.java` — remove the preset items naming the deleted artifact (owned by WP06)
-- `service/packs/src/main/java/ai/speckitty/charter/packs/application/InboundReferences.java` — reuse the scan with a single-artifact removal set (owned by WP14)
+- `service/packs/src/main/java/ai/speckitty/charter/packs/application/InboundReferences.java` — reuse the scan with a single-artifact removal set (owned by WP14, which creates it)
+- `service/packs/src/main/java/ai/speckitty/charter/packs/domain/WritePolicyGate.java` and `MutabilityLevel.java` — use the `REMOVE` operation and the staged-closure gate variant WP14 adds (owned by no WP; no edit expected here)
 - `contracts/charter/scenarios/activation-ruling-changes.feature` — remove `@WIP` from the A10 `DELETE` scenario (owned by WP08)
 
 
@@ -124,15 +132,18 @@ These files are owned by another WP (the no-overlap rule) but this WP must make 
 
 ### T094: Artifact removal
 
-Load → `404` per code (`pack_not_found`, `kind_not_found`, `artifact_not_found`) → inbound scan (`409 artifact_referenced`, referrers listed, same-pack referrer included) → write gate (`409 governance_policy_violation` on a locked target) → mutate staging (file and companions, outgoing edges in the shard and graph documents, graph node, preset items; an emptied preset key reads as not listed) → revalidate the whole aggregate → atomic swap.
+Load → `404` per code (`pack_not_found`, `kind_not_found`, `artifact_not_found`) → inbound scan (`409 artifact_referenced`, referrers listed, same-pack referrer included; built by WP14's `InboundReferences` from `edges()`, presets and descriptor `overrides`, never from `PackCompositionFacts.references`; the data-only fields of ADR-0064 D11 do not count) → write gate with the new `REMOVE` operation through the staged-closure variant (`409 governance_policy_violation`; after B8/A15 it fires only when an ancestor holds and locks the id; a pack removes its own artifact freely) → mutate staging (file and companions, outgoing edges **from `registered.graph.yaml` only**, preset items) → revalidate the whole aggregate and run IC-15's impact check on the result (`422`, strict) → atomic swap.
+
+- A preset key whose last item is removed is **deleted** from the preset file. Every preset list has `minItems: 1`, so writing `[]` makes the pack unreadable (`PresetFiles`). Test: remove the only item of a key and read the pack back, with a positive control that the other keys survive.
+- Decision `DM-01M6TR1KDAJ64GMJD6AYNZKT59`: an edge from the artifact, or a node declaration of it, in an author-written graph document is not rewritten; the `DELETE` answers `409 registration_conflict` ("written in the pack's graph documents: register the whole pack"). Pin it with a scenario and say so in the hand-off note.
 
 ### T095: Relationship removal
 
-Remove one edge of the unordered `{from, to}` pair from the registered shard or a graph document; an edge that is a field of an artifact's own body → `409 registration_conflict`; none → `404 relationship_not_found`.
+Remove one edge of the unordered `{from, to}` pair **only from `registered.graph.yaml`**, the shard `putPackRelationship` writes (`DM-01M6TQ62HXYF362GAFS2BZ3PGF`); the pair held only in a source shard or `drg/fragment.yaml`, or only as a derived relation → `409 relationship_not_registered` (the fixed reason says to register the whole pack; assert the author file is byte-identical afterwards); no edge on the pair anywhere → `404 relationship_not_found`; a pair held both in the registered shard and in an author document → `409 relationship_not_registered` and nothing changes, because the author wrote it (decision `DM-01M6TR1KDAJ64GMJD6AYNZKT59`). A result that leaves a closure broken → `422` (strict; #404 is out of scope). One test per outcome, each with a positive control.
 
 ### T096: Controller
 
-`PackRemovalController` on the generated interface, `PackIfMatchRequired` (`428` absent, `412` stale, checked under the locks), `204`; audit record through WP16's `AuditLog`.
+`PackRemovalController` on the generated interface, `If-Match` from the extended `parameters/IfMatch.yaml` (there is no `PackIfMatchRequired`; `428` absent, `412` stale, checked under the locks), `204`; audit record through WP16's `AuditLog`.
 
 ### T097: Concurrency
 
@@ -143,7 +154,7 @@ Remove one edge of the unordered `{from, to}` pair from the registered shard or 
 `PackRemovalSteps`; bind `pack-removal.feature`, record the red, remove `@WIP`, make it green. Also remove the `@WIP`
 of the A10 `DELETE` scenario in `activation-ruling-changes.feature` (WP08's file, a shared edit) and make it green.
 Every absence assertion keeps its positive control. One audit record per `DELETE` outcome (`204`, `404`, `409`,
-`412`, `428`), asserted in a unit test.
+`412`, `422`, `428`), asserted in a unit test.
 
 ## Test strategy
 
