@@ -28,6 +28,9 @@ public final class PackWriteGeneration {
     private final Counter registry = new Counter();
     private final Map<String, Counter> packs = new ConcurrentHashMap<>();
 
+    /** A generation at zero, with no swap running; a test builds its own, the deployment uses {@link #shared()}. */
+    public PackWriteGeneration() {}
+
     /**
      * The generation of this JVM's pack domain, shared by the write store and the verified reads.
      *
