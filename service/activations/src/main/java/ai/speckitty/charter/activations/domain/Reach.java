@@ -20,13 +20,16 @@ import java.util.TreeSet;
  * @param ancestry each ancestor passed, with every {@link Via} it was passed by: the child that specializes from it,
  *     over {@code specializes_from}. It lets a pass-through {@link Via}, whose {@code from} is the ancestor, be followed
  *     back to the descendant that put the ancestor's relation in force
+ * @param beyondBound the artifacts one {@code suggests} hop past the walk's bound that it did not reach another way
+ *     (IC-21): empty for an unlimited walk. The next frontier, so a client can tell whether a deeper walk reaches more
  */
 public record Reach(
         Map<ArtifactRef, List<Via>> reached,
         Map<ArtifactRef, List<Via>> stopped,
         Set<ArtifactRef> behindStopped,
         Set<ArtifactRef> ancestorsPassed,
-        Map<ArtifactRef, List<Via>> ancestry) {
+        Map<ArtifactRef, List<Via>> ancestry,
+        Set<ArtifactRef> beyondBound) {
 
     /**
      * How an artifact was reached: the artifact before it and the relation crossed.
@@ -57,6 +60,7 @@ public record Reach(
      * @param behindStopped the artifacts behind a stop
      * @param ancestorsPassed the ancestors passed through
      * @param ancestry the ways each ancestor was passed by
+     * @param beyondBound the artifacts past the {@code suggests} bound
      */
     public Reach {
         reached = copyOf(Objects.requireNonNull(reached, "reached"));
@@ -66,6 +70,26 @@ public record Reach(
         ancestorsPassed = Collections.unmodifiableSortedSet(
                 new TreeSet<>(Objects.requireNonNull(ancestorsPassed, "ancestorsPassed")));
         ancestry = copyOf(Objects.requireNonNull(ancestry, "ancestry"));
+        beyondBound =
+                Collections.unmodifiableSortedSet(new TreeSet<>(Objects.requireNonNull(beyondBound, "beyondBound")));
+    }
+
+    /**
+     * A walk of an unlimited plan: nothing lies past a bound.
+     *
+     * @param reached the reached artifacts
+     * @param stopped the stopped artifacts
+     * @param behindStopped the artifacts behind a stop
+     * @param ancestorsPassed the ancestors passed through
+     * @param ancestry the ways each ancestor was passed by
+     */
+    public Reach(
+            Map<ArtifactRef, List<Via>> reached,
+            Map<ArtifactRef, List<Via>> stopped,
+            Set<ArtifactRef> behindStopped,
+            Set<ArtifactRef> ancestorsPassed,
+            Map<ArtifactRef, List<Via>> ancestry) {
+        this(reached, stopped, behindStopped, ancestorsPassed, ancestry, Set.of());
     }
 
     /**
