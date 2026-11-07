@@ -442,7 +442,7 @@
     },
     "WP13": {
       "actor": "claude",
-      "agent": null,
+      "agent": "claude:sonnet:java-jenny",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -452,7 +452,8 @@
       "last_transition_at": "2026-11-07T12:44:19.973010+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Bounded, path-safe extractor (tar.gz strict, zip via EOCD count before entries), commons-compress 1.28.0 with verification entries; corpus 61 hostile + 19 benign; red recorded; PIT adds infra.archive (floor 80), infra.api stays excluded; verifyAll green. Open: OSV/GHSA re-check of 1.28.0 blocked by proxy."
+        "Bounded, path-safe extractor (tar.gz strict, zip via EOCD count before entries), commons-compress 1.28.0 with verification entries; corpus 61 hostile + 19 benign; red recorded; PIT adds infra.archive (floor 80), infra.api stays excluded; verifyAll green. Open: OSV/GHSA re-check of 1.28.0 blocked by proxy.",
+        "Cycle 2: zip central-directory walk (count, extra-field caps), tar meta-header 64 KiB guard, absolute PAX/GNU names, RuntimeException -> 422, nits. Out-of-map: ArchiveViolation.java (codes, Cf escaping), pit-targets.init.gradle (stale comment). verifyAll green."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
