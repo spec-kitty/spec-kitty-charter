@@ -164,3 +164,11 @@ Divergence-register entries (core merges per artifact; PR A replaces the whole p
 - From WP15's review: under the strict rule (DM-01M6TQ67C9ZTNGZB9CY28JS54F), one stored dependent that cannot be read
   makes every registration of its ancestor fail `pack_unreadable`; say so, with the repair (fix or remove the dependent).
 - From WP15's review: a history entry restored by the heal carries the time of the heal, not of the lost registration.
+
+## Hand-off from the WP16 review, cycle 1 (2026-11-07)
+
+Document these, from review-cycle-1 of WP16:
+
+- A re-send of an archive with the same `pack_version` after a per-artifact `PUT` moved the revision answers `409 pack_version_conflict`, not `412`: the version rule (IC-04 step 5) runs before the precondition (step 6). The 412 race needs a new version.
+- The 90 s registration deadline counts the time a job waits in the queue, not only its run.
+- Known limit, accepted for this mission: a registration slot is reserved before the request body is read, so a slow upload holds a slot for its whole transfer, and a few slow uploads can make other callers get `503` with `Retry-After`. Say so in the operator docs, with the slot counts (2 running, 8 waiting).
