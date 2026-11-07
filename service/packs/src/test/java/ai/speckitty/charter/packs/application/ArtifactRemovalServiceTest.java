@@ -22,10 +22,13 @@ import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
 import ai.speckitty.charter.packs.infra.storage.RelationshipShard;
 import ai.speckitty.charter.packs.infra.storage.StagedPackViewFactory;
 import ai.speckitty.charter.packs.infra.storage.YamlSerializationStrategy;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -190,6 +193,40 @@ class ArtifactRemovalServiceTest {
 
         removals.remove("qa", "directive", "D3");
         assertThat(removals.filesOf("qa")).as("the control: D3 goes").doesNotContainKey("directives/D3.directive.yaml");
+    }
+
+    @Test
+    void aToolguideGoesWithItsGuideCompanionAndAnotherToolguideKeepsItsOwn(@TempDir Path host) throws IOException {
+        String yaml = resource("toolguides/git-agent-commit-signing.toolguide.yaml");
+        String guide = resource("toolguides/git-agent-commit-signing.guide.md");
+        Rig rig = new Rig(host);
+        rig.register(
+                "qa",
+                rig.stage(qa().file("toolguides/git-agent-commit-signing.toolguide.yaml", yaml)
+                        .file("toolguides/git-agent-commit-signing.guide.md", guide)
+                        .file(
+                                "toolguides/other-guide.toolguide.yaml",
+                                yaml.replace("git-agent-commit-signing", "other-guide"))
+                        .file("toolguides/other-guide.guide.md", guide)),
+                Preconditions.none());
+        Removals removals = new Removals(rig);
+
+        removals.remove("qa", "toolguide", "git-agent-commit-signing");
+
+        assertThat(removals.filesOf("qa"))
+                .as("the toolguide and the guide it names are gone")
+                .doesNotContainKeys(
+                        "toolguides/git-agent-commit-signing.toolguide.yaml",
+                        "toolguides/git-agent-commit-signing.guide.md")
+                .as("the control: the other toolguide keeps its file and its guide")
+                .containsKeys("toolguides/other-guide.toolguide.yaml", "toolguides/other-guide.guide.md");
+    }
+
+    private static String resource(String path) throws IOException {
+        try (var stream =
+                ArtifactRemovalServiceTest.class.getResourceAsStream("/roundtrip-fixtures/toolguide/" + path)) {
+            return new String(Objects.requireNonNull(stream, path).readAllBytes(), StandardCharsets.UTF_8);
+        }
     }
 
     // ---- what refuses a removal
