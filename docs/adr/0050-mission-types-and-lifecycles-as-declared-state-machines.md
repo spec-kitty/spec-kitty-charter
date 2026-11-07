@@ -2,8 +2,8 @@
 title: "ADR-0050: Mission types and lifecycles as declared state machines"
 description: "A mission type declares a state machine (explicit transitions, guards, emit actions); a lifecycle kind holds the per-work-package lanes; packs enhance or override steps."
 doc_status: active
-updated: 2026-11-03T00:00:00Z
-decision_status: 'Accepted, with Amendment 2026-11-02 (ADR-0053; decision 14 superseded by ADR-0054)'
+updated: 2026-11-07T00:00:00Z
+decision_status: 'Accepted, with Amendment 2026-11-02 (ADR-0053; decision 14 superseded by ADR-0054) and Amendment 2026-11-07 (decision 6 built)'
 decision_date: '2026-11-02'
 type: ADR
 kind: ADR
@@ -84,6 +84,29 @@ this record; the original text stands and each changed point is annotated where 
 - decisions 22 and 23: a step enhancement is an additions artifact plus a CRG `enhances` edge, the mechanism profile
   augmentation uses, not a mechanism of its own ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 22);
 - decisions 26 to 28: the defaults are ruled ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 24).
+
+### Amendment 2026-11-07
+
+Decision 6 (activation) is **built** by the layer-merge mission (`layer-merge-and-effective-reads-01M6R0J6`), PR A0,
+on the operator's rulings of 2026-11-06 (A7, decision `DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY`; Q1 to Q4, decisions
+`DM-01M6RCXTS0SMDNTWZ8G7GJ2P5S`, `DM-01M6RCXZ9HSHT4K3443YYZ8ZFC`, `DM-01M6RCY40CQQTHC130RWF43W0D`,
+`DM-01M6RCY8MYNGNPJ247M2Y4880N`). The decision text stands; decision 6 carries a note.
+
+- **"Absent means all" is reconciled with ADR-0053 decision 10.** The Status above says the ordinary rule for an
+  absent list is "all". ADR-0053 decision 10 ruled afterwards that an absent activation key means none, and ADR-0020's
+  amendment of 2026-11-05 built it (DIV-203). A mission type is an ordinary kind, so an absent
+  `selected.mission_type` means none, the same as `[]`; there is no `missionTypes` list left to read otherwise.
+- **The cascade source (Q1).** Selecting a mission type with a cascade crosses to the steps it holds like `requires`,
+  and what the steps reach is selected. PR A0 built the selection, the cascade and the deny of mission types like any
+  other kind, and the cascade to steps. That a step, and any artifact bound to the mission type, is in force only while
+  the mission type is, is binding rule E6: ruled, not built, planned for PR B with the effective reads (FR-022, US3
+  AS4). The earlier rule that a mission type never cascades (W32) is withdrawn.
+- **Deny and listing (Q2).** A mission type is denied under `deactivated.mission_type` unless it is required or locked
+  (`409 artifact_required`, `artifact_locked`). `mission_type` joins `ActivatableKind`, `SelectedArtifacts`,
+  `DeactivatedArtifacts` and `CascadeKind`, and the `{kind}` segment of the selections and exclusions paths.
+- **`activatedKinds` and `missionTypes` are refused** on a create or replace (`422 validation_failed`), and the
+  stored document is `schemaVersion` 2 (Q4).
+- **Divergences.** DIV-501 is updated, and DIV-203, DIV-210, DIV-212, DIV-213 and DIV-214 record the rest.
 
 ## Context
 
@@ -186,6 +209,10 @@ up the formal meaning of a term used here.
 6. **Activation** (M4). A mission type is the cascade source, and is otherwise an ordinary kind: presets, the
    deny list and listing apply to it as to any kind. No kind token has a special path (core's
    `CHARTER_KIND_TOKENS` mission-type path and `MissionTypeNotAnArtifactKind` go; DIV-501 closes).
+   *Built 2026-11-07 (PR A0, see the amendment above): a mission type is selected under `selected.mission_type`, denied
+   under `deactivated.mission_type` unless required or locked, and cascades to its steps. "Absent means all" in the
+   Status is read as none, with ADR-0053 decision 10. DIV-501 stays `open`: the service still differs from core's
+   mission-type path, so it is updated, not closed.*
 7. **The shipped types stay in the foundation pack.** Topical packs plug in through `scope` edges or step
    enhancements (decision 22).
 

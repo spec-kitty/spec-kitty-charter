@@ -12,20 +12,16 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.packs.application.ArtifactPosition;
 import ai.speckitty.charter.packs.application.ArtifactReadService;
 import ai.speckitty.charter.packs.application.GuideFormat;
-import ai.speckitty.charter.web.Problems;
 import ai.speckitty.charter.web.RefusalHandler;
-import jakarta.validation.ConstraintViolationException;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.ErrorResponseException;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -153,20 +149,6 @@ public class ArtifactController implements ArtifactsApi {
                         holder.descriptor().packId(),
                         holder.descriptor().name())));
         return wire;
-    }
-
-    /**
-     * A parameter that breaks a bound the generated interface declares (a {@code pageSize} of 0 or 201, an empty
-     * {@code pageCursor}) is a malformed request: the plain 400 problem, without a code. The interface is
-     * {@code @Validated}, so the method validation proxy refuses it before this controller runs, with an exception the
-     * shared handler would answer as a 500.
-     *
-     * @param invalid the violation
-     * @return the {@code application/problem+json} 400 response
-     */
-    @ExceptionHandler(ConstraintViolationException.class)
-    ResponseEntity<Object> outOfBounds(ConstraintViolationException invalid) {
-        return Problems.of(HttpStatus.BAD_REQUEST, HttpHeaders.EMPTY);
     }
 
     /** The kind filter: a served kind, or a 400 problem without a code. */

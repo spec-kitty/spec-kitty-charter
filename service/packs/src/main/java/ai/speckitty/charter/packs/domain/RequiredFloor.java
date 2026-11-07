@@ -14,9 +14,9 @@ import java.util.Objects;
  * holds, each with the packs that require it. A requirement is authored as a preset (ADR-0031, ADR-0042), so a
  * convenience preset, and a convenience item of a governing preset, require nothing.
  *
- * <p>The floor is closure-scoped: only the presets of the closure's packs count (planning decision
- * {@code DM-01M6PCWSA65497T9A7J80K6V56}, an assumed default flagged to the operator). The rule lives in {@link #of} alone,
- * so a later ruling changes one place.
+ * <p>The floor is closure-scoped: only the presets of the closure's packs count (operator ruling of
+ * 2026-11-06, which confirms planning decision {@code DM-01M6PCWSA65497T9A7J80K6V56}). The rule lives in {@link #of}
+ * alone, so a later ruling changes one place.
  *
  * @param requiredBy each required URN, mapped to the descriptor {@code pack_id}s whose governing presets require it,
  *     each pack once, in closure order

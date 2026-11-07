@@ -119,6 +119,53 @@ Feature: The activation register and the packs an activation builds on
     And the field at "/config/selected/directive/0" is "DIRECTIVE_002"
     And the response header "ETag" is the quoted field "/revision"
 
+  Scenario: Every known spelling of an id stores the declared id under one revision
+    ADR-0020 D4 (operator ruling of 2026-11-06): the full URN and a case variant normalize to the declared id.
+    When I PUT "/activations/a-1" with the body:
+      """
+      {"schemaVersion": 1, "selected": {"directive": ["DIRECTIVE_001"]}}
+      """
+    Then the response status is 201
+    When I remember the header "ETag"
+    And I PUT "/activations/a-2" with the body:
+      """
+      {"schemaVersion": 1, "selected": {"directive": ["directive:DIRECTIVE_001", "directive_001", "DIRECTIVE:Directive_001"]}}
+      """
+    Then the response status is 201
+    And the field at "/config/selected/directive/0" is "DIRECTIVE_001"
+    And the response header "ETag" is the remembered header
+    When I GET "/activations/a-2"
+    Then the field at "/config/selected/directive/0" is "DIRECTIVE_001"
+    And the response header "ETag" is the remembered header
+
+  Scenario: A deny entry spelled as a URN is judged as the declared id
+    Given the org pack "alpha" with the file "presets/governing.yaml":
+      """
+      schema_version: '1.0'
+      id: governing
+      description: The first directive is required.
+      activated_directives:
+        - id: DIRECTIVE_001
+          must_have: true
+      """
+    When I PUT "/activations/a-1" with the body:
+      """
+      {"schemaVersion": 1, "deactivated": {"directive": ["directive:directive_001"]}}
+      """
+    Then the response status is 409
+    And the problem code is "artifact_required"
+
+  Scenario: A URN of another kind is an unknown id
+    No kind's id grammar admits two ids that differ only by case, so the ambiguous refusal is pinned in DocumentRulesTest.
+    When I PUT "/activations/a-1" with the body:
+      """
+      {"schemaVersion": 1, "selected": {"directive": ["tactic:DIRECTIVE_001"]}}
+      """
+    Then the response status is 422
+    And the problem code is "activation_invalid"
+    And the field at "/violations/0/pointer" is "/selected/directive/0"
+    And the field at "/violations/0/code" is "unknown_artifact"
+
   Scenario: An id no pack of the closure holds is refused, naming the id, and nothing is stored
     US1 AS5.
     When I PUT "/activations/a-1" with the body:
@@ -153,6 +200,144 @@ Feature: The activation register and the packs an activation builds on
     And the field at "/requiredBy/0/packId" is "alpha"
     When I GET "/activations/a-1"
     Then the response status is 404
+
+  Scenario: A child pack's preset takes the place of its parent's, and its must-have item stays required
+    The operator ruling of 2026-11-06: the parent_pack is an ordering edge, so "aaa-child", which sorts before
+    "zzz-parent", still merges after it, and its copy of the preset "team" is the governing one. Its must-have
+    item CHILD_ONLY is required and cannot be denied; the parent's losing copy requires nothing, so PARENT_ONLY can.
+    Given the org pack "zzz-parent" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943T
+      pack_version: 1.0.0
+      parent_pack: null
+      name: parent-pack
+      pack_level: org
+      """
+    And the org pack "zzz-parent" with the file "directives/PARENT_ONLY.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: PARENT_ONLY
+      title: The parent's directive
+      intent: Do the parent's thing
+      enforcement: required
+      """
+    And the org pack "zzz-parent" with the file "presets/team.yaml":
+      """
+      schema_version: '1.0'
+      id: team
+      description: The parent's copy.
+      activated_directives:
+        - id: PARENT_ONLY
+          must_have: true
+      """
+    And the org pack "aaa-child" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943V
+      pack_version: 1.0.0
+      parent_pack: 01M4P01D5TWB5FKZGNNQG3943T
+      name: child-pack
+      pack_level: org
+      """
+    And the org pack "aaa-child" with the file "directives/CHILD_ONLY.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: CHILD_ONLY
+      title: The child's directive
+      intent: Do the child's thing
+      enforcement: required
+      """
+    And the org pack "aaa-child" with the file "presets/team.yaml":
+      """
+      schema_version: '1.0'
+      id: team
+      description: The child's copy.
+      activated_directives:
+        - id: CHILD_ONLY
+          must_have: true
+      """
+    When I PUT "/activations/a-1" with the body:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "aaa-child"}], "deactivated": {"directive": ["CHILD_ONLY"]}}
+      """
+    Then the response status is 409
+    And the problem code is "artifact_required"
+    And the field at "/requiredBy/0/packId" is "aaa-child"
+    When I PUT "/activations/a-1" with the body:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "aaa-child"}], "deactivated": {"directive": ["PARENT_ONLY"]}}
+      """
+    Then the response status is 201
+    When I GET "/activations/a-1/packs"
+    Then the response status is 200
+    And the field at "/packs/0/packId" is "zzz-parent"
+    And the field at "/packs/1/packId" is "aaa-child"
+
+  Scenario: A preset item that names a held id only by case refuses the closure
+    The operator ruling of 2026-11-06: ids are matched exactly, so a must-have item "directive_001" would govern
+    nothing and a deny entry on DIRECTIVE_001 would pass. The compose is refused instead, as pack_reference_artifact_missing.
+    Given the org pack "alpha" with the file "presets/governing.yaml":
+      """
+      schema_version: '1.0'
+      id: governing
+      description: The first directive is required, misspelled.
+      activated_directives:
+        - id: directive_001
+          must_have: true
+      """
+    When I PUT "/activations/a-1" with the body:
+      """
+      {"schemaVersion": 1, "deactivated": {"directive": ["DIRECTIVE_001"]}}
+      """
+    Then the response status is 500
+    And the problem code is "pack_reference_artifact_missing"
+    And the field at "/packs/0/packId" is "alpha"
+    When I GET "/activations/a-1"
+    Then the response status is 404
+
+  Scenario: A policy lock that names a held id only by case refuses the closure
+    Given the org pack "alpha" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: alpha-pack
+      pack_level: org
+      mutability_policy: policy.yaml
+      """
+    And the org pack "alpha" with the file "policy.yaml":
+      """
+      schema_version: 1
+      artifacts:
+        directive:directive_001: locked
+      """
+    When I PUT "/activations/a-1" with the body:
+      """
+      {"schemaVersion": 1, "deactivated": {"directive": ["DIRECTIVE_001"]}}
+      """
+    Then the response status is 500
+    And the problem code is "pack_reference_artifact_missing"
+
+  Scenario: A policy lock on an id no pack of the closure holds changes no write
+    Given the org pack "alpha" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: alpha-pack
+      pack_level: org
+      mutability_policy: policy.yaml
+      """
+    And the org pack "alpha" with the file "policy.yaml":
+      """
+      schema_version: 1
+      artifacts:
+        directive:NOT_HELD: locked
+      """
+    When I PUT "/activations/a-1" with the body:
+      """
+      {"schemaVersion": 1, "deactivated": {"directive": ["DIRECTIVE_001"]}}
+      """
+    Then the response status is 201
 
   Scenario: An empty deny list is refused, never stored
     US1 AS7.
@@ -241,6 +426,38 @@ Feature: The activation register and the packs an activation builds on
       """
     Then the response status is 422
     And the problem code is "activation_invalid"
+    And the field at "/violations/0/pointer" is "/favourite"
+    And the field at "/violations/0/code" is "unknown_member"
+
+  Scenario: A member stated twice is refused, never read last-wins
+    When I PUT "/activations/a-1" with the body:
+      """
+      {"schemaVersion": 1, "selected": {"directive": ["DIRECTIVE_001"], "directive": []}}
+      """
+    Then the response status is 422
+    And the problem code is "activation_invalid"
+    And the field at "/violations/0/pointer" is "/selected/directive"
+    And the field at "/violations/0/code" is "duplicate_member"
+    When I GET "/activations/a-1"
+    Then the response status is 404
+
+  Scenario Outline: A scalar of another type than the declared one is refused, never coerced
+    When I PUT "/activations/a-1" with the body:
+      """
+      <body>
+      """
+    Then the response status is 422
+    And the problem code is "activation_invalid"
+    And the field at "/violations/0/pointer" is "<pointer>"
+    And the field at "/violations/0/code" is "unreadable_body"
+    When I GET "/activations/a-1"
+    Then the response status is 404
+
+    Examples:
+      | body                                                          | pointer                 |
+      | {"schemaVersion": "1"}                                        | /schemaVersion          |
+      | {"schemaVersion": 1.0}                                        | /schemaVersion          |
+      | {"schemaVersion": 1, "selected": {"directive": [1, true]}}    | /selected/directive/0   |
 
   Scenario: A null list is refused
     When I PUT "/activations/a-1" with the body:
@@ -264,7 +481,8 @@ Feature: The activation register and the packs an activation builds on
     Then the response status is 404
 
   Scenario: A pack pinned to a version the service does not hold is refused at the pin
-    R2: alpha is held at 1.0.0.
+    R2: alpha is held at 1.0.0. The operator ruled on 2026-11-06 that a pin differing from the held version stays
+    refused, and the violation tells the client both versions.
     When I PUT "/activations/a-1" with the body:
       """
       {"schemaVersion": 1, "packs": [{"packId": "alpha", "version": "2.0.0"}]}
@@ -273,8 +491,20 @@ Feature: The activation register and the packs an activation builds on
     And the problem code is "activation_invalid"
     And the field at "/violations/0/pointer" is "/packs/0/version"
     And the field at "/violations/0/code" is "version_not_held"
+    And the field at "/violations/0/detail" is "The pack 'alpha' is held at 1.0.0, not 2.0.0."
     When I GET "/activations/a-1"
     Then the response status is 404
+
+  Scenario: A pack pinned to a blank version is refused at the pin
+    A version of only blanks is no version: the contract's pattern refuses it, and so does the service, 422.
+    When I PUT "/activations/a-1" with the body:
+      """
+      {"schemaVersion": 1, "packs": [{"packId": "alpha", "version": "  "}]}
+      """
+    Then the response status is 422
+    And the problem code is "activation_invalid"
+    And the field at "/violations/0/pointer" is "/packs/0/version"
+    And the field at "/violations/0/code" is "invalid_value"
 
   Scenario: A document naming an unconfigured pack is refused at the pack's id
     R4.

@@ -23,3 +23,5 @@ sets the conformance corpus and the harness that hold the two together.
 
 - [Divergence register](/conformance/divergence-register/) — the single register of deliberate
   differences, each with a stable id, grouped by block.
+- [Ruleset scenario trace](/conformance/ruleset-scenario-trace/) — each counter-example of the layer-merge ruleset
+  review and each acceptance scenario, with its decision, its pinning scenario and its pull request.
