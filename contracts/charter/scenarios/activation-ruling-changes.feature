@@ -7,8 +7,9 @@
 # - A4's first counter-example in the review denies a required T that an active override E satisfies. Accepting that
 #   deny entry is IC-13's relaxed write rule, which PR B builds; the A0 scenario below reaches the same state (a deny
 #   entry on a now-required artifact in the stored document) through a pack change instead.
-# - A10's report of the unheld must-have item is a read of PR B (requiredNotHeld), and the DELETE of an artifact
-#   another pack's preset names is PR A's deletePackArtifact (WP19): both stay @WIP in the last scenario.
+# - A10's report of the unheld must-have item is a read of PR B (requiredNotHeld, WP22), and the DELETE of an artifact
+#   another pack's preset names is PR A's deletePackArtifact (WP19): each is its own @WIP scenario at the end, so the
+#   WP that builds the surface removes its own tag (WP19 the DELETE one, WP22 the report one).
 
 @contract @activations
 Feature: The A0 rulings on activation writes and on the packs
@@ -341,6 +342,14 @@ Feature: The A0 rulings on activation writes and on the packs
       name: left-pack
       pack_level: org
       """
+    And the org pack "left" with the file "tactics/left-way.tactic.yaml":
+      """
+      schema_version: '1.0'
+      id: left-way
+      name: left-way
+      steps:
+        - title: Only step
+      """
     And the org pack "left" with the file "enhancing.graph.yaml":
       """
       schema_version: '1.0'
@@ -364,6 +373,14 @@ Feature: The A0 rulings on activation writes and on the packs
       parent_pack: null
       name: right-pack
       pack_level: org
+      """
+    And the org pack "right" with the file "tactics/right-way.tactic.yaml":
+      """
+      schema_version: '1.0'
+      id: right-way
+      name: right-way
+      steps:
+        - title: Only step
       """
     And the org pack "right" with the file "enhancing.graph.yaml":
       """
@@ -390,6 +407,12 @@ Feature: The A0 rulings on activation writes and on the packs
     And the answer holds exactly 2 packs
     When I GET "/offering"
     Then the response status is 200
+    When I GET "/packs/left/artifacts"
+    Then the response status is 200
+    And the field at "/items/0/id" is "left-way"
+    When I GET "/packs/right/artifacts"
+    Then the response status is 200
+    And the field at "/items/0/id" is "right-way"
 
   # A15: a pack's policy locks only its own artifacts and those of the packs it builds on.
 
@@ -439,11 +462,29 @@ Feature: The A0 rulings on activation writes and on the packs
     Then the response status is 409
     And the problem code is "governance_policy_violation"
 
+  # WP19 (PR A) builds deletePackArtifact and removes this @WIP tag.
   @WIP
-  Scenario: A10 - the unheld must-have item is reported, and an artifact another pack's preset names cannot be deleted
-    WIP: two surfaces A0 does not have. The report of an unheld must-have item is PR B's skipped report
-    (requiredNotHeld, WP22); deletePackArtifact and its 409 artifact_referenced are PR A's (WP19). Each half is bound
-    and the tag removed by the WP that builds its surface.
+  Scenario: A10 - an artifact another pack's preset names cannot be deleted
+    WIP: deletePackArtifact and its 409 artifact_referenced are PR A's (WP19), which binds this scenario and removes
+    the tag. The preset of the pack "other" names main's D1, so main's D1 cannot be deleted while it is named.
+    Given the org pack "other" with the file "presets/governing.yaml":
+      """
+      schema_version: '1.0'
+      id: governing
+      description: D1 of main.
+      activated_directives:
+        - id: main::D1
+          must_have: true
+      """
+    When I DELETE "/packs/main/artifacts/directive/D1" with the header "If-Match": "*"
+    Then the response status is 409
+    And the problem code is "artifact_referenced"
+
+  # WP22 (PR B) builds the skipped report and removes this @WIP tag.
+  @WIP
+  Scenario: A10 - the unheld must-have item is in requiredNotHeld
+    WIP: the report of an unheld must-have item is PR B's skipped report (requiredNotHeld, WP22), which binds this
+    scenario and removes the tag.
     Given the org pack "other" with the file "presets/governing.yaml":
       """
       schema_version: '1.0'
@@ -465,6 +506,3 @@ Feature: The A0 rulings on activation writes and on the packs
       """
       directive:GONE
       """
-    When I DELETE "/packs/main/artifacts/directive/D1" with the header "If-Match": "*"
-    Then the response status is 409
-    And the problem code is "artifact_referenced"

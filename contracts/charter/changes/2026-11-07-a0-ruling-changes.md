@@ -26,11 +26,13 @@
   artifact; `activation-ruling-changes.feature` pins two sibling enhancers composing.
 - `replaceActivation` and `PreconditionFailed` say that a replace without `If-Match` is judged again from a fresh
   read when another writer changes the activation in between, up to eight times, and answers `412` with nothing
-  stored when every attempt loses. The behaviour is unchanged.
+  stored when every attempt loses. This is a change: a replace without `If-Match` was an unconditional compare-and-swap
+  and never answered `412`.
 - `ArtifactIdPath` says that a mission type's path id is normalized as every kind's is (its full URN or another case
   names the declared id): it said that a mission type's id is matched exactly, as the document's `missionTypes` was.
 - New `activation-ruling-changes.feature` (`@contract`, SC-005) pins one counter-example per ruling above, each with a
-  control in the same answer; its A10 report and `DELETE` half stays `@WIP` for PR B (WP22) and PR A (WP19).
+  control in the same answer; its two A10 scenarios stay `@WIP`: "an artifact another pack's preset names cannot be deleted" for PR A (WP19) and
+  "the unheld must-have item is in requiredNotHeld" for PR B (WP22), each removed by its own WP.
   `activation-kind-model.feature` loses its `@WIP` tag. The scenarios that pinned the old answers are rewritten, not
   deleted: in `activation-register.feature` the version pin refused on `PUT`, the stale id refused on write and the
   re-deny of a now locked or required artifact; in `activation-selections.feature` the denied ancestor cleared by
@@ -39,3 +41,7 @@
   `activation-register-guards.feature`, `activation-selections.feature` and `activation-presets.feature` (the step
   `Given the project activates the pack(s)` of `composition.feature` stores version 2 now); the reads of an emptied
   `selected.<kind>` expect it absent, its canonical form (FR-042).
+- A write that sends `activatedKinds` or `missionTypes` is `422 validation_failed` with one violation per member, code
+  `removed_member`, naming its replacement (`selected.mission_type` for `missionTypes`; `selected.<kind>` for
+  `activatedKinds`); any other fault of the body is listed beside them. `ActivationConfig` says so, and
+  `ActivationBodyAdviceTest` pins it.
