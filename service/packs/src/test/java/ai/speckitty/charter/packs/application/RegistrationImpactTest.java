@@ -55,7 +55,9 @@ class RegistrationImpactTest {
                         "derived", rig.stage(derived("2.0.0").directive("LOCKED_ONE", "Mine")), Preconditions.none())))
                 .as("one copy of LOCKED_ONE cannot be read, so the readable copy is no proof the id is unchanged")
                 .isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
-        assertThat(rig.filesOf(rig.packs.resolve("derived"))).as("nothing changed").isEqualTo(before);
+        assertThat(rig.filesOf(rig.packs.resolve("derived")))
+                .as("nothing changed")
+                .isEqualTo(before);
 
         Rig control = new Rig(host.resolve("open"));
         control.register("base", control.stage(base("1.0.0")), Preconditions.none());
