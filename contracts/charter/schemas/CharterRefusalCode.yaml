@@ -82,8 +82,9 @@ description: >-
   override_not_permitted, enhances_cycle, conflicting_relations, self_override and override_cycle (a registration that
   leaves a closure it joins breaking a relation rule), as the problem of a refused registration status
   (getPackRegistration); registration_not_found, pack_source_unavailable, registration_timed_out and pack_storage_full are
-  raised by the registration job and its admission. pack_source_refused is raised by the source fetchers and
-  relationship_not_found and relationship_not_registered by the two DELETEs, and stay raised: false until those are built.
+  raised by the registration job and its admission. pack_source_refused is raised by the https_archive and filesystem
+  source fetchers; relationship_not_found and relationship_not_registered are raised by the two DELETEs and stay
+  raised: false until those are built.
   pack_version_conflict (409): the same pack_version was registered with another revision. artifact_referenced (409):
   another artifact or pack still refers to the artifact a DELETE or a replace removes; its packs member names the
   referring packs (at most 100) and its violations name every referring artifact. relationship_not_found (404): no
@@ -93,7 +94,10 @@ description: >-
   an author file, and the fixed reason says to register the whole pack. registration_not_found (404): no registration is
   held under the id. pack_source_refused (422): a source the service refuses (a host not on the allowlist, an address
   that is not global, a bad ref, the wrong media type, a digest or commit mismatch, a descriptor whose name is not the
-  target), with a reason from a fixed set. pack_source_unavailable (503): registration, or the source kind, is switched
+  target), with a reason from a fixed set: host_not_allowed, address_not_global, url_refused, redirect_refused,
+  wrong_media_type, too_large, digest_mismatch, name_mismatch, source_malformed and path_refused, the first word of the
+  problem's detail; a filesystem source refuses every path it will not read with the same path_refused, so the answer does
+  not reveal what exists. pack_source_unavailable (503): registration, or the source kind, is switched
   off, or the system git is missing or older than 2.50.1. override_not_permitted, enhances_cycle, conflicting_relations,
   self_override and override_cycle (422): a relation the registration impact check refuses, naming the root pack of the
   closure and the packs involved (IC-15): an overrides edge onto a target that is not open, an enhances cycle or an
@@ -441,7 +445,7 @@ x-refusal:
   pack_source_refused:
     status: 422
     retryable: false
-    raised: false
+    raised: true
     description: a source the service refuses, with a reason from a fixed set
   pack_source_unavailable:
     status: 503
