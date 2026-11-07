@@ -774,4 +774,99 @@ class RegistrationImpactTest {
                 .enforcement(ai.speckitty.charter.packs.domain.Enforcement.REQUIRED)
                 .build();
     }
+
+    // ---- the cost of the check (cycle 2, issue 3)
+    // --------------------------------------------------------------------
+
+    /** Counts the descriptors a compose asks the views for, which is what each compose judges again. */
+    private static final class CountingViews implements StagedPackViews {
+        private final StagedPackViews real;
+        final java.util.concurrent.atomic.AtomicInteger descriptorAsks =
+                new java.util.concurrent.atomic.AtomicInteger();
+
+        CountingViews(StagedPackViews real) {
+            this.real = real;
+        }
+
+        @Override
+        public Session session() {
+            Session session = real.session();
+            return new Session() {
+                @Override
+                public View stored() {
+                    return counted(session.stored());
+                }
+
+                @Override
+                public View with(RegistrationImpact.Replacement written) {
+                    return counted(session.with(written));
+                }
+            };
+        }
+
+        private View counted(View view) {
+            ai.speckitty.charter.packs.domain.PackDescriptorRepository counting =
+                    new ai.speckitty.charter.packs.domain.PackDescriptorRepository() {
+                        @Override
+                        public ai.speckitty.charter.kernel.domain.PackDescriptor get(
+                                ai.speckitty.charter.kernel.domain.PackIdentifier pack) {
+                            return view.descriptors().get(pack);
+                        }
+
+                        @Override
+                        public Optional<ai.speckitty.charter.kernel.domain.PackDescriptor> find(
+                                ai.speckitty.charter.kernel.domain.PackIdentifier pack) {
+                            descriptorAsks.incrementAndGet();
+                            return view.descriptors().find(pack);
+                        }
+
+                        @Override
+                        public void save(
+                                ai.speckitty.charter.kernel.domain.PackIdentifier pack,
+                                ai.speckitty.charter.kernel.domain.PackDescriptor descriptor) {
+                            view.descriptors().save(pack, descriptor);
+                        }
+                    };
+            return new View(view.catalog(), counting, view.artifacts());
+        }
+    }
+
+    /** Asks the check about a base pack with {@code dependents} packs built on it and answers how often descriptors were asked for. */
+    private static int descriptorAsks(Path host, int dependents) {
+        Rig rig = new Rig(host);
+        rig.register("base", rig.stage(orgBase("1.0.0")), Preconditions.none());
+        for (int i = 1; i <= dependents; i++) {
+            rig.install(
+                    "dep-" + i,
+                    org(
+                                    ulid(i % 22).substring(0, 16) + String.format("%010d", i),
+                                    "dep-" + i,
+                                    "1.0.0",
+                                    dependsOn(BASE_ID))
+                            .directive("DEP_" + i, "Own"));
+        }
+        CountingViews views = new CountingViews(new ai.speckitty.charter.packs.infra.storage.StagedPackViewFactory(
+                rig.repository, rig.repository, rig.repository));
+        ai.speckitty.charter.packs.domain.ConfiguredPack configured = rig.repository.configured().stream()
+                .filter(pack -> pack.id().value().equals("base"))
+                .findFirst()
+                .orElseThrow();
+        RegistrationImpact.Replacement same = new RegistrationImpact.Replacement(
+                configured, rig.repository.get(configured.id()), rig.repository.compositionFacts(configured.id()));
+
+        new RegistrationImpact(views, ActivationImpact.NONE).check(same);
+
+        return views.descriptorAsks.get();
+    }
+
+    @Test
+    void theDescriptorsAreAskedForOncePerViewHoweverManyClosuresHoldThePack(@TempDir Path host) {
+        int packs = 51;
+        int asks = descriptorAsks(host, 50);
+
+        assertThat(asks)
+                .as(
+                        "51 closures hold base; each pack is read and judged once per view (roots, before, after), not once per closure")
+                .isLessThanOrEqualTo(4 * packs);
+    }
 }
