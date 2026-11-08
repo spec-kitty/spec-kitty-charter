@@ -7,6 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -44,6 +45,8 @@ public final class CompositionFactsCache {
     private final PackWriteGeneration generation;
     private final RegistryWriteLock lock;
     private final Map<String, Kept> entries;
+    private final AtomicLong loads = new AtomicLong();
+    private final AtomicLong hits = new AtomicLong();
 
     /** What one read of a pack found, and the state of the pack it found it in. */
     private record Kept(long generation, PackRevision revision, PackCompositionFacts facts) {}
@@ -109,17 +112,18 @@ public final class CompositionFactsCache {
         Objects.requireNonNull(load, "load");
         long before = generation.ofPack(pack.value());
         if (lock.isHeldByCurrentThread() || PackWriteGeneration.isSwapping(before)) {
-            return load.apply(pack);
+            return counted(pack, load);
         }
         Optional<PackRevision> revision = revisionOf(pack);
         if (revision.isEmpty()) {
-            return load.apply(pack);
+            return counted(pack, load);
         }
         Optional<PackCompositionFacts> kept = kept(pack.value(), before, revision.get());
         if (kept.isPresent()) {
+            hits.incrementAndGet();
             return kept.get();
         }
-        PackCompositionFacts loaded = load.apply(pack);
+        PackCompositionFacts loaded = counted(pack, load);
         if (generation.ofPack(pack.value()) == before
                 && revisionOf(pack).filter(revision.get()::equals).isPresent()) {
             remember(pack.value(), new Kept(before, revision.get(), loaded));
@@ -133,7 +137,7 @@ public final class CompositionFactsCache {
      * @return the loads so far
      */
     public long loads() {
-        return 0;
+        return loads.get();
     }
 
     /**
@@ -142,17 +146,27 @@ public final class CompositionFactsCache {
      * @return the hits so far
      */
     public long hits() {
-        return 0;
+        return hits.get();
     }
 
     /** Forgets every entry: the cold start of the NFR-003 gate. */
-    public void clear() {}
+    public void clear() {
+        synchronized (entries) {
+            entries.clear();
+        }
+    }
 
     /** How many packs the cache keeps now. */
     int size() {
         synchronized (entries) {
             return entries.size();
         }
+    }
+
+    /** One read from the store, counted. */
+    private PackCompositionFacts counted(PackIdentifier pack, Function<PackIdentifier, PackCompositionFacts> load) {
+        loads.incrementAndGet();
+        return load.apply(pack);
     }
 
     /** The pack's revision; empty when it cannot be read, so that the load's own refusal is what the caller sees. */

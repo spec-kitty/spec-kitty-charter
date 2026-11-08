@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Decides what is in force: a stratified fixed point over the merged closure (research R13, rules E2 to E9). The strata
@@ -41,6 +42,9 @@ import java.util.TreeSet;
  */
 public final class InForceResolution {
 
+    private static final AtomicLong RESOLUTIONS = new AtomicLong();
+    private static final AtomicLong WALK_VISITS = new AtomicLong();
+
     private InForceResolution() {}
 
     /**
@@ -50,7 +54,7 @@ public final class InForceResolution {
      * @return the resolutions so far
      */
     public static long resolutions() {
-        return 0;
+        return RESOLUTIONS.get();
     }
 
     /**
@@ -59,7 +63,7 @@ public final class InForceResolution {
      * @return the visits so far
      */
     public static long walkVisits() {
-        return 0;
+        return WALK_VISITS.get();
     }
 
     /**
@@ -102,6 +106,7 @@ public final class InForceResolution {
         Objects.requireNonNull(merged, "merged");
         Objects.requireNonNull(edges, "edges");
         Objects.requireNonNull(request, "request");
+        RESOLUTIONS.incrementAndGet();
         Model model = new Model(merged, edges, request);
         model.refuseOverrideCycle();
         return model.states(model.solve());
@@ -188,6 +193,7 @@ public final class InForceResolution {
             if (finished.contains(node)) {
                 return;
             }
+            WALK_VISITS.incrementAndGet();
             if (!path.add(node)) {
                 throw new CharterRefusal(
                         RefusalCode.PACK_UNREADABLE,
@@ -230,8 +236,9 @@ public final class InForceResolution {
 
         /** Counts one step of a walk and fails loudly when a walk takes more steps than the closure can need. */
         private int bounded(int steps) {
+            WALK_VISITS.incrementAndGet();
             int next = steps + 1;
-            if (next > bound * bound * bound) {
+            if (next > (long) bound * bound * bound) {
                 throw new IllegalStateException("an in-force walk crossed its bound of " + bound + " (closure size)");
             }
             return next;
