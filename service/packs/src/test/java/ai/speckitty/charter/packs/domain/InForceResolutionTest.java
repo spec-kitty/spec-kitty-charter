@@ -787,7 +787,9 @@ class InForceResolutionTest {
     // ---- the order of the reason rows (E9): each adjacent pair of rows, with an artifact that both rows catch ----
 
     private static void expectBucket(InForceStates states, String urn, Bucket bucket) {
-        assertThat(states.stateOf(u(urn)).orElseThrow().bucket()).as(urn + " bucket").contains(bucket);
+        assertThat(states.stateOf(u(urn)).orElseThrow().bucket())
+                .as(urn + " bucket")
+                .contains(bucket);
     }
 
     @Test
@@ -820,8 +822,8 @@ class InForceResolutionTest {
     @Test
     void aDeniedArtifactWhoseLanguageIsFilteredIsReportedForItsLanguageFirstAndIsNotExcluded() {
         Closure closure = new Closure().open("tactic:X").languages("tactic:X", "java");
-        InForceRequest request = new InForceRequest(
-                urns("tactic:X"), urns("tactic:X"), Optional.of(Set.of("python")), Map.of());
+        InForceRequest request =
+                new InForceRequest(urns("tactic:X"), urns("tactic:X"), Optional.of(Set.of("python")), Map.of());
 
         InForceStates states = closure.resolve(request);
 

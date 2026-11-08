@@ -648,8 +648,8 @@ class RegistrationImpactTest {
     }
 
     private static Packs floorTop(String version, boolean governs) {
-        Packs top = Packs.of(DERIVED_ID, "top", version, "project", DEPENDS_ON_BASE)
-                .directive("Y_ONE", "Y");
+        Packs top =
+                Packs.of(DERIVED_ID, "top", version, "project", DEPENDS_ON_BASE).directive("Y_ONE", "Y");
         return governs ? top.file("presets/governing.yaml", GOVERNING_Y) : top;
     }
 

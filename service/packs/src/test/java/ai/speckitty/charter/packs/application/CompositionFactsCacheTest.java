@@ -337,8 +337,8 @@ class CompositionFactsCacheTest {
         Files.writeString(before, "id: A\n", StandardCharsets.UTF_8);
         StorageRootLocations locations = new StorageRootLocations(host);
         YamlSerializationStrategy strategy = new YamlSerializationStrategy();
-        CommitStorePackWriteStore store =
-                new CommitStorePackWriteStore(locations, strategy, new PackCommitStore(locations, strategy), lock, generation);
+        CommitStorePackWriteStore store = new CommitStorePackWriteStore(
+                locations, strategy, new PackCommitStore(locations, strategy), lock, generation);
         CompositionFactsCache cache = new CompositionFactsCache(store, generation, lock, 8);
         List<String> seen = new ArrayList<>();
         Function<PackIdentifier, PackCompositionFacts> readFiles = id -> {

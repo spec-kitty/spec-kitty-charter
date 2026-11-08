@@ -75,9 +75,8 @@ public class ActivationImpactAdapter implements ActivationImpact {
      */
     private static boolean differs(ClosureChange change, StoredActivation activation) {
         InForceRequest request = ClosureViewSession.requestOf(EffectiveSet.queryOf(activation.document()));
-        Optional<Map<ArtifactRef, Optional<MergedSnapshot.Winner>>> before = change.before()
-                .map(view -> inForce(view, request))
-                .orElseGet(() -> Optional.of(Map.of()));
+        Optional<Map<ArtifactRef, Optional<MergedSnapshot.Winner>>> before =
+                change.before().map(view -> inForce(view, request)).orElseGet(() -> Optional.of(Map.of()));
         return !before.equals(inForce(change.after(), request));
     }
 

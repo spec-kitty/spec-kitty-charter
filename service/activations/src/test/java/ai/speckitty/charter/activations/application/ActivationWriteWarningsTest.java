@@ -163,8 +163,8 @@ class ActivationWriteWarningsTest {
         states.put(E, inactive(E, Reason.ENHANCED_TARGET_NOT_IN_FORCE));
         select(E);
 
-        ActivationWrites.Outcome unselected =
-                selections.unselect(ID, "tactic", "e", quoted(repository.find(ID).orElseThrow()));
+        ActivationWrites.Outcome unselected = selections.unselect(
+                ID, "tactic", "e", quoted(repository.find(ID).orElseThrow()));
 
         assertThat(unselected.change().applied()).containsExactly(E);
         assertThat(unselected.change().warnings())

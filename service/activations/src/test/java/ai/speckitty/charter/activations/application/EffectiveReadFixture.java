@@ -70,6 +70,7 @@ final class EffectiveReadFixture {
 
     /** The artifacts the closure holds: the selected ones, the required one nobody selects and the enhancer's target. */
     static final int ARTIFACTS = SELECTED + 2;
+
     static final String PATH = "/api/v1/activations/a-1/artifacts?pageSize=200";
 
     /** The length of the chain of overrides: thirty links, from the first artifact of the first pack. */
@@ -198,9 +199,7 @@ final class EffectiveReadFixture {
         if (pack == 0) {
             defined.addAll(List.of("directive:R", "directive:G"));
             presets.add(new Preset(
-                    "governing",
-                    "R is required.",
-                    Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("R")))));
+                    "governing", "R is required.", Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("R")))));
             PackQualifiedReference head = PackQualifiedReference.parse("directive:" + id(0, 0));
             PackQualifiedReference target = PackQualifiedReference.parse("directive:G");
             edges.add(new Relationship(
