@@ -74,6 +74,17 @@ decision of this record. Decision 10 keeps an artifact's own URN unqualified, bu
 boundary is now written `<pack-name>::<urn>` ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 7). An empty active charter puts nothing in force after
 the split ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 10). The original text stands; the changed point is annotated where it stands.
 
+### Amendment 2026-11-06
+
+The operator ruled on 2026-11-06, in the review of the activation register and closure, that `parent_pack` is an
+ordering and a cycle edge as `depends_on` is. The alternative "`parent_pack` as the composition edge" below was
+rejected on 2026-11-02 for conflating lineage with load order; it is now accepted for that purpose only: the pack a
+child extends merges before it, and a `parent_pack` cycle, a pack that names itself included, is
+`pack_dependency_cycle`. A pack still has one parent, and the edge adds no `depends_on` entry and no version range.
+The same ruling extends decision 9 to presets: two packs of one level that hold one preset id are a sibling conflict
+unless one is on the other's `parent_pack` line, and no `overrides` edge settles a preset. The original text stands;
+the changed point is annotated where it stands.
+
 ## Context
 
 - **Identity is per pack.** A pack descriptor carries `pack_id` (a ULID), `pack_version` (a semantic
@@ -272,7 +283,8 @@ they are ruled, the [work breakdown](/plans/pack-ecosystem-work-breakdown/) plan
   that can be reused and registered on their own.
 - **Versions per artifact.** Rejected. Every edit would mean a version bump for little gain, because
   the closure check (decision 2) catches a link to an artifact that is missing.
-- **`parent_pack` as the composition edge.** Rejected. It conflates lineage with load order, and a
+- **`parent_pack` as the composition edge.** Rejected, then accepted as an ordering and cycle edge on 2026-11-06
+  (see the amendment of that date). It conflates lineage with load order, and a
   pack can have only one parent, which cannot express a diamond.
 - **Last loaded wins for sibling overrides.** Rejected. It would make the effective charter depend on
   the order packs are listed in.

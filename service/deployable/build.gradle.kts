@@ -12,6 +12,8 @@ dependencies {
     implementation(project(":web-transport"))
     implementation(catalog.lib("spring-boot-starter-webmvc"))
     implementation(catalog.lib("spring-boot-starter-validation"))
+    // Health only, over HTTP; everything else stays unexposed (ADR-0041 decision 7).
+    implementation(catalog.lib("spring-boot-starter-actuator"))
 
     testImplementation(catalog.lib("spring-boot-starter-test"))
     testImplementation(catalog.lib("spring-boot-webmvc-test"))

@@ -155,14 +155,17 @@ public class ActivationService {
      * @param id the activation's id
      * @param ifMatch the {@code If-Match} header, verbatim; null when absent
      * @throws CharterRefusal with {@code activation_not_found} when nothing is stored under the id
-     * @throws PreconditionException ({@code STALE}) when the {@code If-Match} does not name the current revision
+     * @throws PreconditionException ({@code STALE}) when the {@code If-Match} does not name the current revision, or the
+     *     document was removed by another request after the {@code If-Match} matched it
      */
     public void delete(ActivationId id, @Nullable String ifMatch) {
         Optional<Revision> expected = ifMatch == null ? Optional.empty() : matched(id, ifMatch);
         DeleteResult result = repository.delete(id, expected);
         switch (result) {
             case DeleteResult.Deleted() -> {}
-            case DeleteResult.Missing() -> throw notFound(id);
+            // With If-Match, a document another deleter removed since this request matched it is no stored revision:
+            // 412.
+            case DeleteResult.Missing() -> throw ifMatch == null ? notFound(id) : stale(id);
             case DeleteResult.Stale _ -> throw stale(id);
         }
     }
@@ -198,10 +201,11 @@ public class ActivationService {
     /** The document, when it may be stored: one snapshot of the closure it names, and the rules over it. */
     private ActivationDocument checked(ActivationDocument.Built built) {
         ClosureSnapshot snapshot = packs.snapshot(packIdsOf(built.document()));
-        DocumentRules.check(built, snapshot).ifPresent(refusal -> {
+        ActivationDocument.Built normalized = DocumentRules.normalize(built, snapshot);
+        DocumentRules.check(normalized, snapshot).ifPresent(refusal -> {
             throw refusal;
         });
-        return built.document();
+        return normalized.document();
     }
 
     private static Optional<List<String>> packIdsOf(ActivationDocument document) {
