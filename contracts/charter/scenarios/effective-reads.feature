@@ -1,5 +1,5 @@
 # PR B of layer-merge-and-effective-reads, contract B (IC-08, IC-17; WP22, T113): the effective artifact list, the
-# skipped report and the write warnings. Written red first and committed @WIP (decision DM-01M6RN6GC7PJS8BGHMAYM4JSSW);
+# skipped report and the write warnings. Written red first and committed with a WIP tag (decision DM-01M6RN6GC7PJS8BGHMAYM4JSSW);
 # WP25 bound the glue, recorded the red assertion failure (every step bound, a wrong status or body) and removed the
 # tag. Every When asserts 200 and a non-empty answer, and every absence (X absent, E absent) is read
 # beside a positive control in the same answer. Fixtures are authored inline, per rule. "In force" is state=active

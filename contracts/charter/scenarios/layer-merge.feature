@@ -1,5 +1,5 @@
 # PR B of layer-merge-and-effective-reads, contract B (IC-08; WP22, T113): the layer merge as the effective reads
-# answer it. Written red first and committed @WIP (decision DM-01M6RN6GC7PJS8BGHMAYM4JSSW); WP25 bound the glue,
+# answer it. Written red first and committed with a WIP tag (decision DM-01M6RN6GC7PJS8BGHMAYM4JSSW); WP25 bound the glue,
 # recorded the red assertion failure (every step bound, a wrong status or body) and removed the tag.
 # Every When asserts 200 (or the refusal) and a non-empty answer, and every absence is read beside a positive control in
 # the same answer. The fixture packs are authored inline, per rule (plan.md, Fixtures).
