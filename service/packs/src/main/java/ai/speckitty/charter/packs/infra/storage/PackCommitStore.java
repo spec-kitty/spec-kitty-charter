@@ -2,14 +2,17 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
 import ai.speckitty.charter.packs.application.PackRevision;
+import ai.speckitty.charter.packs.application.PackVersionHistory;
 import ai.speckitty.charter.packs.application.PackWriteGeneration;
 import ai.speckitty.charter.packs.application.RegistryWriteLock;
 import ai.speckitty.charter.packs.application.StagedPack;
 import ai.speckitty.charter.packs.application.WholePackWriteStore;
+import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
@@ -21,6 +24,7 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -29,6 +33,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -108,6 +114,8 @@ public final class PackCommitStore implements WholePackWriteStore {
 
     /** The most links a dangling chain is followed through, as the usual {@code ELOOP} bound. */
     private static final int MAX_LINK_HOPS = 40;
+
+    private static final Logger LOG = LoggerFactory.getLogger(PackCommitStore.class);
 
     private final DomainRepositoryService.Locations locations;
     private final SerializationStrategy strategy;
@@ -333,25 +341,107 @@ public final class PackCommitStore implements WholePackWriteStore {
     }
 
     @Override
+    public List<PackVersionHistory.Entry> versionHistory(String packId) {
+        return new VersionHistoryStore(writableRoot()).read(packId);
+    }
+
+    /**
+     * The version history's next state for a tree about to be stored, written beside its file before the swap and
+     * published right after it (IC-16): a write that fails does so before the pack changes, and the rename that
+     * publishes it cannot meet a full disk.
+     */
+    private record HistoryWrite(VersionHistoryStore store, String packId, Path staged) {
+
+        /**
+         * Stages the history after the tree is stored. The pair the stored pack has now (the live directory, when there is
+         * one) goes in first when the history lacks it, so that a publish lost after an earlier swap heals here and a
+         * version label the stored pack holds is never free to reuse (IC-16). A stored pack that cannot be read has no
+         * pair to give.
+         */
+        static HistoryWrite stage(
+                Path writableRoot, String packId, Path tree, PackRevision revision, @Nullable Path live)
+                throws IOException {
+            VersionHistoryStore store = new VersionHistoryStore(writableRoot);
+            List<PackVersionHistory.Entry> history = store.read(packId);
+            if (live != null) {
+                Optional<PackVersionHistory.Entry> stored = storedPair(live, packId);
+                if (stored.isPresent()) {
+                    history = PackVersionHistory.appended(history, stored.get());
+                }
+            }
+            PackVersionHistory.Entry entry =
+                    new PackVersionHistory.Entry(packVersionOf(tree), revision.token(), Instant.now());
+            return new HistoryWrite(store, packId, store.stage(packId, PackVersionHistory.appended(history, entry)));
+        }
+
+        private static Optional<PackVersionHistory.Entry> storedPair(Path live, String packId) {
+            try {
+                return Optional.of(new PackVersionHistory.Entry(
+                        packVersionOf(live),
+                        revisionOf(live, new PackIdentifier(packId)).token(),
+                        Instant.now()));
+            } catch (IOException | RuntimeException unreadable) {
+                return Optional.empty();
+            }
+        }
+
+        /** Publishes the history; a failure now is a warning, because the pack has been stored and the next write heals it. */
+        void publishAfterSwap() {
+            try {
+                store.publish(packId, staged);
+            } catch (CharterRefusal lost) {
+                LOG.warn(
+                        "The pack {} was stored, but its version history could not be published ({}); the next"
+                                + " registration puts the entry back.",
+                        packId,
+                        lost.getMessage());
+            }
+        }
+
+        void discard() {
+            store.discard(staged);
+        }
+
+        private static String packVersionOf(Path tree) throws IOException {
+            String text = Files.readString(tree.resolve("pack.yaml"), StandardCharsets.UTF_8);
+            if (PackDescriptorReader.read(text) instanceof FileRead.Read<PackDescriptor> read) {
+                return read.value().packVersion();
+            }
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "the tree to store has no readable pack.yaml");
+        }
+    }
+
+    private static void discard(@Nullable HistoryWrite history) {
+        if (history != null) {
+            history.discard();
+        }
+    }
+
+    @Override
     public PackRevision replaceWhole(PackIdentifier pack, StagedPack staged) {
         Path liveDir = DomainRepositoryService.writableRealDirectory(locations, resolve(pack).directory, pack);
         Path parent = requireParent(liveDir);
         hideStaleAsides(liveDir); // so a stale aside copy is never restored over this pack later (#281)
         @Nullable Path copy = null;
+        @Nullable HistoryWrite history = null;
         try {
             // The tree is copied beside the pack, on its filesystem, so that the swap is a rename; the staging root may
             // be on another one.
             copy = Files.createTempDirectory(parent, ".pack-commit-");
             copyTree(staged.directory(), copy);
             PackRevision revision = revisionOf(copy, pack);
+            history = HistoryWrite.stage(writableRoot(), pack.value(), copy, revision, liveDir);
             swapBracketed(pack.value(), copy, liveDir);
             copy = null; // swapped into place; there is nothing left to clean up
+            history.publishAfterSwap();
             return revision;
         } catch (CharterRefusal refusal) {
             deleteTree(copy);
+            discard(history);
             throw refusal;
         } catch (IOException | RuntimeException failure) {
             deleteTree(copy);
+            discard(history);
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "cannot replace pack " + pack.value(), failure);
         }
     }
@@ -371,19 +461,24 @@ public final class PackCommitStore implements WholePackWriteStore {
         Path root = writableRoot();
         Path destination = root.resolve(packId);
         @Nullable Path staging = null;
+        @Nullable HistoryWrite history = null;
         try {
             Files.createDirectories(root);
             staging = Files.createTempDirectory(root, ".pack-write-");
             copyTree(staged.directory(), staging);
             PackRevision revision = revisionOf(staging, new PackIdentifier(packId));
+            history = HistoryWrite.stage(root, packId, staging, revision, null);
             placeBracketed(packId, staging, destination);
             staging = null; // moved into place; nothing left to clean up
+            history.publishAfterSwap();
             return revision;
         } catch (CharterRefusal refusal) {
             deleteTree(staging);
+            discard(history);
             throw refusal;
         } catch (IOException | RuntimeException failure) {
             deleteTree(staging);
+            discard(history);
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "cannot create pack " + packId, failure);
         }
     }

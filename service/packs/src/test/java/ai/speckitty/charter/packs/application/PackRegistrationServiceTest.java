@@ -23,6 +23,7 @@ import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
 import ai.speckitty.charter.packs.infra.storage.PackCommitStore;
 import ai.speckitty.charter.packs.infra.storage.RelationshipShard;
 import ai.speckitty.charter.packs.infra.storage.SlowSwapCommitStores;
+import ai.speckitty.charter.packs.infra.storage.StagedPackViewFactory;
 import ai.speckitty.charter.packs.infra.storage.StorageRootLocations;
 import ai.speckitty.charter.packs.infra.storage.WholePackStore;
 import ai.speckitty.charter.packs.infra.storage.YamlSerializationStrategy;
@@ -32,9 +33,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
@@ -418,7 +421,7 @@ class PackRegistrationServiceTest {
     private static String shard(String... sources) {
         StringBuilder text = new StringBuilder("schema_version: '1.0'\ngenerated_at: STATIC\nnodes: []\nedges:\n");
         for (String source : sources) {
-            text.append("- source: directive:")
+            text.append("- source: base::directive:")
                     .append(source)
                     .append("\n  target: directive:DERIVED_ONE\n  relation: requires\n");
         }
@@ -461,15 +464,18 @@ class PackRegistrationServiceTest {
     }
 
     @Test
-    void anExtendableArtifactOfTheAncestorMayBeRegisteredButNotReplaced(@TempDir Path host) {
+    void anExtendableArtifactOfTheAncestorMayNeitherBeRegisteredNorReplacedByAPackBuiltOnIt(@TempDir Path host) {
         Rig rig = rigWithBase(host);
-        assertThat(rig.register(
-                                "derived",
-                                rig.stage(derived("1.0.0").directive("EXT_ONE", "First")),
-                                Preconditions.none())
-                        .outcome())
-                .as("REGISTER is within extendable")
-                .isEqualTo(Outcome.CREATED);
+        // Decision 01M6VEDYX8TQ4AKCP7C19WAP75 (C21): an id an ancestor holds is a REPLACE of the ancestor's artifact,
+        // so
+        // the first step, which this test expected to create the pack, is refused.
+        assertThat(refusalOf(() -> rig.register(
+                        "derived", rig.stage(derived("1.0.0").directive("EXT_ONE", "First")), Preconditions.none())))
+                .as("holding an id base holds is a replace, and extendable does not permit it")
+                .isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
+        assertThat(rig.packs.resolve("derived")).as("nothing was created").doesNotExist();
+
+        rig.install("derived", derived("1.0.0").directive("EXT_ONE", "First"));
         Map<String, String> before = rig.filesOf(rig.packs.resolve("derived"));
         StagedPack replaced = rig.stage(derived("2.0.0").directive("EXT_ONE", "Second"));
 
@@ -813,6 +819,14 @@ class PackRegistrationServiceTest {
         final PackCommitStore commits;
         final CommitStorePackWriteStore writeStore;
         final PackRegistrationService service;
+        final RegistrationImpact impact;
+
+        /** The root sets of the stored activations a test plants: an empty optional is an activation with no packs. */
+        final List<Optional<List<String>>> activations = new ArrayList<>();
+
+        /** The packs the activations slice was told were registered, in order. */
+        final List<String> registered = new ArrayList<>();
+
         private final AtomicInteger staged = new AtomicInteger();
 
         /** What the swap does inside the window where the live directory is missing; a test sets it. */
@@ -831,6 +845,18 @@ class PackRegistrationServiceTest {
             ConsistentRead read = new ConsistentRead(new FileSystemPackSources(locations::all), generation);
             WritePolicyGate gate = new PackMutabilityPolicy(
                     new OfferingReadService(repository, repository, repository, read), repository, repository, read);
+            this.impact =
+                    new RegistrationImpact(new StagedPackViewFactory(locations, strategy), new ActivationImpact() {
+                        @Override
+                        public List<Optional<List<String>>> activationRoots() {
+                            return List.copyOf(activations);
+                        }
+
+                        @Override
+                        public void registered(String packId, RegistrationImpact.Notices notices) {
+                            registered.add(packId);
+                        }
+                    });
             this.service = new PackRegistrationService(
                     new WholePackStore(strategy),
                     commits,
@@ -838,7 +864,8 @@ class PackRegistrationServiceTest {
                     repository,
                     repository,
                     gate,
-                    new InboundReferences(repository, repository, repository));
+                    new InboundReferences(repository, repository, repository),
+                    impact);
             create(packs);
         }
 

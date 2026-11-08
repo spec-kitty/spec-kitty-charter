@@ -77,8 +77,10 @@ description: >-
   FR-025; PR A of the layer merge mission). Their operations are reserved until the services that raise them are built
   (ADR-0020 D8), so each is raised: false until the service that raises it is built, and the work package that builds the
   service flips it. pack_version_conflict is raised by the whole-pack registration service (the same pack_version sent
-  with another revision) and artifact_referenced (a replace that removes an artifact another pack still refers to), whose
-  two operations stay reserved until their controller and job are built.
+  with another revision), artifact_referenced (a replace that removes an artifact another pack still refers to) and the
+  five relation codes of the impact check, override_not_permitted, enhances_cycle, conflicting_relations, self_override
+  and override_cycle (a registration that leaves a closure it joins breaking a relation rule), whose operations stay
+  reserved until their controller and job are built.
   pack_version_conflict (409): the same pack_version was registered with another revision. artifact_referenced (409):
   another artifact or pack still refers to the artifact a DELETE or a replace removes; its packs member names the
   referring packs (at most 100) and its violations name every referring artifact. relationship_not_found (404): no
@@ -446,27 +448,27 @@ x-refusal:
   override_not_permitted:
     status: 422
     retryable: false
-    raised: false
+    raised: true
     description: an overrides edge onto a target that is not open
   enhances_cycle:
     status: 422
     retryable: false
-    raised: false
+    raised: true
     description: an enhances cycle, or an enhancer with no route to a non-enhancer
   conflicting_relations:
     status: 422
     retryable: false
-    raised: false
+    raised: true
     description: an artifact that both enhances and overrides one target
   self_override:
     status: 422
     retryable: false
-    raised: false
+    raised: true
     description: an overrides edge that resolves to its own source
   override_cycle:
     status: 422
     retryable: false
-    raised: false
+    raised: true
     description: a cycle of overrides edges
   registration_timed_out:
     status: 504

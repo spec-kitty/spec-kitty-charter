@@ -268,7 +268,13 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         final Map<Urn, String> digests = new HashMap<>();
         final List<Relationship> edges = new ArrayList<>();
         final Map<String, Urn> loose = new HashMap<>();
+
+        /** The ids a file that failed to read declares: no copy of such an id stands for it, whatever else reads. */
+        final Set<String> unreadable = new HashSet<>();
     }
+
+    /** The digest of an id one of whose files cannot be read: no upload's copy ever equals it. */
+    private static final String UNREADABLE_DIGEST = "unreadable";
 
     /**
      * Reads what can still be read of a stored pack, every file on its own (ADR-0065, decision 01M6V6N74ER28H8S6TSVZ8ZEY2):
@@ -299,6 +305,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
             graphs.add(packDir.resolve(PackFileSet.FRAGMENT));
         }
         graphs.forEach(graph -> salvageGraph(graph, salvage));
+        salvage.unreadable.forEach(id -> Urn.parse(id).ifPresent(urn -> salvage.digests.put(urn, UNREADABLE_DIGEST)));
         return new WholePackWriteStore.Remains(salvage.defined, salvage.digests, salvage.edges, salvage.loose);
     }
 
@@ -311,13 +318,23 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
             Salvage out) {
         String stem = stemOf(file, binding.fileToken());
         Optional<String> declared = plainText(packDir.resolve(file)).flatMap(text -> declaredId(text, binding.idKey()));
-        urnOf(binding, declared.orElse(stem)).ifPresent(out.defined::add);
-        urnOf(binding, stem).ifPresent(out.defined::add);
-        readEntity(store, key, packDir, binding, file, out);
+        Optional<String> byDeclared = urnOf(binding, declared.orElse(stem));
+        Optional<String> byName = urnOf(binding, stem);
+        byDeclared.ifPresent(out.defined::add);
+        byName.ifPresent(out.defined::add);
+        if (!readEntity(store, key, packDir, binding, file, out)) {
+            // One copy of the id cannot be read: the readable twin, if any, is no proof that the id is unchanged.
+            byDeclared.ifPresent(out.unreadable::add);
+            byName.ifPresent(out.unreadable::add);
+        }
     }
 
-    /** The listed file itself, never a lookup by id: two files declaring one id each contribute their own read. */
-    private <D, E extends CharterArtifact> void readEntity(
+    /**
+     * The listed file itself, never a lookup by id: two files declaring one id each contribute their own read.
+     *
+     * @return whether the file read
+     */
+    private <D, E extends CharterArtifact> boolean readEntity(
             FilesystemPackStore store,
             PackIdentifier key,
             Path packDir,
@@ -325,23 +342,26 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
             String file,
             Salvage out) {
         try {
-            store.readListed(packDir, file, binding).ifPresent(dso -> {
-                E entity = binding.toEntity(key, dso);
-                // An id declared by two files has no one digest: the two are combined, so that no upload's copy equals
-                // it.
-                out.digests.merge(
-                        entity.urn(),
-                        digestOf(entity),
-                        (first, second) -> PackRevision.computeOverBytes(List.of(
-                                        first.getBytes(StandardCharsets.UTF_8),
-                                        second.getBytes(StandardCharsets.UTF_8)))
-                                .token());
-
-                out.edges.addAll(entity.derivedRelationships());
-            });
+            Optional<D> read = store.readListed(packDir, file, binding);
+            read.ifPresent(dso -> addRead(binding.toEntity(key, dso), out));
+            return read.isPresent();
         } catch (RuntimeException readFault) {
             // This file's read fault: it is counted by its ids above, and nothing else of it is known.
+            return false;
         }
+    }
+
+    /**
+     * An id declared by two files has no one digest: the two are combined, so that no upload's copy equals it.
+     */
+    private void addRead(CharterArtifact entity, Salvage out) {
+        out.digests.merge(
+                entity.urn(),
+                digestOf(entity),
+                (first, second) -> PackRevision.computeOverBytes(List.of(
+                                first.getBytes(StandardCharsets.UTF_8), second.getBytes(StandardCharsets.UTF_8)))
+                        .token());
+        out.edges.addAll(entity.derivedRelationships());
     }
 
     private static Optional<String> urnOf(KindBinding<?, ?> binding, String id) {

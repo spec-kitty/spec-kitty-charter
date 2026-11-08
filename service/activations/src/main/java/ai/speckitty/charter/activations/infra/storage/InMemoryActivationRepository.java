@@ -5,6 +5,8 @@ import ai.speckitty.charter.activations.domain.ActivationId;
 import ai.speckitty.charter.activations.domain.ActivationRepository;
 import ai.speckitty.charter.activations.domain.Revision;
 import ai.speckitty.charter.activations.domain.StoredActivation;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -25,6 +27,19 @@ public final class InMemoryActivationRepository implements ActivationRepository 
 
     /** An empty repository. */
     public InMemoryActivationRepository() {}
+
+    @Override
+    public List<StoredActivation> list() {
+        List<StoredActivation> listed = new ArrayList<>();
+        stored.forEach((id, bytes) -> {
+            try {
+                listed.add(read(id, bytes));
+            } catch (ActivationStorageException unreadable) {
+                // Left out, as the file store leaves out a document that does not read.
+            }
+        });
+        return List.copyOf(listed);
+    }
 
     @Override
     public Optional<StoredActivation> find(ActivationId id) {
