@@ -23,7 +23,6 @@ import java.util.regex.Pattern;
  * @param guidelines the step's working notes, when it has them; never with a detailed description
  * @param expectedInputArtifacts the step's preconditions, in authored order
  * @param expectedOutputArtifacts the step's postconditions, in authored order
- * @param references the step's action-scoped guidance, in authored order
  */
 public record MissionStep(
         String id,
@@ -33,8 +32,7 @@ public record MissionStep(
         Optional<StepDocument> prompt,
         Optional<StepDocument> guidelines,
         List<ExpectedInput> expectedInputArtifacts,
-        List<ExpectedArtifact> expectedOutputArtifacts,
-        List<MissionReference> references) {
+        List<ExpectedArtifact> expectedOutputArtifacts) {
 
     /**
      * The longest step description, in characters (Unicode code points): a one-line summary for an overview. The
@@ -76,7 +74,6 @@ public record MissionStep(
      * @param guidelines the guidelines, possibly empty
      * @param expectedInputArtifacts the preconditions
      * @param expectedOutputArtifacts the postconditions
-     * @param references the references
      * @throws ai.speckitty.charter.kernel.validation.ConstraintBreachException when the id, a text or the role breaks
      *     its grammar, the description is longer than {@value #DESCRIPTION_MAX_LENGTH} characters, the guidelines carry
      *     a detailed description, or an artifact key stands twice in one list
@@ -93,7 +90,6 @@ public record MissionStep(
         Objects.requireNonNull(guidelines, "guidelines").ifPresent(GUIDELINES_RULES::guard);
         expectedInputArtifacts = List.copyOf(expectedInputArtifacts);
         expectedOutputArtifacts = List.copyOf(expectedOutputArtifacts);
-        references = List.copyOf(references);
         KEY_RULES.guard(
                 expectedInputArtifacts.stream().map(ExpectedInput::artifactKey).toList());
         KEY_RULES.guard(expectedOutputArtifacts.stream()

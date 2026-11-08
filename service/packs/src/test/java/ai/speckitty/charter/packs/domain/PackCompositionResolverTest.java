@@ -55,7 +55,7 @@ class PackCompositionResolverTest {
                         dependencies));
     }
 
-    /** A pack whose graphs say it changes one artifact (an {@code enhances} or {@code overrides} relation on it). */
+    /** A pack whose graphs say it changes one artifact (an {@code overrides} relation on it; A14). */
     private static PackUnderResolution refining(
             String id, String name, String version, PackLevel level, String artifact) {
         return new PackUnderResolution(
@@ -531,6 +531,52 @@ class PackCompositionResolverTest {
     }
 
     @Test
+    void siblingsDefiningOneMissionTypeAndItsStepConflictOnTheMissionTypeAsBefore() {
+        // A7 Q1: a pack holds the steps its graphs declare; two siblings defining mission type m are refused on m
+        // alone, exactly as before the steps were held.
+        PackUnderResolution left = defining("01LEFT", "left", PackLevel.ORG, "mission_type:m", "action:m/implement");
+        PackUnderResolution right = defining("01RIGHT", "right", PackLevel.ORG, "mission_type:m", "action:m/implement");
+
+        assertThatThrownBy(() -> PackCompositionResolver.resolve(List.of(right, left)))
+                .isInstanceOfSatisfying(PackCompositionResolver.Refusal.class, refusal -> {
+                    assertThat(refusal.failure()).isEqualTo(Failure.SIBLING_CONFLICT);
+                    assertThat(refusal.detail())
+                            .contains("both define the artifact `mission_type:m`")
+                            .doesNotContain("action:");
+                });
+    }
+
+    @Test
+    void anOverridesEdgeSettlingAMissionTypeAlsoSettlesItsSharedSteps() {
+        // A step is part of its mission type: the edge that settles m leaves no contest over m's steps.
+        PackUnderResolution left = new PackUnderResolution(
+                new ConfiguredPack(new PackIdentifier("01LEFT"), PackLevel.ORG),
+                new PackDescriptor(
+                        "01LEFT",
+                        "1.0.4",
+                        Optional.empty(),
+                        "left",
+                        Optional.of(PackLevel.ORG),
+                        Optional.empty(),
+                        PackPaths.none(),
+                        List.of(),
+                        List.of(new PackOverride("mission_type:m", "01RIGHT"))),
+                List.of(),
+                List.of("mission_type:m", "action:m/implement"));
+        PackUnderResolution right = defining("01RIGHT", "right", PackLevel.ORG, "mission_type:m", "action:m/implement");
+
+        assertThat(ids(PackCompositionResolver.resolve(List.of(right, left)))).containsExactly("01LEFT", "01RIGHT");
+    }
+
+    @Test
+    void siblingsDeclaringOneStepNodeWithoutItsMissionTypeCompose() {
+        PackUnderResolution left = defining("01LEFT", "left", PackLevel.ORG, "action:m/implement");
+        PackUnderResolution right = defining("01RIGHT", "right", PackLevel.ORG, "action:m/implement");
+
+        assertThat(ids(PackCompositionResolver.resolve(List.of(right, left)))).containsExactly("01LEFT", "01RIGHT");
+    }
+
+    @Test
     void packsAtDifferentLevelsDefiningOneArtifactComposeAsALayerOverride() {
         PackUnderResolution org = defining("01ORGP", "org-pack", PackLevel.ORG, "directive:DIRECTIVE_009");
         PackUnderResolution project = defining("01PROJ", "project-pack", PackLevel.PROJECT, "directive:DIRECTIVE_009");
@@ -580,6 +626,43 @@ class PackCompositionResolverTest {
                 settling("01DTWO", "dtwo", "1.0.0", PackLevel.ORG, "org::directive:DIRECTIVE_009", "01LEFT");
         assertThat(ids(PackCompositionResolver.resolve(List.of(agreeing, first, right, left))))
                 .containsExactly("01DONE", "01DTWO", "01LEFT", "01RIGHT");
+    }
+
+    // A14 (FR-035, DM-01M6RA92BS6GGCYTRCFQDYYY5S, rule C15): a settlement names exactly one winner. One descriptor
+    // cannot name two (it is refused as it is read), and the overrides edges of the compose naming two contestants
+    // answer the conflict refusal; exactly one winner settles the contest.
+    @Test
+    void a14ASettlementNamingTwoWinnersAnswersTheSiblingConflictRefusalAndExactlyOneWinnerSettlesIt() {
+        assertThatThrownBy(() -> new PackDescriptor(
+                        "01DSTR",
+                        "1.0.0",
+                        Optional.empty(),
+                        "distribution",
+                        Optional.of(PackLevel.ORG),
+                        Optional.empty(),
+                        PackPaths.none(),
+                        List.of(),
+                        List.of(
+                                new PackOverride("directive:DIRECTIVE_009", "01LEFT"),
+                                new PackOverride("directive:DIRECTIVE_009", "01RIGHT"))))
+                .as("one descriptor naming two winners of one artifact")
+                .isInstanceOf(IllegalArgumentException.class);
+        PackUnderResolution left = refining("01LEFT", "left", "1.0.0", PackLevel.ORG, "directive:DIRECTIVE_009");
+        PackUnderResolution right = refining("01RIGHT", "right", "1.0.0", PackLevel.ORG, "directive:DIRECTIVE_009");
+        PackUnderResolution namingLeft =
+                settling("01DSTR", "distribution", "1.0.0", PackLevel.ORG, "directive:DIRECTIVE_009", "01LEFT");
+        PackUnderResolution namingRight =
+                settling("01DTWO", "dtwo", "1.0.0", PackLevel.ORG, "directive:DIRECTIVE_009", "01RIGHT");
+
+        assertThatThrownBy(() -> PackCompositionResolver.resolve(List.of(namingLeft, namingRight, left, right)))
+                .isInstanceOfSatisfying(PackCompositionResolver.Refusal.class, refusal -> {
+                    assertThat(refusal.failure()).isEqualTo(Failure.SIBLING_CONFLICT);
+                    assertThat(refusal.failure().code()).isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT);
+                    assertThat(refusal.detail()).contains("different winners", "01LEFT", "01RIGHT");
+                });
+        assertThat(ids(PackCompositionResolver.resolve(List.of(namingLeft, left, right))))
+                .as("same fixture: exactly one winner settles the contest")
+                .containsExactly("01DSTR", "01LEFT", "01RIGHT");
     }
 
     @Test

@@ -310,11 +310,13 @@ replace round trip, where A4 above is `enhances`. The contract changes are the `
     crosses to the steps it holds like `requires` and selects what they reach, and a cascading deactivate of one
     unselects what only it kept. `CascadeKind` gains `mission_type`. PR A0 closes #410 once a probe over the pinned
     built-in pack confirms that `mission_type/software-dev` with `{"cascade": ["all"]}` selects its steps' governance.
-    DIV-214.
+    A mission type's steps come from the id hierarchy (`action:<M>/<step>`), structurally: that containment is neither
+    an authored nor a derived edge, so the cascade to steps does not contradict
+    [ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decision 7. DIV-214.
   - **Deny (Q2).** A mission type is deniable like any kind unless it is required or locked (`409 artifact_required`
     or `artifact_locked`); an unknown one on the exclusions path is `404 mission_type_not_found`. DIV-214.
   - **Presets (Q3; D6).** A preset may name any kind, `skill` and `glossary_pack` included, and carries no
-    `activated_kinds`: a preset that does is refused when its pack is registered. DIV-211.
+    `activated_kinds`: a preset that does refuses the pack as `500 pack_unreadable`, as the preset item id grammar does; a `422` on registration is planned for PR A. DIV-211.
   - **Storage.** `schemaVersion` is `2`. A stored version 1 document is answered as its upgrade (`missionTypes` become
     `selected.mission_type`, every selection is kept, `activatedKinds` is discarded; decision
     `DM-01M6RMJHDKNTXAM055Q8WR6SDN`) and stored as version 2 on the next write (decision `DM-01M6RFGMDH859CJP3RHHF9YC3H`),

@@ -776,7 +776,7 @@
     A preset may carry activated_kinds, the kind gate, and its member lists exclude skill and
     glossary_pack; mission types are named under mission_type_activations.
   service: >-
-    A preset carrying activated_kinds is refused 422 when its pack is registered. A preset may name
+    A preset carrying activated_kinds refuses the pack as 500 pack_unreadable, as the preset item id grammar does; a 422 on registration is planned for PR A. A preset may name
     any kind: it gains activated_skills and activated_glossary_packs, and activated_mission_types is
     a plain member list applied as selected.mission_type. applyActivationPreset applies every kind
     the preset lists and sets no kind gate.

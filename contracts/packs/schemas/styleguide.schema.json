@@ -160,13 +160,6 @@
       "title": "Applies To Languages",
       "type": "array"
     },
-    "references": {
-      "items": {
-        "type": "string"
-      },
-      "title": "References",
-      "type": "array"
-    },
     "structural_lint_config": {
       "anyOf": [
         {

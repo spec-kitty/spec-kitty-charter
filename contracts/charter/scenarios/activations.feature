@@ -5,8 +5,8 @@ Feature: The activation set is declared and reserved
   operation is built it carries x-reserved and answers 501 Not Implemented with a Problem that
   has no code, before it reads its request (ADR-0020 D8). Each scenario below is a 501 pin: it
   sends a well-formed request to one operation and is removed when that operation is built.
-  ReservedOperationCoverageTest keeps the pins and the reserved operations one to one, and fails
-  if a reserved operation takes a request body (none does, so no pin of the body binding is kept).
+  ReservedOperationCoverageTest keeps the pins and the reserved operations of the activation set one to one, and
+  fails if a reserved operation takes a request body without a pin before its body is bound (none does).
   The register (create, register, read, remove) is built and pinned by activation-register.feature;
   the four per-artifact writes (select, unselect, deactivate, re-activate) by
   activation-selections.feature; the preset write by activation-presets.feature. Only the four

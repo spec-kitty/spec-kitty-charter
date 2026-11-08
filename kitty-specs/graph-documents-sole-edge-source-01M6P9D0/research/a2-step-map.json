@@ -1,0 +1,778 @@
+{
+ "covered": {
+  "DIRECTIVE_001#1": [
+   "component-boundary-definition"
+  ],
+  "DIRECTIVE_001#2": [
+   "component-boundary-definition"
+  ],
+  "DIRECTIVE_001#3": [
+   "component-boundary-definition"
+  ],
+  "DIRECTIVE_001#4": [
+   "component-boundary-definition"
+  ],
+  "DIRECTIVE_003#1": [
+   "decision-record-keeping"
+  ],
+  "DIRECTIVE_003#2": [
+   "decision-record-keeping"
+  ],
+  "DIRECTIVE_003#3": [
+   "decision-record-keeping"
+  ],
+  "DIRECTIVE_010#1": [
+   "specification-traceability-check"
+  ],
+  "DIRECTIVE_010#2": [
+   "specification-traceability-check"
+  ],
+  "DIRECTIVE_010#3": [
+   "specification-traceability-check"
+  ],
+  "DIRECTIVE_018#1": [
+   "doctrine-version-change"
+  ],
+  "DIRECTIVE_018#2": [
+   "doctrine-version-change"
+  ],
+  "DIRECTIVE_018#3": [
+   "doctrine-version-change"
+  ],
+  "DIRECTIVE_024#1": [
+   "keep-change-local"
+  ],
+  "RECONCILE_CHANGE_SCOPE_TENSIONS#3": [
+   "keep-change-local"
+  ],
+  "DIRECTIVE_024#2": [
+   "keep-change-local"
+  ],
+  "DIRECTIVE_024#3": [
+   "keep-change-local"
+  ],
+  "DIRECTIVE_025#1": [
+   "tidy-first-campsite-clean"
+  ],
+  "RECONCILE_CHANGE_SCOPE_TENSIONS#6": [
+   "tidy-first-campsite-clean"
+  ],
+  "DIRECTIVE_025#2": [
+   "touched-area-cleanup"
+  ],
+  "RECONCILE_CHANGE_SCOPE_TENSIONS#2": [
+   "touched-area-cleanup"
+  ],
+  "DIRECTIVE_025#3": [
+   "touched-area-cleanup"
+  ],
+  "RECONCILE_CHANGE_SCOPE_TENSIONS#7": [
+   "touched-area-cleanup"
+  ],
+  "DIRECTIVE_025#4": [
+   "touched-area-cleanup"
+  ],
+  "DIRECTIVE_025#5": [
+   "tech-debt-point-cut-triage"
+  ],
+  "DIRECTIVE_025#6": [
+   "tech-debt-point-cut-triage"
+  ],
+  "RECONCILE_CHANGE_SCOPE_TENSIONS#1": [
+   "change-scope-tension-resolution"
+  ],
+  "RECONCILE_CHANGE_SCOPE_TENSIONS#4": [
+   "change-scope-tension-resolution"
+  ],
+  "RECONCILE_CHANGE_SCOPE_TENSIONS#5": [
+   "change-scope-tension-resolution"
+  ],
+  "DIRECTIVE_028#1": [
+   "local-tooling-selection"
+  ],
+  "DIRECTIVE_028#2": [
+   "local-tooling-selection"
+  ],
+  "DIRECTIVE_028#3": [
+   "local-tooling-selection"
+  ],
+  "DIRECTIVE_028#4": [
+   "local-tooling-selection"
+  ],
+  "DIRECTIVE_028#5": [
+   "local-tooling-selection"
+  ],
+  "DIRECTIVE_028#6": [
+   "local-tooling-selection"
+  ],
+  "DIRECTIVE_028#7": [
+   "local-tooling-selection"
+  ],
+  "DIRECTIVE_029#1": [
+   "agent-commit-signing"
+  ],
+  "DIRECTIVE_029#2": [
+   "agent-commit-signing"
+  ],
+  "DIRECTIVE_029#3": [
+   "agent-commit-signing"
+  ],
+  "DIRECTIVE_030#1": [
+   "test-and-typecheck-gate-run"
+  ],
+  "DIRECTIVE_030#2": [
+   "test-and-typecheck-gate-run"
+  ],
+  "DIRECTIVE_030#3": [
+   "test-and-typecheck-gate-run"
+  ],
+  "DIRECTIVE_030#4": [
+   "test-and-typecheck-gate-run"
+  ],
+  "DIRECTIVE_030#5": [
+   "test-and-typecheck-gate-run"
+  ],
+  "DIRECTIVE_030#6": [
+   "test-and-typecheck-gate-run"
+  ],
+  "DIRECTIVE_031#1": [
+   "bounded-context-alignment"
+  ],
+  "DIRECTIVE_031#2": [
+   "bounded-context-alignment"
+  ],
+  "DIRECTIVE_031#3": [
+   "bounded-context-alignment"
+  ],
+  "DIRECTIVE_031#4": [
+   "bounded-context-alignment"
+  ],
+  "DIRECTIVE_032#1": [
+   "term-interpretation-alignment"
+  ],
+  "DIRECTIVE_032#2": [
+   "term-interpretation-alignment"
+  ],
+  "DIRECTIVE_032#3": [
+   "term-interpretation-alignment"
+  ],
+  "DIRECTIVE_032#4": [
+   "term-interpretation-alignment"
+  ],
+  "DIRECTIVE_033#1": [
+   "targeted-staging"
+  ],
+  "DIRECTIVE_033#2": [
+   "targeted-staging"
+  ],
+  "DIRECTIVE_033#3": [
+   "targeted-staging"
+  ],
+  "DIRECTIVE_033#4": [
+   "targeted-staging"
+  ],
+  "DIRECTIVE_039#1": [
+   "test-first-cycle"
+  ],
+  "DIRECTIVE_034#2": [
+   "test-first-cycle"
+  ],
+  "DIRECTIVE_034#1": [
+   "test-first-cycle"
+  ],
+  "DIRECTIVE_034#3": [
+   "test-first-cycle"
+  ],
+  "DIRECTIVE_034#4": [
+   "red-first-bug-reproduction"
+  ],
+  "DIRECTIVE_034#5": [
+   "red-first-bug-reproduction"
+  ],
+  "DIRECTIVE_034#6": [
+   "red-first-bug-reproduction"
+  ],
+  "DIRECTIVE_041#9": [
+   "red-first-bug-reproduction"
+  ],
+  "DIRECTIVE_035#1": [
+   "bulk-edit-occurrence-mapping"
+  ],
+  "DIRECTIVE_035#2": [
+   "bulk-edit-occurrence-mapping"
+  ],
+  "DIRECTIVE_035#3": [
+   "bulk-edit-occurrence-mapping"
+  ],
+  "DIRECTIVE_035#4": [
+   "bulk-edit-occurrence-mapping"
+  ],
+  "DIRECTIVE_035#5": [
+   "bulk-edit-occurrence-mapping"
+  ],
+  "DIRECTIVE_035#6": [
+   "bulk-edit-occurrence-mapping"
+  ],
+  "DIRECTIVE_036#1": [
+   "black-box-integration-test-design"
+  ],
+  "DIRECTIVE_036#2": [
+   "black-box-integration-test-design"
+  ],
+  "DIRECTIVE_036#3": [
+   "black-box-integration-test-design"
+  ],
+  "DIRECTIVE_036#4": [
+   "black-box-integration-test-design"
+  ],
+  "DIRECTIVE_036#5": [
+   "black-box-integration-test-design"
+  ],
+  "DIRECTIVE_036#6": [
+   "black-box-integration-test-design"
+  ],
+  "DIRECTIVE_037#1": [
+   "living-documentation-sync"
+  ],
+  "DIRECTIVE_037#2": [
+   "living-documentation-sync"
+  ],
+  "DIRECTIVE_037#3": [
+   "living-documentation-sync"
+  ],
+  "DIRECTIVE_037#4": [
+   "living-documentation-sync"
+  ],
+  "DIRECTIVE_039#2": [
+   "small-explicit-code-shaping"
+  ],
+  "DIRECTIVE_039#3": [
+   "small-explicit-code-shaping"
+  ],
+  "DIRECTIVE_039#4": [
+   "small-explicit-code-shaping"
+  ],
+  "DIRECTIVE_040#1": [
+   "five-paradigm-structural-intervention"
+  ],
+  "DIRECTIVE_040#2": [
+   "five-paradigm-structural-intervention"
+  ],
+  "DIRECTIVE_040#3": [
+   "five-paradigm-structural-intervention"
+  ],
+  "DIRECTIVE_040#4": [
+   "five-paradigm-structural-intervention"
+  ],
+  "DIRECTIVE_040#5": [
+   "five-paradigm-structural-intervention"
+  ],
+  "DIRECTIVE_040#6": [
+   "five-paradigm-structural-intervention"
+  ],
+  "DIRECTIVE_040#7": [
+   "five-paradigm-structural-intervention"
+  ],
+  "DIRECTIVE_041#1": [
+   "observable-contract-test-authoring"
+  ],
+  "DIRECTIVE_041#2": [
+   "observable-contract-test-authoring"
+  ],
+  "DIRECTIVE_041#3": [
+   "observable-contract-test-authoring"
+  ],
+  "DIRECTIVE_041#4": [
+   "observable-contract-test-authoring"
+  ],
+  "DIRECTIVE_041#5": [
+   "observable-contract-test-authoring"
+  ],
+  "DIRECTIVE_041#7": [
+   "failing-test-triage"
+  ],
+  "DIRECTIVE_041#8": [
+   "failing-test-triage"
+  ],
+  "DIRECTIVE_041#6": [
+   "failing-test-triage"
+  ],
+  "DIRECTIVE_042#1": [
+   "common-docs-page-authoring"
+  ],
+  "DIRECTIVE_042#2": [
+   "common-docs-page-authoring"
+  ],
+  "DIRECTIVE_042#3": [
+   "common-docs-page-authoring"
+  ],
+  "DIRECTIVE_042#4": [
+   "common-docs-page-authoring"
+  ],
+  "DIRECTIVE_042#6": [
+   "common-docs-page-authoring"
+  ],
+  "DIRECTIVE_042#7": [
+   "common-docs-page-authoring"
+  ],
+  "DIRECTIVE_042#5": [
+   "declare-page-audience"
+  ],
+  "DIRECTIVE_047#5": [
+   "declare-page-audience"
+  ],
+  "DIRECTIVE_043#1": [
+   "defect-class-construction-gate"
+  ],
+  "DIRECTIVE_043#2": [
+   "defect-class-construction-gate"
+  ],
+  "DIRECTIVE_043#3": [
+   "defect-class-construction-gate"
+  ],
+  "DIRECTIVE_043#4": [
+   "defect-class-construction-gate"
+  ],
+  "DIRECTIVE_044#1": [
+   "canonical-source-discipline"
+  ],
+  "DIRECTIVE_044#2": [
+   "canonical-source-discipline"
+  ],
+  "DIRECTIVE_044#3": [
+   "canonical-source-discipline"
+  ],
+  "DIRECTIVE_045#1": [
+   "land-changes-via-pull-request"
+  ],
+  "DIRECTIVE_045#2": [
+   "land-changes-via-pull-request"
+  ],
+  "DIRECTIVE_045#3": [
+   "land-changes-via-pull-request"
+  ],
+  "DIRECTIVE_045#4": [
+   "read-intent-before-high-risk-operation"
+  ],
+  "DIRECTIVE_045#5": [
+   "read-intent-before-high-risk-operation"
+  ],
+  "DIRECTIVE_045#6": [
+   "read-intent-before-high-risk-operation"
+  ],
+  "DIRECTIVE_046#1": [
+   "readable-pr-preparation"
+  ],
+  "DIRECTIVE_046#2": [
+   "readable-pr-preparation"
+  ],
+  "DIRECTIVE_046#3": [
+   "readable-pr-preparation"
+  ],
+  "DIRECTIVE_046#4": [
+   "readable-pr-preparation"
+  ],
+  "DIRECTIVE_046#5": [
+   "readable-pr-preparation"
+  ],
+  "DIRECTIVE_047#1": [
+   "audience-oriented-drafting"
+  ],
+  "DIRECTIVE_047#2": [
+   "audience-oriented-drafting"
+  ],
+  "DIRECTIVE_047#3": [
+   "audience-oriented-drafting"
+  ],
+  "DIRECTIVE_047#4": [
+   "audience-oriented-drafting"
+  ],
+  "DIRECTIVE_048#1": [
+   "version-freshness-check"
+  ],
+  "DIRECTIVE_048#2": [
+   "version-freshness-check"
+  ],
+  "DIRECTIVE_048#3": [
+   "version-freshness-check"
+  ],
+  "DIRECTIVE_049#1": [
+   "agent-self-declaration"
+  ],
+  "DIRECTIVE_049#2": [
+   "agent-self-declaration"
+  ],
+  "DIRECTIVE_049#3": [
+   "agent-self-declaration"
+  ],
+  "DIRECTIVE_050#1": [
+   "credential-exposure-prevention"
+  ],
+  "DIRECTIVE_050#2": [
+   "credential-exposure-prevention"
+  ],
+  "DIRECTIVE_050#3": [
+   "credential-exposure-prevention"
+  ],
+  "DIRECTIVE_050#4": [
+   "credential-exposure-prevention"
+  ],
+  "DIRECTIVE_051#1": [
+   "supply-chain-install-evidence"
+  ],
+  "DIRECTIVE_051#2": [
+   "supply-chain-install-evidence"
+  ],
+  "DIRECTIVE_052#1": [
+   "durable-fix-investigation"
+  ],
+  "DIRECTIVE_052#2": [
+   "durable-fix-investigation"
+  ],
+  "DIRECTIVE_052#3": [
+   "durable-fix-investigation"
+  ],
+  "DIRECTIVE_052#4": [
+   "durable-fix-investigation"
+  ],
+  "DIRECTIVE_052#5": [
+   "durable-fix-investigation"
+  ],
+  "DIRECTIVE_052#6": [
+   "durable-fix-investigation"
+  ],
+  "DIRECTIVE_052#7": [
+   "durable-fix-investigation"
+  ],
+  "DIRECTIVE_053#1": [
+   "op-or-mission-lifecycle"
+  ],
+  "DIRECTIVE_053#2": [
+   "op-or-mission-lifecycle"
+  ],
+  "DIRECTIVE_053#3": [
+   "op-or-mission-lifecycle"
+  ],
+  "DIRECTIVE_053#4": [
+   "op-or-mission-lifecycle"
+  ],
+  "DIRECTIVE_053#5": [
+   "op-or-mission-lifecycle"
+  ],
+  "ACTION_ITEM_ATTRIBUTION#1": [
+   "action-item-attribution-gate"
+  ],
+  "ACTION_ITEM_ATTRIBUTION#2": [
+   "action-item-attribution-gate"
+  ],
+  "ACTION_ITEM_ATTRIBUTION#3": [
+   "action-item-attribution-gate"
+  ],
+  "ACTION_ITEM_ATTRIBUTION#4": [
+   "action-item-attribution-gate"
+  ],
+  "MINUTES_STAND_ALONE#1": [
+   "minutes-self-sufficiency-check"
+  ],
+  "MINUTES_STAND_ALONE#2": [
+   "minutes-self-sufficiency-check"
+  ],
+  "MINUTES_STAND_ALONE#3": [
+   "minutes-self-sufficiency-check"
+  ],
+  "DISCIPLINED_REFACTORING#1": [
+   "disciplined-refactoring-cycle"
+  ],
+  "DISCIPLINED_REFACTORING#2": [
+   "disciplined-refactoring-cycle"
+  ],
+  "DISCIPLINED_REFACTORING#3": [
+   "disciplined-refactoring-cycle"
+  ],
+  "DISCIPLINED_REFACTORING#4": [
+   "disciplined-refactoring-cycle"
+  ],
+  "DISCIPLINED_REFACTORING#5": [
+   "disciplined-refactoring-cycle"
+  ],
+  "RED_MAIN_RELEASE_DISCIPLINE#1": [
+   "red-main-handling"
+  ],
+  "RED_MAIN_RELEASE_DISCIPLINE#2": [
+   "red-main-handling"
+  ],
+  "RED_MAIN_RELEASE_DISCIPLINE#3": [
+   "red-main-handling"
+  ],
+  "RED_MAIN_RELEASE_DISCIPLINE#4": [
+   "red-main-handling"
+  ],
+  "RED_MAIN_RELEASE_DISCIPLINE#5": [
+   "red-main-handling"
+  ],
+  "USE_C4_MODEL_TECHNIQUES#1": [
+   "c4-diagram-authoring"
+  ],
+  "USE_C4_MODEL_TECHNIQUES#2": [
+   "c4-diagram-authoring"
+  ],
+  "USE_C4_MODEL_TECHNIQUES#3": [
+   "c4-diagram-authoring"
+  ],
+  "USE_C4_MODEL_TECHNIQUES#4": [
+   "c4-diagram-authoring"
+  ],
+  "USE_C4_MODEL_TECHNIQUES#5": [
+   "c4-diagram-authoring"
+  ],
+  "USE_MUTATION_TESTING_TO_VALIDATE_TEST_QUALITY#1": [
+   "mutation-testing-review"
+  ],
+  "USE_MUTATION_TESTING_TO_VALIDATE_TEST_QUALITY#2": [
+   "mutation-testing-review"
+  ],
+  "USE_MUTATION_TESTING_TO_VALIDATE_TEST_QUALITY#3": [
+   "mutation-testing-review"
+  ],
+  "USE_MUTATION_TESTING_TO_VALIDATE_TEST_QUALITY#4": [
+   "mutation-testing-review"
+  ],
+  "NO_FULL_HEAVY_SUITES_IN_MISSION#1": [
+   "targeted-mission-test-run"
+  ],
+  "NO_FULL_HEAVY_SUITES_IN_MISSION#2": [
+   "targeted-mission-test-run"
+  ],
+  "NO_FULL_HEAVY_SUITES_IN_MISSION#3": [
+   "targeted-mission-test-run"
+  ],
+  "NO_FULL_HEAVY_SUITES_IN_MISSION#4": [
+   "targeted-mission-test-run"
+  ],
+  "NO_FULL_HEAVY_SUITES_IN_MISSION#5": [
+   "targeted-mission-test-run"
+  ],
+  "NO_FULL_HEAVY_SUITES_IN_MISSION#6": [
+   "targeted-mission-test-run"
+  ],
+  "NO_FULL_HEAVY_SUITES_IN_MISSION#7": [
+   "targeted-mission-test-run"
+  ],
+  "OPERATOR_SIGNAL_CONTRACT#1": [
+   "operator-signal-emission"
+  ],
+  "OPERATOR_SIGNAL_CONTRACT#2": [
+   "operator-signal-emission"
+  ],
+  "OPERATOR_SIGNAL_CONTRACT#3": [
+   "operator-signal-emission"
+  ],
+  "OPERATOR_SIGNAL_CONTRACT#4": [
+   "operator-signal-emission"
+  ],
+  "SPEC_KITTY_RED_MAIN_POLICY#1": [
+   "spec-kitty-red-main-triage"
+  ],
+  "SPEC_KITTY_RED_MAIN_POLICY#2": [
+   "spec-kitty-red-main-triage"
+  ]
+ },
+ "users": {
+  "component-boundary-definition": [
+   "DIRECTIVE_001"
+  ],
+  "decision-record-keeping": [
+   "DIRECTIVE_003"
+  ],
+  "specification-traceability-check": [
+   "DIRECTIVE_010"
+  ],
+  "doctrine-version-change": [
+   "DIRECTIVE_018"
+  ],
+  "keep-change-local": [
+   "DIRECTIVE_024",
+   "RECONCILE_CHANGE_SCOPE_TENSIONS"
+  ],
+  "tidy-first-campsite-clean": [
+   "DIRECTIVE_025",
+   "RECONCILE_CHANGE_SCOPE_TENSIONS"
+  ],
+  "touched-area-cleanup": [
+   "DIRECTIVE_025",
+   "RECONCILE_CHANGE_SCOPE_TENSIONS"
+  ],
+  "tech-debt-point-cut-triage": [
+   "DIRECTIVE_025"
+  ],
+  "change-scope-tension-resolution": [
+   "RECONCILE_CHANGE_SCOPE_TENSIONS"
+  ],
+  "local-tooling-selection": [
+   "DIRECTIVE_028"
+  ],
+  "agent-commit-signing": [
+   "DIRECTIVE_029"
+  ],
+  "test-and-typecheck-gate-run": [
+   "DIRECTIVE_030"
+  ],
+  "bounded-context-alignment": [
+   "DIRECTIVE_031"
+  ],
+  "term-interpretation-alignment": [
+   "DIRECTIVE_032"
+  ],
+  "targeted-staging": [
+   "DIRECTIVE_033"
+  ],
+  "test-first-cycle": [
+   "DIRECTIVE_034",
+   "DIRECTIVE_039"
+  ],
+  "red-first-bug-reproduction": [
+   "DIRECTIVE_034",
+   "DIRECTIVE_041"
+  ],
+  "bulk-edit-occurrence-mapping": [
+   "DIRECTIVE_035"
+  ],
+  "black-box-integration-test-design": [
+   "DIRECTIVE_036"
+  ],
+  "living-documentation-sync": [
+   "DIRECTIVE_037"
+  ],
+  "small-explicit-code-shaping": [
+   "DIRECTIVE_039"
+  ],
+  "five-paradigm-structural-intervention": [
+   "DIRECTIVE_040"
+  ],
+  "observable-contract-test-authoring": [
+   "DIRECTIVE_041"
+  ],
+  "failing-test-triage": [
+   "DIRECTIVE_041"
+  ],
+  "common-docs-page-authoring": [
+   "DIRECTIVE_042"
+  ],
+  "declare-page-audience": [
+   "DIRECTIVE_042",
+   "DIRECTIVE_047"
+  ],
+  "defect-class-construction-gate": [
+   "DIRECTIVE_043"
+  ],
+  "canonical-source-discipline": [
+   "DIRECTIVE_044"
+  ],
+  "land-changes-via-pull-request": [
+   "DIRECTIVE_045"
+  ],
+  "read-intent-before-high-risk-operation": [
+   "DIRECTIVE_045"
+  ],
+  "readable-pr-preparation": [
+   "DIRECTIVE_046"
+  ],
+  "audience-oriented-drafting": [
+   "DIRECTIVE_047"
+  ],
+  "version-freshness-check": [
+   "DIRECTIVE_048"
+  ],
+  "agent-self-declaration": [
+   "DIRECTIVE_049"
+  ],
+  "credential-exposure-prevention": [
+   "DIRECTIVE_050"
+  ],
+  "supply-chain-install-evidence": [
+   "DIRECTIVE_051"
+  ],
+  "durable-fix-investigation": [
+   "DIRECTIVE_052"
+  ],
+  "op-or-mission-lifecycle": [
+   "DIRECTIVE_053"
+  ],
+  "action-item-attribution-gate": [
+   "ACTION_ITEM_ATTRIBUTION"
+  ],
+  "minutes-self-sufficiency-check": [
+   "MINUTES_STAND_ALONE"
+  ],
+  "disciplined-refactoring-cycle": [
+   "DISCIPLINED_REFACTORING"
+  ],
+  "red-main-handling": [
+   "RED_MAIN_RELEASE_DISCIPLINE"
+  ],
+  "c4-diagram-authoring": [
+   "USE_C4_MODEL_TECHNIQUES"
+  ],
+  "mutation-testing-review": [
+   "USE_MUTATION_TESTING_TO_VALIDATE_TEST_QUALITY"
+  ],
+  "targeted-mission-test-run": [
+   "NO_FULL_HEAVY_SUITES_IN_MISSION"
+  ],
+  "operator-signal-emission": [
+   "OPERATOR_SIGNAL_CONTRACT"
+  ],
+  "spec-kitty-red-main-triage": [
+   "SPEC_KITTY_RED_MAIN_POLICY"
+  ]
+ },
+ "pack": {
+  "component-boundary-definition": "built-in",
+  "decision-record-keeping": "built-in",
+  "specification-traceability-check": "built-in",
+  "doctrine-version-change": "built-in",
+  "keep-change-local": "built-in",
+  "tidy-first-campsite-clean": "built-in",
+  "touched-area-cleanup": "built-in",
+  "tech-debt-point-cut-triage": "built-in",
+  "change-scope-tension-resolution": "built-in",
+  "local-tooling-selection": "built-in",
+  "agent-commit-signing": "built-in",
+  "test-and-typecheck-gate-run": "built-in",
+  "bounded-context-alignment": "built-in",
+  "term-interpretation-alignment": "built-in",
+  "targeted-staging": "built-in",
+  "test-first-cycle": "built-in",
+  "red-first-bug-reproduction": "built-in",
+  "bulk-edit-occurrence-mapping": "built-in",
+  "black-box-integration-test-design": "built-in",
+  "living-documentation-sync": "built-in",
+  "small-explicit-code-shaping": "built-in",
+  "five-paradigm-structural-intervention": "built-in",
+  "observable-contract-test-authoring": "built-in",
+  "failing-test-triage": "built-in",
+  "common-docs-page-authoring": "built-in",
+  "declare-page-audience": "built-in",
+  "defect-class-construction-gate": "built-in",
+  "canonical-source-discipline": "built-in",
+  "land-changes-via-pull-request": "built-in",
+  "read-intent-before-high-risk-operation": "built-in",
+  "readable-pr-preparation": "built-in",
+  "audience-oriented-drafting": "built-in",
+  "version-freshness-check": "built-in",
+  "agent-self-declaration": "built-in",
+  "credential-exposure-prevention": "built-in",
+  "supply-chain-install-evidence": "built-in",
+  "durable-fix-investigation": "built-in",
+  "op-or-mission-lifecycle": "built-in",
+  "action-item-attribution-gate": "built-in",
+  "minutes-self-sufficiency-check": "built-in",
+  "disciplined-refactoring-cycle": "built-in",
+  "red-main-handling": "built-in",
+  "c4-diagram-authoring": "built-in",
+  "mutation-testing-review": "built-in",
+  "targeted-mission-test-run": "internal",
+  "operator-signal-emission": "internal",
+  "spec-kitty-red-main-triage": "internal"
+ }
+}

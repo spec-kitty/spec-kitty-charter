@@ -16,12 +16,31 @@ properties:
   includeDeactivated:
     type: boolean
     description: >-
-      When true, the cascade walks through the deactivated artifacts of its kinds and clears their exclusions: of what
-      the walk reaches within the cascade's kinds and of each lineage ancestor it passes through whose kind is among
-      them (a cleared ancestor is never selected). A deactivated artifact outside the cascade's kinds keeps its
+      When true, the cascade walks through the deactivated artifacts of its kinds and clears the exclusions of what the
+      walk reaches and selects within the cascade's kinds only (B5, decision DM-01M6RA9XQSH3E07C7VCPCVD6R4): a lineage
+      ancestor it passes through, which it never selects, keeps its exclusion. A deactivated artifact outside the cascade's kinds keeps its
       exclusion: the walk stops there and reports it in skippedDeactivated, as it does without includeDeactivated.
       enhances is walked like any other relation, from the enhancer to what it enhances; nothing else is cleared.
       Absent means false.
+    x-source:
+      path: docs/adr/0020-offering-and-activations.md
+      symbol: D6
+  depth:
+    type: integer
+    format: int32
+    minimum: 0
+    description: >-
+      How many suggests hops a cascade may cross (IC-21, FR-043; issue #408 ruling 1, decision
+      DM-01M6TDH0SY5Q224GX709DXWG8K). Only suggests is counted, as ADR-0018 D4's depth counts it on the action-context
+      walk: requires, the other hard relations (refines, scope, instantiates), enhances, the specializes_from lineage
+      pass-through and a mission type's steps are walked in full. 0 follows no suggests edge; 1 follows one, and so
+      on. An artifact the walk reaches over requires is selected at any depth, even when a suggests path also reaches
+      it. A pass-through or step place inherits the hop count of the place that produced it, and the lineage never
+      carries suggests. Absent means unlimited, exactly as without this member (ADR-0059 D2). With depth, the skipped
+      report adds skippedByDepth: the suggests targets one hop past the bound. depth without cascade is accepted
+      and has no effect: there is no walk, and no skippedByDepth. A depth below 0 is 422 activation_invalid with the
+      violation below_minimum at /depth, and one past the int32 range with above_maximum; a depth that is not an integer is 422 activation_invalid with unreadable_body at /depth. Unlike
+      ADR-0018 D4's read depth, this one has no default and no maximum.
     x-source:
       path: docs/adr/0020-offering-and-activations.md
       symbol: D6
