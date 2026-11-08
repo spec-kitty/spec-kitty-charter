@@ -120,6 +120,19 @@ These files are owned by another WP (the no-overlap rule) but this WP must make 
 - Execution worktrees are allocated per computed lane from `lanes.json`; do not pick a base branch by hand. Dependencies are a claim gate: this WP can be claimed only when its dependencies are approved or done.
 - At closeout the mission branch is cut into the stacked PRs #399 → A0 → A → B → C; keep this WP's commits inside its PR letter (A).
 
+## Hand-off from WP17 (runner, 2026-11-08)
+
+WP17 (approved at 07c16bc8) leaves these for WP18. The first two are runner decisions taken on the WP17 review; each needs a red test first.
+
+1. **The success status does not echo a URL's secrets.** `PackSourceRecord.url` is today "the URL as sent", held in memory for an hour, so a presigned URL's signature is readable by every holder of the status. Strip the query, the fragment and any user information before the URL is stored in the record (the audit locator already does this in `AuditLocators`), and change the `PackSourceRecord.url` description in the contract to say so, with a `### Changed` line in the WP17 pack-source fragment. A git `url` gets the same treatment.
+2. **The filesystem kind switched on with no root fails at startup.** Today every request then answers `path_refused`. Make it a startup failure, like the overlap and `/proc` checks in `PackSourceWiring`.
+3. **Git fetcher wiring.** Implement a `PackSourceFetcher` with `kind()` GIT as a bean in `PackSourceWiring`; `PackSourceStagers` and `PackSourceIntake` pick it up. Reuse `GuardedHttpsExchange` and its rules; `charter.pack-sources.git.allowed-hosts` is already in the resolver guard's union. Map upstream failures through `SourceUpstreamException` to plain 502 and 504, as the archive fetcher does.
+4. **The git 503 goes.** `POST /packs` with kind git answers `503 pack_source_unavailable` until this WP; add the 428 for a branch ref without a commit and no `If-Match` in the controller.
+5. **Reasons.** Add `bad_ref` and `commit_mismatch` to `SourceRefusal`, and update the fixed reason list in `packs.yaml` and `CharterRefusalCode` together.
+6. **`source.commit`** goes in the `Succeeded` source map; the mapper already emits `ref` and `commit`.
+7. **Boundary.** Add the `NetworkCodeBoundaryTest` rule for `ProcessBuilder`.
+8. **Scenarios.** The three git scenarios in `whole-pack-registration.feature` are still `@WIP`; un-tag them.
+
 ## Subtasks
 
 ### T088: Version check

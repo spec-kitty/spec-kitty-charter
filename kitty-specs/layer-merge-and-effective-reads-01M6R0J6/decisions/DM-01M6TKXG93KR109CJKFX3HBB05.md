@@ -4,9 +4,10 @@
 - **Origin flow:** `plan`
 - **Slot key:** `plan.a0-squad.preset-unheld-member`
 - **Input key:** `preset_unheld_member`
-- **Status:** `deferred`
+- **Status:** `resolved`
 - **Created:** `2026-11-07T09:02:31.203530+00:00`
-- **Resolved:** `2026-11-07T09:02:33.761645+00:00`
+- **Resolved:** `2026-11-07T10:03:12.155197+00:00`
+- **Resolved by:** `operator`
 - **Opened by:** `claude-runner`
 - **Other answer:** `false`
 
@@ -21,13 +22,13 @@ A10 makes a governing preset with an unheld must-have item legal (the floor drop
 
 ## Final answer
 
-_(none)_
+Keep 422 unknown_artifact on apply (current)
 
 ## Rationale
 
-Changes behaviour a test pins; operator ruling needed. Raised by the PR A0 pre-PR correctness squad (2026-11-07). Recommended: drop and report, for consistency with A4 and A10.
+Operator ruling on PR #414 (2026-11-07, comment 6705379031): applying a preset that lists a must-have item no pack holds stays refused, as the test pins today; no drop-and-report.
 
 ## Change log
 
 - `2026-11-07T09:02:31.203530+00:00` - opened
-- `2026-11-07T09:02:33.761645+00:00` - deferred
+- `2026-11-07T10:03:12.155197+00:00` - resolved (final_answer="Keep 422 unknown_artifact on apply (current)")
