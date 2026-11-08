@@ -758,3 +758,13 @@ guide is [Compose packs](/guides/compose-packs/#register-a-pack); the operator's
 - **Status:** open, since 2026-11-08
 - **Evidence:**
   - Charter: `contracts/charter/scenarios/registration/whole-pack-registration.feature` (A git ref is pinned to the commit it points at; A hostile git ref is refused); `NetworkCodeBoundaryTest`; `.github/workflows/service.yml` (git-source)
+
+### DIV-614: A fault of the activation store ends a pack write as an internal error
+
+- **Core:** The service's understanding of core, to be confirmed against core: it has no activation store to list.
+- **Service:** The registration impact check lists the stored activations. When the store cannot be listed (the platform refuses to read its directory), a per-artifact write, a `DELETE` or a registration job ends as `500 internal_error`, the job as refused with `internal_error` and `failed:internal_error` in the audit log. Nothing is written, the body is the generic one and the cause is in the operator log. This is how a stored document that cannot be read back is answered. No refusal code names a fault of the activation store, and none is added.
+- **Rationale:** A fault of the store is the service's, not the client's, and a code that blames neither the pack nor the request would mislead.
+- **Ruling:** ADR-0065; issue 418 (R6)
+- **Status:** open, since 2026-11-08
+- **Evidence:**
+  - Charter: `ActivationListingFaultTest`; `FileActivationRepositoryListingFailureTest`; `ActivationImpactAdapterTest`
