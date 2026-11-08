@@ -67,16 +67,44 @@ public final class RelationshipRemovalService {
      */
     public PackRevision remove(
             PackIdentifier pack, PackQualifiedReference from, PackQualifiedReference to, @Nullable String ifMatch) {
+        return remove(pack, from, to, ifMatch, RevisionTrail.NONE);
+    }
+
+    /**
+     * Removes the edge of the pair and tells the trail which revision it found and which it left.
+     *
+     * @param pack the pack's identity
+     * @param from one end
+     * @param to the other end
+     * @param ifMatch the {@code If-Match} precondition, required
+     * @param trail told, once, when the removal changed the pack; never told of a refusal
+     * @return the revision after the removal
+     * @throws CharterRefusal as for {@link #remove(PackIdentifier, PackQualifiedReference, PackQualifiedReference,
+     *     String)}
+     * @throws ai.speckitty.charter.kernel.transport.PreconditionException {@code MISSING} (428) or {@code STALE} (412)
+     * @throws RegistryWriteLock.RegistryBusyException when the registry lock was not free in time (503)
+     */
+    public PackRevision remove(
+            PackIdentifier pack,
+            PackQualifiedReference from,
+            PackQualifiedReference to,
+            @Nullable String ifMatch,
+            RevisionTrail trail) {
         Objects.requireNonNull(pack, "pack");
         Objects.requireNonNull(from, "from");
         Objects.requireNonNull(to, "to");
-        return store.exclusively(pack, () -> removeUnderLocks(pack, from, to, ifMatch));
+        Objects.requireNonNull(trail, "trail");
+        return store.exclusively(pack, () -> removeUnderLocks(pack, from, to, ifMatch, trail));
     }
 
     private PackRevision removeUnderLocks(
-            PackIdentifier pack, PackQualifiedReference from, PackQualifiedReference to, @Nullable String ifMatch) {
+            PackIdentifier pack,
+            PackQualifiedReference from,
+            PackQualifiedReference to,
+            @Nullable String ifMatch,
+            RevisionTrail trail) {
         Pack current = packs.load(pack);
-        RemovalPrecondition.require(store, pack, ifMatch);
+        PackRevision before = RemovalPrecondition.require(store, pack, ifMatch);
         List<Relationship> registered = store.registeredRelationships(pack);
         List<Relationship> named =
                 registered.stream().filter(edge -> names(edge, from, to)).toList();
@@ -96,7 +124,9 @@ public final class RelationshipRemovalService {
         List<Relationship> retained =
                 registered.stream().filter(edge -> !names(edge, from, to)).toList();
         impact.check(pack, facts -> WriteFacts.withRegisteredEdges(facts, registered, retained));
-        return store.remove(pack, PackRemovalStore.Removal.ofRelationship(retained));
+        PackRevision after = store.remove(pack, PackRemovalStore.Removal.ofRelationship(retained));
+        trail.moved(before, after);
+        return after;
     }
 
     /**

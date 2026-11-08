@@ -19,6 +19,7 @@ import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
 import ai.speckitty.charter.packs.infra.storage.RelationshipShard;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -104,6 +105,37 @@ class RelationshipRemovalServiceTest {
         assertThat(refusal(() -> removals.remove(from, to)).code())
                 .as("the pair is no longer held anywhere")
                 .isEqualTo(RefusalCode.RELATIONSHIP_NOT_FOUND);
+    }
+
+    @Test
+    void theTrailIsToldTheRevisionTheDeleteFoundAndTheOneItLeftAndNothingOnARefusal(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("qa", rig.stage(qa().registeredEdge("D1", "D2")), Preconditions.none());
+        Removals removals = new Removals(rig);
+        PackRevision stored = rig.writeStore.currentRevision(QA);
+        List<PackRevision[]> trail = new ArrayList<>();
+
+        assertThat(refusal(() -> removals.service.remove(
+                                QA,
+                                reference("directive:D1"),
+                                reference("directive:D3"),
+                                "*",
+                                (b, a) -> trail.add(new PackRevision[] {b, a})))
+                        .code())
+                .isEqualTo(RefusalCode.RELATIONSHIP_NOT_FOUND);
+        assertThat(trail).as("a refused delete tells the trail nothing").isEmpty();
+
+        PackRevision after = removals.service.remove(
+                QA,
+                reference("directive:D1"),
+                reference("directive:D2"),
+                "*",
+                (b, a) -> trail.add(new PackRevision[] {b, a}));
+
+        assertThat(trail).singleElement().satisfies(moved -> {
+            assertThat(moved[0]).as("found").isEqualTo(stored);
+            assertThat(moved[1]).as("left").isEqualTo(after).isEqualTo(rig.writeStore.currentRevision(QA));
+        });
     }
 
     @Test

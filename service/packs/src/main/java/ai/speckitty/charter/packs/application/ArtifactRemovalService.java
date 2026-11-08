@@ -94,17 +94,36 @@ public final class ArtifactRemovalService {
      * @throws RegistryWriteLock.RegistryBusyException when the registry lock was not free in time (503)
      */
     public PackRevision remove(PackIdentifier pack, String kindToken, String artifactId, @Nullable String ifMatch) {
+        return remove(pack, kindToken, artifactId, ifMatch, RevisionTrail.NONE);
+    }
+
+    /**
+     * Removes one artifact and tells the trail which revision it found and which it left.
+     *
+     * @param pack the pack's identity
+     * @param kindToken the kind's token as the request names it
+     * @param artifactId the artifact's id
+     * @param ifMatch the {@code If-Match} precondition, required
+     * @param trail told, once, when the removal changed the pack; never told of a refusal
+     * @return the revision after the removal
+     * @throws CharterRefusal as for {@link #remove(PackIdentifier, String, String, String)}
+     * @throws ai.speckitty.charter.kernel.transport.PreconditionException {@code MISSING} (428) or {@code STALE} (412)
+     * @throws RegistryWriteLock.RegistryBusyException when the registry lock was not free in time (503)
+     */
+    public PackRevision remove(
+            PackIdentifier pack, String kindToken, String artifactId, @Nullable String ifMatch, RevisionTrail trail) {
         Objects.requireNonNull(pack, "pack");
         Objects.requireNonNull(kindToken, "kindToken");
         Objects.requireNonNull(artifactId, "artifactId");
-        return store.exclusively(pack, () -> removeUnderLocks(pack, kindToken, artifactId, ifMatch));
+        Objects.requireNonNull(trail, "trail");
+        return store.exclusively(pack, () -> removeUnderLocks(pack, kindToken, artifactId, ifMatch, trail));
     }
 
     private PackRevision removeUnderLocks(
-            PackIdentifier pack, String kindToken, String artifactId, @Nullable String ifMatch) {
+            PackIdentifier pack, String kindToken, String artifactId, @Nullable String ifMatch, RevisionTrail trail) {
         Pack current = packs.load(pack);
         Urn artifact = requireHeld(current, pack, kindToken, artifactId);
-        RemovalPrecondition.require(store, pack, ifMatch);
+        PackRevision before = RemovalPrecondition.require(store, pack, ifMatch);
         List<Relationship> registered = store.registeredRelationships(pack);
         List<Relationship> outgoing =
                 registered.stream().filter(edge -> edge.from().equals(artifact)).toList();
@@ -114,8 +133,10 @@ public final class ArtifactRemovalService {
         impact.check(pack, facts -> WriteFacts.withoutArtifact(facts, artifact, outgoing));
         List<Relationship> retained =
                 registered.stream().filter(edge -> !outgoing.contains(edge)).toList();
-        return store.remove(
+        PackRevision after = store.remove(
                 pack, PackRemovalStore.Removal.ofArtifact(artifact, retained, rewritten(current, artifact)));
+        trail.moved(before, after);
+        return after;
     }
 
     // ---- 404

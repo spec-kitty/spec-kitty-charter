@@ -24,6 +24,7 @@ import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.PackSummaryQuery;
 import ai.speckitty.charter.packs.application.RegistrationJobs;
 import ai.speckitty.charter.packs.application.RelationshipRemovalService;
+import ai.speckitty.charter.packs.application.RevisionTrail;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
 import ai.speckitty.charter.web.RefusalHandler;
@@ -47,6 +48,7 @@ class PackRemovalControllerTest {
     private static final String ARTIFACT = "/api/v1/packs/qa/artifacts/directive/D1";
     private static final String RELATIONSHIP = "/api/v1/packs/qa/relationships?from=directive:D1&to=directive:D2";
     private static final PackRevision REVISION = PackRevision.computeOverBytes(List.of(new byte[] {1}));
+    private static final PackRevision BEFORE = PackRevision.computeOverBytes(List.of(new byte[] {2}));
 
     private final ArtifactRemovalService artifacts = mock(ArtifactRemovalService.class);
     private final RelationshipRemovalService relationships = mock(RelationshipRemovalService.class);
@@ -71,8 +73,14 @@ class PackRemovalControllerTest {
         return request.header("If-Match", "*");
     }
 
+    /** What the services do on a removal that changed the pack: tell the trail, then answer the new revision. */
+    private static PackRevision movedFrom(RevisionTrail trail) {
+        trail.moved(BEFORE, REVISION);
+        return REVISION;
+    }
+
     private void artifactRemovalAnswers(Throwable failure) {
-        when(artifacts.remove(any(PackIdentifier.class), eq("directive"), eq("D1"), any()))
+        when(artifacts.remove(any(PackIdentifier.class), eq("directive"), eq("D1"), any(), any()))
                 .thenThrow(failure);
     }
 
@@ -81,13 +89,15 @@ class PackRemovalControllerTest {
                         any(PackIdentifier.class),
                         any(PackQualifiedReference.class),
                         any(PackQualifiedReference.class),
+                        any(),
                         any()))
                 .thenThrow(failure);
     }
 
     @Test
     void deletingAnArtifactAnswers204WithTheNewRevisionAsTheETag() throws Exception {
-        when(artifacts.remove(new PackIdentifier("qa"), "directive", "D1", "*")).thenReturn(REVISION);
+        when(artifacts.remove(eq(new PackIdentifier("qa")), eq("directive"), eq("D1"), eq("*"), any()))
+                .thenAnswer(invocation -> movedFrom(invocation.getArgument(4)));
 
         mvc.perform(withIfMatch(delete(ARTIFACT)))
                 .andExpect(status().isNoContent())
@@ -97,6 +107,10 @@ class PackRemovalControllerTest {
             assertThat(entry.outcome()).isEqualTo("succeeded:204");
             assertThat(entry.operation()).isEqualTo("deletePackArtifact");
             assertThat(entry.packId()).isEqualTo("qa");
+            assertThat(entry.revisionBefore())
+                    .as("the revision the delete found")
+                    .isEqualTo(BEFORE.token());
+            assertThat(entry.revisionAfter()).as("the revision it left").isEqualTo(REVISION.token());
         });
     }
 
@@ -123,11 +137,12 @@ class PackRemovalControllerTest {
     @Test
     void deletingARelationshipAnswers204WithTheNewRevisionAsTheETag() throws Exception {
         when(relationships.remove(
-                        new PackIdentifier("qa"),
-                        PackQualifiedReference.parse("directive:D1"),
-                        PackQualifiedReference.parse("directive:D2"),
-                        "*"))
-                .thenReturn(REVISION);
+                        eq(new PackIdentifier("qa")),
+                        eq(PackQualifiedReference.parse("directive:D1")),
+                        eq(PackQualifiedReference.parse("directive:D2")),
+                        eq("*"),
+                        any()))
+                .thenAnswer(invocation -> movedFrom(invocation.getArgument(4)));
 
         mvc.perform(withIfMatch(delete(RELATIONSHIP)))
                 .andExpect(status().isNoContent())
@@ -136,6 +151,10 @@ class PackRemovalControllerTest {
         assertThat(entries).singleElement().satisfies(entry -> {
             assertThat(entry.outcome()).isEqualTo("succeeded:204");
             assertThat(entry.operation()).isEqualTo("deletePackRelationship");
+            assertThat(entry.revisionBefore())
+                    .as("the revision the delete found")
+                    .isEqualTo(BEFORE.token());
+            assertThat(entry.revisionAfter()).as("the revision it left").isEqualTo(REVISION.token());
         });
     }
 
