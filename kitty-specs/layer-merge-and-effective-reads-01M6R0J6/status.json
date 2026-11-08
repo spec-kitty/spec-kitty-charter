@@ -699,7 +699,7 @@
     },
     "WP20": {
       "actor": "claude",
-      "agent": null,
+      "agent": "claude:sonnet:java-jenny",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -709,7 +709,8 @@
       "last_transition_at": "2026-11-08T07:53:13.302731+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Docs, divergences DIV-601..613, notice WARN, relationship DELETE gate and qualified compare; verifyAll and docs checks green"
+        "Docs, divergences DIV-601..613, notice WARN, relationship DELETE gate and qualified compare; verifyAll and docs checks green",
+        "Review cycle 1 addressed in d9fefa1c: salvage rule, core claims, no getPack edit link, 504 deadline"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
