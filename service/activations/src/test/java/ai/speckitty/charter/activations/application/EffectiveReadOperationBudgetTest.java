@@ -14,14 +14,29 @@ import org.springframework.mock.web.MockHttpServletResponse;
 /**
  * The NFR-003 gate (decision {@code DM-01M6RN5SG19KXAHH4VGT9QBYA1}): the work of an effective read over ten packs and two
  * thousand artifacts, counted, never timed. One request does one compose of the closure (the facts of each pack read once,
- * from the store when the cache is cold and from the cache when it is warm), one in-force resolution, and walks at most
- * three times the closure's nodes; and it digests the pack files three times, the two of the verified read and the one
+ * from the store when the cache is cold and from the cache when it is warm), one in-force resolution, and walks no more
+ * than the fixture's own walk, which is derived from it below (the cycle check visits each node it starts from once, and
+ * the fixed point runs the strata twice, over the chain of overrides and then over the chain without its pruned head);
+ * and it digests the pack files three times, the two of the verified read and the one
  * of the closure's own digest, which the closure-scoped tags (decision {@code 01M6Y11E55YP5TG1EJ1MDKCFRP}) added. Wall time is
  * {@link EffectiveReadBudgetTest}'s, which only reports. The counts are taken through the test hooks on
  * {@code CompositionFactsCache} and {@code InForceResolution}, as a delta around the request, with the cache cold and
  * then warm.
  */
 class EffectiveReadOperationBudgetTest {
+
+    /** The nodes the cycle check visits: each selected artifact once, and the required one it also starts from. */
+    private static final long CYCLE_CHECK = EffectiveReadFixture.SELECTED + 1L;
+
+    /** The steps of the reach over the chain of overrides: its k-th artifact walks the {@code CHAIN - k} below it. */
+    private static final long CHAIN_REACH = (long) EffectiveReadFixture.CHAIN * (EffectiveReadFixture.CHAIN + 1) / 2;
+
+    /**
+     * What one resolution walks: the cycle check, the reach of the first round, and the reach of the second round, in
+     * which the pruned head of the chain no longer overrides (its {@code CHAIN} steps are gone). A resolution that
+     * runs its strata a third time, or twice over from the start, walks more.
+     */
+    private static final long ONE_RESOLUTION = CYCLE_CHECK + CHAIN_REACH + (CHAIN_REACH - EffectiveReadFixture.CHAIN);
 
     private EffectiveReadFixture fixture;
 
@@ -61,7 +76,7 @@ class EffectiveReadOperationBudgetTest {
     }
 
     @Test
-    void aColdReadComposesOnceResolvesOnceAndWalksWithinThreeTimesTheClosure() throws Exception {
+    void aColdReadComposesOnceResolvesOnceAndWalksNoMoreThanOneResolutionOfTheFixture() throws Exception {
         fixture.cache.clear();
 
         Work cold = measured();
@@ -72,9 +87,10 @@ class EffectiveReadOperationBudgetTest {
         assertThat(cold.hits()).as("a cold cache answers nothing").isZero();
         assertThat(cold.resolutions()).as("one in-force resolution").isEqualTo(1);
         assertThat(cold.walkVisits())
-                .as("walk node visits, at most 3 x the closure's %d nodes", EffectiveReadFixture.ARTIFACTS)
-                .isPositive()
-                .isLessThanOrEqualTo(3L * EffectiveReadFixture.ARTIFACTS);
+                .as("walk node visits: no more than one resolution of the fixture walks")
+                .isLessThanOrEqualTo(ONE_RESOLUTION)
+                .as("and the fixed point iterated, so the second round's reach was walked too")
+                .isGreaterThan(CYCLE_CHECK + CHAIN_REACH);
         assertThat(cold.wholeDigests())
                 .as("the verified read digests before and after the load")
                 .isEqualTo(2);
@@ -94,7 +110,7 @@ class EffectiveReadOperationBudgetTest {
                 .as("the one compose answered by the cache, a pack at a time")
                 .isEqualTo(EffectiveReadFixture.PACKS);
         assertThat(warm.resolutions()).isEqualTo(1);
-        assertThat(warm.walkVisits()).isLessThanOrEqualTo(3L * EffectiveReadFixture.ARTIFACTS);
+        assertThat(warm.walkVisits()).isLessThanOrEqualTo(ONE_RESOLUTION).isGreaterThan(CYCLE_CHECK + CHAIN_REACH);
         assertThat(warm.wholeDigests()).isEqualTo(2);
         assertThat(warm.closureDigests()).isEqualTo(1);
     }
