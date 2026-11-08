@@ -1,0 +1,47 @@
+name: Docs nightly
+
+# The external link check (lychee), run nightly instead of on every pull request (operator, 2026-11-08): it asks
+# remote sites and downloads lychee from github.com, so an outage of either turned a pull request red for a reason the
+# pull request did not cause. It stays report-only: remote sites flake, so a red link step never fails the job.
+# The PlantUML diagram check stays on pull requests in docs-cleanliness.yml: its pinned jar is cached on the pin
+# (#420), so it needs no network on a cache hit, and a stale diagram is still caught before merge.
+# This workflow has only the schedule and workflow_dispatch triggers, so no pull-request run invokes it or waits for it.
+
+on:
+  schedule:
+    # Nightly, off the hour, clear of mutation-nightly.yml (43 2 * * *) and timing-nightly.yml (17 4 * * *).
+    - cron: '29 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-nightly-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  # Tool pins. Bump deliberately; the versions are what the committed config was tuned to.
+  LYCHEE_VERSION: 0.21.0
+  LYCHEE_SHA256: a06547250f10021dcafc6ed5bb20fca75835b65711745b63cfdda34c29ff6a73
+
+jobs:
+  external-links:
+    name: External links (report-only)
+    runs-on: ubuntu-24.04
+    # Remote sites flake. Reported, never failing the run.
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - name: Install lychee
+        run: |
+          curl -fsSL --retry 3 --retry-delay 10 --retry-all-errors -o lychee.tgz "https://github.com/lycheeverse/lychee/releases/download/lychee-v${LYCHEE_VERSION}/lychee-x86_64-unknown-linux-gnu.tar.gz"
+          echo "${LYCHEE_SHA256}  lychee.tgz" | sha256sum -c -
+          tar xzf lychee.tgz lychee
+      - name: lychee
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./lychee --config lychee.toml 'docs/**/*.md'
