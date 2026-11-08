@@ -4,7 +4,6 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.Pack;
@@ -33,6 +32,7 @@ public final class RelationshipRemovalService {
 
     private final PackRepository packs;
     private final PackRemovalStore store;
+    private final WritePolicyGate gate;
     private final RegistrationImpact impact;
 
     /**
@@ -48,7 +48,7 @@ public final class RelationshipRemovalService {
             PackRepository packs, PackRemovalStore store, WritePolicyGate gate, RegistrationImpact impact) {
         this.packs = Objects.requireNonNull(packs, "packs");
         this.store = Objects.requireNonNull(store, "store");
-        Objects.requireNonNull(gate, "gate");
+        this.gate = Objects.requireNonNull(gate, "gate");
         this.impact = Objects.requireNonNull(impact, "impact");
     }
 
@@ -77,43 +77,55 @@ public final class RelationshipRemovalService {
             PackIdentifier pack, PackQualifiedReference from, PackQualifiedReference to, @Nullable String ifMatch) {
         Pack current = packs.load(pack);
         RemovalPrecondition.require(store, pack, ifMatch);
-        Optional<Relationship> pair = pairOf(from, to);
         List<Relationship> registered = store.registeredRelationships(pack);
-        boolean inRegisteredShard = pair.isPresent() && registered.stream().anyMatch(pair.get()::equals);
-        boolean elsewhere = pair.isPresent() && heldOutsideTheShard(pack, current, pair.get());
-        if (!inRegisteredShard && !elsewhere) {
+        List<Relationship> named =
+                registered.stream().filter(edge -> names(edge, from, to)).toList();
+        if (named.isEmpty() && !heldOutsideTheShard(pack, current, from, to)) {
             throw new CharterRefusal(
                     RefusalCode.RELATIONSHIP_NOT_FOUND,
                     "Pack " + pack.value() + " holds no relationship between " + from + " and " + to + ".");
         }
-        if (elsewhere) {
+        if (heldOutsideTheShard(pack, current, from, to)) {
             throw new CharterRefusal(
                     RefusalCode.RELATIONSHIP_NOT_REGISTERED,
                     "The relationship between " + from + " and " + to
                             + " is not only in registered.graph.yaml: register the whole pack to change it.");
         }
+        // The edge goes as a RELATIONSHIP write on its source, as a whole-pack replace that drops it is judged.
+        named.forEach(edge -> gate.authorize(current, WritePolicyGate.Operation.RELATIONSHIP, edge.from()));
         List<Relationship> retained =
-                registered.stream().filter(edge -> !pair.get().equals(edge)).toList();
+                registered.stream().filter(edge -> !names(edge, from, to)).toList();
         impact.check(pack, facts -> WriteFacts.withRegisteredEdges(facts, registered, retained));
         return store.remove(pack, PackRemovalStore.Removal.ofRelationship(retained));
     }
 
-    /** The unordered pair, as the kernel compares edges; empty for an end that is no URN, or a pair that joins one to itself. */
-    private static Optional<Relationship> pairOf(PackQualifiedReference from, PackQualifiedReference to) {
-        Optional<Urn> first = from.asUrn();
-        Optional<Urn> second = to.asUrn();
-        if (first.isEmpty() || second.isEmpty() || first.get().equals(second.get())) {
-            return Optional.empty();
+    /**
+     * Whether an edge joins the pair the request names, in either orientation. A reference that names a pack matches
+     * only an end that names the same pack; one that names none matches by the kernel's comparison, the URN alone. An
+     * end that is no URN, or a pair that joins one URN to itself with no qualifier, names no edge.
+     */
+    private static boolean names(Relationship edge, PackQualifiedReference from, PackQualifiedReference to) {
+        if (!from.qualified() && !to.qualified() && from.asUrn().equals(to.asUrn())) {
+            return false;
         }
-        return Optional.of(Relationship.of(first.get(), second.get(), RelationType.SUGGESTS));
+        return (endNames(edge.fromReference(), from) && endNames(edge.toReference(), to))
+                || (endNames(edge.fromReference(), to) && endNames(edge.toReference(), from));
+    }
+
+    private static boolean endNames(PackQualifiedReference end, PackQualifiedReference requested) {
+        Optional<Urn> urn = requested.asUrn();
+        return urn.isPresent()
+                && urn.equals(end.asUrn())
+                && (requested.packName().isEmpty() || requested.packName().equals(end.packName()));
     }
 
     /** Whether an author-written graph document, or a relation a component derives, holds the pair. */
-    private boolean heldOutsideTheShard(PackIdentifier pack, Pack current, Relationship pair) {
-        boolean authored = store.authored(pack).edges().stream().anyMatch(pair::equals);
+    private boolean heldOutsideTheShard(
+            PackIdentifier pack, Pack current, PackQualifiedReference from, PackQualifiedReference to) {
+        boolean authored = store.authored(pack).edges().stream().anyMatch(edge -> names(edge, from, to));
         return authored
                 || current.artifacts().stream()
                         .flatMap(artifact -> artifact.derivedRelationships().stream())
-                        .anyMatch(pair::equals);
+                        .anyMatch(edge -> names(edge, from, to));
     }
 }

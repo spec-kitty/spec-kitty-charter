@@ -14,6 +14,10 @@
 # Not covered here, by design: the 409 governance_policy_violation of the REMOVE operation. It fires only when an
 # ancestor of the pack holds the id and locks it, and a pack that holds an id its ancestor locks does not compose
 # (FR-011), so no fixture reaches it through the API. WP19's unit tests pin it.
+# The same holds for the edge gate of the relationship DELETE (WP20, decision DM-01M6TR1KDAJ64GMJD6AYNZKT59 item 4: the
+# removed edge is a RELATIONSHIP write on its source, so 409 governance_policy_violation when an ancestor locks the
+# source) and for the pack-qualified targets of its pair compare (A to base::X and A to other::X are two edges, and one
+# DELETE names one): RelationshipRemovalServiceTest pins both over fixture packs.
 
 @contract @registration
 Feature: One artifact or one registered relationship is removed from a pack

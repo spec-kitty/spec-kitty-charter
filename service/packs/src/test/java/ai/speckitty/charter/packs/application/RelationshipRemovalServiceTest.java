@@ -322,11 +322,23 @@ class RelationshipRemovalServiceTest {
                 Optional.empty());
     }
 
+    private static final String PACK_ONE = PackRegistrationServiceTest.ulid('Y');
+    private static final String PACK_TWO = PackRegistrationServiceTest.ulid('Z');
+
+    /** Two packs that both hold {@code directive:X}, and {@code qa}, which depends on both and has an edge to each. */
     private static Rig rigWithTwoEdgesToTheSameIdInTwoPacks(Path host) {
         Rig rig = new Rig(host);
+        rig.install("base", Packs.of(PACK_ONE, "base", "1.0.0", "built-in").directive("X", "Base X"));
+        rig.install("other", Packs.of(PACK_TWO, "other", "1.0.0", "org").directive("X", "Other X"));
         rig.install(
                 "qa",
-                Packs.of(QA_ID, "qa", "1.0.0", "org")
+                Packs.of(
+                                QA_ID,
+                                "qa",
+                                "1.0.0",
+                                "project",
+                                "depends_on:\n  - pack_id: " + PACK_ONE + "\n    range: '>=1.0'\n  - pack_id: "
+                                        + PACK_TWO + "\n    range: '>=1.0'\n")
                         .directive("D1", "D1")
                         .file(
                                 "registered.graph.yaml",
