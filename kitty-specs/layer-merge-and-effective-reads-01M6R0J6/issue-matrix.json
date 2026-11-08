@@ -287,6 +287,18 @@
       "title": null,
       "verdict": "not-applicable",
       "wp": null
+    },
+    "#426": {
+      "evidence_ref": "Follow-up issue for the PR B pre-PR squad's deferred findings (research/closeout-notes-pr-b.md, Pre-PR squad dispositions)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
+      "wp": null
     }
   },
   "schema_version": 1
