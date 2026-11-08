@@ -1282,7 +1282,10 @@
     and refuses links and submodules in the tree (422 validation_failed, violation entry_type, as
     for an archive). A branch ref without a commit is 428 unless If-Match or If-None-Match: * is
     sent. The reasons bad_ref and commit_mismatch are new. sha256 repositories are untested. CI has
-    a new required job, git-source, that runs the real-git tests.
+    a new required job, git-source, that runs the real-git tests. Every run carries config pins that
+    bound the memory git inflates and maps (a 1 MiB big-file threshold, 16 MiB of pack window and
+    window memory, 64 MiB of mapped packs, a 16 MiB delta base cache, one thread), so a fetch stays
+    within tens of MiB. They do not cap address space or time beyond the one deadline.
   rationale: >-
     A host binary is the operator's ruling (no JGit); the version floor and the fixed command line
     bound what it can do.

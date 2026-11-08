@@ -20,7 +20,9 @@ import org.jspecify.annotations.Nullable;
  * <ul>
  *   <li><b>Arguments.</b> {@code git}, then the {@link #PINS} each as {@code -c key=value}, then the transport's pins,
  *       then the caller's arguments. The pins turn off every transport but https, redirects, submodules, hooks, links
- *       in a checkout, the file-system monitor and the LFS filter, and make git check every object it fetches.
+ *       in a checkout, the file-system monitor and the LFS filter, make git check every object it fetches, and bound
+ *       the memory it inflates and maps (big-file threshold, pack window and window memory, mapped-pack limit, delta
+ *       base cache, one thread).
  *   <li><b>Environment.</b> Built from empty ({@link GitEnvironment}), then the transport's variables: no proxy, no
  *       credential helper, no askpass, no {@code GIT_*} override and no {@code HOME} of the service.
  *   <li><b>One deadline.</b> Fixed when the command is built and shared by every run of the fetch, so the whole fetch is
@@ -45,6 +47,17 @@ final class GitCommand {
             "core.symlinks=false",
             "core.fsmonitor=false",
             "transfer.fsckObjects=true",
+            // Memory bounds (A5): git inflates and delta-resolves what it fetches in its own address space, so the
+            // working set is bounded here, not by the 32 MiB source bound alone. A blob over bigFileThreshold is
+            // streamed, never inflated whole; the pack window, the mapped-pack total and the delta base cache are
+            // each a fraction of the bound, and one thread resolves deltas. Slower on a pack near the bound, never
+            // refused for it. Address space (mmap) is not capped (DIV-613).
+            "core.bigFileThreshold=1m",
+            "pack.windowMemory=16m",
+            "pack.threads=1",
+            "core.packedGitLimit=64m",
+            "core.packedGitWindowSize=16m",
+            "core.deltaBaseCacheLimit=16m",
             "filter.lfs.clean=",
             "filter.lfs.smudge=",
             "filter.lfs.process=",

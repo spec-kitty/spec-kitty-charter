@@ -370,7 +370,7 @@ Whole-pack registration (`PUT /packs/{packId}`, `POST /packs`), the two removals
 `charter.registration` and `charter.pack-sources`. Every kind of source is off by default, and each flag is read at every
 request, so an operator can switch a kind off without a restart. How a client uses it is in
 [Compose packs](/guides/compose-packs/#register-a-pack). The differences from core are
-[DIV-609 to DIV-613](/conformance/divergence-register/#registration-div-601699-adr-0065).
+[DIV-609 to DIV-614](/conformance/divergence-register/#registration-div-601699-adr-0065).
 
 | Property | Default | What it does |
 |---|---|---|
@@ -402,6 +402,12 @@ request, so an operator can switch a kind off without a restart. How a client us
   work. A link, a submodule or an odd mode in the fetched tree is refused `422 validation_failed` with the violation
   `entry_type`, as for an archive. Repositories that use the sha256 object format are untested: the work repository is
   created as sha1.
+- **Git's memory.** Every git run carries `-c` pins that bound what git inflates and maps: `core.bigFileThreshold=1m`
+  (a larger blob is streamed, not inflated whole), `pack.windowMemory=16m`, `pack.threads=1`, `core.packedGitLimit=64m`,
+  `core.packedGitWindowSize=16m` and `core.deltaBaseCacheLimit=16m`. They keep the resident memory of a fetch to tens of
+  MiB, and a pack up to the 32 MiB source bound is still fetched, only more slowly. **Residual risk:** the pins do not cap
+  address space (git maps pack windows with `mmap`) or the time git spends, which the one deadline bounds. Run the
+  service with an operating-system memory limit as well.
 - **A refused source** ends the registration `422 pack_source_refused`. The detail is `<token>: <fixed sentence>`, with
   no URL, path or upstream text. The tokens are `host_not_allowed`, `address_not_global`, `url_refused`,
   `redirect_refused`, `wrong_media_type`, `too_large`, `digest_mismatch`, `name_mismatch`, `source_malformed`,
