@@ -122,6 +122,11 @@ class ClosureQueriesTest {
                 digests.incrementAndGet();
                 return fingerprint.get();
             }
+
+            @Override
+            public String fingerprintOf(java.util.Collection<String> packNames) {
+                return "scoped:" + packNames;
+            }
         });
     }
 

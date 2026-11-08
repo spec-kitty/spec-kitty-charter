@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.application;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.Fingerprint;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
@@ -35,6 +36,7 @@ import org.springframework.stereotype.Service;
 public final class ClosureQueries {
 
     private static final String STALE = "The packs changed while the closure was read; read it again.";
+    private static final String CLOSURE_DOMAIN = "charter-closure/v1";
 
     /** How many times a stale read is tried again (research R-lock); after that {@code stale_input} is the answer. */
     private static final int RETRIES = 3;
@@ -87,9 +89,33 @@ public final class ClosureQueries {
 
     /** One verified read of the closure. */
     private ClosureView snapshotOnce(Optional<List<PackIdentifier>> roots) {
-        ConsistentRead.Verified<OfferingReadService.ComposedClosure> verified =
-                read.read(STALE, () -> roots.map(this::composedOfKnownRoots).orElseGet(offering::composedWithFacts));
-        return viewOf(verified.value(), verified.fingerprint());
+        ConsistentRead.Verified<Loaded> verified = read.read(STALE, () -> loaded(roots));
+        return viewOf(
+                verified.value().composed(),
+                verified.fingerprint(),
+                verified.value().closureFingerprint());
+    }
+
+    /** What one load reads: the compose, and the digest of the closure's own packs taken inside the same verified read. */
+    private record Loaded(OfferingReadService.ComposedClosure composed, String closureFingerprint) {}
+
+    private Loaded loaded(Optional<List<PackIdentifier>> roots) {
+        OfferingReadService.ComposedClosure composed =
+                roots.map(this::composedOfKnownRoots).orElseGet(offering::composedWithFacts);
+        return new Loaded(composed, closureFingerprint(composed.packs()));
+    }
+
+    /**
+     * The digest of the packs IN the closure: each pack's configured id and level in closure order, then the digest of
+     * those packs' files alone. A configured pack outside the closure is not in it, so it leaves the digest as it is.
+     */
+    private String closureFingerprint(List<PackUnderResolution> packs) {
+        Fingerprint digest = Fingerprint.sha256().add(CLOSURE_DOMAIN);
+        packs.forEach(pack -> digest.add(pack.configured().id().value())
+                .add(pack.configured().level().token()));
+        List<String> names =
+                packs.stream().map(pack -> pack.configured().id().value()).toList();
+        return digest.add(read.fingerprintOf(names)).value();
     }
 
     /** The compose of the roots, once every root is a configured pack (checked first, in the same verified read). */
@@ -116,7 +142,8 @@ public final class ClosureQueries {
         return snapshot(Optional.empty());
     }
 
-    private static ClosureView viewOf(OfferingReadService.ComposedClosure composed, String fingerprint) {
+    private static ClosureView viewOf(
+            OfferingReadService.ComposedClosure composed, String fingerprint, String closureFingerprint) {
         List<PackUnderResolution> packs = composed.packs();
         Map<ArtifactKind, Set<String>> heldIds = new EnumMap<>(ArtifactKind.class);
         Map<Urn, String> holderOf = new LinkedHashMap<>();
@@ -136,7 +163,7 @@ public final class ClosureQueries {
                 fingerprint,
                 EdgeIndex.of(packs, composed.facts()),
                 new ClosureView.MergeInputs(packs, composed.facts()),
-                fingerprint);
+                closureFingerprint);
     }
 
     /** The held ids per kind, and the first holder of each URN in closure order. */
