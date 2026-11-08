@@ -1,5 +1,7 @@
 package ai.speckitty.charter.packs.infra.storage;
 
+import ai.speckitty.charter.packs.application.PackWriteGeneration;
+import ai.speckitty.charter.packs.application.RegistryWriteLock;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.function.Consumer;
@@ -23,17 +25,42 @@ public final class SlowSwapCommitStores {
      */
     public static PackCommitStore pausingMidSwap(
             DomainRepositoryService.Locations locations, SerializationStrategy strategy, Consumer<Path> midSwap) {
-        return new PackCommitStore(locations, strategy, (staging, live) -> {
-            Path aside = live.resolveSibling(live.getFileName() + ".pack-old-slow");
-            PackCommitStore.moveDirectory(live, aside);
-            try {
-                midSwap.accept(live);
-                PackCommitStore.moveDirectory(staging, live);
-            } catch (IOException | RuntimeException failed) {
-                PackCommitStore.moveDirectory(aside, live);
-                throw failed;
-            }
-            PackCommitStore.deleteTree(aside);
-        });
+        return pausingMidSwap(locations, strategy, midSwap, RegistryWriteLock.shared(), PackWriteGeneration.shared());
+    }
+
+    /**
+     * As {@link #pausingMidSwap(DomainRepositoryService.Locations, SerializationStrategy, Consumer)}, over a registry lock
+     * and a write generation of the test's own.
+     *
+     * @param locations the configured packs
+     * @param strategy the serialization format
+     * @param midSwap what runs inside the window; it may block
+     * @param lock the registry lock a whole-pack registration takes
+     * @param generation the write generation the swap is bracketed with
+     * @return the commit store
+     */
+    public static PackCommitStore pausingMidSwap(
+            DomainRepositoryService.Locations locations,
+            SerializationStrategy strategy,
+            Consumer<Path> midSwap,
+            RegistryWriteLock lock,
+            PackWriteGeneration generation) {
+        return new PackCommitStore(
+                locations,
+                strategy,
+                (staging, live) -> {
+                    Path aside = live.resolveSibling(live.getFileName() + ".pack-old-slow");
+                    PackCommitStore.moveDirectory(live, aside);
+                    try {
+                        midSwap.accept(live);
+                        PackCommitStore.moveDirectory(staging, live);
+                    } catch (IOException | RuntimeException failed) {
+                        PackCommitStore.moveDirectory(aside, live);
+                        throw failed;
+                    }
+                    PackCommitStore.deleteTree(aside);
+                },
+                lock,
+                generation);
     }
 }

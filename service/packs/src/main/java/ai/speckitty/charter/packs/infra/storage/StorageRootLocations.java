@@ -93,6 +93,15 @@ public final class StorageRootLocations implements DomainRepositoryService.Locat
         this.packs = packs.toAbsolutePath().normalize();
     }
 
+    /**
+     * The one directory the service writes packs into, {@code <config-root>/packs} (ADR-0065 D3, Q5).
+     *
+     * @return the directory, absolute and normalized; it need not exist yet
+     */
+    public Path writableRoot() {
+        return packs;
+    }
+
     @Override
     public List<PackLocation> all() {
         Optional<Path> domain = realDomain();
