@@ -21,8 +21,8 @@ post:
     400 before anything is judged. The synchronous answers are 202, 400, 401, 403, 412, 413 (the JSON body over the
     limit), 415 (a body that is not application/json), 428 (the git branch-ref rule only) and 503.
     The fixed reasons of a refused source (the detail of the problem names one): host_not_allowed, address_not_global,
-    url_refused, redirect_refused, wrong_media_type, too_large, digest_mismatch, name_mismatch, source_malformed and
-    path_refused. An https_archive and a filesystem source are served; a git source answers 503 pack_source_unavailable
+    url_refused, redirect_refused, wrong_media_type, too_large, digest_mismatch, name_mismatch, source_malformed,
+    path_refused, bad_ref and commit_mismatch. An https_archive and a filesystem source are served; a git source answers 503 pack_source_unavailable
     until the git source is built.
   tags:
   - Registration
