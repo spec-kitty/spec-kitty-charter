@@ -156,6 +156,11 @@ class LayerMergeTest {
                         LayerMergeTest::c21RaisedByAnotherPack),
                 new Row("C22", "the policy of the closure is each winner's policy", LayerMergeTest::c22),
                 new Row(
+                        "C15",
+                        "an unsettled step contest the compose lets through refuses the merge, never last loaded wins",
+                        LayerMergeTest::c15UnsettledStep),
+                new Row("C18", "a winner's languages keep the order it declares", LayerMergeTest::c18LanguageOrder),
+                new Row(
                         "C29",
                         "the copy of a preset id held last in merge order is the one applied",
                         LayerMergeTest::c29),
@@ -283,6 +288,30 @@ class LayerMergeTest {
         assertThat(merged.languages().get(urn("tactic:T"))).containsExactlyInAnyOrder("rust");
         assertThat(merged.languages().get(urn("tactic:U"))).containsExactlyInAnyOrder("python");
         assertThat(merged.languages()).containsOnlyKeys(urn("tactic:T"), urn("tactic:U"));
+    }
+
+    private static void c15UnsettledStep() {
+        Fixture contested =
+                new Fixture().pack("org-a", PackLevel.ORG, "action:M/s").pack("org-b", PackLevel.ORG, "action:M/s");
+
+        assertThat(contested.closure())
+                .as("the compose leaves a step out of the sibling contest")
+                .hasSize(2);
+        assertThatThrownBy(contested::merge).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+            assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT);
+            assertThat(refusal.getMessage()).contains("action:M/s", "org-a", "org-b", "org");
+            assertThat(refusal.packs()).extracting(RefusalPack::name).containsExactlyInAnyOrder("org-a", "org-b");
+        });
+    }
+
+    private static void c18LanguageOrder() {
+        MergedClosure merged = new Fixture()
+                .pack("org", PackLevel.ORG, "tactic:T")
+                .languages("org", "tactic:T", "zulu", "alpha", "mike", "bravo", "kilo", "delta")
+                .merge();
+
+        assertThat(merged.languages().get(urn("tactic:T")))
+                .containsExactly("zulu", "alpha", "mike", "bravo", "kilo", "delta");
     }
 
     private static void c18NoLanguagesInherited() {
