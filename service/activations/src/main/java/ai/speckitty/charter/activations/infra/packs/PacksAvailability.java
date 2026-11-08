@@ -133,7 +133,7 @@ public class PacksAvailability implements AvailablePacks {
                 lockedBy(view, configuredIdOf),
                 presets(view),
                 view.fingerprint(),
-                view.fingerprint(),
+                view.closureFingerprint(),
                 Set.of());
     }
 

@@ -15,9 +15,10 @@ import java.util.regex.Pattern;
  * The strong entity tag of a read that depends on the packs of an activation's closure (research R5, decisions
  * {@code 01M6Y11E55YP5TG1EJ1MDKCFRP} and {@code 01M6Y3GZFRC5WEQQ7G6GT0YMW3}): the two effective reads and
  * {@code getActivation}. It is {@code sha256:} over a domain tag, the representation read, the activation's revision,
- * the verified fingerprint of the packs of the closure and the normalized query, so it changes when the document or a
- * pack of the closure changes and never names two representations (another page, kind, state or read). A pack outside
- * the closure is not in the fingerprint and leaves the tag as it is.
+ * the verified digest of the packs IN the closure ({@link ClosureSnapshot#closureFingerprint()}, never the source
+ * fingerprint of every configured pack) and the normalized query, so it changes when the document or a pack of the
+ * closure changes and never names two representations (another page, kind, state or read). A configured pack outside
+ * the closure is not in that digest and leaves the tag as it is.
  *
  * <p>The token is the opaque tag without its quotes, as {@code EntityTags} takes it.
  *
@@ -129,7 +130,7 @@ public record EffectiveTag(String token) {
     private static EffectiveTag of(Read read, Revision revision, ClosureSnapshot closure, String query) {
         String preimage = DOMAIN + read.name().toLowerCase(Locale.ROOT)
                 + "\n" + revision.token()
-                + "\n" + closure.fingerprint()
+                + "\n" + closure.closureFingerprint()
                 + "\n" + query;
         try {
             byte[] digest = MessageDigest.getInstance("SHA-256").digest(preimage.getBytes(StandardCharsets.UTF_8));
