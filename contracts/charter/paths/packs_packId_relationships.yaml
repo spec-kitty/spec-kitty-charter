@@ -116,6 +116,8 @@ put:
       $ref: ../../_shared/responses/Problem.yaml
     '500':
       $ref: ../responses/OfferingUnreadable.yaml
+    '503':
+      $ref: ../responses/RegistryBusy.yaml
     default:
       $ref: ../../_shared/responses/Problem.yaml
 delete:
