@@ -93,11 +93,20 @@ class ActivationRoundTripPropertyTest {
 
         MockHttpServletResponse read = send(get(path));
         assertThat(read.getStatus()).as(what).isEqualTo(200);
-        assertThat(read.getHeader(HttpHeaders.ETAG)).as(what).isEqualTo(etag);
+        String readTag = read.getHeader(HttpHeaders.ETAG);
+        assertThat(readTag)
+                .as(what + ": the read's tag is the closure tag, not the revision")
+                .isNotEqualTo(etag);
+        assertThat("\""
+                        + JSON.readTree(read.getContentAsString())
+                                .path("revision")
+                                .asString() + "\"")
+                .as(what)
+                .isEqualTo(etag);
         JsonNode config = JSON.readTree(read.getContentAsString()).path("config");
 
         MockHttpServletResponse again = send(put(path)
-                .header(HttpHeaders.IF_MATCH, etag)
+                .header(HttpHeaders.IF_MATCH, readTag)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(config.toString()));
         assertThat(again.getStatus())

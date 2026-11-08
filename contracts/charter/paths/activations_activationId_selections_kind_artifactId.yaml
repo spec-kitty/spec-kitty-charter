@@ -21,7 +21,7 @@ put:
     artifact (and what the cascade reaches), as it would to []. A write that changes nothing answers 200 with the
     same revision and an empty applied and cleared. A path id the activation's closure does not hold is 404
     artifact_not_found (mission_type_not_found for kind mission_type); a kind outside the path's enum is 422
-    activation_invalid with a violation at the path; an unknown id in the body is 422. An If-Match that is neither * nor one quoted revision breaks its pattern and is 400 before anything
+    activation_invalid with a violation at the path; an unknown id in the body is 422. An If-Match that is neither * nor one quoted sha256 tag (the revision or the getActivation tag) breaks its pattern and is 400 before anything
     else is judged. Then the preconditions, in this order: 428 without If-Match, 404 activation_not_found, 412 when
     stale; each comes before any 422, a fault of the body included (a member the
     schema does not declare, a null, a cascade token outside its kinds). A stored deny entry a pack upgrade put on the required or locked floor is tolerated (ADR-0059 D4): it
@@ -88,12 +88,12 @@ delete:
   summary: Unselect an artifact or a mission type.
   description: >-
     Removes the artifact from selected (a mission type from selected.mission_type) and changes nothing else; applied
-    lists it and cleared is empty. Requires If-Match (ADR-0020 D6), the quoted revision or the current getActivation tag (a closure tag that no longer matches is 412; the answer keeps the revision as its ETag),. Absent means none: when selected holds no list
+    lists it and cleared is empty. Requires If-Match (ADR-0020 D6), the quoted revision or the current getActivation tag (a closure tag that no longer matches is 412; the answer keeps the revision as its ETag). Absent means none: when selected holds no list
     for the kind, nothing of the kind is selected, so there is nothing to remove. A write that changes nothing (the
     id is not in the list, or the kind holds no list) answers 200 with the same revision and an empty applied and
     cleared. A path id the activation's closure does not hold, and the stored document does not name either, is 404
     artifact_not_found (mission_type_not_found for kind mission_type), judged after every 422; a kind outside the path's enum is 422 activation_invalid with a violation at the path.
-    An If-Match that is neither * nor one quoted revision breaks its pattern and is 400 before anything
+    An If-Match that is neither * nor one quoted sha256 tag (the revision or the getActivation tag) breaks its pattern and is 400 before anything
     else is judged. Then the preconditions, in this order: 428 without If-Match, 404 activation_not_found, 412 when
     stale; each comes before any 422, the path's kind included. Stale ids are dropped on write (ADR-0059 amendment of 2026-11-06): the write first removes from the
     stored document every id the activation's closure no longer declares (a pack upgrade removed it), in selected,

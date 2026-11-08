@@ -155,7 +155,7 @@ class ActivationServiceTest {
     // ---- preconditions before content (RFC 9110 section 13.2.2)
 
     @Test
-    void aStaleIfMatchIsRefusedBeforeAnInvalidBodyIsJudgedAndTakesNoSnapshot() {
+    void aStaleIfMatchIsRefusedBeforeAnInvalidBodyIsJudgedAndTakesOnlyTheReadThatComputesTheTag() {
         StoredActivation old = stored(selecting("D1"));
         StoredActivation current = service.put(ID, selecting("D2"), null, null).stored();
         int before = packs.calls();
@@ -165,8 +165,8 @@ class ActivationServiceTest {
                         PreconditionException.class,
                         stale -> assertThat(stale.kind()).isEqualTo(PreconditionException.Kind.STALE));
         assertThat(packs.calls())
-                .as("no closure snapshot on a failed precondition")
-                .isEqualTo(before);
+                .as("one read to see whether the header is the closure tag, none to judge the body")
+                .isEqualTo(before + 1);
         assertThat(repository.find(ID)).contains(current);
     }
 
@@ -190,13 +190,13 @@ class ActivationServiceTest {
     }
 
     @Test
-    void aStaleIfMatchOnADeleteIsJudgedFromTheHeadersAloneAndTakesNoSnapshot() {
+    void aStaleIfMatchOnADeleteTakesOnlyTheReadThatComputesTheTag() {
         StoredActivation old = stored(selecting("D1"));
         service.put(ID, selecting("D2"), null, null);
         int before = packs.calls();
 
         assertThatThrownBy(() -> service.delete(ID, quoted(old))).isInstanceOf(PreconditionException.class);
-        assertThat(packs.calls()).isEqualTo(before);
+        assertThat(packs.calls()).isEqualTo(before + 1);
     }
 
     @Test
@@ -591,7 +591,9 @@ class ActivationServiceTest {
 
         service.delete(ID, quoted(current));
         assertThat(repository.find(ID)).isEmpty();
-        assertThat(packs.calls()).isZero();
+        assertThat(packs.calls())
+                .as("only the stale tag-shaped header read the closure, to see whether it is the closure tag")
+                .isEqualTo(1);
     }
 
     // ---- the closure read

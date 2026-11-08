@@ -14,7 +14,7 @@ put:
     reported in skippedShared when another active artifact still references it, named by that artifact; one only the
     floor keeps is not reported. A named artifact a pack requires or locks is 409, naming every requiring pack, and
     nothing is stored; only the deny entry the write adds is judged against that floor, so a stored one a pack
-    upgrade put on it is tolerated (ADR-0059 D4). Requires If-Match (ADR-0020 D6), the quoted revision or the current getActivation tag (a closure tag that no longer matches is 412; the answer keeps the revision as its ETag),. An If-Match that is neither * nor one quoted revision breaks its pattern and is 400 before anything
+    upgrade put on it is tolerated (ADR-0059 D4). Requires If-Match (ADR-0020 D6), the quoted revision or the current getActivation tag (a closure tag that no longer matches is 412; the answer keeps the revision as its ETag). An If-Match that is neither * nor one quoted sha256 tag (the revision or the getActivation tag) breaks its pattern and is 400 before anything
     else is judged. Then the preconditions, in this order: 428 without If-Match, 404 activation_not_found, 412 when
     stale; each comes before any 422, a fault of the body included. A cascading deactivate removes the reached artifacts from selected only where the kind holds a list; an absent
     kind selects none (absent means none), so there is nothing to remove, and the deny entry on the named artifact
@@ -91,7 +91,7 @@ delete:
   summary: Re-activate an artifact.
   description: >-
     Removes the artifact from deactivated and changes nothing else; the key is left out when its list empties. The
-    id is in cleared and in applied (removed from deactivated). Requires If-Match (ADR-0020 D6), the quoted revision or the current getActivation tag (a closure tag that no longer matches is 412; the answer keeps the revision as its ETag),. A write that
+    id is in cleared and in applied (removed from deactivated). Requires If-Match (ADR-0020 D6), the quoted revision or the current getActivation tag (a closure tag that no longer matches is 412; the answer keeps the revision as its ETag). A write that
     changes nothing (the id is not in the list) answers 200 with the same revision and an empty applied and
     cleared. A re-activate adds no deny entry, so it is never 409. A path id the activation's closure does not hold, and the stored document does not deny either, is 404
     artifact_not_found (mission_type_not_found for kind mission_type), judged after every 422; a kind outside the

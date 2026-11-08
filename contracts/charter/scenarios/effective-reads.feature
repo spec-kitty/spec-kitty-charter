@@ -1,7 +1,7 @@
 # PR B of layer-merge-and-effective-reads, contract B (IC-08, IC-17; WP22, T113): the effective artifact list, the
-# skipped report and the write warnings. Written red first and committed @WIP (decision DM-01M6RN6GC7PJS8BGHMAYM4JSSW):
-# WP25 binds the glue, records the red assertion failure (every step bound, a wrong status or body) and removes the tag
-# scenario by scenario. Every When asserts 200 and a non-empty answer, and every absence (X absent, E absent) is read
+# skipped report and the write warnings. Written red first and committed with a WIP tag (decision DM-01M6RN6GC7PJS8BGHMAYM4JSSW);
+# WP25 bound the glue, recorded the red assertion failure (every step bound, a wrong status or body) and removed the
+# tag. Every When asserts 200 and a non-empty answer, and every absence (X absent, E absent) is read
 # beside a positive control in the same answer. Fixtures are authored inline, per rule. "In force" is state=active
 # (operator ruling Q1), so an absence is asserted on ?state=active and its reason on ?state=inactive or in the report.
 #
@@ -28,6 +28,10 @@
 #   the field last remembered with `When I remember the field "/pageInfo/nextPageCursor" of the response body`.
 # - `Then the field at "<pointer>" is "<text>"` and `... holds exactly the ids:` are the existing steps: an item of the
 #   list is read as `<kind>:<artifactId>`, in the answer's order (kind, then id in code-point order).
+# - `Then the field at "<pointer>" is the stored revision` compares a body field with the revision the activation was
+#   stored with (the stored ETag without its quotes); `Then the field at "<pointer>" is the remembered header "<name>"
+#   without its quotes` compares it with a header remembered with `When I remember the header "<name>"`. They state what
+#   getActivation's closure ETag no longer is: the revision.
 
 @contract @activations
 Feature: The effective reads answer what an activation puts in force, and why the rest is not
@@ -41,7 +45,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
   matching If-None-Match (FR-020). The writes of IC-17 warn what the read will not put in force (B6/B7), and the activation
   lists the deny entries the floor or a lock overrides (B4).
 
-  @WIP
   Scenario: US3 AS2 - a denied required directive stays in force with reason required, and the deny entry is not applied
     US3 AS2, FR-013: the governing preset requires D and the stored document denies D, as a pack change after the
     write would leave it. D is in force with reason required and its deny entry is in denyNotApplied. X, a denied
@@ -89,7 +92,7 @@ Feature: The effective reads answer what an activation puts in force, and why th
       """
     And the stored file of the activation "a-1" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["E1"]}, "deactivated": {"directive": ["D", "X"]}}
+      {"deactivated":{"directive":["D","X"]},"packs":[{"packId":"main"}],"schemaVersion":2,"selected":{"directive":["E1"]}}
       """
     When I GET "/activations/a-1/artifacts?kind=directive"
     Then the response status is 200
@@ -113,7 +116,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
       """
     And the field at "/report/denyNotApplied/0/reason" is "required"
 
-  @WIP
   Scenario: US3 AS3 - a selected id no pack holds is absent and reported as stale
     US3 AS3, ADR-0059 D4: the document selects D, which main holds, and GHOST, which no pack holds any longer. GHOST
     is absent from the artifacts in force and is in staleIds; D is the control, present in the same answer.
@@ -135,7 +137,7 @@ Feature: The effective reads answer what an activation puts in force, and why th
       """
     And the stored file of the activation "a-1" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["D", "GHOST"]}}
+      {"packs":[{"packId":"main"}],"schemaVersion":2,"selected":{"directive":["D","GHOST"]}}
       """
     When I GET "/activations/a-1/artifacts?state=active"
     Then the response status is 200
@@ -151,7 +153,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
       directive:GHOST
       """
 
-  @WIP
   Scenario: US3 AS4 - the steps of a mission type are in force only while the mission type is
     US3 AS4, FR-040, FR-041, A7 Q1: software-dev is selected and its step contract is in force; research is not
     selected, so its step contract, though selected, is not in force: inactive with mission_type_not_in_force. The
@@ -208,7 +209,7 @@ Feature: The effective reads answer what an activation puts in force, and why th
       """
     And the stored file of the activation "a-1" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"mission_type": ["software-dev"], "mission_step_contract": ["sd-implement", "research-gather"]}}
+      {"packs":[{"packId":"main"}],"schemaVersion":2,"selected":{"mission_step_contract":["research-gather","sd-implement"],"mission_type":["software-dev"]}}
       """
     When I GET "/activations/a-1/artifacts?kind=mission_step_contract&state=active"
     Then the response status is 200
@@ -224,7 +225,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
       """
     And the field at "/items/0/reason" is "mission_type_not_in_force"
 
-  @WIP
   Scenario: US3 AS5 - an active enhancer and its target in force are both in force, and an enhancer that is not active is absent
     US3 AS5, FR-015: E enhances T. The activation a-1 selects both, so both are in force. The activation a-2 selects
     T alone: E is absent from the artifacts in force, inactive with not_selected, and T, the control, is in force in
@@ -237,18 +237,18 @@ Feature: The effective reads answer what an activation puts in force, and why th
       name: main-pack
       pack_level: org
       """
-    And the org pack "main" with the file "tactics/T.tactic.yaml":
+    And the org pack "main" with the file "tactics/t.tactic.yaml":
       """
       schema_version: '1.0'
-      id: T
+      id: t
       name: T
       steps:
         - title: Only step
       """
-    And the org pack "main" with the file "tactics/E.tactic.yaml":
+    And the org pack "main" with the file "tactics/e.tactic.yaml":
       """
       schema_version: '1.0'
-      id: E
+      id: e
       name: E
       steps:
         - title: Only step
@@ -259,40 +259,39 @@ Feature: The effective reads answer what an activation puts in force, and why th
       generated_at: STATIC
       nodes: []
       edges:
-      - source: tactic:E
-        target: tactic:T
+      - source: tactic:e
+        target: tactic:t
         relation: enhances
       """
     And the activation "a-1" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"tactic": ["T", "E"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"tactic": ["t", "e"]}}
       """
     And the activation "a-2" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"tactic": ["T"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"tactic": ["t"]}}
       """
     When I GET "/activations/a-1/artifacts?kind=tactic&state=active"
     Then the response status is 200
     And the field at "/items" holds exactly the ids:
       """
-      tactic:E
-      tactic:T
+      tactic:e
+      tactic:t
       """
     When I GET "/activations/a-2/artifacts?kind=tactic&state=active"
     Then the response status is 200
     And the field at "/items" holds exactly the ids:
       """
-      tactic:T
+      tactic:t
       """
     When I GET "/activations/a-2/artifacts?kind=tactic&state=inactive"
     Then the response status is 200
     And the field at "/items" holds exactly the ids:
       """
-      tactic:E
+      tactic:e
       """
     And the field at "/items/0/reason" is "not_selected"
 
-  @WIP
   Scenario: US3 AS6 - an active override hides its target with reason overridden
     US3 AS6, FR-016: F overrides T and both are selected. T is absent from the artifacts in force: inactive with
     overridden, listed in the report's overridden bucket with F as the overriding artifact. F and U are the controls,
@@ -366,7 +365,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
     And the field at "/report/overridden/0/overriddenBy/artifactId" is "F"
     And the field at "/report/overridden/0/overriddenBy/kind" is "directive"
 
-  @WIP
   Scenario: A3 - in a chain F overrides E overrides T only F stays in force
     A3, R13 stratum 2: F overrides E and E overrides T, all selected. Overrides apply from the active set before any
     is removed, so both E and T leave force, hidden, and only F stays. U, which no override reaches, is the control.
@@ -451,11 +449,12 @@ Feature: The effective reads answer what an activation puts in force, and why th
       directive:T
       """
 
-  @WIP
   Scenario: A required T hidden by an active override is satisfied by it
-    R11, operator ruling Q6: the governing preset requires T and F, selected, overrides T. The requirement is satisfied
-    by the override: T stays out of force (inactive, overridden) and carries satisfiedBy F, and it is not put in force
-    and not reported as unsatisfied. F, in force, is the control in the same answer.
+    R11, operator ruling Q6: the governing preset requires T and F, selected, overrides T, which the document selects
+    too. The requirement is satisfied by the override: T stays out of force (inactive, overridden) and carries
+    satisfiedBy F, and it is not put in force and not reported as unsatisfied. F, in force, is the control in the same
+    answer. (A required T the document does not select is not_selected, the row that comes before overridden in E9 and in
+    EffectiveArtifactReason, and carries satisfiedBy F all the same.)
     Given the org pack "main" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943R
@@ -501,7 +500,7 @@ Feature: The effective reads answer what an activation puts in force, and why th
       """
     And the activation "a-1" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["F"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["F", "T"]}}
       """
     When I GET "/activations/a-1/artifacts?kind=directive"
     Then the response status is 200
@@ -526,7 +525,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
     And the field at "/report/denyNotApplied" holds exactly 0 items
     And the field at "/report/requiredNotInForce" holds exactly 0 items
 
-  @WIP
   Scenario: An enhancer alone does not satisfy a required T, which is put in force
     R11, operator ruling Q8: the governing preset requires T, the document denies T and selects E, which enhances T.
     An enhancement never satisfies a requirement, so T is put in force with reason required and its deny entry is in
@@ -548,10 +546,10 @@ Feature: The effective reads answer what an activation puts in force, and why th
       intent: T
       enforcement: required
       """
-    And the org pack "main" with the file "tactics/E.tactic.yaml":
+    And the org pack "main" with the file "tactics/e.tactic.yaml":
       """
       schema_version: '1.0'
-      id: E
+      id: e
       name: E
       steps:
         - title: Only step
@@ -571,13 +569,13 @@ Feature: The effective reads answer what an activation puts in force, and why th
       generated_at: STATIC
       nodes: []
       edges:
-      - source: tactic:E
+      - source: tactic:e
         target: directive:T
         relation: enhances
       """
     And the stored file of the activation "a-1" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"tactic": ["E"]}, "deactivated": {"directive": ["T"]}}
+      {"deactivated":{"directive":["T"]},"packs":[{"packId":"main"}],"schemaVersion":2,"selected":{"tactic":["e"]}}
       """
     When I GET "/activations/a-1/artifacts?kind=directive&state=active"
     Then the response status is 200
@@ -591,7 +589,7 @@ Feature: The effective reads answer what an activation puts in force, and why th
     Then the response status is 200
     And the field at "/items" holds exactly the ids:
       """
-      tactic:E
+      tactic:e
       """
     When I GET "/activations/a-1/skipped"
     Then the response status is 200
@@ -600,7 +598,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
       directive:T
       """
 
-  @WIP
   Scenario: An enhancer whose target is out of force is inactive with enhanced_target_not_in_force
     R11, operator ruling Q8: E enhances T, T is not selected, so E, though selected, is inactive with
     enhanced_target_not_in_force and is in enhancedTargetNotInForce with its target. E2 enhances T2, which is
@@ -629,18 +626,18 @@ Feature: The effective reads answer what an activation puts in force, and why th
       intent: T2
       enforcement: required
       """
-    And the org pack "main" with the file "tactics/E.tactic.yaml":
+    And the org pack "main" with the file "tactics/e.tactic.yaml":
       """
       schema_version: '1.0'
-      id: E
+      id: e
       name: E
       steps:
         - title: Only step
       """
-    And the org pack "main" with the file "tactics/E2.tactic.yaml":
+    And the org pack "main" with the file "tactics/e2.tactic.yaml":
       """
       schema_version: '1.0'
-      id: E2
+      id: e2
       name: E2
       steps:
         - title: Only step
@@ -651,42 +648,41 @@ Feature: The effective reads answer what an activation puts in force, and why th
       generated_at: STATIC
       nodes: []
       edges:
-      - source: tactic:E
+      - source: tactic:e
         target: directive:T
         relation: enhances
-      - source: tactic:E2
+      - source: tactic:e2
         target: directive:T2
         relation: enhances
       """
     And the activation "a-1" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"tactic": ["E", "E2"], "directive": ["T2"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"tactic": ["e", "e2"], "directive": ["T2"]}}
       """
     When I GET "/activations/a-1/artifacts?kind=tactic&state=active"
     Then the response status is 200
     And the field at "/items" holds exactly the ids:
       """
-      tactic:E2
+      tactic:e2
       """
     When I GET "/activations/a-1/artifacts?kind=tactic&state=inactive"
     Then the response status is 200
     And the field at "/items" holds exactly the ids:
       """
-      tactic:E
+      tactic:e
       """
     And the field at "/items/0/reason" is "enhanced_target_not_in_force"
     When I GET "/activations/a-1/skipped"
     Then the response status is 200
     And the field at "/report/enhancedTargetNotInForce" holds exactly the ids:
       """
-      tactic:E
+      tactic:e
       """
     And the field at "/report/enhancedTargetNotInForce/0/targets" holds exactly the ids:
       """
       directive:T
       """
 
-  @WIP
   Scenario: An override of a locked T is not applied
     R11, operator ruling Q6: T is locked, E overrides T and is selected. The override is not applied: T stays in force
     with reason locked, E is in force too, and the pair is in overrideNotApplied. The control is the same override of
@@ -776,7 +772,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
       directive:T2
       """
 
-  @WIP
   Scenario: A8 - an enhancer ring is not in force, and an enhancer of a target in force is
     A8, R13 stratum 4 (a least fixed point): E1 enhances E2 and E2 enhances E1, so neither has a non-enhancer in force
     to stand on and a ring cannot hold itself up: both are inactive with enhanced_target_not_in_force. E3 enhances T,
@@ -790,34 +785,34 @@ Feature: The effective reads answer what an activation puts in force, and why th
       name: main-pack
       pack_level: org
       """
-    And the org pack "main" with the file "tactics/E1.tactic.yaml":
+    And the org pack "main" with the file "tactics/e1.tactic.yaml":
       """
       schema_version: '1.0'
-      id: E1
+      id: e1
       name: E1
       steps:
         - title: Only step
       """
-    And the org pack "main" with the file "tactics/E2.tactic.yaml":
+    And the org pack "main" with the file "tactics/e2.tactic.yaml":
       """
       schema_version: '1.0'
-      id: E2
+      id: e2
       name: E2
       steps:
         - title: Only step
       """
-    And the org pack "main" with the file "tactics/E3.tactic.yaml":
+    And the org pack "main" with the file "tactics/e3.tactic.yaml":
       """
       schema_version: '1.0'
-      id: E3
+      id: e3
       name: E3
       steps:
         - title: Only step
       """
-    And the org pack "main" with the file "tactics/T.tactic.yaml":
+    And the org pack "main" with the file "tactics/t.tactic.yaml":
       """
       schema_version: '1.0'
-      id: T
+      id: t
       name: T
       steps:
         - title: Only step
@@ -828,33 +823,33 @@ Feature: The effective reads answer what an activation puts in force, and why th
       generated_at: STATIC
       nodes: []
       edges:
-      - source: tactic:E1
-        target: tactic:E2
+      - source: tactic:e1
+        target: tactic:e2
         relation: enhances
-      - source: tactic:E2
-        target: tactic:E1
+      - source: tactic:e2
+        target: tactic:e1
         relation: enhances
-      - source: tactic:E3
-        target: tactic:T
+      - source: tactic:e3
+        target: tactic:t
         relation: enhances
       """
     And the activation "a-1" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"tactic": ["E1", "E2", "E3", "T"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"tactic": ["e1", "e2", "e3", "t"]}}
       """
     When I GET "/activations/a-1/artifacts?kind=tactic&state=active"
     Then the response status is 200
     And the field at "/items" holds exactly the ids:
       """
-      tactic:E3
-      tactic:T
+      tactic:e3
+      tactic:t
       """
     When I GET "/activations/a-1/artifacts?kind=tactic&state=inactive"
     Then the response status is 200
     And the field at "/items" holds exactly the ids:
       """
-      tactic:E1
-      tactic:E2
+      tactic:e1
+      tactic:e2
       """
     And the field at "/items/0/reason" is "enhanced_target_not_in_force"
     And the field at "/items/1/reason" is "enhanced_target_not_in_force"
@@ -862,11 +857,10 @@ Feature: The effective reads answer what an activation puts in force, and why th
     Then the response status is 200
     And the field at "/report/enhancedTargetNotInForce" holds exactly the ids:
       """
-      tactic:E1
-      tactic:E2
+      tactic:e1
+      tactic:e2
       """
 
-  @WIP
   Scenario: A step of a denied mission type is not in force (the binding)
     A7 Q1, research R13 stratum 4: a step, and any artifact bound to a mission type, is in force only while the mission
     type is. research is denied and its step contract is selected, so the step contract is inactive with
@@ -946,7 +940,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
       mission_step_contract:research-gather
       """
 
-  @WIP
   Scenario: A required step whose mission type is not in force is dropped and reported (DM-01M6RFGFW3S0YJ222QMHD2W11B)
     Decision DM-01M6RFGFW3S0YJ222QMHD2W11B: the governing preset requires the step contract research-gather and the
     directive D. research is not in force, so the step contract stays out (inactive, mission_type_not_in_force, with
@@ -1028,7 +1021,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
       """
     And the field at "/report/requiredNotInForce/0/reason" is "mission_type_not_in_force"
 
-  @WIP
   Scenario: A required enhancer with no target in force is dropped and reported (DM-01M6R4W3ZMSESETMQ0ZQTCZCFJ, A9)
     Decision DM-01M6R4W3ZMSESETMQ0ZQTCZCFJ, A9: the governing preset requires the tactic RE, which enhances T, and T is
     not selected. The enhancer rule wins over the requirement: RE is inactive with enhanced_target_not_in_force and
@@ -1057,10 +1049,10 @@ Feature: The effective reads answer what an activation puts in force, and why th
       intent: D
       enforcement: required
       """
-    And the org pack "main" with the file "tactics/RE.tactic.yaml":
+    And the org pack "main" with the file "tactics/re.tactic.yaml":
       """
       schema_version: '1.0'
-      id: RE
+      id: re
       name: RE
       steps:
         - title: Only step
@@ -1071,7 +1063,7 @@ Feature: The effective reads answer what an activation puts in force, and why th
       generated_at: STATIC
       nodes: []
       edges:
-      - source: tactic:RE
+      - source: tactic:re
         target: directive:T
         relation: enhances
       """
@@ -1084,7 +1076,7 @@ Feature: The effective reads answer what an activation puts in force, and why th
         - id: D
           must_have: true
       activated_tactics:
-        - id: RE
+        - id: re
           must_have: true
       """
     And the activation "a-1" holds:
@@ -1101,7 +1093,7 @@ Feature: The effective reads answer what an activation puts in force, and why th
     Then the response status is 200
     And the field at "/items" holds exactly the ids:
       """
-      tactic:RE
+      tactic:re
       """
     And the field at "/items/0/reason" is "enhanced_target_not_in_force"
     And the field at "/items/0/required" is true
@@ -1109,11 +1101,10 @@ Feature: The effective reads answer what an activation puts in force, and why th
     Then the response status is 200
     And the field at "/report/requiredNotInForce" holds exactly the ids:
       """
-      tactic:RE
+      tactic:re
       """
     And the field at "/report/requiredNotInForce/0/reason" is "enhanced_target_not_in_force"
 
-  @WIP
   Scenario: B1 - a version pin no pack holds is in pinNotHeld, and a held pin of the same document is not
     B1, FR-026: the document pins main at 9.9.9, which main does not hold, and other at 1.0.0, which it does. A read
     reports the unheld pin (a write would drop it): pinNotHeld holds main's pin alone. The directive OD of other is the
@@ -1152,7 +1143,7 @@ Feature: The effective reads answer what an activation puts in force, and why th
       """
     And the stored file of the activation "a-1" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "main", "version": "9.9.9"}, {"packId": "other", "version": "1.0.0"}], "selected": {"directive": ["OD"]}}
+      {"packs":[{"packId":"main","version":"9.9.9"},{"packId":"other","version":"1.0.0"}],"schemaVersion":2,"selected":{"directive":["OD"]}}
       """
     When I GET "/activations/a-1/artifacts?state=active"
     Then the response status is 200
@@ -1166,7 +1157,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
     And the field at "/report/pinNotHeld/0/packId" is "main"
     And the field at "/report/pinNotHeld/0/version" is "9.9.9"
 
-  @WIP
   Scenario: A10 - a must-have item no pack holds is in requiredNotHeld, and a held one is required and in force
     A10, FR-028: the governing preset names D, which main holds, and GONE, which no pack holds. GONE is not on the
     floor and is in requiredNotHeld; D is the control, required and in force in the same answer. The same case, with a
@@ -1216,7 +1206,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
       directive:GONE
       """
 
-  @WIP
   Scenario: The language filter applies at read only: no languages filters nothing, and what it filtered is in the bucket
     #408 ruling 2, FR-013, FR-017: py-style applies to python and js-style to javascript, D is untagged. The activation
     a-1 sends no languages: nothing is filtered and the report's languageFiltered is empty (all three in force is the
@@ -1301,7 +1290,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
       styleguide:js-style
       """
 
-  @WIP
   Scenario: An artifact reached only through suggests is listed as a suggestion with its when and reason
     #408 ruling 3, FR-013: D suggests S, with a when and a reason, and the document selects D alone. S is reached only
     through the suggests edge, so it is listed as a suggestion carrying the edge's when and reason (not as in force).
@@ -1374,11 +1362,10 @@ Feature: The effective reads answer what an activation puts in force, and why th
     And the field at "/items/0/suggestion/when" is "the change touches the schema"
     And the field at "/items/0/suggestion/reason" is "S covers the schema checks"
 
-  @WIP
   Scenario: A13 - a cascading deactivate after a cascading select leaves the artifact the select reached unselected
-    A13, decision DM-01M6RA8XSM9CZZX1ADX6G80T3X: t requires y, the document selects y and z, and a cascading select of t
-    then a cascading deactivate of t remove t and what its walk reached unless something else active keeps it. Prior
-    selections are not remembered, so y is no longer selected (inactive, not_selected); z, which the walk never
+    A13, decision DM-01M6RA8XSM9CZZX1ADX6G80T3X: T requires Y, the document selects Y and Z, and a cascading select of T
+    then a cascading deactivate of T remove T and what its walk reached unless something else active keeps it. Prior
+    selections are not remembered, so Y is no longer selected (inactive, not_selected); Z, which the walk never
     reached, is the control, still in force in the same answer.
     Given the org pack "main" with the file "pack.yaml":
       """
@@ -1388,28 +1375,28 @@ Feature: The effective reads answer what an activation puts in force, and why th
       name: main-pack
       pack_level: org
       """
-    And the org pack "main" with the file "directives/t.directive.yaml":
+    And the org pack "main" with the file "directives/T.directive.yaml":
       """
       schema_version: '1.0'
-      id: t
-      title: t
-      intent: t
+      id: T
+      title: T
+      intent: T
       enforcement: required
       """
-    And the org pack "main" with the file "directives/y.directive.yaml":
+    And the org pack "main" with the file "directives/Y.directive.yaml":
       """
       schema_version: '1.0'
-      id: y
-      title: y
-      intent: y
+      id: Y
+      title: Y
+      intent: Y
       enforcement: required
       """
-    And the org pack "main" with the file "directives/z.directive.yaml":
+    And the org pack "main" with the file "directives/Z.directive.yaml":
       """
       schema_version: '1.0'
-      id: z
-      title: z
-      intent: z
+      id: Z
+      title: Z
+      intent: Z
       enforcement: required
       """
     And the org pack "main" with the file "requires.graph.yaml":
@@ -1418,20 +1405,20 @@ Feature: The effective reads answer what an activation puts in force, and why th
       generated_at: STATIC
       nodes: []
       edges:
-      - source: directive:t
-        target: directive:y
+      - source: directive:T
+        target: directive:Y
         relation: requires
       """
     And the activation "a-1" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["y", "z"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["Y", "Z"]}}
       """
-    When I PUT "/activations/a-1/selections/directive/t" with the stored ETag and the body:
+    When I PUT "/activations/a-1/selections/directive/T" with the stored ETag and the body:
       """
       {"cascade": ["all"]}
       """
     Then the response status is 200
-    When I PUT "/activations/a-1/exclusions/directive/t" with the header "If-Match": "*" and the body:
+    When I PUT "/activations/a-1/exclusions/directive/T" with the header "If-Match": "*" and the body:
       """
       {"cascade": ["all"]}
       """
@@ -1440,17 +1427,16 @@ Feature: The effective reads answer what an activation puts in force, and why th
     Then the response status is 200
     And the field at "/items" holds exactly the ids:
       """
-      directive:z
+      directive:Z
       """
     When I GET "/activations/a-1/artifacts?kind=directive&state=inactive"
     Then the response status is 200
     And the field at "/items" holds exactly the ids:
       """
-      directive:y
+      directive:Y
       """
     And the field at "/items/0/reason" is "not_selected"
 
-  @WIP
   Scenario: US4 AS1 - each artifact not in force is in exactly one bucket, and the report carries the revision
     US4 AS1, FR-017: one document that has a stale id (GHOST), a deny entry the floor does not apply (D1), a language-
     filtered styleguide, an overridden directive (OV), a step of a mission type not in force, an override of a locked
@@ -1531,18 +1517,18 @@ Feature: The effective reads answer what an activation puts in force, and why th
       applies_to_languages:
         - javascript
       """
-    And the org pack "main" with the file "tactics/ENH.tactic.yaml":
+    And the org pack "main" with the file "tactics/enh.tactic.yaml":
       """
       schema_version: '1.0'
-      id: ENH
+      id: enh
       name: ENH
       steps:
         - title: Only step
       """
-    And the org pack "main" with the file "tactics/RENH.tactic.yaml":
+    And the org pack "main" with the file "tactics/renh.tactic.yaml":
       """
       schema_version: '1.0'
-      id: RENH
+      id: renh
       name: RENH
       steps:
         - title: Only step
@@ -1580,10 +1566,10 @@ Feature: The effective reads answer what an activation puts in force, and why th
       - source: directive:LKO
         target: directive:LK
         relation: overrides
-      - source: tactic:ENH
+      - source: tactic:enh
         target: directive:TG
         relation: enhances
-      - source: tactic:RENH
+      - source: tactic:renh
         target: directive:TG
         relation: enhances
       """
@@ -1598,12 +1584,12 @@ Feature: The effective reads answer what an activation puts in force, and why th
         - id: GONE
           must_have: true
       activated_tactics:
-        - id: RENH
+        - id: renh
           must_have: true
       """
     And the stored file of the activation "a-1" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "main", "version": "9.9.9"}], "languages": ["python"], "selected": {"directive": ["OV", "OVR", "LKO", "GHOST"], "styleguide": ["js-style"], "tactic": ["ENH"], "mission_step_contract": ["research-gather"]}, "deactivated": {"directive": ["D1"]}}
+      {"deactivated":{"directive":["D1"]},"languages":["python"],"packs":[{"packId":"main","version":"9.9.9"}],"schemaVersion":2,"selected":{"directive":["GHOST","LKO","OV","OVR"],"mission_step_contract":["research-gather"],"styleguide":["js-style"],"tactic":["enh"]}}
       """
     When I GET "/activations/a-1/artifacts?kind=directive&state=active"
     Then the response status is 200
@@ -1644,7 +1630,7 @@ Feature: The effective reads answer what an activation puts in force, and why th
       """
     And the field at "/report/enhancedTargetNotInForce" holds exactly the ids:
       """
-      tactic:ENH
+      tactic:enh
       """
     And the field at "/report/pinNotHeld" holds exactly 1 item
     And the field at "/report/requiredNotHeld" holds exactly the ids:
@@ -1653,10 +1639,9 @@ Feature: The effective reads answer what an activation puts in force, and why th
       """
     And the field at "/report/requiredNotInForce" holds exactly the ids:
       """
-      tactic:RENH
+      tactic:renh
       """
 
-  @WIP
   Scenario: US4 AS2 - an unknown activation is 404 activation_not_found on both reads
     US4 AS2, FR-021: neither read answers an activation the service does not hold. The activation a-1, which it holds,
     is the control: both reads answer 200 with its directive in the same scenario.
@@ -1696,7 +1681,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
     Then the response status is 200
     And the field at "/report/staleIds" holds exactly 0 items
 
-  @WIP
   Scenario: The list is paged by a keyset cursor, and summary is identical on every page
     FR-013, plan IC-09: three directives, a page of two. The first page holds A and B and the second holds C, in
     (kind, id) order, and summary counts the whole set on both pages (three in force). The control is that the two
@@ -1755,7 +1739,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
     And the field at "/summary/active" is 3
     And the field at "/pageInfo/hasNextPage" is false
 
-  @WIP
   Scenario: A cursor from another tag is 400, and a fresh cursor of the new tag pages on
     Plan IC-09, research R5: the cursor binds the tag of the set it pages. After the document changes (the revision, so
     the tag, changes) the old cursor is 400 without a code. The control is the same read without a cursor, which answers
@@ -1824,7 +1807,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
       directive:B
       """
 
-  @WIP
   Scenario: US3 AS7 - a matching If-None-Match is 304 with the current tag
     US3 AS7, FR-020: the list answers an ETag, and the same request with that tag as If-None-Match is 304 with no body and
     the same tag. The first answer, 200 with the artifact A, is the positive control: the 304 is not an empty store.
@@ -1845,23 +1827,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
       intent: A
       enforcement: required
       """
-    And the archive "acme-v2" is a copy of the archive "acme-v1"
-    And the archive "acme-v2" holds the file "pack.yaml":
-      """
-      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
-      pack_version: 1.1.0
-      parent_pack: null
-      name: acme
-      pack_level: org
-      """
-    And the archive "acme-v2" holds the file "directives/A.directive.yaml":
-      """
-      schema_version: '1.0'
-      id: A
-      title: A at version 2
-      intent: A
-      enforcement: required
-      """
     And the archive "other-v1" holds the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943S
@@ -1875,23 +1840,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
       schema_version: '1.0'
       id: O
       title: O at version 1
-      intent: O
-      enforcement: required
-      """
-    And the archive "other-v2" is a copy of the archive "other-v1"
-    And the archive "other-v2" holds the file "pack.yaml":
-      """
-      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
-      pack_version: 1.1.0
-      parent_pack: null
-      name: other
-      pack_level: org
-      """
-    And the archive "other-v2" holds the file "directives/O.directive.yaml":
-      """
-      schema_version: '1.0'
-      id: O
-      title: O at version 2
       intent: O
       enforcement: required
       """
@@ -1918,7 +1866,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
     Then the response status is 304
     And the response header "ETag" is the remembered header
 
-  @WIP
   Scenario: US3 AS7 - after a re-registration that changes a pack of the closure the old tag is 200 with a new ETag
     US3 AS7, research R5: the tag covers the packs of the activation's closure. acme is in the closure and its version 1.1.0
     is registered over 1.0.0, so the old tag no longer matches: 200 with the list and a new ETag. The 304 with the old tag
@@ -1973,23 +1920,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
       intent: O
       enforcement: required
       """
-    And the archive "other-v2" is a copy of the archive "other-v1"
-    And the archive "other-v2" holds the file "pack.yaml":
-      """
-      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
-      pack_version: 1.1.0
-      parent_pack: null
-      name: other
-      pack_level: org
-      """
-    And the archive "other-v2" holds the file "directives/O.directive.yaml":
-      """
-      schema_version: '1.0'
-      id: O
-      title: O at version 2
-      intent: O
-      enforcement: required
-      """
     When I PUT "/packs/acme" with the archive "acme-v1"
     And I poll the registration until it ends
     Then the field at "/state" is "succeeded"
@@ -2021,7 +1951,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
       directive:A
       """
 
-  @WIP
   Scenario: US3 AS7 - a change to a pack outside the closure keeps the tag
     US3 AS7, research R5: the activation is rooted at acme alone, and other is registered again with another version. The
     closure of the activation does not hold other, so the tag is unchanged and the old tag is 304. The pack other is held and
@@ -2040,23 +1969,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
       schema_version: '1.0'
       id: A
       title: A at version 1
-      intent: A
-      enforcement: required
-      """
-    And the archive "acme-v2" is a copy of the archive "acme-v1"
-    And the archive "acme-v2" holds the file "pack.yaml":
-      """
-      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
-      pack_version: 1.1.0
-      parent_pack: null
-      name: acme
-      pack_level: org
-      """
-    And the archive "acme-v2" holds the file "directives/A.directive.yaml":
-      """
-      schema_version: '1.0'
-      id: A
-      title: A at version 2
       intent: A
       enforcement: required
       """
@@ -2121,7 +2033,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
     Then the response status is 304
     And the response header "ETag" is the remembered header
 
-  @WIP
   Scenario: US3 AS7 - a state, a kind and a cursor page never answer 304 to the tag of another representation
     US3 AS7, WP24 T123: an entity tag names one representation, so two queries never share a tag. The tag of the first
     page (directives in force, pageSize 1) matches its own request (304, the control) and no other: another state, another
@@ -2159,17 +2070,17 @@ Feature: The effective reads answer what an activation puts in force, and why th
       intent: C
       enforcement: required
       """
-    And the org pack "main" with the file "tactics/T.tactic.yaml":
+    And the org pack "main" with the file "tactics/t.tactic.yaml":
       """
       schema_version: '1.0'
-      id: T
+      id: t
       name: T
       steps:
         - title: Only step
       """
     And the activation "a-1" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["A", "B"], "tactic": ["T"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["A", "B"], "tactic": ["t"]}}
       """
     When I GET "/activations/a-1/artifacts?kind=directive&state=active&pageSize=1"
     Then the response status is 200
@@ -2192,7 +2103,7 @@ Feature: The effective reads answer what an activation puts in force, and why th
     And the response header "ETag" differs from the remembered header
     And the field at "/items" holds exactly the ids:
       """
-      tactic:T
+      tactic:t
       """
     When I GET "/activations/a-1/artifacts?kind=directive&state=active&pageSize=1"
     Then the response status is 200
@@ -2204,7 +2115,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
       directive:B
       """
 
-  @WIP
   Scenario: B4 - the ETag of getActivation changes when a pack of the closure changes, and not for an unrelated pack
     Decision 01M6Y11E55YP5TG1EJ1MDKCFRP: denyNotApplied is judged against the packs, so the strong tag of GET
     /activations/{id} covers the revision and the closure's fingerprint. acme is in the closure and its version 1.1.0 is
@@ -2312,7 +2222,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
       A
       """
 
-  @WIP
   Scenario: B4 - a write takes the getActivation tag or the revision as If-Match, and a stale closure tag is 412
     Decision 01M6Y3GZFRC5WEQQ7G6GT0YMW3: an activation write accepts If-Match carrying the quoted revision or the current
     getActivation tag (the revision and the closure's fingerprint); a closure tag that no longer matches is 412. The write's
@@ -2369,23 +2278,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
       intent: O
       enforcement: required
       """
-    And the archive "other-v2" is a copy of the archive "other-v1"
-    And the archive "other-v2" holds the file "pack.yaml":
-      """
-      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
-      pack_version: 1.1.0
-      parent_pack: null
-      name: other
-      pack_level: org
-      """
-    And the archive "other-v2" holds the file "directives/O.directive.yaml":
-      """
-      schema_version: '1.0'
-      id: O
-      title: O at version 2
-      intent: O
-      enforcement: required
-      """
     When I PUT "/packs/acme" with the archive "acme-v1"
     And I poll the registration until it ends
     Then the field at "/state" is "succeeded"
@@ -2435,7 +2327,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
       """
     Then the response status is 200
 
-  @WIP
   Scenario: B4 - a registration that changes an activation's in-force set lists it in activationsAffected, and not an unrelated one
     FR-027, B4: a-1 is rooted at acme and selects A; acme version 1.2.0 drops A and holds B, so the in-force set of a-1
     changes and the succeeded registration lists a-1 in notices.activationsAffected. a-2, rooted at the unrelated pack
@@ -2458,23 +2349,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
       intent: A
       enforcement: required
       """
-    And the archive "acme-v2" is a copy of the archive "acme-v1"
-    And the archive "acme-v2" holds the file "pack.yaml":
-      """
-      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
-      pack_version: 1.1.0
-      parent_pack: null
-      name: acme
-      pack_level: org
-      """
-    And the archive "acme-v2" holds the file "directives/A.directive.yaml":
-      """
-      schema_version: '1.0'
-      id: A
-      title: A at version 2
-      intent: A
-      enforcement: required
-      """
     And the archive "other-v1" holds the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943S
@@ -2488,23 +2362,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
       schema_version: '1.0'
       id: O
       title: O at version 1
-      intent: O
-      enforcement: required
-      """
-    And the archive "other-v2" is a copy of the archive "other-v1"
-    And the archive "other-v2" holds the file "pack.yaml":
-      """
-      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
-      pack_version: 1.1.0
-      parent_pack: null
-      name: other
-      pack_level: org
-      """
-    And the archive "other-v2" holds the file "directives/O.directive.yaml":
-      """
-      schema_version: '1.0'
-      id: O
-      title: O at version 2
       intent: O
       enforcement: required
       """
@@ -2557,7 +2414,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
       directive:O
       """
 
-  @WIP
   Scenario: US3 AS7 - after the v1 to v2 write the tag changes once
     US3 AS7, FR-042, A7 Q4: a stored version 1 document is read as its version 2 upgrade and a read writes nothing. A
     write stores version 2 and the tag changes (the old tag is 200 with a new ETag); further reads then keep the new tag
@@ -2617,11 +2473,11 @@ Feature: The effective reads answer what an activation puts in force, and why th
     And I GET "/activations/a-1/artifacts?kind=directive&state=active" with If-None-Match the remembered header "ETag"
     Then the response status is 304
 
-  @WIP
   Scenario: B6/B7 - a select of an enhancer whose target is denied is 200 with the warning enhanced_target_not_in_force
     IC-17, FR-032: T is denied, so selecting E, which enhances T, is accepted and the answer warns that the read will not
-    put it in force. Selecting E2, whose target T2 is not denied, is the control: 200 with E2 applied and no warning, in
-    the same scenario.
+    put it in force. Selecting E2, whose target T2 is selected and so in force, is the control: 200 with E2 applied and
+    no warning, in the same scenario. (An enhancer is in force only with a target in force, Q8: a target that is merely
+    not denied is not enough.)
     Given the org pack "main" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943R
@@ -2630,34 +2486,34 @@ Feature: The effective reads answer what an activation puts in force, and why th
       name: main-pack
       pack_level: org
       """
-    And the org pack "main" with the file "tactics/T.tactic.yaml":
+    And the org pack "main" with the file "tactics/t.tactic.yaml":
       """
       schema_version: '1.0'
-      id: T
+      id: t
       name: T
       steps:
         - title: Only step
       """
-    And the org pack "main" with the file "tactics/E.tactic.yaml":
+    And the org pack "main" with the file "tactics/e.tactic.yaml":
       """
       schema_version: '1.0'
-      id: E
+      id: e
       name: E
       steps:
         - title: Only step
       """
-    And the org pack "main" with the file "tactics/T2.tactic.yaml":
+    And the org pack "main" with the file "tactics/t2.tactic.yaml":
       """
       schema_version: '1.0'
-      id: T2
+      id: t2
       name: T2
       steps:
         - title: Only step
       """
-    And the org pack "main" with the file "tactics/E2.tactic.yaml":
+    And the org pack "main" with the file "tactics/e2.tactic.yaml":
       """
       schema_version: '1.0'
-      id: E2
+      id: e2
       name: E2
       steps:
         - title: Only step
@@ -2700,11 +2556,11 @@ Feature: The effective reads answer what an activation puts in force, and why th
       generated_at: STATIC
       nodes: []
       edges:
-      - source: tactic:E
-        target: tactic:T
+      - source: tactic:e
+        target: tactic:t
         relation: enhances
-      - source: tactic:E2
-        target: tactic:T2
+      - source: tactic:e2
+        target: tactic:t2
         relation: enhances
       - source: directive:F
         target: directive:U
@@ -2721,33 +2577,32 @@ Feature: The effective reads answer what an activation puts in force, and why th
       """
     And the activation "a-1" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "main"}], "deactivated": {"tactic": ["T"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"tactic": ["t2"]}, "deactivated": {"tactic": ["t"]}}
       """
-    When I PUT "/activations/a-1/selections/tactic/E" with the stored ETag and the body:
+    When I PUT "/activations/a-1/selections/tactic/e" with the stored ETag and the body:
       """
       {}
       """
     Then the response status is 200
     And the field at "/applied" holds exactly the ids:
       """
-      tactic:E
+      tactic:e
       """
     And the field at "/warnings" holds exactly 1 item
     And the field at "/warnings/0/code" is "enhanced_target_not_in_force"
-    And the field at "/warnings/0/artifact/artifactId" is "E"
+    And the field at "/warnings/0/artifact/artifactId" is "e"
     And the field at "/warnings/0/artifact/kind" is "tactic"
-    When I PUT "/activations/a-1/selections/tactic/E2" with the header "If-Match": "*" and the body:
+    When I PUT "/activations/a-1/selections/tactic/e2" with the header "If-Match": "*" and the body:
       """
       {}
       """
     Then the response status is 200
     And the field at "/applied" holds exactly the ids:
       """
-      tactic:E2
+      tactic:e2
       """
     And the field at "/warnings" holds exactly 0 items
 
-  @WIP
   Scenario: B6/B7 - a select of an artifact an active override hides is 200 with the warning overridden
     IC-17, FR-032: F is selected and overrides U, so selecting U is accepted and the answer warns overridden. Selecting X,
     which nothing overrides, is the control: 200 with X applied and no warning.
@@ -2759,34 +2614,34 @@ Feature: The effective reads answer what an activation puts in force, and why th
       name: main-pack
       pack_level: org
       """
-    And the org pack "main" with the file "tactics/T.tactic.yaml":
+    And the org pack "main" with the file "tactics/t.tactic.yaml":
       """
       schema_version: '1.0'
-      id: T
+      id: t
       name: T
       steps:
         - title: Only step
       """
-    And the org pack "main" with the file "tactics/E.tactic.yaml":
+    And the org pack "main" with the file "tactics/e.tactic.yaml":
       """
       schema_version: '1.0'
-      id: E
+      id: e
       name: E
       steps:
         - title: Only step
       """
-    And the org pack "main" with the file "tactics/T2.tactic.yaml":
+    And the org pack "main" with the file "tactics/t2.tactic.yaml":
       """
       schema_version: '1.0'
-      id: T2
+      id: t2
       name: T2
       steps:
         - title: Only step
       """
-    And the org pack "main" with the file "tactics/E2.tactic.yaml":
+    And the org pack "main" with the file "tactics/e2.tactic.yaml":
       """
       schema_version: '1.0'
-      id: E2
+      id: e2
       name: E2
       steps:
         - title: Only step
@@ -2829,11 +2684,11 @@ Feature: The effective reads answer what an activation puts in force, and why th
       generated_at: STATIC
       nodes: []
       edges:
-      - source: tactic:E
-        target: tactic:T
+      - source: tactic:e
+        target: tactic:t
         relation: enhances
-      - source: tactic:E2
-        target: tactic:T2
+      - source: tactic:e2
+        target: tactic:t2
         relation: enhances
       - source: directive:F
         target: directive:U
@@ -2875,7 +2730,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
       """
     And the field at "/warnings" holds exactly 0 items
 
-  @WIP
   Scenario: B4 - GET /activations/{id} lists a deny entry the floor overrides in denyNotApplied, and not an applied one
     IC-17, FR-027, B4: the governing preset requires D, and the stored document denies D (a pack change after the write
     would leave it so) and X. D's deny entry is not applied, so the activation lists directive:D in denyNotApplied. X is
@@ -2888,34 +2742,34 @@ Feature: The effective reads answer what an activation puts in force, and why th
       name: main-pack
       pack_level: org
       """
-    And the org pack "main" with the file "tactics/T.tactic.yaml":
+    And the org pack "main" with the file "tactics/t.tactic.yaml":
       """
       schema_version: '1.0'
-      id: T
+      id: t
       name: T
       steps:
         - title: Only step
       """
-    And the org pack "main" with the file "tactics/E.tactic.yaml":
+    And the org pack "main" with the file "tactics/e.tactic.yaml":
       """
       schema_version: '1.0'
-      id: E
+      id: e
       name: E
       steps:
         - title: Only step
       """
-    And the org pack "main" with the file "tactics/T2.tactic.yaml":
+    And the org pack "main" with the file "tactics/t2.tactic.yaml":
       """
       schema_version: '1.0'
-      id: T2
+      id: t2
       name: T2
       steps:
         - title: Only step
       """
-    And the org pack "main" with the file "tactics/E2.tactic.yaml":
+    And the org pack "main" with the file "tactics/e2.tactic.yaml":
       """
       schema_version: '1.0'
-      id: E2
+      id: e2
       name: E2
       steps:
         - title: Only step
@@ -2958,11 +2812,11 @@ Feature: The effective reads answer what an activation puts in force, and why th
       generated_at: STATIC
       nodes: []
       edges:
-      - source: tactic:E
-        target: tactic:T
+      - source: tactic:e
+        target: tactic:t
         relation: enhances
-      - source: tactic:E2
-        target: tactic:T2
+      - source: tactic:e2
+        target: tactic:t2
         relation: enhances
       - source: directive:F
         target: directive:U
@@ -2979,7 +2833,7 @@ Feature: The effective reads answer what an activation puts in force, and why th
       """
     And the stored file of the activation "a-1" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "main"}], "deactivated": {"directive": ["D", "X"]}}
+      {"deactivated":{"directive":["D","X"]},"packs":[{"packId":"main"}],"schemaVersion":2}
       """
     When I GET "/activations/a-1"
     Then the response status is 200

@@ -139,6 +139,17 @@ Keep it small; add a step only when a scenario cannot be written without it.
   per-artifact and preset writes, which require `If-Match`.
 - `Then the response header "<name>" is the stored ETag` and `... differs from the stored ETag` — the header equals,
   or is present and differs from, that stored `ETag`: a write that changed nothing, or one that stored a new revision.
+- `Then the field at "<json-pointer>" is the stored revision` — the body member is the revision the last `Given the
+  activation "<id>" holds:` stored (the stored `ETag` without its quotes): a read that stored nothing. `Then the field
+  at "<json-pointer>" is the remembered header "<name>" without its quotes` — the same for a header remembered with
+  `When I remember the header "<name>"`. getActivation's `ETag` is the closure tag, not the revision, so these state
+  the revision where a scenario used to compare it with the header.
+- `When I GET "<path>" with If-None-Match the remembered header "<name>"` and `When I follow the link "<relation>" with
+  If-None-Match the remembered header "<name>"` — a read (or a followed link) that sends the header remembered with
+  `When I remember the header "<name>"` as `If-None-Match`. `When I PUT "<path>" with If-Match the remembered header
+  "<name>" and the body:` sends it as `If-Match`. `When I GET "<path>" with the remembered cursor` appends
+  `pageCursor=<value>` (with `?` or `&`), the value being the field remembered with `When I remember the field
+  "/pageInfo/nextPageCursor" of the response body` (a field of the body is named by a name or by a JSON pointer).
 - `Then the field at "<json-pointer>" holds exactly the ids:` followed by a doc string, one id per line — the member
   is an array whose ids are those lines, in order: a string item as it is, and an item with a `kind` and an
   `artifactId` (an `ArtifactReference`, a skipped entry) as `<kind>:<artifactId>`.
