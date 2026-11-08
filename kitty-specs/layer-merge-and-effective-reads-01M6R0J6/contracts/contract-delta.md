@@ -123,7 +123,7 @@ changes.
   - It holds `packId`, `descriptorPackId`, `name`, `version`, `level` (`PackLevel`, restricted to `org` and
     `project`), `revision` (`Sha256Digest`) and `outcome` (`created`, `replaced`, `unchanged`).
   - It also holds an optional `source`: `PackSourceRecord`, with `kind`, `url`, `ref`, `path` and `commit`.
-  - `_links`: `self` (`getPack`), `edit` (the `PUT`) and `artifacts`.
+  - `_links`: `self` (`getPack`) and `artifacts`; no `edit` link (WP16's decision; the contract dropped it in WP20's review, 2026-11-08).
   - `notices` (B4): `floorAdded`, `floorRemoved`, `locksAdded`, `locksRemoved`, and from PR B `activationsAffected`.
 - **`PackRegistrationStatus`**, closed: `registrationId`, `state` (`pending`, `running`, `succeeded`, `refused`),
   `packId`, `acceptedAt`, `finishedAt`, `result` (`PackRegistration`), `problem` (`Problem`).
