@@ -253,7 +253,7 @@ other callers get `503`. This is a known limit, accepted for this release.
   version.
 - When the service restores a lost history entry, the entry carries the time of the repair, not of the lost
   registration. It restores only a `pack_version` the history does not hold at all: a per-artifact `PUT` that moved the
-  revision of a version registered earlier does not make that version unrestorable. Send the archive that was
+  revision of a version registered earlier does not make that version impossible to restore. Send the archive that was
   registered and it is accepted.
 
 ## What a registration is refused for
