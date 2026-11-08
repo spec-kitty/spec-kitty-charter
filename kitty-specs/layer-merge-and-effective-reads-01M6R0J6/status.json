@@ -657,7 +657,8 @@
       "last_transition_at": "2026-11-08T05:36:05.298382+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "DELETEs of an artifact and a relationship; per-artifact writes run the impact check; verifyAll green"
+        "DELETEs of an artifact and a relationship; per-artifact writes run the impact check; verifyAll green",
+        "Review passed (17bebc0e). Independence override, operator-approved 2026-11-08: claim recorded as bare 'claude'; implementer of record per the for_review hop is claude:sonnet:java-jenny. Gate: verifyAll green; :packs:test --rerun 3398 tests, 0 failed; :deployable:test --rerun 1100, 0 failed. Follow-ups: (1) relationship DELETE runs no RELATIONSHIP gate, while a whole-pack replace gates a dropped edge from a locked ancestor artifact (DM-01M6TR1KDAJ64GMJD6AYNZKT59 (4)); planner ruling needed. (2) The pair compare ignores pack qualifiers, so two registered edges A->base::X and A->other::X both go on one DELETE. (3) A per-artifact write into an unreadable pack is refused even when it would repair it (the overlay reads the stored facts); whole-pack registration is the repair path, and WP20 should document it. (4) A DELETE leaves pack-manifest.yaml stale, listing a missing constituent, as per-artifact writes already leave stale hashes; the read path does not verify it, round-trip and validate do; regenerate the manifest or document it. (5) The DELETE result is judged on the facts overlay; IC-06 step 6 (revalidate the aggregate) is not done on the edited tree. A probe that empties a preset shows the pack still reads. (6) The preset rewrite re-serializes an author preset file, which WP20 must document against 'a DELETE never rewrites an author file'. (7) impact.committed is not called for per-artifact writes or removals (WP25, PR B)."
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
