@@ -36,6 +36,15 @@ public final class ArchiveBody extends AbstractResource {
         return format;
     }
 
+    /**
+     * The resource the converter bound, for a test to see whether the body was held in memory.
+     *
+     * @return the bound resource
+     */
+    Resource source() {
+        return bytes;
+    }
+
     @Override
     public String getDescription() {
         return "a pack archive upload";

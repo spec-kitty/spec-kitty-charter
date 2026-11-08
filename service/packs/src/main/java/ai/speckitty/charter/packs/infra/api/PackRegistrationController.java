@@ -50,6 +50,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class PackRegistrationController implements RegistrationApi {
 
     private static final String ARCHIVE_FILE = "archive";
+    private static final int SPOOL_BUFFER_BYTES = 64 * 1024;
 
     private final RegistrationJobs jobs;
     private final PackSummaryQuery summaries;
@@ -122,17 +123,38 @@ public class PackRegistrationController implements RegistrationApi {
         RegistrationJobs.Reservation reservation = RegistrationAdmission.reservationOf(request);
         ArchiveBody archive = archiveOf(body);
         Path file = reservation.directory().resolve(ARCHIVE_FILE);
-        try (InputStream bytes = archive.getInputStream();
-                OutputStream spooled = OwnerOnly.newFile(file)) {
-            bytes.transferTo(spooled);
-        } catch (IOException failure) {
-            throw new UncheckedIOException("cannot spool the archive of a registration", failure);
-        }
+        spool(archive, file);
         // The status the 202 answers is read before the job can start: a worker may be running it at once.
         RegistrationJobs.Status accepted = reservation.status();
         reservation.start(ArchiveStaging.of(jobs.staging(), archives, archive.format(), file));
         AuditContext.of(request).handedToJob();
         return accepted(reservation.id(), accepted);
+    }
+
+    /**
+     * Copies the body, which is never held in memory, to the job's owner-only spool file (#418, A3). A body that stops
+     * before its end, because the client went away, is a {@code 400}; a file that cannot be written is the service's own
+     * failure. The size limit is the body stream's: it refuses the byte after 32 MiB with the {@code 413}.
+     */
+    private static void spool(ArchiveBody archive, Path file) {
+        byte[] buffer = new byte[SPOOL_BUFFER_BYTES];
+        try (InputStream bytes = archive.getInputStream();
+                OutputStream spooled = OwnerOnly.newFile(file)) {
+            while (true) {
+                int read;
+                try {
+                    read = bytes.read(buffer);
+                } catch (IOException broken) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The body could not be read.", broken);
+                }
+                if (read < 0) {
+                    return;
+                }
+                spooled.write(buffer, 0, read);
+            }
+        } catch (IOException failure) {
+            throw new UncheckedIOException("cannot spool the archive of a registration", failure);
+        }
     }
 
     @Override
