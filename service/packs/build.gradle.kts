@@ -29,6 +29,9 @@ dependencies {
     // re2j runs the patterns a pack writes into a config_schema in linear time (no backtracking).
     implementation(catalog.lib("re2j"))
     implementation(catalog.lib("jackson-databind"))
+    // infra.archive: the tar and zip readers of the bounded pack archive extractor (IC-03, DIRECTIVE_051). Only the
+    // JDK-backed STORED and DEFLATED paths run; the optional codecs are not on the classpath.
+    implementation(catalog.lib("commons-compress"))
     implementation(catalog.lib("slf4j-api"))
 
     // infra.api: the inbound REST adapter implements the generated contract interfaces.
@@ -201,7 +204,10 @@ tasks.register<Test>("timingBudgets") {
 // own JVMs: the tags they leave out, the system properties they read and the repository files they read, declared as
 // inputs so a cached result never outlives them.
 val repositoryDir = rootProject.layout.projectDirectory
-val unitTestExcludedTags = listOf("open-packs", "whole-pack", "timing")
+// `git-host` (WP18's real-git tests) needs the host git binary and runs in its own CI job, so neither `test` nor `check`
+// runs it. `stress` (the 100-run concurrency tests of WP12, WP14 and WP19) still runs in `test` and `check`, and only PIT
+// leaves it out (pitest, below): a mutant would multiply its cost by the mutant count.
+val unitTestExcludedTags = listOf("open-packs", "whole-pack", "timing", "git-host")
 // The link tests skip where the file system cannot make a symbolic link; -PrequireSymlinks=true, which CI passes
 // (service.yml), makes them fail there instead, so a runner without links cannot stay green by skipping (#286).
 val requireSymlinks = providers.gradleProperty("requireSymlinks").orElse("false")
@@ -245,14 +251,17 @@ tasks.test {
 tasks.check { dependsOn(openPacksRoundTrip) }
 
 // The nightly mutation floor (#239; operator rulings of 2026-11-05). PIT mutates domain, application, infra.storage
-// (infra.storage.config included) and infra.fetch, but never the Spring wiring (application.config,
-// infra.fetch.config) nor the inbound REST adapter (infra.api), and runs only the unit tests of those packages: the
-// Spring-wired tests (*WiredTest, the only @SpringBootTest among them) and the tagged suites that `test` leaves out
-// (open-packs, whole-pack, timing) stay out of PIT too. pit-targets.init.gradle narrows this scope further for a run of
+// (infra.storage.config included), infra.fetch, and since WP13 infra.archive (the archive extractor, which carries the upload's
+// safety rules; floor group infra.archive), but never the Spring wiring (application.config, infra.fetch.config) nor the
+// inbound REST adapter (infra.api), and runs only the unit tests of those packages: the Spring-wired tests
+// (*WiredTest, the only @SpringBootTest among them) and the tagged suites that `test` leaves out (open-packs,
+// whole-pack, timing, git-host, and stress for PIT alone) stay out of PIT too. pit-targets.init.gradle narrows this scope further for a run of
 // one work package's classes.
 val packsPackage = "ai.speckitty.charter.packs"
 val mutatedPackages =
-    listOf("domain", "application", "infra.storage", "infra.fetch").map { "$packsPackage.$it.*" }.toSet()
+    listOf("domain", "application", "infra.storage", "infra.fetch", "infra.archive")
+        .map { "$packsPackage.$it.*" }
+        .toSet()
 pitest {
     targetClasses = mutatedPackages
     excludedClasses = setOf(
@@ -263,13 +272,16 @@ pitest {
     targetTests = mutatedPackages
     excludedTestClasses = setOf("*WiredTest")
     // The same tags, system properties and inputs as `test` (above): PIT runs those tests in its own JVMs.
-    excludedGroups = unitTestExcludedTags.toSet()
+    // plus `stress`: the 100-run concurrency tests run in `test` but are too slow to repeat per mutant.
+    excludedGroups = (unitTestExcludedTags + "stress").toSet()
     jvmArgs.addAll(unitTestSystemProperties.map { (key, value) -> "-D$key=$value" })
 }
 tasks.named("pitest") { readsTheUnitTestInputs() }
 
 // Three floor groups, as the operator ruled them on 2026-11-05 (C-001): each at or below floor5(score - 3) of its first
-// measured run. domain+application (92.7 %) and infra.storage (90.7 %) take 85; infra.fetch (77.3 %) takes 70.
+// measured run. domain+application (92.7 %) and infra.storage (90.7 %) take 85; infra.fetch (77.3 %) takes 70. WP13 adds
+// infra.archive on the same rule: 87.5 % (239 of 273) on its first narrowed run takes 80. infra.api is not mutated (it is
+// excluded above and left out of mutatedPackages), so it has no floor.
 mutationFloors {
     group("domain+application") {
         packages.addAll("$packsPackage.domain", "$packsPackage.application")
@@ -279,6 +291,10 @@ mutationFloors {
     group("infra.storage") {
         packages.add("$packsPackage.infra.storage")
         floor = 85
+    }
+    group("infra.archive") {
+        packages.add("$packsPackage.infra.archive")
+        floor = 80
     }
     group("infra.fetch") {
         packages.add("$packsPackage.infra.fetch")
