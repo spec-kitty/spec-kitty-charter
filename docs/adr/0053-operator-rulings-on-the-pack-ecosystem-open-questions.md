@@ -2,7 +2,7 @@
 title: "ADR-0053: Operator rulings on the pack-ecosystem open questions"
 description: "The operator's rulings of 2026-11-02 on every open question of ADR-0048 to ADR-0052, and the decisions of those records that the rulings amend."
 doc_status: active
-updated: 2026-11-05T00:00:00Z
+updated: 2026-11-08T00:00:00Z
 decision_status: Accepted; layer-override grain of d6 settled by ADR-0059 (2026-11-04); Amendment 2026-11-05 (ADR-0064)
 decision_date: '2026-11-02'
 type: ADR
@@ -84,6 +84,7 @@ The operator also replaced ADR-0050's `gate` kind with asset-backed guards (ADR-
 5. **A sibling conflict is settled by the distribution pack's own `overrides` edge** (question 5) on the contested
    artifact, naming the member whose version wins. No new edge type.
    *Amended 2026-11-03 (operator, #145 pre-PR review): a sibling conflict also covers two packs at one level that both define the same artifact id, not only two that both change it, and is refused as `pack_sibling_conflict`. Until [#358](https://github.com/spec-kitty/spec-kitty-charter/issues/358) any pack of the compose may declare the edge, not only the distribution pack. Until [#357](https://github.com/spec-kitty/spec-kitty-charter/issues/357) settling only clears the refusal; the named member's version is not yet put in force.*
+   *2026-11-08 (layer-merge mission, PR B): #357 is built. The layer merge puts the named member's version in force at that level, a step shares its mission type's settlement, and a step contest no entry settles is refused at read as `pack_sibling_conflict`, which the compose lets through. #358 is still open: any pack of the compose may declare the entry, and a settlement is not gated by level. The divergence register records both (DIV-218, DIV-219).*
 6. **A compose is one `depends_on` closure at one level** (question 6). An id is unique within it, except where an
    explicit `overrides` replaces it. Across levels the layer merge applies (project over org over built-in).
    *Amended 2026-11-03 (operator, #145 pre-PR review): the closure is rooted at one level's configured packs and includes dependencies at levels nearer built-in. Today every configured pack is a root; roots from the activation set come with [#360](https://github.com/spec-kitty/spec-kitty-charter/issues/360). Pack ids and pack names are unique across a compose without exception. An artifact id is unique within a level except where an `overrides` edge settles it; across levels the same id is a legitimate layer override.*

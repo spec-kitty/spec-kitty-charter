@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: REST resource conventions
 description: How the charter API names resources and paths, uses methods and parameters, negotiates media types and versions the contract.
 doc_status: draft
-updated: 2026-10-28T00:00:00Z
+updated: 2026-11-08T00:00:00Z
 type: Guide
 kind: Reference
 related:
@@ -138,8 +138,8 @@ that is `*` or matches it is a 304 without a body.
 Proposed: the activation resources (ADR-0020) use HTTP preconditions so two writers cannot lose each other's
 changes:
 
-- **`ETag`** on every activation answer: the document's `revision`, a strong validator.
-- **`If-Match`** on a write: apply only if the document is still at that revision; otherwise 412.
+- **`ETag`** on every activation answer: a strong validator. A write's answer sends the document's `revision`; `getActivation` and the effective reads send a tag that covers the revision and the closure's packs (decision `01M6Y11E55YP5TG1EJ1MDKCFRP`).
+- **`If-Match`** on a write: apply only if the document is still at that revision, or the current `getActivation` tag names it (decision `01M6Y3GZFRC5WEQQ7G6GT0YMW3`); otherwise 412.
   Required on sub-resource writes, so a missing one is a 428.
 - **`If-None-Match: *`** on `PUT`: create only; an existing document is a 412.
 

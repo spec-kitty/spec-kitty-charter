@@ -63,7 +63,7 @@ except the servlet container's own 400s
 
 | Code | Meaning | Used here | Body |
 |---|---|---|---|
-| 304 Not Modified | The client's cached copy is current (`If-None-Match` matched the `ETag`) | `getOpenApiDocument` (`GET /openapi.yaml`): an `If-None-Match` that is `*` or matches the bundle's `ETag`. Built: `getActivation` and `listActivationPacks`, when `If-None-Match` is `*` or lists a tag that weakly matches the answer's `ETag` (the closure read's covers the revision and the closure's packs); the answer keeps the `ETag` and has no body. Proposed: `Charter-Source-Fingerprint` and `governanceFingerprint` are the natural validators if more conditional reads are added | None |
+| 304 Not Modified | The client's cached copy is current (`If-None-Match` matched the `ETag`) | `getOpenApiDocument` (`GET /openapi.yaml`): an `If-None-Match` that is `*` or matches the bundle's `ETag`. Built: `getActivation`, `listActivationPacks`, `listEffectiveArtifacts` and `getActivationSkippedReport`, when `If-None-Match` is `*` or lists a tag that weakly matches the answer's `ETag` (each covers the revision and the packs of the activation's closure; an effective read's also names its `kind`, `state`, cursor and page size); the answer keeps the `ETag` and has no body. Proposed: `Charter-Source-Fingerprint` and `governanceFingerprint` are the natural validators if more conditional reads are added | None |
 
 ## 4xx: the request is wrong
 
