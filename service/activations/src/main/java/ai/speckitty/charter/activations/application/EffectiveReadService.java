@@ -1,27 +1,56 @@
 package ai.speckitty.charter.activations.application;
 
+import ai.speckitty.charter.activations.application.ActivationService.Read;
 import ai.speckitty.charter.activations.domain.ActivationId;
 import ai.speckitty.charter.activations.domain.ActivationRepository;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
+import ai.speckitty.charter.activations.domain.ClosureSnapshot;
+import ai.speckitty.charter.activations.domain.EffectiveSet;
 import ai.speckitty.charter.activations.domain.EffectiveSet.EffectiveArtifact;
 import ai.speckitty.charter.activations.domain.EffectiveSet.State;
 import ai.speckitty.charter.activations.domain.EffectiveSet.Summary;
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport;
+import ai.speckitty.charter.activations.domain.EffectiveSkippedReport.DenyNotApplied;
+import ai.speckitty.charter.activations.domain.EffectiveTag;
+import ai.speckitty.charter.activations.domain.MergedSnapshot;
+import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
+import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.transport.EntityTags;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Predicate;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
  * The reads of what an activation puts in force: {@code getActivation} with its deny notice, the effective artifact
- * list and the skipped report (FR-013, FR-017, FR-020, FR-021, FR-027).
+ * list and the skipped report (IC-09, FR-013, FR-017, FR-020, FR-021, FR-027).
+ *
+ * <p>Each read opens one {@link PacksSession}, one verified read of the closure the stored document names (E19), and
+ * answers everything from it: the tag, then, only when the {@code If-None-Match} does not match it, the merge and the
+ * in-force resolution, once each (NFR-007). The session's read retries a stale input up to three times before it
+ * refuses. A refusal of the compose or of the merge is the answer, unchanged, and never a partial one.
+ *
+ * <p>Every tag is an {@link EffectiveTag}: the strong digest of the representation read, the activation's revision and
+ * the closure's own digest ({@link ClosureSnapshot#closureFingerprint()}), so it changes with the document and with a
+ * pack of the closure and with nothing else. A page's tag names its kind, state, cursor and page size. The cursor binds
+ * the tag of the <em>set</em> it pages (the same kind and state, no cursor and no page size): a cursor of another set
+ * is refused ({@link StaleCursorException}), so paging over a recomputed set is stable for one set only.
  */
 @Service
 public class EffectiveReadService {
+
+    /** The page size part of the tag of a set: a set has no page size. */
+    private static final int WHOLE_SET = 0;
+
+    private final ActivationRepository repository;
+    private final AvailablePacks packs;
 
     /**
      * The reads over the register and the packs.
@@ -31,8 +60,8 @@ public class EffectiveReadService {
      */
     @Autowired
     public EffectiveReadService(ActivationRepository repository, AvailablePacks packs) {
-        Objects.requireNonNull(repository, "repository");
-        Objects.requireNonNull(packs, "packs");
+        this.repository = Objects.requireNonNull(repository, "repository");
+        this.packs = Objects.requireNonNull(packs, "packs");
     }
 
     /**
@@ -40,7 +69,8 @@ public class EffectiveReadService {
      *
      * @param position the last artifact of the page before
      * @param setTag the tag of the set that page belonged to
-     * @param cursor the cursor as the request carried it
+     * @param cursor the cursor as the request carried it; empty for the position a page offers as its next one, which
+     *     the wire adapter encodes
      */
     public record After(ArtifactRef position, String setTag, String cursor) {}
 
@@ -108,36 +138,143 @@ public class EffectiveReadService {
     }
 
     /**
-     * {@code getActivation}.
+     * {@code getActivation}: the stored document, with the deny entries the floor or a lock overrides (B4, FR-027),
+     * under the tag of the revision and the closure.
      *
      * @param id the activation's id
-     * @param ifNoneMatch the {@code If-None-Match} header, verbatim
-     * @return the read
+     * @param ifNoneMatch the {@code If-None-Match} header, verbatim; null when absent
+     * @return the activation, or {@code NotModified} when the header matches its tag
+     * @throws CharterRefusal with {@code activation_not_found} when nothing is stored under the id, with
+     *     {@code pack_unreadable} when a pack the document names is no longer configured, or with the refusal of the
+     *     compose or of the merge
      */
-    public ActivationService.Read<Viewed> activation(ActivationId id, @Nullable String ifNoneMatch) {
-        return new ActivationService.Read.NotModified<>("");
+    public Read<Viewed> activation(ActivationId id, @Nullable String ifNoneMatch) {
+        StoredActivation stored = found(id);
+        PacksSession session = open(stored);
+        String etag =
+                EffectiveTag.activation(stored.revision(), session.snapshot()).token();
+        if (EntityTags.noneMatch(ifNoneMatch, etag)) {
+            return new Read.NotModified<>(etag);
+        }
+        InForceAnswer answered = session.inForce(EffectiveSet.queryOf(stored.document()));
+        return new Read.Found<>(new Viewed(stored, denied(answered)), etag);
     }
 
     /**
-     * {@code listEffectiveArtifacts}.
+     * {@code listEffectiveArtifacts}: one page of the artifacts of the merged closure, ordered by kind and then by id.
      *
      * @param id the activation's id
-     * @param query what is asked
-     * @param ifNoneMatch the {@code If-None-Match} header, verbatim
-     * @return the read
+     * @param query what is asked: the filters, the page size and where the page continues
+     * @param ifNoneMatch the {@code If-None-Match} header, verbatim; null when absent
+     * @return the page, or {@code NotModified} when the header matches the tag of this representation
+     * @throws StaleCursorException when the cursor belongs to another set than the one this request reads
+     * @throws CharterRefusal as {@link #activation} does
      */
-    public ActivationService.Read<Page> list(ActivationId id, PageQuery query, @Nullable String ifNoneMatch) {
-        return new ActivationService.Read.NotModified<>("");
+    public Read<Page> list(ActivationId id, PageQuery query, @Nullable String ifNoneMatch) {
+        StoredActivation stored = found(id);
+        PacksSession session = open(stored);
+        ClosureSnapshot closure = session.snapshot();
+        String setTag = EffectiveTag.artifacts(
+                        stored.revision(),
+                        closure,
+                        new EffectiveTag.Query(query.state(), query.kind(), Optional.empty(), WHOLE_SET))
+                .token();
+        if (query.after().filter(after -> !after.setTag().equals(setTag)).isPresent()) {
+            throw new StaleCursorException();
+        }
+        String etag = EffectiveTag.artifacts(
+                        stored.revision(),
+                        closure,
+                        new EffectiveTag.Query(
+                                query.state(), query.kind(), query.after().map(After::cursor), query.pageSize()))
+                .token();
+        if (EntityTags.noneMatch(ifNoneMatch, etag)) {
+            return new Read.NotModified<>(etag);
+        }
+        EffectiveSet set = effectiveSet(stored, session);
+        return new Read.Found<>(pageOf(stored, closure, set, query, setTag), etag);
     }
 
     /**
-     * {@code getActivationSkippedReport}.
+     * {@code getActivationSkippedReport}: each artifact not in force once, in the typed bucket of the rule that decided
+     * it, and the rules not applied.
      *
      * @param id the activation's id
-     * @param ifNoneMatch the {@code If-None-Match} header, verbatim
-     * @return the read
+     * @param ifNoneMatch the {@code If-None-Match} header, verbatim; null when absent
+     * @return the report, or {@code NotModified} when the header matches its tag
+     * @throws CharterRefusal as {@link #activation} does
      */
-    public ActivationService.Read<Report> skipped(ActivationId id, @Nullable String ifNoneMatch) {
-        return new ActivationService.Read.NotModified<>("");
+    public Read<Report> skipped(ActivationId id, @Nullable String ifNoneMatch) {
+        StoredActivation stored = found(id);
+        PacksSession session = open(stored);
+        ClosureSnapshot closure = session.snapshot();
+        String etag = EffectiveTag.skipped(stored.revision(), closure).token();
+        if (EntityTags.noneMatch(ifNoneMatch, etag)) {
+            return new Read.NotModified<>(etag);
+        }
+        EffectiveSet set = effectiveSet(stored, session);
+        return new Read.Found<>(
+                new Report(stored, closure.fingerprint(), closure.closureFingerprint(), set.skipped()), etag);
+    }
+
+    /** The page of the set the query asks for: filtered, strictly after the cursor's position, at most a page size. */
+    private static Page pageOf(
+            StoredActivation stored, ClosureSnapshot closure, EffectiveSet set, PageQuery query, String setTag) {
+        Predicate<EffectiveArtifact> kind =
+                item -> query.kind().map(wanted -> item.kind() == wanted).orElse(true);
+        Predicate<EffectiveArtifact> state =
+                item -> query.state().map(wanted -> item.state() == wanted).orElse(true);
+        Predicate<EffectiveArtifact> after = item -> query.after()
+                .map(from -> item.ref().compareTo(from.position()) > 0)
+                .orElse(true);
+        List<EffectiveArtifact> matching = set.artifacts().stream()
+                .filter(kind)
+                .filter(state)
+                .filter(after)
+                .toList();
+        List<EffectiveArtifact> items =
+                matching.stream().limit(query.pageSize()).toList();
+        Optional<After> next = matching.size() > items.size()
+                ? Optional.of(new After(items.getLast().ref(), setTag, ""))
+                : Optional.empty();
+        return new Page(stored, closure.fingerprint(), closure.closureFingerprint(), set.summary(), items, next, query);
+    }
+
+    /** The effective set of the stored document: the merge and the in-force resolution, asked once of the session. */
+    private static EffectiveSet effectiveSet(StoredActivation stored, PacksSession session) {
+        MergedSnapshot merged = session.merged();
+        InForceAnswer answered = session.inForce(EffectiveSet.queryOf(stored.document()));
+        return EffectiveSet.of(stored.document(), session.snapshot(), merged, answered);
+    }
+
+    /** The deny entries not applied, as artifacts, each once, in order. */
+    private static List<ArtifactRef> denied(InForceAnswer answered) {
+        return answered.denyNotApplied().stream()
+                .map(DenyNotApplied::ref)
+                .distinct()
+                .sorted()
+                .toList();
+    }
+
+    /** One verified read of the closure the document names, refused when a pack it names is no longer configured. */
+    private PacksSession open(StoredActivation stored) {
+        PacksSession session = packs.session(stored.document()
+                .packs()
+                .map(list -> list.stream().map(PackRef::packId).toList()));
+        if (!session.snapshot().resolved()) {
+            throw new CharterRefusal(
+                    RefusalCode.PACK_UNREADABLE,
+                    "The activation builds on "
+                            + String.join(", ", session.snapshot().unknownPacks())
+                            + ", which no pack is configured as any more.");
+        }
+        return session;
+    }
+
+    private StoredActivation found(ActivationId id) {
+        return repository
+                .find(id)
+                .orElseThrow(() -> new CharterRefusal(
+                        RefusalCode.ACTIVATION_NOT_FOUND, "No activation is stored as '" + id + "'."));
     }
 }

@@ -7,6 +7,7 @@ import ai.speckitty.charter.activations.application.ActivationSelectionService;
 import ai.speckitty.charter.activations.application.ActivationService;
 import ai.speckitty.charter.activations.application.ActivationWrites;
 import ai.speckitty.charter.activations.application.AvailablePacks;
+import ai.speckitty.charter.activations.application.EffectiveReadService;
 import ai.speckitty.charter.activations.application.FakeAvailablePacks;
 import ai.speckitty.charter.activations.domain.ClosureSnapshots;
 import ai.speckitty.charter.activations.infra.storage.InMemoryActivationRepository;
@@ -89,7 +90,9 @@ final class StandaloneActivationMvc {
                 new ActivationExclusionService(writes),
                 new ActivationPresetService(writes),
                 mapper,
-                new ActivationChangeMapper(mapper));
+                new ActivationChangeMapper(mapper),
+                new EffectiveReadService(repository, packs),
+                new EffectiveReadMapper(mapper));
     }
 
     /** The controller behind the method validation Spring Boot applies to the {@code @Validated} interface. */

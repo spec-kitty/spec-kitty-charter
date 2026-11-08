@@ -109,7 +109,12 @@ public class ActivationMapper {
      * @return the answer
      */
     public Activation toActivation(StoredActivation stored, List<ArtifactRef> denyNotApplied) {
-        return toActivation(stored);
+        Activation answer = toActivation(stored);
+        if (!denyNotApplied.isEmpty()) {
+            answer.setDenyNotApplied(
+                    denyNotApplied.stream().map(ArtifactRef::urn).toList());
+        }
+        return answer;
     }
 
     /**

@@ -64,7 +64,7 @@ public class ActivationChangeMapper {
         return answer;
     }
 
-    private static ai.speckitty.charter.api.model.SkippedReport skipped(SkippedReport report) {
+    static ai.speckitty.charter.api.model.SkippedReport skipped(SkippedReport report) {
         ai.speckitty.charter.api.model.SkippedReport skipped = new ai.speckitty.charter.api.model.SkippedReport(
                 references(report.skippedByScope()),
                 report.skippedDeactivated().stream()
@@ -129,7 +129,7 @@ public class ActivationChangeMapper {
         return refs.stream().map(ActivationChangeMapper::reference).toList();
     }
 
-    private static ArtifactReference reference(ArtifactRef ref) {
+    static ArtifactReference reference(ArtifactRef ref) {
         return new ArtifactReference(
                 ArtifactReference.KindEnum.fromValue(ref.kind().token()), ref.id());
     }
