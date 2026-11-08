@@ -72,7 +72,8 @@ public final class LayerMerge {
             }
         });
         Map<String, MergedClosure.MergedPreset> presets = mergedPresets(closure, factsByConfiguredId);
-        return new MergedClosure(winners, overrides, presets, floorOf(closure, factsByConfiguredId, winners.keySet()));
+        return new MergedClosure(
+                winners, overrides, Map.of(), presets, floorOf(closure, factsByConfiguredId, winners.keySet()));
     }
 
     /**

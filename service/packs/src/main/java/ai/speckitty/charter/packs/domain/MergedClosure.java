@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * What the layer merge answers for one composed closure (FR-009 to FR-012): which version of each held artifact is in
@@ -18,6 +19,8 @@ import java.util.Optional;
  * @param winners each held URN with the version in force, in the order the closure first holds the URNs
  * @param layerOverrides every version a later level replaced, in the order the closure first holds the artifacts and,
  *     per artifact, from the nearest built-in level to the farthest
+ * @param languages each winner's {@code applies_to_languages}, read from the winner's own pack alone; a winner that
+ *     declares none is absent
  * @param presets each preset id once, with the copy in force and the must-have items of every copy (A1, rule C31)
  * @param floor the must-have items of every copy of every governing preset that the merged closure holds, with the
  *     requiring packs; the items it holds no version of are in its {@link RequiredFloor#unheld()} report (A10)
@@ -25,12 +28,13 @@ import java.util.Optional;
 public record MergedClosure(
         Map<Urn, Winner> winners,
         List<LayerOverride> layerOverrides,
+        Map<Urn, Set<String>> languages,
         Map<String, MergedPreset> presets,
         RequiredFloor floor) {
 
     /** A closure that holds nothing: no winner, no override, no preset. */
     public static final MergedClosure EMPTY =
-            new MergedClosure(Map.of(), List.of(), Map.of(), new RequiredFloor(Map.of()));
+            new MergedClosure(Map.of(), List.of(), Map.of(), Map.of(), new RequiredFloor(Map.of()));
 
     /**
      * A preset id as the merge answers it (ADR-0053 d6, A1): the copy in force, and the requirement that only ever
@@ -93,12 +97,17 @@ public record MergedClosure(
      *
      * @param winners each held URN with its winner
      * @param layerOverrides every replaced version
+     * @param languages the languages of each winner
      * @param presets each preset id with its merged requirement
      * @param floor the floor over every copy of every governing preset
      */
     public MergedClosure {
         winners = Collections.unmodifiableMap(new LinkedHashMap<>(Objects.requireNonNull(winners, "winners")));
         layerOverrides = List.copyOf(Objects.requireNonNull(layerOverrides, "layerOverrides"));
+        Map<Urn, Set<String>> languageCopy = new LinkedHashMap<>();
+        Objects.requireNonNull(languages, "languages")
+                .forEach((urn, declared) -> languageCopy.put(urn, Set.copyOf(declared)));
+        languages = Collections.unmodifiableMap(languageCopy);
         presets = Collections.unmodifiableMap(new LinkedHashMap<>(Objects.requireNonNull(presets, "presets")));
         Objects.requireNonNull(floor, "floor");
     }

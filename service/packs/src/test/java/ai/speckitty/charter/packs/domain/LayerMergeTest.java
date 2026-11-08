@@ -37,6 +37,7 @@ class LayerMergeTest {
 
         private final List<PackUnderResolution> packs = new ArrayList<>();
         private final Map<String, List<Preset>> presets = new HashMap<>();
+        private final Map<String, Map<String, List<String>>> languages = new HashMap<>();
         private final Map<String, MutabilityPolicySource> policies = new HashMap<>();
 
         Fixture pack(String name, PackLevel level, String... held) {
@@ -56,6 +57,11 @@ class LayerMergeTest {
                     overrides);
             packs.add(new PackUnderResolution(
                     new ConfiguredPack(new PackIdentifier(name), level), descriptor, List.of(), Arrays.asList(held)));
+            return this;
+        }
+
+        Fixture languages(String name, String urn, String... declared) {
+            languages.computeIfAbsent(name, ignored -> new HashMap<>()).put(urn, Arrays.asList(declared));
             return this;
         }
 
@@ -84,7 +90,9 @@ class LayerMergeTest {
                                 pack.definedArtifacts(),
                                 List.of(),
                                 MutabilityPolicySource.empty(),
-                                presets.getOrDefault(name, List.of())));
+                                presets.getOrDefault(name, List.of()),
+                                List.of(),
+                                languages.getOrDefault(name, Map.of())));
             }
             return LayerMerge.merge(closure(), facts, new PerPackPolicy(policies));
         }
@@ -121,6 +129,11 @@ class LayerMergeTest {
                 new Row("C17", "the level that applies wins, built-in then org then project", LayerMergeTest::c17),
                 new Row("C17", "an id held once is its own winner, and replaces nothing", LayerMergeTest::c17Single),
                 new Row("C18", "the winner replaces the others whole, per artifact", LayerMergeTest::c18),
+                new Row("C18", "the winner's languages are read from its own pack alone", LayerMergeTest::c18Languages),
+                new Row(
+                        "C18",
+                        "a winner that declares no language inherits none from the version it replaced",
+                        LayerMergeTest::c18NoLanguagesInherited),
                 new Row("C15", "a settled sibling contest puts the named member in force", LayerMergeTest::c15),
                 new Row(
                         "C15",
@@ -256,6 +269,32 @@ class LayerMergeTest {
                         PackCompositionResolver.Refusal.class,
                         refusal -> assertThat(refusal.toCharterRefusal().code())
                                 .isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT));
+    }
+
+    private static void c18Languages() {
+        MergedClosure merged = new Fixture()
+                .pack("org", PackLevel.ORG, "tactic:T", "tactic:U")
+                .pack("project", PackLevel.PROJECT, "tactic:T")
+                .languages("org", "tactic:T", "java", "kotlin")
+                .languages("org", "tactic:U", "python")
+                .languages("project", "tactic:T", "rust")
+                .merge();
+
+        assertThat(merged.languages().get(urn("tactic:T"))).containsExactlyInAnyOrder("rust");
+        assertThat(merged.languages().get(urn("tactic:U"))).containsExactlyInAnyOrder("python");
+        assertThat(merged.languages()).containsOnlyKeys(urn("tactic:T"), urn("tactic:U"));
+    }
+
+    private static void c18NoLanguagesInherited() {
+        MergedClosure merged = new Fixture()
+                .pack("org", PackLevel.ORG, "tactic:T")
+                .pack("project", PackLevel.PROJECT, "tactic:T")
+                .languages("org", "tactic:T", "java")
+                .merge();
+
+        assertThat(merged.languages())
+                .as("the project's tactic declares none, and nothing is inherited from the org's")
+                .isEmpty();
     }
 
     private static MutabilityPolicySource level(String urn, MutabilityLevel level) {
