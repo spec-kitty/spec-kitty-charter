@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.application;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
@@ -10,6 +11,7 @@ import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolu
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.RequiredFloor;
+import java.time.Duration;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -33,6 +35,12 @@ import org.springframework.stereotype.Service;
 public final class ClosureQueries {
 
     private static final String STALE = "The packs changed while the closure was read; read it again.";
+
+    /** How many times a stale read is tried again (research R-lock); after that {@code stale_input} is the answer. */
+    private static final int RETRIES = 3;
+
+    /** The longest a retry waits for a running swap to end before it reads again. */
+    private static final Duration SWAP_WAIT = Duration.ofMillis(250);
 
     private final OfferingReadService offering;
     private final PackCatalogRepository catalog;
@@ -59,11 +67,26 @@ public final class ClosureQueries {
      * @param roots the configured identifiers the closure is rooted at; empty for every configured pack
      * @return the closure's view, with the verified fingerprint
      * @throws CharterRefusal with a composition refusal when the closure cannot compose, {@code PACK_UNREADABLE} when an
-     *     input of it cannot be read, or {@code STALE_INPUT} when the inputs changed during the read
+     *     input of it cannot be read, or {@code STALE_INPUT} when the inputs changed during the read and three retries,
+     *     each after the running swap ended, changed again
      * @throws UnknownRootException when a root names no configured pack, naming every such root; nothing is composed
      */
     public ClosureView snapshot(Optional<List<PackIdentifier>> roots) {
         Objects.requireNonNull(roots, "roots");
+        for (int retry = 0; ; retry++) {
+            try {
+                return snapshotOnce(roots);
+            } catch (CharterRefusal refused) {
+                if (refused.code() != RefusalCode.STALE_INPUT || retry >= RETRIES) {
+                    throw refused;
+                }
+                read.awaitWrites(SWAP_WAIT);
+            }
+        }
+    }
+
+    /** One verified read of the closure. */
+    private ClosureView snapshotOnce(Optional<List<PackIdentifier>> roots) {
         ConsistentRead.Verified<OfferingReadService.ComposedClosure> verified =
                 read.read(STALE, () -> roots.map(this::composedOfKnownRoots).orElseGet(offering::composedWithFacts));
         return viewOf(verified.value(), verified.fingerprint());
