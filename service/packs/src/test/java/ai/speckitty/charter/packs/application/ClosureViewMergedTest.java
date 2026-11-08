@@ -270,9 +270,12 @@ class ClosureViewMergedTest {
         ReachRequest request = new ReachRequest(
                 Set.of(D), EnumSet.of(RelationType.REQUIRES), urn -> false, Optional.empty(), OptionalInt.empty());
 
-        assertThat(view.reach(request).reached().keySet())
+        assertThat(Reachability.reach(view.edges(), request).reached().keySet())
                 .as("the unmerged index keeps both versions' edges")
                 .contains(new Urn(NodeKind.TACTIC, "T1"), new Urn(NodeKind.TACTIC, "T2"));
+        assertThat(view.reach(request))
+                .as("the cascade walks the merged edges (FR-038)")
+                .isEqualTo(view.merged().reach(request));
         assertThat(view.merged().reach(request).reached().keySet())
                 .as("the merged one follows the version in force only")
                 .contains(new Urn(NodeKind.TACTIC, "T2"))

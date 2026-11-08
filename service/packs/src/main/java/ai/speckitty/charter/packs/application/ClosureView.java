@@ -1,8 +1,12 @@
 package ai.speckitty.charter.packs.application;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.InForceRequest;
+import ai.speckitty.charter.packs.domain.InForceResolution;
 import ai.speckitty.charter.packs.domain.InForceStates;
 import ai.speckitty.charter.packs.domain.LayerMerge;
 import ai.speckitty.charter.packs.domain.MergedClosure;
@@ -15,6 +19,7 @@ import ai.speckitty.charter.packs.domain.RequiredFloor;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -65,7 +70,8 @@ public record ClosureView(
     /**
      * What the layer merge is built from: the composed closure and the facts the verified read holds, with the merge
      * kept once it is built. The merge never reads again (NFR-007); it is built on the first {@link #merged()} and not
-     * before, so a read that never asks for it, {@code /offering} and every write path among them, never runs it.
+     * before, so a read that never asks for it, {@code /offering} among them, never runs it. The write cascade asks for it
+     * through {@link #reach} (FR-038).
      */
     public static final class MergeInputs {
 
@@ -132,6 +138,38 @@ public record ClosureView(
          */
         public ReachResult reach(ReachRequest request) {
             return Reachability.reach(edges, request);
+        }
+
+        /**
+         * The {@code overrides} and {@code enhances} edges among the winners, as the in-force resolution reads them
+         * (FR-013 to FR-016): from the merged index, so an edge a losing version declared is not among them.
+         *
+         * @return each overrider and enhancer with the winning artifacts it names
+         */
+        InForceResolution.Edges resolutionEdges() {
+            Map<Urn, Set<Urn>> overrides = new LinkedHashMap<>();
+            Map<Urn, Set<Urn>> enhances = new LinkedHashMap<>();
+            closure.winners()
+                    .forEach((urn, winner) -> edges.inPack(new PackIdentifier(winner.descriptorPackId()))
+                            .resolve(urn)
+                            .ifPresent(node -> node.derivedRelationships()
+                                    .forEach(edge -> record(urn, edge, overrides, enhances))));
+            return new InForceResolution.Edges(overrides, enhances, Map.of());
+        }
+
+        /** Files an {@code overrides} or {@code enhances} edge to a winner under its source; any other edge is not read. */
+        private void record(Urn source, Relationship edge, Map<Urn, Set<Urn>> overrides, Map<Urn, Set<Urn>> enhances) {
+            if (!closure.winners().containsKey(edge.to())) {
+                return;
+            }
+            if (edge.type() == RelationType.OVERRIDES) {
+                overrides
+                        .computeIfAbsent(source, ignored -> new LinkedHashSet<>())
+                        .add(edge.to());
+            } else if (edge.type() == RelationType.ENHANCES) {
+                enhances.computeIfAbsent(source, ignored -> new LinkedHashSet<>())
+                        .add(edge.to());
+            }
         }
     }
 
@@ -261,13 +299,16 @@ public record ClosureView(
     }
 
     /**
-     * The forward reach over the closure's edges ({@link Reachability#reach}).
+     * The forward reach over the merged edges ({@link MergedView#reach}), so the write cascade never follows an edge of
+     * an artifact a later level replaced (FR-038, rule E20). Where no layer override exists the merged and the unmerged
+     * walks agree. It builds the layer merge on its first call, from the read this view holds.
      *
      * @param request what to walk
      * @return what the walk reached, stopped at, left behind a stop and passed through
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal as {@link #merged()} does
      */
     public ReachResult reach(ReachRequest request) {
-        return Reachability.reach(edges, request);
+        return merged().reach(request);
     }
 
     /**
@@ -292,7 +333,8 @@ public record ClosureView(
      * @return one state per winning artifact and the rules not applied
      */
     public InForceStates inForce(InForceRequest request) {
-        return new InForceStates(Map.of(), List.of(), List.of(), List.of(), List.of(), List.of(), Map.of());
+        MergedView view = merged();
+        return InForceResolution.resolve(view.closure(), view.resolutionEdges(), request);
     }
 
     /**
