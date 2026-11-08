@@ -9,8 +9,11 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
  * Makes the service read an archive upload as a stream (#418, A3): the {@code Resource} converter Spring registers by
- * default is replaced, in its place in the list, by {@link StreamingResourceConverter}. No other operation takes a
- * {@code Resource} body, and what the converter writes is unchanged.
+ * default is replaced, in its place in the list, by {@link StreamingResourceConverter}. The replacement is not scoped
+ * to the upload: the converter applies to every {@code Resource}-typed request body, in every operation. Today the
+ * archive upload ({@code registerPackFromArchive}) is the only one, and what the converter writes is unchanged;
+ * {@code ResourceBodyOperationsTest} scans the generated API interfaces and fails when a second operation takes a
+ * {@code Resource} body, so that whoever adds it narrows this converter first.
  */
 @Component
 public class ArchiveBodyConverters implements WebMvcConfigurer {
