@@ -182,6 +182,8 @@ They are recorded here as decided. This document does not reopen them; it settle
 
 ## R6. Inbound references on `DELETE`
 
+> Superseded in part (2026-11-07, plan delta squad): the scan is built from `PackCompositionFacts.edges()`, the presets and descriptor `overrides`, and the data-only fields of ADR-0064 D11 do not count. The pack `If-Match` reuses `parameters/IfMatch.yaml`, not a `PackIfMatch` parameter. See plan.md, "Fold of the phase A delta squad (2026-11-07)".
+
 - **Decision.**
   - `InboundReferences.of(packId, urn)` answers every configured pack other than this one whose references resolve
     to this pack's artifact. Its inputs come from one `ConsistentRead`: every configured pack's descriptor and

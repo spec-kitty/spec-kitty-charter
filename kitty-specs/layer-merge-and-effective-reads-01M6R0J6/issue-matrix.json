@@ -132,6 +132,18 @@
       "verdict": "not-applicable",
       "wp": null
     },
+    "#397": {
+      "evidence_ref": "Context only: plan.md IC-15 and WP15 cite #397 (GraphWalk sees only derived relations) as the reason relation checks read EdgeIndex/edges(); no work for #397 in this mission",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
     "#398": {
       "evidence_ref": "Cited for context: #374 is a closed input analysis; #398/#399 are the base PRs this mission stacks on",
       "fr": null,
@@ -154,6 +166,30 @@
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
       "verdict": "not-applicable",
+      "wp": null
+    },
+    "#403": {
+      "evidence_ref": "Merged on main (ADR-0064); this mission builds on it (plan.md fold 2026-11-07, DM-01M6TDH34JX94ZZWN6MKMVPQJ2)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "verified-already-fixed",
+      "wp": null
+    },
+    "#404": {
+      "evidence_ref": "Operator ruling DM-01M6TQ67C9ZTNGZB9CY28JS54F: PR A stays strict; repair writes (#404) stay open as their own issue",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
       "wp": null
     },
     "#405": {
@@ -191,6 +227,30 @@
       "title": null,
       "verdict": "in-mission",
       "wp": "WP05"
+    },
+    "#416": {
+      "evidence_ref": "Lookup cache proposal raised by the operator's 2026-11-07 request; the mission keeps its local fixes (WP15 pin, WP16 identity scan) and is not blocked on #416",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
+      "wp": null
+    },
+    "#417": {
+      "evidence_ref": "decision 01M6VXMCDQJWBJXGRQNMF5G6SV: operator kept the notice drop; #417 tracks widening after this mission",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
+      "wp": "WP20"
     }
   },
   "schema_version": 1

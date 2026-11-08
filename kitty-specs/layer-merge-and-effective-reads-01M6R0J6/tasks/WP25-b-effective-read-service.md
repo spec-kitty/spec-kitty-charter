@@ -148,6 +148,8 @@ The deny entries the floor or a lock overrides (B4 activation half).
 
 ### T129: ActivationImpact adapter
 
+Note (phase A delta squad, 2026-11-07): WP15 creates `ActivationImpactAdapter` in PR A, implementing `activationRoots()` for the registration impact check. This WP extends that file for the in-force changes; it does not create it.
+
 Implements the `packs` port: given the before/after closures, list activation ids whose in-force set changes (bounded: activations composing the pack only).
 
 ### T130: Scenario glue and timing
