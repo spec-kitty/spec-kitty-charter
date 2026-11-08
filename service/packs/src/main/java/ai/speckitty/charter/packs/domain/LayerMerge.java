@@ -73,7 +73,11 @@ public final class LayerMerge {
         });
         Map<String, MergedClosure.MergedPreset> presets = mergedPresets(closure, factsByConfiguredId);
         return new MergedClosure(
-                winners, overrides, Map.of(), presets, floorOf(closure, factsByConfiguredId, winners.keySet()));
+                winners,
+                overrides,
+                languagesOf(winners, closure, factsByConfiguredId),
+                presets,
+                floorOf(closure, factsByConfiguredId, winners.keySet()));
     }
 
     /**
@@ -114,6 +118,29 @@ public final class LayerMerge {
                 pack.descriptor().packId(),
                 pack.configured().id().value(),
                 pack.descriptor().name());
+    }
+
+    /**
+     * The languages each winner declares, read from the winner's own pack alone: a version a later level replaced is
+     * never consulted, so nothing is inherited (C18). A winner that declares none is absent.
+     */
+    private static Map<Urn, Set<String>> languagesOf(
+            Map<Urn, MergedClosure.Winner> winners,
+            List<PackUnderResolution> closure,
+            Map<String, PackCompositionFacts> facts) {
+        Map<String, PackCompositionFacts> byDescriptorPackId = new LinkedHashMap<>();
+        closure.forEach(pack -> byDescriptorPackId.put(pack.descriptor().packId(), factsOf(pack, facts)));
+        Map<Urn, Set<String>> languages = new LinkedHashMap<>();
+        winners.forEach((urn, winner) -> {
+            List<String> declared = byDescriptorPackId
+                    .getOrDefault(winner.descriptorPackId(), PackCompositionFacts.NONE)
+                    .languages()
+                    .getOrDefault(urn.toString(), List.of());
+            if (!declared.isEmpty()) {
+                languages.put(urn, new LinkedHashSet<>(declared));
+            }
+        });
+        return languages;
     }
 
     /** One preset id's copies: the pack that holds each, in closure order. */
