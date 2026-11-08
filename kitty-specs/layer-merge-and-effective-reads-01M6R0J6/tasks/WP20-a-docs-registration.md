@@ -207,3 +207,15 @@ Two code fixes, runner decision 2026-11-08, each with a red test first:
 
 1. **The relationship `DELETE` runs the edge gate.** Today it skips the write gate, so a `DELETE` can drop an edge whose source is a locked ancestor artifact, which a whole-pack replace is refused for dropping (DM-01M6TR1KDAJ64GMJD6AYNZKT59 item 4). Gate the removed edge as a `RELATIONSHIP` write on its source, with the refusal a replace gives. If this needs a response the contract does not list for the `DELETE`, add it with a `### Changed` fragment line.
 2. **The relationship `DELETE` compares pack-qualified targets.** Today the pair compare ignores pack qualifiers, so with registered edges `A→base::X` and `A→other::X` one `DELETE` removes both. Remove only the edge the request names; keep the kernel's comparison for an unqualified reference.
+
+## Hand-off from WP18 (2026-11-08)
+
+Document, and add divergence-register entries for:
+
+- The host requirement: git 2.50.1 or later on `PATH` or at `charter.pack-sources.git.executable`; no JGit; a container image must carry it (README and `docs/guides/run-in-a-container.md`). The new keys `charter.pack-sources.git.executable` and `charter.pack-sources.git.timeout` (60 s). The version is checked at every start-up; an old or missing git makes the git kind answer `503 pack_source_unavailable` while the other kinds work.
+- The filesystem kind switched on with no root is a start-up failure.
+- The git source runs the host git binary into a bare work repository, never a work tree.
+- The `428` for a git branch ref without a commit, satisfied by `If-Match` or `If-None-Match: *`.
+- The reasons `bad_ref` and `commit_mismatch`.
+- A link, a submodule or an odd mode in the fetched tree is `422 validation_failed` with violation `entry_type`, as for an archive.
+- The new required CI job `git-source` in `service.yml` (check the aggregate gate and branch protection pick it up).
