@@ -6,7 +6,6 @@ import ai.speckitty.charter.activations.domain.ActivationRepository;
 import ai.speckitty.charter.activations.domain.Revision;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.AccessDeniedException;
@@ -97,6 +96,19 @@ public final class FileActivationRepository implements ActivationRepository {
         void move(Path temp, Path target) throws IOException;
 
         /**
+         * Lists the entries of the root; a test supplies one that fails, as a disk does that cannot be read.
+         *
+         * @param directory the root of the store
+         * @return the entries
+         * @throws IOException when the directory cannot be listed
+         */
+        default List<Path> list(Path directory) throws IOException {
+            try (Stream<Path> entries = Files.list(directory)) {
+                return entries.toList();
+            }
+        }
+
+        /**
          * Forces a directory to the device, so a file created, moved or removed in it, or a directory created in it,
          * survives a power cut. A directory the platform denies opening as a channel (Windows: {@link
          * AccessDeniedException}) or that is gone ({@link NoSuchFileException}) is tolerated; any other failure to open
@@ -164,14 +176,15 @@ public final class FileActivationRepository implements ActivationRepository {
         if (!Files.isDirectory(root)) {
             return List.of();
         }
-        try (Stream<Path> children = Files.list(root)) {
-            return children.filter(Files::isDirectory)
+        try {
+            return durability.list(root).stream()
+                    .filter(Files::isDirectory)
                     .map(child -> ActivationDirectoryName.tryDecode(
                             child.getFileName().toString()))
                     .flatMap(Optional::stream)
                     .toList();
         } catch (IOException e) {
-            throw new UncheckedIOException("the activation store cannot be listed", e);
+            throw ActivationStorageException.listing(e);
         }
     }
 

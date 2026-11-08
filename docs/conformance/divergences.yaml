@@ -1291,3 +1291,23 @@
   since: 2026-11-08
   evidence:
     - "charter: contracts/charter/scenarios/registration/whole-pack-registration.feature (A git ref is pinned to the commit it points at; A hostile git ref is refused); NetworkCodeBoundaryTest; .github/workflows/service.yml (git-source)"
+- id: DIV-614
+  surface: Pack writes when the activation store cannot be listed
+  core: >-
+    The service's understanding of core, to be confirmed against core: it has no activation store to
+    list.
+  service: >-
+    The registration impact check lists the stored activations. When the store cannot be listed (the
+    platform refuses to read its directory), a per-artifact write, a DELETE or a registration job
+    ends as 500 internal_error, the job as refused with internal_error and failed:internal_error in
+    the audit log. Nothing is written, the body is the generic one and the cause is in the operator
+    log. This is how a stored document that cannot be read back is answered. No refusal code names a
+    fault of the activation store, and none is added.
+  rationale: >-
+    A fault of the store is the service's, not the client's, and a code that blames neither the pack
+    nor the request would mislead.
+  ruling: ADR-0065; issue 418 (R6)
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: ActivationListingFaultTest; FileActivationRepositoryListingFailureTest; ActivationImpactAdapterTest"
