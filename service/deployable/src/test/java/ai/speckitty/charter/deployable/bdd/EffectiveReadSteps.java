@@ -64,7 +64,9 @@ public class EffectiveReadSteps {
     public void getWithRememberedCursor(String path) throws Exception {
         String cursor = charter.remembered(CURSOR_FIELD);
         assertThat(cursor)
-                .as("a next page cursor was remembered with: I remember the field \"%s\" of the response body", CURSOR_FIELD)
+                .as(
+                        "a next page cursor was remembered with: I remember the field \"%s\" of the response body",
+                        CURSOR_FIELD)
                 .isNotNull()
                 .isNotEmpty();
         http.get(path + (path.contains("?") ? "&" : "?") + "pageCursor=" + cursor);

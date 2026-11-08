@@ -672,6 +672,7 @@ Feature: The activation register and the packs an activation builds on
     Then the response status is 200
     And the field at "/config/deactivated/directive/0" is "DIRECTIVE_001"
     When I remember the ETag
+    And I remember the header "ETag"
     And I remember the field "revision" of the response body
     And I PUT "/activations/a-1" with the remembered ETag and the body:
       """

@@ -299,7 +299,7 @@ Feature: The layer merge decides which version of an artifact the effective read
       """
     And the stored file of the activation "a-1" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "a"}, {"packId": "b"}], "selected": {"directive": ["D"]}}
+      {"packs":[{"packId":"a"},{"packId":"b"}],"schemaVersion":2,"selected":{"directive":["D"]}}
       """
     When I GET "/activations/a-1/artifacts"
     Then the response status is 500
@@ -320,8 +320,9 @@ Feature: The layer merge decides which version of an artifact the effective read
     FR-011, ADR-0063 D3, C21: core (built-in) locks LK and leaves OP open. The project pack proj replaces LK, which a
     locked artifact does not allow, so the read of an activation over core and proj refuses 500 pack_unreadable,
     naming the artifact, both packs and the level. The project pack proj-ok replaces the open OP: the control, an
-    activation over core and proj-ok, answers 200 and lists OP with proj-ok's provenance in the same scenario. Both
-    refused and served activations are stored past the API.
+    activation over core and proj-ok, answers 200 and lists OP with proj-ok's provenance in the same scenario, beside LK,
+    which core's lock keeps in force whatever the activation selects. Both refused and served activations are stored
+    past the API.
     Given the built-in pack "core" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943R
@@ -387,11 +388,11 @@ Feature: The layer merge decides which version of an artifact the effective read
       """
     And the stored file of the activation "a-1" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "core"}, {"packId": "proj"}], "selected": {"directive": ["LK"]}}
+      {"packs":[{"packId":"core"},{"packId":"proj"}],"schemaVersion":2,"selected":{"directive":["LK"]}}
       """
     And the stored file of the activation "a-2" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "core"}, {"packId": "proj-ok"}], "selected": {"directive": ["OP"]}}
+      {"packs":[{"packId":"core"},{"packId":"proj-ok"}],"schemaVersion":2,"selected":{"directive":["OP"]}}
       """
     When I GET "/activations/a-1/artifacts"
     Then the response status is 500
@@ -409,7 +410,10 @@ Feature: The layer merge decides which version of an artifact the effective read
     Then the response status is 200
     And the field at "/items" holds exactly the ids:
       """
+      directive:LK
       directive:OP
       """
-    And the field at "/items/0/packId" is "proj-ok"
-    And the field at "/items/0/level" is "project"
+    And the field at "/items/0/reason" is "locked"
+    And the field at "/items/0/packId" is "core"
+    And the field at "/items/1/packId" is "proj-ok"
+    And the field at "/items/1/level" is "project"
