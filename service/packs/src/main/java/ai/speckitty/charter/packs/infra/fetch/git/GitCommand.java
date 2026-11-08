@@ -207,6 +207,20 @@ final class GitCommand {
         }
 
         /**
+         * Says why git was destroyed, when it was: after a read of its output failed, the failure is the deadline's or the
+         * size watch's and not the output's.
+         *
+         * @throws GitFailure when the watch destroyed git at the deadline or for size, or the thread was interrupted
+         */
+        void rethrowIfDestroyed() {
+            Kind why = killedFor.get();
+            if (why != null) {
+                joinDrain();
+                throw new GitFailure(why, stderr());
+            }
+        }
+
+        /**
          * Waits for git to end.
          *
          * @throws GitFailure when git was destroyed at the deadline or for size, or ended with a status other than zero

@@ -453,6 +453,8 @@ public final class GitSourceFetcher implements PackSourceFetcher {
             throw ArchiveStaging.refusalOf(new ArchiveRefusal(
                     List.of(new ArchiveViolation(Code.EXPANDED_TOO_LARGE, "")), 0, 0));
         } catch (IOException unreadable) {
+            // A cut stream is the deadline's or the size watch's when the watch destroyed git; else git's own failure.
+            cat.rethrowIfDestroyed();
             throw SourceUpstreamException.failed();
         }
     }
