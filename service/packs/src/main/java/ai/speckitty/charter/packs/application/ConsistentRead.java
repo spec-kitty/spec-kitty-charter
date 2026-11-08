@@ -4,6 +4,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.PackSources;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.Objects;
 import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
@@ -45,6 +46,19 @@ public final class ConsistentRead {
     public ConsistentRead(PackSources sources, PackWriteGeneration generation) {
         this.sources = Objects.requireNonNull(sources, "sources");
         this.generation = Objects.requireNonNull(generation, "generation");
+    }
+
+    /**
+     * The digest of the named packs' files alone, for a caller that scopes a fingerprint to a closure. Call it inside
+     * the {@code load} of {@link #read}: the whole-source digests taken before and after the load then guard it, so it
+     * names the files the load read.
+     *
+     * @param packNames the configured names of the packs
+     * @return {@code sha256:} and 64 lower-case hex digits
+     * @throws CharterRefusal with {@code PACK_UNREADABLE} when a named pack cannot be read
+     */
+    public String fingerprintOf(Collection<String> packNames) {
+        return sources.fingerprintOf(Objects.requireNonNull(packNames, "packNames"));
     }
 
     /**

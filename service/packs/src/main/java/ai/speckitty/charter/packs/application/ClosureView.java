@@ -53,6 +53,10 @@ import org.jspecify.annotations.Nullable;
  *     from it with no further read
  * @param mergeInputs what {@link #merged()} builds the layer merge from: the composed packs and the facts the same read
  *     holds
+ * @param closureFingerprint the verified digest of the packs IN the closure alone, from the same read: the closure's
+ *     packs, their configured ids and levels in closure order, and the files of those packs. A change to a configured
+ *     pack outside the closure leaves it as it is, where {@link #fingerprint()} (the digest of every configured pack)
+ *     changes. It is what the effective reads' entity tags cover
  */
 public record ClosureView(
         List<OfferingReadService.OfferingEntry> packs,
@@ -65,7 +69,8 @@ public record ClosureView(
         Map<String, String> parents,
         String fingerprint,
         EdgeIndex edges,
-        MergeInputs mergeInputs) {
+        MergeInputs mergeInputs,
+        String closureFingerprint) {
 
     /**
      * What the layer merge is built from: the composed closure and the facts the verified read holds, with the merge
@@ -207,6 +212,7 @@ public record ClosureView(
      * @param fingerprint the verified digest
      * @param edges the closure's typed edges
      * @param mergeInputs what the layer merge is built from
+     * @param closureFingerprint the digest of the closure's own packs
      */
     public ClosureView {
         packs = List.copyOf(Objects.requireNonNull(packs, "packs"));
@@ -220,6 +226,49 @@ public record ClosureView(
         Objects.requireNonNull(fingerprint, "fingerprint");
         Objects.requireNonNull(edges, "edges");
         Objects.requireNonNull(mergeInputs, "mergeInputs");
+        Objects.requireNonNull(closureFingerprint, "closureFingerprint");
+    }
+
+    /**
+     * A view whose closure digest is the whole source digest: for a view built without a scoped one.
+     *
+     * @param packs the closure's packs
+     * @param heldIds the held ids per kind
+     * @param holderOf the holder of each held URN
+     * @param floor the required floor
+     * @param policy the per-pack policies
+     * @param closurePackIds the closure's {@code pack_id}s
+     * @param heldPresets the presets, each id once
+     * @param parents the parent of each pack that has one
+     * @param fingerprint the verified digest
+     * @param edges the closure's typed edges
+     * @param mergeInputs what the layer merge is built from
+     */
+    public ClosureView(
+            List<OfferingReadService.OfferingEntry> packs,
+            Map<ArtifactKind, Set<String>> heldIds,
+            Map<Urn, String> holderOf,
+            RequiredFloor floor,
+            PerPackPolicy policy,
+            List<String> closurePackIds,
+            List<HeldPreset> heldPresets,
+            Map<String, String> parents,
+            String fingerprint,
+            EdgeIndex edges,
+            MergeInputs mergeInputs) {
+        this(
+                packs,
+                heldIds,
+                holderOf,
+                floor,
+                policy,
+                closurePackIds,
+                heldPresets,
+                parents,
+                fingerprint,
+                edges,
+                mergeInputs,
+                fingerprint);
     }
 
     /**

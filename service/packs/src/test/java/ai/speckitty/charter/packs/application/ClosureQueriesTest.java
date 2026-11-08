@@ -21,6 +21,7 @@ import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
+import ai.speckitty.charter.packs.domain.PackSources;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.PresetItem;
@@ -115,6 +116,35 @@ class ClosureQueriesTest {
     }
 
     private ClosureQueries queries(Supplier<String> fingerprint) {
+        return queriesOver(new PackSources() {
+            @Override
+            public String fingerprint() {
+                digests.incrementAndGet();
+                return fingerprint.get();
+            }
+        });
+    }
+
+    /** Sources that digest each pack's content on its own, as the file system does: the whole digest is every pack's. */
+    private PackSources contentSources(Map<String, String> contents) {
+        return new PackSources() {
+            @Override
+            public String fingerprint() {
+                return "whole:" + new java.util.TreeMap<>(contents);
+            }
+
+            @Override
+            public String fingerprintOf(java.util.Collection<String> packNames) {
+                return "scoped:"
+                        + new java.util.TreeMap<>(contents)
+                                .entrySet().stream()
+                                        .filter(entry -> packNames.contains(entry.getKey()))
+                                        .toList();
+            }
+        };
+    }
+
+    private ClosureQueries queriesOver(PackSources sources) {
         PackDescriptorRepository repository = new PackDescriptorRepository() {
             @Override
             public PackDescriptor get(PackIdentifier pack) {
@@ -131,10 +161,7 @@ class ClosureQueriesTest {
                 throw new UnsupportedOperationException("the closure never writes");
             }
         };
-        ConsistentRead read = new ConsistentRead(() -> {
-            digests.incrementAndGet();
-            return fingerprint.get();
-        });
+        ConsistentRead read = new ConsistentRead(sources);
         PackCatalogRepository catalog = () -> List.copyOf(configured);
         OfferingReadService offering = new OfferingReadService(
                 catalog,
@@ -180,6 +207,33 @@ class ClosureQueriesTest {
         assertThat(view.heldIds().get(ArtifactKind.MISSION_TYPE)).containsExactly("software-dev");
         assertThat(view.closurePackIds()).containsExactly("beta", "alpha");
         assertThat(view.fingerprint()).isEqualTo(D1);
+    }
+
+    @Test
+    void theClosureFingerprintCoversTheClosurePacksAndNoOtherConfiguredPack() {
+        alphaBetaGamma();
+        Map<String, String> contents = new HashMap<>(Map.of("alpha", "a1", "beta", "b1", "gamma", "g1"));
+        ClosureQueries queries = queriesOver(contentSources(contents));
+        ClosureView before = queries.snapshot(roots("alpha"));
+
+        contents.put("gamma", "g2");
+        ClosureView gammaChanged = queries.snapshot(roots("alpha"));
+        contents.put("beta", "b2");
+        ClosureView betaChanged = queries.snapshot(roots("alpha"));
+
+        assertThat(gammaChanged.fingerprint())
+                .as("the source fingerprint is the digest of every configured pack")
+                .isNotEqualTo(before.fingerprint());
+        assertThat(gammaChanged.closureFingerprint())
+                .as("a pack outside the closure")
+                .isEqualTo(before.closureFingerprint());
+        assertThat(betaChanged.closureFingerprint())
+                .as("a pack in the closure, as the dependency of the root")
+                .isNotEqualTo(before.closureFingerprint());
+        assertThat(queries.snapshot(roots("gamma")).closureFingerprint())
+                .as("another closure")
+                .isNotEqualTo(betaChanged.closureFingerprint());
+        assertThat(before.closureFingerprint()).matches("sha256:[0-9a-f]{64}");
     }
 
     @Test

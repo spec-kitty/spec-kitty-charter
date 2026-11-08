@@ -47,6 +47,29 @@ class FileSystemPackSourcesTest {
     }
 
     @Test
+    void theFingerprintOfNamedPacksFollowsTheirFilesAloneOnRealDirectories(@TempDir Path dir) throws IOException {
+        Path inside = Files.createDirectories(dir.resolve("inside"));
+        Path outside = Files.createDirectories(dir.resolve("outside"));
+        Files.writeString(inside.resolve("pack.yaml"), "name: inside\n");
+        Files.writeString(outside.resolve("pack.yaml"), "name: outside\n");
+        FileSystemPackSources sources = new FileSystemPackSources(() -> List.of(
+                new PackLocation("inside", PackLevel.ORG, inside),
+                new PackLocation("outside", PackLevel.ORG, outside)));
+        String whole = sources.fingerprint();
+        String scoped = sources.fingerprintOf(List.of("inside"));
+
+        Files.writeString(outside.resolve("pack.yaml"), "name: outside\nchanged: true\n");
+        assertThat(sources.fingerprint()).as("the whole digest").isNotEqualTo(whole);
+        assertThat(sources.fingerprintOf(List.of("inside")))
+                .as("a pack that is not named")
+                .isEqualTo(scoped);
+
+        Files.writeString(inside.resolve("pack.yaml"), "name: inside\nchanged: true\n");
+        assertThat(sources.fingerprintOf(List.of("inside"))).as("a named pack").isNotEqualTo(scoped);
+        assertThat(scoped).matches("sha256:[0-9a-f]{64}");
+    }
+
+    @Test
     void aPackThatIsNoDirectoryHasNoSourceFingerprint(@TempDir Path dir) {
         assertThatThrownBy(() -> sources(dir.resolve("missing")).fingerprint())
                 .isInstanceOfSatisfying(
