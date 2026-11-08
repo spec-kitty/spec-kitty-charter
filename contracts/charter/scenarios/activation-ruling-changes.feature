@@ -7,9 +7,10 @@
 # - A4's first counter-example in the review denies a required T that an active override E satisfies. Accepting that
 #   deny entry is IC-13's relaxed write rule, which PR B builds; the A0 scenario below reaches the same state (a deny
 #   entry on a now-required artifact in the stored document) through a pack change instead.
-# - A10's report of the unheld must-have item is a read of PR B (requiredNotHeld, WP22), and the DELETE of an artifact
+# - A10's report of the unheld must-have item is a read of PR B (requiredNotHeld, WP22 and WP25), and the DELETE of an artifact
 #   another pack's preset names is PR A's deletePackArtifact (WP19), which bound its scenario: the report one is still
-#   its own @WIP scenario at the end, so WP22 removes its own tag.
+#   its own @WIP scenario at the end. WP22 declares the requiredNotHeld bucket and keeps the scenario in line with it;
+#   WP25, which serves the skipped report, binds it and removes the tag.
 
 @contract @activations
 Feature: The A0 rulings on activation writes and on the packs
@@ -494,18 +495,21 @@ Feature: The A0 rulings on activation writes and on the packs
     When I GET "/packs/main/artifacts/directive/D1"
     Then the response status is 200
 
-  # WP22 (PR B) builds the skipped report and removes this @WIP tag.
+  # WP22 (PR B) declares the skipped report and its requiredNotHeld bucket; WP25 (PR B) serves it, binds this scenario,
+  # surfaces floor.unheld() and removes the @WIP tag. The answer is ActivationSkippedReport: the report is at /report.
   @WIP
   Scenario: A10 - the unheld must-have item is in requiredNotHeld
-    WIP: the report of an unheld must-have item is PR B's skipped report (requiredNotHeld, WP22), which binds this
-    scenario and removes the tag.
+    WIP: the report of an unheld must-have item is PR B's skipped report (requiredNotHeld, declared by WP22 and served
+    by WP25, which binds this scenario and removes the tag). The preset item is spelled as a bare id, as the preset item
+    grammar requires (a pack-qualified main::D1 is refused), and names main's D1. The held item D1 is the control: it is
+    required and in force, and it is not in the bucket.
     Given the org pack "other" with the file "presets/governing.yaml":
       """
       schema_version: '1.0'
       id: governing
       description: D1 of main and an item no pack holds.
       activated_directives:
-        - id: main::D1
+        - id: D1
           must_have: true
         - id: GONE
           must_have: true
@@ -516,7 +520,11 @@ Feature: The A0 rulings on activation writes and on the packs
       """
     When I GET "/activations/a-1/skipped"
     Then the response status is 200
-    And the field at "/skipped/requiredNotHeld" holds exactly the ids:
+    And the field at "/report/requiredNotHeld" holds exactly the ids:
       """
       directive:GONE
       """
+    When I GET "/activations/a-1/artifacts?kind=directive&state=active"
+    Then the response status is 200
+    And the field at "/items/0/artifactId" is "D1"
+    And the field at "/items/0/required" is true

@@ -17,7 +17,7 @@ put:
     walk stops there and reports it, as it does without includeDeactivated (ADR-0059 amendment of 2026-11-06). The walk crosses enhances like any other
     relation, from the enhancer to what it enhances (ADR-0059 D2, as amended on 2026-11-06), so selecting an
     enhancer with a cascade selects its target and selecting a target selects no enhancer. One write, one new revision; answers the ActivationChange and the new ETag. Requires If-Match (ADR-0020
-    D6). Absent means none: when selected holds no list for the kind, the select adds one that holds exactly the
+    D6), the quoted revision or the current getActivation tag (a closure tag that no longer matches is 412; the answer keeps the revision as its ETag). Absent means none: when selected holds no list for the kind, the select adds one that holds exactly the
     artifact (and what the cascade reaches), as it would to []. A write that changes nothing answers 200 with the
     same revision and an empty applied and cleared. A path id the activation's closure does not hold is 404
     artifact_not_found (mission_type_not_found for kind mission_type); a kind outside the path's enum is 422
@@ -88,7 +88,7 @@ delete:
   summary: Unselect an artifact or a mission type.
   description: >-
     Removes the artifact from selected (a mission type from selected.mission_type) and changes nothing else; applied
-    lists it and cleared is empty. Requires If-Match (ADR-0020 D6). Absent means none: when selected holds no list
+    lists it and cleared is empty. Requires If-Match (ADR-0020 D6), the quoted revision or the current getActivation tag (a closure tag that no longer matches is 412; the answer keeps the revision as its ETag),. Absent means none: when selected holds no list
     for the kind, nothing of the kind is selected, so there is nothing to remove. A write that changes nothing (the
     id is not in the list, or the kind holds no list) answers 200 with the same revision and an empty applied and
     cleared. A path id the activation's closure does not hold, and the stored document does not name either, is 404

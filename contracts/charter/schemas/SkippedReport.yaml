@@ -1,6 +1,10 @@
 title: SkippedReport
 description: >-
-  What a cascade or the effective set left out, and why (ADR-0013 D4, ADR-0020 D6). Every list may be empty.
+  What a cascade or the effective set left out, and why (ADR-0013 D4, ADR-0020 D6). Every list may be empty, and each
+  is sorted by kind and id, so the answer is byte-stable. At read (getActivationSkippedReport, and the skipped of an
+  action context) each artifact that is not in force appears once, in the bucket of the first rule that decided it;
+  denyNotApplied and overrideNotApplied list rules that were not applied, not artifacts out of force. A write's
+  ActivationChange.skipped answers the read buckets as [].
 type: object
 additionalProperties: false
 required:
@@ -8,12 +12,25 @@ required:
 - skippedDeactivated
 - unreachedBehindDeactivated
 - skippedShared
+- staleIds
+- denyNotApplied
+- languageFiltered
+- overridden
+- missionTypeNotInForce
+- overrideNotApplied
+- enhancedTargetNotInForce
+- pinNotHeld
+- requiredNotHeld
+- requiredNotInForce
 properties:
   skippedByScope:
     type: array
     items:
       $ref: ArtifactReference.yaml
-    description: Artifacts the walk reached that lie outside the cascade's kinds.
+    description: >-
+      The write report of the cascade scope: artifacts the walk reached that lie outside the cascade's kinds. Always
+      empty at read (decision DM-01M6RN5MTWC98PXEVJNFQSRRJX): the kind gate is gone, so a read never leaves an artifact
+      out for its kind.
     x-derived:
       rule: The reached artifacts whose kind is outside the cascade scope.
       inputs:
@@ -22,7 +39,9 @@ properties:
     type: array
     items:
       $ref: SkippedDeactivated.yaml
-    description: Artifacts the walk reached and skipped because they are deactivated.
+    description: >-
+      Artifacts the walk reached and skipped because they are deactivated. At read, the artifacts the document selects
+      and denies: viaRequires is false and requiredBy is [].
     x-derived:
       rule: The reached artifacts in deactivated.
       inputs:
@@ -31,7 +50,9 @@ properties:
     type: array
     items:
       $ref: ArtifactReference.yaml
-    description: Artifacts reachable only through a deactivated artifact, so the walk never reached them.
+    description: >-
+      Artifacts reachable only through a deactivated artifact, so the walk never reached them. A write's report; always
+      empty at read.
     x-derived:
       rule: The artifacts behind a skipped deactivated artifact.
       inputs:
@@ -40,9 +61,119 @@ properties:
     type: array
     items:
       $ref: SharedSkip.yaml
-    description: 'For a cascading deactivate: artifacts kept because an active artifact still references them.'
+    description: >-
+      For a cascading deactivate: artifacts kept because an active artifact still references them. A write's report;
+      always empty at read.
     x-derived:
       rule: The reached artifacts another active artifact references.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  staleIds:
+    type: array
+    items:
+      $ref: ArtifactReference.yaml
+    description: >-
+      The ids in selected or deactivated, mission types included, that the merged closure does not hold (ADR-0059 D4):
+      a pack change removed them. The next write drops them.
+    x-derived:
+      rule: The ids of the document that no pack of the merged closure holds.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  denyNotApplied:
+    type: array
+    items:
+      $ref: DenyNotApplied.yaml
+    description: >-
+      The deny entries not applied (ADR-0013 D2): on a locked artifact, or on a required one that nothing else
+      satisfies. The artifact stays in force.
+    x-derived:
+      rule: The entries of deactivated that name a locked artifact or a required artifact no active override satisfies.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  languageFiltered:
+    type: array
+    items:
+      $ref: ArtifactReference.yaml
+    description: >-
+      The selected artifacts the language filter excludes. The filter applies at read only, and a document with no
+      languages filters nothing (#408 ruling 2).
+    x-derived:
+      rule: The selected artifacts whose applies_to_languages list holds none of the document's languages.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  overridden:
+    type: array
+    items:
+      $ref: OverriddenArtifact.yaml
+    description: The artifacts hidden by an active overrides edge, each with the artifact that overrides it.
+    x-derived:
+      rule: The targets of the overrides edges from active artifacts, a locked target excepted.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  missionTypeNotInForce:
+    type: array
+    items:
+      $ref: ArtifactReference.yaml
+    description: >-
+      The selected artifacts bound to a mission type that is not in force. In an action context, the mission type
+      itself (kind mission_type).
+    x-derived:
+      rule: The selected artifacts whose mission type is not in force.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  overrideNotApplied:
+    type: array
+    items:
+      $ref: OverriddenArtifact.yaml
+    description: >-
+      An override of a locked artifact, not applied: the target stays in force and so does the overriding artifact. The
+      item names the locked target and the artifact that tried to override it.
+    x-derived:
+      rule: The active overrides edges whose target is locked.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  enhancedTargetNotInForce:
+    type: array
+    items:
+      $ref: EnhancerWithoutTarget.yaml
+    description: >-
+      The selected enhancers none of whose targets is in force, each with its targets. An enhancer does not stand on its
+      own.
+    x-derived:
+      rule: The selected enhancers whose enhances targets are all out of force.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  pinNotHeld:
+    type: array
+    items:
+      $ref: PackPin.yaml
+    description: >-
+      The version pins of the document that no pack holds (B1), each as it was stored. A write drops such a pin into
+      droppedPins; a read reports it.
+    x-derived:
+      rule: The packs entries whose version no pack of the activation's closure holds.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  requiredNotHeld:
+    type: array
+    items:
+      $ref: ArtifactReference.yaml
+    description: >-
+      The must-have items of a governing preset that no pack of the closure holds (A10). They are not on the required
+      floor.
+    x-derived:
+      rule: The must-have items of the governing presets that the merged closure does not hold.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  requiredNotInForce:
+    type: array
+    items:
+      $ref: RequiredNotInForce.yaml
+    description: >-
+      The required artifacts that cannot stand in force: an enhancer none of whose targets is in force, or an artifact
+      bound to a mission type not in force. Each is also out of force in the list, with required true.
+    x-derived:
+      rule: The required artifacts kept out by the enhancer rule or by the mission type binding.
       inputs:
       - schemas/ActivationConfig.yaml
   skippedByDepth:
