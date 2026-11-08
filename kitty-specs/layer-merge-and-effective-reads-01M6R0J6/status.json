@@ -1,20 +1,20 @@
 {
-  "event_count": 217,
-  "last_event_id": "01M6VYAANH84P6ZMTFJXYQRX92",
-  "materialized_at": "2026-11-07T21:23:31.620057+00:00",
+  "event_count": 222,
+  "last_event_id": "01M6WSSXTK9JTEQSEN53SR324H",
+  "materialized_at": "2026-11-08T05:23:54.323445+00:00",
   "mission_number": "",
   "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
   "mission_type": "software-dev",
   "schema_version": 2,
   "summary": {
-    "approved": 17,
+    "approved": 18,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 2,
-    "in_review": 0,
+    "in_progress": 0,
+    "in_review": 1,
     "planned": 11
   },
   "work_packages": {
@@ -598,19 +598,36 @@
     },
     "WP17": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": "claude:opus:reviewer-renata",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
-      "force_count": 0,
+      "force_count": 1,
       "implementer_of_record": "claude",
-      "lane": "in_progress",
-      "last_event_id": "01M6VYA1C021BNY3Z2X5TH6TAQ",
-      "last_transition_at": "2026-11-07T21:23:22.096847+00:00",
+      "lane": "approved",
+      "last_event_id": "01M6WSPPWFZ6AZ4D1V2W8HA598",
+      "last_transition_at": "2026-11-08T05:22:08.911784+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "HTTPS archive and local path sources for POST /packs; verifyAll green",
+        "Review passed (07c16bc8) by claude:opus:reviewer-renata. Independence override, operator-approved 2026-11-08: the claim was recorded as bare 'claude' (runner error at claim time); the implementer of record per the for_review hop is claude:sonnet:java-jenny, a different model and profile. Follow-ups: query echo in PackSourceRecord, residual double-swap race doc, double load, filesystem-on-without-root startup failure."
+      ],
       "provider": "__resolved_provider_absent__",
-      "role": "implementer",
-      "shell_pid": 8016,
-      "shell_pid_created_at": "1794086594.16"
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/layer-merge-and-effective-reads-01M6R0J6-coord/kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP17-a-https-and-local-sources/review-cycle-1.md",
+        "reference": "review-cycle://layer-merge-and-effective-reads-01M6R0J6/WP17-a-https-and-local-sources/review-cycle-1.md",
+        "reviewer": "claude:opus:reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 30927,
+      "shell_pid_created_at": "1794090971.62",
+      "subtasks": {
+        "T083": "done",
+        "T084": "done",
+        "T085": "done",
+        "T086": "done",
+        "T087": "done"
+      }
     },
     "WP18": {
       "actor": "finalize-tasks",
@@ -621,19 +638,29 @@
     },
     "WP19": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": "claude:opus:reviewer-renata",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude",
-      "lane": "in_progress",
-      "last_event_id": "01M6VYAANH84P6ZMTFJXYQRX92",
-      "last_transition_at": "2026-11-07T21:23:31.620057+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M6WSSXTK9JTEQSEN53SR324H",
+      "last_transition_at": "2026-11-08T05:23:54.323445+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "DELETEs of an artifact and a relationship; per-artifact writes run the impact check; verifyAll green"
+      ],
       "provider": "__resolved_provider_absent__",
-      "role": "implementer",
-      "shell_pid": 8016,
-      "shell_pid_created_at": "1794086594.16"
+      "role": "reviewer",
+      "shell_pid": 1503,
+      "shell_pid_created_at": "1794115429.68",
+      "subtasks": {
+        "T094": "done",
+        "T095": "done",
+        "T096": "done",
+        "T097": "done",
+        "T098": "done"
+      }
     },
     "WP20": {
       "actor": "finalize-tasks",
