@@ -9,12 +9,10 @@ import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditi
 import ai.speckitty.charter.packs.application.PackRegistrationService.RegistrationOutcome;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -35,7 +33,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -310,7 +307,7 @@ public final class RegistrationJobs implements AutoCloseable {
      * @param audit the audit trail
      * @param gate the test seam
      * @param room the free-space check
-     * @param stagingRoot the directory the jobs stage in
+     * @param staging the staging area the jobs stage in
      */
     public record Dependencies(
             java.time.Clock clock,
@@ -319,7 +316,7 @@ public final class RegistrationJobs implements AutoCloseable {
             AuditLog audit,
             JobGate gate,
             StorageRoom room,
-            Path stagingRoot) {
+            StagingArea staging) {
 
         /**
          * Checks the fields.
@@ -330,7 +327,7 @@ public final class RegistrationJobs implements AutoCloseable {
          * @param audit the audit trail
          * @param gate the test seam
          * @param room the free-space check
-         * @param stagingRoot the directory the jobs stage in
+         * @param staging the staging area the jobs stage in
          */
         public Dependencies {
             Objects.requireNonNull(clock, "clock");
@@ -339,7 +336,7 @@ public final class RegistrationJobs implements AutoCloseable {
             Objects.requireNonNull(audit, "audit");
             Objects.requireNonNull(gate, "gate");
             Objects.requireNonNull(room, "room");
-            Objects.requireNonNull(stagingRoot, "stagingRoot");
+            Objects.requireNonNull(staging, "staging");
         }
     }
 
@@ -389,6 +386,15 @@ public final class RegistrationJobs implements AutoCloseable {
                     thread.setDaemon(true);
                     return thread;
                 });
+    }
+
+    /**
+     * The staging area the jobs work in, for the stagers that make a directory inside a job's.
+     *
+     * @return the staging area
+     */
+    public StagingArea staging() {
+        return dependencies.staging();
     }
 
     /**
@@ -630,9 +636,8 @@ public final class RegistrationJobs implements AutoCloseable {
             this.preconditions = preconditions;
             this.origin = origin;
             this.revisionBefore = stored.map(PackRevision::token).orElse("");
-            this.directory = owner.dependencies.stagingRoot().resolve(id);
             try {
-                OwnerOnly.directories(directory);
+                this.directory = owner.dependencies.staging().createJobDirectory(id);
             } catch (IOException failure) {
                 throw new UncheckedIOException("cannot create the staging directory of a registration", failure);
             }
@@ -915,19 +920,7 @@ public final class RegistrationJobs implements AutoCloseable {
         }
 
         private void deleteDirectory() {
-            if (!Files.exists(directory, java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
-                return;
-            }
-            try (Stream<Path> walk = Files.walk(directory)) {
-                for (Path path : walk.sorted(Comparator.reverseOrder()).toList()) {
-                    Files.deleteIfExists(path);
-                }
-            } catch (IOException | UncheckedIOException failure) {
-                LOG.log(
-                        System.Logger.Level.WARNING,
-                        "The staging directory of a registration could not be removed; the sweep takes it later.",
-                        failure);
-            }
+            owner.dependencies.staging().delete(directory);
         }
     }
 }

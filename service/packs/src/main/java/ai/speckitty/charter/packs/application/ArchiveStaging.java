@@ -28,17 +28,19 @@ public final class ArchiveStaging {
     /**
      * A stager for an archive that is already on disk.
      *
+     * @param staging the staging area the extraction directory is made in
      * @param reader the extractor
      * @param format the archive's format
      * @param archive the spooled body
      * @return the stager
      */
-    public static Stager of(PackArchiveReader reader, ArchiveFormat format, Path archive) {
+    public static Stager of(StagingArea staging, PackArchiveReader reader, ArchiveFormat format, Path archive) {
+        Objects.requireNonNull(staging, "staging");
         Objects.requireNonNull(reader, "reader");
         Objects.requireNonNull(format, "format");
         Objects.requireNonNull(archive, "archive");
         return directory -> {
-            Path into = OwnerOnly.directories(directory.resolve(EXTRACTED));
+            Path into = staging.createDirectory(directory.resolve(EXTRACTED));
             try (InputStream body = Files.newInputStream(archive)) {
                 return new Staged(reader.extract(body, format, into), Map.of());
             } catch (ArchiveRefusal refused) {

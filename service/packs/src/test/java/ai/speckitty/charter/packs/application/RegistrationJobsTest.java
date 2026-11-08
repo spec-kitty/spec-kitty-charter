@@ -21,6 +21,7 @@ import ai.speckitty.charter.packs.application.RegistrationJobs.Stager;
 import ai.speckitty.charter.packs.application.RegistrationJobs.State;
 import ai.speckitty.charter.packs.application.RegistrationJobs.Status;
 import ai.speckitty.charter.packs.application.RegistrationJobs.Succeeded;
+import ai.speckitty.charter.packs.infra.storage.FileStagingArea;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -883,7 +884,13 @@ class RegistrationJobsTest {
             this.rig.midSwap = midSwap;
             this.staging = host.resolve("job-staging");
             this.jobs = new RegistrationJobs(new RegistrationJobs.Dependencies(
-                    clock, rig.service, rig.writeStore, audit, gate, () -> room.require(), staging));
+                    clock,
+                    rig.service,
+                    rig.writeStore,
+                    audit,
+                    gate,
+                    () -> room.require(),
+                    new FileStagingArea(staging)));
             opened.add(jobs);
         }
 
