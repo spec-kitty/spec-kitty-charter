@@ -15,9 +15,9 @@
 #
 # An enhancer ring cannot be registered (A8, enhances_cycle), so the A8 scenario writes its pack files past the API.
 #
-# OPEN (reported by WP22, not decided here): the suggestion scenario reads the carrier of a suggests edge's `when` and
-# `reason` as an optional EffectiveArtifact member `suggestion {when, reason}`. No document settles the member, so the
-# contract does not declare it; that scenario stays @WIP until the carrier is ruled.
+# The suggestion scenario reads the carrier of a suggests edge's `when` and `reason` as the optional
+# EffectiveArtifact.suggestion {when, reason} (runner decision 01M6Y0X5E9ANR25MC8RPFXYM72).
+# getActivation's ETag covers the revision and the closure's fingerprint (operator decision 01M6Y11E55YP5TG1EJ1MDKCFRP).
 #
 # Steps these scenarios add to the vocabulary of README.md (WP25 binds them in EffectiveReadSteps):
 # - `When I GET "<path>" with If-None-Match the remembered header "ETag"` sends the `ETag` last remembered with
@@ -1304,8 +1304,7 @@ Feature: The effective reads answer what an activation puts in force, and why th
   Scenario: An artifact reached only through suggests is listed as a suggestion with its when and reason
     #408 ruling 3, FR-013: D suggests S, with a when and a reason, and the document selects D alone. S is reached only
     through the suggests edge, so it is listed as a suggestion carrying the edge's when and reason (not as in force).
-    R, which D requires and which is selected, is the control: a plain entry, with no suggestion member. OPEN: the member
-    name is not settled (see the head of this file), so this scenario stays @WIP until the carrier is ruled.
+    R, which D requires and which is selected, is the control: a plain entry, with no suggestion member.
     Given the org pack "main" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943R
@@ -2202,6 +2201,114 @@ Feature: The effective reads answer what an activation puts in force, and why th
     And the field at "/items" holds exactly the ids:
       """
       directive:B
+      """
+
+  @WIP
+  Scenario: B4 - the ETag of getActivation changes when a pack of the closure changes, and not for an unrelated pack
+    Decision 01M6Y11E55YP5TG1EJ1MDKCFRP: denyNotApplied is judged against the packs, so the strong tag of GET
+    /activations/{id} covers the revision and the closure's fingerprint. acme is in the closure and its version 1.1.0 is
+    registered over 1.0.0, so the old tag is 200 with a new ETag and the activation. The control is the unrelated pack
+    other, registered again before: the tag then still matched (304), and the 200 body is not empty.
+    Given registration is switched on
+    And the archive "acme-v1" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: acme
+      pack_level: org
+      """
+    And the archive "acme-v1" holds the file "directives/A.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: A
+      title: A at version 1
+      intent: A
+      enforcement: required
+      """
+    And the archive "acme-v2" is a copy of the archive "acme-v1"
+    And the archive "acme-v2" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.1.0
+      parent_pack: null
+      name: acme
+      pack_level: org
+      """
+    And the archive "acme-v2" holds the file "directives/A.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: A
+      title: A at version 2
+      intent: A
+      enforcement: required
+      """
+    And the archive "other-v1" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+      pack_version: 1.0.0
+      parent_pack: null
+      name: other
+      pack_level: org
+      """
+    And the archive "other-v1" holds the file "directives/O.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: O
+      title: O at version 1
+      intent: O
+      enforcement: required
+      """
+    And the archive "other-v2" is a copy of the archive "other-v1"
+    And the archive "other-v2" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+      pack_version: 1.1.0
+      parent_pack: null
+      name: other
+      pack_level: org
+      """
+    And the archive "other-v2" holds the file "directives/O.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: O
+      title: O at version 2
+      intent: O
+      enforcement: required
+      """
+    When I PUT "/packs/acme" with the archive "acme-v1"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+    When I PUT "/packs/other" with the archive "other-v1"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+    When I PUT "/activations/a-1" with the body:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "acme"}], "selected": {"directive": ["A"]}}
+      """
+    Then the response status is 201
+    When I GET "/activations/a-1"
+    Then the response status is 200
+    And the field at "/config/selected/directive" holds exactly the ids:
+      """
+      A
+      """
+    When I remember the header "ETag"
+    And I PUT "/packs/other" with the archive "other-v2"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+    When I GET "/activations/a-1" with If-None-Match the remembered header "ETag"
+    Then the response status is 304
+    And the response header "ETag" is the remembered header
+    When I PUT "/packs/acme" with the archive "acme-v2"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+    When I GET "/activations/a-1" with If-None-Match the remembered header "ETag"
+    Then the response status is 200
+    And the response header "ETag" differs from the remembered header
+    And the field at "/config/selected/directive" holds exactly the ids:
+      """
+      A
       """
 
   @WIP

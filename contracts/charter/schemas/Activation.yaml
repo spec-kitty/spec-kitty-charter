@@ -1,9 +1,10 @@
 title: Activation
 description: >-
-  One stored activation document (ADR-0020 D4). The ETag is the quoted revision. Apart from denyNotApplied the answer
-  depends only on the stored document (ADR-0059 D5): the counts are on the effective artifact list
-  (EffectiveArtifactList.summary) and the packs the document builds on are on its closure read (listActivationPacks).
-  denyNotApplied (B4, FR-027) is the one member judged against the packs when the activation is read. dropped and
+  One stored activation document (ADR-0020 D4). The ETag covers the activation's revision and the governanceFingerprint
+  of the packs of its closure, because denyNotApplied (B4, FR-027) is judged against those packs when the activation is
+  read: it changes when the document or a pack of the closure changes. Apart from denyNotApplied the answer depends only
+  on the stored document: the counts are on the effective artifact list (EffectiveArtifactList.summary) and the packs
+  the document builds on are on its closure read (listActivationPacks). dropped and
   droppedPins are on a replaceActivation answer only, and only when that write dropped something (A4, B1): a read never
   carries them.
 type: object

@@ -2,12 +2,15 @@ get:
   operationId: getActivation
   summary: Read an activation.
   description: >-
-    The stored document, as stored, with its quoted revision as the ETag (ADR-0020 D4, ADR-0059 D5): the answer
-    depends only on the document, never on the offering, so a document an offering change made stale (an id the
-    offering no longer has, a deny entry on an id now required or locked) is served unchanged (ADR-0059 D4). A
-    request whose If-None-Match matches the ETag is answered 304 without a body. An unknown id is 404
-    activation_not_found. An id outside the declared pattern is 400. The read takes no snapshot of the packs, so its
-    only 500 is internal_error, a failure of the storage.
+    The stored document, as stored (ADR-0020 D4, ADR-0059 D4): a document an offering change made stale (an id the
+    offering no longer has, a deny entry on an id now required or locked) is served unchanged, and a deny entry the
+    required floor or a lock overrides is listed in denyNotApplied (B4, FR-027). That member is judged against the
+    packs of the activation's closure, so the strong ETag covers the activation's revision and the closure's
+    governanceFingerprint, as the effective reads' tags do: it changes when the document or a pack of the closure
+    changes, and not when a pack outside the closure does. A request whose If-None-Match matches the ETag is answered
+    304 without a body. An unknown id is 404 activation_not_found. An id outside the declared pattern is 400. A closure
+    that cannot compose is 500 with its code (pack_unreadable among them); stale_input and internal_error may be
+    retried.
   tags:
   - Activation
   parameters:
@@ -21,8 +24,8 @@ get:
           $ref: ../headers/CharterContractVersion.yaml
         Charter-Worktree: &id002
           $ref: ../headers/CharterWorktree.yaml
-        ETag: &id004
-          $ref: ../headers/ActivationETag.yaml
+        ETag:
+          $ref: ../headers/EffectiveETag.yaml
       content:
         application/json:
           schema:
@@ -90,7 +93,8 @@ put:
       headers:
         Charter-Contract-Version: *id001
         Charter-Worktree: *id002
-        ETag: *id004
+        ETag: &id004
+          $ref: ../headers/ActivationETag.yaml
       content:
         application/json:
           schema:

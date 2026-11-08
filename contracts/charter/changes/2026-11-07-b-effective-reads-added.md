@@ -17,6 +17,7 @@
     model: EffectiveSkippedReport).
 - `EffectiveArtifact.satisfiedBy` (`ArtifactReference`, optional): for a required artifact that is out of force, the
   active artifact that overrides it and so satisfies the requirement. It never names an enhancer.
+- `EffectiveArtifact.suggestion` (`EffectiveArtifactSuggestion {when, reason}`, optional, #408 ruling 3): present only for an artifact reached only through a `suggests` edge, with the edge's `when` and `reason`; absent for one reached through `requires` or another hard relation. It serves the list and, in PR C, the action context.
 - `EffectiveArtifactReason` gains `overridden`, `mission_type_not_in_force` and `enhanced_target_not_in_force` (the
   last for an enhancer none of whose targets is in force, operator ruling Q8). `EffectiveArtifact.required` is true
   for a required artifact that stays out of force for either of the last two reasons.
