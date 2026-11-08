@@ -210,8 +210,4 @@ public class PackRegistrationController implements RegistrationApi {
         }
         throw new IllegalStateException("no servlet request is being handled");
     }
-
-    private static ResponseStatusException notBuilt() {
-        return new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED);
-    }
 }
