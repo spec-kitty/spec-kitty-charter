@@ -34,6 +34,7 @@ import ai.speckitty.charter.packs.domain.Paradigm;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
 import ai.speckitty.charter.packs.domain.ParadigmRepository;
 import ai.speckitty.charter.packs.domain.Preset;
+import ai.speckitty.charter.packs.domain.Procedure;
 import ai.speckitty.charter.packs.domain.Styleguide;
 import ai.speckitty.charter.packs.domain.StyleguideIdentifier;
 import ai.speckitty.charter.packs.domain.StyleguideRepository;
@@ -362,7 +363,9 @@ public final class DomainRepositoryService
      *   <li>the mutability policy its descriptor names by {@code mutability_policy} (ADR-0063), or the empty policy;
      *   <li>the activation presets it holds, from the same assembly; a preset the domain refuses is a violation, which
      *       makes the pack unreadable here as any other file does;
-     *   <li>the typed edges it writes, as written, from the same graph read and assembly ({@link #typedEdges}).
+     *   <li>the typed edges it writes, as written, from the same graph read and assembly ({@link #typedEdges});
+     *   <li>the {@code applies_to_languages} of each artifact it holds that declares any, by bare URN, from the same
+     *       assembly ({@link #languagesOf}).
      * </ul>
      *
      * <p>The answer fails closed: a graph document or a file of the pack that cannot be read refuses it
@@ -389,10 +392,15 @@ public final class DomainRepositoryService
             declaredWithoutFile(document).forEach(declared::add);
         }
         Set<String> defined = new LinkedHashSet<>();
+        Map<String, List<String>> languages = new LinkedHashMap<>();
         for (CharterArtifact artifact : assembled.artifacts()) {
             artifact.writtenReferences().forEach(reference -> references.add(reference.toString()));
             if (artifact.urn().kind().authoredInGraphs()) {
                 defined.add(artifact.urn().toString());
+                List<String> declaredLanguages = languagesOf(artifact);
+                if (!declaredLanguages.isEmpty()) {
+                    languages.put(artifact.urn().toString(), declaredLanguages);
+                }
             }
         }
         defined.addAll(declared);
@@ -402,7 +410,23 @@ public final class DomainRepositoryService
                 List.copyOf(references),
                 policy,
                 assembled.presets(),
-                typedEdges(graphs.documents(), assembled));
+                typedEdges(graphs.documents(), assembled),
+                languages);
+    }
+
+    /**
+     * The {@code applies_to_languages} an artifact declares: the kinds that carry the field are a tactic, a styleguide,
+     * a toolguide, a procedure and an agent profile; every other kind declares none.
+     */
+    private static List<String> languagesOf(CharterArtifact artifact) {
+        return switch (artifact) {
+            case Tactic tactic -> tactic.appliesToLanguages();
+            case Styleguide styleguide -> styleguide.appliesToLanguages();
+            case Toolguide toolguide -> toolguide.appliesToLanguages();
+            case Procedure procedure -> procedure.appliesToLanguages();
+            case AgentProfile profile -> profile.appliesToLanguages();
+            default -> List.of();
+        };
     }
 
     /**
