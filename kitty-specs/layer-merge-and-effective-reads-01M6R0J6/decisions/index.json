@@ -1626,6 +1626,29 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-08T15:56:48.373851Z",
+      "decision_id": "01M6XY0SVNASDDCNTJ3DPJP3Q6",
+      "final_answer": "leave them unsigned; runner re-signs CLI commits before work is stacked on them where it can",
+      "input_key": "cli-commits-under-lane-head",
+      "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",
+      "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
+      "opened_by": "claude-runner",
+      "options": [
+        "re-sign (breaks recorded lane_head)",
+        "leave them unsigned; runner re-signs CLI commits before work is stacked on them where it can"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "CLI status commits that end up beneath a lane head recorded in a status event (e.g. WP21 for_review lane_head f0a000e7 above 3f09bc51 and 2edd3ccc) cannot be re-signed without invalidating the recorded head. Re-sign anyway, or leave them unsigned?",
+      "rationale": "Runner, 2026-11-08: status events record lane_head SHAs, so rewriting history beneath them would make the event log name commits that no branch holds. Lane and mission-branch history does not land on main: PR B is rebuilt as one signed commit per WP. The runner now runs re-claims itself and re-signs the CLI commits before an implementer stacks work on them. Same reasoning as 01M6XSRSK0N9PEVJ7EHM45475V.",
+      "resolved_at": "2026-11-08T15:56:50.885330Z",
+      "resolved_by": "claude-runner",
+      "slot_key": "cli-commits-under-lane-head",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",
