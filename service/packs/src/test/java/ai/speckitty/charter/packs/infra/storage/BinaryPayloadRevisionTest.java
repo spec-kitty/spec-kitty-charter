@@ -99,10 +99,19 @@ class BinaryPayloadRevisionTest {
                 .isEqualTo(edited);
     }
 
+    /**
+     * Copies the pinned {@code internal} pack, and the {@code built-in} pack it builds on: a write is judged over every
+     * closure the pack joins (IC-15), which cannot compose with the pack's dependency missing.
+     */
     private static Path copyOfPinnedInternalPack(Path host) throws IOException {
         OpenPacksCorpus.assertPinned();
-        Path source = OpenPacksCorpus.packsDirectory().resolve("internal");
-        Path target = host.resolve(PACK.value());
+        copyOfPinnedPack("built-in", host);
+        return copyOfPinnedPack(PACK.value(), host);
+    }
+
+    private static Path copyOfPinnedPack(String name, Path host) throws IOException {
+        Path source = OpenPacksCorpus.packsDirectory().resolve(name);
+        Path target = host.resolve(name);
         try (Stream<Path> walk = Files.walk(source)) {
             for (Path path : walk.sorted(Comparator.naturalOrder()).toList()) {
                 Path to = target.resolve(source.relativize(path).toString());

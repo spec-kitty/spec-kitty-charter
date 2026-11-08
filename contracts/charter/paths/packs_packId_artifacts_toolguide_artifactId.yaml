@@ -98,6 +98,12 @@ put:
         names the rule); its id or title breaks a toolguide rule; or the service refused to fetch its guideUri (the
         detail names the reason and the host). An empty guide or a list over 256 items breaks a constraint the schema
         declares and is refused 400 Bad Request before the controller (ADR-0041 decision 2).
+        The write is also judged over every closure the pack joins, as the pack will be after it, under the registry
+        lock (the registration impact check, IC-15; operator ruling DM-01M6VG6GC40AKYYFRR35SV8HVW, FR-025): a closure
+        that would no longer compose is refused with its composition code (pack_sibling_conflict, two packs of one level
+        defining one id, among them), and one that would break a relation rule with override_not_permitted,
+        enhances_cycle, conflicting_relations, self_override or override_cycle. The packs member names the closure's
+        root pack and the packs involved, and nothing is written.
       headers:
         Charter-Contract-Version:
           $ref: ../headers/CharterContractVersion.yaml

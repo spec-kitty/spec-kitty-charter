@@ -60,20 +60,38 @@ public class RefusalHandler {
     }
 
     /**
+     * The operations that judge a write over the closures a pack joins and refuse it synchronously: the per-artifact
+     * writes (a directive, a paradigm, a styleguide and a toolguide, each created and put), the relationship write and
+     * the two {@code DELETE}s (IC-15; operator ruling DM-01M6VG6GC40AKYYFRR35SV8HVW).
+     */
+    private static final List<String> IMPACT_CHECKED_WRITES = List.of(
+            "registerPackDirective",
+            "putPackDirective",
+            "registerPackParadigm",
+            "putPackParadigm",
+            "registerPackStyleguide",
+            "putPackStyleguide",
+            "registerPackToolguide",
+            "putPackToolguide",
+            "putPackRelationship",
+            "deletePackArtifact",
+            "deletePackRelationship");
+
+    /**
      * The refusal codes an operation answers with a status other than the code's own, by the operation's
      * {@code operationId} (the name of its controller method): the {@code operations} map of the code's entry in the
-     * contract's {@code x-refusal}, which the contract scenarios hold this table to. The relationship registration
-     * judges the request's own {@code to} against the compose, so the three reference codes are the request's fault
-     * there (422) where a read is refused by packs that do not compose (500).
+     * contract's {@code x-refusal}, which the contract scenarios hold this table to. A refused registration, and each
+     * write that is judged over the closures its pack joins, answers the eleven composition codes as 422 where a read
+     * is refused by packs that do not compose (500): the request is what leaves them unable to.
      */
-    private static final Map<String, Map<RefusalCode, HttpStatus>> STATUS_BY_OPERATION = Map.of(
-            "putPackRelationship",
-            Map.of(
-                    RefusalCode.PACK_REFERENCE_PACK_MISSING, HttpStatus.UNPROCESSABLE_CONTENT,
-                    RefusalCode.PACK_REFERENCE_UNQUALIFIED, HttpStatus.UNPROCESSABLE_CONTENT,
-                    RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING, HttpStatus.UNPROCESSABLE_CONTENT),
-            REGISTRATION_STATUS,
-            registrationStatusCodes());
+    private static final Map<String, Map<RefusalCode, HttpStatus>> STATUS_BY_OPERATION = statusByOperation();
+
+    private static Map<String, Map<RefusalCode, HttpStatus>> statusByOperation() {
+        Map<String, Map<RefusalCode, HttpStatus>> byOperation = new java.util.HashMap<>();
+        byOperation.put(REGISTRATION_STATUS, registrationStatusCodes());
+        IMPACT_CHECKED_WRITES.forEach(operation -> byOperation.put(operation, registrationStatusCodes()));
+        return Map.copyOf(byOperation);
+    }
 
     /**
      * The most violations a problem body lists (the contract's {@code maxItems}). A 1 MiB body of nulls or unknown ids

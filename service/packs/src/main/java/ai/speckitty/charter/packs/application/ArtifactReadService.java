@@ -76,6 +76,21 @@ public final class ArtifactReadService {
             ArtifactKind.PARADIGM, RefusalCode.PARADIGM_NOT_FOUND,
             ArtifactKind.TOOLGUIDE, RefusalCode.TOOLGUIDE_NOT_FOUND);
 
+    /**
+     * The code a request for an artifact of a served kind that the pack does not hold is refused with.
+     *
+     * @param kind a served kind
+     * @return its not-found code, for example {@code directive_not_found}
+     * @throws IllegalArgumentException when the kind is not served
+     */
+    public static RefusalCode absentCode(ArtifactKind kind) {
+        RefusalCode code = ABSENT.get(kind);
+        if (code == null) {
+            throw new IllegalArgumentException("not a served kind: " + kind);
+        }
+        return code;
+    }
+
     private final PackRepository packs;
     private final PackDescriptorRepository descriptors;
     private final ConsistentRead read;

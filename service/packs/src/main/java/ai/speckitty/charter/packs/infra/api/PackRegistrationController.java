@@ -6,7 +6,6 @@ import ai.speckitty.charter.api.model.PackRegistrationStatus;
 import ai.speckitty.charter.api.model.PackSource;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.kernel.transport.ReservedOperation;
 import ai.speckitty.charter.packs.application.ArchiveStaging;
 import ai.speckitty.charter.packs.application.PackArchiveReader;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditions;
@@ -42,8 +41,8 @@ import org.springframework.web.server.ResponseStatusException;
  * guard's; this class spools the judged body into the slot the admission took, hands the job its stager, and answers.
  * {@code POST /packs} names a source instead: its kind's flag and availability, the slot and the preconditions come after
  * the JSON body is bound (the target and the kind are in it), and the fetch is the job's. Everything after the {@code 202}
- * is the job's. The two {@code DELETE}s are still reserved (ADR-0020 D8): each is marked, so the composition root's
- * {@code ReservedOperationInterceptor} answers {@code 501} before the request is bound.
+ * is the job's. The two {@code DELETE}s are {@link PackRemovalController}'s: they carry the same contract tag, so the
+ * generated interface is this one.
  */
 @RestController
 @RequestMapping("${charter.api.base-path:/api/v1}")
@@ -56,31 +55,17 @@ public class PackRegistrationController implements RegistrationApi {
     private final PackArchiveReader archives;
     private final PackRegistrationMapper mapper;
     private final PackSourceIntake intake;
+    private final PackRemovalController removals;
 
     /**
-     * A controller over the registration jobs and the stored packs, with no source of a registration built.
-     *
-     * @param jobs the registration jobs
-     * @param summaries the stored-pack read
-     * @param archives the archive extractor
-     * @param mapper the contract shapes
-     */
-    PackRegistrationController(
-            RegistrationJobs jobs,
-            PackSummaryQuery summaries,
-            PackArchiveReader archives,
-            PackRegistrationMapper mapper) {
-        this(jobs, summaries, archives, mapper, PackSourceIntake.none());
-    }
-
-    /**
-     * A controller over the registration jobs, the stored packs and the sources a registration may name.
+     * A controller over the registration jobs, the stored packs, the sources a registration may name and the removals.
      *
      * @param jobs the registration jobs
      * @param summaries the stored-pack read
      * @param archives the archive extractor
      * @param mapper the contract shapes
      * @param intake what takes a registration from a source
+     * @param removals the adapter of the two {@code DELETE}s
      */
     @Autowired
     PackRegistrationController(
@@ -88,26 +73,26 @@ public class PackRegistrationController implements RegistrationApi {
             PackSummaryQuery summaries,
             PackArchiveReader archives,
             PackRegistrationMapper mapper,
-            PackSourceIntake intake) {
+            PackSourceIntake intake,
+            PackRemovalController removals) {
         this.jobs = Objects.requireNonNull(jobs, "jobs");
         this.summaries = Objects.requireNonNull(summaries, "summaries");
         this.archives = Objects.requireNonNull(archives, "archives");
         this.mapper = Objects.requireNonNull(mapper, "mapper");
         this.intake = Objects.requireNonNull(intake, "intake");
+        this.removals = Objects.requireNonNull(removals, "removals");
     }
 
     @Override
-    @ReservedOperation
     public ResponseEntity<Void> deletePackArtifact(
             String packId, String kind, String artifactId, @Nullable String ifMatch) {
-        throw notBuilt();
+        return removals.deleteArtifact(packId, kind, artifactId, ifMatch);
     }
 
     @Override
-    @ReservedOperation
     public ResponseEntity<Void> deletePackRelationship(
             String packId, String from, String to, @Nullable String ifMatch) {
-        throw notBuilt();
+        return removals.deleteRelationship(packId, from, to, ifMatch);
     }
 
     @Override
@@ -224,9 +209,5 @@ public class PackRegistrationController implements RegistrationApi {
             return servlet.getRequest();
         }
         throw new IllegalStateException("no servlet request is being handled");
-    }
-
-    private static ResponseStatusException notBuilt() {
-        return new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED);
     }
 }

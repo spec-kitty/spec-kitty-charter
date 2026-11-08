@@ -82,9 +82,9 @@ description: >-
   override_not_permitted, enhances_cycle, conflicting_relations, self_override and override_cycle (a registration that
   leaves a closure it joins breaking a relation rule), as the problem of a refused registration status
   (getPackRegistration); registration_not_found, pack_source_unavailable, registration_timed_out and pack_storage_full are
-  raised by the registration job and its admission. pack_source_refused is raised by the https_archive and filesystem
-  source fetchers; relationship_not_found and relationship_not_registered are raised by the two DELETEs and stay
-  raised: false until those are built.
+  raised by the registration job and its admission. pack_source_refused is raised by the https_archive, filesystem and
+  git source fetchers; relationship_not_found and relationship_not_registered are raised by the removal of a
+  relationship (deletePackRelationship).
   pack_version_conflict (409): the same pack_version was registered with another revision. artifact_referenced (409):
   another artifact or pack still refers to the artifact a DELETE or a replace removes; its packs member names the
   referring packs (at most 100) and its violations name every referring artifact. relationship_not_found (404): no
@@ -118,7 +118,10 @@ description: >-
   their synchronous answers (202, 400, 401, 403, 412, 413, 415, 428 for the git branch-ref rule only, and 503). The two
   DELETEs are synchronous, so deletePackArtifact and deletePackRelationship answer their own 409 and 422, the
   composition codes as 422 there too. An artifact the pack does not hold is the not-found code of its kind there, as on
-  getPackArtifact. registration_conflict, governance_policy_violation and
+  getPackArtifact. The per-artifact writes (registerPack and putPack of a directive, a paradigm, a styleguide or a
+  toolguide, and putPackRelationship) are synchronous as well and run the same impact check over the pack as it will be
+  after the write (operator ruling DM-01M6VG6GC40AKYYFRR35SV8HVW, IC-15): they answer the composition codes as 422 and
+  the five relation codes, naming the closure's root pack and the packs involved. registration_conflict, governance_policy_violation and
   validation_failed are existing codes that these operations also raise.
 
   The eleven codes of the pack composition are 500 like pack_unreadable, and for the same reason: the request is
@@ -302,6 +305,24 @@ x-refusal:
         status: 422
       deletePackRelationship:
         status: 422
+      putPackRelationship:
+        status: 422
+      registerPackDirective:
+        status: 422
+      putPackDirective:
+        status: 422
+      registerPackParadigm:
+        status: 422
+      putPackParadigm:
+        status: 422
+      registerPackStyleguide:
+        status: 422
+      putPackStyleguide:
+        status: 422
+      registerPackToolguide:
+        status: 422
+      putPackToolguide:
+        status: 422
   pack_dependency_unknown:
     status: 500
     retryable: false
@@ -312,6 +333,24 @@ x-refusal:
       deletePackArtifact:
         status: 422
       deletePackRelationship:
+        status: 422
+      putPackRelationship:
+        status: 422
+      registerPackDirective:
+        status: 422
+      putPackDirective:
+        status: 422
+      registerPackParadigm:
+        status: 422
+      putPackParadigm:
+        status: 422
+      registerPackStyleguide:
+        status: 422
+      putPackStyleguide:
+        status: 422
+      registerPackToolguide:
+        status: 422
+      putPackToolguide:
         status: 422
   pack_dependency_out_of_range:
     status: 500
@@ -324,6 +363,24 @@ x-refusal:
         status: 422
       deletePackRelationship:
         status: 422
+      putPackRelationship:
+        status: 422
+      registerPackDirective:
+        status: 422
+      putPackDirective:
+        status: 422
+      registerPackParadigm:
+        status: 422
+      putPackParadigm:
+        status: 422
+      registerPackStyleguide:
+        status: 422
+      putPackStyleguide:
+        status: 422
+      registerPackToolguide:
+        status: 422
+      putPackToolguide:
+        status: 422
   pack_parent_unresolved:
     status: 500
     retryable: false
@@ -334,6 +391,24 @@ x-refusal:
       deletePackArtifact:
         status: 422
       deletePackRelationship:
+        status: 422
+      putPackRelationship:
+        status: 422
+      registerPackDirective:
+        status: 422
+      putPackDirective:
+        status: 422
+      registerPackParadigm:
+        status: 422
+      putPackParadigm:
+        status: 422
+      registerPackStyleguide:
+        status: 422
+      putPackStyleguide:
+        status: 422
+      registerPackToolguide:
+        status: 422
+      putPackToolguide:
         status: 422
   pack_level_violation:
     status: 500
@@ -346,6 +421,24 @@ x-refusal:
         status: 422
       deletePackRelationship:
         status: 422
+      putPackRelationship:
+        status: 422
+      registerPackDirective:
+        status: 422
+      putPackDirective:
+        status: 422
+      registerPackParadigm:
+        status: 422
+      putPackParadigm:
+        status: 422
+      registerPackStyleguide:
+        status: 422
+      putPackStyleguide:
+        status: 422
+      registerPackToolguide:
+        status: 422
+      putPackToolguide:
+        status: 422
   pack_name_conflict:
     status: 500
     retryable: false
@@ -356,6 +449,24 @@ x-refusal:
       deletePackArtifact:
         status: 422
       deletePackRelationship:
+        status: 422
+      putPackRelationship:
+        status: 422
+      registerPackDirective:
+        status: 422
+      putPackDirective:
+        status: 422
+      registerPackParadigm:
+        status: 422
+      putPackParadigm:
+        status: 422
+      registerPackStyleguide:
+        status: 422
+      putPackStyleguide:
+        status: 422
+      registerPackToolguide:
+        status: 422
+      putPackToolguide:
         status: 422
   pack_duplicate_id:
     status: 500
@@ -368,6 +479,24 @@ x-refusal:
         status: 422
       deletePackRelationship:
         status: 422
+      putPackRelationship:
+        status: 422
+      registerPackDirective:
+        status: 422
+      putPackDirective:
+        status: 422
+      registerPackParadigm:
+        status: 422
+      putPackParadigm:
+        status: 422
+      registerPackStyleguide:
+        status: 422
+      putPackStyleguide:
+        status: 422
+      registerPackToolguide:
+        status: 422
+      putPackToolguide:
+        status: 422
   pack_sibling_conflict:
     status: 500
     retryable: false
@@ -378,6 +507,24 @@ x-refusal:
       deletePackArtifact:
         status: 422
       deletePackRelationship:
+        status: 422
+      putPackRelationship:
+        status: 422
+      registerPackDirective:
+        status: 422
+      putPackDirective:
+        status: 422
+      registerPackParadigm:
+        status: 422
+      putPackParadigm:
+        status: 422
+      registerPackStyleguide:
+        status: 422
+      putPackStyleguide:
+        status: 422
+      registerPackToolguide:
+        status: 422
+      putPackToolguide:
         status: 422
   pack_reference_unqualified:
     status: 500
@@ -392,6 +539,22 @@ x-refusal:
         status: 422
       deletePackRelationship:
         status: 422
+      registerPackDirective:
+        status: 422
+      putPackDirective:
+        status: 422
+      registerPackParadigm:
+        status: 422
+      putPackParadigm:
+        status: 422
+      registerPackStyleguide:
+        status: 422
+      putPackStyleguide:
+        status: 422
+      registerPackToolguide:
+        status: 422
+      putPackToolguide:
+        status: 422
   pack_reference_pack_missing:
     status: 500
     retryable: false
@@ -404,6 +567,22 @@ x-refusal:
       deletePackArtifact:
         status: 422
       deletePackRelationship:
+        status: 422
+      registerPackDirective:
+        status: 422
+      putPackDirective:
+        status: 422
+      registerPackParadigm:
+        status: 422
+      putPackParadigm:
+        status: 422
+      registerPackStyleguide:
+        status: 422
+      putPackStyleguide:
+        status: 422
+      registerPackToolguide:
+        status: 422
+      putPackToolguide:
         status: 422
   pack_reference_artifact_missing:
     status: 500
@@ -418,6 +597,22 @@ x-refusal:
         status: 422
       deletePackRelationship:
         status: 422
+      registerPackDirective:
+        status: 422
+      putPackDirective:
+        status: 422
+      registerPackParadigm:
+        status: 422
+      putPackParadigm:
+        status: 422
+      registerPackStyleguide:
+        status: 422
+      putPackStyleguide:
+        status: 422
+      registerPackToolguide:
+        status: 422
+      putPackToolguide:
+        status: 422
   pack_version_conflict:
     status: 409
     retryable: false
@@ -431,12 +626,12 @@ x-refusal:
   relationship_not_found:
     status: 404
     retryable: false
-    raised: false
+    raised: true
     description: no graph document of the pack holds an edge on the pair, and no derived relation joins it
   relationship_not_registered:
     status: 409
     retryable: false
-    raised: false
+    raised: true
     description: the pair is held outside registered.graph.yaml (authored or derived), or in both kinds of document
   registration_not_found:
     status: 404

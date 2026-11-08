@@ -7,6 +7,9 @@ import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackOverride;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RefusalPack;
+import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
@@ -81,6 +84,32 @@ public final class InboundReferences {
         this.catalog = Objects.requireNonNull(catalog, "catalog");
         this.descriptors = Objects.requireNonNull(descriptors, "descriptors");
         this.artifacts = Objects.requireNonNull(artifacts, "artifacts");
+    }
+
+    /**
+     * The {@code 409 artifact_referenced} that names every referrer: the packs member lists each referring pack once, in the
+     * order of the first referrer, and each violation holds the pack in its pointer and says what refers to what. A
+     * registration and a {@code DELETE} refuse with this one answer.
+     *
+     * @param detail the sentence that says what was refused
+     * @param removedBy what removes the artifact, as the violations say it: {@code registration} or {@code removal}
+     * @param referrers the referrers; not empty
+     * @return the refusal
+     */
+    public static CharterRefusal refusal(String detail, String removedBy, List<Referrer> referrers) {
+        List<RefusalViolation> violations = referrers.stream()
+                .map(referrer -> new RefusalViolation(
+                        referrer.pack().value() + "/" + referrer.referrer(),
+                        "artifact_referenced",
+                        referrer.referrer() + " of the pack " + referrer.name() + " refers to " + referrer.removed()
+                                + ", which the " + removedBy + " removes."))
+                .toList();
+        List<RefusalPack> packs = referrers.stream()
+                .map(referrer -> new RefusalPack(
+                        referrer.descriptorPackId(), referrer.pack().value(), referrer.name()))
+                .distinct()
+                .toList();
+        return CharterRefusal.withPacksAndViolations(RefusalCode.ARTIFACT_REFERENCED, detail, packs, violations);
     }
 
     /** One pack as the scan reads it: how it is configured, its descriptor, and what it holds and writes. */
