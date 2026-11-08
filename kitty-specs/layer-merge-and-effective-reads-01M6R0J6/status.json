@@ -849,6 +849,9 @@
       "last_event_id": "01M6Y67R4TW8W1MVDNNS02RHT2",
       "last_transition_at": "2026-11-08T18:20:24.602341+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "WP24 done: PacksSession.merged()/inForce() as values (MergedSnapshot, InForceQuery/InForceAnswer), EffectiveSet, EffectiveSkippedReport, EffectiveTag (activation/skipped/artifacts variants). 8 commits, red before green. :activations:check and :packs:check green; :deployable:test red only on OperationCoverage R-20 (HexagonalArchitectureTest 61/61 green). Shared edits: packs ArtifactState.overriddenBy (+3 tests), deployable ActivationTestWiring (two port methods)."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 7131,
