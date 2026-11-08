@@ -180,3 +180,30 @@ Document these, from review-cycle-1 of WP16:
 - Say in the contract (the `PackRegistrationNotices` description, as a description change only, with no schema change) that notices name activatable kinds only, and that entries of other kinds are left out. Add an entry under `### Changed` in the registration fragment if the wording changes the documented meaning.
 - Have the mapper log each dropped entry (WARN, naming the URN). Write the unit test first: a notice on a template is not in the response and is logged.
 - Point to #417, which tracks widening the notice kinds.
+
+## Hand-off from the WP17 review (2026-11-08)
+
+Document, and add divergence-register entries (C-007) for:
+
+- The pack-source configuration keys and defaults: `charter.pack-sources.https.{enabled, allowed-hosts, timeout 60s, max-size 32MB, max-redirects 3}`, `charter.pack-sources.git.{enabled, allowed-hosts}`, `charter.pack-sources.filesystem.{enabled, root}`. Each kind is off by default and read per request. The filesystem root must not lie under `/proc`, `/sys` or `/dev` or overlap `charter.config-root`. The resolver guard covers the union of the guide, archive and git hosts. Add them to `docs/guides/service-build.md` and the container guide.
+- The fixed refusal reasons of `pack_source_refused` (the detail is "<token>: <fixed sentence>", with no URL, path or upstream text), `502`/`504` as plain problems for upstream failures and timeouts, and every local-path refusal as one `path_refused` (the reason is in the operator log only).
+- The `PackSource.url` pattern fix (`^https://\S+$`).
+- For `POST`, the descriptor `name` must equal the target pack id; for `PUT` it need not.
+- The residual race of the local source: the file-key and link-count checks look the file up by name, not on the open handle (the JDK has no fstat on a channel); exploiting it needs write access under the root.
+- The status of a successful registration does not keep a URL's query, fragment or user information (WP18 builds this).
+
+## Hand-off from the WP19 review (2026-11-08)
+
+Document, and add divergence-register entries for:
+
+- Per-artifact `PUT`/`POST` and the relationship write can answer `422` with composition and relation codes. A write into a stored pack that cannot be read, or whose dependency is missing, is refused even when the write would repair it; whole-pack registration is the repair path.
+- The artifact `DELETE` answers `409 registration_conflict` for an artifact named in an author-written graph document, and never rewrites an author graph file. It does re-serialize a preset file when it removes a preset item (comments and formatting are lost), and deletes a preset key whose last item goes.
+- The relationship `DELETE` removes only from `registered.graph.yaml` and answers `409 relationship_not_registered` for authored, derived or doubly-held pairs. `If-Match` is required on both `DELETE`s. A removal that leaves a closure broken is `422` (strict; #404 is out of scope).
+- `PUT` with `If-Match: *` satisfies the `428` requirement.
+- Known gap: `pack-manifest.yaml` is not updated by per-artifact writes or `DELETE`s, so its hashes go stale and a `DELETE` leaves it listing a removed file. Reads do not verify the manifest; round trip and validate report it.
+- The `DELETE` result is judged on the facts overlay; the edited tree is not re-read.
+
+Two code fixes, runner decision 2026-11-08, each with a red test first:
+
+1. **The relationship `DELETE` runs the edge gate.** Today it skips the write gate, so a `DELETE` can drop an edge whose source is a locked ancestor artifact, which a whole-pack replace is refused for dropping (DM-01M6TR1KDAJ64GMJD6AYNZKT59 item 4). Gate the removed edge as a `RELATIONSHIP` write on its source, with the refusal a replace gives. If this needs a response the contract does not list for the `DELETE`, add it with a `### Changed` fragment line.
+2. **The relationship `DELETE` compares pack-qualified targets.** Today the pair compare ignores pack qualifiers, so with registered edges `A→base::X` and `A→other::X` one `DELETE` removes both. Remove only the edge the request names; keep the kernel's comparison for an unqualified reference.
