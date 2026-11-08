@@ -1,7 +1,7 @@
 {
-  "event_count": 221,
-  "last_event_id": "01M6WSR9E4AA7YNZ7HDTFWS3AK",
-  "materialized_at": "2026-11-08T05:23:00.677043+00:00",
+  "event_count": 222,
+  "last_event_id": "01M6WSSXTK9JTEQSEN53SR324H",
+  "materialized_at": "2026-11-08T05:23:54.323445+00:00",
   "mission_number": "",
   "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
   "mission_type": "",
@@ -12,9 +12,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 0,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 11
   },
   "work_packages": {
@@ -638,22 +638,22 @@
     },
     "WP19": {
       "actor": "claude",
-      "agent": "claude:sonnet:java-jenny",
+      "agent": "claude:opus:reviewer-renata",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude",
-      "lane": "for_review",
-      "last_event_id": "01M6WSR9E4AA7YNZ7HDTFWS3AK",
-      "last_transition_at": "2026-11-08T05:23:00.677043+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M6WSSXTK9JTEQSEN53SR324H",
+      "last_transition_at": "2026-11-08T05:23:54.323445+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "DELETEs of an artifact and a relationship; per-artifact writes run the impact check; verifyAll green"
       ],
       "provider": "__resolved_provider_absent__",
-      "role": "implementer",
-      "shell_pid": 8016,
-      "shell_pid_created_at": "1794086594.16",
+      "role": "reviewer",
+      "shell_pid": 1503,
+      "shell_pid_created_at": "1794115429.68",
       "subtasks": {
         "T094": "done",
         "T095": "done",
