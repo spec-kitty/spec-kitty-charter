@@ -74,13 +74,16 @@ description: >-
   until the request or the configured packs change.
 
   Fourteen codes belong to the whole-pack registration and the two DELETEs (ADR-0065, FR-001 to FR-006, FR-024,
-  FR-025; PR A of the layer merge mission). Their operations are reserved until the services that raise them are built
-  (ADR-0020 D8), so each is raised: false until the service that raises it is built, and the work package that builds the
-  service flips it. pack_version_conflict is raised by the whole-pack registration service (the same pack_version sent
-  with another revision), artifact_referenced (a replace that removes an artifact another pack still refers to) and the
-  five relation codes of the impact check, override_not_permitted, enhances_cycle, conflicting_relations, self_override
-  and override_cycle (a registration that leaves a closure it joins breaking a relation rule), whose operations stay
-  reserved until their controller and job are built.
+  FR-025; PR A of the layer merge mission). A code is raised: false until the service that raises it is built, and the
+  work package that builds the service flips it, so a code's flag follows what the service names, not what its operation
+  declares: an operation that stays reserved (ADR-0020 D8) raises nothing. pack_version_conflict is raised by the
+  whole-pack registration service (the same pack_version sent with another revision), artifact_referenced (a replace
+  that removes an artifact another pack still refers to) and the five relation codes of the impact check,
+  override_not_permitted, enhances_cycle, conflicting_relations, self_override and override_cycle (a registration that
+  leaves a closure it joins breaking a relation rule), as the problem of a refused registration status
+  (getPackRegistration); registration_not_found, pack_source_unavailable, registration_timed_out and pack_storage_full are
+  raised by the registration job and its admission. pack_source_refused is raised by the source fetchers and
+  relationship_not_found and relationship_not_registered by the two DELETEs, and stay raised: false until those are built.
   pack_version_conflict (409): the same pack_version was registered with another revision. artifact_referenced (409):
   another artifact or pack still refers to the artifact a DELETE or a replace removes; its packs member names the
   referring packs (at most 100) and its violations name every referring artifact. relationship_not_found (404): no
@@ -433,7 +436,7 @@ x-refusal:
   registration_not_found:
     status: 404
     retryable: false
-    raised: false
+    raised: true
     description: no registration is held under the id
   pack_source_refused:
     status: 422
@@ -443,7 +446,7 @@ x-refusal:
   pack_source_unavailable:
     status: 503
     retryable: false
-    raised: false
+    raised: true
     description: registration or the source kind is switched off, or the system git is missing or older than 2.50.1
   override_not_permitted:
     status: 422
@@ -473,12 +476,12 @@ x-refusal:
   registration_timed_out:
     status: 504
     retryable: true
-    raised: false
+    raised: true
     description: the job ended at the source deadline plus 30 seconds
   pack_storage_full:
     status: 503
     retryable: true
-    raised: false
+    raised: true
     description: less than twice the archive bound is free
 x-source:
   path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RefusalCode.java

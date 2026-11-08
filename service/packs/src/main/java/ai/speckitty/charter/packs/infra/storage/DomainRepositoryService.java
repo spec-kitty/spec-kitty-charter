@@ -115,6 +115,16 @@ public final class DomainRepositoryService
         default Optional<String> whyReadOnly(Path realDirectory) {
             return Optional.empty();
         }
+
+        /**
+         * The one directory the service writes whole packs into ({@code <config-root>/packs}, ADR-0065 D3), when these
+         * locations have one. A fixed set of locations has none and cannot take a whole-pack registration.
+         *
+         * @return the directory, absolute and normalized; empty for a fixed set
+         */
+        default Optional<Path> writeRoot() {
+            return Optional.empty();
+        }
     }
 
     private final Locations locations;

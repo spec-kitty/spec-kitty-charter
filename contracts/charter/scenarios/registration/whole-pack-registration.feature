@@ -58,7 +58,6 @@ Feature: Registering a whole pack replaces the pack the service holds
       """
 
   # bound by: WP16 (US1 AS1)
-  @WIP
   Scenario: A pack that does not exist yet is created, and everything the archive carries is readable
     When I PUT "/packs/acme" with the archive "v1"
     Then the response status is 202
@@ -83,7 +82,6 @@ Feature: Registering a whole pack replaces the pack the service holds
     And the field at "/directive/title" is "B at version 1"
 
   # bound by: WP16 (US1 AS1, the zip format)
-  @WIP
   Scenario: A zip archive registers the same pack as a gzip archive
     When I PUT "/packs/acme" with the archive "v1" as a zip archive
     Then the response status is 202
@@ -94,7 +92,6 @@ Feature: Registering a whole pack replaces the pack the service holds
     Then the response status is 200
 
   # bound by: WP16 (US1 AS2, SC-003)
-  @WIP
   Scenario: A replace drops what the new archive leaves out and keeps what it carries
     Given the archive "v2" is a copy of the archive "v1"
     And the archive "v2" holds the file "pack.yaml":
@@ -130,7 +127,6 @@ Feature: Registering a whole pack replaces the pack the service holds
     And the problem code is "directive_not_found"
 
   # bound by: WP16 (US1 AS2: no edge from a dropped artifact remains)
-  @WIP
   Scenario: A replace drops the registered edges an artifact it removes held
     Given the archive "v2" is a copy of the archive "v1"
     And the archive "v2" holds the file "pack.yaml":
@@ -164,7 +160,6 @@ Feature: Registering a whole pack replaces the pack the service holds
     And the field at "/items/0" is absent
 
   # bound by: WP16 (US1 AS4)
-  @WIP
   Scenario: Sending the identical archive again changes nothing
     When I PUT "/packs/acme" with the archive "v1"
     And I poll the registration until it ends
@@ -180,7 +175,6 @@ Feature: Registering a whole pack replaces the pack the service holds
     Then the field "revision" of the response body is the remembered one
 
   # bound by: WP16 (US1 AS3, the version history of IC-16)
-  @WIP
   Scenario: The same version with other content is refused, and a new version is accepted
     Given the archive "same-version" is a copy of the archive "v1"
     And the archive "same-version" holds the file "directives/A.directive.yaml":
@@ -219,7 +213,6 @@ Feature: Registering a whole pack replaces the pack the service holds
     Then the field at "/directive/title" is "A changed without a new version"
 
   # bound by: WP16 (US1 AS6, first clause)
-  @WIP
   Scenario: A stale If-Match is refused at once and no registration exists
     When I PUT "/packs/acme" with the archive "v1"
     And I poll the registration until it ends
@@ -230,7 +223,6 @@ Feature: Registering a whole pack replaces the pack the service holds
     And the field at "/state" is absent
 
   # bound by: WP16 (US1 AS6, the control of the stale If-Match)
-  @WIP
   Scenario: The current revision as If-Match is accepted
     When I PUT "/packs/acme" with the archive "v1"
     And I poll the registration until it ends
@@ -243,7 +235,6 @@ Feature: Registering a whole pack replaces the pack the service holds
     And the field at "/result/outcome" is "unchanged"
 
   # bound by: WP16 (US1 AS6, If-None-Match: * and both validators)
-  @WIP
   Scenario: If-None-Match makes a registration create-only, and both validators together are refused
     When I PUT "/packs/acme" with the archive "v1" and the header "If-None-Match": "*"
     Then the response status is 202
@@ -256,14 +247,22 @@ Feature: Registering a whole pack replaces the pack the service holds
     Then the response status is 400
 
   # bound by: WP16 (US1 AS6, second clause: the revision moves after the 202)
-  @WIP
   Scenario: A revision that moves after the registration was accepted ends it refused with 412
+    Given the archive "next-version" is a copy of the archive "v1"
+    And the archive "next-version" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.1
+      parent_pack: null
+      name: acme
+      pack_level: org
+      """
     When I PUT "/packs/acme" with the archive "v1"
     And I poll the registration until it ends
     And I GET "/packs/acme"
     And I remember the ETag
     And the registration jobs are held before they run
-    And I PUT "/packs/acme" with the archive "v1" and the remembered ETag
+    And I PUT "/packs/acme" with the archive "next-version" and the remembered ETag
     Then the response status is 202
     When I remember the Location header
     And I PUT "/packs/acme/artifacts/directive/C" with the body:
@@ -281,7 +280,6 @@ Feature: Registering a whole pack replaces the pack the service holds
     And the field at "/directive/title" is "C written while the registration waits"
 
   # bound by: WP16 (FR-024, the status lifecycle)
-  @WIP
   Scenario: A registration is observed pending, running and succeeded, and its status is forgotten later
     Given the registration jobs are held before they run
     When I PUT "/packs/acme" with the archive "v1"
@@ -307,7 +305,6 @@ Feature: Registering a whole pack replaces the pack the service holds
     Then the response status is 200
 
   # bound by: WP16 (FR-024, an id nobody issued, and an id outside the grammar)
-  @WIP
   Scenario: A registration id nobody issued is not found
     When I GET "/pack-registrations/01M6TQ62HXYF362GAFS2BZ3PGF"
     Then the response status is 404
@@ -317,7 +314,6 @@ Feature: Registering a whole pack replaces the pack the service holds
     And the problem has no code
 
   # bound by: WP16 (US1 AS5; one outline, a violation each, a control in the same pack)
-  @WIP
   Scenario Outline: An archive that breaks a pack rule is refused with the violations and stores nothing
     Given the archive "bad" is a copy of the archive "v1"
     And the archive "bad" holds the file "<path>":
@@ -345,7 +341,6 @@ Feature: Registering a whole pack replaces the pack the service holds
       | directives/C.directive.yaml | id: C, a directive missing its required keys |
 
   # bound by: WP16 (US1 AS7: a changed level or pack_id is refused, then the same identity is accepted)
-  @WIP
   Scenario Outline: A replace may not change the level or the pack_id of the stored pack
     Given the archive "changed" is a copy of the archive "v1"
     And the archive "changed" holds the file "pack.yaml":
@@ -385,7 +380,6 @@ Feature: Registering a whole pack replaces the pack the service holds
       | 01M4P01D5TWB5FKZGNNQG3943S | org     |
 
   # bound by: WP16 (ADR-0065 D3: the built-in level is read-only)
-  @WIP
   Scenario: A pack declaring the built-in level is refused as a conflict
     Given the archive "built-in" is a copy of the archive "v1"
     And the archive "built-in" holds the file "pack.yaml":
@@ -408,7 +402,7 @@ Feature: Registering a whole pack replaces the pack the service holds
     Then the field at "/state" is "succeeded"
 
   # bound by: WP16 (PR-PACK-REGISTER-003 reversed: a second registration of a pack id replaces, ADR-0065 D1)
-  @WIP @promise:PR-PACK-REGISTER-003
+   @promise:PR-PACK-REGISTER-003
   Scenario: A second registration of a pack id replaces the pack, and another pack may not take its pack_id
     Given the archive "v2" is a copy of the archive "v1"
     And the archive "v2" holds the file "pack.yaml":
@@ -443,7 +437,6 @@ Feature: Registering a whole pack replaces the pack the service holds
     Then the field at "/version" is "2.0.0"
 
   # bound by: WP16 (FR-037, IC-18: the guard answers 401 before routing, so no registration rule is shown)
-  @WIP
   Scenario: A registration without the worktree token is refused with the guard's 401, and one with it is accepted
     When I PUT "/packs/acme" with the archive "v1" without the worktree token
     Then the response status is 401
@@ -455,7 +448,6 @@ Feature: Registering a whole pack replaces the pack the service holds
     Then the response status is 202
 
   # bound by: WP16 (FR-037, IC-18: charter.registration.enabled defaults to false)
-  @WIP
   Scenario: Registration switched off answers 503, and nothing is stored
     Given registration is switched off
     When I PUT "/packs/acme" with the archive "v1"
@@ -468,7 +460,6 @@ Feature: Registering a whole pack replaces the pack the service holds
     Then the response status is 202
 
   # bound by: WP16 (spec edge case, ADR-0065 D8: two registrations run and eight wait; the next is refused with Retry-After)
-  @WIP
   Scenario: A full registration queue answers 503 with Retry-After, and nothing is stored
     Given the registration jobs are held before they run
     And the registration queue is full
@@ -483,7 +474,6 @@ Feature: Registering a whole pack replaces the pack the service holds
     Then the response status is 202
 
   # bound by: WP16 (NFR-004: the body limit holds before the body is read; the media type must match the bytes)
-  @WIP
   Scenario: A body over the limit, or in another media type, is refused before a registration exists
     When I PUT "/packs/acme" with an archive larger than the body limit
     Then the response status is 413
@@ -495,6 +485,63 @@ Feature: Registering a whole pack replaces the pack the service holds
     Then the response status is 415
     When I PUT "/packs/acme" with the archive "v1"
     Then the response status is 202
+
+  # bound by: WP16 (T079, decision DM-01M6TV6VDNHNCVWRHHC74WATV0: the packId grammar is checked before the body is read)
+  Scenario Outline: A packId outside the grammar is a 400 before the body is read, and one inside it is accepted
+    When I PUT "/packs/<packId>" with the archive "v1"
+    Then the response status is 400
+    And the problem has no code
+    And the response has no "Location" header
+    When I PUT "/packs/acme" with the archive "v1"
+    Then the response status is 202
+
+    Examples: ids the grammar ^[a-z0-9][a-z0-9-]{0,62}$ refuses
+      | packId                                                            |
+      | Acme                                                              |
+      | -acme                                                             |
+      | acme_x                                                            |
+      | acme.x                                                            |
+      | aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |
+
+  # bound by: WP16 (ADR-0065 D12, WP12 and WP14 hand-offs: a write that meets a busy registry is told to retry, not answered 500)
+  Scenario: A per-artifact write that meets a busy registry answers 503 with Retry-After, and succeeds once it is free
+    When I PUT "/packs/acme" with the archive "v1"
+    And I poll the registration until it ends
+    And I GET "/packs/acme"
+    And I remember the ETag
+    And the pack registry is held by another write
+    And I PUT "/packs/acme/artifacts/directive/C" with the remembered ETag and the body:
+      """
+      {"schemaVersion": "1.0", "title": "C written while the registry is busy", "intent": "A write that waits", "enforcement": "required"}
+      """
+    Then the response status is 503
+    And the problem has no code
+    And the response header "Retry-After" appears once
+    When I GET "/packs/acme/artifacts/directive/C"
+    Then the response status is 404
+    When the held pack registry is released
+    And I PUT "/packs/acme/artifacts/directive/C" with the remembered ETag and the body:
+      """
+      {"schemaVersion": "1.0", "title": "C written once the registry is free", "intent": "A write that waits", "enforcement": "required"}
+      """
+    Then the response status is 201
+
+  # bound by: WP16 (review cycle 1, issue 2: an activation write takes the registry lock, so it can answer 503 as a registration can)
+  Scenario: An activation write that meets a busy registry answers 503 with Retry-After, and succeeds once it is free
+    When the pack registry is held by another write
+    And I POST "/activations" as JSON with the body:
+      """
+      {"schemaVersion": 2}
+      """
+    Then the response status is 503
+    And the problem has no code
+    And the response header "Retry-After" appears once
+    When the held pack registry is released
+    And I POST "/activations" as JSON with the body:
+      """
+      {"schemaVersion": 2}
+      """
+    Then the response status is 201
 
   # bound by: WP17 (US1 AS7, https_archive; PR-PACK-REGISTER-001)
   @WIP @promise:PR-PACK-REGISTER-001
@@ -667,7 +714,6 @@ Feature: Registering a whole pack replaces the pack the service holds
       | refs/heads/topic.lock |
 
   # bound by: WP16 (IC-15, FR-025: a composition code, naming the packs)
-  @WIP
   Scenario: A registration that leaves a closure unable to compose is refused naming the packs
     Given the archive "dependent" holds the file "pack.yaml":
       """
@@ -719,7 +765,6 @@ Feature: Registering a whole pack replaces the pack the service holds
   # bound by: WP16 (IC-15, A6: an overrides edge onto a target that is not open; the control overrides an open one)
   # The lock is a built-in one, as US1 AS8 says, and the refusal names both packs: the pack that breaks the rule
   # first, then the pack that holds the lock.
-  @WIP
   Scenario: An overrides edge onto a locked artifact is refused, and onto an open one is accepted
     Given the built-in pack "main" with the file "pack.yaml":
       """
@@ -760,6 +805,9 @@ Feature: Registering a whole pack replaces the pack the service holds
       parent_pack: 01M4P01D5TWB5FKZGNNQG3943W
       name: acme
       pack_level: project
+      depends_on:
+        - pack_id: 01M4P01D5TWB5FKZGNNQG3943W
+          range: '>=1.0,<2'
       """
     And the archive "over-locked" holds the file "overrides.graph.yaml":
       """
@@ -767,7 +815,7 @@ Feature: Registering a whole pack replaces the pack the service holds
       generated_at: STATIC
       nodes: []
       edges:
-      - {source: 'directive:A', target: 'directive:LK', relation: overrides}
+      - {source: 'directive:A', target: 'main-pack::directive:LK', relation: overrides}
       """
     And the archive "over-open" is a copy of the archive "over-locked"
     And the archive "over-open" holds the file "overrides.graph.yaml":
@@ -776,7 +824,7 @@ Feature: Registering a whole pack replaces the pack the service holds
       generated_at: STATIC
       nodes: []
       edges:
-      - {source: 'directive:A', target: 'directive:OP', relation: overrides}
+      - {source: 'directive:A', target: 'main-pack::directive:OP', relation: overrides}
       """
     When I PUT "/packs/acme" with the archive "over-locked"
     And I poll the registration until it ends
@@ -784,7 +832,8 @@ Feature: Registering a whole pack replaces the pack the service holds
     And the field at "/problem/status" is 422
     And the field at "/problem/code" is "override_not_permitted"
     And the field at "/problem/packs/0/packId" is "acme"
-    And the field at "/problem/packs/1/packId" is "main-pack"
+    And the field at "/problem/packs/1/packId" is "main"
+    And the field at "/problem/packs/1/name" is "main-pack"
     When I GET "/packs/acme"
     Then the response status is 404
     When I PUT "/packs/acme" with the archive "over-open"
@@ -792,7 +841,6 @@ Feature: Registering a whole pack replaces the pack the service holds
     Then the field at "/state" is "succeeded"
 
   # bound by: WP16 (IC-15, A8, A11, A12, C28: each relation rule, each with the control that composes)
-  @WIP
   Scenario Outline: A registration whose relations break a rule is refused with that rule's code
     Given the archive "relations" is a copy of the archive "v1"
     And the archive "relations" holds the file "relations.graph.yaml":
@@ -821,15 +869,91 @@ Feature: Registering a whole pack replaces the pack the service holds
     And I poll the registration until it ends
     Then the field at "/state" is "succeeded"
 
-    Examples: one rule each, an enhances cycle, an enhance and an override of one target, an override of itself, an overrides cycle
+    Examples: one rule each, an enhances cycle, an enhance and an override of one target, an overrides cycle ; and a bare self-loop, which the load refuses first as invalid (the qualified self-loop is the next scenario)
       | code                  | edges                                                                                                                                       |
       | enhances_cycle        | {source: 'directive:A', target: 'directive:B', relation: enhances}, {source: 'directive:B', target: 'directive:A', relation: enhances}     |
       | conflicting_relations | {source: 'directive:B', target: 'directive:A', relation: enhances}, {source: 'directive:B', target: 'directive:A', relation: overrides}    |
-      | self_override         | {source: 'directive:A', target: 'directive:A', relation: overrides}                                                                         |
+      | validation_failed     | {source: 'directive:A', target: 'directive:A', relation: overrides}                                                                         |
+      | validation_failed     | {source: 'directive:A', target: 'directive:A', relation: enhances}                                                                          |
       | override_cycle        | {source: 'directive:A', target: 'directive:B', relation: overrides}, {source: 'directive:B', target: 'directive:A', relation: overrides}   |
 
+  # bound by: WP16 (IC-15, A8, A12 and the WP15 hand-off: an edge whose two ends name one artifact of another pack)
+  # A self-loop the load can see in one pack is refused first as invalid (the outline above); an edge whose ends are qualified
+  # to one artifact of a pack the writer builds on is the shadow the impact check refuses, as the rule of its relation.
+  Scenario Outline: An edge whose two ends name one artifact of another pack is refused as that rule, and an edge to the writer's own artifact is accepted
+    Given the archive "acme-open" is a copy of the archive "v1"
+    And the archive "acme-open" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: acme
+      pack_level: org
+      mutability_policy: policy.yaml
+      """
+    And the archive "acme-open" holds the file "policy.yaml":
+      """
+      schema_version: 1
+      artifacts:
+        directive:A: open
+      """
+    And the archive "derived" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943P
+      pack_version: 1.0.0
+      parent_pack: null
+      name: derived
+      pack_level: org
+      depends_on:
+        - pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+          range: '>=1.0,<2'
+      """
+    And the archive "derived" holds the file "directives/D.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: D
+      title: D
+      intent: The directive derived holds
+      enforcement: required
+      """
+    And the archive "derived-shadow" is a copy of the archive "derived"
+    And the archive "derived-shadow" holds the file "shadow.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - {source: 'acme::directive:A', target: 'acme::directive:A', relation: <relation>}
+      """
+    And the archive "derived-own" is a copy of the archive "derived"
+    And the archive "derived-own" holds the file "shadow.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - {source: 'acme::directive:A', target: 'directive:D', relation: <relation>}
+      """
+    When I PUT "/packs/acme" with the archive "acme-open"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+    When I PUT "/packs/derived" with the archive "derived-shadow"
+    And I poll the registration until it ends
+    Then the field at "/state" is "refused"
+    And the field at "/problem/status" is 422
+    And the field at "/problem/code" is "<code>"
+    When I GET "/packs/derived"
+    Then the response status is 404
+    When I PUT "/packs/derived" with the archive "derived-own"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+
+    Examples: the shadow of each relation, and the control that points at the writer's own artifact
+      | relation  | code           |
+      | overrides | self_override  |
+      | enhances  | enhances_cycle |
+
   # bound by: WP16 (plan delta squad finding 3: a reserved shard is refused, a stamped one is accepted and replaces)
-  @WIP
   Scenario: A registered.graph.yaml without the registration stamp is refused, and a stamped one replaces the registered edges
     Given the archive "unstamped" is a copy of the archive "v1"
     And the archive "unstamped" holds the file "registered.graph.yaml":
@@ -882,7 +1006,6 @@ Feature: Registering a whole pack replaces the pack the service holds
     Then the response status is 200
 
   # bound by: WP16 (finding 3: a field ADR-0064 removed is an unknown field; the control is the directive without it)
-  @WIP
   Scenario Outline: A directive with a field that was removed is refused as invalid, never a 500
     Given the archive "removed-field" is a copy of the archive "v1"
     And the archive "removed-field" holds the file "directives/A.directive.yaml":
@@ -911,7 +1034,6 @@ Feature: Registering a whole pack replaces the pack the service holds
       | relationships |
 
   # bound by: WP16 (finding 3: a preset with activated_kinds, and a preset item outside the id grammar)
-  @WIP
   Scenario Outline: A preset the pack model no longer reads is refused as invalid, and a sound preset is accepted
     Given the archive "preset" is a copy of the archive "v1"
     And the archive "preset" holds the file "presets/team.yaml":
@@ -947,7 +1069,6 @@ Feature: Registering a whole pack replaces the pack the service holds
       | activated_directives | [{id: 'A B'}]          |
 
   # bound by: WP16 (FR-027: the notices of a registration that changes the floor)
-  @WIP
   Scenario: A registration that removes a must-have item reports it in the notices
     Given the archive "floor" is a copy of the archive "v1"
     And the archive "floor" holds the file "presets/team.yaml":

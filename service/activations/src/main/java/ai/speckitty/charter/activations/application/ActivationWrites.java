@@ -73,17 +73,42 @@ public class ActivationWrites {
 
     private final ActivationRepository repository;
     private final AvailablePacks packs;
+    private final WriteCoordination coordination;
+
+    /**
+     * The shared flow over the register and the packs, with no coordination with pack registrations.
+     *
+     * @param repository the activation register
+     * @param packs the packs, asked once per write
+     */
+    public ActivationWrites(ActivationRepository repository, AvailablePacks packs) {
+        this(repository, packs, WriteCoordination.NONE);
+    }
 
     /**
      * The shared flow over the register and the packs.
      *
      * @param repository the activation register
      * @param packs the packs, asked once per write
+     * @param coordination what makes a write exclude a pack registration
      */
     @Autowired
-    public ActivationWrites(ActivationRepository repository, AvailablePacks packs) {
+    public ActivationWrites(ActivationRepository repository, AvailablePacks packs, WriteCoordination coordination) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.packs = Objects.requireNonNull(packs, "packs");
+        this.coordination = Objects.requireNonNull(coordination, "coordination");
+    }
+
+    /**
+     * Runs a whole write, from its first read to its store, excluding every pack registration, so that the activation is
+     * judged against the packs it is stored with and a registration's impact check sees it.
+     *
+     * @param work the write
+     * @param <T> what it answers
+     * @return what the work answers
+     */
+    <T> T exclusively(java.util.function.Supplier<T> work) {
+        return coordination.exclusively(work);
     }
 
     /**

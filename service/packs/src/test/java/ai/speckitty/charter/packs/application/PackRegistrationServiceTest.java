@@ -121,6 +121,86 @@ class PackRegistrationServiceTest {
         assertThat(rig.filesOf(rig.packs.resolve("pack-x")).get("pack.yaml")).contains("pack_version: 1.0.0");
     }
 
+    // ---- a fault in the upload is a 422 that names the file, whatever refuses it ---------------------------------
+
+    @Test
+    void anEdgeThatJoinsAnArtifactToItselfIsAValidationFailureThatNamesTheFile(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        StagedPack loop = rig.stage(
+                Packs.of(ORG_PACK, "pack-x", "1.0.0", "org").directive("A", "A").file("loop.graph.yaml", """
+                        schema_version: '1.0'
+                        generated_at: STATIC
+                        nodes: []
+                        edges:
+                        - {source: 'directive:A', target: 'directive:A', relation: overrides}
+                        """));
+
+        CharterRefusal refused = refusal(() -> rig.register("pack-x", loop, Preconditions.none()));
+
+        assertThat(refused.code())
+                .as("the fault is in the upload, so it is a 422 and never a 500 pack_unreadable")
+                .isEqualTo(RefusalCode.VALIDATION_FAILED);
+        assertThat(refused.violations()).isNotEmpty();
+        assertThat(refused.violations().getFirst().detail()).contains("loop.graph.yaml");
+        assertThat(rig.packs.resolve("pack-x")).as("nothing was stored").doesNotExist();
+    }
+
+    @Test
+    void everyViolationOfAnUploadNamesItsFileInItsDetailAsWellAsInItsPointer(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        StagedPack faulty = rig.stage(Packs.of(ORG_PACK, "pack-x", "1.0.0", "org")
+                .directive("A", "A")
+                .file("notes.txt", "a file no pack kind models"));
+
+        CharterRefusal refused = refusal(() -> rig.register("pack-x", faulty, Preconditions.none()));
+
+        assertThat(refused.violations()).isNotEmpty();
+        assertThat(refused.violations())
+                .allSatisfy(violation -> assertThat(violation.detail()).contains(violation.pointer()));
+    }
+
+    // ---- the point of no return -----------------------------------------------------------------------------------
+
+    @Test
+    void theBeforeCommitHookRunsJustBeforeTheWriteAndWhateverItThrowsLeavesNothingWritten(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        java.util.List<Boolean> lockedInHook = new java.util.ArrayList<>();
+        StagedPack upload =
+                rig.stage(Packs.of(ORG_PACK, "pack-x", "1.0.0", "org").directive("DIRECTIVE_001", "One"));
+
+        assertThatThrownBy(() -> rig.service.register("pack-x", upload, Preconditions.none(), () -> {
+                    lockedInHook.add(rig.lock.isHeldByCurrentThread());
+                    throw new IllegalStateException("the deadline ended the registration");
+                }))
+                .isInstanceOf(IllegalStateException.class);
+
+        assertThat(lockedInHook).as("the hook runs under the registry lock").containsExactly(true);
+        assertThat(rig.packs.resolve("pack-x")).as("nothing was written").doesNotExist();
+        assertThat(rig.asidesBeside(rig.packs.resolve("pack-x"))).isEmpty();
+        assertThat(rig.register("pack-x", upload, Preconditions.none()).outcome())
+                .as("the control: without the hook's throw the same upload is stored")
+                .isEqualTo(Outcome.CREATED);
+    }
+
+    @Test
+    void theBeforeCommitHookIsNotRunForARegistrationThatIsRefusedOrUnchanged(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        Packs pack = Packs.of(ORG_PACK, "pack-x", "1.0.0", "org").directive("DIRECTIVE_001", "One");
+        rig.register("pack-x", rig.stage(pack), Preconditions.none());
+        java.util.concurrent.atomic.AtomicInteger calls = new java.util.concurrent.atomic.AtomicInteger();
+
+        RegistrationOutcome unchanged =
+                rig.service.register("pack-x", rig.stage(pack), Preconditions.none(), calls::incrementAndGet);
+        refusal(() -> rig.service.register(
+                "pack-x",
+                rig.stage(pack.directive("DIRECTIVE_001", "Same version, other content")),
+                Preconditions.none(),
+                calls::incrementAndGet));
+
+        assertThat(unchanged.outcome()).isEqualTo(Outcome.UNCHANGED);
+        assertThat(calls).as("nothing was about to be written").hasValue(0);
+    }
+
     // ---- the version rule (steps 4 to 6) -------------------------------------------------------------------------
 
     @Test
@@ -813,7 +893,7 @@ class PackRegistrationServiceTest {
         final Path packs;
         final Path staging;
         final PackWriteGeneration generation = new PackWriteGeneration();
-        final RegistryWriteLock lock = new RegistryWriteLock(Duration.ofSeconds(30));
+        final RegistryWriteLock lock;
         final StorageRootLocations locations;
         final DomainRepositoryService repository;
         final PackCommitStore commits;
@@ -833,7 +913,13 @@ class PackRegistrationServiceTest {
         volatile Runnable midSwap = () -> {};
 
         Rig(Path host) {
+            this(host, Duration.ofSeconds(30));
+        }
+
+        /** A rig whose registry lock gives up after {@code lockTimeout}, so a contention test does not wait 5 s. */
+        Rig(Path host, Duration lockTimeout) {
             this.host = host;
+            this.lock = new RegistryWriteLock(lockTimeout);
             this.packs = host.resolve("packs");
             this.staging = host.resolve("staging");
             YamlSerializationStrategy strategy = new YamlSerializationStrategy();
@@ -861,8 +947,7 @@ class PackRegistrationServiceTest {
                     new WholePackStore(strategy),
                     commits,
                     writeStore,
-                    repository,
-                    repository,
+                    new StagedPackViewFactory(locations, strategy),
                     gate,
                     new InboundReferences(repository, repository, repository),
                     impact);
@@ -921,7 +1006,7 @@ class PackRegistrationServiceTest {
             }
         }
 
-        private static void write(Path file, String text) {
+        static void write(Path file, String text) {
             try {
                 Files.createDirectories(file.getParent());
                 Files.writeString(file, text, StandardCharsets.UTF_8);

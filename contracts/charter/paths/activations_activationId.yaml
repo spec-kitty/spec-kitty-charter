@@ -129,6 +129,8 @@ put:
       $ref: ../responses/ActivationInvalid.yaml
     '500':
       $ref: ../responses/OfferingUnreadable.yaml
+    '503':
+      $ref: ../responses/RegistryBusy.yaml
     default:
       $ref: ../../_shared/responses/Problem.yaml
 delete:
@@ -163,5 +165,7 @@ delete:
       $ref: ../responses/PreconditionFailed.yaml
     '500':
       $ref: ../../_shared/responses/Problem.yaml
+    '503':
+      $ref: ../responses/RegistryBusy.yaml
     default:
       $ref: ../../_shared/responses/Problem.yaml

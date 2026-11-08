@@ -293,10 +293,10 @@ public final class PackCommitStore implements WholePackWriteStore {
 
     /** The one directory packs are written into; a fixed set of locations has none, and cannot take a registration. */
     private Path writableRoot() {
-        if (locations instanceof StorageRootLocations storage) {
-            return storage.writableRoot();
-        }
-        throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "the pack domain has no writable root");
+        return locations
+                .writeRoot()
+                .orElseThrow(
+                        () -> new CharterRefusal(RefusalCode.PACK_UNREADABLE, "the pack domain has no writable root"));
     }
 
     @Override

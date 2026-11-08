@@ -5,12 +5,12 @@ import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
-import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import java.nio.file.Path;
@@ -63,6 +63,22 @@ public final class PackRegistrationService {
         public Preconditions {
             if (ifMatch != null && ifNoneMatchAny) {
                 throw new IllegalArgumentException("If-Match and If-None-Match: * exclude each other");
+            }
+        }
+
+        /**
+         * Checks the preconditions against the stored revision: a registration that asks for the pack to be absent
+         * (create only) or to be at a revision, and finds otherwise, is stale.
+         *
+         * @param stored the stored pack's revision; empty when no pack is stored under the name
+         * @throws PreconditionException {@code STALE} (412) when they do not hold
+         */
+        public void requireMet(Optional<PackRevision> stored) {
+            if (ifNoneMatchAny && stored.isPresent()) {
+                throw stale("If-None-Match: * asks for a pack that does not exist, and it does; read the pack again.");
+            }
+            if (ifMatch != null && (stored.isEmpty() || !PackRevision.matches(ifMatch, stored.get()))) {
+                throw stale("The If-Match precondition is stale; read the pack again.");
             }
         }
 
@@ -136,8 +152,7 @@ public final class PackRegistrationService {
     private final WholePackWriteStore.Loader loader;
     private final WholePackWriteStore store;
     private final PackRevisions revisions;
-    private final PackCatalogRepository catalog;
-    private final PackDescriptorRepository descriptors;
+    private final StagedPackViews views;
     private final WritePolicyGate gate;
     private final InboundReferences inbound;
     private final RegistrationImpact impact;
@@ -148,8 +163,8 @@ public final class PackRegistrationService {
      * @param loader reads a staged tree
      * @param store locks, swaps and creates
      * @param revisions the revision of a stored pack
-     * @param catalog the configured packs
-     * @param descriptors their descriptors
+     * @param views the stored packs, read through one session per registration: each session lists the configured
+     *     locations once, however many packs the identity checks look at
      * @param gate the mutability gate
      * @param inbound the inbound scan
      * @param impact the impact check of step 9
@@ -159,16 +174,14 @@ public final class PackRegistrationService {
             WholePackWriteStore.Loader loader,
             WholePackWriteStore store,
             PackRevisions revisions,
-            PackCatalogRepository catalog,
-            PackDescriptorRepository descriptors,
+            StagedPackViews views,
             WritePolicyGate gate,
             InboundReferences inbound,
             RegistrationImpact impact) {
         this.loader = Objects.requireNonNull(loader, "loader");
         this.store = Objects.requireNonNull(store, "store");
         this.revisions = Objects.requireNonNull(revisions, "revisions");
-        this.catalog = Objects.requireNonNull(catalog, "catalog");
-        this.descriptors = Objects.requireNonNull(descriptors, "descriptors");
+        this.views = Objects.requireNonNull(views, "views");
         this.gate = Objects.requireNonNull(gate, "gate");
         this.inbound = Objects.requireNonNull(inbound, "inbound");
         this.impact = Objects.requireNonNull(impact, "impact");
@@ -210,7 +223,30 @@ public final class PackRegistrationService {
      * @throws RegistryWriteLock.RegistryBusyException when the registry lock was not free in time (503)
      */
     public RegistrationOutcome register(String packId, StagedPack staged, Preconditions preconditions) {
+        return register(packId, staged, preconditions, () -> {});
+    }
+
+    /**
+     * Registers a pack as {@link #register(String, StagedPack, Preconditions)} does, calling {@code beforeCommit} once the
+     * decisive steps have judged the upload and just before anything is written. The job runs it to learn that the
+     * deadline or a shutdown ended the registration first: it throws, and nothing is stored. A call that returned is
+     * the point of no return, so the job ends as the commit does.
+     *
+     * @param packId the name the pack is stored under (the path parameter)
+     * @param staged the extracted upload
+     * @param preconditions the conditional headers
+     * @param beforeCommit called under the locks, after the impact check and before the swap; whatever it throws ends
+     *     the registration with nothing written
+     * @return what was done and the revision
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal a refusal of the flow, with its code
+     * @throws ai.speckitty.charter.kernel.transport.PreconditionException {@code STALE} (412) when the precondition
+     *     does not hold
+     * @throws RegistryWriteLock.RegistryBusyException when the registry lock was not free in time (503)
+     */
+    public RegistrationOutcome register(
+            String packId, StagedPack staged, Preconditions preconditions, Runnable beforeCommit) {
         Objects.requireNonNull(packId, "packId");
+        Objects.requireNonNull(beforeCommit, "beforeCommit");
         Objects.requireNonNull(staged, "staged");
         Objects.requireNonNull(preconditions, "preconditions");
         requireValidPackId(packId);
@@ -218,13 +254,18 @@ public final class PackRegistrationService {
         WholePackWriteStore.Contents contents = loader.loadStaged(staged);
         PackRevision revision = store.revisionOf(staged);
         Upload upload = new Upload(packId, staged, contents, revision, preconditions);
-        return store.exclusively(packId, () -> decide(upload));
+        return store.exclusively(packId, () -> decide(upload, beforeCommit));
     }
 
     /** Steps 3 and 5 to 10, under the registry lock and then the pack's own. */
-    private RegistrationOutcome decide(Upload upload) {
+    private RegistrationOutcome decide(Upload upload, Runnable beforeCommit) {
         store.requireWritableLocation(upload.packId());
-        Optional<Stored> stored = checkIdentity(upload);
+        // One session for the identity step and the inbound scan: every listing of the locations parses every
+        // pack.yaml,
+        // so a read per pack looked at would make the registration grow with the square of the stored packs (NFR-009).
+        // The registry lock is held, so nothing a session has read goes stale before it is dropped.
+        StagedPackViews.View view = views.session().stored();
+        Optional<Stored> stored = checkIdentity(upload, view);
         Optional<RegistrationOutcome> unchanged = applyVersionRule(upload, stored);
         if (unchanged.isPresent()) {
             return unchanged.get();
@@ -232,8 +273,9 @@ public final class PackRegistrationService {
         checkPreconditions(upload.preconditions(), stored);
         Before before = beforeOf(stored);
         gate.authorizeStaged(upload.contents().pack(), writesOf(upload.contents(), before));
-        requireNoInboundReference(upload, stored, before);
+        requireNoInboundReference(upload, stored, before, view);
         RegistrationImpact.Notices notices = impact.check(replacementOf(upload, stored));
+        beforeCommit.run();
         return commit(upload, stored, notices);
     }
 
@@ -250,29 +292,29 @@ public final class PackRegistrationService {
 
     // ---- step 3: the identity ------------------------------------------------------------------------------------
 
-    private Optional<Stored> checkIdentity(Upload upload) {
+    private Optional<Stored> checkIdentity(Upload upload, StagedPackViews.View view) {
         if (upload.level() == PackLevel.BUILT_IN) {
             throw new CharterRefusal(
                     RefusalCode.REGISTRATION_CONFLICT,
                     "A built-in pack is read-only; only org and project packs are registered.");
         }
-        List<ConfiguredPack> configured = catalog.configured();
+        List<ConfiguredPack> configured = view.catalog().configured();
         requireNoCaseTwin(upload.packId(), configured);
         Optional<ConfiguredPack> named = configured.stream()
                 .filter(candidate -> candidate.id().value().equals(upload.packId()))
                 .findFirst();
         if (named.isEmpty()) {
-            requireFreePackId(upload, configured);
-            requireFreeName(upload, configured, Optional.empty());
+            requireFreePackId(upload, configured, view.descriptors());
+            requireFreeName(upload, configured, Optional.empty(), view.descriptors());
             return Optional.empty();
         }
-        Stored stored = new Stored(
+        Stored replaced = new Stored(
                 named.get(),
-                descriptors.get(named.get().id()),
+                view.descriptors().get(named.get().id()),
                 revisions.currentRevision(named.get().id()));
-        requireSameIdentity(upload, stored);
-        requireFreeName(upload, configured, Optional.of(named.get()));
-        return Optional.of(stored);
+        requireSameIdentity(upload, replaced);
+        requireFreeName(upload, configured, Optional.of(named.get()), view.descriptors());
+        return Optional.of(replaced);
     }
 
     /** An id that folds to another stored id would be one directory on a file system that folds case. */
@@ -305,9 +347,10 @@ public final class PackRegistrationService {
     }
 
     /** A new pack may not take the {@code pack_id} of a pack that is stored. */
-    private void requireFreePackId(Upload upload, List<ConfiguredPack> configured) {
+    private static void requireFreePackId(
+            Upload upload, List<ConfiguredPack> configured, PackDescriptorRepository descriptors) {
         for (ConfiguredPack other : configured) {
-            Optional<PackDescriptor> held = descriptorOf(other);
+            Optional<PackDescriptor> held = descriptorOf(descriptors, other);
             if (held.isPresent()
                     && held.get().packId().equals(upload.descriptor().packId())) {
                 throw conflict("The pack_id " + held.get().packId() + " is held by the stored pack "
@@ -317,9 +360,13 @@ public final class PackRegistrationService {
     }
 
     /** A pack, new or replaced, may not take the name of another stored pack. */
-    private void requireFreeName(Upload upload, List<ConfiguredPack> configured, Optional<ConfiguredPack> replaced) {
+    private static void requireFreeName(
+            Upload upload,
+            List<ConfiguredPack> configured,
+            Optional<ConfiguredPack> replaced,
+            PackDescriptorRepository descriptors) {
         for (ConfiguredPack other : configured) {
-            Optional<PackDescriptor> held = descriptorOf(other);
+            Optional<PackDescriptor> held = descriptorOf(descriptors, other);
             if (!replaced.filter(other::equals).isPresent()
                     && held.isPresent()
                     && held.get().name().equals(upload.descriptor().name())) {
@@ -330,7 +377,7 @@ public final class PackRegistrationService {
     }
 
     /** A stored pack whose descriptor cannot be read holds no identity this check can compare. */
-    private Optional<PackDescriptor> descriptorOf(ConfiguredPack stored) {
+    private static Optional<PackDescriptor> descriptorOf(PackDescriptorRepository descriptors, ConfiguredPack stored) {
         try {
             return descriptors.find(stored.id());
         } catch (CharterRefusal unreadable) {
@@ -377,15 +424,7 @@ public final class PackRegistrationService {
     }
 
     private static void checkPreconditions(Preconditions preconditions, Optional<Stored> stored) {
-        if (preconditions.ifNoneMatchAny() && stored.isPresent()) {
-            throw stale("If-None-Match: * asks for a pack that does not exist, and it does; read the pack again.");
-        }
-        String ifMatch = preconditions.ifMatch();
-        if (ifMatch != null
-                && (stored.isEmpty()
-                        || !PackRevision.matches(ifMatch, stored.get().revision()))) {
-            throw stale("The If-Match precondition is stale; read the pack again.");
-        }
+        preconditions.requireMet(stored.map(Stored::revision));
     }
 
     private static PreconditionException stale(String detail) {
@@ -506,7 +545,8 @@ public final class PackRegistrationService {
     }
 
     /** Before the compose: a removed artifact that another pack still refers to is a 409, not a composition 422. */
-    private void requireNoInboundReference(Upload upload, Optional<Stored> stored, Before before) {
+    private void requireNoInboundReference(
+            Upload upload, Optional<Stored> stored, Before before, StagedPackViews.View view) {
         if (stored.isEmpty()) {
             return;
         }
@@ -516,6 +556,7 @@ public final class PackRegistrationService {
                 .filter(urn -> !now.contains(urn))
                 .forEach(urn -> Urn.parse(urn).ifPresent(removed::add));
         List<InboundReferences.Referrer> referrers = inbound.scan(
+                view,
                 new InboundReferences.StagedTree(
                         Optional.of(stored.get().configured().id()),
                         Optional.of(stored.get().descriptor().name()),
@@ -528,9 +569,8 @@ public final class PackRegistrationService {
     }
 
     /**
-     * The refusal names every referrer by its pack and artifact. A refusal carries the packs or the violations, not
-     * both (the kernel's {@code CharterRefusal} has no factory for the two), so the violations hold the pack in their
-     * pointer.
+     * The refusal names every referrer by its pack and artifact: the packs member lists each referring pack once, in
+     * the order of the first referrer, and the violations hold the pack in their pointer.
      */
     private static CharterRefusal referenced(Upload upload, List<InboundReferences.Referrer> referrers) {
         List<RefusalViolation> violations = referrers.stream()
@@ -540,12 +580,18 @@ public final class PackRegistrationService {
                         referrer.referrer() + " of the pack " + referrer.name() + " refers to " + referrer.removed()
                                 + ", which the registration removes."))
                 .toList();
-        return CharterRefusal.withViolations(
+        List<RefusalPack> packs = referrers.stream()
+                .map(referrer -> new RefusalPack(
+                        referrer.descriptorPackId(), referrer.pack().value(), referrer.name()))
+                .distinct()
+                .toList();
+        return CharterRefusal.withPacksAndViolations(
                 RefusalCode.ARTIFACT_REFERENCED,
                 "The pack " + upload.packId() + " cannot drop " + referrers.size()
                         + " artifact(s) that other packs still refer to; the first is "
                         + referrers.getFirst().removed()
                         + ".",
+                packs,
                 violations);
     }
 
