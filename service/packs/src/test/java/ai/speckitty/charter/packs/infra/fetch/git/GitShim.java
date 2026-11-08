@@ -20,7 +20,7 @@ import java.util.Map;
 final class GitShim {
 
     /** What one call of the shim was given. */
-    record Call(List<String> arguments, Map<String, String> environment, String cwd) {}
+    record Call(List<String> arguments, Map<String, String> environment, String cwd, String cwdMode) {}
 
     private final Path directory;
 
@@ -97,13 +97,16 @@ final class GitShim {
         List<String> arguments = new ArrayList<>();
         Map<String, String> environment = new LinkedHashMap<>();
         String cwd = "";
+        String cwdMode = "";
         try {
             for (String line : Files.readAllLines(record, StandardCharsets.UTF_8)) {
                 if (line.equals("begin")) {
                     arguments = new ArrayList<>();
                     environment = new LinkedHashMap<>();
                 } else if (line.equals("end")) {
-                    calls.add(new Call(arguments, environment, cwd));
+                    calls.add(new Call(arguments, environment, cwd, cwdMode));
+                } else if (line.startsWith("cwdmode:")) {
+                    cwdMode = line.substring("cwdmode:".length());
                 } else if (line.startsWith("cwd:")) {
                     cwd = line.substring("cwd:".length());
                 } else if (line.startsWith("argv:")) {

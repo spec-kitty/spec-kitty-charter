@@ -21,6 +21,7 @@ PATH=/usr/bin:/bin
 {
     printf 'begin\n'
     printf 'cwd:%s\n' "$(pwd)"
+    printf 'cwdmode:%s\n' "$(ls -ld . | cut -c1-10)"
     for argument in "$@"; do
         printf 'argv:%s\n' "$argument"
     done
