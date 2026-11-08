@@ -38,7 +38,7 @@ public final class ArchiveStaging {
         Objects.requireNonNull(format, "format");
         Objects.requireNonNull(archive, "archive");
         return directory -> {
-            Path into = Files.createDirectories(directory.resolve(EXTRACTED));
+            Path into = OwnerOnly.directories(directory.resolve(EXTRACTED));
             try (InputStream body = Files.newInputStream(archive)) {
                 return new Staged(reader.extract(body, format, into), Map.of());
             } catch (ArchiveRefusal refused) {
