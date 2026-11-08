@@ -210,14 +210,55 @@ public final class InForceResolution {
             return next;
         }
 
-        /** The strata 1 and 2: the candidates less what an overrider in the candidates hides. */
+        /**
+         * The strata 1 to 3 (E4, E5): the candidates less what an overrider among them hides, then the requirement
+         * iterated until no required artifact is unsatisfied on the final set (A2).
+         */
         Outcome solve() {
             Map<Urn, Set<Urn>> reach = reach();
-            Set<Urn> inForce = base();
+            Set<Urn> base = base();
+            Set<Urn> inForce = minus(base, hiddenBy(base, reach));
+            for (int round = 0; round <= bound; round++) {
+                Set<Urn> next = step(inForce, reach);
+                if (next.equals(inForce)) {
+                    return new Outcome(inForce, reach);
+                }
+                inForce = next;
+            }
+            throw new IllegalStateException(
+                    "the requirement iteration crossed its bound of " + bound + " (closure size) without settling");
+        }
+
+        /** One step of the requirement (E5): add what no artifact in force satisfies, then hide what that hides. */
+        private Set<Urn> step(Set<Urn> inForce, Map<Urn, Set<Urn>> reach) {
+            Set<Urn> with = new LinkedHashSet<>(inForce);
+            for (Urn urn : required) {
+                if (!locked.contains(urn)
+                        && !inForce.contains(urn)
+                        && overriderOf(urn, inForce, reach).isEmpty()) {
+                    with.add(urn);
+                }
+            }
+            return minus(with, hiddenBy(with, reach));
+        }
+
+        /** The smallest artifact of the set that overrides the target, directly or through a chain. */
+        private Optional<Urn> overriderOf(Urn target, Set<Urn> among, Map<Urn, Set<Urn>> reach) {
+            return among.stream()
+                    .filter(overrider -> reach.getOrDefault(overrider, Set.of()).contains(target))
+                    .min(Comparator.naturalOrder());
+        }
+
+        private Set<Urn> hiddenBy(Set<Urn> overriders, Map<Urn, Set<Urn>> reach) {
             Set<Urn> hidden = new HashSet<>();
-            inForce.forEach(urn -> hidden.addAll(reach.get(urn)));
-            inForce.removeAll(hidden);
-            return new Outcome(inForce, reach);
+            overriders.forEach(urn -> hidden.addAll(reach.getOrDefault(urn, Set.of())));
+            return hidden;
+        }
+
+        private Set<Urn> minus(Set<Urn> set, Set<Urn> removed) {
+            Set<Urn> rest = new LinkedHashSet<>(set);
+            rest.removeAll(removed);
+            return rest;
         }
 
         InForceStates states(Outcome outcome) {
@@ -226,7 +267,7 @@ public final class InForceResolution {
             return new InForceStates(
                     states,
                     stale(),
-                    denyNotApplied(),
+                    denyNotApplied(outcome),
                     overrideNotApplied(outcome),
                     sorted(merged.floor().unheld().keySet()),
                     List.of(),
@@ -241,8 +282,18 @@ public final class InForceResolution {
                     state,
                     reason,
                     required.contains(urn) || locked.contains(urn),
-                    Optional.empty(),
+                    satisfiedBy(urn, outcome),
                     bucketOf(urn, state, reason));
+        }
+
+        /** The artifact in force that satisfies a required artifact that is out of force (E5, E9). */
+        private Optional<Urn> satisfiedBy(Urn urn, Outcome outcome) {
+            if (!required.contains(urn)
+                    || locked.contains(urn)
+                    || outcome.inForce().contains(urn)) {
+                return Optional.empty();
+            }
+            return overriderOf(urn, outcome.inForce(), outcome.reach());
         }
 
         private State decided(Urn urn, Outcome outcome, Reason reason) {
@@ -291,11 +342,16 @@ public final class InForceResolution {
             return List.copyOf(stale);
         }
 
-        private List<DenyNotApplied> denyNotApplied() {
-            return sorted(request.deactivated()).stream()
-                    .filter(urn -> locked.contains(urn))
-                    .map(urn -> new DenyNotApplied(urn, DenyReason.LOCKED))
-                    .toList();
+        private List<DenyNotApplied> denyNotApplied(Outcome outcome) {
+            List<DenyNotApplied> entries = new ArrayList<>();
+            for (Urn urn : sorted(request.deactivated())) {
+                if (locked.contains(urn)) {
+                    entries.add(new DenyNotApplied(urn, DenyReason.LOCKED));
+                } else if (required.contains(urn) && outcome.inForce().contains(urn)) {
+                    entries.add(new DenyNotApplied(urn, DenyReason.REQUIRED));
+                }
+            }
+            return entries;
         }
 
         private List<OverrideNotApplied> overrideNotApplied(Outcome outcome) {
