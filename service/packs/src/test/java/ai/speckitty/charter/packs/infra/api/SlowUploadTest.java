@@ -165,7 +165,9 @@ class SlowUploadTest {
                 .andReturn()
                 .getResponse();
 
-        assertThat(refused.getStatus()).as("ten uploads are open: the eleventh is refused").isEqualTo(503);
+        assertThat(refused.getStatus())
+                .as("ten uploads are open: the eleventh is refused")
+                .isEqualTo(503);
         assertThat(refused.getHeader("Retry-After")).isNotNull();
         assertThat(requestBytesRead.get()).as("not a byte of its body was read").isEqualTo(readBefore);
         assertThat(staged()).as("and it staged nothing").isEqualTo(directoriesBefore);
@@ -178,7 +180,9 @@ class SlowUploadTest {
                         .with(request -> counting(request, body)))
                 .andReturn()
                 .getResponse();
-        assertThat(next.getStatus()).as("the finished upload's place is free again").isEqualTo(202);
+        assertThat(next.getStatus())
+                .as("the finished upload's place is free again")
+                .isEqualTo(202);
 
         for (int i = 1; i < SLOTS; i++) {
             release.get(i).countDown();

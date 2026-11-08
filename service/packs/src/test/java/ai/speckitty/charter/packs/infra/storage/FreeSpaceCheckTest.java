@@ -113,9 +113,12 @@ class FreeSpaceCheckTest {
         FileStore tightStaging = storeWith(42 * MIB);
         FileStore packs = storeWith(32 * MIB);
         assertThatThrownBy(() -> new FreeSpaceCheck(() -> packs, () -> tightStaging).require(1 * MIB, 10 * MIB))
-                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> assertThat(refusal.getMessage())
-                        .contains("staging volume")
-                        .contains("42 MiB").contains("43 MiB"));
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.getMessage())
+                                .contains("staging volume")
+                                .contains("42 MiB")
+                                .contains("43 MiB"));
 
         assertThatCode(() -> new FreeSpaceCheck(() -> packs, () -> storeWith(43 * MIB)).require(1 * MIB, 10 * MIB))
                 .doesNotThrowAnyException();

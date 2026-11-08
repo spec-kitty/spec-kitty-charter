@@ -107,8 +107,11 @@ class RegistrationJobsUploadTest {
         assertThatThrownBy(() -> jobs.openUpload(1))
                 .as("the eleventh open upload is refused at admission, with a Retry-After like the full queue's")
                 .isInstanceOfSatisfying(
-                        RetryLaterException.class, refused -> assertThat(refused.retryAfterSeconds()).isPositive());
-        assertThat(admissionAsked).as("the room is not asked for an upload that has no place").hasSize(SLOTS);
+                        RetryLaterException.class,
+                        refused -> assertThat(refused.retryAfterSeconds()).isPositive());
+        assertThat(admissionAsked)
+                .as("the room is not asked for an upload that has no place")
+                .hasSize(SLOTS);
         assertThat(jobs.owned()).as("the refused upload left no directory").hasSize(SLOTS);
         assertThatCodeNothing(() -> jobs.precheck("acme", Preconditions.none()));
         assertThat(jobs.retained()).as("open uploads hold no queue slot").isZero();

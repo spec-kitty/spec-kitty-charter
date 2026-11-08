@@ -122,8 +122,9 @@ public class PackRegistrationController implements RegistrationApi {
         HttpServletRequest request = currentRequest();
         ArchiveBody archive = archiveOf(body);
         AuditContext audit = AuditContext.of(request);
-        // The body is spooled before a slot is taken, so a slow upload holds none (#418, A4, ADR-0065 D8).
-        RegistrationJobs.Upload upload = jobs.openUpload(RegistrationJobs.StorageRoom.UNKNOWN_BYTES);
+        // The body is spooled before a slot is taken, so a slow upload holds none (#418, A4, ADR-0065 D8). The upload,
+        // and its place among the ten that may be open, are the admission's (#418, F1).
+        RegistrationJobs.Upload upload = RegistrationAdmission.admittedUpload(request);
         try {
             Path file = upload.directory().resolve(ARCHIVE_FILE);
             long bytes = spool(archive, file);
