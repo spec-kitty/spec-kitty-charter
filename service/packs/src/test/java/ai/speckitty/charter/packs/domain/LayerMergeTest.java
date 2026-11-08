@@ -3,12 +3,14 @@ package ai.speckitty.charter.packs.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackOverride;
 import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import java.util.ArrayList;
@@ -107,7 +109,22 @@ class LayerMergeTest {
                         "C15",
                         "a settled sibling loser is no layer override, the level winner is",
                         LayerMergeTest::c15BelowALayerWinner),
-                new Row("C15", "an unsettled sibling contest still refuses in the compose", LayerMergeTest::c15Open));
+                new Row("C15", "an unsettled sibling contest still refuses in the compose", LayerMergeTest::c15Open),
+                new Row(
+                        "C21",
+                        "a locked artifact refuses its override and names both packs",
+                        LayerMergeTest::c21Locked),
+                new Row("C21", "an extendable artifact refuses its override too", LayerMergeTest::c21Extendable),
+                new Row("C21", "an open artifact is overridden", LayerMergeTest::c21Open),
+                new Row(
+                        "C21",
+                        "the winning pack's own lock never blocks its override",
+                        LayerMergeTest::c21WinnerExcluded),
+                new Row(
+                        "C21",
+                        "a third pack that raised the level refuses the override",
+                        LayerMergeTest::c21RaisedByAnotherPack),
+                new Row("C22", "the policy of the closure is each winner's policy", LayerMergeTest::c22));
     }
 
     @ParameterizedTest(name = "{0}")
@@ -205,6 +222,91 @@ class LayerMergeTest {
                         PackCompositionResolver.Refusal.class,
                         refusal -> assertThat(refusal.toCharterRefusal().code())
                                 .isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT));
+    }
+
+    private static MutabilityPolicySource level(String urn, MutabilityLevel level) {
+        return MutabilityPolicySource.builder().entry(urn(urn), level).build();
+    }
+
+    private static void refuses(Fixture fixture, String... mentions) {
+        assertThatThrownBy(fixture::merge).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+            assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+            assertThat(refusal.getMessage()).contains(mentions);
+            assertThat(refusal.packs())
+                    .as("the winning pack first, then the pack it replaces")
+                    .extracting(RefusalPack::name)
+                    .containsExactly("project", "org");
+        });
+    }
+
+    private static void c21Locked() {
+        refuses(
+                new Fixture()
+                        .pack("org", PackLevel.ORG, "directive:D")
+                        .pack("project", PackLevel.PROJECT, "directive:D")
+                        .policy("org", level("directive:D", MutabilityLevel.LOCKED)),
+                "directive:D",
+                "locked",
+                "project",
+                "org");
+    }
+
+    private static void c21Extendable() {
+        refuses(
+                new Fixture()
+                        .pack("org", PackLevel.ORG, "directive:D")
+                        .pack("project", PackLevel.PROJECT, "directive:D")
+                        .policy("org", level("directive:D", MutabilityLevel.EXTENDABLE)),
+                "directive:D",
+                "extendable");
+    }
+
+    private static void c21Open() {
+        MergedClosure merged = new Fixture()
+                .pack("org", PackLevel.ORG, "directive:D")
+                .pack("project", PackLevel.PROJECT, "directive:D")
+                .policy("org", level("directive:D", MutabilityLevel.OPEN))
+                .merge();
+
+        assertThat(winner(merged, urn("directive:D")).packId()).isEqualTo(configured("project"));
+    }
+
+    private static void c21WinnerExcluded() {
+        MergedClosure merged = new Fixture()
+                .pack("org", PackLevel.ORG, "directive:D")
+                .pack("project", PackLevel.PROJECT, "directive:D")
+                .policy("project", level("directive:D", MutabilityLevel.LOCKED))
+                .merge();
+
+        MergedClosure.Winner winner = winner(merged, urn("directive:D"));
+        assertThat(winner.packId()).isEqualTo(configured("project"));
+        assertThat(winner.policy().level())
+                .as("the winner's own lock still shows as its level along the closure")
+                .isEqualTo(MutabilityLevel.LOCKED);
+    }
+
+    private static void c21RaisedByAnotherPack() {
+        refuses(
+                new Fixture()
+                        .pack("org", PackLevel.ORG, "directive:D")
+                        .pack("org-guard", PackLevel.ORG)
+                        .pack("project", PackLevel.PROJECT, "directive:D")
+                        .policy("org-guard", level("directive:D", MutabilityLevel.LOCKED)),
+                "directive:D",
+                "locked",
+                "org-guard");
+    }
+
+    private static void c22() {
+        MergedClosure merged = new Fixture()
+                .pack("builtin", PackLevel.BUILT_IN, "directive:D", "directive:E")
+                .pack("org", PackLevel.ORG, "directive:D")
+                .policy("builtin", level("directive:E", MutabilityLevel.LOCKED))
+                .merge();
+
+        assertThat(winner(merged, urn("directive:E")).policy())
+                .isEqualTo(new PerPackPolicy.Level(MutabilityLevel.LOCKED, Optional.of(packId("builtin"))));
+        assertThat(winner(merged, urn("directive:D")).policy()).isEqualTo(PerPackPolicy.Level.OPEN);
     }
 
     @Test
