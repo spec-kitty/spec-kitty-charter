@@ -518,6 +518,7 @@ public final class RegistrationJobs implements AutoCloseable {
      * @return the reservation, whose directory is the upload's
      * @throws RetryLaterException when two jobs run and eight wait already, or the service is stopping
      * @throws PreconditionException {@code STALE} when the preconditions do not hold against the stored pack
+     * @throws IllegalStateException when a reservation adopted the upload already
      */
     public Reservation reserve(
             String packId, Preconditions preconditions, Origin origin, Upload upload, long archiveBytes) {
@@ -530,6 +531,27 @@ public final class RegistrationJobs implements AutoCloseable {
         Objects.requireNonNull(preconditions, "preconditions");
         Objects.requireNonNull(origin, "origin");
         requireOpen();
+        OpenUpload claimed = upload instanceof OpenUpload open ? open : null;
+        if (claimed != null && !claimed.claim()) {
+            throw new IllegalStateException("the upload " + claimed.id() + " was adopted by a reservation already");
+        }
+        try {
+            return takeSlot(packId, preconditions, origin, upload, archiveBytes, claimed);
+        } catch (RuntimeException | Error refused) {
+            if (claimed != null) {
+                claimed.unclaim();
+            }
+            throw refused;
+        }
+    }
+
+    private Reservation takeSlot(
+            String packId,
+            Preconditions preconditions,
+            Origin origin,
+            @Nullable Upload upload,
+            long archiveBytes,
+            @Nullable OpenUpload claimed) {
         if (inFlight.incrementAndGet() > RUNNING_LIMIT + WAITING_LIMIT) {
             inFlight.decrementAndGet();
             throw queueFull();
@@ -539,8 +561,8 @@ public final class RegistrationJobs implements AutoCloseable {
             preconditions.requireMet(stored);
             Job job = new Job(this, packId, preconditions, origin, stored, upload, archiveBytes);
             admit(job);
-            if (upload instanceof OpenUpload open) {
-                open.adopt();
+            if (claimed != null) {
+                claimed.adopt();
             }
             return job;
         } catch (RuntimeException | Error refused) {
@@ -653,8 +675,18 @@ public final class RegistrationJobs implements AutoCloseable {
             return directory;
         }
 
+        /** Takes the upload for one reservation: {@code false} when one holds it already. */
+        boolean claim() {
+            return adopted.compareAndSet(false, true);
+        }
+
+        /** Gives the upload back, when the reservation that claimed it was refused. */
+        void unclaim() {
+            adopted.set(false);
+        }
+
+        /** The reservation holds the directory now: the upload's place is free. */
         void adopt() {
-            adopted.set(true);
             forget(directory);
         }
 

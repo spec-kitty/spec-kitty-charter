@@ -237,6 +237,36 @@ class RegistrationJobsUploadTest {
     }
 
     @Test
+    void anUploadThatAReservationAdoptedAlreadyIsRefusedNotAdoptedTwice() {
+        RegistrationJobs.Upload upload = jobs.openUpload(1);
+        Reservation first = jobs.reserve("acme", Preconditions.none(), ORIGIN, upload, 1);
+
+        assertThatThrownBy(() -> jobs.reserve("other", Preconditions.none(), ORIGIN, upload, 1))
+                .isInstanceOf(IllegalStateException.class);
+
+        assertThat(jobs.retained()).as("the second reservation made no job").isEqualTo(1);
+        assertThat(jobs.owned()).containsExactly(upload.directory());
+        first.abandon();
+        assertThatCodeNothing(() -> jobs.precheck("acme", Preconditions.none()));
+    }
+
+    @Test
+    void anUploadWhoseReservationWasRefusedCanBeReservedAgain() {
+        List<Reservation> held = new ArrayList<>();
+        for (int i = 0; i < SLOTS; i++) {
+            held.add(jobs.reserve("pack-" + i, Preconditions.none(), ORIGIN, jobs.openUpload(1), 1));
+        }
+        RegistrationJobs.Upload upload = jobs.openUpload(1);
+        assertThatThrownBy(() -> jobs.reserve("acme", Preconditions.none(), ORIGIN, upload, 1))
+                .isInstanceOf(RetryLaterException.class);
+
+        held.get(0).abandon();
+        Reservation retried = jobs.reserve("acme", Preconditions.none(), ORIGIN, upload, 1);
+
+        assertThat(retried.directory()).isEqualTo(upload.directory());
+    }
+
+    @Test
     void theJobChecksTheRoomForTheSizeThatWasSpooled() throws Exception {
         gate.releaseBeforeRun();
         RegistrationJobs.Upload upload = jobs.openUpload(1);
