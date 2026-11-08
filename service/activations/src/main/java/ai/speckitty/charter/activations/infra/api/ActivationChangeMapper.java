@@ -21,7 +21,8 @@ import org.springframework.stereotype.Component;
  * as stored after the write, {@code applied} and {@code cleared} as {@code ArtifactReference} items, the four skipped
  * lists, each sorted, {@code skippedByDepth} only when the cascade ran under a {@code depth} (IC-21), {@code dropped} only when the write dropped a stale id (ADR-0059 amendment A5),
  * {@code droppedPins} always (B1: the pins it dropped, each as stored, {@code []} when none; {@link #pins}), and the
- * links. The write's path has no {@code GET}, so the answer has no {@code self}; its {@code up} is the activation the
+ * links. The read buckets of the skipped report and {@code warnings} answer {@code []} until WP25 serves them (contract
+ * B declares them required). The write's path has no {@code GET}, so the answer has no {@code self}; its {@code up} is the activation the
  * write applied to.
  */
 @Component
@@ -53,6 +54,7 @@ public class ActivationChangeMapper {
                 references(change.cleared()),
                 skipped(change.skipped()),
                 pins(change.droppedPins()),
+                List.of(),
                 Map.of("up", new Link(activations.self(outcome.stored().id().value()))));
         if (!change.dropped().isEmpty()) {
             answer.setDropped(references(change.dropped()));
@@ -77,7 +79,17 @@ public class ActivationChangeMapper {
                                 SharedSkip.KindEnum.fromValue(skip.ref().kind().token()),
                                 skip.ref().id(),
                                 reference(skip.referencedBy())))
-                        .toList());
+                        .toList(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of());
         report.skippedByDepth().map(ActivationChangeMapper::references).ifPresent(skipped::setSkippedByDepth);
         return skipped;
     }

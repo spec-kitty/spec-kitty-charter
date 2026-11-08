@@ -1,7 +1,8 @@
 description: >-
-  A strong entity tag of an effective read: an opaque digest that changes when the activation's revision or the
-  offering's governanceFingerprint changes, in double quotes. Opaque to consumers, who compare it and never parse
-  it.
+  A strong entity tag of a read that depends on the packs of an activation's closure (the two effective reads and
+  getActivation): an opaque digest that changes when the activation's revision or a pack of its closure changes, and,
+  for the effective reads, with the query (kind, state and cursor); a pack outside the closure leaves it unchanged. In
+  double quotes. Opaque to consumers, who compare it and never parse it.
 required: true
 schema:
   type: string

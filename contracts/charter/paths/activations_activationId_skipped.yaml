@@ -4,13 +4,24 @@ get:
   operationId: getActivationSkippedReport
   summary: Read the skipped report of an activation.
   description: >-
-    What the effective set leaves out, and why (ADR-0013 D4, ADR-0020 D7). Reserved: it answers 501 until it is
-    built (ADR-0020 D8).
+    Each artifact of the activation's merged closure that is not in force, once, in the typed bucket of the first rule
+    that decided it, and the rules the effective set did not apply (ADR-0013 D4, ADR-0020 D7): staleIds, denyNotApplied,
+    languageFiltered, overridden, missionTypeNotInForce, overrideNotApplied, enhancedTargetNotInForce, pinNotHeld,
+    requiredNotHeld (must-have items no pack holds, A10), requiredNotInForce and skippedDeactivated. denyNotApplied and
+    overrideNotApplied list rules that were not applied, not artifacts out of force. The buckets of a write's cascade
+    (skippedByScope, unreachedBehindDeactivated, skippedShared) are always empty at read, and in skippedDeactivated
+    viaRequires is false and requiredBy is []. The report carries the activation's revision and the fingerprint it was
+    computed from.
+
+    ETag follows the same rule as the effective list: it changes with the activation's revision and with any pack of the
+    activation's closure, not with a pack outside it, and a matching If-None-Match is a 304 without a body.
+
+    An activationId outside the declared pattern is a 400 Problem without a code. An unknown activation is 404 activation_not_found. A closure that cannot compose or merge is 500, with its code:
+    pack_unreadable also for a layer override or an overrides edge that the mutability level of the overridden artifact
+    forbids (ADR-0063 D3) and for an overrides cycle among active artifacts; stale_input and internal_error may be
+    retried. The answer is never partial.
   tags:
   - Activation
-  x-reserved:
-    contractSet: activation
-    issue: '#125'
   parameters:
   - $ref: ../parameters/IfNoneMatch.yaml
   responses:
@@ -32,17 +43,19 @@ get:
           examples:
             nothing-skipped:
               $ref: ../examples/ActivationSkippedReport.nothing-skipped.yaml
+            each-bucket:
+              $ref: ../examples/ActivationSkippedReport.each-bucket.yaml
     '304':
       $ref: ../responses/NotModified.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
     '401':
       $ref: ../responses/Unauthorized.yaml
     '403':
       $ref: ../responses/Forbidden.yaml
     '404':
-      $ref: ../responses/ActivationNotFound.yaml
+      $ref: ../responses/UnknownActivation.yaml
     '500':
       $ref: ../responses/OfferingUnreadable.yaml
-    '501':
-      $ref: ../responses/NotImplemented.yaml
     default:
       $ref: ../../_shared/responses/Problem.yaml

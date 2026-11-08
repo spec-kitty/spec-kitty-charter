@@ -9,18 +9,10 @@ Feature: The activation set is declared and reserved
   fails if a reserved operation takes a request body without a pin before its body is bound (none does).
   The register (create, register, read, remove) is built and pinned by activation-register.feature;
   the four per-artifact writes (select, unselect, deactivate, re-activate) by
-  activation-selections.feature; the preset write by activation-presets.feature. Only the four
-  effective reads remain reserved; the resolution mission builds them (#103).
-
-  @reserved
-  Scenario: Reading the effective artifacts of an activation is reserved
-    When I GET "/activations/a-1/artifacts?kind=directive&state=active"
-    Then the operation is refused as not implemented
-
-  @reserved
-  Scenario: Reading the skipped report of an activation is reserved
-    When I GET "/activations/a-1/skipped"
-    Then the operation is refused as not implemented
+  activation-selections.feature; the preset write by activation-presets.feature. The effective artifact list and
+  the skipped report are declared as built operations (PR B, WP22) and their two 501 pins are gone: their scenarios
+  are effective-reads.feature and layer-merge.feature, which WP25 binds. Only the effective graph and the effective
+  action context remain reserved, until PR C builds them (#103).
 
   @reserved
   Scenario: Reading the effective graph of an activation is reserved
