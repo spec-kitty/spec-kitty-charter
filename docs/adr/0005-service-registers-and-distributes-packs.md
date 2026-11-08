@@ -2,8 +2,8 @@
 title: "ADR-0005: The charter offering service registers and distributes packs; built-in is its first catfooding consumer"
 description: The service registers and distributes packs of every level through its OpenAPI API from four source kinds; built-in rides that path as the first catfooding consumer.
 doc_status: active
-updated: 2026-10-19T00:00:00Z
-decision_status: Accepted, with Amendment 2026-10-19
+updated: 2026-11-07T00:00:00Z
+decision_status: Accepted, with Amendments 2026-10-19 and 2026-11-07
 decision_date: '2026-10-18'
 type: ADR
 kind: ADR
@@ -38,6 +38,10 @@ Decision Moments; the cited DM ids are the authoritative record of each choice.
 `pack.yaml` as an optional PEP 440 range of supported Spec Kitty core versions. The point is
 annotated where it stands.
 
+**Amendment 2026-11-07**: decision 1 is amended by [ADR-0065](/adr/0065-pack-registration-replaces-the-whole-pack/). The HTTPS archive, git and filesystem source kinds are
+built; the service-stored kind is `PUT /packs/{packId}`; the published-artifact kind is deferred. The point is
+annotated where it stands.
+
 ## Context
 
 The charter offering service (this repository; ADR-0001) manages charter offerings, and a charter is built
@@ -67,6 +71,7 @@ client of that contract** — it does not re-implement resolution or vendor pack
    **purl-style locator `pkg:charter/<id>@<version>`** (a versioned package the service pulls from a
    registry; DM `01M578WH1TV7FYJFBNHX7BXN5F`). The `source` kind is a versionable discriminator; `bundled`
    is a resolve-time materialization outcome, not a registration input.
+   *Amended 2026-11-07 ([ADR-0065](/adr/0065-pack-registration-replaces-the-whole-pack/)): the HTTPS archive, git and filesystem kinds are built; the service-stored kind is `PUT /packs/{packId}`; the published-artifact kind is deferred.*
 2. **One canonical path for every pack** (DIRECTIVE_044). Built-in, org, consumer and private packs all
    register and resolve through this one API; the requester tier is **derived from the authenticated
    identity, never a client-set field** (DM `01M578W9FK24NNSFRYT7C5ZZZ1`; fail-closed trust, with authn/authz
