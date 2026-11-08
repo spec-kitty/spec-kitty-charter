@@ -529,7 +529,11 @@ class PackCommitStoreTest {
                 new RegistryWriteLock(Duration.ofSeconds(5)),
                 new PackWriteGeneration());
 
-        assertThatThrownBy(() -> dying.replaceWhole(PACK, staged)).isInstanceOf(CharterRefusal.class);
+        assertThatThrownBy(() -> dying.replaceWhole(PACK, staged))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE))
+                .hasCauseInstanceOf(IllegalStateException.class);
         assertThat(live)
                 .as("the live directory is missing, as a crash leaves it")
                 .doesNotExist();

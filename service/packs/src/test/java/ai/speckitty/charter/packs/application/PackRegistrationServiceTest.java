@@ -172,7 +172,8 @@ class PackRegistrationServiceTest {
                     lockedInHook.add(rig.lock.isHeldByCurrentThread());
                     throw new IllegalStateException("the deadline ended the registration");
                 }))
-                .isInstanceOf(IllegalStateException.class);
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("the deadline ended the registration");
 
         assertThat(lockedInHook).as("the hook runs under the registry lock").containsExactly(true);
         assertThat(rig.packs.resolve("pack-x")).as("nothing was written").doesNotExist();
