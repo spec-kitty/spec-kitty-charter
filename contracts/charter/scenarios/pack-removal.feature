@@ -544,3 +544,73 @@ Feature: One artifact or one registered relationship is removed from a pack
     Then the response status is 204
     When I DELETE "/packs/qa/relationships?from=directive:D2&to=directive:D3" with the header "If-Match": "*"
     Then the response status is 204
+
+  # The control of the scenario above (squad finding Q5): the strict 422 pins a closure that was already broken, so it
+  # holds only when the broken closure is one the pack belongs to. This activation lists the one pack "rival" and not
+  # qa. "rival" then comes to depend on "rival-two", which holds D1 as it does, so the closure of the activation does not
+  # compose; it does not hold qa, and the same removal from qa is not refused for it.
+  Scenario: A removal is not refused for the broken closure of a stored activation that does not list the pack
+    Given the org pack "qa" with the file "registered.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      generated_by: charter-registration
+      nodes:
+      - urn: directive:D2
+        kind: directive
+      - urn: directive:D3
+        kind: directive
+      edges:
+      - source: directive:D2
+        target: directive:D3
+        relation: requires
+      """
+    And the org pack "rival" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+      pack_version: 1.0.0
+      parent_pack: null
+      name: rival
+      pack_level: org
+      """
+    And the org pack "rival" with the file "directives/D1.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: D1
+      title: The first rival D1
+      intent: A directive of a pack that does not build on qa
+      enforcement: required
+      """
+    And the activation "a-1" holds:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "rival"}]}
+      """
+    And the org pack "rival-two" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943T
+      pack_version: 1.0.0
+      parent_pack: null
+      name: rival-two
+      pack_level: org
+      """
+    And the org pack "rival-two" with the file "directives/D1.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: D1
+      title: The second rival D1
+      intent: Another directive of a pack that does not build on qa
+      enforcement: required
+      """
+    And the org pack "rival" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+      pack_version: 1.0.0
+      parent_pack: null
+      name: rival
+      pack_level: org
+      depends_on:
+        - pack_id: 01M4P01D5TWB5FKZGNNQG3943T
+          range: '>=1.0'
+      """
+    When I DELETE "/packs/qa/relationships?from=directive:D2&to=directive:D3" with the header "If-Match": "*"
+    Then the response status is 204
