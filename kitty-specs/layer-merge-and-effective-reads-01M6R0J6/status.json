@@ -641,7 +641,8 @@
       "last_transition_at": "2026-11-08T06:53:45.827755+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "git source for POST /packs plus WP17 hand-offs; verifyAll green"
+        "git source for POST /packs plus WP17 hand-offs; verifyAll green",
+        "Review passed (1ed5dad3); follow-ups: first CI gitHostTest run, contract-delta 428 wording, sha256 repos, native hints, PIT floor, multi-address failover."
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
