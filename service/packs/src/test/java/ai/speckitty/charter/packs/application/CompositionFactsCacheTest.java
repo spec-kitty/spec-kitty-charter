@@ -12,13 +12,26 @@ import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
+import ai.speckitty.charter.packs.infra.storage.CommitStorePackWriteStore;
+import ai.speckitty.charter.packs.infra.storage.PackCommitStore;
+import ai.speckitty.charter.packs.infra.storage.StorageRootLocations;
+import ai.speckitty.charter.packs.infra.storage.YamlSerializationStrategy;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 /**
  * The facts cache of the effective reads (#416, decision DM-01M6XT2FKK7YPV1GCESFW1ANZ7): facts are kept per pack under
@@ -310,6 +323,41 @@ class CompositionFactsCacheTest {
 
         generation.bracket("alpha", () -> content.put("alpha", "two"));
         assertThat(offering.composedWithFacts().facts().get("alpha")).isEqualTo(factsOf("two"));
+        assertThat(loads).hasValue(2);
+    }
+
+    @Test
+    void aRenameOnlyOutOfBandChangeOfTheRealPackFilesMissesTheCache(@TempDir Path host) throws IOException {
+        Path pack = Files.createDirectories(host.resolve("alpha").resolve("directives"));
+        Files.writeString(
+                host.resolve("alpha").resolve("pack.yaml"),
+                "pack_id: 01M5DEH8ASSETREG1STRAT10N0\npack_version: 0.1.0\nname: pack-a\npack_level: org\n",
+                StandardCharsets.UTF_8);
+        Path before = pack.resolve("A.directive.yaml");
+        Files.writeString(before, "id: A\n", StandardCharsets.UTF_8);
+        StorageRootLocations locations = new StorageRootLocations(host);
+        YamlSerializationStrategy strategy = new YamlSerializationStrategy();
+        CommitStorePackWriteStore store =
+                new CommitStorePackWriteStore(locations, strategy, new PackCommitStore(locations, strategy), lock, generation);
+        CompositionFactsCache cache = new CompositionFactsCache(store, generation, lock, 8);
+        List<String> seen = new ArrayList<>();
+        Function<PackIdentifier, PackCompositionFacts> readFiles = id -> {
+            loads.incrementAndGet();
+            seen.clear();
+            try (Stream<Path> files = Files.list(pack)) {
+                files.forEach(file -> seen.add("directive:" + file.getFileName()));
+            } catch (IOException failure) {
+                throw new UncheckedIOException(failure);
+            }
+            return new PackCompositionFacts(List.of(), List.copyOf(seen), List.of());
+        };
+        cache.facts(ALPHA, readFiles);
+
+        Files.move(before, pack.resolve("B.directive.yaml"));
+
+        assertThat(cache.facts(ALPHA, readFiles).defined())
+                .as("the same bytes under another path are another pack: no write bracketed it, so the key must see it")
+                .containsExactly("directive:B.directive.yaml");
         assertThat(loads).hasValue(2);
     }
 }
