@@ -243,6 +243,46 @@ class InForceResolutionTest {
     }
 
     @Test
+    void anOverriddenArtifactNamesTheOverriderInForce() {
+        InForceStates states = new Closure()
+                .open("tactic:E", "tactic:T")
+                .overrides("tactic:E", "tactic:T")
+                .select("tactic:E", "tactic:T");
+
+        assertThat(states.stateOf(u("tactic:T")).orElseThrow().overriddenBy()).contains(u("tactic:E"));
+        assertThat(states.stateOf(u("tactic:E")).orElseThrow().overriddenBy()).isEmpty();
+    }
+
+    @Test
+    void anOverriddenArtifactNamesTheTopOfTheChainAndTheSmallestOfSeveral() {
+        InForceStates chain = new Closure()
+                .open("tactic:F", "tactic:E", "tactic:T")
+                .overrides("tactic:F", "tactic:E")
+                .overrides("tactic:E", "tactic:T")
+                .select("tactic:F", "tactic:E", "tactic:T");
+        InForceStates two = new Closure()
+                .open("tactic:E2", "tactic:E1", "tactic:T")
+                .overrides("tactic:E2", "tactic:T")
+                .overrides("tactic:E1", "tactic:T")
+                .select("tactic:E1", "tactic:E2", "tactic:T");
+
+        assertThat(chain.stateOf(u("tactic:E")).orElseThrow().overriddenBy()).contains(u("tactic:F"));
+        assertThat(chain.stateOf(u("tactic:T")).orElseThrow().overriddenBy()).contains(u("tactic:F"));
+        assertThat(two.stateOf(u("tactic:T")).orElseThrow().overriddenBy()).contains(u("tactic:E1"));
+    }
+
+    @Test
+    void anArtifactOutOfForceForAnotherReasonNamesNoOverrider() {
+        InForceStates states = new Closure()
+                .open("tactic:E", "tactic:T", "tactic:U")
+                .overrides("tactic:E", "tactic:T")
+                .resolve(urns("tactic:E"), urns("tactic:U"));
+
+        assertThat(states.stateOf(u("tactic:T")).orElseThrow().overriddenBy()).isEmpty();
+        assertThat(states.stateOf(u("tactic:U")).orElseThrow().overriddenBy()).isEmpty();
+    }
+
+    @Test
     void overridesComposeTransitivelyFromTheTop() {
         InForceStates states = new Closure()
                 .open("tactic:F", "tactic:E", "tactic:T")
