@@ -95,6 +95,15 @@ properties:
     x-source:
       path: contracts/offering/schemas/ActivationConfig.schema.json
       symbol: '#/$defs/SelectedArtifacts/properties/mission_type'
+  step_enhancement:
+    allOf:
+    - $ref: ArtifactIdList.yaml
+    description: >-
+      The step_enhancement ids. Absent means none of the kind; [] means none; a list means exactly those. Selecting
+      one puts its additions, prompt fragments included, in force (ADR-0066).
+    x-source:
+      path: contracts/offering/schemas/ActivationConfig.schema.json
+      symbol: '#/$defs/SelectedArtifacts/properties/step_enhancement'
 x-source:
   path: contracts/offering/schemas/ActivationConfig.schema.json
   symbol: '#/$defs/SelectedArtifacts'

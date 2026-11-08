@@ -183,7 +183,16 @@ public enum RefusalCode {
      * pack (NFR-009). Answered as 503: synchronously for an upload whose declared length the volumes cannot hold, else in a
      * refused registration status.
      */
-    PACK_STORAGE_FULL("pack_storage_full");
+    PACK_STORAGE_FULL("pack_storage_full"),
+
+    /** A base prompt's slot declaration is malformed, repeated, nested or unpaired (ADR-0066; reserved for #424). */
+    PROMPT_SLOT_MALFORMED("prompt_slot_malformed"),
+    /** A slot is not empty at descriptor schema_version 1.0 (ADR-0066; reserved for #424). */
+    PROMPT_SLOT_NOT_EMPTY("prompt_slot_not_empty"),
+    /** An enhancement or Markdown prompt fragment breaks its load-time rules (ADR-0066; reserved for #424). */
+    PROMPT_FRAGMENT_INVALID("prompt_fragment_invalid"),
+    /** The prompt in force declares no slot an enhancement names (ADR-0066; reserved for #424). */
+    PROMPT_SLOT_MISSING("prompt_slot_missing");
 
     private final String token;
 

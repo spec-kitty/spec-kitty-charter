@@ -93,6 +93,15 @@ properties:
     x-source:
       path: contracts/offering/schemas/ActivationConfig.schema.json
       symbol: '#/$defs/DeactivatedArtifacts/properties/mission_type'
+  step_enhancement:
+    allOf:
+    - $ref: DeniedArtifactIdList.yaml
+    description: >-
+      The step_enhancement ids. Absent means no exclusion of the kind. A step enhancement a pack requires or locks
+      cannot be denied (409 artifact_required, artifact_locked), as any kind.
+    x-source:
+      path: contracts/offering/schemas/ActivationConfig.schema.json
+      symbol: '#/$defs/DeactivatedArtifacts/properties/step_enhancement'
 x-source:
   path: contracts/offering/schemas/ActivationConfig.schema.json
   symbol: '#/$defs/DeactivatedArtifacts'

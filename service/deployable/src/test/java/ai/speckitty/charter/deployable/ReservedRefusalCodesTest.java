@@ -338,7 +338,11 @@ class ReservedRefusalCodesTest {
                 RefusalCode.SELF_OVERRIDE,
                 RefusalCode.OVERRIDE_CYCLE,
                 RefusalCode.REGISTRATION_TIMED_OUT,
-                RefusalCode.PACK_STORAGE_FULL
+                RefusalCode.PACK_STORAGE_FULL,
+                RefusalCode.PROMPT_SLOT_MALFORMED,
+                RefusalCode.PROMPT_SLOT_NOT_EMPTY,
+                RefusalCode.PROMPT_FRAGMENT_INVALID,
+                RefusalCode.PROMPT_SLOT_MISSING
             };
         }
     }

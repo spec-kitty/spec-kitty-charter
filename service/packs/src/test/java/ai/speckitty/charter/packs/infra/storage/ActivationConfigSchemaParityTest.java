@@ -139,7 +139,7 @@ class ActivationConfigSchemaParityTest {
                 .filter(ArtifactKind::activatable)
                 .map(ArtifactKind::token)
                 .collect(Collectors.toCollection(TreeSet::new));
-        assertThat(activatable).hasSize(12).contains("mission_type");
+        assertThat(activatable).hasSize(13).contains("mission_type", "step_enhancement");
         assertThat(properties("SelectedArtifacts.yaml")).isEqualTo(activatable);
         assertThat(properties("DeactivatedArtifacts.yaml")).isEqualTo(activatable);
     }

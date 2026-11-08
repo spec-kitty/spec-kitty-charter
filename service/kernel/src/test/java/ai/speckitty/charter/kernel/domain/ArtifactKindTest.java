@@ -31,13 +31,20 @@ class ArtifactKindTest {
                         "glossary_pack",
                         "skill",
                         "anti_pattern",
-                        "mission_type");
+                        "mission_type",
+                        "step_enhancement");
     }
 
     @Test
     void theMissionTypeIsAnActivatableKindLikeAnyOther() {
         assertThat(ArtifactKind.MISSION_TYPE.activatable()).isTrue();
         assertThat(ArtifactKind.MISSION_TYPE.plural()).isEqualTo("mission_types");
+    }
+
+    @Test
+    void theStepEnhancementIsAnActivatableKindWithItsGraphPlural() {
+        assertThat(ArtifactKind.STEP_ENHANCEMENT.activatable()).isTrue();
+        assertThat(ArtifactKind.STEP_ENHANCEMENT.plural()).isEqualTo("step_enhancements");
     }
 
     @Test

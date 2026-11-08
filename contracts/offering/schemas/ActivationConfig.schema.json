@@ -157,6 +157,14 @@
             }
           ],
           "description": "The mission_type ids. Absent means no exclusion of the kind. A mission type a pack requires or locks cannot be denied (409), as any kind."
+        },
+        "step_enhancement": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/DeniedArtifactIdList"
+            }
+          ],
+          "description": "The step_enhancement ids. Absent means no exclusion of the kind. A step enhancement a pack requires or locks cannot be denied (409), as any kind."
         }
       }
     },
@@ -303,6 +311,14 @@
             }
           ],
           "description": "The mission_type ids: the mission types the activation selects. Selecting a mission type cascades to the steps it holds. Absent means none of the kind; [] means none; a list means exactly those."
+        },
+        "step_enhancement": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/ArtifactIdList"
+            }
+          ],
+          "description": "The step_enhancement ids. Absent means none of the kind; [] means none; a list means exactly those. Selecting one puts its additions, prompt fragments included, in force (ADR-0066)."
         }
       }
     },

@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spec-kitty.ai/charter/packs/prompt-fragment.schema.json",
+  "title": "Prompt fragment",
+  "description": "The parsed Markdown model of a prompt-fragment companion: no frontmatter, an optional H1, a preamble and H2 sections, with non-blank text in at least one of them (ADR-0066 decisions 3 and 7). The raw-Markdown check beside this structure schema refuses every slot marker in a fragment as prompt_fragment_invalid; a structure schema cannot express that check over this parsed model.",
+  "type": "object",
+  "required": [
+    "preamble",
+    "sections"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "preamble": {
+      "type": "string"
+    },
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "title",
+          "content"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "content": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "anyOf": [
+    {
+      "description": "A non-blank H1.",
+      "required": [
+        "title"
+      ]
+    },
+    {
+      "description": "Non-blank preamble text.",
+      "properties": {
+        "preamble": {
+          "pattern": "\\S"
+        }
+      }
+    },
+    {
+      "description": "At least one H2, whose title is non-blank.",
+      "properties": {
+        "sections": {
+          "minItems": 1
+        }
+      }
+    }
+  ]
+}

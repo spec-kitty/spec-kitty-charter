@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spec-kitty.ai/charter/packs/step-enhancement.schema.json",
+  "title": "Mission step enhancement",
+  "description": "The additions a step enhancement contributes (missions/<type>/enhancements/<id>.step-enhancement.yaml). Its target is not a field: the enhancing pack's graph documents carry the only enhances edge, to action:<type>/<step> (ADR-0053 decision 22; ADR-0064). prompt_fragments names one Markdown companion per slot of that step's prompt (ADR-0066). A semantic check beside this schema requires the id to equal the file stem, each slot to occur at most once, and each named companion to exist beside the enhancement; violations are prompt_fragment_invalid.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "id"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "description": "The step-enhancement shape's version, the string \"1.0\".",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "id": {
+      "description": "The enhancement's stable identity; equal to its file stem.",
+      "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "prompt_fragments": {
+      "description": "Markdown companions to insert into named slots of the enhanced step's prompt. Absent when the enhancement contributes none; never empty. Each slot id occurs at most once. No target, range, anchor, position or priority field exists (ADR-0066 decisions 3, 5 and 7).",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "slot",
+          "path"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "slot": {
+            "description": "The slot declared by the prompt in force for the enhanced step: <namespace>:<name>, each part lower-case and starting with a letter.",
+            "pattern": "^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*$",
+            "title": "Slot",
+            "type": "string"
+          },
+          "path": {
+            "description": "The <id>.prompt-fragment.md companion beside this enhancement file; no subdirectory or other file form.",
+            "pattern": "^[a-z][a-z0-9-]*\\.prompt-fragment\\.md$",
+            "title": "Path",
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
