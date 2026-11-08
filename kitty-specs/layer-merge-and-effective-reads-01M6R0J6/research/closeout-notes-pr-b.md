@@ -11,7 +11,8 @@ Items collected during PR B (WP21–WP26) for the docs WP, the pre-PR squad and 
 - **N2: the facts cache reads the pack revision on every call** (a listing plus a digest). The out-of-band check
   needs it. The PR B description must not claim a win on #416.
 - **N3: no test asserts that the deployed `OfferingReadService` reads through `CompositionFactsCache`.** Handed to
-  WP22. The full `:deployable:test` boots the context through the new constructor.
+  WP25 (it serves the reads and owns the deployable wiring; WP22 is contract-only). The full `:deployable:test`
+  boots the context through the new constructor.
 - **Effective reads take the floor and presets from `merged()`** (the A1 union over every copy); `ClosureView.floor()`
   and `heldPresets()` keep the winners-only floor for writes and `/offering`.
 - **Steps under a winning mission type:** a winning `mission_type:M` does not take its losers' unique steps, so a
