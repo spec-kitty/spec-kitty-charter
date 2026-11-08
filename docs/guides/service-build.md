@@ -2,7 +2,7 @@
 title: Building the service
 description: How to build and test the charter service, what each verification task checks, how to change the contract or a dependency, and how a release is cut.
 doc_status: active
-updated: 2026-11-07T00:00:00Z
+updated: 2026-11-08T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -14,6 +14,10 @@ related:
   - adr/0060-native-build-runs-nightly-and-per-release
   - guides/generate-a-client
   - adr/0062-nightly-mutation-floor
+  - guides/compose-packs
+  - guides/run-in-a-container
+  - conformance/divergence-register
+  - changelog/2026-11-07-a-pack-registration
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this before you build, test or change the contract.
@@ -49,6 +53,10 @@ How to build the charter service and run every check CI runs.
   records with the contract's major version. A release whose tag is not yet merged (as on a
   release PR) is skipped, and a new major version has no baseline, so it needs no tag. Fetch the
   tags if one is missing.
+- **A system `git` of 2.50.1 or later, only for the `git-host` tests.** `verifyAll` does not need it: the git source's
+  argument list, environment, version check and deadline run against a fake git. The tests that run the real git
+  are tagged `git-host` and run with `./gradlew :packs:gitHostTest -PrequireGitHost=true`. With that property they
+  fail when git is missing or older, so they cannot pass by skipping. CI runs them in the `git-source` job (below).
 - **Network access on the first run.** The contract checks download vacuum and oasdiff at
   pinned versions and verify each archive's SHA-256 before using it (Linux and macOS, x86-64
   and arm64).
@@ -355,6 +363,56 @@ toolguide's title (optional when sent, since the service writes it; required in 
 it is derived from the title), no text before `## Overview`, then the fixed blocks and freeform sections
 (ADR-0043 decision 4). The `markdown` content form reads it, and diverges from CommonMark on
 purpose: an HTML comment is text, so a column-0 `##` inside one is a heading.
+
+## Registering packs
+
+Whole-pack registration (`PUT /packs/{packId}`, `POST /packs`) and its sources are configured under
+`charter.registration` and `charter.pack-sources`. Every kind of source is off by default, and each flag is read at every
+request, so an operator can switch a kind off without a restart. How a client uses it is in
+[Compose packs](/guides/compose-packs/#register-a-pack). The differences from core are
+[DIV-609 to DIV-613](/conformance/divergence-register/#registration-div-601699-adr-0065).
+
+| Property | Default | What it does |
+|---|---|---|
+| `charter.registration.enabled` | `false` | Allows registration. While it is off, every registration answers `503 pack_source_unavailable`. It needs `charter.config-root`. |
+| `charter.registration.staging-dir` | `<config-root>/staging` | Where a registration spools and extracts its upload. Keep it on the volume of the packs. |
+| `charter.pack-sources.https.enabled` | `false` | Allows `POST /packs` with an `https_archive` source. |
+| `charter.pack-sources.https.allowed-hosts` | empty | The hosts an archive may be fetched from, matched exactly after lower-casing and stripping a trailing dot. Empty refuses every URL (`host_not_allowed`). |
+| `charter.pack-sources.https.timeout` | `60s` | One deadline over resolution, every hop and the body. |
+| `charter.pack-sources.https.max-size` | `32MB` | The largest archive accepted. |
+| `charter.pack-sources.https.max-redirects` | `3` | The most redirects followed; each target is checked again. |
+| `charter.pack-sources.git.enabled` | `false` | Allows `POST /packs` with a `git` source. |
+| `charter.pack-sources.git.allowed-hosts` | empty | The hosts a repository may be fetched from. Empty refuses every URL. |
+| `charter.pack-sources.git.executable` | unset | The absolute path of the git binary. Unset, the service looks for `git` on the `PATH`. |
+| `charter.pack-sources.git.timeout` | `60s` | One deadline over the lookup, the wait for a slot and every git command. |
+| `charter.pack-sources.filesystem.enabled` | `false` | Allows `POST /packs` with a `filesystem` source. |
+| `charter.pack-sources.filesystem.root` | unset | The directory a path is read under. Switching the kind on with no root stops the start. |
+
+- **The filesystem root** must not lie under `/proc`, `/sys` or `/dev`, and must not overlap `charter.config-root`. A
+  path is relative, has no empty, `.` or `..` segment, and is read under the root. Every local-path refusal answers one
+  `path_refused`; the reason is in the operator log only.
+- **The resolver guard** (`GlobalAddressResolverProvider`) acts on the union of the guide, https archive and git hosts,
+  as for guides (see [Fetching toolguide guides](#fetching-toolguide-guides)). An archive fetch and a git fetch are direct,
+  use no proxy, and accept only https on port 443 with no redirect, user information or IP literal. The git source
+  follows no redirect at all, not even to the same host.
+- **Git.** The git source needs the system `git`, version 2.50.1 or later, on the `PATH` or at
+  `charter.pack-sources.git.executable`. The service never uses JGit and never checks out a work tree: it runs the host
+  binary into a bare work repository, with a fixed argument list and a cleaned environment. It checks the version at
+  every start. An old or missing git makes the git kind answer `503 pack_source_unavailable` while the other kinds
+  work. A link, a submodule or an odd mode in the fetched tree is refused `422 validation_failed` with the violation
+  `entry_type`, as for an archive. Repositories that use the sha256 object format are untested: the work repository is
+  created as sha1.
+- **A refused source** ends the registration `422 pack_source_refused`. The detail is `<token>: <fixed sentence>`, with
+  no URL, path or upstream text. The tokens are `host_not_allowed`, `address_not_global`, `url_refused`,
+  `redirect_refused`, `wrong_media_type`, `too_large`, `digest_mismatch`, `name_mismatch`, `source_malformed`,
+  `path_refused`, `bad_ref` and `commit_mismatch`. An upstream failure is a plain `502` and a timeout a plain `504`.
+- **Known limit of the local source.** The file-key and link-count checks look a file up by name, not on the open handle,
+  because the JDK has no `fstat` on a channel. A race between the check and the open needs write access under the root.
+  Give the root to the service alone.
+
+The `git-source` job of `service.yml` runs the real-git tests on a git of 2.50.1 or later. It is a job of the `service`
+workflow, so the `service` result that `CI gate / gate` counts includes it. Branch protection requires only
+`CI gate / gate` ([ADR-0023](/adr/0023-ci-gate-required-check/)), so no setting changes for the new job.
 
 ## Exceptions to a gate
 

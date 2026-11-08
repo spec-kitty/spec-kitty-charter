@@ -23,9 +23,6 @@ value:
     _links:
       self:
         href: /api/v1/packs/acme-review-pack
-      edit:
-        href: /api/v1/packs/acme-review-pack
-        method: PUT
       artifacts:
         href: /api/v1/packs/acme-review-pack/artifacts{?kind}
         templated: true

@@ -124,9 +124,10 @@ delete:
   description: >-
     Removes the edge of the unordered {from, to} pair, only from registered.graph.yaml, the shard putPackRelationship
     writes, and answers 204 with an ETag, the pack's new revision (ADR-0065 D4, FR-006; decision
-    DM-01M6TQ62HXYF362GAFS2BZ3PGF). A DELETE never rewrites a file the author wrote. from and to are required query
-    parameters, each a PackQualifiedReference, in either orientation: a URN may hold a slash (action:<type>/<step>), so
-    the pair is not a path segment. It is synchronous and requires If-Match on the pack revision, as every
+    DM-01M6TQ62HXYF362GAFS2BZ3PGF). A DELETE never rewrites a file the author wrote. The removed edge is gated as a
+    RELATIONSHIP write on its from (409 governance_policy_violation), as a whole-pack replace that drops it is. from and
+    to are required query parameters, each a PackQualifiedReference, in either orientation: a URN may hold a slash
+    (action:<type>/<step>), so the pair is not a path segment. It is synchronous and requires If-Match on the pack revision, as every
     sub-resource write does: absent is 428, a stale revision is 412, checked under the registry lock. The pack is
     judged first: an identifier that matches no configured pack is 404 pack_not_found; a pair on which no graph
     document of the pack holds an edge and no derived relation joins the two is 404 relationship_not_found. 409
@@ -147,6 +148,9 @@ delete:
     description: >-
       One end of the pair: a URN <kind>:<id> or a pack-qualified <pack-name>::<kind>:<id>. The pair is unordered, so the
       edge is found whichever end the registration wrote as its from.
+      A reference that names a pack matches only an edge end that names the same pack, so with the edges A to base::X
+      and A to other::X a DELETE naming base::X removes one edge; a reference that names no pack matches by its URN,
+      whatever pack the edge end names.
     schema:
       $ref: ../schemas/PackQualifiedReference.yaml
   - name: to
@@ -209,6 +213,9 @@ delete:
         relationship_not_registered: the pack holds an edge on the pair that is not in registered.graph.yaml (authored in
         a source shard or drg/fragment.yaml, or derived), or holds the pair both there and in an author-written document.
         Register the whole pack to change it; nothing is written.
+        governance_policy_violation: the removed edge is a RELATIONSHIP write on its from, and the mutability level of the
+        pack that owns that artifact does not permit it, as for a whole-pack replace that drops the edge (ADR-0012);
+        nothing is written.
       headers:
         Charter-Contract-Version:
           $ref: ../headers/CharterContractVersion.yaml

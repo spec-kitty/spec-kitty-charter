@@ -2,7 +2,9 @@ title: PackRegistrationNotices
 description: >-
   Only in the result of a succeeded registration (FR-027): what the write changed about the floor and the locks, so no
   change of force is silent. Every list is empty when the write changed nothing of its kind. The activations whose in-
-  force set changes join in a later minor.
+  force set changes join in a later minor. Notices name activatable kinds only: an entry of another kind (a template, an
+  asset, a guard, a lifecycle) is left out of the lists, and the service logs it. Widening the kinds is tracked in
+  issue #417.
 type: object
 additionalProperties: false
 properties:
