@@ -1,10 +1,13 @@
 package ai.speckitty.charter.packs.domain;
 
+import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackOverride;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import java.util.ArrayList;
@@ -62,9 +65,52 @@ public final class LayerMerge {
                     levelWinners(holders, settlements.getOrDefault(settlementKey(urn), Set.of()));
             PackUnderResolution winner = byLevel.getLast();
             winners.put(urn, winnerOf(winner, urn, policy.levelIn(closurePackIds, urn)));
-            byLevel.subList(0, byLevel.size() - 1).forEach(loser -> overrides.add(overrideOf(urn, winner, loser)));
+            for (PackUnderResolution loser : byLevel.subList(0, byLevel.size() - 1)) {
+                allowOverride(urn, winner, loser, closurePackIds, policy);
+                overrides.add(overrideOf(urn, winner, loser));
+            }
         });
         return new MergedClosure(winners, overrides);
+    }
+
+    /**
+     * Refuses a layer override the owner's level forbids (C21, FR-011, ADR-0063 D3): only an {@code open} artifact may be
+     * replaced by a later level. The level is judged along the closure with the winning pack left out, so the losers'
+     * own files and any pack that raised the level count, and a pack never blocks its own override (research R3).
+     */
+    private static void allowOverride(
+            Urn urn,
+            PackUnderResolution winner,
+            PackUnderResolution loser,
+            List<String> closurePackIds,
+            PerPackPolicy policy) {
+        List<String> judging = closurePackIds.stream()
+                .filter(packId -> !packId.equals(winner.descriptor().packId()))
+                .toList();
+        PerPackPolicy.Level level = policy.levelIn(judging, urn);
+        if (level.level() != MutabilityLevel.OPEN) {
+            throw new CharterRefusal(
+                    RefusalCode.PACK_UNREADABLE,
+                    "pack `" + winner.descriptor().name() + "` at "
+                            + winner.configured().level().token()
+                            + " replaces `" + urn + "` of pack `"
+                            + loser.descriptor().name() + "` at "
+                            + loser.configured().level().token() + ", but the artifact is "
+                            + level.level().token()
+                            + " along the closure"
+                            + level.setBy()
+                                    .map(by -> " (set by pack " + by + ")")
+                                    .orElse("")
+                            + "; only an open artifact may be replaced by a later level",
+                    List.of(refusalPack(winner), refusalPack(loser)));
+        }
+    }
+
+    private static RefusalPack refusalPack(PackUnderResolution pack) {
+        return new RefusalPack(
+                pack.descriptor().packId(),
+                pack.configured().id().value(),
+                pack.descriptor().name());
     }
 
     private static MergedClosure.Winner winnerOf(PackUnderResolution pack, Urn urn, PerPackPolicy.Level policy) {
