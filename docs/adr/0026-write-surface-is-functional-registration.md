@@ -2,8 +2,8 @@
 title: "ADR-0026: The write surface is functional registration of packs, artifacts and relationships, not CRUD over storage"
 description: Why the API's only writes are functional registration of a pack, an artifact or a relationship edge over the Pack aggregate — not CRUD that exposes storage DSOs.
 doc_status: active
-updated: 2026-11-05T00:00:00Z
-decision_status: 'Accepted, with Amendment 2026-11-05 (ADR-0064); superseded in part by ADR-0030 (2026-10-26)'
+updated: 2026-11-07T00:00:00Z
+decision_status: 'Accepted, with Amendment 2026-11-05 (ADR-0064); superseded in part by ADR-0030 (2026-10-26); decision 2 superseded for DELETE by ADR-0065 (2026-11-07)'
 decision_date: '2026-10-25'
 type: ADR
 kind: ADR
@@ -148,6 +148,12 @@ API writes and how it is framed.
   `DELETE`/`PATCH` semantics the service does not want (removal is deactivation).
 - **Activation writes as the only write surface** (ADR-0020). Rejected: activation writes *choices*,
   not content; authoring content needs its own content-write path.
+
+## Amendment 2026-11-07: `DELETE`
+
+Decision 2 ("No `DELETE`, `PATCH` or generic CRUD") is superseded for `DELETE` by [ADR-0065](/adr/0065-pack-registration-replaces-the-whole-pack/): an artifact and a registered
+relationship can be removed by `DELETE`, and a whole-pack registration replaces the known pack, removals included.
+`PATCH` and generic CRUD stay out. The original text stands.
 
 ## References
 
