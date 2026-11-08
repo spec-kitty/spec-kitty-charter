@@ -157,6 +157,12 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
         this.generation = Objects.requireNonNull(generation, "generation");
     }
 
+    /** The digest of the pack's files with the path of each, as the closure's fingerprint digests them (#416). */
+    @Override
+    public String digestOf(PackIdentifier pack) {
+        return FileSystemPackSources.digestOfPack(resolve(pack), pack.value());
+    }
+
     @Override
     public PackRevision currentRevision(PackIdentifier pack) {
         Path directory = resolve(pack);

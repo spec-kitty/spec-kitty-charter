@@ -18,20 +18,20 @@ import org.springframework.stereotype.Service;
  * holds no storage type and knows no store.
  *
  * <p>An entry is keyed by the pack's configured name and valid for one write generation
- * ({@link PackWriteGeneration#ofPack}) and one revision ({@link PackRevisions#currentRevision}) together. The
- * generation catches a swap, even one that restores the same bytes; the revision catches a change no write bracketed (an
- * out-of-band edit). Every pack write brackets its swap with the pack's configured name (#418 R5), so that is the name
+ * ({@link PackWriteGeneration#ofPack}) and one file digest ({@link PackRevisions#digestOf}) together. The generation
+ * catches a swap, even one that restores the same bytes; the digest, which names every file as well as its bytes,
+ * catches a change no write bracketed (an out-of-band edit, a rename included). Every pack write brackets its swap with the pack's configured name (#418 R5), so that is the name
  * the generation is read with here.
  *
  * <p>What it never does:
  *
  * <ul>
  *   <li>serve an entry, or fill one, from a read whose generation was odd (a swap was running) or moved during the read,
- *       or whose revision changed during it;
+ *       or whose digest changed during it;
  *   <li>serve or fill from a holder of the {@link RegistryWriteLock}: the registry's write paths read the packs they are
  *       about to replace, a staged view that is not the committed state;
  *   <li>keep a failure: a pack that cannot be read stays a refusal with the loader's code and detail, on every read. A
- *       revision that cannot be read leaves the answer to the loader, so its refusal is the one reported;
+ *       digest that cannot be read leaves the answer to the loader, so its refusal is the one reported;
  *   <li>grow past its bound: the least recently used pack leaves when the bound is reached.
  * </ul>
  */
@@ -49,7 +49,7 @@ public final class CompositionFactsCache {
     private final AtomicLong hits = new AtomicLong();
 
     /** What one read of a pack found, and the state of the pack it found it in. */
-    private record Kept(long generation, PackRevision revision, PackCompositionFacts facts) {}
+    private record Kept(long generation, String digest, PackCompositionFacts facts) {}
 
     /** A map that keeps its most recently used entries, at most {@code capacity} of them. */
     private static final class Lru extends LinkedHashMap<String, Kept> {
@@ -72,7 +72,7 @@ public final class CompositionFactsCache {
     /**
      * The cache of this JVM's pack domain: the shared write generation and registry lock, and the default bound.
      *
-     * @param revisions the committed revision of a pack
+     * @param revisions the committed revision of a pack and the digest of its files
      */
     @Autowired
     public CompositionFactsCache(PackRevisions revisions) {
@@ -83,7 +83,7 @@ public final class CompositionFactsCache {
      * A cache over a write generation and a lock of its own; a test builds one, the deployment uses the other
      * constructor.
      *
-     * @param revisions the committed revision of a pack
+     * @param revisions the committed revision of a pack and the digest of its files
      * @param generation the write generation the pack writes bracket their swap with
      * @param lock the registry write lock whose holders neither read from nor fill the cache
      * @param capacity the most packs kept, at least 1
@@ -101,7 +101,7 @@ public final class CompositionFactsCache {
     }
 
     /**
-     * The facts of a pack: the entry kept for its generation and revision, else what {@code load} reads now.
+     * The facts of a pack: the entry kept for its generation and file digest, else what {@code load} reads now.
      *
      * @param pack the configured identifier of the pack, the name its writes bracket the generation with
      * @param load reads the facts of the pack from its store; its refusal is the answer, unchanged
@@ -114,19 +114,19 @@ public final class CompositionFactsCache {
         if (lock.isHeldByCurrentThread() || PackWriteGeneration.isSwapping(before)) {
             return counted(pack, load);
         }
-        Optional<PackRevision> revision = revisionOf(pack);
-        if (revision.isEmpty()) {
+        Optional<String> digest = digestOf(pack);
+        if (digest.isEmpty()) {
             return counted(pack, load);
         }
-        Optional<PackCompositionFacts> kept = kept(pack.value(), before, revision.get());
+        Optional<PackCompositionFacts> kept = kept(pack.value(), before, digest.get());
         if (kept.isPresent()) {
             hits.incrementAndGet();
             return kept.get();
         }
         PackCompositionFacts loaded = counted(pack, load);
         if (generation.ofPack(pack.value()) == before
-                && revisionOf(pack).filter(revision.get()::equals).isPresent()) {
-            remember(pack.value(), new Kept(before, revision.get(), loaded));
+                && digestOf(pack).filter(digest.get()::equals).isPresent()) {
+            remember(pack.value(), new Kept(before, digest.get(), loaded));
         }
         return loaded;
     }
@@ -169,20 +169,20 @@ public final class CompositionFactsCache {
         return load.apply(pack);
     }
 
-    /** The pack's revision; empty when it cannot be read, so that the load's own refusal is what the caller sees. */
-    private Optional<PackRevision> revisionOf(PackIdentifier pack) {
+    /** The digest of the pack's files; empty when it cannot be read, so that the load's own refusal is what the caller sees. */
+    private Optional<String> digestOf(PackIdentifier pack) {
         try {
-            return Optional.of(revisions.currentRevision(pack));
+            return Optional.of(revisions.digestOf(pack));
         } catch (CharterRefusal unreadable) {
             return Optional.empty();
         }
     }
 
-    private Optional<PackCompositionFacts> kept(String name, long generationNow, PackRevision revision) {
+    private Optional<PackCompositionFacts> kept(String name, long generationNow, String digest) {
         synchronized (entries) {
             return Optional.ofNullable(entries.get(name))
                     .filter(entry -> entry.generation() == generationNow
-                            && entry.revision().equals(revision))
+                            && entry.digest().equals(digest))
                     .map(Kept::facts);
         }
     }
