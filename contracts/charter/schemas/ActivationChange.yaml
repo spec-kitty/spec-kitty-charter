@@ -85,12 +85,13 @@ properties:
     items:
       $ref: ActivationWarning.yaml
     description: >-
-      The artifacts the write applied that a read of the document as stored will not put in force (FR-032, B6/B7): an
-      enhancer none of whose targets is in force (enhanced_target_not_in_force), or an artifact an active override hides
-      (overridden). The write is accepted either way, so a client learns what the read will show. Always present; []
-      when there is none.
+      The artifacts the write put in (a select, or the additions of a preset) that a read of the document as stored will
+      not put in force (FR-032, B6/B7): an enhancer none of whose targets is in force (enhanced_target_not_in_force), or
+      an artifact an active override hides (overridden). Only additions are named: an unselect, a deny, a reactivation or any
+      other removal asks for nothing to be in force, so it warns of nothing. The write is accepted either way, so a client
+      learns what the read will show. Always present; [] when there is none.
     x-derived:
-      rule: The applied artifacts that the in-force resolution of the stored document leaves out for those two reasons.
+      rule: The artifacts the write put in that the in-force resolution of the stored document leaves out for those two reasons.
       inputs:
       - schemas/ActivationConfig.yaml
   _links:

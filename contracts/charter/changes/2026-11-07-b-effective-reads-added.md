@@ -4,8 +4,7 @@
   (`GET /activations/{activationId}/skipped`) lose `x-reserved` and their `501`, so the contract declares them as
   operations that answer (IC-08). `ReservedOperationCoverageTest` counts two reserved operations of the `activation`
   set (the effective graph and the effective action context, PR C), and `activations.feature` loses the two `501`
-  pins; `effective-reads.feature` and `layer-merge.feature` replace them with `@WIP` scenarios that the serving work
-  package binds and turns green.
+  pins; `effective-reads.feature` and `layer-merge.feature` replace them with scenarios that pin the reads.
   - The list answers every artifact of the merged closure with its `state` (ADR-0020 D7, operator ruling Q1): "in
     force" is `state=active`. It is filtered by `kind` and `state`, paged by a keyset cursor over `(kind, id)` bound to
     the tag of the set it pages (a cursor from another tag is `400`), and answers the `summary` of the whole set,

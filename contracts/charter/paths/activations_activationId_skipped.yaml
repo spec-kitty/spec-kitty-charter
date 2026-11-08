@@ -10,7 +10,7 @@ get:
     requiredNotHeld (must-have items no pack holds, A10), requiredNotInForce and skippedDeactivated. denyNotApplied and
     overrideNotApplied list rules that were not applied, not artifacts out of force. The buckets of a write's cascade
     (skippedByScope, unreachedBehindDeactivated, skippedShared) are always empty at read, and in skippedDeactivated
-    viaRequires is false and requiredBy is []. The report carries the activation's revision and the fingerprint it was
+    viaRequires is false and requiredBy is []. A required or locked artifact that the enhancer rule or the mission type binding prunes is listed once, in requiredNotInForce. The report carries the activation's revision and the fingerprint it was
     computed from.
 
     ETag follows the same rule as the effective list: it changes with the activation's revision and with any pack of the

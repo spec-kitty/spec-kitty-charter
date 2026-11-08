@@ -3,8 +3,12 @@ get:
   summary: Read an activation.
   description: >-
     The stored document, as stored (ADR-0020 D4, ADR-0059 D4): a document an offering change made stale (an id the
-    offering no longer has, a deny entry on an id now required or locked) is served unchanged, and a deny entry the
-    required floor or a lock overrides is listed in denyNotApplied (B4, FR-027). That member is judged against the
+    offering no longer has, a deny entry on an id now required or locked) is served unchanged while its closure can be
+    read, and a deny entry the required floor or a lock overrides is listed in denyNotApplied (B4, FR-027). When the
+    closure cannot be read the document is not served: the answer is 500 for a document that names a pack that is no
+    longer configured (pack_unreadable), for a layer merge the closure refuses (an override the mutability level
+    forbids, an overrides cycle, an unstable answer, an override of itself, or pack_sibling_conflict) and for an
+    in-force refusal. That member is judged against the
     packs of the activation's closure, so the strong ETag covers the activation's revision and the closure's
     governanceFingerprint, as the effective reads' tags do: it changes when the document or a pack of the closure
     changes, and not when a pack outside the closure does. A request whose If-None-Match matches the ETag is answered
@@ -145,8 +149,11 @@ delete:
     Removes the document: 204, honouring If-Match (the quoted revision or the current getActivation tag; a stale closure tag is 412). A second DELETE is 404 activation_not_found (ADR-0020 D6). With
     If-Match, an id nothing is stored under is 412, not 404: no stored revision matches it (RFC 9110 section
     13.1.1). An If-Match that is neither * nor one quoted sha256 tag (the revision or the getActivation tag), and an id outside the declared pattern, are 400. The
-    delete takes no snapshot of the packs, so its only 500 is internal_error, a failure of the storage; a storage 500
-    may follow a committed change (the document is gone), so read before retrying.
+    delete reads no packs for a quoted revision or *, so then its only 500 is internal_error, a failure of the
+    storage. An If-Match that is a getActivation tag costs one verified read of the packs of the stored document's
+    closure to compute the current tag; a closure that cannot be read, or that names a pack no longer configured, has no
+    current tag, so the header names nothing and the delete is 412. A storage 500 may follow a committed change (the
+    document is gone), so read before retrying.
   tags:
   - Activation
   parameters:
