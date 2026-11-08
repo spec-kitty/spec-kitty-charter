@@ -408,9 +408,10 @@ public final class PackCommitStore implements WholePackWriteStore {
 
         /**
          * Stages the history after the tree is stored. The pair the stored pack has now (the live directory, when there is
-         * one) goes in first when the history lacks it, so that a publish lost after an earlier swap heals here and a
-         * version label the stored pack holds is never free to reuse (IC-16). A stored pack that cannot be read has no
-         * pair to give.
+         * one) goes in first when the history knows nothing of its {@code pack_version}, so that a publish lost after an
+         * earlier swap heals here and a version label the stored pack holds is never free to reuse (IC-16). A version the
+         * history already holds is left with the revision it was registered with: a per-artifact write moved the stored
+         * revision, which registers nothing. A stored pack that cannot be read has no pair to give.
          */
         static HistoryWrite stage(
                 Path writableRoot, String packId, Path tree, PackRevision revision, @Nullable Path live)
@@ -420,7 +421,7 @@ public final class PackCommitStore implements WholePackWriteStore {
             if (live != null) {
                 Optional<PackVersionHistory.Entry> stored = storedPair(live, packId);
                 if (stored.isPresent()) {
-                    history = PackVersionHistory.appended(history, stored.get());
+                    history = PackVersionHistory.healed(history, stored.get());
                 }
             }
             PackVersionHistory.Entry entry =
