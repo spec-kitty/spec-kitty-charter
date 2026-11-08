@@ -10,8 +10,10 @@
 - `SkippedReport.skippedByScope` says it is always empty at read; `SkippedDeactivated` says that at read `viaRequires`
   is `false` and `requiredBy` is `[]`. `EffectiveArtifact.kind` takes the merged kind enum, so the list shows mission
   types.
-- `EffectiveArtifactList.governanceFingerprint` and `ActivationSkippedReport.governanceFingerprint` name the packs of
-  the activation's closure that the answer was computed from.
+- `EffectiveArtifactList.governanceFingerprint` and `ActivationSkippedReport.governanceFingerprint` are the
+  `charter-closure/v1` digest of the packs of the activation's closure alone (their configured id and level, and their
+  files). They are not `ServiceInfo.sourceFingerprint` and not the `Charter-Source-Fingerprint` header, which digest the
+  whole source; a change to a pack outside the closure leaves them unchanged.
 - `Activation` and `getActivation` say that `denyNotApplied` is judged against the packs of the closure and that the `ETag`
   covers the revision and the closure's fingerprint (see the Breaking entry).
 - The relaxed write rule (IC-13, operator ruling Q9) is declared by the work package that serves it; this fragment
