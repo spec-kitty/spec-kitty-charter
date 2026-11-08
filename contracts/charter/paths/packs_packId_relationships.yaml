@@ -138,6 +138,8 @@ delete:
     strict: when a closure that contains the pack, after the removal, no longer composes or breaks a rule, the answer
     is 422 with the composition code or one of override_not_permitted, enhances_cycle, conflicting_relations,
     self_override and override_cycle, naming the packs, and nothing is written. The version history is kept.
+    While charter.registration.enabled is off (the default) the answer is 503 pack_source_unavailable before the pack, the
+    path or If-Match is judged (ADR-0065 D13).
   tags:
   - Registration
   parameters:
@@ -257,5 +259,7 @@ delete:
       $ref: ../responses/PreconditionRequired.yaml
     '500':
       $ref: ../responses/OfferingUnreadable.yaml
+    '503':
+      $ref: ../responses/PackRemovalUnavailable.yaml
     default:
       $ref: ../../_shared/responses/Problem.yaml

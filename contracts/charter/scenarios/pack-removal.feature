@@ -29,7 +29,8 @@ Feature: One artifact or one registered relationship is removed from a pack
   PR A is strict: a removal that leaves a closure unable to compose, or breaking a relation rule, is refused 422.
 
   Background:
-    Given the org pack "qa" with the file "pack.yaml":
+    Given registration is switched on
+    And the org pack "qa" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943R
       pack_version: 1.0.0
@@ -297,6 +298,25 @@ Feature: One artifact or one registered relationship is removed from a pack
     Then the response status is 204
     When I GET "/packs/qa/artifacts/directive/D3"
     Then the response status is 404
+
+  # bound by: WP19 (ADR-0065 D13, FR-037: both removals are writes of the registration family, so
+  # charter.registration.enabled gates them, before the pack, the path or If-Match is judged)
+  Scenario: Both deletes answer 503 while registration is switched off, and nothing is removed
+    Given registration is switched off
+    When I DELETE "/packs/qa/artifacts/directive/D3" with the header "If-Match": "*"
+    Then the response status is 503
+    And the problem code is "pack_source_unavailable"
+    When I send DELETE "/packs/qa/artifacts/directive/D3"
+    Then the response status is 503
+    And the problem code is "pack_source_unavailable"
+    When I DELETE "/packs/qa/relationships?from=directive:D1&to=directive:D2" with the header "If-Match": "*"
+    Then the response status is 503
+    And the problem code is "pack_source_unavailable"
+    When I GET "/packs/qa/artifacts/directive/D3"
+    Then the response status is 200
+    Given registration is switched on
+    When I DELETE "/packs/qa/artifacts/directive/D3" with the header "If-Match": "*"
+    Then the response status is 204
 
   # bound by: WP19 (US2 AS3: a registered edge is removed, in either orientation; the artifacts stay)
   Scenario Outline: A registered relationship is removed, whichever end the request names first

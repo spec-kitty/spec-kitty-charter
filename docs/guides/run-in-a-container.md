@@ -117,8 +117,8 @@ Registration is off by default. These settings switch it on and name where packs
 properties like any other setting (`CHARTER_REGISTRATION_ENABLED`, and so on). The full list, with defaults, is in
 [Building the service](/guides/service-build/#registering-packs).
 
-- `charter.registration.enabled=true` allows `PUT /packs/{packId}` and `POST /packs`. While it is off, a registration
-  answers `503 pack_source_unavailable`.
+- `charter.registration.enabled=true` allows `PUT /packs/{packId}`, `POST /packs` and the two removals of a pack
+  (`DELETE` of an artifact and of a relationship). While it is off, each answers `503 pack_source_unavailable`.
 - Each source kind is off until its own flag is on: `charter.pack-sources.https.enabled`,
   `charter.pack-sources.git.enabled` and `charter.pack-sources.filesystem.enabled`. A flag is read at every request.
 - Allowlists and the root are empty by default, so a source nobody configured is refused: set

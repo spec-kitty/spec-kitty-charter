@@ -88,6 +88,8 @@ delete:
     override_cycle, naming the packs, and nothing is written. A refused DELETE changes nothing: no file, edge or preset
     item is removed. A DELETE does not consult activations: a saved selection of the removed artifact reads as stale and
     is dropped on the next write. The version history is kept.
+    While charter.registration.enabled is off (the default) the answer is 503 pack_source_unavailable before the pack, the
+    path or If-Match is judged (ADR-0065 D13).
   tags:
   - Registration
   parameters:
@@ -205,5 +207,7 @@ delete:
       $ref: ../responses/PreconditionRequired.yaml
     '500':
       $ref: ../responses/OfferingUnreadable.yaml
+    '503':
+      $ref: ../responses/PackRemovalUnavailable.yaml
     default:
       $ref: ../../_shared/responses/Problem.yaml

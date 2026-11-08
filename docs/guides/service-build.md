@@ -366,7 +366,7 @@ purpose: an HTML comment is text, so a column-0 `##` inside one is a heading.
 
 ## Registering packs
 
-Whole-pack registration (`PUT /packs/{packId}`, `POST /packs`) and its sources are configured under
+Whole-pack registration (`PUT /packs/{packId}`, `POST /packs`), the two removals of a pack and the sources of a registration are configured under
 `charter.registration` and `charter.pack-sources`. Every kind of source is off by default, and each flag is read at every
 request, so an operator can switch a kind off without a restart. How a client uses it is in
 [Compose packs](/guides/compose-packs/#register-a-pack). The differences from core are
@@ -374,7 +374,7 @@ request, so an operator can switch a kind off without a restart. How a client us
 
 | Property | Default | What it does |
 |---|---|---|
-| `charter.registration.enabled` | `false` | Allows registration. While it is off, every registration answers `503 pack_source_unavailable`. It needs `charter.config-root`. |
+| `charter.registration.enabled` | `false` | Allows registration and the two removals of a pack (`DELETE` of an artifact and of a relationship). While it is off, each answers `503 pack_source_unavailable`. It needs `charter.config-root`. |
 | `charter.registration.staging-dir` | `<config-root>/staging` | Where a registration spools and extracts its upload. Keep it on the volume of the packs. |
 | `charter.pack-sources.https.enabled` | `false` | Allows `POST /packs` with an `https_archive` source. |
 | `charter.pack-sources.https.allowed-hosts` | empty | The hosts an archive may be fetched from, matched exactly after lower-casing and stripping a trailing dot. Empty refuses every URL (`host_not_allowed`). |
