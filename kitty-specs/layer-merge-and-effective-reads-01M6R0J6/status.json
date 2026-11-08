@@ -885,6 +885,9 @@
       "last_event_id": "01M6YEHW1FCR8Q4G4B8Z4JN40E",
       "last_transition_at": "2026-11-08T20:45:44.879993+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "WP25 implemented, red before green. Serves listEffectiveArtifacts and getActivationSkippedReport (one session per request, E19), getActivation closure tag + denyNotApplied, either-tag If-Match on every activation write, ActivationChange.warnings, activationsAffected through the ActivationImpact port, mission-step-contract binding in the resolution, NFR-003 operation-count gate (EffectiveReadOperationBudgetTest) and report-only EffectiveReadBudgetTest (timingBudgets not run). Full :deployable:test green (1173 tests, 0 skipped), :activations/:packs/:contracts/:deployable check green. Open questions in the hand-off: required-but-unselected T reason (E9 not_selected vs scenario overridden), stale tag-shaped If-Match now costs one pack read, fixture corrections to WP22's unrun scenarios, defect found by the gate (int overflow in the in-force walk bound at 1291 artifacts)."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 24459,
