@@ -782,7 +782,14 @@
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 8255,
-      "shell_pid_created_at": "1794153855.1"
+      "shell_pid_created_at": "1794153855.1",
+      "subtasks": {
+        "T109": "done",
+        "T110": "done",
+        "T111": "done",
+        "T112": "done",
+        "T113": "done"
+      }
     },
     "WP23": {
       "actor": "claude",
@@ -798,7 +805,15 @@
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 9702,
-      "shell_pid_created_at": "1794153893.55"
+      "shell_pid_created_at": "1794153893.55",
+      "subtasks": {
+        "T114": "done",
+        "T115": "done",
+        "T116": "done",
+        "T117": "done",
+        "T118": "done",
+        "T119": "done"
+      }
     },
     "WP24": {
       "actor": "finalize-tasks",
