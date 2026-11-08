@@ -1,7 +1,7 @@
 title: ActivationWarning
 description: >-
-  A warning on a write (FR-032, B6/B7): an artifact the write applied that a read of the document as stored will not
-  put in force. The write is still accepted.
+  A warning on a write (FR-032, B6/B7): the artifact, in artifact, that the write applied and a read of the document as
+  stored will not put in force. The write is still accepted.
 type: object
 additionalProperties: false
 required:
@@ -21,10 +21,4 @@ properties:
       inputs:
       - schemas/ActivationConfig.yaml
   artifact:
-    allOf:
-    - $ref: ArtifactReference.yaml
-    description: The artifact the write applied and the read will not put in force.
-    x-derived:
-      rule: An artifact of the write's applied list that the in-force resolution of the stored document leaves out.
-      inputs:
-      - schemas/ActivationConfig.yaml
+    $ref: ArtifactReference.yaml

@@ -2,7 +2,8 @@ title: EffectiveArtifact
 description: >-
   One artifact of the merged closure under an activation (ADR-0020 D7): the version the layer merge keeps, with its
   state and the reason for it. Every artifact of the closure is listed, so "in force" is state active (operator
-  ruling Q1).
+  ruling Q1). satisfiedBy is present only for a required artifact that is out of force: it is the active artifact that
+  overrides it and so satisfies the requirement, never an enhancer (research R11).
 type: object
 additionalProperties: false
 required:
@@ -69,15 +70,7 @@ properties:
       inputs:
       - schemas/ActivationConfig.yaml
   satisfiedBy:
-    allOf:
-    - $ref: ArtifactReference.yaml
-    description: >-
-      Only for a required artifact that is out of force: the active artifact that overrides it and so satisfies the
-      requirement. It names an override, never an enhancer.
-    x-derived:
-      rule: The in-force artifact whose overrides edge reaches the required artifact.
-      inputs:
-      - schemas/ActivationConfig.yaml
+    $ref: ArtifactReference.yaml
   policy:
     allOf:
     - $ref: ArtifactPolicy.yaml
