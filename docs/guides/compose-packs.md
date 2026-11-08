@@ -1,8 +1,8 @@
 ---
 title: Compose packs
-description: "Declare depends_on, qualify cross-pack references, see how they resolve, settle a sibling conflict, and fix each of the eleven composition refusals."
+description: "Declare depends_on, qualify cross-pack references, settle a sibling conflict, register and remove packs, artifacts and edges, and fix each refusal."
 doc_status: draft
-updated: 2026-11-05T00:00:00Z
+updated: 2026-11-08T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -17,6 +17,9 @@ related:
   - changelog/2026-11-05-open-packs-real-compose
   - adr/0064-graph-documents-are-the-only-source-of-relationships
   - changelog/2026-11-05-edges-only-in-graph-documents
+  - changelog/2026-11-07-a-pack-registration
+  - conformance/divergence-register
+  - guides/service-build
 audience:
   - profile: pack-author
     guidance_text: Follow this when your pack builds on another pack, references its artifacts, or meets a composition refusal.
@@ -28,7 +31,8 @@ audience:
 
 This page is for a pack author whose pack builds on another pack, and for whoever reviews that pack. It covers
 declaring the dependency, writing references across packs, seeing how they resolve, settling a conflict between
-sibling packs, and reading a refusal. The concepts are in the [logical model](/architecture/logical-model/#charter-packs-and-pack-levels);
+sibling packs, reading a refusal, and changing a registered pack: registering it whole, removing an artifact or an
+edge, and what the strict check refuses. The concepts are in the [logical model](/architecture/logical-model/#charter-packs-and-pack-levels);
 the decisions are [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) and
 [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/).
 
@@ -195,9 +199,133 @@ pack-scoped reads still answer.
 | `pack_reference_pack_missing` | A qualified reference names a pack outside the referring pack's own `depends_on` closure. | Add a `depends_on` on that pack, or correct the name. |
 | `pack_reference_artifact_missing` | A qualified reference names a pack in the closure, but that pack holds no such artifact. Also: a preset item or a `policy.yaml` lock names an artifact the closure holds only under another case (`directive_001` for `DIRECTIVE_001`); ids are matched exactly, so it would govern nothing (operator ruling of 2026-11-06). | Correct the URN or the id to the declared spelling, or reference the pack that holds it. |
 
+## Register a pack
+
+A whole pack is registered in one request, and the service then holds exactly that pack. An artifact, an edge, a preset
+item or a file the upload does not carry is gone. This differs from core, which merges per artifact
+([DIV-601](/conformance/divergence-register/#div-601-a-registration-replaces-the-stored-pack)). The per-artifact and
+per-relationship writes stay for a small change.
+
+Registration is off by default (`charter.registration.enabled`). While it is off, every registration answers
+`503 pack_source_unavailable`. Only the org and the project level are writable: a pack that declares the built-in level
+is refused `409`. The operator settings are in [Building the service](/guides/service-build/#registering-packs).
+
+1. **Send the pack.** Either `PUT /packs/{packId}` with the pack directory as one archive (gzip tar or zip, at most
+   32 MiB), or `POST /packs` with a source: an allowlisted https archive, a git repository and ref, or a path under a
+   configured root. An oversized body is `413` and a wrong media type or magic bytes is `415`, both before a
+   registration exists. The service answers `202` with a status and a `Location`.
+2. **Poll the status.** `GET /pack-registrations/{registrationId}` shows `pending`, `running`, `succeeded` or `refused`.
+   A refused registration answers `200` here, with its problem in the body. A succeeded one carries the pack, its
+   `outcome` (`created`, `replaced` or `unchanged`) and its `notices`. The status is kept for one hour, at most 1,000
+   entries, and a restart forgets it (`404 registration_not_found`). Send the pack again: the version rule makes that
+   safe.
+3. **Read the pack.** `GET /packs/{packId}` answers the stored pack, with its revision as the `ETag`.
+
+Rules of the request:
+
+- `If-Match` with a pack revision is optional. Without it the last writer wins on the whole pack. A stale one is `412`
+  at once, before any registration exists. `If-None-Match: *` makes the request create-only.
+- A source registration records its source in the status. `source.url` keeps no query, no fragment and no user
+  information. For a git source, `source.commit` is the commit the ref resolved to.
+- For `POST`, the `name` in the pack's `pack.yaml` must equal the target `packId`. For `PUT` it need not.
+- A git ref that is a branch needs a commit, or `If-Match`, or `If-None-Match: *`, else `428`. A tag, a commit id and a
+  branch with a commit need none of them.
+- The notices list the must-have items the write added to or took off the required floor, and the artifacts it put under
+  or released from a lock. They name activatable kinds only. An entry of another kind (a template, an asset, a guard, a
+  lifecycle) is left out and logged at WARN with its URN. Issue
+  [#417](https://github.com/spec-kitty/spec-kitty-charter/issues/417) tracks widening the kinds.
+
+Limits of the queue. Two registrations run and eight wait. A ninth waiter is refused `503` with `Retry-After`. The
+90 second deadline of a registration counts the time it waits in the queue, not only its run. A registration takes its
+slot before the service reads the body, so a slow upload holds a slot for its whole transfer. A few slow uploads can make
+other callers get `503`. This is a known limit, accepted for this release.
+
+## The version rule
+
+`pack_version` is a label, not an order. A registration may go back to an older version. The service keeps every
+`(pack_version, revision)` a pack name was registered with, in a history beside the packs. A `DELETE` keeps the history.
+
+- The same version with the same revision ends `succeeded` as `unchanged`.
+- The same version with another revision is refused `409 pack_version_conflict`, whether or not that version is the
+  stored one.
+- The version rule runs before the `If-Match` precondition. A re-send of an archive with the same `pack_version`, after
+  a per-artifact `PUT` moved the revision, answers `409 pack_version_conflict`, not `412`. The `412` race needs a new
+  version.
+- When the service restores a lost history entry, the entry carries the time of the repair, not of the lost
+  registration.
+
+## What a registration is refused for
+
+A registration, and every per-artifact write and removal, is judged over every closure the pack joins, as it will be
+after the write. PR A is strict: the write is refused `422`, and nothing is written, when a closure no longer composes
+(one of the [eleven composition codes](#read-a-refusal)) or breaks a relation rule (`override_not_permitted`,
+`enhances_cycle`, `conflicting_relations`, `self_override`, `override_cycle`). The detail names the packs. Core warns
+here ([DIV-604](/conformance/divergence-register/#div-604-the-impact-check-is-strict-and-an-unreadable-pack-is-repaired-by-a-whole-pack-replace)).
+The refusal is not repaired for you: the repair writes of [#404](https://github.com/spec-kitty/spec-kitty-charter/issues/404)
+are not applied.
+
+- **A stored dependent that cannot be read** makes every registration of its ancestor fail `pack_unreadable`. Fix the
+  dependent, or remove it.
+- **A stored pack that cannot be read** is repaired by a whole-pack registration. A per-artifact write into it, or into a
+  pack whose dependency is missing, is refused even when the write would repair it. The write gate judges the whole-pack
+  upload by what can still be read: every uploaded artifact is a replace, and nothing is a removal.
+- **The mutability policy** applies as for any write. Removing an artifact is a `REMOVE`, and each edge the write adds or
+  drops is a `RELATIONSHIP` write on its source. An edge from a locked artifact of an ancestor pack is refused `409
+  governance_policy_violation`.
+- At start-up the service logs a WARN for each stored pack that its strict check would now refuse.
+
+## Remove from a pack
+
+Two `DELETE`s remove one thing from a pack without sending the pack again. Both are synchronous and need `If-Match`: a
+quoted pack revision or `*`. Without it the answer is `428`, with a stale revision `412`. Both answer `204` and the new
+revision as the `ETag`, and both are strict as above (`422`).
+
+`DELETE /packs/{packId}/artifacts/{kind}/{artifactId}` removes the artifact, its companion files, its registered edges
+and the preset items of the pack that name it. A preset key left with no item is deleted, because every preset list
+needs an item. It refuses with:
+
+- `404` by code, when the pack or the artifact is not there;
+- `409 artifact_referenced`, while another artifact or pack refers to it. Another pack's preset item and a descriptor
+  `overrides` entry count;
+- `409 governance_policy_violation`, when an ancestor of the pack holds and locks the id;
+- `409 registration_conflict`, when a graph document the author wrote names the artifact's node or an edge from it.
+
+The artifact `DELETE` never rewrites an author's graph file. It does re-serialize a preset file when it removes a preset
+item, so comments and formatting in that file are lost.
+
+`DELETE /packs/{packId}/relationships?from=<ref>&to=<ref>` removes one registered edge, in either orientation. It
+removes only from `registered.graph.yaml`, the file `PUT /packs/{packId}/relationships` writes.
+
+- `404 relationship_not_found` when no graph document and no derived relation joins the pair.
+- `409 relationship_not_registered` when an author wrote the edge into a source shard or `drg/fragment.yaml`, when a
+  component derives it, or when the pair is held both there and in the registered file. Register the whole pack to
+  change it.
+- `409 governance_policy_violation` when the edge's source is a locked artifact of an ancestor. A whole-pack replace is
+  refused for dropping that edge, and so is the `DELETE`.
+- A reference that names a pack matches only an edge end that names the same pack. With the edges `A` to `base::X` and
+  `A` to `other::X`, a `DELETE` naming `base::X` removes that one. A reference that names no pack matches by its URN.
+  A reference that names a pack does not match an edge end written without one.
+
+Known gaps:
+
+- `pack-manifest.yaml` is not updated by a per-artifact write or a `DELETE`. Its hashes go stale, and after a `DELETE` it
+  still lists the removed file. Reads do not verify the manifest. A round trip and validate mode report it.
+- A `DELETE` is judged on the facts overlay. The edited tree is not read again.
+- A per-artifact `PUT` with `If-Match: *` satisfies the `428` requirement.
+
+## A cascading deactivate (A13)
+
+A cascading deactivate of `t` removes `t` and what its walk reached, unless something else that is active keeps it.
+The service does not remember the selections before the select. So a select of `t` followed by a deactivate of `t`
+does not always restore the earlier set: an artifact that was selected before, and that the walk reached, is removed.
+Decision `DM-01M6RA8XSM9CZZX1ADX6G80T3X`; see also `depth` in the [activation changelog](/changelog/2026-11-07-a0-kind-model/).
+
 ## See also
 
-- [HTTP status codes](/development/http-status-codes/): the 422 a relationship registration answers.
+- [HTTP status codes](/development/http-status-codes/): the 422 a relationship registration answers, and the statuses of registration and removal.
+- [Building the service](/guides/service-build/#registering-packs): the operator settings for registration and its sources.
+- [Divergence register](/conformance/divergence-register/#registration-div-601699-adr-0065): where registration differs from core.
+- [Changelog: pack registration](/changelog/2026-11-07-a-pack-registration/).
 - [Descriptors](/architecture/descriptors/#packyaml--pack-descriptor): the `pack.yaml` fields.
 - [Resolution model](/architecture/resolution-model/): where the compose sits in the pipeline.
 - [Changelog: pack composition](/changelog/2026-11-03-pack-composition-depends-on-and-resolver/).
