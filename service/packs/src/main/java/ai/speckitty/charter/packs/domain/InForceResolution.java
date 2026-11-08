@@ -399,7 +399,7 @@ public final class InForceResolution {
                     reason,
                     required.contains(urn) || locked.contains(urn),
                     satisfiedBy(urn, outcome),
-                    Optional.empty(),
+                    overriddenBy(urn, outcome, reason),
                     bucketOf(urn, state, reason));
         }
 
@@ -411,6 +411,13 @@ public final class InForceResolution {
                 return Optional.empty();
             }
             return overriderOf(urn, outcome.inForce(), outcome.reach());
+        }
+
+        /** The artifact in force that hides an artifact whose reason is {@link Reason#OVERRIDDEN} (the same walk as E5). */
+        private Optional<Urn> overriddenBy(Urn urn, Outcome outcome, Reason reason) {
+            return reason == Reason.OVERRIDDEN
+                    ? overriderOf(urn, outcome.inForce(), outcome.reach())
+                    : Optional.empty();
         }
 
         private State decided(Urn urn, Outcome outcome, Reason reason) {
