@@ -280,15 +280,15 @@ class InForceResolutionTest {
     }
 
     @Test
-    void aLockedTargetStopsTheChain() {
+    void aLockedArtifactInForceStillHidesWhatItOverrides() {
         InForceStates states = new Closure()
-                .open("tactic:F", "tactic:T")
+                .open("tactic:T")
                 .locked("tactic:L")
-                .overrides("tactic:F", "tactic:L")
                 .overrides("tactic:L", "tactic:T")
-                .select("tactic:F", "tactic:T");
+                .select("tactic:T");
 
-        expect(states, "tactic:T", State.ACTIVE, Reason.SELECTED);
+        expect(states, "tactic:L", State.ACTIVE, Reason.LOCKED);
+        expect(states, "tactic:T", State.INACTIVE, Reason.OVERRIDDEN);
     }
 
     @Test
