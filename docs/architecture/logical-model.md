@@ -598,8 +598,8 @@ runs it, evaluates its guards and sends its events. The charter service runs no 
 | Parallel regions | not modelled | not modelled; per-work-package lifecycles cover today's parallel work |
 
 **Extension.** Another pack may enhance a step (a step enhancement: an artifact holding the additions, joined to
-the step by a CRG `enhances` edge, as profiles are augmented; it adds guards and emits and never
-removes, reorders or re-routes) or replace a step or a type (`overrides`: whole replacement, with a drift warning).
+the step by a CRG `enhances` edge, as profiles are augmented; it adds guards, emits and prompt fragments, text
+inserted into slots the step's prompt declares, and never removes, reorders or re-routes, nor edits prompt text outside a slot) or replace a step or a type (`overrides`: whole replacement, with a drift warning).
 A reference across packs is written `<pack-name>::<urn>` ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/)).
 
 **Theoretical origins.**

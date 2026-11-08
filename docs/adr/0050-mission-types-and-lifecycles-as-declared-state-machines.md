@@ -2,8 +2,8 @@
 title: "ADR-0050: Mission types and lifecycles as declared state machines"
 description: "A mission type declares a state machine (explicit transitions, guards, emit actions); a lifecycle kind holds the per-work-package lanes; packs enhance or override steps."
 doc_status: active
-updated: 2026-11-07T00:00:00Z
-decision_status: 'Accepted, with Amendment 2026-11-02 (ADR-0053; decision 14 superseded by ADR-0054), Amendment 2026-11-05 (ADR-0064) and Amendment 2026-11-07 (decision 6 built)'
+updated: 2026-11-08T00:00:00Z
+decision_status: 'Accepted, with Amendment 2026-11-02 (ADR-0053; decision 14 superseded by ADR-0054), Amendment 2026-11-05 (ADR-0064), Amendment 2026-11-07 (decision 6 built) and Amendment 2026-11-08 (ADR-0066: prompt fragments; ADR-0053 decision 21: sibling enhancers compose)'
 decision_date: '2026-11-02'
 type: ADR
 kind: ADR
@@ -119,6 +119,17 @@ on the operator's rulings of 2026-11-06 (A7, decision `DM-01M6RA8BJ0FZV9BHFJ1MV4
 - **`activatedKinds` and `missionTypes` are refused** on a create or replace (`422 validation_failed`), and the
   stored document is `schemaVersion` 2 (Q4).
 - **Divergences.** DIV-501 is updated, and DIV-203, DIV-210, DIV-212, DIV-213 and DIV-214 record the rest.
+
+### Amendment 2026-11-08
+
+The operator ruled on 2026-11-08 ([spec-kitty-open-packs#73](https://github.com/spec-kitty/spec-kitty-open-packs/issues/73);
+review of [#422](https://github.com/spec-kitty/spec-kitty-charter/pull/422)) on two points. The original text stands, and
+each is annotated:
+
+- decision 22: a step enhancement's additions are guards, `emit` entries and prompt fragments for slots the step's
+  prompt declares; it still never removes, reorders or re-routes. The rules are [ADR-0066](/adr/0066-a-step-enhancement-may-contribute-prompt-fragments/).
+- decision 23: two sibling packs that both override one step are refused; two that both enhance it compose
+  ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 21, amended).
 
 ## Context
 
@@ -324,6 +335,7 @@ up the formal meaning of a term used here.
     (profiles, for example), and a step enhancement is authored as a file (decision 23), not as that relation. A specialist or org pack attaches more to an existing step:
     references (guidance), guards on the step's outgoing transitions, and `emit` entries on its action points.
     *Amended 2026-11-05 ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decision 12): an enhancement holds no `references`; guidance it adds to a step is an edge in the enhancing pack's graph documents.*
+    *Amended 2026-11-08 ([ADR-0066](/adr/0066-a-step-enhancement-may-contribute-prompt-fragments/)): an enhancement may also add prompt fragments, text inserted into slots the step's prompt declares. It cannot replace or delete prompt text, or add a slot.*
     An enhancement only adds. It cannot remove or reorder steps, change their transitions, or remove a guard.
     *Amended 2026-11-02 ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 22): the enhancement is an artifact in the enhancing pack that holds only the additions, joined to the target step by a CRG `enhances` edge, the same mechanism profile augmentation uses. It is no longer a mechanism of its own, so the sentence above that separates it from the relation no longer holds; the add-only rule stands.*
 23. **How an enhancement is authored** (proposed): a step-enhancement file in the enhancing pack,
@@ -333,6 +345,7 @@ up the formal meaning of a term used here.
     settles it. Because a step enhancement only adds, letting sibling enhancements compose (a union, independent
     of load order) is recommended; it needs an operator ruling on ADR-0048 decision 9 (open question 7).
     *Amended 2026-11-02 ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 22): a step enhancement is an artifact in the enhancing pack holding only the additions, plus a CRG `enhances` edge to `action:<type>/<step>` (pack-qualified as `<pack>::action:<type>/<step>` when the step is in another pack, ADR-0053 decision 7), the mechanism profile augmentation uses; add-only for steps. Sibling enhancements are refused unless settled ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 21).*
+    *Amended 2026-11-08 ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 21, amended): sibling step overrides are refused; sibling step enhancements compose, so the recommendation above is taken (open question 7).*
 24. **`overrides` replaces a step or a whole type**: whole replacement, with a drift warning when the replaced
     original changes (#164 D2). Only an override may remove a guard or change a transition.
 25. **A new workflow is a new mission type**, not an enhancement.
@@ -436,6 +449,7 @@ decisions above use the default until then.
 7. **Sibling step enhancements** (decision 23): let add-only enhancements compose, narrowing ADR-0048 decision 9
    to `overrides` for steps.
    **Ruled 2026-11-02:** refused unless the distribution pack settles them; ADR-0048 decision 9 stands ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 21).
+   *Amended 2026-11-08 (operator ruling, review of [#422](https://github.com/spec-kitty/spec-kitty-charter/pull/422)): sibling step overrides are refused; sibling enhancers compose (C14). The recommendation above is taken, and ADR-0048 decision 9 is narrowed to overrides for steps.*
 8. **How an enhancement is authored** (decision 23): a step-enhancement file in the type's bundle path.
    **Ruled 2026-11-02:** an additions artifact plus a CRG `enhances` edge ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 22).
 9. **The `{kind}` path token spelling** (decision 3): the snake_case kind token (`mission_type`, `event_registry`,

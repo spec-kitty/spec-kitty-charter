@@ -2,8 +2,8 @@
 title: "ADR-0048: Pack composition: a dependency graph of named packs, with built-in as a distribution pack"
 description: Packs compose through versioned depends_on edges into a diamond-shaped graph; built-in becomes a content-free distribution pack over a slimmed foundation pack.
 doc_status: active
-updated: 2026-11-02T00:00:00Z
-decision_status: 'Accepted, with Amendment 2026-11-02 (ADR-0053)'
+updated: 2026-11-08T00:00:00Z
+decision_status: 'Accepted, with Amendment 2026-11-02 (ADR-0053) and Amendment 2026-11-08 (sibling step enhancers compose)'
 decision_date: '2026-11-02'
 type: ADR
 kind: ADR
@@ -85,6 +85,13 @@ The same ruling extends decision 9 to presets: two packs of one level that hold 
 unless one is on the other's `parent_pack` line, and no `overrides` edge settles a preset. The original text stands;
 the changed point is annotated where it stands.
 
+### Amendment 2026-11-08
+
+The operator ruled on 2026-11-08 (review of [#422](https://github.com/spec-kitty/spec-kitty-charter/pull/422)) that
+sibling step overrides are refused and sibling step enhancers compose (composition rule C14). Decision 9 and open
+question 5 each carry an annotation; the original text stands. [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 21 and
+[ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) decision 23 carry the same ruling.
+
 ## Context
 
 - **Identity is per pack.** A pack descriptor carries `pack_id` (a ULID), `pack_version` (a semantic
@@ -149,6 +156,7 @@ the changed point is annotated where it stands.
      `depends_on` closure, the compose is refused.
    - The distribution pack may settle it explicitly with its own edge.
    - There is no "last loaded wins", so the result never depends on the order packs are listed in.
+   *Amended 2026-11-08 (operator ruling, review of [#422](https://github.com/spec-kitty/spec-kitty-charter/pull/422)): for a step, `overrides` conflicts and is refused unless settled, but `enhances` does not: sibling step enhancers compose (C14), because an enhancement only adds. The parenthesis "(`enhances` or `overrides`)" above holds for artifacts other than steps.*
 10. **Artifact identity does not change.** URNs stay global and unqualified. Which pack holds an
     artifact is provenance, not identity, and an id must be unique across every pack in a compose.
     *Amended 2026-11-02 ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 7): a reference to an artifact of another pack is written `<pack-name>::<urn>`, for example `foundation::directive:DIRECTIVE_001`; a reference inside one pack stays bare, and a bare reference that resolves only in another pack is refused. Pack names are unique within a compose.*
@@ -258,6 +266,7 @@ they are ruled, the [work breakdown](/plans/pack-ecosystem-work-breakdown/) plan
    *Recommended:* the distribution pack declares its own `overrides` edge on the contested artifact, naming the
    member whose version wins. No new edge type. Whether add-only step enhancements from siblings compose instead of
    conflicting is ADR-0050 open question 7.
+   *Amended 2026-11-08 (operator ruling): they compose; ADR-0050 open question 7 is answered that way, and sibling step overrides stay refused.*
    **Ruled 2026-11-02:** the distribution pack's own `overrides` edge ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 5).
 6. **What a "compose" is** (decision 10). *Recommended:* one `depends_on` closure at one level. An id is unique
    within it, except where an explicit `overrides` replaces it; across levels the layer merge applies (project over
