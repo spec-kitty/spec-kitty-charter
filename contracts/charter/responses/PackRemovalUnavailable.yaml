@@ -1,0 +1,21 @@
+description: >-
+  The service does not take the removal: registration is switched off (charter.registration.enabled is false, which is
+  the default), answered 503 pack_source_unavailable before the pack, the path or the If-Match is read (ADR-0065 D13).
+  Nothing is removed.
+headers:
+  Charter-Contract-Version:
+    $ref: ../headers/CharterContractVersion.yaml
+  Charter-Worktree:
+    $ref: ../headers/CharterWorktree.yaml
+content:
+  application/problem+json:
+    schema:
+      $ref: ../schemas/CharterRefusal.yaml
+    examples:
+      registration-switched-off:
+        summary: Registration is switched off, so no pack write is taken.
+        value:
+          title: Pack source unavailable
+          status: 503
+          code: pack_source_unavailable
+          detail: 'Registration is switched off: charter.registration.enabled is not true.'

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -50,6 +51,9 @@ class PackRemovalControllerTest {
     private final ArtifactRemovalService artifacts = mock(ArtifactRemovalService.class);
     private final RelationshipRemovalService relationships = mock(RelationshipRemovalService.class);
     private final List<AuditLog.Entry> entries = new ArrayList<>();
+    private final RegistrationSwitch registration = new RegistrationSwitch(true);
+    private final ServiceInfoQuery info =
+            new ServiceInfoQuery("worktree-1", new ConsistentRead(new FileSystemPackSources(List::of)));
     private final MockMvc mvc = MockMvcBuilders.standaloneSetup(new PackRegistrationController(
                     mock(RegistrationJobs.class),
                     mock(PackSummaryQuery.class),
@@ -57,12 +61,10 @@ class PackRemovalControllerTest {
                     mock(PackRegistrationMapper.class),
                     PackSourceIntake.none(),
                     new PackRemovalController(artifacts, relationships)))
+            .addInterceptors(new RegistrationAdmission(registration, mock(RegistrationJobs.class), info))
             .setControllerAdvice(new RefusalHandler())
             .addFilters(new RegistrationAuditFilter(
-                    entries::add,
-                    new ServiceInfoQuery("worktree-1", new ConsistentRead(new FileSystemPackSources(List::of))),
-                    "/api/v1",
-                    Clock.fixed(Instant.parse("2026-11-07T10:00:00Z"), ZoneOffset.UTC)))
+                    entries::add, info, "/api/v1", Clock.fixed(Instant.parse("2026-11-07T10:00:00Z"), ZoneOffset.UTC)))
             .build();
 
     private static MockHttpServletRequestBuilder withIfMatch(MockHttpServletRequestBuilder request) {
@@ -96,6 +98,26 @@ class PackRemovalControllerTest {
             assertThat(entry.operation()).isEqualTo("deletePackArtifact");
             assertThat(entry.packId()).isEqualTo("qa");
         });
+    }
+
+    @Test
+    void bothDeletesAreRefused503WhileRegistrationIsSwitchedOffAndNothingIsRemoved() throws Exception {
+        registration.set(false);
+
+        for (String path : List.of(ARTIFACT, RELATIONSHIP)) {
+            mvc.perform(withIfMatch(delete(path)))
+                    .andExpect(status().isServiceUnavailable())
+                    .andExpect(jsonPath("$.code").value("pack_source_unavailable"));
+        }
+        // Not even a request without If-Match gets to the precondition rule: the switch is the first answer.
+        mvc.perform(delete(ARTIFACT))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value("pack_source_unavailable"));
+
+        verifyNoInteractions(artifacts, relationships);
+        assertThat(entries)
+                .hasSize(3)
+                .allSatisfy(entry -> assertThat(entry.outcome()).isEqualTo("refused:503"));
     }
 
     @Test

@@ -206,8 +206,8 @@ item or a file the upload does not carry is gone. This differs from core, which 
 ([DIV-601](/conformance/divergence-register/#div-601-a-registration-replaces-the-stored-pack)). The per-artifact and
 per-relationship writes stay for a small change.
 
-Registration is off by default (`charter.registration.enabled`). While it is off, every registration answers
-`503 pack_source_unavailable`. Only the org and the project level are writable: a pack that declares the built-in level
+Registration is off by default (`charter.registration.enabled`). While it is off, every registration and both removals
+(`DELETE` of an artifact and of a relationship) answer `503 pack_source_unavailable`. Only the org and the project level are writable: a pack that declares the built-in level
 is refused `409`. The operator settings are in [Building the service](/guides/service-build/#registering-packs).
 
 1. **Send the pack.** Either `PUT /packs/{packId}` with the pack directory as one archive (gzip tar or zip, at most

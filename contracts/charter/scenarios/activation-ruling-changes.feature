@@ -466,7 +466,8 @@ Feature: The A0 rulings on activation writes and on the packs
   # main::D1), so the pack other builds on main, and the item names main's D1 as the compose resolves it.
   Scenario: A10 - an artifact another pack's preset names cannot be deleted
     The preset of the pack "other" names main's D1, so main's D1 cannot be deleted while it is named.
-    Given the org pack "other" with the file "pack.yaml":
+    Given registration is switched on
+    And the org pack "other" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943T
       pack_version: 1.0.0

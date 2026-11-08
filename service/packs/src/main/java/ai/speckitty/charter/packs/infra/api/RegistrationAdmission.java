@@ -24,7 +24,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
  * The synchronous checks of {@code PUT /packs/{packId}} that come before its body is read (IC-14, IC-18), and of
- * {@code POST /packs} that need no body (registration on, the conditional headers), in the order the
+ * {@code POST /packs} that need no body (registration on, the conditional headers), and the registration switch of the two
+ * {@code DELETE}s of a pack ({@code deletePackArtifact}, {@code deletePackRelationship}), in the order the
  * contract lists them, each its own answer: registration switched off ({@code 503 pack_source_unavailable}), the
  * {@code packId} grammar ({@code 400}, decision DM-01M6TV6VDNHNCVWRHHC74WATV0), the conditional headers ({@code 400} for
  * a malformed one or both together), a declared length over 32 MiB ({@code 413}), and then the registration's slot: a
@@ -44,6 +45,8 @@ public class RegistrationAdmission implements HandlerInterceptor, WebMvcConfigur
 
     private static final String UPLOAD = "registerPackFromArchive";
     private static final String SOURCE = "registerPackFromSource";
+    private static final String DELETE_ARTIFACT = "deletePackArtifact";
+    private static final String DELETE_RELATIONSHIP = "deletePackRelationship";
     private static final Pattern PACK_ID = Pattern.compile("^[a-z0-9][a-z0-9-]{0,62}$");
     private static final Pattern IF_MATCH = Pattern.compile("^(\\*|\"sha256:[0-9a-f]{64}\")$");
 
@@ -80,6 +83,11 @@ public class RegistrationAdmission implements HandlerInterceptor, WebMvcConfigur
             admitSource(request);
         } else if (UPLOAD.equals(name)) {
             admitUpload(request);
+        } else if (DELETE_ARTIFACT.equals(name) || DELETE_RELATIONSHIP.equals(name)) {
+            // ADR-0065 D13, FR-037: the pack's writes of this PR are one family under one switch. A removal reads no
+            // body
+            // and takes no slot, so the switch is the whole of its admission; the revision rules are the services'.
+            requireRegistrationOn();
         }
         return true;
     }
