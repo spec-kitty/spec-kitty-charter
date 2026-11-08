@@ -191,7 +191,7 @@ public final class RegistrationImpact {
      */
     public Notices check(Replacement replacement) {
         Objects.requireNonNull(replacement, "replacement");
-        return check(views.session(), replacement);
+        return check(views.session(), replacement, true);
     }
 
     /**
@@ -202,7 +202,8 @@ public final class RegistrationImpact {
      *
      * @param pack the pack written to, by the name it is configured under or by its declared {@code pack_id}
      * @param write what the pack's facts become once the write is stored
-     * @return the floor and lock changes over those closures
+     * @return the floor and lock changes over those closures; the answer of such a write declares no notices, so the
+     *     activations it affects are not asked for
      * @throws CharterRefusal {@code pack_not_found} when no configured pack has this identifier, or as
      *     {@link #check(Replacement)} refuses
      */
@@ -216,7 +217,7 @@ public final class RegistrationImpact {
                 configured,
                 stored.descriptors().get(configured.id()),
                 write.apply(stored.artifacts().compositionFacts(configured.id())));
-        return check(session, written);
+        return check(session, written, false);
     }
 
     /** The configured pack an identifier names: by configured name first, otherwise by the {@code pack_id} it declares. */
@@ -247,21 +248,28 @@ public final class RegistrationImpact {
         }
     }
 
-    private Notices check(StagedPackViews.Session session, Replacement replacement) {
+    private Notices check(StagedPackViews.Session session, Replacement replacement, boolean namingActivations) {
         StagedPackViews.View stored = session.stored();
         StagedPackViews.View staged = session.with(replacement);
-        List<ClosureRoots.Roots> closures =
+        ClosureRoots.Found found =
                 ClosureRoots.of(staged, replacement.descriptor().packId(), activations.activationRoots());
         Views after = Views.over(staged);
         Views before = Views.over(stored);
         Set<PackIdentifier> configuredBefore = new HashSet<>();
         stored.catalog().configured().forEach(pack -> configuredBefore.add(pack.id()));
         ForceDiff diff = new ForceDiff();
-        for (ClosureRoots.Roots roots : closures) {
-            Force now = Force.of(judge(roots, after, staged));
-            diff.add(forceBefore(roots, before, configuredBefore), now);
+        Map<ClosureRoots.Roots, ActivationImpact.ClosureChange> changes = new LinkedHashMap<>();
+        for (ClosureRoots.Roots roots : found.closures()) {
+            ClosureView now = judge(roots, after, staged);
+            Optional<ClosureView> was = viewBefore(roots, before, configuredBefore);
+            diff.add(was.map(Force::of).orElse(Force.NONE), Force.of(now));
+            changes.put(roots, new ActivationImpact.ClosureChange(was, now));
         }
-        return diff.notices();
+        List<String> affected = namingActivations
+                ? activations.activationsAffected(
+                        roots -> found.holding().apply(roots).map(changes::get))
+                : List.of();
+        return diff.notices(affected);
     }
 
     /**
@@ -371,17 +379,18 @@ public final class RegistrationImpact {
         }
     }
 
-    /** The closure's floor and locks before the write; none when it did not exist or cannot be composed. */
-    private static Force forceBefore(ClosureRoots.Roots roots, Views views, Set<PackIdentifier> configured) {
+    /** The closure before the write; none when it did not exist or cannot be composed. */
+    private static Optional<ClosureView> viewBefore(
+            ClosureRoots.Roots roots, Views views, Set<PackIdentifier> configured) {
         List<PackIdentifier> existing =
                 roots.ids().stream().filter(configured::contains).toList();
         if (existing.isEmpty()) {
-            return Force.NONE;
+            return Optional.empty();
         }
         try {
-            return Force.of(views.queries().snapshot(Optional.of(existing)));
+            return Optional.of(views.queries().snapshot(Optional.of(existing)));
         } catch (CharterRefusal brokenAlready) {
-            return Force.NONE;
+            return Optional.empty();
         }
     }
 
@@ -449,12 +458,13 @@ public final class RegistrationImpact {
             now.stream().filter(urn -> !was.contains(urn)).forEach(into::add);
         }
 
-        Notices notices() {
+        Notices notices(List<String> activationsAffected) {
             return new Notices(
                     List.copyOf(floorAdded),
                     List.copyOf(floorRemoved),
                     List.copyOf(locksAdded),
-                    List.copyOf(locksRemoved));
+                    List.copyOf(locksRemoved),
+                    activationsAffected);
         }
     }
 }

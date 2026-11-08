@@ -40,6 +40,7 @@ class RegistrationImpactActivationsAffectedTest {
         rig.register("lone", rig.stage(lone()), Preconditions.none());
         rig.activations.add(Optional.of(List.of("base")));
         rig.activations.add(Optional.of(List.of("lone")));
+        rig.activations.add(Optional.empty());
         rig.asked.clear();
         rig.affected.addAll(List.of("a-1"));
 
