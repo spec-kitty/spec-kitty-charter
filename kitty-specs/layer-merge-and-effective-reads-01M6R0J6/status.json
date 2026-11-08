@@ -770,7 +770,7 @@
     },
     "WP22": {
       "actor": "claude",
-      "agent": "claude:opus:reviewer-renata",
+      "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -780,9 +780,11 @@
       "last_transition_at": "2026-11-08T17:05:09.292329+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Contract B declared (effective list, skipped report, IC-17 write members, EffectiveArtifact.suggestion, getActivation ETag over revision plus closure fingerprint), two reads unreserved (ReservedOperationCoverageTest 4 to 2), fragments, 37 @WIP scenarios. :contracts:check green; targeted deployable tests green. Whole :deployable:test stays red ONLY on OperationCoverage R-20 (GET artifacts 200 and skipped 200) until WP25 binds the two reads; accepted per the plan split, not re-reserved."
+        "Contract B declared (effective list, skipped report, IC-17 write members, EffectiveArtifact.suggestion, getActivation ETag over revision plus closure fingerprint), two reads unreserved (ReservedOperationCoverageTest 4 to 2), fragments, 37 @WIP scenarios. :contracts:check green; targeted deployable tests green. Whole :deployable:test stays red ONLY on OperationCoverage R-20 (GET artifacts 200 and skipped 200) until WP25 binds the two reads; accepted per the plan split, not re-reserved.",
+        "Changes requested (cycle 1). Blocking: B1 getActivation's closure ETag vs If-Match/write ETags undeclared (GET-then-PUT flow and 17 non-WIP GET ETag assertions; needs a ruling); B2 denyNotApplied and activationsAffected (closed responses of built ops) missing from Breaking; B3 getActivation 500 not OfferingUnreadable. :contracts:check green; :deployable:test 1132 tests, only R-20 red (accepted)."
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/layer-merge-and-effective-reads-01M6R0J6-coord/kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP22-b-contract-effective-reads/review-cycle-1.md",
         "reference": "review-cycle://layer-merge-and-effective-reads-01M6R0J6/WP22-b-contract-effective-reads/review-cycle-1.md",
@@ -790,14 +792,14 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 8601,
-      "shell_pid_created_at": "1794157036.18",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T109": "done",
-        "T110": "done",
-        "T111": "done",
-        "T112": "done",
-        "T113": "done"
+        "T109": "planned",
+        "T110": "planned",
+        "T111": "planned",
+        "T112": "planned",
+        "T113": "planned"
       }
     },
     "WP23": {
