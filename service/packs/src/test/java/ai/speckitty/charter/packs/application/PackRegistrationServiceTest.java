@@ -908,6 +908,12 @@ class PackRegistrationServiceTest {
         /** The packs the activations slice was told were registered, in order. */
         final List<String> registered = new ArrayList<>();
 
+        /** The activations the activations slice names as affected by a registration; a test sets them. */
+        final List<String> affected = new ArrayList<>();
+
+        /** The closures of each registration the activations slice was asked about, in order. */
+        final List<ActivationImpact.ClosureChanges> asked = new ArrayList<>();
+
         private final AtomicInteger staged = new AtomicInteger();
 
         /** What the swap does inside the window where the live directory is missing; a test sets it. */
@@ -942,6 +948,12 @@ class PackRegistrationServiceTest {
                         @Override
                         public void registered(String packId, RegistrationImpact.Notices notices) {
                             registered.add(packId);
+                        }
+
+                        @Override
+                        public List<String> activationsAffected(ActivationImpact.ClosureChanges closures) {
+                            asked.add(closures);
+                            return List.copyOf(affected);
                         }
                     });
             this.service = new PackRegistrationService(

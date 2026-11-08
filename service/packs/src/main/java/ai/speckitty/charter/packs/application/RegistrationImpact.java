@@ -56,9 +56,14 @@ public final class RegistrationImpact {
      * @param floorRemoved must-have items the floor lost
      * @param locksAdded artifacts locked now and not before
      * @param locksRemoved artifacts locked before and not now
+     * @param activationsAffected the stored activations whose in-force set the write changes, sorted
      */
     public record Notices(
-            List<String> floorAdded, List<String> floorRemoved, List<String> locksAdded, List<String> locksRemoved) {
+            List<String> floorAdded,
+            List<String> floorRemoved,
+            List<String> locksAdded,
+            List<String> locksRemoved,
+            List<String> activationsAffected) {
 
         /** No change. */
         public static final Notices NONE = new Notices(List.of(), List.of(), List.of(), List.of());
@@ -70,12 +75,30 @@ public final class RegistrationImpact {
          * @param floorRemoved must-have items lost
          * @param locksAdded locks gained
          * @param locksRemoved locks lost
+         * @param activationsAffected the activations whose in-force set changes
          */
         public Notices {
             floorAdded = List.copyOf(floorAdded);
             floorRemoved = List.copyOf(floorRemoved);
             locksAdded = List.copyOf(locksAdded);
             locksRemoved = List.copyOf(locksRemoved);
+            activationsAffected = List.copyOf(activationsAffected);
+        }
+
+        /**
+         * Notices that name no activation.
+         *
+         * @param floorAdded must-have items gained
+         * @param floorRemoved must-have items lost
+         * @param locksAdded locks gained
+         * @param locksRemoved locks lost
+         */
+        public Notices(
+                List<String> floorAdded,
+                List<String> floorRemoved,
+                List<String> locksAdded,
+                List<String> locksRemoved) {
+            this(floorAdded, floorRemoved, locksAdded, locksRemoved, List.of());
         }
     }
 
