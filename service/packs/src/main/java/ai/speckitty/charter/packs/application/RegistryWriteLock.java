@@ -96,6 +96,17 @@ public final class RegistryWriteLock {
         return lock.isLocked();
     }
 
+    /**
+     * Whether {@code thread} is queued for the lock, which is exact where a thread's state is not. For tests of this
+     * package, which wait until a writer is seen blocked on the lock.
+     *
+     * @param thread the thread asked about
+     * @return true while it waits to take the lock
+     */
+    boolean hasQueuedThread(Thread thread) {
+        return lock.hasQueuedThread(thread);
+    }
+
     private void acquire() {
         try {
             if (!lock.tryLock(timeout.toNanos(), TimeUnit.NANOSECONDS)) {
