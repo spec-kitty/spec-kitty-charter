@@ -645,7 +645,7 @@ Feature: Registering a whole pack replaces the pack the service holds
     Then the response status is 202
 
   # bound by: WP18 (git source; PR-PACK-REGISTER-001 and 002)
-  @WIP @promise:PR-PACK-REGISTER-002
+  @promise:PR-PACK-REGISTER-002
   Scenario: A git ref is pinned to the commit it points at, and the commit is the source's record
     Given the git host "git.example.org" is allowed
     And the git repository "https://git.example.org/acme/packs.git" holds the archive "v1" at the ref "refs/tags/v1.0.0"
@@ -663,7 +663,6 @@ Feature: Registering a whole pack replaces the pack the service holds
     Then the response status is 200
 
   # bound by: WP18 (the one 428 of a registration: a branch ref with no commit and no If-Match)
-  @WIP
   Scenario: A branch ref without a commit needs If-Match, and a commit that does not match the ref is refused
     Given the git host "git.example.org" is allowed
     And the git repository "https://git.example.org/acme/packs.git" holds the archive "v1" at the ref "refs/heads/main"
@@ -689,7 +688,6 @@ Feature: Registering a whole pack replaces the pack the service holds
     And the field at "/problem/code" is "pack_source_refused"
 
   # bound by: WP18 (hostile refs are refused before a process starts)
-  @WIP
   Scenario Outline: A hostile git ref is refused
     Given the git host "git.example.org" is allowed
     And the git repository "https://git.example.org/acme/packs.git" holds the archive "v1" at the ref "refs/heads/main"

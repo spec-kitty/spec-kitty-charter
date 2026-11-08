@@ -4,6 +4,8 @@ import ai.speckitty.charter.activations.infra.storage.InMemoryActivationReposito
 import ai.speckitty.charter.deployable.CharterServiceApplication;
 import ai.speckitty.charter.deployable.CharterWiring;
 import ai.speckitty.charter.packs.application.ConsistentRead;
+import ai.speckitty.charter.packs.infra.fetch.git.GitVersion;
+import ai.speckitty.charter.packs.infra.fetch.git.GitVersionCheck;
 import ai.speckitty.charter.packs.infra.storage.DomainRepositoryService;
 import ai.speckitty.charter.packs.infra.storage.ProjectConfigSources;
 import io.cucumber.spring.CucumberContextConfiguration;
@@ -25,7 +27,10 @@ import org.springframework.test.web.servlet.MockMvc;
             // The registration staging directory is under the temporary directory, never the user's home.
             "charter.registration.staging-dir=${java.io.tmpdir}/charter-scenario-staging",
             // The filesystem source reads under a directory of the scenarios' own, never the user's home.
-            "charter.pack-sources.filesystem.root=${java.io.tmpdir}/charter-scenario-sources"
+            "charter.pack-sources.filesystem.root=${java.io.tmpdir}/charter-scenario-sources",
+            // The git source of the scenarios fetches from repositories of its own (GitFixtureServer), for the one host
+            // the scenarios allow; the host is on the allowlist, and the kind's own flag is what a step switches on.
+            "charter.pack-sources.git.allowed-hosts=git.example.org"
         })
 @AutoConfigureMockMvc
 public class CucumberSpringConfiguration {
@@ -82,6 +87,26 @@ public class CucumberSpringConfiguration {
         @Primary
         StubArchiveExchange stubArchiveExchange() {
             return new StubArchiveExchange();
+        }
+
+        /**
+         * The remote and the name resolution of the git source: the repositories a scenario describes, real bare
+         * repositories reached under the file transport, and one global address for the host a scenario allowed.
+         */
+        @Bean
+        @Primary
+        GitFixtureServer gitFixtureServer() {
+            return new GitFixtureServer();
+        }
+
+        /**
+         * The git of the scenarios is the host's, whatever its version: the 2.50.1 floor is the version check's own
+         * tests (NFR-011), and these scenarios are about what the source does with the repositories.
+         */
+        @Bean
+        @Primary
+        GitVersionCheck scenarioGitVersionCheck() {
+            return GitVersionCheck.resolve(null, System.getenv("PATH"), new GitVersion(2, 0, 0));
         }
 
         /** The packs the steps wrote and the pack domain a whole-pack registration writes to (ScenarioLocations). */
