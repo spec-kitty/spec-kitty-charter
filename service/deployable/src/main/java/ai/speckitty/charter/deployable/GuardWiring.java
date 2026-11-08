@@ -1,6 +1,7 @@
 package ai.speckitty.charter.deployable;
 
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
+import ai.speckitty.charter.packs.infra.api.GuardPolicy;
 import ai.speckitty.charter.packs.infra.api.WorktreeGuard;
 import ai.speckitty.charter.packs.infra.api.WorktreeToken;
 import jakarta.servlet.DispatcherType;
@@ -38,7 +39,11 @@ import tools.jackson.databind.ObjectMapper;
  *       {@code true}, a development flag that logs a warning at every start. The guard's browser checks are on
  *       either way;
  *   <li>the guard is registered at the highest precedence for every request dispatch, so it runs before anything that
- *       reads a file, and a direct request for the error page is guarded like any other.
+ *       reads a file, and a direct request for the error page is guarded like any other;
+ *   <li>the guard's {@link GuardPolicy} follows the profile, which the packs module never learns (ADR-0041 decision 2).
+ *       Without the {@code container} profile it accepts the loopback names and exempts nothing (ADR-0018 D9). Under
+ *       the profile it accepts {@code charter.container.allowed-hosts}, requires a {@code Host} header (decision 6),
+ *       and lets exactly {@code GET /actuator/health} through without the token (decision 7).
  * </ul>
  *
  * The token is never put in a message or a log line.
@@ -49,6 +54,9 @@ public class GuardWiring {
     static final String TOKEN_PROPERTY = "charter.worktree-token";
     static final String INSECURE_PROPERTY = "charter.insecure-no-token";
     static final int MIN_TOKEN_LENGTH = 32;
+
+    /** The one path a container's health probe reaches without the token (ADR-0041 decision 7). */
+    static final String HEALTH_PATH = "/actuator/health";
 
     private static final Log LOG = LogFactory.getLog(GuardWiring.class);
 
@@ -67,6 +75,7 @@ public class GuardWiring {
      * The guard and its registration.
      *
      * @param environment the environment the token is read from
+     * @param container the container profile's settings, bound before the guard is built; empty without the profile
      * @param info the use case that knows the worktree id the refusals report
      * @param mapper the application's JSON mapper, resolved when a refusal is first written
      * @return the registration of the guard at the highest precedence, for request dispatches only
@@ -75,14 +84,25 @@ public class GuardWiring {
      */
     @Bean
     FilterRegistrationBean<WorktreeGuard> worktreeGuardRegistration(
-            ConfigurableEnvironment environment, ServiceInfoQuery info, ObjectProvider<ObjectMapper> mapper) {
-        FilterRegistrationBean<WorktreeGuard> registration =
-                new FilterRegistrationBean<>(new WorktreeGuard(configuredToken(environment), info, mapper::getObject));
+            ConfigurableEnvironment environment,
+            ContainerWiring container,
+            ServiceInfoQuery info,
+            ObjectProvider<ObjectMapper> mapper) {
+        FilterRegistrationBean<WorktreeGuard> registration = new FilterRegistrationBean<>(
+                new WorktreeGuard(configuredToken(environment), policy(container), info, mapper::getObject));
         registration.setName("worktreeGuard");
         registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
         registration.setDispatcherTypes(EnumSet.of(DispatcherType.REQUEST));
         registration.addUrlPatterns("/*");
         return registration;
+    }
+
+    /** The configured list and the health exemption under the container profile; the loopback names otherwise. */
+    static GuardPolicy policy(ContainerWiring container) {
+        return container
+                .properties()
+                .map(settings -> GuardPolicy.named(settings.allowedHosts()).withTokenExemptGet(HEALTH_PATH))
+                .orElseGet(GuardPolicy::loopback);
     }
 
     /** The token the guard enforces, or {@code null} for the development flag; fails the start otherwise. */

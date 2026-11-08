@@ -71,10 +71,11 @@ public class ActivationExclusionService {
             @Nullable String ifMatch) {
         StoredActivation loaded = writes.loaded(id, ifMatch);
         ActivationWrites.requireWellFormed(bodyFaults);
-        ArtifactRef target = ActivationWrites.deniable(kind, artifactId);
+        ArtifactRef written = ActivationWrites.deniable(kind, artifactId);
         CascadeScope scope = ActivationWrites.scope(cascade);
         PacksSession session = writes.session(loaded);
         ClosureSnapshot snapshot = session.snapshot();
+        ArtifactRef target = ActivationWrites.declared(snapshot, written, Set.of());
         ActivationWrites.requireHeld(snapshot, target);
         ActivationDocument before = ActivationWrites.current(loaded, snapshot);
         refuseFloor(before, target, snapshot);
@@ -89,7 +90,7 @@ public class ActivationExclusionService {
      * Re-activates one artifact: its deny entry is removed (a deny list it empties is dropped), and nothing else
      * changes. One that is not denied is a no-op. An id the closure no longer holds is refused unless the stored
      * document still denies it: then it is dropped as a stale id and reported in {@code dropped} only, not in
-     * {@code cleared} (ADR-0059 amendment R5).
+     * {@code cleared} (ADR-0059 amendment A5).
      *
      * @param id the activation's id
      * @param kind the path's kind token
@@ -100,8 +101,10 @@ public class ActivationExclusionService {
     public ActivationWrites.Outcome reactivate(
             ActivationId id, String kind, String artifactId, @Nullable String ifMatch) {
         StoredActivation loaded = writes.loaded(id, ifMatch);
-        ArtifactRef target = ActivationWrites.deniable(kind, artifactId);
+        ArtifactRef written = ActivationWrites.deniable(kind, artifactId);
         PacksSession session = writes.session(loaded);
+        ArtifactRef target = ActivationWrites.declared(
+                session.snapshot(), written, loaded.document().deactivated(written.kind()));
         ActivationWrites.requireHeldOrStale(
                 session.snapshot(), target, ActivationWrites.denies(loaded.document(), target));
         ActivationDocument before = ActivationWrites.current(loaded, session.snapshot());
