@@ -277,6 +277,31 @@ class RelationshipRemovalServiceTest {
                 .isEmpty();
     }
 
+    private static final String SIBLING_C = PackRegistrationServiceTest.ulid('Q');
+
+    @Test
+    void aBrokenClosureTheTargetPackDoesNotJoinLeavesTheRemovalAlone(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.install(
+                "target",
+                Packs.of(SIBLING_C, "target", "1.0.0", "org")
+                        .directive("ONE", "x")
+                        .directive("TWO", "x")
+                        .registeredEdge("ONE", "TWO"));
+        rig.install("sib-a", Packs.of(SIBLING_A, "sib-a", "1.0.0", "org").directive("SHARED_ONE", "Mine"));
+        rig.install("sib-b", Packs.of(SIBLING_B, "sib-b", "1.0.0", "org").directive("SHARED_ONE", "Yours"));
+        rig.activations.add(Optional.of(List.of("sib-a", "sib-b")));
+        RelationshipRemovalService service =
+                new RelationshipRemovalService(rig.repository, rig.writeStore, gateOf(rig), rig.impact);
+        PackIdentifier target = new PackIdentifier("target");
+
+        service.remove(target, reference("directive:ONE"), reference("directive:TWO"), "*");
+
+        assertThat(rig.writeStore.registeredRelationships(target))
+                .as("the activation's closure is broken, but it does not hold the pack the removal is from")
+                .isEmpty();
+    }
+
     // ---- the edge gate (WP20 item 2; DM-01M6TR1KDAJ64GMJD6AYNZKT59 item 4)
     // ---------------------------------------------
 
