@@ -733,7 +733,7 @@
     },
     "WP21": {
       "actor": "claude",
-      "agent": null,
+      "agent": "claude:sonnet:java-jenny",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -744,7 +744,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "LayerMerge (C15 settled sibling, C17/C18 winner and whole replacement, C21 override gate, C29/C31 preset union per A1), MergedClosure/LayerOverride, EdgeIndex.merged (C19, C20, C36), languages in the facts, CompositionFactsCache (#416 invariants, wired into OfferingReadService), ClosureView.merged(). Red-first commits per subtask. :packs:check green (with -PopenPacksDir=/home/user/open-packs) and HexagonalArchitectureTest green.",
-        "Changes requested (cycle 1). Blocking B1: LayerMerge.settledAmong falls back to the last sibling for an unsettled contest; reachable via graph-declared action:M/s nodes, which the compose leaves out of sibling contests. Refuse with pack_sibling_conflict for artifacts and keep the last-holder rule for presets only. Non-blocking: N1 Set.copyOf loses language order; N2 the revision read per pack; N3 a Spring-path cache test for WP22. Rulings: (a) accepted per C21/R3, logged as an open item; (b) unsafe, see B1; (c) acceptable. Ran :packs:check (pass) and :deployable:test (1127 tests, 0 failures, HexagonalArchitectureTest unchanged); confirmed red-first on 5c7cc198, 7afe9fa0, a4f69c8f, cc7e7e5e (assertion failures)."
+        "Changes requested (cycle 1). Blocking B1: LayerMerge.settledAmong falls back to the last sibling for an unsettled contest; reachable via graph-declared action:M/s nodes, which the compose leaves out of sibling contests. Refuse with pack_sibling_conflict for artifacts and keep the last-holder rule for presets only. Non-blocking: N1 Set.copyOf loses language order; N2 the revision read per pack; N3 a Spring-path cache test for WP22. Rulings: (a) accepted per C21/R3, logged as an open item; (b) unsafe, see B1; (c) acceptable. Ran :packs:check (pass) and :deployable:test (1127 tests, 0 failures, HexagonalArchitectureTest unchanged); confirmed red-first on 5c7cc198, 7afe9fa0, a4f69c8f, cc7e7e5e (assertion failures).",
+        "Cycle 2: B1 an unsettled same-level artifact contest (steps included) refuses the merge with pack_sibling_conflict, naming both packs and level; presets keep last-holder (C29/C34). N1 languages keep declared order. Red-first rows; :packs:check and HexagonalArchitectureTest green."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
