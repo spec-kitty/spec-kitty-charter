@@ -94,7 +94,8 @@ class NetworkCodeBoundaryTest {
         JavaClasses fixtures = new ClassFileImporter().importPackages(ROOT + ".infra.fetch.git.goodfixture");
 
         assertThat(fixtures).isNotEmpty();
-        assertThatCode(() -> PROCESSES_START_ONLY_IN_THE_GIT_ADAPTER.check(fixtures))
+        // No class of the fixture is selected by the rule, which is the point: the git package is outside its subject.
+        assertThatCode(() -> PROCESSES_START_ONLY_IN_THE_GIT_ADAPTER.allowEmptyShould(true).check(fixtures))
                 .doesNotThrowAnyException();
     }
 
