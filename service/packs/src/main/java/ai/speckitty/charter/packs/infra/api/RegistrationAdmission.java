@@ -10,7 +10,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Pattern;
-import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -31,14 +30,15 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * a malformed one or both together), a declared length over 32 MiB ({@code 413}), and then the registration's slot: a
  * stale {@code If-Match} or an {@code If-None-Match: *} over a stored pack is {@code 412}, a full queue is {@code 503}
  * with {@code Retry-After}. It runs in {@code preHandle}, before the body is bound, so a refused request's body is never
- * read; the slot it takes is handed to the controller, and given back at the end of a request that did not start its job.
+ * read. A body that is still arriving holds no slot: the queue and the preconditions are checked now and again when the
+ * controller has spooled the body and takes the slot.
  * The {@code 401} and {@code 403} are the guard's, before routing.
  */
 @Component
 public class RegistrationAdmission implements HandlerInterceptor, WebMvcConfigurer {
 
-    /** The request attribute that holds the slot the admission took. */
-    static final String RESERVATION = RegistrationAdmission.class.getName() + ".reservation";
+    /** The request attribute that holds the origin of an upload, for the audit entry of its job. */
+    static final String ORIGIN = RegistrationAdmission.class.getName() + ".origin";
 
     /** The request attribute that holds the preconditions the admission judged. */
     static final String PRECONDITIONS = RegistrationAdmission.class.getName() + ".preconditions";
@@ -105,11 +105,15 @@ public class RegistrationAdmission implements HandlerInterceptor, WebMvcConfigur
                 headers.getContentLength() >= 0
                         ? headers.getContentLength()
                         : RegistrationJobs.StorageRoom.UNKNOWN_BYTES);
-        RegistrationJobs.Origin origin =
-                new RegistrationJobs.Origin(info.worktree(), AuditContext.credentialOf(request), UPLOAD, "archive", "");
-        RegistrationJobs.Reservation reservation = jobs.reserve(packId, preconditions, origin);
-        request.setAttribute(RESERVATION, reservation);
-        audit.revisionBefore(reservation.revisionBefore());
+        // No slot is taken here (#418, A4): a body that is still arriving holds none. The queue and the preconditions
+        // are
+        // judged now, so that a refusal comes before the body is read, and again when the body is spooled.
+        jobs.precheck(packId, preconditions);
+        request.setAttribute(PRECONDITIONS, preconditions);
+        request.setAttribute(
+                ORIGIN,
+                new RegistrationJobs.Origin(
+                        info.worktree(), AuditContext.credentialOf(request), UPLOAD, "archive", ""));
     }
 
     /**
@@ -143,25 +147,16 @@ public class RegistrationAdmission implements HandlerInterceptor, WebMvcConfigur
         throw new IllegalStateException("the registration was not admitted");
     }
 
-    @Override
-    public void afterCompletion(
-            HttpServletRequest request, HttpServletResponse response, Object handler, @Nullable Exception failure) {
-        if (request.getAttribute(RESERVATION) instanceof RegistrationJobs.Reservation reservation) {
-            // A reservation whose job started is not touched by this: abandon only gives back a slot never started.
-            reservation.abandon();
-        }
-    }
-
     /**
-     * The slot the admission took for this request.
+     * The origin the admission recorded for an upload.
      *
      * @param request the request
-     * @return the reservation
+     * @return the origin
      * @throws IllegalStateException when the admission did not run
      */
-    static RegistrationJobs.Reservation reservationOf(HttpServletRequest request) {
-        if (request.getAttribute(RESERVATION) instanceof RegistrationJobs.Reservation reservation) {
-            return reservation;
+    static RegistrationJobs.Origin originOf(HttpServletRequest request) {
+        if (request.getAttribute(ORIGIN) instanceof RegistrationJobs.Origin origin) {
+            return origin;
         }
         throw new IllegalStateException("the registration was not admitted");
     }
