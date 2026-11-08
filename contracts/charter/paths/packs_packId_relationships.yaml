@@ -130,9 +130,11 @@ delete:
     RELATIONSHIP write on its from (409 governance_policy_violation), as a whole-pack replace that drops it is. from and
     to are required query parameters, each a PackQualifiedReference, in either orientation: a URN may hold a slash
     (action:<type>/<step>), so the pair is not a path segment. It is synchronous and requires If-Match on the pack revision, as every
-    sub-resource write does: absent is 428, a stale revision is 412, checked under the registry lock. The pack is
-    judged first: an identifier that matches no configured pack is 404 pack_not_found; a pair on which no graph
-    document of the pack holds an edge and no derived relation joins the two is 404 relationship_not_found. 409
+    sub-resource write does: absent is 428, a stale revision is 412, checked under the registry lock. The order of the
+    checks is: the pack first (an identifier that matches no configured pack is 404 pack_not_found), then If-Match (428,
+    412), and only then the pair, so a pair on which no graph document of the pack holds an edge and no derived relation
+    joins the two is 404 relationship_not_found for a request whose If-Match passed, and a stale or absent If-Match on
+    such a pair is 412 or 428; deletePackArtifact judges the path (kind, then artifact) before If-Match. 409
     relationship_not_registered answers a pair the pack holds only outside registered.graph.yaml (the author wrote the
     edge in a source shard or drg/fragment.yaml), or a derived relation (a guard's implemented_by, ADR-0064 D7), and a
     pair held both in registered.graph.yaml and in an author-written document: the author wrote it, and a 204 that left

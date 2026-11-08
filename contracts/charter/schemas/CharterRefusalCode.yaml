@@ -58,7 +58,9 @@ description: >-
   and whether an operation of this version raises it (raised). A code has one status, except where its entry
   carries an operations map: operations.<operationId>.status is the status that one operation answers the
   code with, in place of the entry's status, and every other operation answers the entry's status. Only
-  putPackRelationship, getPackRegistration, deletePackArtifact and deletePackRelationship declare one (below). A code is raised when an operation of this version
+  the twelve operations that answer the composition codes as 422 declare one (below): getPackRegistration,
+  deletePackArtifact, deletePackRelationship, putPackRelationship and the eight per-artifact writes (registerPack and
+  putPack of a directive, a paradigm, a styleguide and a toolguide). A code is raised when an operation of this version
   reaches the code that refuses with it, even when no configuration of this version provokes the refusal
   (governance_policy_violation); a code that only a part no operation reaches refuses with is not raised
   (drg_schema_error). Clients and the contract scenarios read it.
@@ -125,9 +127,13 @@ description: >-
   validation_failed are existing codes that these operations also raise.
 
   The eleven codes of the pack composition are 500 like pack_unreadable, and for the same reason: the request is
-  fine and the configured packs are not, so the same read is refused the same way until a pack is fixed. The one
-  exception is the registration of a relationship (putPackRelationship), which judges the request's own to
-  against the compose of the pack it registers into: pack_reference_pack_missing (a qualified to naming a pack
+  fine and the configured packs are not, so the same read is refused the same way until a pack is fixed. The
+  exceptions are the twelve operations that judge a write over the closures its pack joins, which answer them as 422,
+  in place of 500, because the request is what leaves the packs unable to compose: getPackRegistration (in the problem
+  of a refused registration), deletePackArtifact, deletePackRelationship, putPackRelationship, and registerPackDirective,
+  putPackDirective, registerPackParadigm, putPackParadigm, registerPackStyleguide, putPackStyleguide,
+  registerPackToolguide and putPackToolguide. The registration of a relationship (putPackRelationship) also judges the
+  request's own to against the compose of the pack it registers into: pack_reference_pack_missing (a qualified to naming a pack
   outside the source pack's depends_on closure), pack_reference_unqualified (a bare to that only another pack
   holds) and pack_reference_artifact_missing (a qualified to naming an artifact the named pack does not hold)
   answer 422 there, because the request is what is wrong, and are refused before any file is written. On

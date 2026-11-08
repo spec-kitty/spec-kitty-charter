@@ -13,8 +13,8 @@
     answers are `202`, `400`, `401`, `403`, `412`, `413`, `415` and `503` (with `Retry-After` when the queue is full,
     `pack_source_unavailable` when registration is switched off). There is no `428` here.
   - `registerPackFromSource`, `POST /packs` (new `paths/packs.yaml`): the body is a `PackSource`; the answers are the
-    `PUT`'s, with the one `428` of a registration: a git branch ref that names no commit, sent without `If-Match`
-    (FR-004).
+    `PUT`'s, with the one `428` of a registration: a git branch ref that names no commit, sent with neither `If-Match` nor
+    `If-None-Match: *` (FR-004).
   - `getPackRegistration`, `GET /pack-registrations/{registrationId}` (new
     `paths/pack-registrations_registrationId.yaml`): `200` with the status in `pending`, `running`, `succeeded` (with
     the `PackRegistration`) or `refused` (with the `Problem` the synchronous API would have answered); `404
@@ -51,6 +51,6 @@
     `registration_timed_out` (`504`, the planner's proposal, now confirmed) and `pack_storage_full` (`503`), each
     `raised: false` until its operation is served. `x-refusal.operations` of `getPackRegistration`,
     `deletePackArtifact` and `deletePackRelationship` give the composition codes `422` in place of `500`.
-  - New contract scenarios, all `@WIP` until the serving work packages bind them:
+  - New contract scenarios, bound by the serving work packages (WP16 to WP19), none of them `@WIP`:
     `scenarios/registration/whole-pack-registration.feature` (replaces the `@WIP` `registration/register-pack.feature`)
     and `scenarios/pack-removal.feature`.

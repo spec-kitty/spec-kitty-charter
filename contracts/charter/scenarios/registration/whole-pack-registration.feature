@@ -9,11 +9,10 @@
 #   is gone (changes/2026-11-07-a-pack-registration-breaking.md);
 # - PR-PACK-REGISTER-004 (a colliding constituent slug is refused) was already superseded by ADR-0053 decision 6.
 #
-# State: every scenario is @WIP. The operations are declared in the contract and reserved (x-reserved, 501) until their
-# services are built (decision DM-01M6RN6GC7PJS8BGHMAYM4JSSW: a contract WP commits its scenarios @WIP, and the serving
-# WP binds the glue, records the red assertion failure and removes the tag). Who binds each scenario is named above it:
-# WP16 the PUT path, the status resource, the impact check and the version history, WP17 the https_archive and
-# filesystem sources, WP18 the git source. A serving WP removes @WIP only from the scenarios it binds.
+# State: bound, with no @WIP tag. WP16 bound the PUT path, the status resource, the impact check and the version history,
+# WP17 the https_archive and filesystem sources, and WP18 the git source, each recording the red assertion failure and
+# removing the tag from the scenarios it bound (decision DM-01M6RN6GC7PJS8BGHMAYM4JSSW). The operations are built: none is
+# x-reserved or answers 501.
 #
 # Steps the serving WPs add (listed in scenarios/README.md, "Registration steps"): the archive steps (an archive is
 # built from the files named, as tar.gz unless a step says zip), the registration steps (poll the Location until the job
