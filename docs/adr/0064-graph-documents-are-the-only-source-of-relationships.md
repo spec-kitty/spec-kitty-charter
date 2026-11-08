@@ -2,8 +2,8 @@
 title: "ADR-0064: Relationships are authored only in a pack's graph documents"
 description: "Operator ruling of 2026-11-05 on #240: graph documents are the only home of an edge, putPackRelationship its only write, and every edge-minting field is dropped."
 doc_status: active
-updated: 2026-11-05T00:00:00Z
-decision_status: Accepted
+updated: 2026-11-08T00:00:00Z
+decision_status: Accepted, with Amendment 2026-11-07
 decision_date: '2026-11-05'
 type: ADR
 kind: ADR
@@ -21,6 +21,7 @@ related:
   - adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts
   - adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions
   - adr/0022-contract-versions-start-at-0-x
+  - adr/0065-pack-registration-replaces-the-whole-pack
   - architecture/logical-model
 audience:
   - profile: pack-author
@@ -71,6 +72,18 @@ note on [ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/). Eac
 or an inline note where only a citation moves. It decides the edge authority that
 [#189](https://github.com/spec-kitty/spec-kitty-charter/issues/189) and
 [#167](https://github.com/spec-kitty/spec-kitty-charter/issues/167) left open.
+
+### Amendment 2026-11-07
+
+[ADR-0065](/adr/0065-pack-registration-replaces-the-whole-pack/) amends decision 4 ("One write path").
+`putPackRelationship` is no longer the only operation that writes an edge. A whole-pack `PUT /packs/{packId}` writes
+graph documents: the author's shards and `drg/fragment.yaml`, replaced whole. `registered.graph.yaml` is included in
+the replace only when it carries the registration stamp (`generated_by: charter-registration`); an unstamped one is
+refused. The relationship `DELETE` removes a registered edge, from `registered.graph.yaml` and from no other file; an
+authored or derived edge answers `409 relationship_not_registered` and a `DELETE` never rewrites an author file.
+`putPackRelationship` remains the only operation that writes one edge into a pack without re-sending the pack.
+Decisions 1 and 2 stand: no artifact field mints an edge, and the author's graph documents remain the home of an
+authored edge. An artifact registration still writes the artifact's own content only.
 
 ## Context
 
