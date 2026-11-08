@@ -478,7 +478,7 @@ public final class InForceResolution {
         private Optional<Bucket> bucketOf(Urn urn, State state, Reason reason) {
             boolean named =
                     request.selected().contains(urn) || request.deactivated().contains(urn);
-            if (state == State.ACTIVE || !named) {
+            if (state == State.ACTIVE || !named || listedAsRequiredNotInForce(urn, reason)) {
                 return Optional.empty();
             }
             return switch (reason) {
@@ -489,6 +489,15 @@ public final class InForceResolution {
                 case OVERRIDDEN -> Optional.of(Bucket.OVERRIDDEN);
                 default -> Optional.empty();
             };
+        }
+
+        /**
+         * Whether the artifact is a required or locked one the pruning removed: it is listed once, in
+         * {@code requiredNotInForce}, and in no bucket as well (decision {@code 01M6YM02EG3X5V8G33T1HT5N0K}).
+         */
+        private boolean listedAsRequiredNotInForce(Urn urn, Reason reason) {
+            return (required.contains(urn) || locked.contains(urn))
+                    && (reason == Reason.MISSION_TYPE_NOT_IN_FORCE || reason == Reason.ENHANCED_TARGET_NOT_IN_FORCE);
         }
 
         private List<Urn> stale() {

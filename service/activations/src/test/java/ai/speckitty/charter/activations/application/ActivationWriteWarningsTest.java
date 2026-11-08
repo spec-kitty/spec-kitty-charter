@@ -146,6 +146,43 @@ class ActivationWriteWarningsTest {
     }
 
     @Test
+    void aDenyEntryOnAnEnhancerWithoutATargetInForceWarnsOfNothingThoughItsReasonIsTheEnhancersOne() {
+        states.put(E, inactive(E, Reason.ENHANCED_TARGET_NOT_IN_FORCE));
+
+        ActivationWrites.Outcome denied = exclusions.deactivate(
+                ID, "tactic", "e", Optional.empty(), OptionalInt.empty(), List.of(), quoted(stored));
+
+        assertThat(denied.change().applied()).containsExactly(E);
+        assertThat(denied.change().warnings())
+                .as("a deny is no addition: E9 puts the enhancer row before the deny row, and the write asked for it")
+                .isEmpty();
+    }
+
+    @Test
+    void anUnselectOfAnEnhancerWithoutATargetInForceWarnsOfNothingThoughItsReasonIsTheEnhancersOne() {
+        states.put(E, inactive(E, Reason.ENHANCED_TARGET_NOT_IN_FORCE));
+        select(E);
+
+        ActivationWrites.Outcome unselected =
+                selections.unselect(ID, "tactic", "e", quoted(repository.find(ID).orElseThrow()));
+
+        assertThat(unselected.change().applied()).containsExactly(E);
+        assertThat(unselected.change().warnings())
+                .as("a removal is no addition")
+                .isEmpty();
+    }
+
+    @Test
+    void aDenyOfAnOverriddenArtifactWarnsOfNothing() {
+        states.put(H, inactive(H, Reason.OVERRIDDEN));
+
+        ActivationWrites.Outcome denied = exclusions.deactivate(
+                ID, "tactic", "h", Optional.empty(), OptionalInt.empty(), List.of(), quoted(stored));
+
+        assertThat(denied.change().warnings()).isEmpty();
+    }
+
+    @Test
     void theResolutionIsAskedOnceOfTheSessionTheWriteHoldsWithTheDocumentAsStored() {
         states.put(E, inactive(E, Reason.ENHANCED_TARGET_NOT_IN_FORCE));
 

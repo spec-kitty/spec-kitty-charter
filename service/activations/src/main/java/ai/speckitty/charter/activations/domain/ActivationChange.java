@@ -155,15 +155,20 @@ public record ActivationChange(
     }
 
     /**
-     * The same change with the warnings the in-force resolution of the document as stored gives: each applied artifact
-     * that a read leaves out of force for want of a target in force (an enhancer), or because an artifact in force
-     * overrides it. Any other reason, a deny entry included, is no warning: it is what the write asked for.
+     * The same change with the warnings the in-force resolution of the document as stored gives: each artifact the write
+     * put in ({@code selected} gained it: a selection, or an item of a preset) that a read leaves out of force for want of
+     * a target in force (an enhancer), or because an artifact in force overrides it. A removal, a deny entry and any other
+     * reason is no warning: it is what the write asked for.
      *
      * @param answered what the in-force resolution answered for {@code after}
+     * @param before the document the write started from
      * @return the change with its warnings
      */
-    public ActivationChange withWarnings(MergedSnapshot.InForceAnswer answered) {
+    public ActivationChange withWarnings(MergedSnapshot.InForceAnswer answered, ActivationDocument before) {
+        Set<ArtifactRef> added = new TreeSet<>(refs(after.selected()));
+        added.removeAll(refs(before.selected()));
         List<Warning> found = applied.stream()
+                .filter(added::contains)
                 .flatMap(ref -> warningOf(ref, answered.states().get(ref)).stream())
                 .toList();
         return new ActivationChange(after, applied, cleared, skipped, dropped, droppedPins, found);

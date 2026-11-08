@@ -389,7 +389,7 @@ public class ActivationWrites {
                 .ifPresent(refusal -> {
                     throw refusal;
                 });
-        ActivationChange reported = warned(change, session);
+        ActivationChange reported = warned(change, loaded.document(), session);
         CasResult result = repository.replace(loaded.id(), Optional.of(loaded.revision()), after);
         return switch (result) {
             case CasResult.Written(StoredActivation stored, boolean _) -> new Outcome(stored, reported);
@@ -398,15 +398,15 @@ public class ActivationWrites {
     }
 
     /**
-     * The change with its warnings (IC-17, FR-032): what the write applied that a read of the stored document will not
-     * put in force. The resolution is asked once, of the session the write holds, before anything is stored, so a closure
-     * whose resolution refuses ({@code pack_unreadable}) leaves the write refused and the document as it was. A write that
-     * applied nothing asks nothing.
+     * The change with its warnings (IC-17, FR-032): what the write added to {@code selected} that a read of the stored
+     * document will not put in force. The resolution is asked once, of the session the write holds, before anything is
+     * stored, so a closure whose resolution refuses ({@code pack_unreadable}) leaves the write refused and the document
+     * as it was. A write that applied nothing asks nothing.
      */
-    private static ActivationChange warned(ActivationChange change, PacksSession session) {
+    private static ActivationChange warned(ActivationChange change, ActivationDocument before, PacksSession session) {
         return change.applied().isEmpty()
                 ? change
-                : change.withWarnings(session.inForce(EffectiveSet.queryOf(change.after())));
+                : change.withWarnings(session.inForce(EffectiveSet.queryOf(change.after())), before);
     }
 
     /** A refusal of the computed document, its violations pointing at the whole request. */

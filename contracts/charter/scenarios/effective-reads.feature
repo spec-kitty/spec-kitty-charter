@@ -1187,6 +1187,87 @@ Feature: The effective reads answer what an activation puts in force, and why th
       """
     And the field at "/report/skippedDeactivated" holds exactly 0 items
 
+  Scenario: A required enhancer the document selects is listed once, in requiredNotInForce only
+    Decision 01M6YM02EG3X5V8G33T1HT5N0K: the governing preset requires the tactic RE, which enhances T, T is not
+    selected, and the document selects RE. The enhancer rule wins over the requirement and over the selection: RE is
+    inactive with enhanced_target_not_in_force and is in requiredNotInForce, and not in enhancedTargetNotInForce as well,
+    so summary.skipped counts it once. The required directive D is the control, in force in the same answer.
+    Given the org pack "main" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: main-pack
+      pack_level: org
+      """
+    And the org pack "main" with the file "directives/T.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: T
+      title: T
+      intent: T
+      enforcement: required
+      """
+    And the org pack "main" with the file "directives/D.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: D
+      title: D
+      intent: D
+      enforcement: required
+      """
+    And the org pack "main" with the file "tactics/re.tactic.yaml":
+      """
+      schema_version: '1.0'
+      id: re
+      name: RE
+      steps:
+        - title: Only step
+      """
+    And the org pack "main" with the file "enhance.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: tactic:re
+        target: directive:T
+        relation: enhances
+      """
+    And the org pack "main" with the file "presets/governing.yaml":
+      """
+      schema_version: '1.0'
+      id: governing
+      description: The governing preset.
+      activated_directives:
+        - id: D
+          must_have: true
+      activated_tactics:
+        - id: re
+          must_have: true
+      """
+    And the activation "a-1" holds:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"tactic": ["re"]}}
+      """
+    When I GET "/activations/a-1/artifacts?kind=tactic"
+    Then the response status is 200
+    And the field at "/items" holds exactly the ids:
+      """
+      tactic:re
+      """
+    And the field at "/items/0/state" is "inactive"
+    And the field at "/items/0/reason" is "enhanced_target_not_in_force"
+    And the field at "/items/0/required" is true
+    And the field at "/summary/skipped" is 1
+    When I GET "/activations/a-1/skipped"
+    Then the response status is 200
+    And the field at "/report/requiredNotInForce" holds exactly the ids:
+      """
+      tactic:re
+      """
+    And the field at "/report/enhancedTargetNotInForce" holds exactly 0 items
+
   Scenario: B1 - a version pin no pack holds is in pinNotHeld, and a held pin of the same document is not
     B1, FR-026: the document pins main at 9.9.9, which main does not hold, and other at 1.0.0, which it does. A read
     reports the unheld pin (a write would drop it): pinNotHeld holds main's pin alone. The directive OD of other is the
