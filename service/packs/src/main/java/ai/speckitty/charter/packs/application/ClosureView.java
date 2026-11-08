@@ -2,7 +2,11 @@ package ai.speckitty.charter.packs.application;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.domain.LayerMerge;
+import ai.speckitty.charter.packs.domain.MergedClosure;
 import ai.speckitty.charter.packs.domain.MutabilityLevel;
+import ai.speckitty.charter.packs.domain.PackCompositionFacts;
+import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.RequiredFloor;
@@ -14,6 +18,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 
 /**
  * What one verified read of a composition closure answers (NFR-007, FR-009, FR-023): a read-only value an adapter maps
@@ -39,6 +44,8 @@ import java.util.Set;
  * @param fingerprint the verified digest of the inputs every field was read from
  * @param edges the typed edges of the closure's packs, indexed from the facts the same read holds; the reach answers
  *     from it with no further read
+ * @param mergeInputs what {@link #merged()} builds the layer merge from: the composed packs and the facts the same read
+ *     holds
  */
 public record ClosureView(
         List<OfferingReadService.OfferingEntry> packs,
@@ -50,7 +57,81 @@ public record ClosureView(
         List<HeldPreset> heldPresets,
         Map<String, String> parents,
         String fingerprint,
-        EdgeIndex edges) {
+        EdgeIndex edges,
+        MergeInputs mergeInputs) {
+
+    /**
+     * What the layer merge is built from: the composed closure and the facts the verified read holds, with the merge
+     * kept once it is built. The merge never reads again (NFR-007); it is built on the first {@link #merged()} and not
+     * before, so a read that never asks for it, {@code /offering} and every write path among them, never runs it.
+     */
+    public static final class MergeInputs {
+
+        private static final MergeInputs NONE = new MergeInputs(List.of(), Map.of());
+
+        private final List<PackUnderResolution> packs;
+        private final Map<String, PackCompositionFacts> facts;
+        private @Nullable MergedView built;
+
+        /**
+         * The inputs of a closure's merge.
+         *
+         * @param packs the composed closure, in closure order
+         * @param facts the facts each pack was read with, by configured identifier
+         */
+        public MergeInputs(List<PackUnderResolution> packs, Map<String, PackCompositionFacts> facts) {
+            this.packs = List.copyOf(Objects.requireNonNull(packs, "packs"));
+            this.facts = Map.copyOf(Objects.requireNonNull(facts, "facts"));
+        }
+
+        /**
+         * The inputs of a view built without the closure's packs: it merges nothing.
+         *
+         * @return the empty inputs
+         */
+        public static MergeInputs none() {
+            return NONE;
+        }
+
+        synchronized MergedView merged(PerPackPolicy policy, EdgeIndex edges) {
+            if (built == null) {
+                MergedClosure merged = LayerMerge.merge(packs, facts, policy);
+                built = new MergedView(merged, edges.merged(merged));
+            }
+            return built;
+        }
+    }
+
+    /**
+     * The closure as the layer merge sees it: the version of each artifact in force, and the typed edges re-homed
+     * through the winners (FR-009, FR-010).
+     *
+     * @param closure the winners, the layer overrides, the languages and the merged presets
+     * @param edges the closure's edges with no edge from a losing place and every edge to one ending at the winner
+     */
+    public record MergedView(MergedClosure closure, EdgeIndex edges) {
+
+        /**
+         * Checks the fields.
+         *
+         * @param closure the layer merge
+         * @param edges the merged edges
+         */
+        public MergedView {
+            Objects.requireNonNull(closure, "closure");
+            Objects.requireNonNull(edges, "edges");
+        }
+
+        /**
+         * The forward reach over the merged edges ({@link Reachability#reach}).
+         *
+         * @param request what to walk
+         * @return what the walk reached, stopped at, left behind a stop and passed through
+         */
+        public ReachResult reach(ReachRequest request) {
+            return Reachability.reach(edges, request);
+        }
+    }
 
     /**
      * A preset of the closure with the pack that holds it.
@@ -85,6 +166,7 @@ public record ClosureView(
      * @param parents the parent of each pack that has one
      * @param fingerprint the verified digest
      * @param edges the closure's typed edges
+     * @param mergeInputs what the layer merge is built from
      */
     public ClosureView {
         packs = List.copyOf(Objects.requireNonNull(packs, "packs"));
@@ -97,6 +179,46 @@ public record ClosureView(
         parents = Map.copyOf(Objects.requireNonNull(parents, "parents"));
         Objects.requireNonNull(fingerprint, "fingerprint");
         Objects.requireNonNull(edges, "edges");
+        Objects.requireNonNull(mergeInputs, "mergeInputs");
+    }
+
+    /**
+     * A view whose layer merge is not built from the closure's packs: {@link #merged()} merges nothing.
+     *
+     * @param packs the closure's packs
+     * @param heldIds the held ids per kind
+     * @param holderOf the holder of each held URN
+     * @param floor the required floor
+     * @param policy the per-pack policies
+     * @param closurePackIds the closure's {@code pack_id}s
+     * @param heldPresets the presets, each id once
+     * @param parents the parent of each pack that has one
+     * @param fingerprint the verified digest
+     * @param edges the closure's typed edges
+     */
+    public ClosureView(
+            List<OfferingReadService.OfferingEntry> packs,
+            Map<ArtifactKind, Set<String>> heldIds,
+            Map<Urn, String> holderOf,
+            RequiredFloor floor,
+            PerPackPolicy policy,
+            List<String> closurePackIds,
+            List<HeldPreset> heldPresets,
+            Map<String, String> parents,
+            String fingerprint,
+            EdgeIndex edges) {
+        this(
+                packs,
+                heldIds,
+                holderOf,
+                floor,
+                policy,
+                closurePackIds,
+                heldPresets,
+                parents,
+                fingerprint,
+                edges,
+                MergeInputs.none());
     }
 
     /**
@@ -132,7 +254,8 @@ public record ClosureView(
                 heldPresets,
                 parents,
                 fingerprint,
-                EdgeIndex.empty());
+                EdgeIndex.empty(),
+                MergeInputs.none());
     }
 
     /**
@@ -143,6 +266,21 @@ public record ClosureView(
      */
     public ReachResult reach(ReachRequest request) {
         return Reachability.reach(edges, request);
+    }
+
+    /**
+     * The closure under the layer merge (FR-009 to FR-012): the version of each artifact in force across levels, every
+     * version a later level replaced, and the typed edges re-homed through the winners. It is built from the composed
+     * packs and the facts this verified read holds, on the first call, and kept: nothing is read again (NFR-007).
+     * {@link #holderOf()} stays the first holder in closure order, which the compose's reference checks use; the merged
+     * view answers the winner.
+     *
+     * @return the merge of the closure
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with {@code PACK_UNREADABLE} when a layer override
+     *     breaks the owner's level (FR-011) or an {@code overrides} edge resolves to its own source (A12)
+     */
+    public MergedView merged() {
+        return mergeInputs.merged(policy, edges);
     }
 
     /**

@@ -2,13 +2,18 @@ package ai.speckitty.charter.packs.application;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
+import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RefusalPack;
+import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ComponentResolver;
 import ai.speckitty.charter.packs.domain.ComposeResolver;
+import ai.speckitty.charter.packs.domain.MergedClosure;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
@@ -101,7 +106,11 @@ public final class EdgeIndex implements ComposeResolver {
     private final Map<Place, List<Relationship>> outgoing = new LinkedHashMap<>();
     private final IdentityHashMap<Relationship, Place> sources = new IdentityHashMap<>();
 
-    private EdgeIndex(List<PackUnderResolution> closure) {
+    /** The place of the version in force per URN under a layer merge; empty for an index that is not merged. */
+    private final Map<Urn, Place> winners;
+
+    private EdgeIndex(List<PackUnderResolution> closure, Map<Urn, Place> winners) {
+        this.winners = Map.copyOf(winners);
         this.closure = List.copyOf(closure);
         this.closure.forEach(pack -> byPack.put(idOf(pack), pack));
     }
@@ -120,7 +129,7 @@ public final class EdgeIndex implements ComposeResolver {
     public static EdgeIndex of(
             List<PackUnderResolution> closure, Map<String, PackCompositionFacts> factsByConfiguredId) {
         Objects.requireNonNull(factsByConfiguredId, "factsByConfiguredId");
-        EdgeIndex index = new EdgeIndex(Objects.requireNonNull(closure, "closure"));
+        EdgeIndex index = new EdgeIndex(Objects.requireNonNull(closure, "closure"), Map.of());
         for (PackUnderResolution pack : index.closure) {
             List<Relationship> edges = factsByConfiguredId
                     .getOrDefault(pack.configured().id().value(), PackCompositionFacts.NONE)
@@ -138,6 +147,78 @@ public final class EdgeIndex implements ComposeResolver {
      */
     public static EdgeIndex empty() {
         return of(List.of(), Map.of());
+    }
+
+    /**
+     * The index as the layer merge sees it (FR-010, rules C19, C20 and C36): the edges that start at a losing place are
+     * dropped, the edges that end at one end at the winner's place, and a losing place no longer holds its artifact.
+     *
+     * @param merged the layer merge of this index's closure
+     * @return the merged index
+     * @throws CharterRefusal with {@code PACK_UNREADABLE} when an {@code overrides} edge, re-pointed to the winner, ends
+     *     at its own source
+     */
+    public EdgeIndex merged(MergedClosure merged) {
+        Objects.requireNonNull(merged, "merged");
+        Map<Urn, Place> placesInForce = new LinkedHashMap<>();
+        merged.winners()
+                .forEach((urn, winner) ->
+                        placesInForce.put(urn, new Place(new PackIdentifier(winner.descriptorPackId()), urn)));
+        EdgeIndex view = new EdgeIndex(closure, placesInForce);
+        outgoing.forEach((place, edges) -> {
+            if (view.wins(place)) {
+                edges.forEach(edge -> view.put(place, repointed(edge, view)));
+            }
+        });
+        view.refuseSelfOverrides();
+        return view;
+    }
+
+    private PackUnderResolution packOf(Place place) {
+        return Objects.requireNonNull(byPack.get(place.pack()), "a place of the closure");
+    }
+
+    /** Whether the place holds the version in force of its URN; every place does in an index that is not merged. */
+    private boolean wins(Place place) {
+        return winners.getOrDefault(place.urn(), place).equals(place);
+    }
+
+    /** The edge with its target moved to the winner's place when it ends at a losing place (C20); else as it is. */
+    private Relationship repointed(Relationship edge, EdgeIndex view) {
+        Optional<Place> lost = neighbour(edge).filter(this::holds).filter(place -> !view.wins(place));
+        if (lost.isEmpty()) {
+            return edge;
+        }
+        Place winner = Objects.requireNonNull(view.winners.get(lost.get().urn()), "a lost place has a winner");
+        return new Relationship(
+                edge.from(),
+                edge.fromPack(),
+                edge.to(),
+                Optional.of(packOf(winner).descriptor().name()),
+                edge.type(),
+                edge.when(),
+                edge.rationale());
+    }
+
+    /** Refuses an {@code overrides} edge that, re-pointed to the winner, ends at its own source (C36, A12). */
+    private void refuseSelfOverrides() {
+        for (Map.Entry<Place, List<Relationship>> held : outgoing.entrySet()) {
+            for (Relationship edge : held.getValue()) {
+                if (edge.type() == RelationType.OVERRIDES
+                        && neighbour(edge).filter(held.getKey()::equals).isPresent()) {
+                    PackUnderResolution writer = packOf(held.getKey());
+                    throw new CharterRefusal(
+                            RefusalCode.PACK_UNREADABLE,
+                            "pack `" + writer.descriptor().name() + "` writes the overrides edge `" + edge.from()
+                                    + "` -> `" + edge.toReference()
+                                    + "`, which resolves to its own source in the merged closure (self_override)",
+                            List.of(new RefusalPack(
+                                    writer.descriptor().packId(),
+                                    writer.configured().id().value(),
+                                    writer.descriptor().name())));
+                }
+            }
+        }
     }
 
     @Override
@@ -158,6 +239,7 @@ public final class EdgeIndex implements ComposeResolver {
         return closure.stream()
                 .filter(pack -> pack.holds(urn.toString()))
                 .map(pack -> new Place(idOf(pack), urn))
+                .filter(this::wins)
                 .toList();
     }
 
@@ -172,14 +254,16 @@ public final class EdgeIndex implements ComposeResolver {
                         .flatMap(defined -> Urn.parse(defined).stream())
                         .filter(urn -> urn.kind() == NodeKind.ACTION && urn.id().startsWith(prefix))
                         .map(urn -> new Place(idOf(pack), urn)))
+                .filter(this::wins)
                 .toList();
     }
 
-    /** Whether the place's pack holds its URN. */
+    /** Whether the place's pack holds its URN and, in a merged index, holds the version in force. */
     boolean holds(Place place) {
         return Optional.ofNullable(byPack.get(place.pack()))
-                .filter(pack -> pack.holds(place.urn().toString()))
-                .isPresent();
+                        .filter(pack -> pack.holds(place.urn().toString()))
+                        .isPresent()
+                && wins(place);
     }
 
     /** The node at a held place, for a walk to start from. */

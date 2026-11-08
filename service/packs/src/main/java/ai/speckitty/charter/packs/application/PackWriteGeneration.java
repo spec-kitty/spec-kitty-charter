@@ -62,7 +62,7 @@ public final class PackWriteGeneration {
     /**
      * One pack's generation.
      *
-     * @param pack the pack's identifier as the write named it
+     * @param pack the pack's configured name: every write brackets its swap with it (#418 R5), so a reader keys on it too
      * @return odd while that pack's swap runs; zero for a pack never swapped
      */
     public long ofPack(String pack) {

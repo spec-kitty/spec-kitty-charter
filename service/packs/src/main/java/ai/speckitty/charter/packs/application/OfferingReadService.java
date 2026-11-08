@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,8 +52,8 @@ public final class OfferingReadService {
 
     private final PackCatalogRepository catalog;
     private final PackDescriptorRepository descriptors;
-    private final PackArtifactRepository packArtifacts;
     private final ConsistentRead read;
+    private final Function<PackIdentifier, PackCompositionFacts> factsOf;
     private final Supplier<Resolution> resolution;
 
     /**
@@ -111,24 +112,59 @@ public final class OfferingReadService {
      * @param packArtifacts the port that reads the artifacts each pack changes or defines and the references it writes
      * @param read the verifier that digests the inputs before and after the read
      */
-    @Autowired
     public OfferingReadService(
             PackCatalogRepository catalog,
             PackDescriptorRepository descriptors,
             PackArtifactRepository packArtifacts,
             ConsistentRead read) {
+        this(catalog, descriptors, read, Objects.requireNonNull(packArtifacts, "packArtifacts")::compositionFacts);
+    }
+
+    /**
+     * A service whose composition facts are kept between reads.
+     *
+     * @param catalog the port that lists the configured packs
+     * @param descriptors the port that looks each pack's descriptor up
+     * @param packArtifacts the port that reads the artifacts each pack changes or defines and the references it writes
+     * @param read the verifier that digests the inputs before and after the read
+     * @param facts the cache the facts of each pack are read through
+     */
+    @Autowired
+    public OfferingReadService(
+            PackCatalogRepository catalog,
+            PackDescriptorRepository descriptors,
+            PackArtifactRepository packArtifacts,
+            ConsistentRead read,
+            CompositionFactsCache facts) {
+        this(catalog, descriptors, read, cached(facts, packArtifacts));
+    }
+
+    /** The facts of a pack as the cache keeps them, read from the port when it holds none for the pack's state. */
+    private static Function<PackIdentifier, PackCompositionFacts> cached(
+            CompositionFactsCache facts, PackArtifactRepository packArtifacts) {
+        Objects.requireNonNull(facts, "facts");
+        Function<PackIdentifier, PackCompositionFacts> store =
+                Objects.requireNonNull(packArtifacts, "packArtifacts")::compositionFacts;
+        return pack -> facts.facts(pack, store);
+    }
+
+    private OfferingReadService(
+            PackCatalogRepository catalog,
+            PackDescriptorRepository descriptors,
+            ConsistentRead read,
+            Function<PackIdentifier, PackCompositionFacts> factsOf) {
         this.catalog = Objects.requireNonNull(catalog, "catalog");
         this.descriptors = Objects.requireNonNull(descriptors, "descriptors");
-        this.packArtifacts = Objects.requireNonNull(packArtifacts, "packArtifacts");
         this.read = Objects.requireNonNull(read, "read");
+        this.factsOf = factsOf;
         this.resolution = this::resolveNow;
     }
 
     private OfferingReadService(OfferingReadService source, Supplier<Resolution> resolution) {
         this.catalog = source.catalog;
         this.descriptors = source.descriptors;
-        this.packArtifacts = source.packArtifacts;
         this.read = source.read;
+        this.factsOf = source.factsOf;
         this.resolution = resolution;
     }
 
@@ -420,7 +456,7 @@ public final class OfferingReadService {
             Optional<PackDescriptor> member =
                     read.descriptor().filter(descriptor -> closure.contains(descriptor.packId()));
             if (member.isPresent()) {
-                PackCompositionFacts held = packArtifacts.compositionFacts(pack.id());
+                PackCompositionFacts held = factsOf.apply(pack.id());
                 facts.put(pack.id().value(), held);
                 members.add(new PackUnderResolution(pack, member.get(), held.changed(), held.defined()));
             }
