@@ -179,7 +179,8 @@ public enum RefusalCode {
      */
     REGISTRATION_TIMED_OUT("registration_timed_out"),
     /**
-     * Less than twice the archive bound is free where a registration stages its pack (NFR-009). Answered as 503, in a
+     * Less than the per-job peak, about three times the archive bound, is free where a registration stages and stores its
+     * pack (NFR-009). Answered as 503: synchronously for an upload whose declared length the volumes cannot hold, else in a
      * refused registration status.
      */
     PACK_STORAGE_FULL("pack_storage_full");

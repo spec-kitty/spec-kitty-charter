@@ -3,7 +3,9 @@ description: >-
   (two registrations run and eight wait, ADR-0065 D8), which carries Retry-After and no code, or registration is
   switched off (charter.registration.enabled is false, which is the default) or the source kind's own flag
   (charter.pack-sources.<kind>.enabled) is off, or the system git is missing or older than 2.50.1 for a git source,
-  which carry the code pack_source_unavailable.
+  which carry the code pack_source_unavailable. The upload of registerPackFromArchive is also refused 503
+  pack_storage_full, without Retry-After, when the volumes lack room for the declared length (about three times the
+  archive bound at most), before the body is read.
 headers:
   Charter-Contract-Version:
     $ref: ../headers/CharterContractVersion.yaml

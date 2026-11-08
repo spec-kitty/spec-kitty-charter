@@ -107,8 +107,9 @@ description: >-
   enhancer with no route to a non-enhancer, an artifact that both enhances and overrides one target, an overrides edge
   that resolves to its own source, and an overrides cycle. registration_timed_out (504): the registration job's end
   state at the source deadline plus 30 seconds (NFR-008); the 504 is the planner's proposal, no earlier text gave the
-  code a status, and this contract confirms it. pack_storage_full (503): less than twice the archive bound is free
-  (NFR-009), checked before anything is written.
+  code a status, and this contract confirms it. pack_storage_full (503): less than the
+  per-job peak (about three times the archive bound) is free on the staging or the pack volume (NFR-009), checked before
+  anything is written, and for an upload before its body is read.
 
   Where they are declared (ADR-0056). A registration is asynchronous: its 409 and 422 answers, and these codes, are the
   problem of a refused status, returned in the 200 body of getPackRegistration. So the operations map of a code names
@@ -688,7 +689,7 @@ x-refusal:
     status: 503
     retryable: true
     raised: true
-    description: less than twice the archive bound is free
+    description: less than the per-job peak, about three times the archive bound, is free
 x-source:
   path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RefusalCode.java
   symbol: RefusalCode

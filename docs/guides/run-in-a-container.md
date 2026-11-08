@@ -130,9 +130,12 @@ properties like any other setting (`CHARTER_REGISTRATION_ENABLED`, and so on). T
   checks out a work tree.
 - Registration spools its upload under `<config-root>/staging`, on the volume of the packs, unless
   `charter.registration.staging-dir` names another directory. Keep it on the same volume as the packs.
-- Two registrations run and eight wait. A registration takes its slot before the service reads the body, so a few slow
-  uploads can make other callers get `503` with `Retry-After`. Put a proxy with an upload timeout in front if clients
-  are slow.
+- A registration needs about three times its archive in free space, at most 96 MiB: the archive, the tree it expands to
+  and the copy made beside the pack. On one volume the whole of it must be free there; on two, 64 MiB on the staging
+  volume and 32 MiB on the volume of the packs. Less is `503 pack_storage_full`, answered before the body is read.
+- Two registrations run and eight wait. A registration takes its slot after the service has read the body, so a slow
+  upload holds no slot, but it does hold a connection and up to 32 MiB of staging while it arrives. Put a proxy with an
+  upload timeout in front if clients are slow, and size the staging volume for the uploads you expect at once.
 
 ## Health check
 

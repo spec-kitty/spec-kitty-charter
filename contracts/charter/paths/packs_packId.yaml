@@ -23,8 +23,10 @@ put:
     service answers 202 with a PackRegistrationStatus (pending) and a Location, the URI of GET
     /pack-registrations/{registrationId}, which the client polls until the state is succeeded or refused. The
     synchronous checks are access (the worktree bearer token, which the guard checks before routing and answers 401),
-    the registration flag (503), the packId grammar (400), the body size (413), the media type and magic bytes (415) and
-    If-Match / If-None-Match (400 when both are sent, 412 when stale). Every other answer of the flow is the problem of
+    the registration flag (503), the packId grammar (400), the body size (413), the volumes' room for the declared length
+    (503 pack_storage_full), the media type and magic bytes (415) and If-Match / If-None-Match (400 when both are sent,
+    412 when stale). A full queue (503 with Retry-After) and a stale If-Match are answered before the body is read and
+    judged again once it is spooled, since the slot is taken then: a slow upload holds none. Every other answer of the flow is the problem of
     a refused status, never a synchronous answer: the 409 answers (a version already held with other content, a built-in
     level or a pack_id or name another configured pack uses, a change or removal the pack's level forbids, an artifact
     another pack still refers to) and the 422 answers (an archive path or entry the extractor refuses, an unmodelled
