@@ -638,7 +638,7 @@
     },
     "WP19": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": "claude:sonnet:java-jenny",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
@@ -647,6 +647,9 @@
       "last_event_id": "01M6WSR9E4AA7YNZ7HDTFWS3AK",
       "last_transition_at": "2026-11-08T05:23:00.677043+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "DELETEs of an artifact and a relationship; per-artifact writes run the impact check; verifyAll green"
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 8016,
