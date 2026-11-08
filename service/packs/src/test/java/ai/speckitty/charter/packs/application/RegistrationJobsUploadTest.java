@@ -51,6 +51,7 @@ class RegistrationJobsUploadTest {
     private final TestGate gate = new TestGate();
     private final RecordingAudit audit = new RecordingAudit();
     private final List<Long> roomAsked = new CopyOnWriteArrayList<>();
+    private final List<Long> runAsked = new CopyOnWriteArrayList<>();
     private final List<Long> admissionAsked = new CopyOnWriteArrayList<>();
     private final List<Long> openBytesAsked = new CopyOnWriteArrayList<>();
     private final AtomicReference<CharterRefusal> full = new AtomicReference<>();
@@ -76,6 +77,11 @@ class RegistrationJobsUploadTest {
                     @Override
                     public void require(long archiveBytes) {
                         roomAsked.add(archiveBytes);
+                    }
+
+                    @Override
+                    public void requireForRun(long archiveBytes) {
+                        runAsked.add(archiveBytes);
                     }
 
                     @Override
@@ -277,7 +283,10 @@ class RegistrationJobsUploadTest {
         });
         awaitEnd(reservation);
 
-        assertThat(roomAsked).containsExactly(1234L);
+        assertThat(runAsked)
+                .as("a spooled archive is on disk already: the job asks what is left to write, for that archive")
+                .containsExactly(1234L);
+        assertThat(roomAsked).as("and not for the whole peak again").isEmpty();
     }
 
     @Test
