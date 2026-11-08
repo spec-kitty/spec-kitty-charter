@@ -4,7 +4,7 @@ artifact_type: spec-kitty.analysis-report
 command: /spec-kitty.analyze
 mission_slug: layer-merge-and-effective-reads-01M6R0J6
 mission_id: 01M6R0J642MF7F33XVMMPSBSAT
-generated_at: '2026-11-08T14:40:53.799097+00:00'
+generated_at: '2026-11-08T14:45:07.186421+00:00'
 analyzer_agent: claude:opus:orchestrator
 input_artifacts:
   spec.md:
@@ -1341,7 +1341,7 @@ input_artifacts:
     sha256: ac4a332a65a08be93f0a47af6b8b49464c4f6756e31316b5a662fb6fd6acf4e4
   material:kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP01-a0-contract-kind-model.md:
     path: kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP01-a0-contract-kind-model.md
-    sha256: 4822eba4e327e1397548e49656ad0152958fa090272c4c67f2bb025f8b25b9e2
+    sha256: d956ddf6b529e8511ac9c6f4d10dd91fdcbde9d801bd4a1b4c1845e26b27a56c
   material:kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP02-a0-kernel-kind-registry.md:
     path: kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP02-a0-kernel-kind-registry.md
     sha256: 6cbcdbe19d8217a2bc4e4429d623d902c069ad427591339d33f72d7ad1ce1ce0
@@ -1371,7 +1371,7 @@ input_artifacts:
     sha256: f5c31fb949dfffc58497a12e1da197f633afad673ce8cbec653851185da250ef
   material:kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP11-a-contract-registration.md:
     path: kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP11-a-contract-registration.md
-    sha256: 7f336c83117a200bfb955cad8d1488652c79dbb219f61e21e54e2de796456577
+    sha256: 405b99749995d6838bc3037e7a940bc9d6f8547e003189656a6c9dbb966fa389
   material:kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP12-a-write-coordination.md:
     path: kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP12-a-write-coordination.md
     sha256: a30e5055864d379b2eee0c56d709025f43646c99fb9952b3924b2c6dd0b53ff9
@@ -1455,13 +1455,13 @@ input_artifacts:
     sha256: 07390d53c23192499411fb221a2773c80872038812d62368de0a3b19b876f97a
 verdict: unknown
 issue_counts:
-  critical:
-  low:
-  medium:
   high:
+  low:
+  critical:
+  medium:
   info:
 findings: []
-report_transaction: 96b668d93385476cbd18095208ead891
+report_transaction: fe8aedbf5a5b42c88bff7f77620e3207
 material_manifest_version: 1
 ---
 
@@ -1560,6 +1560,11 @@ any lookup cache. None widens scope.
 | C-007 | WP26 |
 
 FR coverage: 43/43 mapped. Critical: 0, high: 0. Both findings are LOW and fixed.
+
+Also in this re-run: WP01's and WP11's `owned_files` dropped two files those work packages retired
+(`schemas/SelectableKind.yaml`, folded into `ActivatableKind`; `scenarios/registration/register-pack.feature`,
+replaced by `whole-pack-registration.feature`), so `finalize-tasks --refresh-planning-commit` validates after the
+rebase. No requirement mapping changed.
 
 ### Next actions
 
