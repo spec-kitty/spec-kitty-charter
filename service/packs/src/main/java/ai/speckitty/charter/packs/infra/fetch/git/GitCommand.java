@@ -24,7 +24,7 @@ import org.jspecify.annotations.Nullable;
  *   <li><b>Environment.</b> Built from empty ({@link GitEnvironment}), then the transport's variables: no proxy, no
  *       credential helper, no askpass, no {@code GIT_*} override and no {@code HOME} of the service.
  *   <li><b>One deadline.</b> Fixed when the command is built and shared by every run of the fetch, so the whole fetch is
- *       held to {@code charter.pack-sources.timeout}. When it passes the process and every descendant are destroyed
+ *       held to {@code charter.pack-sources.git.timeout}. When it passes the process and every descendant are destroyed
  *       forcibly and the run fails {@link Kind#DEADLINE}; a run started after it is never started.
  *   <li><b>A size watch.</b> A caller may give a test of "the fetch is too big", polled while git runs; a {@code true}
  *       destroys the tree and fails the run {@link Kind#TOO_LARGE}.
