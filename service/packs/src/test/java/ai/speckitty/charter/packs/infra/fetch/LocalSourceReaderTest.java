@@ -101,6 +101,9 @@ class LocalSourceReaderTest {
         assertThat(Files.getPosixFilePermissions(pack.resolve("directives")))
                 .isEqualTo(PosixFilePermissions.fromString("rwx------"));
         assertThat(pack).startsWith(staging);
+        assertThat(Files.getPosixFilePermissions(staging.resolve("extract")))
+                .as("the directory the tree is staged in")
+                .isEqualTo(PosixFilePermissions.fromString("rwx------"));
     }
 
     @Test

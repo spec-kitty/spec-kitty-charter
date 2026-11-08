@@ -7,6 +7,7 @@ import ai.speckitty.charter.api.model.PackSource;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.application.ArchiveStaging;
+import ai.speckitty.charter.packs.application.OwnerOnly;
 import ai.speckitty.charter.packs.application.PackArchiveReader;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditions;
 import ai.speckitty.charter.packs.application.PackSourceKind;
@@ -16,9 +17,9 @@ import ai.speckitty.charter.packs.application.RegistrationJobs;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
@@ -121,8 +122,9 @@ public class PackRegistrationController implements RegistrationApi {
         RegistrationJobs.Reservation reservation = RegistrationAdmission.reservationOf(request);
         ArchiveBody archive = archiveOf(body);
         Path file = reservation.directory().resolve(ARCHIVE_FILE);
-        try (InputStream bytes = archive.getInputStream()) {
-            Files.copy(bytes, file);
+        try (InputStream bytes = archive.getInputStream();
+                OutputStream spooled = OwnerOnly.newFile(file)) {
+            bytes.transferTo(spooled);
         } catch (IOException failure) {
             throw new UncheckedIOException("cannot spool the archive of a registration", failure);
         }

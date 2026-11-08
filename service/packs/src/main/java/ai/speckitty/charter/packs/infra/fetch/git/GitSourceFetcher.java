@@ -6,6 +6,7 @@ import ai.speckitty.charter.packs.application.ArchiveRefusal;
 import ai.speckitty.charter.packs.application.ArchiveStaging;
 import ai.speckitty.charter.packs.application.ArchiveViolation;
 import ai.speckitty.charter.packs.application.ArchiveViolation.Code;
+import ai.speckitty.charter.packs.application.OwnerOnly;
 import ai.speckitty.charter.packs.application.PackSourceFetcher;
 import ai.speckitty.charter.packs.application.PackSourceKind;
 import ai.speckitty.charter.packs.application.PackSourceRequest;
@@ -343,7 +344,7 @@ public final class GitSourceFetcher implements PackSourceFetcher {
         Path wanted = work.resolve("oids");
         try {
             Files.write(wanted, blobIds(entries), java.nio.file.StandardOpenOption.CREATE_NEW);
-            Path into = Files.createDirectories(directory.resolve("extract"));
+            Path into = OwnerOnly.directories(directory.resolve("extract"));
             return stageBlobs(git, repository, wanted, entries, into, named);
         } catch (IOException unwritable) {
             throw new UncheckedIOException("cannot stage the objects of a git source", unwritable);

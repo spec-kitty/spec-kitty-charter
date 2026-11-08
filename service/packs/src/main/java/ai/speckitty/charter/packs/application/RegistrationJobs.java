@@ -632,7 +632,7 @@ public final class RegistrationJobs implements AutoCloseable {
             this.revisionBefore = stored.map(PackRevision::token).orElse("");
             this.directory = owner.dependencies.stagingRoot().resolve(id);
             try {
-                Files.createDirectories(directory);
+                OwnerOnly.directories(directory);
             } catch (IOException failure) {
                 throw new UncheckedIOException("cannot create the staging directory of a registration", failure);
             }

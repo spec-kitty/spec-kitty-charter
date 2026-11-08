@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.infra.fetch;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.packs.application.ArchiveRefusal;
+import ai.speckitty.charter.packs.application.OwnerOnly;
 import ai.speckitty.charter.packs.application.PackSourceFetcher;
 import ai.speckitty.charter.packs.application.PackSourceKind;
 import ai.speckitty.charter.packs.application.PackSourceRequest;
@@ -145,7 +146,7 @@ public final class LocalSourceReader implements PackSourceFetcher {
 
     private StagedPack copy(List<String> segments, Path directory) throws IOException, ArchiveRefusal {
         Path real = requireAllowed(Objects.requireNonNull(root).toRealPath());
-        Path into = Files.createDirectories(directory.resolve(EXTRACTED));
+        Path into = OwnerOnly.directories(directory.resolve(EXTRACTED));
         boolean staged = false;
         try (DirectoryStream<Path> top = Files.newDirectoryStream(real)) {
             StagedPack pack = copyBelow(secure(top), real, segments, into);

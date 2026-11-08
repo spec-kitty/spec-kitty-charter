@@ -238,6 +238,9 @@ class GitSourceFetcherTest {
         assertThat(after(calls.get(5), 1)).containsExactly("--git-dir=" + repository, "cat-file", "--batch");
         assertThat(staged.pack().directory().resolve("pack.yaml")).hasContent("name: acme\n");
         assertThat(staged.pack().directory().resolve("docs/readme.md")).hasContent("# acme\n");
+        assertThat(java.nio.file.Files.getPosixFilePermissions(directory.resolve("extract")))
+                .as("the directory the tree is staged in")
+                .isEqualTo(java.nio.file.attribute.PosixFilePermissions.fromString("rwx------"));
     }
 
     @Test
