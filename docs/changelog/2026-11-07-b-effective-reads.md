@@ -28,6 +28,8 @@ The file is dated with the mission's PR B, as the PR A page is; it landed on 202
   force is four strata to a fixed point; the list carries the state and reason of each artifact, the report a typed
   bucket. The graph and the action context are PR C.
 - **Writes.** `warnings` on a write, `activationsAffected` on a registration, and a cascade that walks the merged edges.
+  A write over a closure that does not merge answers `500` (`pack_unreadable` or `pack_sibling_conflict`), a response the
+  write paths already declare (`2026-11-08-b-write-cascade-merged-edges.md`).
 - **Tags.** Each read's `ETag` names one representation and the closure. `If-Match` takes either tag.
 
 ## Breaking
@@ -38,7 +40,6 @@ The file is dated with the mission's PR B, as the PR A page is; it landed on 202
   `denyNotApplied` and `PackRegistrationNotices` gains `activationsAffected`, both optional.
 - The `ETag` of `getActivation` is no longer the revision: it covers the revision and the closure's packs, and the
   read can answer `500`. A write's `If-Match` takes the revision or that tag; a stale closure tag is `412`.
-- A write over a closure that does not merge answers `500 pack_unreadable`.
 - **From PR A.** Create and replace now refuse a wrong-type scalar and a duplicate member with `422`; they were coerced
   or last-wins before.
 

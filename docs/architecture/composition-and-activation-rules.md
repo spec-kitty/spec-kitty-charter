@@ -347,12 +347,15 @@ an `E` with `enhances(E, T)` whose every `enhances` chain ends at an enhancer, n
 An enhancement never stands alone and always links to a real artifact; an artifact cannot both enhance and override one
 target; nothing overrides itself.
 *Source:* A8, decision `DM-01M6RA8G0RGRWSFW4DERH8W319`; A11 and A12, decision `DM-01M6RA8S9G57W4BW55SNVHBQ10`; operator
-ruling Q8 ("enhancers do not stand on their own"). **Ruled, not built** (layer-merge PR B).
+ruling Q8 ("enhancers do not stand on their own"). **Built:** the registration refusal (PR A: `enhances_cycle`,
+`conflicting_relations`, `self_override`, `422`). PR B adds a merge-time refusal: an `overrides` edge that, re-pointed
+to the winner, ends at its own source is refused at `merged()` as `500 pack_unreadable` (`self_override`), on a read and
+on a write.
 
 ## 3. Registration rules
 
 Registration writes pack content. The per-artifact registrations are built (ADR-0026); the whole-pack registration
-and `DELETE` are ruled on 2026-11-06 and planned as ADR-0065.
+and `DELETE` were ruled on 2026-11-06 and are built in PR A (ADR-0065); the status of each rule below says how far.
 
 **G1 Writable levels.** A registration or deletion of `p` requires `lv(p) ∈ {O, R}`; `lv(p) = B` is
 `409 registration_conflict`.
@@ -363,7 +366,7 @@ The built-in level is read-only.
 edge, preset and file absent from `Z` is absent from the pack.
 Registering a whole pack replaces what was known of it, removals included.
 *Source:* operator ruling of 2026-11-06; decision `DM-01M6R0TA37CQ0VEMHWSTJF2TRM`; spec FR-001, SC-003.
-**Ruled, not built.**
+**Built (PR A).**
 
 **G3 Version rule.** Let `s` be the stored pack and `z` the staged one: `rev(z) = rev(s) ⇒ 200`, nothing written;
 `ver(z) = ver(s) ∧ rev(z) ≠ rev(s) ⇒ 409 pack_version_conflict`; and, with `hist(cid)` the version → content-digest
@@ -393,8 +396,7 @@ An identical re-send is a no-op even under a stale validator; a removal is alway
 **G7 Write gate on the diff.** Every artifact the replace adds, changes or removes passes C25 and C26 along
 `C({z}) ∖ {z}`, else `409 governance_policy_violation`.
 The packs the new pack builds on judge the diff; its own policy, old or new, does not (B8).
-*Source:* ADR-0063 D3; ADR-0030 d3; plan IC-04 step 7; B8, decision `DM-01M6RAA6Y7NVVGKVKQV05GZYES`. **Planned, not
-built.**
+*Source:* ADR-0063 D3; ADR-0030 d3; plan IC-04 step 7; B8, decision `DM-01M6RAA6Y7NVVGKVKQV05GZYES`. **Built (PR A).**
 
 **G8 Impact check.** Let `P' = P ∖ {s} ∪ {z}` and `Aff(z) = {C'(S) | S ∈ Roots, z ∈ C'(S)}`, where `Roots` is `P'`
 and the roots of every stored activation, and `C'` composes over `P'`. Every closure in `Aff(z)` must pass C1–C16,
@@ -402,8 +404,11 @@ C20, C21, C27, C28 and C34–C36, and its floor must hold (E13 under I10), else 
 the packs of the failing closure. A closure that does not contain `z` is not judged.
 A registration never leaves a closure it joins unable to compose or merge, and never blocks an author over a closure it
 does not join.
-*Source:* plan IC-04 step 8; A5, decision `DM-01M6RA8225EXG6GAT1MM2R9T6C`. **Ruled, not built** (layer-merge PR B;
-the scope replaces the plan's one global compose).
+*Source:* plan IC-04 step 8; A5, decision `DM-01M6RA8225EXG6GAT1MM2R9T6C`. **Partly built (PR A):** the check judges the
+composition and the relation rules (C1–C16, C25, C27, C28, C34–C36) over every closure the pack joins and refuses `422`
+naming the packs (DIV-604). The registration code does not run the layer merge, so C21 is judged at read, not at
+registration, and a floor that stops holding is reported as a notice (G20), not refused. The scope replaces the plan's
+one global compose.
 
 **G9 Reference check.** For each artifact `u` a `DELETE` or replace removes from `p`, judged against the configured
 packs as the request would leave them (`P'`, with `p`'s new tree): `Inbound(p, u) = {(q, a) | q ∈ P', a held by q in
@@ -473,7 +478,9 @@ G6's status codes are to be revised to it).
 **G20 Impact report.** A completed registration reports, for every closure in `Aff(z)` (G8): the artifacts that joined
 or left `Req` or `Lk`, the `Unheld` items (C31), and the stored activations whose effective set changes, by id.
 A pack upgrade that moves the floor is never silent.
-*Source:* B4, decision `DM-01M6RA9SAKCBSKGX165JM3CAGS`. **Ruled, not built** (layer-merge PR B).
+*Source:* B4, decision `DM-01M6RA9SAKCBSKGX165JM3CAGS`. **Partly built:** the notices carry the floor and lock lists
+(`floorAdded`, `floorRemoved`, `locksAdded`, `locksRemoved`; PR A) and `activationsAffected` (PR B). The `Unheld` items
+are not in the notices; the effective skipped report lists them as `requiredNotHeld`.
 
 **G21 Repair writes.** A registration into `p` whose closure `C({p})` does not compose today is let through when the
 closure composes after it (G8 holds for the new state); one that leaves it broken is refused as before.
@@ -704,11 +711,11 @@ Only the user's explicit choice adds or removes a deny entry.
 F8. The withdrawal is **built (PR A0)**: selection, deny and cascade treat a mission type as any kind.
 
 **W33 Write warnings.** The change report carries `warnings`, one per artifact of `Sel(D') ∖ Sel(D₀)` that `Eff(D', M)`
-leaves out, with the E9 reason that decides it (for example `enhanced_target_not_in_force`,
-`mission_type_not_in_force`).
+leaves out, with the E9 reason that decides it.
 A write that will not bring what it selected into force says so; it is still applied.
-*Source:* B6 and B7, decision `DM-01M6RAA2B2G9PNXN2F9SJ7B1CR`. **Ruled, not built** (needs `Eff`; layer-merge PR C,
-with W26).
+*Source:* B6 and B7, decision `DM-01M6RAA2B2G9PNXN2F9SJ7B1CR`. **Partly built (PR B)** (DIV-237): the built warning codes
+are `enhanced_target_not_in_force` and `overridden`. No other E9 reason is warned: the code never warns
+`mission_type_not_in_force`, so a selected step of a mission type not in force is applied without a warning.
 
 **W34 Withdrawn keys refused.** A create, replace or preset body carrying `activatedKinds` or `missionTypes` is
 `422 validation_failed`, one violation per member (`removed_member`), with no deprecation window; core regenerates its DTOs first. A stored version-1 document is
@@ -1006,15 +1013,15 @@ activations it affects (G20), and every stored deny entry that the floor overrid
 | C33 Offering stays a catalog | ADR-0020 D1; FR-023 | Built |
 | C34 Same-level preset conflict | operator 2026-11-06; `refusePresetContests` | Built |
 | C35 Case-only mention | operator 2026-11-06; `refuseCaseOnlyMatches` | Built |
-| C36 Edge shape | A8, A11, A12 | Ruled, planned (PR B) |
+| C36 Edge shape | A8, A11, A12 | Built (registration PR A; the merge-time refusal PR B) |
 | G1 Writable levels | `DM-01M6R1GQYF` | Ruled, not built |
-| G2 Full replacement | operator 2026-11-06; `DM-01M6R0TA37` | Ruled, not built |
-| G3 Version rule | `DM-01M6R0TCAG`; B1 | Ruled, planned (PR B) |
+| G2 Full replacement | operator 2026-11-06; `DM-01M6R0TA37` | Built (PR A) |
+| G3 Version rule | `DM-01M6R0TCAG`; B1 | Built (PR A) |
 | G4 Fixed identity | spec FR-003; `DM-01M6R2X0H0` | Level ruled, not built; `pid` and uniqueness planned, not built |
 | G5 Archive validity | FR-003, NFR-004, NFR-005 | Ruled, not built |
 | G6 Preconditions | FR-003; research R-lock | Planned, not built |
 | G7 Write gate on the diff | ADR-0063 D3; plan IC-04; B8 | Planned, not built |
-| G8 Impact check | plan IC-04; A5 | Ruled, planned (PR B) |
+| G8 Impact check | plan IC-04; A5 | Partly built (PR A): composition and relation rules; not C21 or a floor refusal |
 | G9 Reference check | operator 2026-11-06; `DM-01M6R0TEM8`, `DM-01M6R2WSAR`, `DM-01M6R2WVRK`; A10, B3 | Ruled, planned (PR B) |
 | G10 Artifact `DELETE` | operator 2026-11-06; FR-005 | Ruled, not built |
 | G11 Relationship `DELETE` | `DM-01M6R0TEM8`; FR-006 | Ruled, not built |
@@ -1026,7 +1033,7 @@ activations it affects (G20), and every stored deny entry that the floor overrid
 | G17 Unconditional per-artifact registration | ADR-0026 D5 | Built |
 | G18 Activations unaffected | research R-lock | Ruled, not built |
 | G19 Asynchronous registration | A5 | Ruled, planned (PR B) |
-| G20 Impact report | B4 | Ruled, planned (PR B) |
+| G20 Impact report | B4 | Partly built: floor and lock lists (PR A), `activationsAffected` (PR B); no `Unheld` |
 | G21 Repair writes | ADR-0063 amendment 2026-11-06; #404 | Ruled, not built |
 | W1 Closed body | ADR-0020 D4, D9 | Built |
 | W2 Absent means none | ADR-0053 d10; DIV-203; A7 | Built; one `sel` form built (PR A0) |
@@ -1060,7 +1067,7 @@ activations it affects (G20), and every stored deny entry that the floor overrid
 | W30 Compare-and-set | ADR-0020 D6, D9 | Built |
 | W31 Who changes a deny entry | ADR-0013 d2, d3 | Built |
 | W32 Mission types in a write | A7 | Withdrawn; the withdrawal built (PR A0) |
-| W33 Write warnings | B6, B7 | Ruled, planned (PR C) |
+| W33 Write warnings | B6, B7 | Partly built (PR B): `enhanced_target_not_in_force` and `overridden` only |
 | W34 Withdrawn keys refused | A7 Q4 | Built (PR A0) |
 | E1 Stale ids | ADR-0059 D4; FR-017; B1 | Built (PR B) |
 | E2 Candidates | ADR-0020 D7; ADR-0053 d10; FR-013; A7 | Built (PR B) |

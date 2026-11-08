@@ -131,11 +131,12 @@ A path names a resource, never an action. Every resource is one of four archetyp
 
 ## Conditional requests
 
-`getOpenApiDocument` (`GET /openapi.yaml`) is the one conditional read built into the contract: its
+`getOpenApiDocument` (`GET /openapi.yaml`) is a conditional read built into the contract: its
 answer carries a strong `ETag`, the SHA-256 digest of the bundled contract, and an `If-None-Match`
-that is `*` or matches it is a 304 without a body.
+that is `*` or matches it is a 304 without a body. So are `getActivation`, `listActivationPacks`,
+`listEffectiveArtifacts` and `getActivationSkippedReport`.
 
-Proposed: the activation resources (ADR-0020) use HTTP preconditions so two writers cannot lose each other's
+Built: the activation resources (ADR-0020) use HTTP preconditions so two writers cannot lose each other's
 changes:
 
 - **`ETag`** on every activation answer: a strong validator. A write's answer sends the document's `revision`; `getActivation` and the effective reads send a tag that covers the revision and the closure's packs (decision `01M6Y11E55YP5TG1EJ1MDKCFRP`).

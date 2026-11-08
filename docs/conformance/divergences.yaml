@@ -882,7 +882,6 @@
     - "charter: contracts/charter/scenarios/activation-cascade-depth.feature (A cascading select at depth 0 selects the target and its hard closure only; A cascading deactivate at depth 1 undoes a cascading select at depth 1; The round trip is not exact when another active artifact suggests a candidate)"
     - "corpus case: cascade-depth"
 
-
 - id: DIV-216
   surface: >-
     A layer override: the version from the level that applies replaces the artifact whole
