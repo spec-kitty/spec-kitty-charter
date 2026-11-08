@@ -3,6 +3,7 @@ package ai.speckitty.charter.activations.infra.packs;
 import ai.speckitty.charter.activations.domain.ActivationRepository;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.EffectiveSet;
+import ai.speckitty.charter.activations.domain.MergedSnapshot;
 import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
@@ -10,10 +11,10 @@ import ai.speckitty.charter.packs.application.ActivationImpact;
 import ai.speckitty.charter.packs.application.ClosureView;
 import ai.speckitty.charter.packs.domain.InForceRequest;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.TreeMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +29,8 @@ import org.springframework.stereotype.Component;
  * in the order written, or empty for an activation that lists none, which roots at every configured pack.
  * {@link #activationsAffected} is the affected-activations notice (FR-027, B4): given the closures a registration
  * composed, before and after, it asks the in-force resolution of each activation whose closure holds the pack, over both
- * closures, and names the activations whose set of artifacts in force differs. It composes nothing and reads no pack: the
+ * closures, and names the activations whose effective set differs: the artifacts in force, or the version in force of one
+ * of them (its pack, level or policy). It composes nothing and reads no pack: the
  * closures are the impact check's own, and an activation whose closure does not hold the pack is not asked. A closure that
  * cannot be merged has no set in force, which differs from one that can be and equals another that cannot, so a
  * registration that makes an activation unreadable names it and one that leaves it unreadable does not.
@@ -67,21 +69,31 @@ public class ActivationImpactAdapter implements ActivationImpact {
                 .toList();
     }
 
-    /** Whether the activation has another set in force over the closure after the write than before it. */
+    /**
+     * Whether the activation has another effective set over the closure after the write than before it: another set of
+     * artifacts in force, or the version in force of one of them (its pack, level or policy) another.
+     */
     private static boolean differs(ClosureChange change, StoredActivation activation) {
         InForceRequest request = ClosureViewSession.requestOf(EffectiveSet.queryOf(activation.document()));
-        Optional<Set<ArtifactRef>> before =
-                change.before().map(view -> inForce(view, request)).orElseGet(() -> Optional.of(Set.of()));
+        Optional<Map<ArtifactRef, Optional<MergedSnapshot.Winner>>> before = change.before()
+                .map(view -> inForce(view, request))
+                .orElseGet(() -> Optional.of(Map.of()));
         return !before.equals(inForce(change.after(), request));
     }
 
-    /** The artifacts the request puts in force over the closure; empty when the closure cannot be merged. */
-    private static Optional<Set<ArtifactRef>> inForce(ClosureView view, InForceRequest request) {
+    /**
+     * The artifacts the request puts in force over the closure, each with the version in force; empty when the closure
+     * cannot be merged.
+     */
+    private static Optional<Map<ArtifactRef, Optional<MergedSnapshot.Winner>>> inForce(
+            ClosureView view, InForceRequest request) {
         try {
-            Set<ArtifactRef> active = new TreeSet<>();
+            Map<ArtifactRef, MergedSnapshot.Winner> winners =
+                    ClosureViewSession.winnersOf(view.merged().closure());
+            Map<ArtifactRef, Optional<MergedSnapshot.Winner>> active = new TreeMap<>();
             ClosureViewSession.inForceOf(view.inForce(request)).states().forEach((ref, state) -> {
                 if (state.state() == EffectiveSet.State.ACTIVE) {
-                    active.add(ref);
+                    active.put(ref, Optional.ofNullable(winners.get(ref)));
                 }
             });
             return Optional.of(active);

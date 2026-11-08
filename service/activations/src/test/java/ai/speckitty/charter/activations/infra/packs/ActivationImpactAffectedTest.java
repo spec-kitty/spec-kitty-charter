@@ -154,6 +154,59 @@ class ActivationImpactAffectedTest {
     }
 
     @Test
+    void anActivationWhoseSelectedArtifactStaysInForceButWhoseWinnerMovedToAnotherPackAndLevelIsAffected() {
+        activation("a-1", Optional.of("acme"), "A");
+        ClosureView before = new Closure()
+                .pack("base", PackLevel.BUILT_IN, MutabilityPolicySource.empty(), "directive:A")
+                .view();
+        ClosureView after = new Closure()
+                .pack("base", PackLevel.BUILT_IN, MutabilityPolicySource.empty(), "directive:A")
+                .pack("acme", PackLevel.ORG, MutabilityPolicySource.empty(), "directive:A")
+                .view();
+        ClosureChanges closures =
+                closures(Map.of(Optional.of(List.of("acme")), new ClosureChange(Optional.of(before), after)));
+
+        assertThat(adapter.activationsAffected(closures))
+                .as("A is in force before and after, but the version in force is another pack's, at another level")
+                .containsExactly("a-1");
+    }
+
+    @Test
+    void anActivationWhoseSelectedArtifactStaysInForceFromTheSamePackButUnderAnotherPolicyIsAffected() {
+        activation("a-1", Optional.of("acme"), "A");
+        ClosureView before = holding("directive:A");
+        ClosureView after = new Closure()
+                .pack(
+                        "acme",
+                        PackLevel.ORG,
+                        MutabilityPolicySource.builder()
+                                .entry(Urn.parse("directive:A").orElseThrow(), MutabilityLevel.EXTENDABLE)
+                                .build(),
+                        "directive:A")
+                .view();
+        ClosureChanges closures =
+                closures(Map.of(Optional.of(List.of("acme")), new ClosureChange(Optional.of(before), after)));
+
+        assertThat(adapter.activationsAffected(closures)).containsExactly("a-1");
+    }
+
+    @Test
+    void anActivationWhoseWinnersAreTheSameBeforeAndAfterIsNotAffectedByAnotherPacksArtifact() {
+        activation("a-1", Optional.of("acme"), "A");
+        ClosureView before = holding("directive:A");
+        ClosureView after = new Closure()
+                .pack("acme", PackLevel.ORG, MutabilityPolicySource.empty(), "directive:A")
+                .pack("other", PackLevel.ORG, MutabilityPolicySource.empty(), "directive:Z")
+                .view();
+        ClosureChanges closures =
+                closures(Map.of(Optional.of(List.of("acme")), new ClosureChange(Optional.of(before), after)));
+
+        assertThat(adapter.activationsAffected(closures))
+                .as("the control: A has the same winner, and Z is held but not in force")
+                .isEmpty();
+    }
+
+    @Test
     void aClosureThatDidNotExistBeforeHasNothingInForceBefore() {
         activation("a-1", Optional.empty(), "A");
         activation("a-2", Optional.empty(), "Z");
