@@ -32,8 +32,8 @@ import org.springframework.context.annotation.Configuration;
  *
  * <p>Nothing is fetched that is not switched on and not allowlisted: every flag is off by default, the https and git
  * allowlists and the filesystem root are empty by default, and a service that was never configured for a source refuses
- * it. A filesystem root that is under {@code /proc}, {@code /sys} or {@code /dev}, or overlaps the configuration root,
- * fails the start.
+ * it. A filesystem source that is switched on with no root, and a root that is under {@code /proc}, {@code /sys} or
+ * {@code /dev} or overlaps the configuration root, fail the start.
  */
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(PackSourceProperties.class)
@@ -95,12 +95,18 @@ public class PackSourceWiring {
      * @param tree the writer of a walked tree
      * @param configRoot the configuration root the source root must not overlap, when one is set
      * @return the fetcher
+     * @throws IllegalStateException when the source is switched on and no root is configured
      * @throws IllegalArgumentException when the root is under {@code /proc}, {@code /sys} or {@code /dev}, or overlaps
      *     the configuration root
      */
     @Bean
     PackSourceFetcher filesystemSourceFetcher(
             PackSourceProperties properties, PackTreeReader tree, ObjectProvider<ConfigRoot> configRoot) {
+        if (properties.filesystem().enabled() && properties.filesystem().root() == null) {
+            throw new IllegalStateException("charter.pack-sources.filesystem.enabled is true but "
+                    + "charter.pack-sources.filesystem.root is not set: name the directory a path is read under, "
+                    + "or switch the filesystem source off.");
+        }
         ConfigRoot configured = configRoot.getIfAvailable();
         Path config = configured == null ? null : configured.root();
         return new LocalSourceReader(properties.filesystem().root(), config, tree);
