@@ -9,12 +9,10 @@ import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditi
 import ai.speckitty.charter.packs.application.PackRegistrationService.RegistrationOutcome;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -35,7 +33,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -55,6 +52,12 @@ public final class RegistrationJobs implements AutoCloseable {
 
     /** Registrations that wait for a worker; the next is refused with {@code Retry-After}. */
     public static final int WAITING_LIMIT = 8;
+
+    /**
+     * Uploads open at once, counted apart from the queue: as many as the queue has slots, so that the bodies arriving
+     * are never more than the jobs that can be waiting for them (#418, F1). The next is refused with {@code Retry-After}.
+     */
+    public static final int UPLOAD_LIMIT = RUNNING_LIMIT + WAITING_LIMIT;
 
     /** The most statuses kept, ended or not (one replica, ADR-0061). */
     public static final int MAX_RETAINED = 1_000;
@@ -259,7 +262,32 @@ public final class RegistrationJobs implements AutoCloseable {
         }
     }
 
-    /** A slot in the queue, taken before the body is read. */
+    /**
+     * A body that is arriving: a directory in staging that holds the spool, and no slot of the queue (#418, A4). A
+     * reservation made with it adopts the directory as the job's; one that is never made leaves the directory to
+     * {@link #discard()}.
+     */
+    public interface Upload {
+
+        /**
+         * The registration id the job will have, the name of the directory.
+         *
+         * @return the ULID
+         */
+        String id();
+
+        /**
+         * The directory the body is spooled in.
+         *
+         * @return the directory, owner-only
+         */
+        Path directory();
+
+        /** Removes the directory unless a reservation adopted it, and ends the upload's ownership of it. Idempotent. */
+        void discard();
+    }
+
+    /** A slot in the queue, taken once the body is spooled. */
     public interface Reservation {
 
         /**
@@ -280,8 +308,12 @@ public final class RegistrationJobs implements AutoCloseable {
          * Hands the job to the executor.
          *
          * @param stager what produces the tree
+         * @return {@code true} when the job was handed over; {@code false} when it had ended already, because the
+         *     deadline or the shutdown reached it while it was reserved: its status then holds that end (for the deadline,
+         *     {@code registration_timed_out}), nothing runs, and the caller answers with that status
+         * @throws IllegalStateException when the job was started before
          */
-        void start(Stager stager);
+        boolean start(Stager stager);
 
         /** Gives the slot back, when the request failed before the job could start; deletes the directory. */
         void abandon();
@@ -310,7 +342,7 @@ public final class RegistrationJobs implements AutoCloseable {
      * @param audit the audit trail
      * @param gate the test seam
      * @param room the free-space check
-     * @param stagingRoot the directory the jobs stage in
+     * @param staging the staging area the jobs stage in
      */
     public record Dependencies(
             java.time.Clock clock,
@@ -319,7 +351,7 @@ public final class RegistrationJobs implements AutoCloseable {
             AuditLog audit,
             JobGate gate,
             StorageRoom room,
-            Path stagingRoot) {
+            StagingArea staging) {
 
         /**
          * Checks the fields.
@@ -330,7 +362,7 @@ public final class RegistrationJobs implements AutoCloseable {
          * @param audit the audit trail
          * @param gate the test seam
          * @param room the free-space check
-         * @param stagingRoot the directory the jobs stage in
+         * @param staging the staging area the jobs stage in
          */
         public Dependencies {
             Objects.requireNonNull(clock, "clock");
@@ -339,23 +371,64 @@ public final class RegistrationJobs implements AutoCloseable {
             Objects.requireNonNull(audit, "audit");
             Objects.requireNonNull(gate, "gate");
             Objects.requireNonNull(room, "room");
-            Objects.requireNonNull(stagingRoot, "stagingRoot");
+            Objects.requireNonNull(staging, "staging");
         }
     }
 
-    /** The check that the pack volume has room, before a job writes anything. */
+    /** The check that the volumes a registration writes to have room, before it writes anything. */
     @FunctionalInterface
     public interface StorageRoom {
 
         /** A volume that always has room. */
         StorageRoom UNBOUNDED = () -> {};
 
+        /** The archive size that is not known: a chunked body, a source. It is judged as a full-size archive. */
+        long UNKNOWN_BYTES = -1;
+
+        /** The archive bound of a registration, 32 MiB (NFR-004): what an upload of unknown length is taken to write. */
+        long ARCHIVE_BOUND_BYTES = 32L * 1024 * 1024;
+
         /**
-         * Checks the room.
+         * Checks the room for an archive of the largest size a registration takes.
          *
-         * @throws CharterRefusal {@code PACK_STORAGE_FULL} when less than twice the archive bound is free
+         * @throws CharterRefusal {@code PACK_STORAGE_FULL} when a volume has less than the per-job peak free
          */
         void require();
+
+        /**
+         * Checks the room for an archive of this size: at admission, the declared length of the upload.
+         *
+         * @param archiveBytes the archive's size, or {@link #UNKNOWN_BYTES}
+         * @throws CharterRefusal {@code PACK_STORAGE_FULL} when a volume has less than the per-job peak free
+         */
+        default void require(long archiveBytes) {
+            require();
+        }
+
+        /**
+         * Checks the room for an archive of this size when other uploads are open: the bytes they are declared to write
+         * are not free for this one.
+         *
+         * @param archiveBytes the archive's size, or {@link #UNKNOWN_BYTES}
+         * @param openUploadBytes the declared bytes of the uploads already open ({@link #ARCHIVE_BOUND_BYTES} for each
+         *     of unknown length)
+         * @throws CharterRefusal {@code PACK_STORAGE_FULL} when a volume has less than the peak plus these bytes free
+         */
+        default void require(long archiveBytes, long openUploadBytes) {
+            require(archiveBytes);
+        }
+
+        /**
+         * Checks the room for what a job still has to write when it runs, which is less than its peak when the archive is
+         * already spooled: the tree it expands to and the copy the commit makes, not the archive again.
+         *
+         * @param archiveBytes the size of the archive already spooled in staging, or {@link #UNKNOWN_BYTES} when the job
+         *     has still to fetch it (a source), which is judged as a full-size archive written at run time
+         * @throws CharterRefusal {@code PACK_STORAGE_FULL} when a volume has less than that free
+         */
+        default void requireForRun(long archiveBytes) {
+            require(archiveBytes);
+        }
     }
 
     private static final System.Logger LOG = System.getLogger(RegistrationJobs.class.getName());
@@ -368,6 +441,9 @@ public final class RegistrationJobs implements AutoCloseable {
     private final ThreadPoolExecutor executor;
     private final Map<String, Job> jobs = new LinkedHashMap<>();
     private final AtomicInteger inFlight = new AtomicInteger();
+    /** The uploads open, with the bytes each is declared to write; guarded by itself. */
+    private final Map<Path, Long> uploads = new LinkedHashMap<>();
+
     private final SecureRandom random = new SecureRandom();
     private volatile boolean closing;
     private @Nullable ScheduledExecutorService watchdog;
@@ -389,6 +465,15 @@ public final class RegistrationJobs implements AutoCloseable {
                     thread.setDaemon(true);
                     return thread;
                 });
+    }
+
+    /**
+     * The staging area the jobs work in, for the stagers that make a directory inside a job's.
+     *
+     * @return the staging area
+     */
+    public StagingArea staging() {
+        return dependencies.staging();
     }
 
     /**
@@ -429,27 +514,200 @@ public final class RegistrationJobs implements AutoCloseable {
      * @throws PreconditionException {@code STALE} when the preconditions do not hold against the stored pack
      */
     public Reservation reserve(String packId, Preconditions preconditions, Origin origin) {
+        return take(packId, preconditions, origin, null, StorageRoom.UNKNOWN_BYTES);
+    }
+
+    /**
+     * Takes a slot for the registration of an upload whose body is spooled: the same refusals as
+     * {@link #reserve(String, Preconditions, Origin)}, judged now that the body is here, and the job adopts the upload's
+     * directory. The deadline of the job counts from this moment, not from the start of the transfer.
+     *
+     * @param packId the target pack
+     * @param preconditions the conditional headers
+     * @param origin where the attempt came from
+     * @param upload the spooled body
+     * @param archiveBytes the size of the spooled archive, which the job's free-space check is made for
+     * @return the reservation, whose directory is the upload's
+     * @throws RetryLaterException when two jobs run and eight wait already, or the service is stopping
+     * @throws PreconditionException {@code STALE} when the preconditions do not hold against the stored pack
+     * @throws IllegalStateException when a reservation adopted the upload already
+     */
+    public Reservation reserve(
+            String packId, Preconditions preconditions, Origin origin, Upload upload, long archiveBytes) {
+        return take(packId, preconditions, origin, Objects.requireNonNull(upload, "upload"), archiveBytes);
+    }
+
+    private Reservation take(
+            String packId, Preconditions preconditions, Origin origin, @Nullable Upload upload, long archiveBytes) {
         Objects.requireNonNull(packId, "packId");
         Objects.requireNonNull(preconditions, "preconditions");
         Objects.requireNonNull(origin, "origin");
-        if (closing) {
-            throw new RetryLaterException(STOPPING_DETAIL, RETRY_AFTER_SECONDS);
+        requireOpen();
+        OpenUpload claimed = upload instanceof OpenUpload open ? open : null;
+        if (claimed != null && !claimed.claim()) {
+            throw new IllegalStateException("the upload " + claimed.id() + " was adopted by a reservation already");
         }
+        try {
+            return takeSlot(packId, preconditions, origin, upload, archiveBytes, claimed);
+        } catch (RuntimeException | Error refused) {
+            if (claimed != null) {
+                claimed.unclaim();
+            }
+            throw refused;
+        }
+    }
+
+    private Reservation takeSlot(
+            String packId,
+            Preconditions preconditions,
+            Origin origin,
+            @Nullable Upload upload,
+            long archiveBytes,
+            @Nullable OpenUpload claimed) {
         if (inFlight.incrementAndGet() > RUNNING_LIMIT + WAITING_LIMIT) {
             inFlight.decrementAndGet();
-            throw new RetryLaterException(
-                    "Two registrations run and " + WAITING_LIMIT + " wait; send this one again shortly.",
-                    RETRY_AFTER_SECONDS);
+            throw queueFull();
         }
         try {
             Optional<PackRevision> stored = storedRevision(packId);
             preconditions.requireMet(stored);
-            Job job = new Job(this, packId, preconditions, origin, stored);
+            Job job = new Job(this, packId, preconditions, origin, stored, upload, archiveBytes);
             admit(job);
+            if (claimed != null) {
+                claimed.adopt();
+            }
             return job;
         } catch (RuntimeException | Error refused) {
             inFlight.decrementAndGet();
             throw refused;
+        }
+    }
+
+    /**
+     * The admission of an upload, before its body is read: refuses what {@link #reserve} would refuse now, without taking
+     * a slot, so that a full queue or a stale {@code If-Match} is answered before 32 MiB are sent. The same checks are
+     * made again when the body is spooled, since the queue and the pack move meanwhile.
+     *
+     * @param packId the target pack
+     * @param preconditions the conditional headers
+     * @throws RetryLaterException when two jobs run and eight wait already, or the service is stopping
+     * @throws PreconditionException {@code STALE} when the preconditions do not hold against the stored pack
+     */
+    public void precheck(String packId, Preconditions preconditions) {
+        Objects.requireNonNull(packId, "packId");
+        Objects.requireNonNull(preconditions, "preconditions");
+        requireOpen();
+        if (inFlight.get() >= RUNNING_LIMIT + WAITING_LIMIT) {
+            throw queueFull();
+        }
+        preconditions.requireMet(storedRevision(packId));
+    }
+
+    /**
+     * Opens the directory a body is spooled in. It holds no slot of the queue, but a place among at most
+     * {@link #UPLOAD_LIMIT} uploads open at once, and the room it will need is asked for on top of what the open uploads
+     * are declared to write: each is bounded at 32 MiB by the body guard, and the sweep leaves a directory that is open
+     * (#418, A4, F1). The place is given back when a reservation adopts the directory or {@link Upload#discard()} runs.
+     *
+     * @param declaredBytes the declared length of the body, or {@link StorageRoom#UNKNOWN_BYTES}
+     * @return the upload
+     * @throws RetryLaterException when the service is stopping, or {@link #UPLOAD_LIMIT} uploads are open already
+     * @throws CharterRefusal {@code PACK_STORAGE_FULL} when the volumes have no room left for it
+     */
+    public Upload openUpload(long declaredBytes) {
+        requireOpen();
+        long bytes = declaredBytes < 0 || declaredBytes > StorageRoom.ARCHIVE_BOUND_BYTES
+                ? StorageRoom.ARCHIVE_BOUND_BYTES
+                : declaredBytes;
+        String id = Ulid.next(clock.instant(), random);
+        synchronized (uploads) {
+            if (uploads.size() >= UPLOAD_LIMIT) {
+                throw uploadsFull();
+            }
+            long open = uploads.values().stream().mapToLong(Long::longValue).sum();
+            dependencies.room().require(declaredBytes, open);
+            Path directory;
+            try {
+                directory = dependencies.staging().createJobDirectory(id);
+            } catch (IOException failure) {
+                throw new UncheckedIOException("cannot create the staging directory of an upload", failure);
+            }
+            uploads.put(directory, bytes);
+            return new OpenUpload(id, directory);
+        }
+    }
+
+    private void requireOpen() {
+        if (closing) {
+            throw new RetryLaterException(STOPPING_DETAIL, RETRY_AFTER_SECONDS);
+        }
+    }
+
+    private static RetryLaterException queueFull() {
+        return new RetryLaterException(
+                "Two registrations run and " + WAITING_LIMIT + " wait; send this one again shortly.",
+                RETRY_AFTER_SECONDS);
+    }
+
+    private List<Path> openUploads() {
+        synchronized (uploads) {
+            return List.copyOf(uploads.keySet());
+        }
+    }
+
+    private boolean forget(Path directory) {
+        synchronized (uploads) {
+            return uploads.remove(directory) != null;
+        }
+    }
+
+    private static RetryLaterException uploadsFull() {
+        return new RetryLaterException(
+                UPLOAD_LIMIT + " uploads are open already; send this one again shortly.", RETRY_AFTER_SECONDS);
+    }
+
+    /** An upload in progress. */
+    private final class OpenUpload implements Upload {
+        private final String id;
+        private final Path directory;
+        private final AtomicBoolean adopted = new AtomicBoolean();
+
+        OpenUpload(String id, Path directory) {
+            this.id = id;
+            this.directory = directory;
+        }
+
+        @Override
+        public String id() {
+            return id;
+        }
+
+        @Override
+        public Path directory() {
+            return directory;
+        }
+
+        /** Takes the upload for one reservation: {@code false} when one holds it already. */
+        boolean claim() {
+            return adopted.compareAndSet(false, true);
+        }
+
+        /** Gives the upload back, when the reservation that claimed it was refused. */
+        void unclaim() {
+            adopted.set(false);
+        }
+
+        /** The reservation holds the directory now: the upload's place is free. */
+        void adopt() {
+            forget(directory);
+        }
+
+        @Override
+        public void discard() {
+            if (adopted.get() || !forget(directory)) {
+                return;
+            }
+            dependencies.staging().delete(directory);
         }
     }
 
@@ -529,7 +787,7 @@ public final class RegistrationJobs implements AutoCloseable {
      */
     public Set<Path> owned() {
         synchronized (jobs) {
-            Set<Path> owned = new LinkedHashSet<>();
+            Set<Path> owned = new LinkedHashSet<>(openUploads());
             jobs.values().stream().filter(job -> !job.ended()).forEach(job -> owned.add(job.directory));
             return owned;
         }
@@ -568,6 +826,11 @@ public final class RegistrationJobs implements AutoCloseable {
             snapshot = List.copyOf(jobs.values());
         }
         snapshot.forEach(Job::stop);
+        openUploads().forEach(directory -> {
+            if (forget(directory)) {
+                dependencies.staging().delete(directory);
+            }
+        });
         executor.shutdown();
         try {
             if (!executor.awaitTermination(30, TimeUnit.SECONDS)) {
@@ -607,6 +870,7 @@ public final class RegistrationJobs implements AutoCloseable {
         private final Preconditions preconditions;
         private final Origin origin;
         private final String revisionBefore;
+        private final long archiveBytes;
         private final Instant acceptedAt;
         private final Path directory;
         private Phase phase = Phase.RESERVED;
@@ -622,19 +886,25 @@ public final class RegistrationJobs implements AutoCloseable {
                 String packId,
                 Preconditions preconditions,
                 Origin origin,
-                Optional<PackRevision> stored) {
+                Optional<PackRevision> stored,
+                @Nullable Upload upload,
+                long archiveBytes) {
             this.owner = owner;
             this.acceptedAt = owner.clock.instant();
-            this.id = Ulid.next(acceptedAt, owner.random);
+            this.archiveBytes = archiveBytes;
+            this.id = upload != null ? upload.id() : Ulid.next(acceptedAt, owner.random);
             this.packId = packId;
             this.preconditions = preconditions;
             this.origin = origin;
             this.revisionBefore = stored.map(PackRevision::token).orElse("");
-            this.directory = owner.dependencies.stagingRoot().resolve(id);
-            try {
-                OwnerOnly.directories(directory);
-            } catch (IOException failure) {
-                throw new UncheckedIOException("cannot create the staging directory of a registration", failure);
+            if (upload != null) {
+                this.directory = upload.directory();
+            } else {
+                try {
+                    this.directory = owner.dependencies.staging().createJobDirectory(id);
+                } catch (IOException failure) {
+                    throw new UncheckedIOException("cannot create the staging directory of a registration", failure);
+                }
             }
         }
 
@@ -672,8 +942,13 @@ public final class RegistrationJobs implements AutoCloseable {
         }
 
         @Override
-        public void start(Stager work) {
+        public boolean start(Stager work) {
             synchronized (this) {
+                if (phase == Phase.ENDED && stager == null) {
+                    // The deadline or the shutdown ended the job while it was reserved: its end stands, and the
+                    // request that reserved it answers with that status instead of failing (#418, A4).
+                    return false;
+                }
                 if (phase != Phase.RESERVED) {
                     throw new IllegalStateException("The registration was started or ended already.");
                 }
@@ -685,6 +960,7 @@ public final class RegistrationJobs implements AutoCloseable {
             } catch (RejectedExecutionException stopped) {
                 end(new Refused(Kind.BUSY, null, STOPPING_DETAIL), false);
             }
+            return true;
         }
 
         @Override
@@ -778,7 +1054,7 @@ public final class RegistrationJobs implements AutoCloseable {
 
         private @Nullable Ending work() {
             try {
-                owner.dependencies.room().require();
+                owner.dependencies.room().requireForRun(archiveBytes);
                 Staged staged = Objects.requireNonNull(stager).stage(directory);
                 RegistrationOutcome outcome =
                         owner.dependencies.service().register(packId, staged.pack(), preconditions, this::beginCommit);
@@ -915,19 +1191,7 @@ public final class RegistrationJobs implements AutoCloseable {
         }
 
         private void deleteDirectory() {
-            if (!Files.exists(directory, java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
-                return;
-            }
-            try (Stream<Path> walk = Files.walk(directory)) {
-                for (Path path : walk.sorted(Comparator.reverseOrder()).toList()) {
-                    Files.deleteIfExists(path);
-                }
-            } catch (IOException | UncheckedIOException failure) {
-                LOG.log(
-                        System.Logger.Level.WARNING,
-                        "The staging directory of a registration could not be removed; the sweep takes it later.",
-                        failure);
-            }
+            owner.dependencies.staging().delete(directory);
         }
     }
 }

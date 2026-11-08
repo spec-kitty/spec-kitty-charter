@@ -23,6 +23,7 @@ import ai.speckitty.charter.packs.application.RegistrationJobs;
 import ai.speckitty.charter.packs.application.RegistrationJobs.Staged;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
 import ai.speckitty.charter.packs.application.WholePackWriteStore;
+import ai.speckitty.charter.packs.infra.storage.FileStagingArea;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
 import ai.speckitty.charter.web.RefusalHandler;
 import java.nio.file.Path;
@@ -75,7 +76,7 @@ class PackSourceRegistrationTest {
                 audit::add,
                 RegistrationJobs.JobGate.OPEN,
                 RegistrationJobs.StorageRoom.UNBOUNDED,
-                staging));
+                new FileStagingArea(staging)));
         info = new ServiceInfoQuery("worktree-source", new ConsistentRead(new FileSystemPackSources(List::of)));
         mvc = mvcWith(List.of(stub(PackSourceKind.HTTPS_ARCHIVE)), info);
     }

@@ -1027,9 +1027,14 @@
     preset item or a file the upload does not carry is gone, and the same version with the same
     revision ends unchanged. The registration is asynchronous: 202 and a status to poll. Two
     registrations run and eight wait, a ninth waiter is 503 with Retry-After, and the 90 second
-    deadline counts the time spent in the queue. A slot is taken before the body is read, so a few
-    slow uploads can make other callers get 503 (a known limit, accepted for this release). The
-    status is kept in memory for one hour, at most 1,000 entries.
+    deadline counts the time spent in the queue. A slot is taken after the body is spooled, so a
+    slow upload holds none while it arrives (what it holds is a connection, up to 32 MiB of
+    staging and one of ten places for uploads open at once; the eleventh is 503 with Retry-After);
+    the queue and If-Match are checked before the body is read and again then. The free-space
+    check (503 pack_storage_full) runs at admission, on top of the declared bytes of the uploads
+    already open, and when the job runs, on the staging and the pack volume, against the per-job
+    peak of about three times the archive bound.
+    The status is kept in memory for one hour, at most 1,000 entries.
   rationale: >-
     A registration is the whole truth about a pack, so nothing a client dropped can survive in it,
     and one request is one atomic swap.
@@ -1282,7 +1287,12 @@
     and refuses links and submodules in the tree (422 validation_failed, violation entry_type, as
     for an archive). A branch ref without a commit is 428 unless If-Match or If-None-Match: * is
     sent. The reasons bad_ref and commit_mismatch are new. sha256 repositories are untested. CI has
-    a new required job, git-source, that runs the real-git tests.
+    a new required job, git-source, that runs the real-git tests. Every run carries config pins that
+    bound the memory git inflates and maps (a 1 MiB big-file threshold, 16 MiB of pack window and
+    window memory, 64 MiB of mapped packs, a 16 MiB delta base cache, one thread), so a fetch stays
+    within tens of MiB. They do not cap address space or time beyond the one deadline. With
+    core.bigFileThreshold=1m and transfer.fsckObjects=true git refuses a .gitmodules blob over
+    1 MiB (gitmodulesLarge).
   rationale: >-
     A host binary is the operator's ruling (no JGit); the version floor and the fixed command line
     bound what it can do.
@@ -1291,3 +1301,23 @@
   since: 2026-11-08
   evidence:
     - "charter: contracts/charter/scenarios/registration/whole-pack-registration.feature (A git ref is pinned to the commit it points at; A hostile git ref is refused); NetworkCodeBoundaryTest; .github/workflows/service.yml (git-source)"
+- id: DIV-614
+  surface: Pack writes when the activation store cannot be listed
+  core: >-
+    The service's understanding of core, to be confirmed against core: it has no activation store to
+    list.
+  service: >-
+    The registration impact check lists the stored activations. When the store cannot be listed (the
+    platform refuses to read its directory), a per-artifact write, a DELETE or a registration job
+    ends as 500 internal_error, the job as refused with internal_error and failed:internal_error in
+    the audit log. Nothing is written, the body is the generic one and the cause is in the operator
+    log. This is how a stored document that cannot be read back is answered. No refusal code names a
+    fault of the activation store, and none is added.
+  rationale: >-
+    A fault of the store is the service's, not the client's, and a code that blames neither the pack
+    nor the request would mislead.
+  ruling: ADR-0065; issue 418 (R6)
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: ActivationListingFaultTest; FileActivationRepositoryListingFailureTest; ActivationImpactAdapterTest"

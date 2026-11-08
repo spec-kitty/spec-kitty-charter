@@ -2,7 +2,7 @@
 title: "ADR-0065: Registering a pack replaces the whole pack"
 description: Registering a whole pack replaces the known pack, removals included; per-artifact writes are helpers; removal is by DELETE; registration is asynchronous and impact-checked.
 doc_status: active
-updated: 2026-11-07T00:00:00Z
+updated: 2026-11-08T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-11-07'
 type: ADR
@@ -185,11 +185,50 @@ source kind's own flag, the `packId` grammar, body size, media type and magic by
   the notices and a link to the pack) or `refused` (with the `Problem` a synchronous API would have answered). The
   `409` and `422` answers of D2 to D6 are the `problem` of a `refused` status, never a synchronous answer. The job
   also ends `refused` with `registration_timed_out` (`504`, at the source deadline plus 30 seconds) or
-  `pack_storage_full` (`503`, less than twice the archive bound free, checked before anything is written).
+  `pack_storage_full` (`503`, less than the per-job peak free, checked at admission and again before anything is
+  written; see the note of 2026-11-08 below).
 - Status is kept in memory for one hour after the job ends, at most 1,000 entries. A restart forgets pending jobs and
   their URI then answers `404`; a client re-sends, which the version rule of D2 makes idempotent.
 - The client polls the URI. There is no outbound callback, so the service opens no connection to a client-chosen
   address (SSRF).
+
+**Note, 2026-11-08 (#418, items A3, A4, A6, A8).** The upload path of `PUT /packs/{packId}` changed; the decision above
+stands, and the clauses it names are read as follows.
+
+- *The body is streamed.* The archive is copied from the request stream, behind the 32 MiB counter, into an owner-only
+  spool file in the job's directory. It is never held in the heap (A3).
+- *A slow upload holds no slot (A4).* Two designs were open: (a) take the slot only after the body is spooled, or (b)
+  count uploads in progress separately (two reading, `503` beyond) with a body read deadline. (a) is chosen, with a plain
+  cap on the uploads open at once (see the cost below) instead of (b)'s body read deadline. That deadline needs a
+  deadline on a blocking socket read, which the application cannot enforce between bytes, and an answer for an upload
+  that outran it, and the contract declares no `408` or `504` for `registerPackFromArchive`; (a) answers only with
+  statuses the contract already declares. Admission still refuses, before the body is read, a declared length over 32
+  MiB (`413`), a full queue (`503` with `Retry-After`), a stale `If-Match` or an `If-None-Match: *` over a stored pack
+  (`412`), and a full volume (`503 pack_storage_full`); the queue and the preconditions are judged again when the body is
+  spooled, because both move during a transfer. The slot, and the 90 second deadline, start then, so the deadline no
+  longer counts the transfer. The cost, and its bound: bodies arriving hold no slot, so they would be limited only by
+  the server's connections (8192 with virtual threads), each writing up to 32 MiB that the others' free-space checks
+  never saw. They are therefore counted apart from the queue: at most `RUNNING_LIMIT + WAITING_LIMIT` = 10 uploads are
+  open at once, the eleventh is refused at admission with the `503` and `Retry-After` of a full queue (the same
+  declared answer, no new code), and an upload gives its place back when its body is spooled and a reservation adopts
+  it, or when it is discarded (a refused or abandoned transfer). An open upload still holds no queue slot. The
+  free-space check at admission is cumulative: it asks for its own room on top of the declared length (32 MiB when none
+  is declared) of every upload already open. Each body is bounded at 32 MiB, an abandoned spool is a job-id-named
+  directory the sweep removes after 15 minutes (never one whose transfer is open), and the endpoint needs the worktree
+  token and the flag. A job the deadline ends while it is reserved, before the controller starts it, is answered by its
+  own end: `202` with the refused status `registration_timed_out`, the outcome the audit records, not a `500`.
+- *Free space (A6).* The check runs at admission, from the declared length (a body with none is judged as full-size) plus the declared
+  bytes of the uploads already open, and
+  when the job runs, on the staging volume as well as the pack volume. The margin is the per-job peak: about three times
+  the archive bound, the archive, the extracted tree and the copy the commit makes beside the pack (96 MiB for a
+  full-size archive on one volume; on two volumes, the staging volume needs the archive and the tree and the pack volume
+  the copy). A zip is read where it was spooled, not copied to a second spool, which is what keeps the peak at three.
+  When the job runs the archive of an upload is on the volume already, so the run-time check asks only what is left to
+  write, the tree and the copy: two bounds on one volume, a bound on each of two. A job that has still to fetch its
+  archive (a source) is asked the whole peak. The per-job peak is the three together, the archive counted at admission.
+  The refusal and its code are unchanged.
+- *Staging area (A8).* The staging directory's lifecycle (root, owner-only job directory, deletion) is the application
+  port `StagingArea`, implemented in `infra.storage` and composed in the deployable.
 
 ### D9. The version-to-digest history
 

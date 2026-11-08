@@ -39,7 +39,7 @@ import org.springframework.web.server.ResponseStatusException;
  * status, and {@code GET /packs/{packId}} reads the stored pack's summary (FR-024, FR-039). The checks that come before
  * the body is read (the flags, the packId grammar, the headers, the declared length, the queue) are
  * {@link RegistrationAdmission}'s, the body's size and media type {@link ArchiveBodyAdvice}'s, and the {@code 401} the
- * guard's; this class spools the judged body into the slot the admission took, hands the job its stager, and answers.
+ * guard's; this class spools the judged body, takes the slot, hands the job its stager, and answers.
  * {@code POST /packs} names a source instead: its kind's flag and availability, the slot and the preconditions come after
  * the JSON body is bound (the target and the kind are in it), and the fetch is the job's. Everything after the {@code 202}
  * is the job's. The two {@code DELETE}s are {@link PackRemovalController}'s: they carry the same contract tag, so the
@@ -50,6 +50,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class PackRegistrationController implements RegistrationApi {
 
     private static final String ARCHIVE_FILE = "archive";
+    private static final int SPOOL_BUFFER_BYTES = 64 * 1024;
 
     private final RegistrationJobs jobs;
     private final PackSummaryQuery summaries;
@@ -119,20 +120,67 @@ public class PackRegistrationController implements RegistrationApi {
     public ResponseEntity<PackRegistrationStatus> registerPackFromArchive(
             String packId, Resource body, @Nullable String ifMatch, @Nullable String ifNoneMatch) {
         HttpServletRequest request = currentRequest();
-        RegistrationJobs.Reservation reservation = RegistrationAdmission.reservationOf(request);
         ArchiveBody archive = archiveOf(body);
-        Path file = reservation.directory().resolve(ARCHIVE_FILE);
+        AuditContext audit = AuditContext.of(request);
+        // The body is spooled before a slot is taken, so a slow upload holds none (#418, A4, ADR-0065 D8). The upload,
+        // and its place among the ten that may be open, are the admission's (#418, F1).
+        RegistrationJobs.Upload upload = RegistrationAdmission.admittedUpload(request);
+        try {
+            Path file = upload.directory().resolve(ARCHIVE_FILE);
+            long bytes = spool(archive, file);
+            RegistrationJobs.Reservation reservation = jobs.reserve(
+                    packId,
+                    RegistrationAdmission.admittedPreconditions(request),
+                    RegistrationAdmission.originOf(request),
+                    upload,
+                    bytes);
+            try {
+                audit.revisionBefore(reservation.revisionBefore());
+                // The status the 202 answers is read before the job can start: a worker may be running it at once.
+                RegistrationJobs.Status accepted = reservation.status();
+                if (!reservation.start(ArchiveStaging.of(jobs.staging(), archives, archive.format(), file))) {
+                    // The deadline ended it first: the client gets the end the audit records, not a failure.
+                    accepted = reservation.status();
+                }
+                audit.handedToJob();
+                return accepted(reservation.id(), accepted);
+            } catch (RuntimeException failure) {
+                reservation.abandon();
+                throw failure;
+            }
+        } finally {
+            upload.discard();
+        }
+    }
+
+    /**
+     * Copies the body, which is never held in memory, to the job's owner-only spool file (#418, A3). A body that stops
+     * before its end, because the client went away, is a {@code 400}; a file that cannot be written is the service's own
+     * failure. The size limit is the body stream's: it refuses the byte after 32 MiB with the {@code 413}.
+     *
+     * @return the bytes spooled
+     */
+    private static long spool(ArchiveBody archive, Path file) {
+        byte[] buffer = new byte[SPOOL_BUFFER_BYTES];
+        long total = 0;
         try (InputStream bytes = archive.getInputStream();
                 OutputStream spooled = OwnerOnly.newFile(file)) {
-            bytes.transferTo(spooled);
+            while (true) {
+                int read;
+                try {
+                    read = bytes.read(buffer);
+                } catch (IOException broken) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The body could not be read.", broken);
+                }
+                if (read < 0) {
+                    return total;
+                }
+                spooled.write(buffer, 0, read);
+                total += read;
+            }
         } catch (IOException failure) {
             throw new UncheckedIOException("cannot spool the archive of a registration", failure);
         }
-        // The status the 202 answers is read before the job can start: a worker may be running it at once.
-        RegistrationJobs.Status accepted = reservation.status();
-        reservation.start(ArchiveStaging.of(archives, archive.format(), file));
-        AuditContext.of(request).handedToJob();
-        return accepted(reservation.id(), accepted);
     }
 
     @Override
@@ -158,7 +206,10 @@ public class PackRegistrationController implements RegistrationApi {
             audit.revisionBefore(reservation.revisionBefore());
             // The status the 202 answers is read before the job can start: a worker may be running it at once.
             RegistrationJobs.Status accepted = reservation.status();
-            reservation.start(stager);
+            if (!reservation.start(stager)) {
+                // The deadline ended it first: the client gets the end the audit records, not a failure.
+                accepted = reservation.status();
+            }
             audit.handedToJob();
             return accepted(reservation.id(), accepted);
         } catch (RuntimeException failure) {

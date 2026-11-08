@@ -13,37 +13,175 @@ import java.nio.file.attribute.FileStoreAttributeView;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/** The room a registration needs on the pack volume (NFR-009): twice the 32 MiB archive bound, judged by a fake store. */
+/**
+ * The room a registration needs (NFR-009, #418 A6): the per-job peak, which holds the archive, the extracted tree and the
+ * commit copy, each at most the 32 MiB bound. On one volume that is three times the bound for an archive of the bound; on
+ * two, the staging volume holds the archive and the tree and the pack volume the commit copy. Judged by fake stores.
+ */
 class FreeSpaceCheckTest {
 
     private static final long MIB = 1024L * 1024L;
 
     @Test
-    void lessThanTwiceTheArchiveBoundIsRefusedStorageFull() {
-        FreeSpaceCheck check = new FreeSpaceCheck(() -> storeWith(63 * MIB));
+    void lessThanThePeakOfAFullSizeArchiveOnOneVolumeIsRefusedStorageFull() {
+        FreeSpaceCheck check = new FreeSpaceCheck(() -> storeWith(95 * MIB));
 
         assertThatThrownBy(check::require).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
             assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_STORAGE_FULL);
-            assertThat(refusal.getMessage()).contains("64 MiB").contains("63 MiB");
+            assertThat(refusal.getMessage()).contains("96 MiB").contains("95 MiB");
         });
     }
 
     @Test
-    void twiceTheArchiveBoundOrMoreIsAccepted() {
-        assertThatCode(new FreeSpaceCheck(() -> storeWith(65 * MIB))::require).doesNotThrowAnyException();
-        assertThatCode(new FreeSpaceCheck(() -> storeWith(64 * MIB))::require)
-                .as("exactly the bound is room enough: only less than it is refused")
+    void thePeakOrMoreOnOneVolumeIsAccepted() {
+        assertThatCode(new FreeSpaceCheck(() -> storeWith(97 * MIB))::require).doesNotThrowAnyException();
+        assertThatCode(new FreeSpaceCheck(() -> storeWith(96 * MIB))::require)
+                .as("exactly the peak is room enough: only less than it is refused")
                 .doesNotThrowAnyException();
+    }
+
+    @Test
+    void anArchiveOfUnknownSizeNeedsTheRoomOfAFullSizeOne() {
+        assertThatThrownBy(() -> new FreeSpaceCheck(() -> storeWith(95 * MIB)).require(-1))
+                .isInstanceOf(CharterRefusal.class);
+        assertThatCode(() -> new FreeSpaceCheck(() -> storeWith(96 * MIB)).require(-1))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void aSmallerArchiveNeedsItsOwnSizePlusTheTwoBoundsOfTheTreeAndTheCopy() {
+        assertThatThrownBy(() -> new FreeSpaceCheck(() -> storeWith(64 * MIB)).require(1 * MIB))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_STORAGE_FULL);
+                    assertThat(refusal.getMessage()).contains("65 MiB");
+                });
+        assertThatCode(() -> new FreeSpaceCheck(() -> storeWith(65 * MIB)).require(1 * MIB))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void anArchiveLargerThanTheBoundIsJudgedAsTheBound() {
+        assertThatCode(() -> new FreeSpaceCheck(() -> storeWith(96 * MIB)).require(500 * MIB))
+                .as("a body over the bound is a 413 before this check; the check never asks for more than the peak")
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void onTwoVolumesTheStagingVolumeHoldsTheArchiveAndTheTreeAndThePackVolumeTheCommitCopy() {
+        FileStore packs = storeWith(1024 * MIB);
+        FileStore staging = storeWith(63 * MIB);
+        assertThatThrownBy(() -> new FreeSpaceCheck(() -> packs, () -> staging).require())
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_STORAGE_FULL);
+                    assertThat(refusal.getMessage())
+                            .contains("staging volume")
+                            .contains("63 MiB")
+                            .contains("64 MiB");
+                });
+
+        FileStore tightPacks = storeWith(31 * MIB);
+        FileStore roomyStaging = storeWith(1024 * MIB);
+        assertThatThrownBy(() -> new FreeSpaceCheck(() -> tightPacks, () -> roomyStaging).require())
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_STORAGE_FULL);
+                    assertThat(refusal.getMessage())
+                            .contains("pack volume")
+                            .contains("31 MiB")
+                            .contains("32 MiB");
+                });
+
+        assertThatCode(() -> new FreeSpaceCheck(() -> storeWith(32 * MIB), () -> storeWith(64 * MIB)).require())
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void theBytesOfTheUploadsAlreadyOpenAreNotFreeForTheNextOne() {
+        assertThatThrownBy(() -> new FreeSpaceCheck(() -> storeWith(74 * MIB)).require(1 * MIB, 10 * MIB))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_STORAGE_FULL);
+                    assertThat(refusal.getMessage()).contains("74 MiB").contains("75 MiB");
+                });
+        assertThatCode(() -> new FreeSpaceCheck(() -> storeWith(75 * MIB)).require(1 * MIB, 10 * MIB))
+                .as("1 MiB and the two bounds, and the 10 MiB the open uploads will write")
+                .doesNotThrowAnyException();
+        assertThatCode(() -> new FreeSpaceCheck(() -> storeWith(75 * MIB)).require(1 * MIB, 0))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void onTwoVolumesTheOpenUploadsAreSubtractedFromTheStagingVolumeOnly() {
+        FileStore tightStaging = storeWith(42 * MIB);
+        FileStore packs = storeWith(32 * MIB);
+        assertThatThrownBy(() -> new FreeSpaceCheck(() -> packs, () -> tightStaging).require(1 * MIB, 10 * MIB))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.getMessage())
+                                .contains("staging volume")
+                                .contains("42 MiB")
+                                .contains("43 MiB"));
+
+        assertThatCode(() -> new FreeSpaceCheck(() -> packs, () -> storeWith(43 * MIB)).require(1 * MIB, 10 * MIB))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void atRunTimeASpooledArchiveNeedsOnlyTheTreeAndTheCopyOnOneVolume() {
+        assertThatThrownBy(() -> new FreeSpaceCheck(() -> storeWith(63 * MIB)).requireForRun(20 * MIB))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_STORAGE_FULL);
+                    assertThat(refusal.getMessage()).contains("63 MiB").contains("64 MiB");
+                });
+        assertThatCode(() -> new FreeSpaceCheck(() -> storeWith(64 * MIB)).requireForRun(20 * MIB))
+                .as("two bounds: the archive is written already, whatever its size")
+                .doesNotThrowAnyException();
+        assertThatCode(() -> new FreeSpaceCheck(() -> storeWith(64 * MIB)).requireForRun(32 * MIB))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void atRunTimeASpooledArchiveNeedsABoundOnEachVolumeWhenThereAreTwo() {
+        FileStore roomy = storeWith(1024 * MIB);
+        assertThatThrownBy(() -> new FreeSpaceCheck(() -> roomy, () -> storeWith(31 * MIB)).requireForRun(20 * MIB))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.getMessage())
+                                .contains("staging volume")
+                                .contains("31 MiB")
+                                .contains("32 MiB"));
+        assertThatThrownBy(() -> new FreeSpaceCheck(() -> storeWith(31 * MIB), () -> roomy).requireForRun(20 * MIB))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.getMessage())
+                                .contains("pack volume")
+                                .contains("32 MiB"));
+
+        assertThatCode(() -> new FreeSpaceCheck(() -> storeWith(32 * MIB), () -> storeWith(32 * MIB))
+                        .requireForRun(20 * MIB))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void atRunTimeAJobThatStillHasToFetchItsArchiveNeedsTheWholePeak() {
+        assertThatThrownBy(() -> new FreeSpaceCheck(() -> storeWith(95 * MIB)).requireForRun(-1))
+                .isInstanceOf(CharterRefusal.class);
+        assertThatCode(() -> new FreeSpaceCheck(() -> storeWith(96 * MIB)).requireForRun(-1))
+                .doesNotThrowAnyException();
+        assertThatThrownBy(() ->
+                        new FreeSpaceCheck(() -> storeWith(1024 * MIB), () -> storeWith(63 * MIB)).requireForRun(-1))
+                .isInstanceOf(CharterRefusal.class);
     }
 
     @Test
     void aVolumeWhoseSpaceCannotBeReadRefusesRatherThanGuesses() {
         FreeSpaceCheck check = new FreeSpaceCheck(() -> new FakeStore(-1));
+        FreeSpaceCheck stagingUnreadable = new FreeSpaceCheck(() -> storeWith(1024 * MIB), () -> new FakeStore(-1));
 
-        assertThatThrownBy(check::require)
-                .isInstanceOfSatisfying(
-                        CharterRefusal.class,
-                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+        for (FreeSpaceCheck unreadable : new FreeSpaceCheck[] {check, stagingUnreadable}) {
+            assertThatThrownBy(unreadable::require)
+                    .isInstanceOfSatisfying(
+                            CharterRefusal.class,
+                            refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+        }
     }
 
     @Test

@@ -370,16 +370,16 @@ Whole-pack registration (`PUT /packs/{packId}`, `POST /packs`), the two removals
 `charter.registration` and `charter.pack-sources`. Every kind of source is off by default, and each flag is read at every
 request, so an operator can switch a kind off without a restart. How a client uses it is in
 [Compose packs](/guides/compose-packs/#register-a-pack). The differences from core are
-[DIV-609 to DIV-613](/conformance/divergence-register/#registration-div-601699-adr-0065).
+[DIV-609 to DIV-614](/conformance/divergence-register/#registration-div-601699-adr-0065).
 
 | Property | Default | What it does |
 |---|---|---|
 | `charter.registration.enabled` | `false` | Allows registration and the two removals of a pack (`DELETE` of an artifact and of a relationship). While it is off, each answers `503 pack_source_unavailable`. It needs `charter.config-root`. |
-| `charter.registration.staging-dir` | `<config-root>/staging` | Where a registration spools and extracts its upload. Keep it on the volume of the packs. The service refuses to start when it is `charter.config-root`, holds it, is or lies inside the `packs` or `activations` directory, or lies under `/proc`, `/sys` or `/dev`: the sweep removes the job directories it finds there, and only those. |
+| `charter.registration.staging-dir` | `<config-root>/staging` | Where a registration spools and extracts its upload. Keep it on the volume of the packs. A registration needs about three times its archive free (at most 96 MiB on one volume; on two, 64 MiB here and 32 MiB on the packs volume), else `503 pack_storage_full`. The service refuses to start when it is `charter.config-root`, holds it, is or lies inside the `packs` or `activations` directory, or lies under `/proc`, `/sys` or `/dev`: the sweep removes the job directories it finds there, and only those. |
 | `charter.pack-sources.https.enabled` | `false` | Allows `POST /packs` with an `https_archive` source. |
 | `charter.pack-sources.https.allowed-hosts` | empty | The hosts an archive may be fetched from, matched exactly after lower-casing and stripping a trailing dot. Empty refuses every URL (`host_not_allowed`). |
 | `charter.pack-sources.https.timeout` | `60s` | One deadline over resolution, every hop and the body. |
-| `charter.pack-sources.https.max-size` | `32MB` | The largest archive accepted. |
+| `charter.pack-sources.https.max-size` | `32MB` | The largest archive accepted. At most 32 MiB: a larger value stops the start, because the free-space check of a registration is sized from that bound. |
 | `charter.pack-sources.https.max-redirects` | `3` | The most redirects followed; each target is checked again. |
 | `charter.pack-sources.git.enabled` | `false` | Allows `POST /packs` with a `git` source. |
 | `charter.pack-sources.git.allowed-hosts` | empty | The hosts a repository may be fetched from. Empty refuses every URL. |
@@ -402,6 +402,12 @@ request, so an operator can switch a kind off without a restart. How a client us
   work. A link, a submodule or an odd mode in the fetched tree is refused `422 validation_failed` with the violation
   `entry_type`, as for an archive. Repositories that use the sha256 object format are untested: the work repository is
   created as sha1.
+- **Git's memory.** Every git run carries `-c` pins that bound what git inflates and maps: `core.bigFileThreshold=1m`
+  (a larger blob is streamed, not inflated whole), `pack.windowMemory=16m`, `pack.threads=1`, `core.packedGitLimit=64m`,
+  `core.packedGitWindowSize=16m` and `core.deltaBaseCacheLimit=16m`. They keep the resident memory of a fetch to tens of
+  MiB, and a pack up to the 32 MiB source bound is still fetched, only more slowly. **Residual risk:** the pins do not cap
+  address space (git maps pack windows with `mmap`) or the time git spends, which the one deadline bounds. Run the
+  service with an operating-system memory limit as well.
 - **A refused source** ends the registration `422 pack_source_refused`. The detail is `<token>: <fixed sentence>`, with
   no URL, path or upstream text. The tokens are `host_not_allowed`, `address_not_global`, `url_refused`,
   `redirect_refused`, `wrong_media_type`, `too_large`, `digest_mismatch`, `name_mismatch`, `source_malformed`,

@@ -43,9 +43,37 @@ public final class BoundedArchiveExtractor implements PackArchiveReader {
 
     @Override
     public StagedPack extract(InputStream body, ArchiveFormat format, Path stagingRoot) throws ArchiveRefusal {
+        return extractInto(stagingRoot, tree -> {
+            if (format == ArchiveFormat.TAR_GZ) {
+                new TarGzReader(limits).read(body, tree);
+            } else {
+                new ZipReader(limits, opener).read(body, tree, stagingRoot);
+            }
+        });
+    }
+
+    /**
+     * Reads a zip file where it lies, so the archive is on disk once (#418, A6); a {@code tar.gz} is a stream either way
+     * and takes the default.
+     */
+    @Override
+    public StagedPack extract(Path archive, ArchiveFormat format, Path stagingRoot) throws ArchiveRefusal {
+        if (format != ArchiveFormat.ZIP) {
+            return PackArchiveReader.super.extract(archive, format, stagingRoot);
+        }
+        return extractInto(stagingRoot, tree -> new ZipReader(limits, opener).readFile(archive, tree));
+    }
+
+    /** What reads an archive into a tree. */
+    @FunctionalInterface
+    private interface Reading {
+        void into(PackTree tree) throws IOException;
+    }
+
+    private StagedPack extractInto(Path stagingRoot, Reading reading) throws ArchiveRefusal {
         PackTree tree = PackTree.create(stagingRoot, limits);
         try {
-            read(body, format, tree, stagingRoot);
+            read(reading, tree);
             return tree.finish();
         } catch (ArchiveRefusal | RuntimeException e) {
             tree.discard();
@@ -53,13 +81,9 @@ public final class BoundedArchiveExtractor implements PackArchiveReader {
         }
     }
 
-    private void read(InputStream body, ArchiveFormat format, PackTree tree, Path stagingRoot) {
+    private void read(Reading reading, PackTree tree) {
         try {
-            if (format == ArchiveFormat.TAR_GZ) {
-                new TarGzReader(limits).read(body, tree);
-            } else {
-                new ZipReader(limits, opener).read(body, tree, stagingRoot);
-            }
+            reading.into(tree);
         } catch (ArchiveLimitException e) {
             tree.violation(e.code(), e.path());
         } catch (IOException e) {

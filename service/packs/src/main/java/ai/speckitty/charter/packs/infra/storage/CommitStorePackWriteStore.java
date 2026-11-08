@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
@@ -205,7 +206,18 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
         // work.
         // The pack is resolved under the registry lock too: with no swap running, a listing cannot miss a directory
         // that a concurrent writer is renaming.
-        return registryLock.exclusively(() -> underPackLock(resolve(pack), work));
+        return exclusivelyAt(pack, location -> work.get());
+    }
+
+    /**
+     * As {@link #exclusively}, and tells the work the configured location the pack resolved to, found once, so the write
+     * can key its write generation by the configured name without another listing.
+     */
+    private <T> T exclusivelyAt(PackIdentifier pack, Function<PackLocation, T> work) {
+        return registryLock.exclusively(() -> {
+            PackLocation location = location(pack);
+            return underPackLock(normalized(location), () -> work.apply(location));
+        });
     }
 
     /** Runs {@code work} under the lock of the resolved entry, so a pack addressed by name and by id shares one lock,
@@ -230,9 +242,9 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
     public PackRevision commit(PackIdentifier pack, @Nullable String ifMatch, Change change) {
         @Nullable String shard = change.relationships().map(RelationshipShard::write).orElse(null);
         @Nullable CharterArtifact artifact = change.artifact().orElse(null);
-        return exclusively(pack, () -> {
+        return exclusivelyAt(pack, location -> {
             requireClosuresCompose(pack, change);
-            return generation.bracket(pack.value(), () -> commitStore.commit(pack, ifMatch, artifact, shard));
+            return generation.bracket(location.name(), () -> commitStore.commit(pack, ifMatch, artifact, shard));
         });
     }
 
@@ -293,7 +305,7 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
 
     @Override
     public PackRevision remove(PackIdentifier pack, Removal removal) {
-        return exclusively(pack, () -> {
+        return exclusivelyAt(pack, location -> {
             Path directory = resolve(pack);
             List<String> files = removal.artifact()
                     .map(urn -> ArtifactFiles.of(directory, urn, strategy))
@@ -307,7 +319,7 @@ public final class CommitStorePackWriteStore implements PackWriteStore, PackRemo
             removal.presets()
                     .forEach(preset ->
                             presets.put(PresetFiles.pathOf(preset.id()), PresetYaml.write(PresetFiles.toDso(preset))));
-            return generation.bracket(pack.value(), () -> commitStore.remove(pack, files, shard, presets));
+            return generation.bracket(location.name(), () -> commitStore.remove(pack, files, shard, presets));
         });
     }
 

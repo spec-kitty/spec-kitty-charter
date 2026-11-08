@@ -14,6 +14,7 @@ import ai.speckitty.charter.packs.application.RegistrationJobs.Reservation;
 import ai.speckitty.charter.packs.application.RegistrationJobs.Stager;
 import ai.speckitty.charter.packs.application.RegistrationJobs.State;
 import ai.speckitty.charter.packs.application.RegistrationJobs.Status;
+import ai.speckitty.charter.packs.infra.storage.FileStagingArea;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
@@ -55,7 +56,7 @@ class RegistrationJobsUpstreamTest {
                 audit::add,
                 RegistrationJobs.JobGate.OPEN,
                 RegistrationJobs.StorageRoom.UNBOUNDED,
-                host));
+                new FileStagingArea(host)));
         Reservation reservation = jobs.reserve("acme", Preconditions.none(), ORIGIN);
         reservation.start(stager);
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);

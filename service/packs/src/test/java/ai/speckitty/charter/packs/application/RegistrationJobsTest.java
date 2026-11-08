@@ -21,6 +21,7 @@ import ai.speckitty.charter.packs.application.RegistrationJobs.Stager;
 import ai.speckitty.charter.packs.application.RegistrationJobs.State;
 import ai.speckitty.charter.packs.application.RegistrationJobs.Status;
 import ai.speckitty.charter.packs.application.RegistrationJobs.Succeeded;
+import ai.speckitty.charter.packs.infra.storage.FileStagingArea;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -34,6 +35,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -480,10 +482,56 @@ class RegistrationJobsTest {
     }
 
     @Test
+    void atMostTheRunningLimitOfJobsRunAtOnce(@TempDir Path host) throws Exception {
+        Harness h = new Harness(host);
+        int admitted = RegistrationJobs.RUNNING_LIMIT + 3;
+        CountDownLatch entered = new CountDownLatch(RegistrationJobs.RUNNING_LIMIT);
+        CountDownLatch release = new CountDownLatch(1);
+        AtomicInteger inside = new AtomicInteger();
+        AtomicInteger mostInside = new AtomicInteger();
+        AtomicInteger entries = new AtomicInteger();
+        List<Reservation> accepted = new ArrayList<>();
+        for (int i = 0; i < admitted; i++) {
+            String id = "run-" + i;
+            Stager counting = directory -> {
+                entries.incrementAndGet();
+                mostInside.accumulateAndGet(inside.incrementAndGet(), Math::max);
+                entered.countDown();
+                await(release);
+                inside.decrementAndGet();
+                return h.stage(h.pack(id, "1.0.0")).stage(directory);
+            };
+            accepted.add(h.start(id, Preconditions.none(), counting));
+        }
+
+        assertThat(entered.await(10, TimeUnit.SECONDS))
+                .as("exactly the running limit of stagers is entered")
+                .isTrue();
+        // A job over the limit would enter soon after the first two; give it the time to, and watch the count.
+        long watchUntil = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(300);
+        while (System.nanoTime() < watchUntil) {
+            assertThat(inside.get()).isLessThanOrEqualTo(RegistrationJobs.RUNNING_LIMIT);
+            Thread.sleep(5);
+        }
+        assertThat(entries.get())
+                .as("the jobs over the limit wait for a worker and are not inside a stager")
+                .isEqualTo(RegistrationJobs.RUNNING_LIMIT);
+
+        release.countDown();
+        accepted.forEach(h::awaitEnd);
+        assertThat(entries.get()).as("every job ran in the end").isEqualTo(admitted);
+        assertThat(mostInside.get())
+                .as("never more than the running limit inside a stager at once")
+                .isEqualTo(RegistrationJobs.RUNNING_LIMIT);
+    }
+
+    @Test
     void aJobEndedByTheDeadlineKeepsItsSlotUntilItsWorkerIsFree(@TempDir Path host) throws Exception {
         Harness h = new Harness(host);
         CountDownLatch release = new CountDownLatch(1);
+        CountDownLatch entered = new CountDownLatch(RegistrationJobs.RUNNING_LIMIT);
         Stager stuck = directory -> {
+            entered.countDown();
             // A stager that ignores interrupts, as a read of a slow disk does.
             boolean interrupted = false;
             while (release.getCount() > 0) {
@@ -502,7 +550,10 @@ class RegistrationJobsTest {
         for (int i = 0; i < admitted; i++) {
             h.start("held-" + i, Preconditions.none(), stuck);
         }
-        h.await(() -> h.jobs.owned().size() >= RegistrationJobs.RUNNING_LIMIT);
+        // owned() counts reserved jobs too, so it is true at once: wait for the workers to be inside their stagers.
+        assertThat(entered.await(10, TimeUnit.SECONDS))
+                .as("both workers are inside a stager that ignores interrupts")
+                .isTrue();
         h.clock.advance(RegistrationJobs.DEADLINE.plusSeconds(1));
         h.jobs.expireOverdue();
 
@@ -833,7 +884,13 @@ class RegistrationJobsTest {
             this.rig.midSwap = midSwap;
             this.staging = host.resolve("job-staging");
             this.jobs = new RegistrationJobs(new RegistrationJobs.Dependencies(
-                    clock, rig.service, rig.writeStore, audit, gate, () -> room.require(), staging));
+                    clock,
+                    rig.service,
+                    rig.writeStore,
+                    audit,
+                    gate,
+                    () -> room.require(),
+                    new FileStagingArea(staging)));
             opened.add(jobs);
         }
 

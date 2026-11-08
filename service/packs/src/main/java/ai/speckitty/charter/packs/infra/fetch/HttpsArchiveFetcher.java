@@ -12,6 +12,7 @@ import ai.speckitty.charter.packs.application.RegistrationJobs.Staged;
 import ai.speckitty.charter.packs.application.SourceRefusal;
 import ai.speckitty.charter.packs.application.SourceUpstreamException;
 import ai.speckitty.charter.packs.application.SourceUrls;
+import ai.speckitty.charter.packs.application.StagingArea;
 import ai.speckitty.charter.packs.infra.fetch.HttpsExchange.BodyPolicy;
 import ai.speckitty.charter.packs.infra.fetch.HttpsExchange.Fetched;
 import java.io.IOException;
@@ -73,6 +74,7 @@ public final class HttpsArchiveFetcher implements PackSourceFetcher {
 
     private final HttpsExchange exchange;
     private final PackArchiveReader reader;
+    private final StagingArea staging;
     private final BodyPolicy policy;
 
     /**
@@ -81,10 +83,12 @@ public final class HttpsArchiveFetcher implements PackSourceFetcher {
      * @param exchange the guarded exchange, on the archive allowlist
      * @param reader the extractor
      * @param maxBytes the largest archive accepted
+     * @param staging the staging area the extraction directory is made in
      */
-    public HttpsArchiveFetcher(HttpsExchange exchange, PackArchiveReader reader, long maxBytes) {
+    public HttpsArchiveFetcher(HttpsExchange exchange, PackArchiveReader reader, long maxBytes, StagingArea staging) {
         this.exchange = Objects.requireNonNull(exchange, "exchange");
         this.reader = Objects.requireNonNull(reader, "reader");
+        this.staging = Objects.requireNonNull(staging, "staging");
         this.policy = new BodyPolicy(maxBytes, ACCEPT);
     }
 
@@ -232,7 +236,7 @@ public final class HttpsArchiveFetcher implements PackSourceFetcher {
 
     private Staged stage(ArchiveFormat format, Path archive, Path directory) {
         try {
-            return ArchiveStaging.of(reader, format, archive).stage(directory);
+            return ArchiveStaging.of(staging, reader, format, archive).stage(directory);
         } catch (RuntimeException refused) {
             throw refused;
         } catch (Exception failure) {

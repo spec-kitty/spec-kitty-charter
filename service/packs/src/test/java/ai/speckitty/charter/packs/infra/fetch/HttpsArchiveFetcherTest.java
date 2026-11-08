@@ -23,6 +23,7 @@ import ai.speckitty.charter.packs.infra.fetch.HttpsExchange.BodyPolicy;
 import ai.speckitty.charter.packs.infra.fetch.HttpsExchange.Fetched;
 import ai.speckitty.charter.packs.infra.fetch.HttpsGuideFetcherTest.Canned;
 import ai.speckitty.charter.packs.infra.fetch.HttpsGuideFetcherTest.FakeTransport;
+import ai.speckitty.charter.packs.infra.storage.FileStagingArea;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
@@ -86,7 +87,8 @@ class HttpsArchiveFetcherTest {
             }
             return answer;
         };
-        return new HttpsArchiveFetcher(exchange, reader, HttpsArchiveFetcher.DEFAULT_MAX_BYTES);
+        return new HttpsArchiveFetcher(
+                exchange, reader, HttpsArchiveFetcher.DEFAULT_MAX_BYTES, new FileStagingArea(directory));
     }
 
     private static Fetched fetched(String contentType, byte[] body) {
@@ -372,7 +374,8 @@ class HttpsArchiveFetcherTest {
                 },
                 transport,
                 GuardedHttpsExchange.LOOKUP_SLOTS);
-        HttpsArchiveFetcher real = new HttpsArchiveFetcher(exchange, reader, HttpsArchiveFetcher.DEFAULT_MAX_BYTES);
+        HttpsArchiveFetcher real = new HttpsArchiveFetcher(
+                exchange, reader, HttpsArchiveFetcher.DEFAULT_MAX_BYTES, new FileStagingArea(directory));
 
         assertThat(real.fetch(request(URL, null), directory).pack()).isNotNull();
         assertThatThrownBy(() -> real.fetch(request("https://inner.example.org/acme.tar.gz", null), directory))

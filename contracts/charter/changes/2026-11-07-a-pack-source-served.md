@@ -15,6 +15,3 @@
   `path_refused`. A `git` source is served by the git source change of WP18 (`2026-11-08-a-git-source-served.md`).
 - `CharterRefusalCode`: `pack_source_refused` is `raised: true`. `errors.feature` lists it among the codes an operation
   raises.
-- `PackSourceRecord.url` is the URL without its query, its fragment and its user information (WP18, WP17 hand-off): the
-  status holds a registration for an hour, and a presigned URL's signature was readable by every holder of it. The audit
-  locator already cut them. `source.path`, `source.ref` and `source.kind` are unchanged.

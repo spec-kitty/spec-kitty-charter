@@ -460,4 +460,22 @@ class ArtifactRemovalServiceTest {
                 .as("the control: without the activation the same removal lands")
                 .doesNotContainKey("directives/EXTRA.directive.yaml");
     }
+
+    private static final String SIBLING_C = PackRegistrationServiceTest.ulid('V');
+
+    @Test
+    void aBrokenClosureTheTargetPackDoesNotJoinLeavesTheRemovalAlone(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.install("target", Packs.of(SIBLING_C, "target", "1.0.0", "org").directive("EXTRA", "x"));
+        rig.install("sib-a", Packs.of(SIBLING_A, "sib-a", "1.0.0", "org").directive("SHARED_ONE", "Mine"));
+        rig.install("sib-b", Packs.of(SIBLING_B, "sib-b", "1.0.0", "org").directive("SHARED_ONE", "Yours"));
+        rig.activations.add(Optional.of(List.of("sib-a", "sib-b")));
+        Removals removals = new Removals(rig);
+
+        removals.remove("target", "directive", "EXTRA");
+
+        assertThat(removals.filesOf("target"))
+                .as("the activation's closure is broken, but it does not hold the pack the removal is from")
+                .doesNotContainKey("directives/EXTRA.directive.yaml");
+    }
 }

@@ -6,10 +6,12 @@ import ai.speckitty.charter.packs.application.PackRegistrationService;
 import ai.speckitty.charter.packs.application.PackRevisions;
 import ai.speckitty.charter.packs.application.RegistrationJobs;
 import ai.speckitty.charter.packs.application.RegistryWriteLock;
+import ai.speckitty.charter.packs.application.StagingArea;
 import ai.speckitty.charter.packs.infra.api.RegistrationProperties;
 import ai.speckitty.charter.packs.infra.api.RegistrationSwitch;
 import ai.speckitty.charter.packs.infra.archive.BoundedArchiveExtractor;
 import ai.speckitty.charter.packs.infra.storage.ConfigRoot;
+import ai.speckitty.charter.packs.infra.storage.FileStagingArea;
 import ai.speckitty.charter.packs.infra.storage.FreeSpaceCheck;
 import ai.speckitty.charter.packs.infra.storage.StagingSweeper;
 import java.io.IOException;
@@ -157,9 +159,17 @@ public class RegistrationWiring {
     }
 
     @Bean
-    RegistrationJobs.StorageRoom storageRoom(ObjectProvider<ConfigRoot> root) {
+    RegistrationJobs.StorageRoom storageRoom(ObjectProvider<ConfigRoot> root, RegistrationStagingRoot staging) {
         ConfigRoot configured = root.getIfAvailable();
-        return configured == null ? RegistrationJobs.StorageRoom.UNBOUNDED : FreeSpaceCheck.of(configured.packs());
+        return configured == null
+                ? RegistrationJobs.StorageRoom.UNBOUNDED
+                : FreeSpaceCheck.of(configured.packs(), staging.directory());
+    }
+
+    /** The staging area the registrations work in: owner-only directories under the staging root. */
+    @Bean
+    StagingArea stagingArea(RegistrationStagingRoot staging) {
+        return new FileStagingArea(staging.directory());
     }
 
     /** The jobs, with the watchdog that ends the ones past their deadline; closed at shutdown. */
@@ -171,9 +181,9 @@ public class RegistrationWiring {
             AuditLog audit,
             RegistrationJobs.JobGate gate,
             RegistrationJobs.StorageRoom room,
-            RegistrationStagingRoot staging) {
+            StagingArea staging) {
         return new RegistrationJobs(new RegistrationJobs.Dependencies(
-                        registrationClock, service, revisions, audit, gate, room, staging.directory()))
+                        registrationClock, service, revisions, audit, gate, room, staging))
                 .startWatchdog(WATCHDOG_PERIOD);
     }
 

@@ -14,6 +14,7 @@ import ai.speckitty.charter.packs.application.PackRegistrationService;
 import ai.speckitty.charter.packs.application.PackSummaryQuery;
 import ai.speckitty.charter.packs.application.RegistrationJobs;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
+import ai.speckitty.charter.packs.infra.storage.FileStagingArea;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
 import ai.speckitty.charter.web.RefusalHandler;
 import java.io.IOException;
@@ -80,7 +81,7 @@ class StagingPermissionsTest {
                 (AuditLog) entry -> {},
                 gate,
                 RegistrationJobs.StorageRoom.UNBOUNDED,
-                staging))) {
+                new FileStagingArea(staging)))) {
             MockMvc mvc = mvc(jobs, reader);
 
             mvc.perform(put("/api/v1/packs/acme")

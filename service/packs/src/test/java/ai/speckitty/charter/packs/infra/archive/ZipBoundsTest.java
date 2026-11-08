@@ -261,7 +261,10 @@ class ZipBoundsTest {
         Throwable thrown = catchThrowable(
                 () -> new BoundedArchiveExtractor().extract(new ByteArrayInputStream(zip), ArchiveFormat.ZIP, staging));
 
-        assertThat(thrown).isInstanceOf(UncheckedIOException.class);
+        assertThat(thrown)
+                .as("the refusal is the spool file that exists, not any other I/O failure")
+                .isInstanceOf(UncheckedIOException.class)
+                .hasCauseInstanceOf(java.nio.file.FileAlreadyExistsException.class);
         assertThat(Files.readString(foreign)).isEqualTo("belongs to the caller");
     }
 

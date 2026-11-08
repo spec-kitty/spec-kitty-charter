@@ -25,7 +25,9 @@
     `Charter-Source-Fingerprint` (decision DM-01M6TV6VDNHNCVWRHHC74WATV0); the path is exempt from the lint rules of
     that header, as the activation reads are.
   - `getPack`, `GET /packs/{packId}`: `200` with the stored pack as a `PackRegistration` (no outcome), the quoted
-    revision as its `ETag`, `_links.self`; `404 pack_not_found` (FR-039).
+    revision as its `ETag`, and `_links` of `self` and `artifacts`; `404 pack_not_found` (FR-039). No pack or status
+    carries an `edit` link, and the contract names no `edit` relation for a pack, so the whole-pack `PUT` is not
+    advertised by a link (the examples `PackRegistration.stored` and `PackRegistrationStatus.succeeded` show none).
   - `deletePackArtifact`, `DELETE /packs/{packId}/artifacts/{kind}/{artifactId}` (in the existing item path file): `204`
     with the new revision as `ETag`; `If-Match` on the pack revision is required (`428` absent, `412` stale); `404`
     `pack_not_found`, `kind_not_found` or the not-found code of the kind (`directive_not_found` and the like, the code
@@ -44,7 +46,14 @@
     `revision`, `outcome`, `source`, `notices` of FR-027: `floorAdded`, `floorRemoved`, `locksAdded`, `locksRemoved`,
     and `_links`), `PackRegistrationStatus` (`registrationId`, `state`, `packId`, `acceptedAt`, `finishedAt`, `result`,
     `problem`, `_links`, with a `pack` link on a succeeded status: the new relation `pack` of the hypermedia guide) and `PackSource` (one closed object: `kind` as `https_archive`, `git` or `filesystem`,
-    `packId`, and by kind `url`, `ref`, `commit`, `sha256` or `path`).
+    `packId`, and by kind `url`, `ref`, `commit`, `sha256` or `path`). `PackSource.url` is `^https://\S+$`: a pattern is
+    matched against the whole value (by the bean validation of the service's generated model and by any generated client
+    that anchors it), so it accepts an `https://` URL of one or more characters without whitespace; the host, the port,
+    the user information and the address checks are the fetcher's, and a refused one ends the registration `refused`
+    with `422 pack_source_refused`. `PackSourceRecord.url`, the `source` a status and a `PackRegistration` carry, is the
+    URL without its query, its fragment and its user information (the status holds a registration for an hour, and a
+    presigned URL's signature must not be readable by every holder of it; the audit locator cuts them too);
+    `source.path`, `source.ref` and `source.kind` are as sent.
   - `CharterRefusalCode` gains `pack_version_conflict`, `artifact_referenced`, `relationship_not_found`,
     `relationship_not_registered`, `registration_not_found`, `pack_source_refused`, `pack_source_unavailable`,
     `override_not_permitted`, `enhances_cycle`, `conflicting_relations`, `self_override`, `override_cycle`,
