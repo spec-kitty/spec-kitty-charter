@@ -174,7 +174,9 @@ Feature: Failures outside the charter's refusals
     code, and these are all the codes raised. The generic item read adds the not-found code of each
     served kind (tactic_not_found, directive_not_found, styleguide_not_found, paradigm_not_found and
     toolguide_not_found) and kind_not_found; the registration writes add validation_failed,
-    registration_conflict and governance_policy_violation. action_not_found is not raised: the
+    registration_conflict and governance_policy_violation, and the whole-pack registration service adds
+    pack_version_conflict and artifact_referenced (its operations stay reserved until their controller and job are
+    built, and ReservedRefusalCodesTest holds the flag to the main code that names the code). action_not_found is not raised: the
     operation that answered it is gone, and the reserved activation operation that will answer it again
     (ADR-0020 D7) answers 501 until it is built. unresolved_edge_endpoint, and, with the load that
     judged a pack's graph, pack_level_mismatch and drg_schema_error, are raised by no operation (no
@@ -196,6 +198,8 @@ Feature: Failures outside the charter's refusals
       | validation_failed           |
       | registration_conflict       |
       | governance_policy_violation |
+      | pack_version_conflict       |
+      | artifact_referenced         |
       | pack_dependency_cycle       |
       | pack_dependency_unknown     |
       | pack_dependency_out_of_range |
