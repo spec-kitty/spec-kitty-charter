@@ -1,8 +1,9 @@
 ### Added
 
-- Whole-pack registration and removal, declared and reserved until their services are built (ADR-0065, ADR-0020 D8:
-  each answers `501` until it is served; PR A of the layer merge mission, issue #10). One new tag, `Registration`, and
-  one `x-reserved` contract set, `pack-registration`:
+- Whole-pack registration and removal (ADR-0065; PR A of the layer merge mission, issue #10). One new tag,
+  `Registration`. Each operation was declared reserved (`x-reserved`, contract set `pack-registration`, `501` under
+  ADR-0020 D8) and is built by a later change of the same release (the `...-served.md` fragments); at the end of PR A
+  none is reserved:
   - `registerPackFromArchive`, `PUT /packs/{packId}` (new `paths/packs_packId.yaml`): the body is the pack directory as
     one raw archive (`application/gzip`, `application/x-gzip`, `application/x-tar+gzip` or `application/zip`, at most
     32 MiB). It answers `202` with a `PackRegistrationStatus` (`pending`) and `Location:

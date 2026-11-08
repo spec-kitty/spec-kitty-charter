@@ -9,7 +9,7 @@
   enhances nothing (an enhancement of an artifact nobody holds has none), an artifact that both enhances and overrides one
   target, an `overrides` edge whose target resolves to its own source, or a cycle of `overrides` edges. A composition code
   (`pack_dependency_unknown`, `pack_dependency_out_of_range`, `pack_sibling_conflict` and the rest) is refused the same
-  way, with the closure's roots named in the detail and among `packs`. `registerPackFromArchive` and
-  `registerPackFromSource` stay reserved (`501`) until their controller and job are built, so no request of this version
-  provokes them yet.
+  way, with the closure's roots named in the detail and among `packs`, as the `problem` of a `refused` registration
+  status. The per-artifact writes and the two `DELETE`s answer them synchronously (`2026-11-07-a-per-artifact-impact-check.md`,
+  `2026-11-07-a-removal-served.md`).
   The scenario `errors.feature` lists the five among the codes an operation raises.

@@ -2,7 +2,8 @@
 
 - `registerPackFromSource` (`POST /packs`) is built for the `https_archive` and `filesystem` source kinds (ADR-0065 D10,
   FR-004, NFR-004, NFR-005, NFR-012; PR A of the layer merge mission): it loses `x-reserved` and its `501`, and the `501`
-  pin of `scenarios/registration/reserved-registration.feature` goes with them. The two `DELETE`s stay reserved. It
+  pin of `scenarios/registration/reserved-registration.feature` goes with them (the `DELETE`s are built by
+  `2026-11-07-a-removal-served.md`). It
   answers `202` with a pending `PackRegistrationStatus` and a `Location` after the synchronous checks (registration and
   the kind's own flag switched on, the `PackSource` schema, both validators, a stale `If-Match`, a full queue); the fetch
   runs in the job, outside every lock, and a successful result carries `source` (`kind` and `url` or `path`, as sent).
