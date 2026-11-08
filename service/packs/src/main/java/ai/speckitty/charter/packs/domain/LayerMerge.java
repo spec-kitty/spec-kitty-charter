@@ -204,6 +204,22 @@ public final class LayerMerge {
         return List.copyOf(items);
     }
 
+    /**
+     * The floor over every copy of every preset the closure holds, restricted to the artifacts a pack of it holds (A1,
+     * C31, A10), which {@link #merge} answers with the winners but which is judged on no override: a closure whose
+     * layer override the owner's level forbids still has this floor.
+     *
+     * @param closure the composed closure, in closure order
+     * @param factsByConfiguredId the facts each pack was read with, by configured identifier
+     * @return the union floor
+     */
+    public static RequiredFloor floorOf(
+            List<PackUnderResolution> closure, Map<String, PackCompositionFacts> factsByConfiguredId) {
+        Objects.requireNonNull(closure, "closure");
+        Objects.requireNonNull(factsByConfiguredId, "factsByConfiguredId");
+        return floorOf(closure, factsByConfiguredId, holdersByUrn(closure).keySet());
+    }
+
     /** The floor over every copy of every preset, restricted to what the merged closure holds (C31, A10). */
     private static RequiredFloor floorOf(
             List<PackUnderResolution> closure, Map<String, PackCompositionFacts> facts, Set<Urn> held) {

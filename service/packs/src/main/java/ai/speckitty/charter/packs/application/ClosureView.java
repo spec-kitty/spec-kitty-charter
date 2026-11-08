@@ -106,6 +106,11 @@ public record ClosureView(
             return NONE;
         }
 
+        /** The union floor (A1): the merged closure's when it was built, else computed with no override judged. */
+        synchronized RequiredFloor floor() {
+            return built != null ? built.closure().floor() : LayerMerge.floorOf(packs, facts);
+        }
+
         synchronized MergedView merged(PerPackPolicy policy, EdgeIndex edges) {
             if (built == null) {
                 MergedClosure merged = LayerMerge.merge(packs, facts, policy);
@@ -387,6 +392,18 @@ public record ClosureView(
      */
     public ReachResult reach(ReachRequest request) {
         return merged().reach(request);
+    }
+
+    /**
+     * The must-have items of every copy of every governing preset the closure holds, with the requiring packs (A1, rule
+     * C31): the floor the effective reads answer. Unlike {@link #floor()}, which follows the copy of a preset that wins,
+     * it is the union across levels. It judges no layer override, so it is answered for a closure whose {@link #merged()}
+     * refuses.
+     *
+     * @return the union floor
+     */
+    public RequiredFloor mergedFloor() {
+        return mergeInputs.floor();
     }
 
     /**

@@ -161,7 +161,32 @@ class PacksAvailabilityTest {
                 List.of(BETA, ALPHA),
                 List.of(new ClosureView.HeldPreset(governing, ALPHA)),
                 Map.of(ALPHA, BETA),
-                "sha256:fingerprint");
+                "sha256:fingerprint",
+                EdgeIndex.empty(),
+                mergeInputs(governing));
+    }
+
+    /** What the layer merge reads of {@link #view()}: beta holds D1 and D2, alpha holds the governing preset. */
+    private static ClosureView.MergeInputs mergeInputs(Preset governing) {
+        List<String> held = List.of("directive:D1", "directive:D2");
+        Merging merging = new Merging(Map.of("beta", BETA, "alpha", ALPHA))
+                .pack(
+                        "beta",
+                        PackLevel.BUILT_IN,
+                        List.of(),
+                        held,
+                        Map.of(),
+                        List.of(),
+                        MutabilityPolicySource.empty())
+                .pack(
+                        "alpha",
+                        PackLevel.ORG,
+                        List.of("beta"),
+                        List.of(),
+                        Map.of(),
+                        List.of(governing),
+                        MutabilityPolicySource.empty());
+        return merging.mergeInputs();
     }
 
     @Test
@@ -200,6 +225,60 @@ class PacksAvailabilityTest {
 
         assertThat(snapshot.requiredBy()).containsExactly(Map.entry("directive:D2", List.of("alpha")));
         assertThat(snapshot.lockedBy()).containsExactly(Map.entry("directive:D1", "alpha"));
+    }
+
+    /** A1: the built-in copy of the governing preset requires D1, the org copy of the same id requires D2. */
+    private static Merging unionOfTwoCopies() {
+        Preset core = new Preset(
+                "governing", "Core.", Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("D1"))));
+        Preset house = new Preset(
+                "governing", "House.", Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("D2"))));
+        return new Merging()
+                .pack(
+                        "core",
+                        PackLevel.BUILT_IN,
+                        List.of(),
+                        List.of("directive:D1", "directive:D2"),
+                        Map.of(),
+                        List.of(core),
+                        MutabilityPolicySource.empty())
+                .pack(
+                        "house",
+                        PackLevel.ORG,
+                        List.of("core"),
+                        List.of(),
+                        Map.of(),
+                        List.of(house),
+                        MutabilityPolicySource.empty());
+    }
+
+    private static ClosureView unionView() {
+        return unionOfTwoCopies().viewHolding(Map.of(ArtifactKind.DIRECTIVE, Set.of("D1", "D2")));
+    }
+
+    @Test
+    void theFloorIsTheUnionOfEveryGoverningCopyAndNamesTheLosingCopysPack() {
+        closures.answers(Optional.empty(), unionView());
+
+        ClosureSnapshot snapshot = adapter.snapshot(Optional.empty());
+
+        assertThat(snapshot.requiredBy())
+                .as("D1 stays required by the built-in copy that the org copy replaces, and D2 by the org copy")
+                .containsOnly(Map.entry("directive:D1", List.of("core")), Map.entry("directive:D2", List.of("house")));
+    }
+
+    @Test
+    void aDenyEntryOnAnItemOnlyTheLosingCopyRequiresIsRefusedNamingThatPack() {
+        closures.answers(Optional.empty(), unionView());
+        ClosureSnapshot snapshot = adapter.snapshot(Optional.empty());
+        ActivationDocument.Built built = ActivationDocument.builder()
+                .deactivated(ArtifactKind.DIRECTIVE, List.of("D1"))
+                .build();
+
+        assertThat(DocumentRules.check(built, snapshot)).hasValueSatisfying(refusal -> {
+            assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_REQUIRED);
+            assertThat(refusal.requiredBy()).extracting(by -> by.packId()).containsExactly("core");
+        });
     }
 
     @Test
@@ -354,6 +433,16 @@ class PacksAvailabilityTest {
         private final List<PackUnderResolution> packs = new ArrayList<>();
         private final Map<String, PackCompositionFacts> facts = new LinkedHashMap<>();
         private final Map<String, MutabilityPolicySource> policies = new LinkedHashMap<>();
+        private final Map<String, String> ids;
+
+        Merging() {
+            this(Map.of());
+        }
+
+        /** A closure whose packs declare the given {@code pack_id}s, and {@code id-<name>} when a name is not given. */
+        Merging(Map<String, String> ids) {
+            this.ids = ids;
+        }
 
         /** A pack at a level, holding bare URNs, depending on the named packs and writing the edges. */
         Merging pack(
@@ -386,15 +475,29 @@ class PacksAvailabilityTest {
             return this;
         }
 
+        ClosureView.MergeInputs mergeInputs() {
+            return new ClosureView.MergeInputs(packs, facts);
+        }
+
         ClosureView view() {
             return view("sha256:merged");
         }
 
         ClosureView view(String closureFingerprint) {
+            return view(closureFingerprint, Map.of(), List.of());
+        }
+
+        /** The view of a closure whose held ids are declared, as the compose declares them. */
+        ClosureView viewHolding(Map<ArtifactKind, Set<String>> held) {
+            return view("sha256:merged", held, entries());
+        }
+
+        private ClosureView view(
+                String closureFingerprint, Map<ArtifactKind, Set<String>> held, List<OfferingEntry> offered) {
             PerPackPolicy policy = new PerPackPolicy(policies);
             return new ClosureView(
-                    List.of(),
-                    Map.of(),
+                    offered,
+                    held,
                     Map.of(),
                     new RequiredFloor(Map.of()),
                     policy,
@@ -407,8 +510,21 @@ class PacksAvailabilityTest {
                     closureFingerprint);
         }
 
-        static String descriptorId(String name) {
-            return "id-" + name;
+        /** The packs as the offering lists them, so the floor names each by the id it is configured under. */
+        private List<OfferingEntry> entries() {
+            return packs.stream()
+                    .map(pack -> new OfferingEntry(
+                            pack.configured().id(),
+                            pack.descriptor().packId(),
+                            pack.configured().level(),
+                            pack.descriptor().name(),
+                            "1.0.0",
+                            List.of()))
+                    .toList();
+        }
+
+        private String descriptorId(String name) {
+            return ids.getOrDefault(name, "id-" + name);
         }
     }
 

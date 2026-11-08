@@ -633,6 +633,56 @@ class RegistrationImpactTest {
         assertThat(renamed.notices()).isEqualTo(RegistrationImpact.Notices.NONE);
     }
 
+    private static final String GOVERNING_X = governing("X_ONE");
+    private static final String GOVERNING_Y = governing("Y_ONE");
+
+    private static String governing(String id) {
+        return "schema_version: \"1.0\"\nid: governing\ndescription: The governing preset.\n"
+                + "activated_directives:\n  - id: " + id + "\n    must_have: true\n";
+    }
+
+    private static Packs floorBase() {
+        return Packs.of(BASE_ID, "base", "1.0.0", "org")
+                .directive("X_ONE", "X")
+                .file("presets/governing.yaml", GOVERNING_X);
+    }
+
+    private static Packs floorTop(String version, boolean governs) {
+        Packs top = Packs.of(DERIVED_ID, "top", version, "project", DEPENDS_ON_BASE)
+                .directive("Y_ONE", "Y");
+        return governs ? top.file("presets/governing.yaml", GOVERNING_Y) : top;
+    }
+
+    @Test
+    void aLaterCopyOfAGoverningPresetAddsToTheFloorAndRemovesNothingOfTheEarlierOne(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("base", rig.stage(floorBase()), Preconditions.none());
+        rig.register("top", rig.stage(floorTop("1.0.0", false)), Preconditions.none());
+
+        PackRegistrationService.RegistrationOutcome governed =
+                rig.register("top", rig.stage(floorTop("2.0.0", true)), Preconditions.none());
+
+        assertThat(governed.notices().floorAdded())
+                .as("the union of the copies is required (A1), so Y_ONE joins the floor")
+                .containsExactly("directive:Y_ONE");
+        assertThat(governed.notices().floorRemoved())
+                .as("X_ONE stays required by the built-in copy, whichever copy wins")
+                .isEmpty();
+    }
+
+    @Test
+    void droppingTheLaterCopyOfAGoverningPresetRemovesOnlyItsOwnItems(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("base", rig.stage(floorBase()), Preconditions.none());
+        rig.register("top", rig.stage(floorTop("1.0.0", true)), Preconditions.none());
+
+        PackRegistrationService.RegistrationOutcome dropped =
+                rig.register("top", rig.stage(floorTop("2.0.0", false)), Preconditions.none());
+
+        assertThat(dropped.notices().floorRemoved()).containsExactly("directive:Y_ONE");
+        assertThat(dropped.notices().floorAdded()).isEmpty();
+    }
+
     @Test
     void theActivationsSliceIsToldOfAStoredRegistrationAndOfNoOtherOne(@TempDir Path host) {
         Rig rig = new Rig(host);
