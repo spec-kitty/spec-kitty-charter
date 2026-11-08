@@ -28,7 +28,11 @@ public enum SourceRefusal {
     /** The request names a member this kind of source does not take, or lacks one it needs. */
     SOURCE_MALFORMED("The request names a member this kind of source does not take, or lacks one it needs."),
     /** The path is not a pack directory the service reads. */
-    PATH_REFUSED("The path is not a pack directory this service reads.");
+    PATH_REFUSED("The path is not a pack directory this service reads."),
+    /** The git ref is not a commit id, nor a refs/heads or refs/tags name of the grammar, or names nothing in the repository. */
+    BAD_REF("The git ref is not a commit id or a branch or tag name of the allowed form, or names nothing."),
+    /** The commit the ref resolved to is not the commit the request named. */
+    COMMIT_MISMATCH("The commit the ref resolved to is not the commit the request named.");
 
     private final String sentence;
 
