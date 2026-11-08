@@ -23,6 +23,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -32,8 +33,9 @@ import org.junit.jupiter.api.io.TempDir;
  * A {@code DELETE} of {@code a::X} against a relationship {@code PUT} of {@code b}'s {@code Y} onto it (IC-06, FR-007,
  * FR-036), a hundred runs: both take the registry lock, so one runs after the other and sees its result, and the two
  * never both succeed to leave a registered edge that points at an artifact the other removed. Every run proves that the
- * two writers overlapped: the swap of the writer that got the lock pauses until the other writer's thread is seen waiting
- * for the lock, so a registry lock that let both through at once fails the run instead of passing it by luck of timing.
+ * two writers overlapped: the swap of the writer that got the lock pauses until the other writer's thread is seen
+ * queued for the lock ({@code RegistryWriteLock.hasQueuedThread}, which a thread in a sleep does not satisfy), so a
+ * registry lock that let both through at once fails the run instead of passing it by luck of timing.
  */
 @Tag("stress")
 class RemovalConcurrencyTest {
@@ -75,14 +77,14 @@ class RemovalConcurrencyTest {
         String revisionOfB =
                 rig.writeStore.currentRevision(new PackIdentifier("b")).token();
         CyclicBarrier start = new CyclicBarrier(2);
-        Thread[] writers = new Thread[2];
+        AtomicReferenceArray<Thread> writers = new AtomicReferenceArray<>(2);
         AtomicBoolean overlapped = new AtomicBoolean();
         AtomicBoolean first = new AtomicBoolean(true);
         // Inside the swap of the writer that got the lock first: wait until the other is seen blocked on it. The other
         // writer's own swap, later, has nobody to wait for.
         rig.midSwap = () -> {
             if (first.getAndSet(false)) {
-                overlapped.set(awaitTheOtherWriterWaiting(writers));
+                overlapped.set(awaitTheOtherWriterWaiting(rig.lock, writers));
             }
         };
 
@@ -111,13 +113,13 @@ class RemovalConcurrencyTest {
                 .isFalse();
     }
 
-    /** Polls the other writer's thread until it waits on the registry lock; false when it never does. */
-    private static boolean awaitTheOtherWriterWaiting(Thread[] writers) {
+    /** Polls the lock until the other writer's thread is queued for it; false when it never is. */
+    private static boolean awaitTheOtherWriterWaiting(RegistryWriteLock lock, AtomicReferenceArray<Thread> writers) {
         Thread self = Thread.currentThread();
-        Thread other = self.equals(writers[0]) ? writers[1] : writers[0];
+        Thread other = self.equals(writers.get(0)) ? writers.get(1) : writers.get(0);
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
         while (System.nanoTime() < deadline) {
-            if (other != null && other.getState() == Thread.State.TIMED_WAITING) {
+            if (other != null && lock.hasQueuedThread(other)) {
                 return true;
             }
             Thread.onSpinWait();
@@ -141,9 +143,10 @@ class RemovalConcurrencyTest {
     }
 
     /** Runs the write once both sides are ready; true when it was accepted, false when it was refused. */
-    private static Callable<Boolean> attempt(CyclicBarrier start, Thread[] writers, int index, Runnable write) {
+    private static Callable<Boolean> attempt(
+            CyclicBarrier start, AtomicReferenceArray<Thread> writers, int index, Runnable write) {
         return () -> {
-            writers[index] = Thread.currentThread();
+            writers.set(index, Thread.currentThread());
             start.await(30, TimeUnit.SECONDS);
             try {
                 write.run();
