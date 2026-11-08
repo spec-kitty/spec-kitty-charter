@@ -733,7 +733,7 @@
     },
     "WP21": {
       "actor": "claude",
-      "agent": "claude:opus:reviewer-renata",
+      "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -743,9 +743,11 @@
       "last_transition_at": "2026-11-08T15:46:20.658090+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "LayerMerge (C15 settled sibling, C17/C18 winner and whole replacement, C21 override gate, C29/C31 preset union per A1), MergedClosure/LayerOverride, EdgeIndex.merged (C19, C20, C36), languages in the facts, CompositionFactsCache (#416 invariants, wired into OfferingReadService), ClosureView.merged(). Red-first commits per subtask. :packs:check green (with -PopenPacksDir=/home/user/open-packs) and HexagonalArchitectureTest green."
+        "LayerMerge (C15 settled sibling, C17/C18 winner and whole replacement, C21 override gate, C29/C31 preset union per A1), MergedClosure/LayerOverride, EdgeIndex.merged (C19, C20, C36), languages in the facts, CompositionFactsCache (#416 invariants, wired into OfferingReadService), ClosureView.merged(). Red-first commits per subtask. :packs:check green (with -PopenPacksDir=/home/user/open-packs) and HexagonalArchitectureTest green.",
+        "Changes requested (cycle 1). Blocking B1: LayerMerge.settledAmong falls back to the last sibling for an unsettled contest; reachable via graph-declared action:M/s nodes, which the compose leaves out of sibling contests. Refuse with pack_sibling_conflict for artifacts and keep the last-holder rule for presets only. Non-blocking: N1 Set.copyOf loses language order; N2 the revision read per pack; N3 a Spring-path cache test for WP22. Rulings: (a) accepted per C21/R3, logged as an open item; (b) unsafe, see B1; (c) acceptable. Ran :packs:check (pass) and :deployable:test (1127 tests, 0 failures, HexagonalArchitectureTest unchanged); confirmed red-first on 5c7cc198, 7afe9fa0, a4f69c8f, cc7e7e5e (assertion failures)."
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/layer-merge-and-effective-reads-01M6R0J6-coord/kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP21-b-layer-merge/review-cycle-1.md",
         "reference": "review-cycle://layer-merge-and-effective-reads-01M6R0J6/WP21-b-layer-merge/review-cycle-1.md",
@@ -753,15 +755,15 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 22414,
-      "shell_pid_created_at": "1794152095.29",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T103": "done",
-        "T104": "done",
-        "T105": "done",
-        "T106": "done",
-        "T107": "done",
-        "T108": "done"
+        "T103": "planned",
+        "T104": "planned",
+        "T105": "planned",
+        "T106": "planned",
+        "T107": "planned",
+        "T108": "planned"
       }
     },
     "WP22": {
