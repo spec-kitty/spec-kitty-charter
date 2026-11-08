@@ -20,7 +20,8 @@ put:
     application/x-tar+gzip) or of a zip archive (application/zip); the Content-Type picks the format and the leading
     bytes must match it. The body is at most 32 MiB (413, answered before the body is read), and only the org and the
     project level are writable. The registration is asynchronous (A5, FR-024): after the synchronous checks the
-    service answers 202 with a PackRegistrationStatus (pending) and a Location, the URI of GET
+    service answers 202 with a PackRegistrationStatus (pending; refused with registration_timed_out when the
+    deadline ended the job before it started) and a Location, the URI of GET
     /pack-registrations/{registrationId}, which the client polls until the state is succeeded or refused. The
     synchronous checks are access (the worktree bearer token, which the guard checks before routing and answers 401),
     the registration flag (503), the packId grammar (400), the body size (413), the volumes' room for the declared length
@@ -69,7 +70,8 @@ put:
     '202':
       description: >-
         The registration was accepted and a job will run it. The body is the status, pending, and Location is the URI
-        to poll.
+        to poll. A job that ended before it started (the deadline, or the service stopping, between the slot and the
+        start) answers its end here: the status is refused, with registration_timed_out for the deadline.
       headers:
         Charter-Contract-Version:
           $ref: ../headers/CharterContractVersion.yaml

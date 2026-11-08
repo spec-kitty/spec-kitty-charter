@@ -1,5 +1,10 @@
 ### Changed
 
+- The `202` of `registerPackFromArchive` and `registerPackFromSource` says its body is the status `pending`, except that a
+  job the deadline (or a shutdown) ended between its slot and its start answers `202` with that end, `refused` with
+  `registration_timed_out` for the deadline (issue #418, F2). Text only: the status was always a `PackRegistrationStatus`,
+  and no status or code is added. `POST /packs` now answers that end as `PUT` already did.
+
 - `registerPackFromArchive` (`PUT /packs/{packId}`) reads its body as a stream and takes its registration slot when the body
   is spooled, not before it is read (issue #418, A3, A4): a slow upload no longer holds one of the two running and eight
   waiting places while it arrives. A full queue (`503` with `Retry-After`) and a stale `If-Match` are still answered before
