@@ -20,6 +20,17 @@ public interface PackSourceFetcher {
     PackSourceKind kind();
 
     /**
+     * Whether this fetcher can serve a request now. A fetcher that cannot (the git source on a host with no usable git,
+     * NFR-011) is a kind that is not built: the request is {@code 503 pack_source_unavailable} at acceptance and takes no
+     * slot. The answer does not change while the service runs.
+     *
+     * @return true unless the fetcher depends on something the host lacks
+     */
+    default boolean available() {
+        return true;
+    }
+
+    /**
      * Fetches the source into the job's staging directory.
      *
      * @param request the source as the request named it

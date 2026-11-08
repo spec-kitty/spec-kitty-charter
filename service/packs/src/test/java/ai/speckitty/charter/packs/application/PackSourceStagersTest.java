@@ -126,6 +126,40 @@ class PackSourceStagersTest {
     }
 
     @Test
+    void aFetcherThatIsNotAvailableIsAKindThatIsNotBuiltAndIsUnavailable() {
+        PackSourceFetcher noGit = new PackSourceFetcher() {
+            @Override
+            public PackSourceKind kind() {
+                return PackSourceKind.GIT;
+            }
+
+            @Override
+            public boolean available() {
+                return false;
+            }
+
+            @Override
+            public Staged fetch(PackSourceRequest request, Path into) {
+                throw new AssertionError("an unavailable fetcher is never asked to fetch");
+            }
+        };
+        PackSourceStagers stagers = new PackSourceStagers(
+                List.of(
+                        noGit,
+                        fetcher(PackSourceKind.HTTPS_ARCHIVE, new Staged(new StagedPack(directory), Map.of()))),
+                loader);
+        PackSourceRequest git = new PackSourceRequest(
+                PackSourceKind.GIT, "https://git.example.org/a.git", "refs/tags/v1", null, null, null);
+
+        assertThat(stagers.fetcherFor(PackSourceKind.GIT)).isEmpty();
+        assertThat(stagers.fetcherFor(PackSourceKind.HTTPS_ARCHIVE)).isPresent();
+        assertThatThrownBy(() -> stagers.stagerFor(git, "acme"))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_SOURCE_UNAVAILABLE));
+    }
+
+    @Test
     void twoFetchersOfOneKindAreAMisconfiguration() {
         PackSourceFetcher first = fetcher(PackSourceKind.FILESYSTEM, new Staged(new StagedPack(directory), Map.of()));
         PackSourceFetcher second = fetcher(PackSourceKind.FILESYSTEM, new Staged(new StagedPack(directory), Map.of()));
