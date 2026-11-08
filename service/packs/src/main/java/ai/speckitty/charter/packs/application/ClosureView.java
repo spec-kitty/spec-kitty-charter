@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.application;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.domain.LayerMerge;
 import ai.speckitty.charter.packs.domain.MergedClosure;
 import ai.speckitty.charter.packs.domain.MutabilityLevel;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
@@ -94,10 +95,8 @@ public record ClosureView(
 
         synchronized MergedView merged(PerPackPolicy policy, EdgeIndex edges) {
             if (built == null) {
-                Objects.requireNonNull(packs, "packs");
-                Objects.requireNonNull(facts, "facts");
-                Objects.requireNonNull(policy, "policy");
-                built = new MergedView(MergedClosure.EMPTY, edges);
+                MergedClosure merged = LayerMerge.merge(packs, facts, policy);
+                built = new MergedView(merged, edges.merged(merged));
             }
             return built;
         }
