@@ -153,7 +153,7 @@ for one process; several processes over one root are out of scope
 ## The closure read
 
 `GET /activations/{activationId}/packs` (`listActivationPacks`) answers the packs a document builds on: the
-`depends_on` closure rooted at its `packs` (every configured pack when `packs` is absent), in dependency order. Each
+`depends_on` and `parent_pack` closure rooted at its `packs` (every configured pack when `packs` is absent), in dependency order. Each
 item has the offering's pack shape, `OfferingPack`, with the facts of each resolved dependency. A pack outside the
 closure is never judged, so an unrelated broken pack does not refuse it; a closure that does not compose is refused
 with the offering's `500` codes, naming the pack. Its `ETag` covers the revision and the closure's packs, and it
@@ -262,7 +262,7 @@ five operations declare that `400`. Every other answer comes from one flow (`Act
    declares `409`. `createActivation` and `replaceActivation` judge the whole document they are sent.
 
    A stale id is dropped on write ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/#amendment-2026-11-06)
-   R5). Before the write computes anything, it removes from the stored document every id the closure no longer
+   A5). Before the write computes anything, it removes from the stored document every id the closure no longer
    holds (a pack upgrade removed it), in `selected`, `deactivated` and `missionTypes`, and reports them in
    `dropped`. A dropped id is a change, so such a write is never a no-op and answers a new revision. An unselect or a
    re-activate whose path names a stale id the stored list still holds is such a write: `200`, the id in `dropped`
@@ -315,7 +315,7 @@ never cascades: its `cascade` is checked for its shape and then ignored, and so 
 with no depth limit, and `<pack>::` targets resolved in the closure. Each node is visited once, so a cycle ends and
 each artifact on it is selected once. **`enhances`** is walked the same way, in its declared direction, from the
 enhancer to what it enhances ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/#amendment-2026-11-06)
-R4, [DIV-207](/conformance/divergence-register/)): selecting an enhancer with a cascade selects its target, and
+A4, [DIV-207](/conformance/divergence-register/)): selecting an enhancer with a cascade selects its target, and
 selecting a target selects no enhancer. It has no rule of its own: no pull, at write or at read. No other relation is
 followed (D2.5).
 
@@ -346,7 +346,7 @@ a template, an asset, a lineage ancestor (to the descendant it was passed from) 
 is named, so the choice does not depend on the order the walk recorded its ways in.
 
 **`includeDeactivated`** (ADR-0013 D4, [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/#amendment-2026-11-06)
-R3). The walk stops only at the deny entries of a kind outside the `cascade` scope. The select clears the deny
+A3). The walk stops only at the deny entries of a kind outside the `cascade` scope. The select clears the deny
 entries the walk passes through within the scope: the target, what it reached of a kind in scope, and each ancestor
 it passed whose kind is in scope (cleared, never selected). A denied artifact outside the scope keeps its deny entry:
 the walk stops there and reports it in `skippedDeactivated`, with what lies only behind it in
@@ -377,7 +377,7 @@ With a cascade:
 A deactivate's `skippedByScope` lists only the out-of-scope artifacts the target reached that are selected; one that
 is not selected is left alone and not reported.
 
-**`enhances` at read** (ADR-0059 amendment R4, recorded for the effective reads of
+**`enhances` at read** (ADR-0059 amendment A4, recorded for the effective reads of
 [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103), which answer `501`). An enhancement is returned
 only when it is itself active. `E enhances T` also reads "T is enhanced by E", so resolving T returns E when E is
 active. There is no automatic read-time pull: an enhancer does not come into force because its target does, nor a

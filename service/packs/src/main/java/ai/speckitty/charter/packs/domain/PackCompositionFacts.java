@@ -9,7 +9,8 @@ import java.util.Objects;
  * changes, the artifacts it holds, the references it writes, the mutability policy it declares, the activation presets
  * it holds and the typed edges it writes.
  *
- * @param changed the distinct targets of its {@code enhances} and {@code overrides} relations, in first-seen order
+ * @param changed the distinct targets of its {@code overrides} relations, in first-seen order (an {@code enhances}
+ *     relation changes nothing, A14)
  * @param defined the artifacts it holds, as bare URNs ({@code <kind>:<id>}), in a stable order
  * @param references the references it writes, as written (bare or pack-qualified), in first-seen order
  * @param policy the mutability policy its descriptor names (ADR-0063); {@link MutabilityPolicySource#empty()} when it
@@ -17,7 +18,7 @@ import java.util.Objects;
  * @param presets the activation presets the pack holds ({@link Pack#presets()}), from the same assembly; empty when it
  *     holds none
  * @param edges every typed edge the pack writes, as written: the kernel {@link Relationship} with its relation type and
- *     any {@code <pack>::} qualifier of either endpoint, from its graph documents, its components' relationships and its
+ *     any {@code <pack>::} qualifier of either endpoint, from its graph documents, its components' derived relationships and its
  *     registered relationship shard, each (from, relation, to, qualifiers) once, in first-seen order; empty when it
  *     writes none
  */

@@ -18,7 +18,16 @@ import java.util.Optional;
  *   locked      no         no        no
  * </pre>
  *
- * <p>The registration API exposes three {@link Operation}s, mapped onto that table (FR-011, analysis finding U2):
+ * <p>and the four registration operations over the levels:
+ *
+ * <pre>
+ *   level       REGISTER   REPLACE   RELATIONSHIP   REMOVE
+ *   open        yes        yes       yes            yes
+ *   extendable  yes        no        yes            yes
+ *   locked      no         no        no             no
+ * </pre>
+ *
+ * <p>The registration API exposes four {@link Operation}s, mapped onto that table (FR-011, analysis finding U2):
  *
  * <ul>
  *   <li>{@link Operation#REGISTER} &mdash; add a brand-new artifact. An addition, not an override; refused only by a
@@ -28,11 +37,15 @@ import java.util.Optional;
  *       {@code open} permits it.
  *   <li>{@link Operation#RELATIONSHIP} &mdash; author an edge touching the artifact. Requires <em>enhance</em>, so
  *       {@code open} and {@code extendable} permit it; {@code locked} refuses it.
+ *   <li>{@link Operation#REMOVE} &mdash; take an existing artifact out of the pack (a {@code DELETE}, or an artifact a
+ *       whole-pack replace leaves out; ADR-0065 D5). A removal is no override of the artifact's fields, so, as ADR-0012
+ *       decision 1 and ADR-0030 decision 3 have it, {@code open} and {@code extendable} permit it and only
+ *       {@code locked} refuses it.
  * </ul>
  *
  * <p>Refusal matrix (a write beyond the owning pack's level is refused {@code governance_policy_violation}, 409):
  * {@code extendable}+{@code REPLACE}; {@code locked}+{@code REGISTER}; {@code locked}+{@code REPLACE};
- * {@code locked}+{@code RELATIONSHIP}. An artifact a policy does not name, in a pack with no policy file, is
+ * {@code locked}+{@code RELATIONSHIP}; {@code locked}+{@code REMOVE}. An artifact a policy does not name, in a pack with no policy file, is
  * {@code open} (ADR-0012 §Decision 2) &mdash; the default resolved by {@link MutabilityPolicySource}.
  */
 public enum MutabilityLevel {
@@ -69,6 +82,7 @@ public enum MutabilityLevel {
             case REGISTER -> this != LOCKED;
             case REPLACE -> this == OPEN;
             case RELATIONSHIP -> this == OPEN || this == EXTENDABLE;
+            case REMOVE -> this != LOCKED;
         };
     }
 

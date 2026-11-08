@@ -4,8 +4,9 @@
   the eleven refusal codes of the dependency resolver are declared, and `GET /offering` raises all eleven:
   `pack_dependency_cycle`, `pack_dependency_unknown`, `pack_dependency_out_of_range` (which also covers two ranges on
   one pack that share no version), `pack_parent_unresolved`, `pack_level_violation`, `pack_name_conflict`,
-  `pack_duplicate_id`, `pack_reference_unqualified` (a bare reference, in a graph edge, a typed reference, a directive's `procedures` or a paradigm's `directive_refs`, that resolves only in
-  another pack) and `pack_reference_pack_missing` (a qualified reference whose pack is outside the referring pack's own
+  `pack_duplicate_id`, `pack_reference_unqualified` (a bare reference, in a graph edge, that resolves only in another pack; the typed references, a directive's
+  `procedures` and a paradigm's `directive_refs` named here before carry no reference since
+  `2026-11-05-edges-only-in-graph-documents`, ADR-0064) and `pack_reference_pack_missing` (a qualified reference whose pack is outside the referring pack's own
   `depends_on` closure), `pack_reference_artifact_missing` (a qualified reference to a pack of the closure that does not
   hold the artifact) and `pack_sibling_conflict`, all with 500 like `pack_unreadable`: the request is fine and the
   configured packs do not compose (operator ruling of 2026-11-03). Each names the violating pack in `detail` and in the new

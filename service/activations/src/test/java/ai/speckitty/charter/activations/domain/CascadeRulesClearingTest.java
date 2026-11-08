@@ -16,10 +16,10 @@ import java.util.TreeSet;
 import org.junit.jupiter.api.Test;
 
 /**
- * FR-013, US3 AS3: {@code includeDeactivated} takes back only the deny entries the walk passes through within the
- * cascade's scope: what it reached in scope, the ancestors it passed whose kind is in scope, and the target (ADR-0059 as
- * amended on 2026-11-06, R3). A denied artifact outside the scope stops the walk and keeps its deny entry, as it would
- * without {@code includeDeactivated}. There is no {@code enhances} pull at write time (R4): the write adds to
+ * FR-013, FR-034, US3 AS3: {@code includeDeactivated} takes back only the deny entries of what the walk reaches and
+ * selects within the cascade's scope, and the target's (ADR-0059 as amended on 2026-11-06, A3; B5): a lineage ancestor
+ * it only passes through keeps its deny entry. A denied artifact outside the scope stops the walk and keeps its deny entry, as it would
+ * without {@code includeDeactivated}. There is no {@code enhances} pull at write time (A4): the write adds to
  * {@code selected} only the target and what the walk reached, which every test checks with
  * {@link #assertOnlyTheWalkSelected}.
  */
@@ -92,7 +92,7 @@ class CascadeRulesClearingTest {
 
     @Test
     void aDeniedArtifactOutsideTheScopeStopsTheWalkAndKeepsItsDenyEntry() {
-        // R3: X is a tactic, outside a cascade into directives, so the walk stops at it as it would without
+        // A3: X is a tactic, outside a cascade into directives, so the walk stops at it as it would without
         // includeDeactivated: it is reported in skippedDeactivated and its deny entry stays.
         ActivationDocument before = denying("tactic:X");
         Reach reach = reach().start("directive:D")
@@ -122,9 +122,10 @@ class CascadeRulesClearingTest {
     }
 
     @Test
-    void aDeniedAncestorTheWalkPassedIsClearedAndNeverSelected() {
+    void aDeniedAncestorTheWalkPassesKeepsItsDenyEntryAndIsNeverSelected() {
+        // B5 (DM-01M6RA9XQSH3E07C7VCPCVD6R4, rule W22): the walk passes through the denied Q to R, but Q is never
+        // selected, so its deny entry stays.
         ArtifactRef p = ref("agent_profile:P");
-        ArtifactRef q = ref("agent_profile:Q");
         Reach reach = reach().start("agent_profile:P")
                 .ancestor("agent_profile:Q", "agent_profile:P")
                 .reached("directive:R", "agent_profile:Q", REQUIRES)
@@ -133,14 +134,37 @@ class CascadeRulesClearingTest {
 
         ActivationChange change = include(before, p, reach);
 
-        assertThat(change.cleared()).containsExactly(q);
+        assertThat(change.cleared()).isEmpty();
+        assertThat(change.after().deactivated(AGENT_PROFILE)).containsExactly("Q");
         assertThat(change.after().selected(AGENT_PROFILE).orElseThrow()).containsExactly("P");
-        assertThat(change.applied()).containsExactly(p, q, ref("directive:R"));
+        assertThat(change.applied()).containsExactly(p, ref("directive:R"));
+    }
+
+    @Test
+    void onlyWhatTheWalkReachesAndSelectsIsClearedNeverAnAncestorItOnlyPasses() {
+        // B5: lineage A <- B <- C (C specializes from B, B from A), C also requires B; A requires R. A and B are
+        // denied. The walk selects C, B (reached by requires) and R (passed through from A); A is only passed.
+        ArtifactRef c = ref("agent_profile:C");
+        ArtifactRef b = ref("agent_profile:B");
+        Reach reach = reach().start("agent_profile:C")
+                .reached("agent_profile:B", "agent_profile:C", REQUIRES)
+                .ancestor("agent_profile:B", "agent_profile:C")
+                .ancestor("agent_profile:A", "agent_profile:B")
+                .reached("directive:R", "agent_profile:A", REQUIRES)
+                .build();
+        ActivationDocument before = denying("agent_profile:A", "agent_profile:B");
+
+        ActivationChange change = include(before, c, reach);
+
+        assertThat(change.cleared()).containsExactly(b);
+        assertThat(change.after().deactivated(AGENT_PROFILE)).containsExactly("A");
+        assertThat(change.after().selected(AGENT_PROFILE).orElseThrow()).containsExactly("B", "C");
+        assertThat(change.applied()).containsExactly(b, c, ref("directive:R"));
     }
 
     @Test
     void aDeniedAncestorOutsideTheScopeStopsTheLineageAndKeepsItsDenyEntry() {
-        // R3: the ancestor's kind is outside a cascade into directives, so it is a stop, as without includeDeactivated.
+        // A3: the ancestor's kind is outside a cascade into directives, so it is a stop, as without includeDeactivated.
         ArtifactRef p = ref("agent_profile:P");
         ActivationDocument before = denying("agent_profile:Q");
         Reach passed = reach().start("agent_profile:P")

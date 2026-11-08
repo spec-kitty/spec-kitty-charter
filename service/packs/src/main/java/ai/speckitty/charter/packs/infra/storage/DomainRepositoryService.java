@@ -25,6 +25,8 @@ import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackDocument;
+import ai.speckitty.charter.packs.domain.PackEdge;
+import ai.speckitty.charter.packs.domain.PackEdgeRepository;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRepository;
@@ -47,6 +49,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -87,6 +90,7 @@ public final class DomainRepositoryService
                 PackDescriptorRepository,
                 PackCatalogRepository,
                 PackArtifactRepository,
+                PackEdgeRepository,
                 PackRepository,
                 MutabilityPolicyRepository {
 
@@ -109,6 +113,16 @@ public final class DomainRepositoryService
          * @return the reason, to follow the pack's name in a refusal; empty when it may be written
          */
         default Optional<String> whyReadOnly(Path realDirectory) {
+            return Optional.empty();
+        }
+
+        /**
+         * The one directory the service writes whole packs into ({@code <config-root>/packs}, ADR-0065 D3), when these
+         * locations have one. A fixed set of locations has none and cannot take a whole-pack registration.
+         *
+         * @return the directory, absolute and normalized; empty for a fixed set
+         */
+        default Optional<Path> writeRoot() {
             return Optional.empty();
         }
     }
@@ -296,6 +310,42 @@ public final class DomainRepositoryService
     // ---- PackArtifactRepository -------------------------------------------------------------------------------
 
     /**
+     * The edges of the pack's graph documents, in {@link FilesystemPackStore#readGraphs} order: the root shards by
+     * file name, then the fragment, each in document order (ADR-0064). An {@code in_tension_with} edge is a tension,
+     * not a relationship, and is left out.
+     *
+     * @param pack the pack
+     * @return the edges
+     * @throws CharterRefusal {@code PACK_UNREADABLE} when a graph document cannot be read or an edge names an unknown
+     *     relation
+     */
+    @Override
+    public List<PackEdge> edges(PackIdentifier pack) {
+        Resolved resolved = resolve(pack);
+        FilesystemPackStore.GraphRead graphs = resolved.store.readGraphs(resolved.key);
+        if (!graphs.violations().isEmpty()) {
+            throw new CharterRefusal(
+                    RefusalCode.PACK_UNREADABLE, "a graph document of " + pack.value() + " cannot be read");
+        }
+        List<PackEdge> edges = new ArrayList<>();
+        for (GraphDocument document : graphs.documents()) {
+            for (GraphDocument.Edge edge : document.edges()) {
+                if (PackPolicy.TENSION.equals(edge.relation())) {
+                    // A tension is read as a tension, never answered as a relationship (Relation.yaml).
+                    continue;
+                }
+                RelationType relation = RelationType.fromToken(edge.relation())
+                        .orElseThrow(() -> new CharterRefusal(
+                                RefusalCode.PACK_UNREADABLE,
+                                document.file() + " of " + pack.value() + ": unknown relation '" + edge.relation()
+                                        + "'"));
+                edges.add(new PackEdge(edge.source(), edge.target(), relation));
+            }
+        }
+        return List.copyOf(edges);
+    }
+
+    /**
      * What the compose needs to know about the pack, from one assembly of it and one read of its graph documents:
      *
      * <ul>
@@ -357,7 +407,7 @@ public final class DomainRepositoryService
 
     /**
      * Every typed edge the pack writes, as written: the edges of its graph documents in file order, then each of
-     * its components' relationships in assembly order (its typed references, {@code ArtifactEdges.build}), then the
+     * its components' derived relationships in assembly order (a guard's {@code implemented_by}, ADR-0064), then the
      * edges of its registered relationship shard ({@link RelationshipShard#SHARD_PATH}, a root shard the one graph read
      * already holds). Each (from, relation, to, qualifiers) is kept once, where it was first seen: the kernel
      * {@link Relationship#equals} ignores the relation and the qualifiers, so the key is explicit.
@@ -365,7 +415,9 @@ public final class DomainRepositoryService
     private static List<Relationship> typedEdges(List<GraphDocument> documents, Pack assembled) {
         Map<EdgeKey, Relationship> edges = new LinkedHashMap<>();
         documents.stream().filter(document -> !registered(document)).forEach(document -> graphEdges(document, edges));
-        assembled.artifacts().forEach(artifact -> artifact.relationships().forEach(edge -> keep(edge, edges)));
+        assembled
+                .artifacts()
+                .forEach(artifact -> artifact.derivedRelationships().forEach(edge -> keep(edge, edges)));
         documents.stream().filter(DomainRepositoryService::registered).forEach(document -> graphEdges(document, edges));
         return List.copyOf(edges.values());
     }
@@ -391,7 +443,7 @@ public final class DomainRepositoryService
      * One graph-document edge as the kernel's typed edge, with each endpoint's qualifier as written; empty for an
      * endpoint or a relation that is no reference, which the reads that judge the document report.
      */
-    private static Optional<Relationship> typedEdge(GraphDocument.Edge edge) {
+    static Optional<Relationship> typedEdge(GraphDocument.Edge edge) {
         try {
             PackQualifiedReference source = PackQualifiedReference.parse(edge.source());
             PackQualifiedReference target = PackQualifiedReference.parse(edge.target());
@@ -445,8 +497,8 @@ public final class DomainRepositoryService
     }
 
     /**
-     * What one graph document's edges tell the compose: the targets of its {@code enhances} and {@code overrides}
-     * relations into {@code changed}, both endpoints of every edge into {@code references}; a self-loop is refused.
+     * What one graph document's edges tell the compose: the targets of its {@code overrides} relations into
+     * {@code changed}, both endpoints of every edge into {@code references}; a self-loop is refused.
      */
     private static void edgeFacts(
             PackIdentifier pack, String packName, GraphDocument document, Set<String> changed, Set<String> references) {
@@ -483,20 +535,24 @@ public final class DomainRepositoryService
 
     /**
      * The nodes a graph document declares for a kind that is never a file of its own: an {@code anti_pattern} lives
-     * only as a node of a graph document, so the document is where the pack holds it.
+     * only as a node of a graph document, and so does a mission type's step {@code action:<M>/<step>}, a value of its
+     * mission type's file that a graph names as a node (A7 Q1, rule W20's {@code steps(M)}).
      */
     private static List<String> declaredWithoutFile(GraphDocument document) {
-        String token = NodeKind.ANTI_PATTERN.token();
+        Set<NodeKind> withoutFile = EnumSet.of(NodeKind.ANTI_PATTERN, NodeKind.ACTION);
         return switch (document) {
             case GraphDocument.Shard shard ->
                 shard.nodes().stream()
-                        .filter(node -> token.equals(node.kind()))
+                        .filter(node -> withoutFile.stream()
+                                .anyMatch(kind -> kind.token().equals(node.kind())))
                         .map(GraphDocument.ShardNode::urn)
                         .toList();
             case GraphDocument.Fragment fragment ->
                 fragment.nodes().stream()
-                        .filter(node -> NodeKind.ANTI_PATTERN.plural().equals(node.kind()))
-                        .map(node -> token + ":" + node.id())
+                        .flatMap(node -> NodeKind.fromPlural(node.kind())
+                                .filter(withoutFile::contains)
+                                .map(kind -> kind.token() + ":" + node.id())
+                                .stream())
                         .toList();
         };
     }
@@ -513,10 +569,12 @@ public final class DomainRepositoryService
         return assembled;
     }
 
-    /** Whether a relation changes its target: a field-merge into it ({@code enhances}) or a full replacement of it. */
+    /**
+     * Whether a relation changes its target: a full replacement of it ({@code overrides}). An {@code enhances} relation
+     * is additive and changes nothing, so two sibling enhancers are no conflict (A14, rule C14).
+     */
     private static boolean refines(String relation) {
-        return RelationType.ENHANCES.token().equals(relation)
-                || RelationType.OVERRIDES.token().equals(relation);
+        return RelationType.OVERRIDES.token().equals(relation);
     }
 
     // ---- PackRepository --------------------------------------------------------------------
@@ -647,12 +705,6 @@ public final class DomainRepositoryService
         for (FilesystemPackStore.Stored<D> stored : read.elements(kind)) {
             try {
                 E entity = kind.toEntity(pack, stored.dso());
-                Optional<String> unsound =
-                        PackPolicy.referenceProblem(read.descriptor().name(), entity);
-                if (unsound.isPresent()) {
-                    builder.violation(new PackElementViolation(stored.file(), "reference", unsound.get()));
-                    continue;
-                }
                 Optional<UnresolvedTemplate> unresolved = MissionTemplates.firstUnresolved(entity, namableTemplates);
                 if (unresolved.isPresent()) {
                     builder.violation(new PackElementViolation(

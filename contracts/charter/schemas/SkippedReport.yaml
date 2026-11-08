@@ -45,6 +45,18 @@ properties:
       rule: The reached artifacts another active artifact references.
       inputs:
       - schemas/ActivationConfig.yaml
+  skippedByDepth:
+    type: array
+    items:
+      $ref: ArtifactReference.yaml
+    description: >-
+      Present only when the request sent a cascade and a depth (IC-21, FR-043): the suggests targets one hop past the bound, the next
+      frontier of the walk, so a client knows whether a deeper depth would reach more. Absent when no depth was sent or there was no cascade;
+      an empty list says the bound cut nothing.
+    x-derived:
+      rule: The suggests targets the walk would cross at one hop more than depth, not yet reached.
+      inputs:
+      - schemas/ActivationConfig.yaml
 x-derived:
   rule: The skipped report of the walk or the effective set (ADR-0013 D4).
   inputs:

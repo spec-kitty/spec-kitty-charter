@@ -51,10 +51,11 @@ class LinkChecksTest {
         assertThat(get(ITEM, null, """
                         {"_links": {
                           "self": {"href": "/api/v1/packs/qa/artifacts/tactic/rehearse"},
-                          "up": {"href": "/api/v1/packs/{packId}", "templated": true}
+                          "up": {"href": "/api/v1/packs/{packId}/assets", "templated": true}
                         }}"""))
-                .anySatisfy(violation ->
-                        assertThat(violation).contains("/api/v1/packs/{packId}").contains("no GET operation"));
+                .anySatisfy(violation -> assertThat(violation)
+                        .contains("/api/v1/packs/{packId}/assets")
+                        .contains("no GET operation"));
     }
 
     @Test
@@ -173,6 +174,31 @@ class LinkChecksTest {
                         201,
                         "http://localhost/api/v1/packs/qa/artifacts/directive/OTHER",
                         created))
+                .anySatisfy(violation -> assertThat(violation).contains("Location"));
+    }
+
+    @Test
+    void theLocationOfA202IsItsSelfAndNotThePathOfTheRequest() {
+        String accepted = "{\"registrationId\": \"01M6TQ62HXYF362GAFS2BZ3PGF\", \"state\": \"pending\","
+                + " \"packId\": \"qa\", \"acceptedAt\": \"2026-11-07T10:00:00Z\", \"_links\": {"
+                + "\"self\": {\"href\": \"/api/v1/pack-registrations/01M6TQ62HXYF362GAFS2BZ3PGF\"}}}";
+        assertThat(check(
+                        "put",
+                        "/packs/qa",
+                        null,
+                        202,
+                        "/api/v1/pack-registrations/01M6TQ62HXYF362GAFS2BZ3PGF",
+                        accepted))
+                .as("the status is the resource a 202 answers, so the Location is its self")
+                .isEmpty();
+        assertThat(check(
+                        "put",
+                        "/packs/qa",
+                        null,
+                        202,
+                        "/api/v1/pack-registrations/01M6TQ62HXYF362GAFS2BZ3PGG",
+                        accepted))
+                .as("a Location that is not the self is reported")
                 .anySatisfy(violation -> assertThat(violation).contains("Location"));
     }
 

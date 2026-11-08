@@ -90,16 +90,13 @@ public enum NodeKind {
     }
 
     /**
-     * The plural a fragment node names this kind by, the inverse of {@link #fromPlural(String)}.
+     * The plural a fragment node names this kind by, the inverse of {@link #fromPlural(String)}. Every kind but
+     * {@link #ACTION} takes it from {@link ArtifactKind#plural()}, the one registry of plurals.
      *
      * @return the plural kind, for example {@code agent_profiles}, {@code actions} or {@code mission_types}
      */
     public String plural() {
-        return switch (this) {
-            case ACTION -> "actions";
-            case MISSION_TYPE -> "mission_types";
-            default -> ArtifactKind.valueOf(name()).plural();
-        };
+        return artifactKind().map(ArtifactKind::plural).orElse("actions");
     }
 
     /**

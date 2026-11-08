@@ -21,8 +21,7 @@ class PackPresetsTest {
             new PackDescriptor("01PACK", "1.0.0", Optional.empty(), "demo", Optional.empty(), Optional.empty());
 
     private static Preset preset(String id) {
-        return new Preset(
-                id, "d", List.of(), Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("GUARD"))), List.of());
+        return new Preset(id, "d", Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("GUARD"))));
     }
 
     private static Directive directive(String id) {

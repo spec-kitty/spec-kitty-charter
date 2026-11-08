@@ -411,7 +411,7 @@ Directive DIRECTIVE_037. Requires behavior-describing artifacts to evolve togeth
 
 ## Mission step
 
-One step of a mission type's recipe. A step names the role it needs, never a profile. It is a sub-item of its mission type's file, in `steps` (the run order) or `on_demand_steps`, with a one-line description of at most 160 characters, its expected input artifacts (preconditions) and output artifacts (postconditions), its references (its action-scoped guidance) and, as Markdown companions, its prompt and guidelines. A domain type, not an artifact kind: there is no `mission_steps` kind. The graph names it as an action, `action:<mission-type>/<step>` (ADR-0044).
+One step of a mission type's recipe. A step names the role it needs, never a profile. It is a sub-item of its mission type's file, in `steps` (the run order) or `on_demand_steps`, with a one-line description of at most 160 characters, its expected input artifacts (preconditions) and output artifacts (postconditions), its action-scoped guidance as graph edges from its `action:<mission-type>/<step>` node (ADR-0064) and, as Markdown companions, its prompt and guidelines. A domain type, not an artifact kind: there is no `mission_steps` kind. The graph names it as an action, `action:<mission-type>/<step>` (ADR-0044).
 
 **Meta:**
 
@@ -565,7 +565,7 @@ The project's own charter components, under the one flat root `.kittify/charter-
 
 ## Qualified reference
 
-A cross-pack reference written `<pack-name>::<urn>`; the URN part stays opaque (ADR-0053 decision 7). A reference inside the same pack stays bare. The pack is provenance on the relationship, not identity: the artifact's URN stays bare. A bare reference is the referring pack's own artifact first. A bare reference that would only resolve in another pack is refused, naming the holding pack (`pack_reference_unqualified`); one that names a pack outside the referring pack's own `depends_on` closure is refused, naming the missing pack (`pack_reference_pack_missing`); one whose pack does not hold the artifact is refused too (`pack_reference_artifact_missing`).
+A cross-pack reference, an edge end in a graph document, written `<pack-name>::<urn>`; the URN part stays opaque (ADR-0053 decision 7). A reference inside the same pack stays bare. The pack is provenance on the relationship, not identity: the artifact's URN stays bare. A bare reference is the referring pack's own artifact first. A bare reference that would only resolve in another pack is refused, naming the holding pack (`pack_reference_unqualified`); one that names a pack outside the referring pack's own `depends_on` closure is refused, naming the missing pack (`pack_reference_pack_missing`); one whose pack does not hold the artifact is refused too (`pack_reference_artifact_missing`).
 
 **Aliases:** pack-qualified reference
 
@@ -583,7 +583,7 @@ A snapshot of a quality metric (failure count, symbol count, dead-module count) 
 
 ## Recipe ingredients
 
-The guidance a mission type names by id: the `references` of its mission-type file (core reads them from `governance-profile.yaml`, which the service retires). They are kept by id and mint no relationship until edge authority is ruled (#189); until then the graph's `scope` edges carry their activation meaning. While a mission of that type runs, these artifacts are added to the plate; activating the mission type is the consent. The ingredients name no profiles: roles stay the only link to profiles. Replaces Mission-Type Profile.
+The guidance a mission type names: the targets of its `scope` edges in the pack's graph documents (core reads them from `governance-profile.yaml`, which the service retires). The mission-type file has no `references` field; a relationship is authored only in the graph documents (ADR-0064). While a mission of that type runs, these artifacts are added to the plate; activating the mission type is the consent. The ingredients name no profiles: roles stay the only link to profiles. Replaces Mission-Type Profile.
 
 **Meta:**
 
@@ -699,7 +699,7 @@ The structural sub-steps of one mission step and what each delegates to (the `mi
 
 ## Step enhancement
 
-An add-only extension that a specialist or org pack attaches to an existing step of a mission type: references, guards on its outgoing transitions and `emit` entries. It cannot remove or reorder steps; `overrides` replaces a step whole (ADR-0050).
+An add-only extension that a specialist or org pack attaches to an existing step of a mission type: guards on its outgoing transitions and `emit` entries (its guidance is graph edges, ADR-0064). It cannot remove or reorder steps; `overrides` replaces a step whole (ADR-0050).
 
 **Meta:**
 
@@ -775,7 +775,7 @@ A structured set of charter templates that shape output artifacts and interactio
 
 ## Sibling conflict
 
-Two packs at the same level that both change, or both define, the same artifact id, of any kind; a definer and an enhancer do not conflict. It is refused as `pack_sibling_conflict` unless an overrides edge naming a contesting member settles it (ADR-0048 decision 9, ADR-0053 decision 5). Across levels the same id is a legitimate layer override, not a conflict.
+Two packs at the same level that both change, or both define, the same artifact id, of any kind; a definer and an enhancer do not conflict. It is refused as `pack_sibling_conflict` unless an overrides edge naming a contesting member settles it (ADR-0048 decision 9, ADR-0053 decision 5). Across levels the same id is a legitimate layer override, not a conflict. Two packs at one level that hold a preset with the same id conflict too, unless one is on the other's `parent_pack` line; an overrides edge does not settle a preset (operator ruling of 2026-11-06).
 
 **Meta:**
 
@@ -929,7 +929,7 @@ The `markdown` content form: a file read into a model of optional frontmatter, a
 
 ## Guide (toolguide)
 
-A toolguide's guide: the Markdown companion `<id>.guide.md` beside its toolguide, named by `guide_path`. It holds fixed blocks under canonical H2 headings (`Overview`, required, then `When to use`, `Setup`, `Usage`, `Cautions`, `Known limitations`, `References`) and freeform sections between `Usage` and `Cautions`. Its H1 is written from the toolguide's title, which, with the summary, commands and references, lives only in the toolguide. Over HTTP it travels as content or a fetched URI, never as a path (ADR-0043).
+A toolguide's guide: the Markdown companion `<id>.guide.md` beside its toolguide, named by `guide_path`. It holds fixed blocks under canonical H2 headings (`Overview`, required, then `When to use`, `Setup`, `Usage`, `Cautions`, `Known limitations`, `References`) and freeform sections between `Usage` and `Cautions`. Its H1 is written from the toolguide's title, which, with the summary and commands, lives only in the toolguide. Over HTTP it travels as content or a fetched URI, never as a path (ADR-0043).
 
 **Meta:**
 
