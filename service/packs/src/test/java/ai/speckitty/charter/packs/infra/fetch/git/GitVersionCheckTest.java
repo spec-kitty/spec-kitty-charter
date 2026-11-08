@@ -8,7 +8,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -175,15 +178,20 @@ class GitVersionCheckTest {
 
         assertThat(shim.calls()).singleElement().satisfies(call -> {
             assertThat(call.arguments()).containsExactly("--version");
-            assertThat(call.environment().keySet())
-                    .allMatch(name -> name.equals("PATH")
-                            || name.equals("HOME")
-                            || name.equals("LC_ALL")
-                            || name.equals("GIT_CONFIG_NOSYSTEM")
-                            || name.equals("GIT_CONFIG_GLOBAL")
-                            || name.equals("GIT_TERMINAL_PROMPT")
-                            || name.equals("XDG_CONFIG_HOME")
-                            || name.equals("PWD"));
+            Map<String, String> environment = new HashMap<>(call.environment());
+            // The shell the shim runs in adds its own bookkeeping variables; nothing else is there.
+            environment.keySet().removeAll(Set.of("PWD", "_", "SHLVL", "OLDPWD"));
+            assertThat(environment.keySet())
+                    .containsExactlyInAnyOrder(
+                            "PATH",
+                            "HOME",
+                            "XDG_CONFIG_HOME",
+                            "GIT_CONFIG_NOSYSTEM",
+                            "GIT_CONFIG_GLOBAL",
+                            "GIT_TERMINAL_PROMPT",
+                            "LC_ALL",
+                            "GIT_ALLOW_PROTOCOL",
+                            "GIT_LFS_SKIP_SMUDGE");
             assertThat(call.environment()).containsEntry("PATH", shim.directory().toString());
         });
     }

@@ -1,14 +1,34 @@
 package ai.speckitty.charter.packs.infra.fetch.git;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import org.jspecify.annotations.Nullable;
 
-/** Whether the host has a git the source may use (NFR-011); resolved once. */
+/**
+ * Whether the host has a git the source may use (NFR-011, C-008): the binary is resolved once, from
+ * {@code charter.pack-sources.git.executable} or the {@code PATH}, and asked {@code --version}. Below 2.50.1, without a
+ * binary, or with one that does not answer with a version, the git source is off and answers
+ * {@code 503 pack_source_unavailable}; nothing else changes, and the other kinds of source keep working.
+ *
+ * <p>The binary is started with an argument list that is fixed and an environment built from empty ({@link
+ * GitEnvironment}), under a deadline, and only {@code --version} is asked of it.
+ */
 public final class GitVersionCheck {
 
     /** The oldest git the source runs (C-008, NFR-011). */
     public static final GitVersion MINIMUM = new GitVersion(2, 50, 1);
+
+    private static final String BINARY = "git";
+    private static final long ASK_SECONDS = 10;
+    private static final int MAX_ANSWER_BYTES = 4096;
+    private static final String PROPERTY = "charter.pack-sources.git.executable";
 
     /** What the check found. */
     public enum Status {
@@ -22,7 +42,17 @@ public final class GitVersionCheck {
         UNREADABLE
     }
 
-    private GitVersionCheck() {}
+    private final Status status;
+    private final @Nullable Path executable;
+    private final @Nullable GitVersion version;
+    private final GitVersion minimum;
+
+    private GitVersionCheck(Status status, @Nullable Path executable, @Nullable GitVersion version, GitVersion minimum) {
+        this.status = status;
+        this.executable = executable;
+        this.version = version;
+        this.minimum = minimum;
+    }
 
     /**
      * Resolves git and checks its version against {@link #MINIMUM}.
@@ -44,7 +74,108 @@ public final class GitVersionCheck {
      * @return the check
      */
     public static GitVersionCheck resolve(@Nullable Path executable, @Nullable String path, GitVersion minimum) {
-        return new GitVersionCheck();
+        Objects.requireNonNull(minimum, "minimum");
+        Optional<Path> found = executable != null ? usable(executable) : onPath(path);
+        if (found.isEmpty()) {
+            return new GitVersionCheck(Status.MISSING, null, null, minimum);
+        }
+        Path binary = found.get();
+        Optional<GitVersion> version = ask(binary);
+        if (version.isEmpty()) {
+            return new GitVersionCheck(Status.UNREADABLE, binary, null, minimum);
+        }
+        Status status = version.get().compareTo(minimum) >= 0 ? Status.ENABLED : Status.TOO_OLD;
+        return new GitVersionCheck(status, binary, version.get(), minimum);
+    }
+
+    private static Optional<Path> usable(Path candidate) {
+        boolean runnable = candidate.isAbsolute() && Files.isRegularFile(candidate) && Files.isExecutable(candidate);
+        return runnable ? Optional.of(candidate.normalize()) : Optional.empty();
+    }
+
+    private static Optional<Path> onPath(@Nullable String path) {
+        if (path == null) {
+            return Optional.empty();
+        }
+        for (String entry : path.split(java.io.File.pathSeparator, -1)) {
+            Path directory = entry.isEmpty() ? null : Path.of(entry);
+            if (directory != null && directory.isAbsolute()) {
+                Optional<Path> found = usable(directory.resolve(BINARY));
+                if (found.isPresent()) {
+                    return found;
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    /** The version the binary reports; empty when it does not start, does not answer in time or does not say one. */
+    private static Optional<GitVersion> ask(Path binary) {
+        Path home = null;
+        try {
+            home = Files.createTempDirectory("charter-git-version-");
+            ProcessBuilder builder = new ProcessBuilder(List.of(binary.toString(), "--version"));
+            builder.environment().clear();
+            builder.environment().putAll(GitEnvironment.from(binary, home));
+            builder.directory(home.toFile());
+            builder.redirectErrorStream(true);
+            Process process = builder.start();
+            try {
+                return answer(process);
+            } finally {
+                process.descendants().forEach(ProcessHandle::destroyForcibly);
+                process.destroyForcibly();
+            }
+        } catch (IOException | RuntimeException unreadable) {
+            return Optional.empty();
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            return Optional.empty();
+        } finally {
+            remove(home);
+        }
+    }
+
+    private static Optional<GitVersion> answer(Process process) throws IOException, InterruptedException {
+        process.getOutputStream().close();
+        byte[] output;
+        try (InputStream stdout = process.getInputStream()) {
+            // A binary that never ends is cut by the deadline, which closes its output.
+            Thread watchdog = Thread.ofVirtual().start(() -> kill(process));
+            try {
+                output = stdout.readNBytes(MAX_ANSWER_BYTES);
+            } finally {
+                watchdog.interrupt();
+            }
+        }
+        if (!process.waitFor(ASK_SECONDS, TimeUnit.SECONDS) || process.exitValue() != 0) {
+            return Optional.empty();
+        }
+        return GitVersion.parse(new String(output, StandardCharsets.UTF_8));
+    }
+
+    private static void kill(Process process) {
+        try {
+            if (!process.waitFor(ASK_SECONDS, TimeUnit.SECONDS)) {
+                process.descendants().forEach(ProcessHandle::destroyForcibly);
+                process.destroyForcibly();
+            }
+        } catch (InterruptedException done) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private static void remove(@Nullable Path directory) {
+        if (directory == null) {
+            return;
+        }
+        try (var entries = Files.walk(directory)) {
+            for (Path entry : entries.sorted(java.util.Comparator.reverseOrder()).toList()) {
+                Files.deleteIfExists(entry);
+            }
+        } catch (IOException ignored) {
+            // A temporary directory the operating system will clear.
+        }
     }
 
     /**
@@ -53,7 +184,7 @@ public final class GitVersionCheck {
      * @return the status
      */
     public Status status() {
-        return Status.MISSING;
+        return status;
     }
 
     /**
@@ -62,7 +193,7 @@ public final class GitVersionCheck {
      * @return true when the status is {@link Status#ENABLED}
      */
     public boolean enabled() {
-        return false;
+        return status == Status.ENABLED;
     }
 
     /**
@@ -72,10 +203,10 @@ public final class GitVersionCheck {
      * @throws IllegalStateException when the source is not enabled
      */
     public Path executable() {
-        if (!enabled()) {
+        if (!enabled() || executable == null) {
             throw new IllegalStateException("the git source is not enabled");
         }
-        return Path.of("/");
+        return executable;
     }
 
     /**
@@ -84,7 +215,7 @@ public final class GitVersionCheck {
      * @return the version; empty when none was read
      */
     public Optional<GitVersion> version() {
-        return Optional.empty();
+        return Optional.ofNullable(version);
     }
 
     /**
@@ -93,6 +224,12 @@ public final class GitVersionCheck {
      * @return the line
      */
     public String describe() {
-        return "";
+        String off = " The git source answers 503 pack_source_unavailable; the other kinds of source are not affected.";
+        return switch (status) {
+            case ENABLED -> "git " + version + " at " + executable + " is on: the git source is available.";
+            case MISSING -> "No executable git was found on the PATH or at " + PROPERTY + "." + off;
+            case TOO_OLD -> "git " + version + " at " + executable + " is older than " + minimum + "." + off;
+            case UNREADABLE -> "The binary at " + executable + " did not answer --version with a git version." + off;
+        };
     }
 }

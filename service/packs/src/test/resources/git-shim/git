@@ -10,14 +10,20 @@
 #       SUB.grow  bytes to write into the --git-dir (the fetch that fills the disk).
 # It is copied next to its answers by the test and is first on no PATH but the one the test gives it. POSIX sh only.
 
-here=$(cd "$(dirname "$0")" && pwd)
+here=${0%/*}
+here=$(cd "$here" && pwd)
+
+# The environment the test gave is recorded before anything else, then the tools of the script are found on a path of
+# its own: the PATH of a run is the directory of git alone.
+environment=$(/usr/bin/env)
+PATH=/usr/bin:/bin
 
 {
     printf 'begin\n'
     for argument in "$@"; do
         printf 'argv:%s\n' "$argument"
     done
-    env | sort | sed 's/^/env:/'
+    printf '%s\n' "$environment" | sort | sed 's/^/env:/'
     printf 'end\n'
 } >> "$here/record"
 
