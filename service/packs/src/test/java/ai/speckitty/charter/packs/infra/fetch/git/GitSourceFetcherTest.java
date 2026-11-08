@@ -107,7 +107,11 @@ class GitSourceFetcherTest {
             for (int i = 0; i < parts.length - 1; i++) {
                 prefix.append(i == 0 ? "" : "/").append(parts[i]);
                 if (directories.add(prefix.toString())) {
-                    lsTree.append("040000 tree ").append("f".repeat(40)).append('\t').append(prefix).append('\0');
+                    lsTree.append("040000 tree ")
+                            .append("f".repeat(40))
+                            .append('\t')
+                            .append(prefix)
+                            .append('\0');
                 }
             }
             int index = catFile.size() + lsTree.length();
@@ -127,7 +131,8 @@ class GitSourceFetcherTest {
     }
 
     private GitSourceFetcher fetcher() {
-        return fetcher(Duration.ofSeconds(60), GitSourceFetcher.MAX_BLOB_BYTES + GitSourceFetcher.OBJECT_ALLOWANCE_BYTES, 2);
+        return fetcher(
+                Duration.ofSeconds(60), GitSourceFetcher.MAX_BLOB_BYTES + GitSourceFetcher.OBJECT_ALLOWANCE_BYTES, 2);
     }
 
     private GitSourceFetcher fetcher(Duration timeout, long maxFetchBytes, int concurrent) {
@@ -166,7 +171,8 @@ class GitSourceFetcherTest {
     }
 
     private SourceRefusal refusedWith(PackSourceRequest request) {
-        Throwable thrown = org.assertj.core.api.Assertions.catchThrowable(() -> fetcher().fetch(request, directory));
+        Throwable thrown =
+                org.assertj.core.api.Assertions.catchThrowable(() -> fetcher().fetch(request, directory));
         assertThat(thrown).isInstanceOf(CharterRefusal.class);
         assertThat(((CharterRefusal) thrown).code()).isEqualTo(RefusalCode.PACK_SOURCE_REFUSED);
         for (SourceRefusal reason : SourceRefusal.values()) {
@@ -179,7 +185,8 @@ class GitSourceFetcherTest {
 
     /** The arguments of a call after the fixed pins and the pins a remote added. */
     private static List<String> after(GitShim.Call call, int remotePins) {
-        return call.arguments().subList(PIN_ARGUMENTS + remotePins * 2, call.arguments().size());
+        return call.arguments()
+                .subList(PIN_ARGUMENTS + remotePins * 2, call.arguments().size());
     }
 
     /** No git command ran, the version check of building the fetcher aside, and nothing was looked up or left behind. */
@@ -191,7 +198,8 @@ class GitSourceFetcherTest {
 
     private List<Path> leftovers() {
         try (Stream<Path> entries = Files.list(directory)) {
-            return entries.filter(path -> path.getFileName().toString().startsWith("git-")).toList();
+            return entries.filter(path -> path.getFileName().toString().startsWith("git-"))
+                    .toList();
         } catch (IOException unreadable) {
             throw new IllegalStateException(unreadable);
         }
@@ -237,8 +245,7 @@ class GitSourceFetcherTest {
         Staged staged = fetch();
 
         assertThat(staged.source())
-                .containsExactlyInAnyOrderEntriesOf(
-                        Map.of("kind", "git", "url", URL, "ref", REF, "commit", COMMIT));
+                .containsExactlyInAnyOrderEntriesOf(Map.of("kind", "git", "url", URL, "ref", REF, "commit", COMMIT));
     }
 
     @Test
@@ -327,7 +334,9 @@ class GitSourceFetcherTest {
                 2);
 
         assertThatThrownBy(() -> slow.fetch(request(URL, REF, null), directory))
-                .isInstanceOfSatisfying(SourceUpstreamException.class, failure -> assertThat(failure.timedOut()).isTrue());
+                .isInstanceOfSatisfying(
+                        SourceUpstreamException.class,
+                        failure -> assertThat(failure.timedOut()).isTrue());
         never.countDown();
     }
 
@@ -380,7 +389,8 @@ class GitSourceFetcherTest {
         assertThat(staged.source()).containsEntry("commit", COMMIT);
         long callsBefore = shim.calls().size();
 
-        assertThat(refusedWith(request(URL, "refs/heads/main", "b".repeat(40)))).isEqualTo(SourceRefusal.COMMIT_MISMATCH);
+        assertThat(refusedWith(request(URL, "refs/heads/main", "b".repeat(40))))
+                .isEqualTo(SourceRefusal.COMMIT_MISMATCH);
 
         // The mismatch is found after rev-parse and before the tree is listed: no ls-tree, no cat-file.
         assertThat(shim.calls().size() - callsBefore).isEqualTo(4);
@@ -393,13 +403,11 @@ class GitSourceFetcherTest {
             tree(Blob.file("pack.yaml", "name: acme\n"), new Blob("evil-entry", "target", mode));
             long callsBefore = shim.calls().size();
 
-            assertThatThrownBy(() -> fetch())
-                    .as(mode)
-                    .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
-                        assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
-                        assertThat(refusal.violations()).extracting(v -> v.code()).containsExactly("entry_type");
-                        assertThat(refusal.getMessage()).doesNotContain("target");
-                    });
+            assertThatThrownBy(() -> fetch()).as(mode).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
+                assertThat(refusal.violations()).extracting(v -> v.code()).containsExactly("entry_type");
+                assertThat(refusal.getMessage()).doesNotContain("target");
+            });
             // init, fetch, rev-parse and ls-tree ran; the blobs were never asked for.
             assertThat(shim.calls().size() - callsBefore).isEqualTo(5);
             assertThat(leftovers()).isEmpty();
@@ -411,20 +419,21 @@ class GitSourceFetcherTest {
         tree(new Blob("link", "x", "120000"), new Blob("sub", "x", "160000"), Blob.file("pack.yaml", "name: a\n"));
 
         assertThatThrownBy(() -> fetch())
-                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> assertThat(refusal.violations())
-                        .extracting(v -> v.code())
-                        .containsExactly("entry_type", "entry_type"));
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.violations())
+                                .extracting(v -> v.code())
+                                .containsExactly("entry_type", "entry_type"));
     }
 
     @Test
     void aPathTheBoundedWriterRefusesIsRefusedWithTheArchiveRulesAndLeavesNothing() throws IOException {
         tree(Blob.file("pack.yaml", "name: acme\n"), Blob.file("../evil.txt", "x"));
 
-        assertThatThrownBy(() -> fetch())
-                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
-                    assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
-                    assertThat(refusal.violations()).extracting(v -> v.code()).contains("path_traversal");
-                });
+        assertThatThrownBy(() -> fetch()).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+            assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
+            assertThat(refusal.violations()).extracting(v -> v.code()).contains("path_traversal");
+        });
         assertThat(leftovers()).isEmpty();
         assertThat(directory.resolve("extract")).isEmptyDirectory();
     }
@@ -435,9 +444,11 @@ class GitSourceFetcherTest {
         shim.out("cat-file", (oid(0) + " blob 99999999999\n").getBytes(StandardCharsets.US_ASCII));
 
         assertThatThrownBy(() -> fetch())
-                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> assertThat(refusal.violations())
-                        .extracting(v -> v.code())
-                        .contains("expanded_too_large"));
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.violations())
+                                .extracting(v -> v.code())
+                                .contains("expanded_too_large"));
     }
 
     @Test
@@ -451,9 +462,11 @@ class GitSourceFetcherTest {
         shim.out("cat-file", cat.toByteArray());
 
         assertThatThrownBy(() -> fetch())
-                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> assertThat(refusal.violations())
-                        .extracting(v -> v.code())
-                        .contains("expanded_too_large"));
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.violations())
+                                .extracting(v -> v.code())
+                                .contains("expanded_too_large"));
     }
 
     @Test
@@ -477,10 +490,14 @@ class GitSourceFetcherTest {
         shim.err("fetch", "error: Server does not allow request for unadvertised object " + COMMIT + "\n");
         assertThat(refusedWith(request(URL, REF, null))).isEqualTo(SourceRefusal.BAD_REF);
 
-        shim.err("fetch", "fatal: unable to access 'https://git.example.org/acme/packs.git/': The requested URL returned error: 301\n");
+        shim.err(
+                "fetch",
+                "fatal: unable to access 'https://git.example.org/acme/packs.git/': The requested URL returned error: 301\n");
         assertThat(refusedWith(request(URL, REF, null))).isEqualTo(SourceRefusal.REDIRECT_REFUSED);
 
-        shim.err("fetch", "fatal: unable to access 'https://git.example.org/acme/packs.git/': Could not resolve host: s3cr3t\n");
+        shim.err(
+                "fetch",
+                "fatal: unable to access 'https://git.example.org/acme/packs.git/': Could not resolve host: s3cr3t\n");
         assertThatThrownBy(() -> fetcher().fetch(request(URL, REF, null), directory))
                 .isInstanceOfSatisfying(SourceUpstreamException.class, failure -> {
                     assertThat(failure.timedOut()).isFalse();
@@ -509,7 +526,9 @@ class GitSourceFetcherTest {
         GitSourceFetcher slow = fetcher(Duration.ofMillis(1500), 1L << 30, 2);
 
         assertThatThrownBy(() -> slow.fetch(request(URL, REF, null), directory))
-                .isInstanceOfSatisfying(SourceUpstreamException.class, failure -> assertThat(failure.timedOut()).isTrue());
+                .isInstanceOfSatisfying(
+                        SourceUpstreamException.class,
+                        failure -> assertThat(failure.timedOut()).isTrue());
         assertThat(leftovers()).isEmpty();
     }
 
@@ -520,7 +539,9 @@ class GitSourceFetcherTest {
         long started = System.nanoTime();
 
         assertThatThrownBy(() -> slow.fetch(request(URL, REF, null), directory))
-                .isInstanceOfSatisfying(SourceUpstreamException.class, failure -> assertThat(failure.timedOut()).isTrue());
+                .isInstanceOfSatisfying(
+                        SourceUpstreamException.class,
+                        failure -> assertThat(failure.timedOut()).isTrue());
 
         assertThat(Duration.ofNanos(System.nanoTime() - started)).isLessThan(Duration.ofSeconds(20));
         assertThat(leftovers()).isEmpty();
@@ -538,7 +559,9 @@ class GitSourceFetcherTest {
     private SourceRefusal refusedWith(GitSourceFetcher fetcher, PackSourceRequest request) {
         Throwable thrown = org.assertj.core.api.Assertions.catchThrowable(() -> fetcher.fetch(request, directory));
         assertThat(thrown).isInstanceOf(CharterRefusal.class);
-        return SourceRefusal.valueOf(thrown.getMessage().substring(0, thrown.getMessage().indexOf(':')).toUpperCase(java.util.Locale.ROOT));
+        return SourceRefusal.valueOf(thrown.getMessage()
+                .substring(0, thrown.getMessage().indexOf(':'))
+                .toUpperCase(java.util.Locale.ROOT));
     }
 
     @Test
@@ -563,7 +586,8 @@ class GitSourceFetcherTest {
         GitShim.Call fetchCall = shim.calls().get(2);
         assertThat(fetchCall.environment()).containsEntry("GIT_ALLOW_PROTOCOL", "https");
         assertThat(fetchCall.environment().get("HOME")).isEqualTo(fetchCall.cwd());
-        assertThat(fetchCall.environment().keySet()).noneMatch(name -> name.toLowerCase(java.util.Locale.ROOT).contains("proxy"));
+        assertThat(fetchCall.environment().keySet())
+                .noneMatch(name -> name.toLowerCase(java.util.Locale.ROOT).contains("proxy"));
     }
 
     @Test
@@ -616,7 +640,9 @@ class GitSourceFetcherTest {
         assertThat(holding.await(10, TimeUnit.SECONDS)).isTrue();
 
         assertThatThrownBy(() -> only.fetch(request(URL, REF, null), directory))
-                .isInstanceOfSatisfying(SourceUpstreamException.class, failure -> assertThat(failure.timedOut()).isTrue());
+                .isInstanceOfSatisfying(
+                        SourceUpstreamException.class,
+                        failure -> assertThat(failure.timedOut()).isTrue());
         release.countDown();
         assertThatThrownBy(() -> running.get(30, TimeUnit.SECONDS)).isNotNull();
     }

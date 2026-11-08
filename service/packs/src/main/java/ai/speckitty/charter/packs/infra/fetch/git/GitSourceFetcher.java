@@ -184,7 +184,8 @@ public final class GitSourceFetcher implements PackSourceFetcher {
     }
 
     /** What a request that names a git source holds, after the checks that need no process and no lookup. */
-    private record Named(GitRepository repository, GitRef ref, @Nullable String commit, String url) {}
+    private record Named(
+            GitRepository repository, GitRef ref, @Nullable String commit, String url) {}
 
     private Named requireWellFormed(PackSourceRequest request) {
         if (request.kind() != PackSourceKind.GIT) {
@@ -278,7 +279,12 @@ public final class GitSourceFetcher implements PackSourceFetcher {
         GitCommand git = new GitCommand(check.executable(), work, left, target.transport())
                 .watching(() -> sizeOf(work) > maxFetchBytes);
         Path repository = work.resolve("repo.git");
-        call(git, Phase.INIT, named, List.of("init", "--bare", "--template=", repository.toString()), SMALL_OUTPUT_BYTES);
+        call(
+                git,
+                Phase.INIT,
+                named,
+                List.of("init", "--bare", "--template=", repository.toString()),
+                SMALL_OUTPUT_BYTES);
         call(
                 git,
                 Phase.FETCH,
@@ -433,8 +439,7 @@ public final class GitSourceFetcher implements PackSourceFetcher {
 
     private StagedPack stageBlobs(
             GitCommand git, Path repository, Path wanted, List<Entry> entries, Path into, Named named) {
-        try (GitCommand.Running cat =
-                git.stream(List.of(gitDir(repository), "cat-file", "--batch"), wanted)) {
+        try (GitCommand.Running cat = git.stream(List.of(gitDir(repository), "cat-file", "--batch"), wanted)) {
             return readBlobs(cat, entries, into);
         } catch (GitFailure failure) {
             throw translate(failure, Phase.CAT_FILE, named);
@@ -450,8 +455,8 @@ public final class GitSourceFetcher implements PackSourceFetcher {
         } catch (ArchiveRefusal refused) {
             throw ArchiveStaging.refusalOf(refused);
         } catch (BlobsTooLarge tooLarge) {
-            throw ArchiveStaging.refusalOf(new ArchiveRefusal(
-                    List.of(new ArchiveViolation(Code.EXPANDED_TOO_LARGE, "")), 0, 0));
+            throw ArchiveStaging.refusalOf(
+                    new ArchiveRefusal(List.of(new ArchiveViolation(Code.EXPANDED_TOO_LARGE, "")), 0, 0));
         } catch (IOException unreadable) {
             // A cut stream is the deadline's or the size watch's when the watch destroyed git; else git's own failure.
             cat.rethrowIfDestroyed();
@@ -621,7 +626,9 @@ public final class GitSourceFetcher implements PackSourceFetcher {
     private static Path createWorkDirectory(Path directory) {
         try {
             return Files.createTempDirectory(
-                    directory, "git-", PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------")));
+                    directory,
+                    "git-",
+                    PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------")));
         } catch (IOException failure) {
             throw new UncheckedIOException("cannot create the work directory of a git source", failure);
         }

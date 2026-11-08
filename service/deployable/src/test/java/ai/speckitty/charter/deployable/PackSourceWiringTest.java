@@ -1,9 +1,9 @@
 package ai.speckitty.charter.deployable;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
@@ -12,27 +12,27 @@ import ai.speckitty.charter.packs.application.PackSourceFetcher;
 import ai.speckitty.charter.packs.application.PackSourceKind;
 import ai.speckitty.charter.packs.application.PackSourceRequest;
 import ai.speckitty.charter.packs.application.PackSourceStagers;
-import ai.speckitty.charter.packs.application.WholePackWriteStore;
-import ai.speckitty.charter.packs.infra.fetch.HttpsExchange;
 import ai.speckitty.charter.packs.application.PackTreeReader;
+import ai.speckitty.charter.packs.application.WholePackWriteStore;
 import ai.speckitty.charter.packs.infra.archive.BoundedTreeStager;
+import ai.speckitty.charter.packs.infra.fetch.HttpsExchange;
 import ai.speckitty.charter.packs.infra.fetch.PackSourceProperties;
 import ai.speckitty.charter.packs.infra.fetch.git.GitHostResolver;
 import ai.speckitty.charter.packs.infra.fetch.git.GitRemote;
 import ai.speckitty.charter.packs.infra.storage.ConfigRoot;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
-import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.springframework.boot.context.properties.bind.Binder;
-import org.springframework.boot.context.properties.source.MapConfigurationPropertySource;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.support.StaticListableBeanFactory;
+import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.boot.context.properties.source.MapConfigurationPropertySource;
 import org.springframework.util.unit.DataSize;
 
 /**
@@ -148,8 +148,9 @@ class PackSourceWiringTest {
                 "charter.pack-sources.git.executable", "/opt/git/bin/git",
                 "charter.pack-sources.git.timeout", "30s")));
 
-        PackSourceProperties.Git git =
-                binder.bind("charter.pack-sources", PackSourceProperties.class).get().git();
+        PackSourceProperties.Git git = binder.bind("charter.pack-sources", PackSourceProperties.class)
+                .get()
+                .git();
 
         assertThat(git.executable()).isEqualTo(Path.of("/opt/git/bin/git"));
         assertThat(git.timeout()).isEqualTo(Duration.ofSeconds(30));

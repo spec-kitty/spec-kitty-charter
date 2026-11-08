@@ -39,7 +39,8 @@ class SourceRefusalContractTest {
 
     @Test
     void theEnumHoldsExactlyTheFixedReasons() {
-        assertThat(Stream.of(SourceRefusal.values()).map(SourceRefusal::wire)).containsExactlyInAnyOrderElementsOf(REASONS);
+        assertThat(Stream.of(SourceRefusal.values()).map(SourceRefusal::wire))
+                .containsExactlyInAnyOrderElementsOf(REASONS);
     }
 
     @Test

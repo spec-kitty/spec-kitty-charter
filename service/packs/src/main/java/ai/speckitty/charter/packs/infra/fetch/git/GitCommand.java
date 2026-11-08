@@ -72,7 +72,8 @@ final class GitCommand {
         this(executable, home, System.nanoTime() + timeout.toNanos(), transport, () -> false);
     }
 
-    private GitCommand(Path executable, Path home, long deadlineNanos, GitTransport transport, BooleanSupplier overLimit) {
+    private GitCommand(
+            Path executable, Path home, long deadlineNanos, GitTransport transport, BooleanSupplier overLimit) {
         this.executable = executable;
         this.home = home;
         this.deadlineNanos = deadlineNanos;
@@ -164,10 +165,8 @@ final class GitCommand {
         private Running(Process process, long deadlineNanos, BooleanSupplier overLimit) {
             this.process = process;
             this.drain = Thread.ofPlatform().daemon().name("git-stderr").start(this::drainStderr);
-            this.watchdog = Thread.ofPlatform()
-                    .daemon()
-                    .name("git-watchdog")
-                    .start(() -> watch(deadlineNanos, overLimit));
+            this.watchdog =
+                    Thread.ofPlatform().daemon().name("git-watchdog").start(() -> watch(deadlineNanos, overLimit));
         }
 
         /**

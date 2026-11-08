@@ -44,9 +44,8 @@ public interface GitRemote {
      */
     static GitRemote https() {
         return (repository, address) -> {
-            String literal = address instanceof Inet6Address
-                    ? "[" + address.getHostAddress() + "]"
-                    : address.getHostAddress();
+            String literal =
+                    address instanceof Inet6Address ? "[" + address.getHostAddress() + "]" : address.getHostAddress();
             String pin = "http.curloptResolve=" + repository.host() + ":" + HTTPS_PORT + ":" + literal;
             return new Target(repository.url(), new GitTransport(List.of(pin), Map.of()));
         };

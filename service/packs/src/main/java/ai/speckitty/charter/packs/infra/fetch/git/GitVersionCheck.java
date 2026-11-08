@@ -47,7 +47,8 @@ public final class GitVersionCheck {
     private final @Nullable GitVersion version;
     private final GitVersion minimum;
 
-    private GitVersionCheck(Status status, @Nullable Path executable, @Nullable GitVersion version, GitVersion minimum) {
+    private GitVersionCheck(
+            Status status, @Nullable Path executable, @Nullable GitVersion version, GitVersion minimum) {
         this.status = status;
         this.executable = executable;
         this.version = version;
@@ -170,7 +171,8 @@ public final class GitVersionCheck {
             return;
         }
         try (var entries = Files.walk(directory)) {
-            for (Path entry : entries.sorted(java.util.Comparator.reverseOrder()).toList()) {
+            for (Path entry :
+                    entries.sorted(java.util.Comparator.reverseOrder()).toList()) {
                 Files.deleteIfExists(entry);
             }
         } catch (IOException ignored) {

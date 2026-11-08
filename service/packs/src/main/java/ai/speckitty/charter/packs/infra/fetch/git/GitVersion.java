@@ -14,9 +14,11 @@ import java.util.regex.Pattern;
  */
 public record GitVersion(int major, int minor, int patch) implements Comparable<GitVersion> {
 
-    private static final Pattern OUTPUT = Pattern.compile("^git version (\\d{1,6})\\.(\\d{1,6})(?:\\.(\\d{1,6}))?(?!\\d)");
-    private static final Comparator<GitVersion> ORDER =
-            Comparator.comparingInt(GitVersion::major).thenComparingInt(GitVersion::minor).thenComparingInt(GitVersion::patch);
+    private static final Pattern OUTPUT =
+            Pattern.compile("^git version (\\d{1,6})\\.(\\d{1,6})(?:\\.(\\d{1,6}))?(?!\\d)");
+    private static final Comparator<GitVersion> ORDER = Comparator.comparingInt(GitVersion::major)
+            .thenComparingInt(GitVersion::minor)
+            .thenComparingInt(GitVersion::patch);
 
     /**
      * Reads the version out of the output of {@code git --version}: the first three numbers after {@code git version},
@@ -31,7 +33,8 @@ public record GitVersion(int major, int minor, int patch) implements Comparable<
             return Optional.empty();
         }
         int patch = matcher.group(3) == null ? 0 : Integer.parseInt(matcher.group(3));
-        return Optional.of(new GitVersion(Integer.parseInt(matcher.group(1)), Integer.parseInt(matcher.group(2)), patch));
+        return Optional.of(
+                new GitVersion(Integer.parseInt(matcher.group(1)), Integer.parseInt(matcher.group(2)), patch));
     }
 
     @Override

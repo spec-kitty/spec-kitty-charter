@@ -254,7 +254,10 @@ public final class GuardedHttpsExchange implements HttpsExchange {
     /**
      * Bracketed IPv6, or a last label that is numeric or hexadecimal: the forms the JDK parses as an address without
      * a lookup ({@code 127.0.0.1}, {@code 127.1}, {@code 2130706433}, {@code 0x7f.1}). No DNS top-level label is
-     * numeric.
+     * numeric. The git source applies the same test to the host of its URL.
+     *
+     * @param normalisedHost a host as {@link GuideAllowlist#normalise} leaves it
+     * @return whether the host is an IP literal in any of those forms
      */
     public static boolean isIpLiteral(String normalisedHost) {
         if (normalisedHost.startsWith("[") || normalisedHost.contains(":")) {

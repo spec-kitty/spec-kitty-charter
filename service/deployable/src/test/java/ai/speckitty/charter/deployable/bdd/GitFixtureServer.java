@@ -83,11 +83,22 @@ public final class GitFixtureServer implements GitRemote, GitHostResolver {
             run(root, "init", "-q", "--bare", bare.toString());
             run(work, "init", "-q");
             run(work, "add", "-A");
-            run(work, "-c", "user.name=Scenario", "-c", "user.email=scenario@example.org", "-c", "commit.gpgsign=false",
-                    "commit", "-q", "-m", "the archive");
+            run(
+                    work,
+                    "-c",
+                    "user.name=Scenario",
+                    "-c",
+                    "user.email=scenario@example.org",
+                    "-c",
+                    "commit.gpgsign=false",
+                    "commit",
+                    "-q",
+                    "-m",
+                    "the archive");
             run(work, "push", "-q", bare.toString(), "HEAD:" + ref);
             repositories.put(url, bare);
-            commits.put(ref, run(bare, "rev-parse", "--verify", ref + "^{commit}").strip());
+            commits.put(
+                    ref, run(bare, "rev-parse", "--verify", ref + "^{commit}").strip());
         } catch (IOException failure) {
             throw new UncheckedIOException(failure);
         }
@@ -130,7 +141,9 @@ public final class GitFixtureServer implements GitRemote, GitHostResolver {
     public Target target(GitRepository repository, InetAddress address) {
         Path bare = repositories.get(repository.url());
         String location = bare == null ? "file:///nonexistent-charter-scenario-repository" : "file://" + bare;
-        return new Target(location, new GitTransport(List.of("protocol.file.allow=always"), Map.of("GIT_ALLOW_PROTOCOL", "file")));
+        return new Target(
+                location,
+                new GitTransport(List.of("protocol.file.allow=always"), Map.of("GIT_ALLOW_PROTOCOL", "file")));
     }
 
     /** Runs the host git for a fixture, with the user's and the system's configuration out of it; returns its stdout. */
@@ -138,7 +151,8 @@ public final class GitFixtureServer implements GitRemote, GitHostResolver {
         List<String> command = new ArrayList<>();
         command.add("git");
         command.addAll(List.of(arguments));
-        ProcessBuilder builder = new ProcessBuilder(command).directory(directory.toFile()).redirectErrorStream(true);
+        ProcessBuilder builder =
+                new ProcessBuilder(command).directory(directory.toFile()).redirectErrorStream(true);
         builder.environment().put("GIT_CONFIG_GLOBAL", "/dev/null");
         builder.environment().put("GIT_CONFIG_NOSYSTEM", "1");
         builder.environment().put("GIT_TERMINAL_PROMPT", "0");

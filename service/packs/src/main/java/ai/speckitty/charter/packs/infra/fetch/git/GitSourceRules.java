@@ -93,9 +93,7 @@ final class GitSourceRules {
                 ? authority.substring(0, authority.length() - PORT_SUFFIX.length())
                 : authority;
         String host = GuideAllowlist.normalise(hostPart);
-        if (hostPart.contains(":")
-                || !HOST_NAME.matcher(host).matches()
-                || GuardedHttpsExchange.isIpLiteral(host)) {
+        if (hostPart.contains(":") || !HOST_NAME.matcher(host).matches() || GuardedHttpsExchange.isIpLiteral(host)) {
             throw SourceRefusal.URL_REFUSED.refusal();
         }
         return host;

@@ -8,9 +8,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
-import java.net.URI;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -60,24 +60,38 @@ final class GitHttpsFixture implements AutoCloseable {
         keytool(
                 parent,
                 "-genkeypair",
-                "-alias", "fixture",
-                "-keyalg", "RSA",
-                "-keysize", "2048",
-                "-validity", "2",
-                "-dname", "CN=" + HOST,
-                "-ext", "san=dns:" + HOST + ",dns:localhost,ip:127.0.0.1",
-                "-ext", "bc=ca:true",
-                "-keystore", keystore.toString(),
-                "-storetype", "PKCS12",
-                "-storepass", new String(PASSWORD));
+                "-alias",
+                "fixture",
+                "-keyalg",
+                "RSA",
+                "-keysize",
+                "2048",
+                "-validity",
+                "2",
+                "-dname",
+                "CN=" + HOST,
+                "-ext",
+                "san=dns:" + HOST + ",dns:localhost,ip:127.0.0.1",
+                "-ext",
+                "bc=ca:true",
+                "-keystore",
+                keystore.toString(),
+                "-storetype",
+                "PKCS12",
+                "-storepass",
+                new String(PASSWORD));
         keytool(
                 parent,
                 "-exportcert",
                 "-rfc",
-                "-alias", "fixture",
-                "-file", certificate.toString(),
-                "-keystore", keystore.toString(),
-                "-storepass", new String(PASSWORD));
+                "-alias",
+                "fixture",
+                "-file",
+                certificate.toString(),
+                "-keystore",
+                keystore.toString(),
+                "-storepass",
+                new String(PASSWORD));
         HttpsServer server = HttpsServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);
         server.setHttpsConfigurator(new HttpsConfigurator(contextOf(keystore)));
         GitHttpsFixture fixture = new GitHttpsFixture(projects, certificate, server);
@@ -158,8 +172,19 @@ final class GitHttpsFixture implements AutoCloseable {
 
     /** Commits what the index of the work tree holds, which a test may have set by hand, and pushes it; returns the commit. */
     String commitIndex(Path bare, Path work, String ref) throws IOException {
-        git(work, "-c", "user.name=Fixture", "-c", "user.email=fixture@example.org", "-c", "commit.gpgsign=false",
-                "commit", "-q", "-m", "fixture", "--allow-empty");
+        git(
+                work,
+                "-c",
+                "user.name=Fixture",
+                "-c",
+                "user.email=fixture@example.org",
+                "-c",
+                "commit.gpgsign=false",
+                "commit",
+                "-q",
+                "-m",
+                "fixture",
+                "--allow-empty");
         git(work, "push", "-q", bare.toString(), "HEAD:" + ref);
         return git(bare, "rev-parse", "--verify", ref + "^{commit}").strip();
     }
@@ -189,7 +214,8 @@ final class GitHttpsFixture implements AutoCloseable {
     }
 
     private static String run(Path directory, List<String> command) throws IOException {
-        ProcessBuilder builder = new ProcessBuilder(command).directory(directory.toFile()).redirectErrorStream(true);
+        ProcessBuilder builder =
+                new ProcessBuilder(command).directory(directory.toFile()).redirectErrorStream(true);
         builder.environment().put("GIT_CONFIG_GLOBAL", "/dev/null");
         builder.environment().put("GIT_CONFIG_NOSYSTEM", "1");
         builder.environment().put("GIT_TERMINAL_PROMPT", "0");
@@ -217,8 +243,10 @@ final class GitHttpsFixture implements AutoCloseable {
             for (Map.Entry<String, String> redirect : redirects.entrySet()) {
                 if (path.startsWith(redirect.getKey())) {
                     exchange.getResponseHeaders()
-                            .add("Location", "https://" + HOST + ":" + port() + redirect.getValue()
-                                    + path.substring(redirect.getKey().length()));
+                            .add(
+                                    "Location",
+                                    "https://" + HOST + ":" + port() + redirect.getValue()
+                                            + path.substring(redirect.getKey().length()));
                     exchange.sendResponseHeaders(302, -1);
                     return;
                 }
@@ -242,7 +270,11 @@ final class GitHttpsFixture implements AutoCloseable {
         environment.put("GIT_CONFIG_NOSYSTEM", "1");
         environment.put("REQUEST_METHOD", exchange.getRequestMethod());
         environment.put("PATH_INFO", path);
-        environment.put("QUERY_STRING", exchange.getRequestURI().getRawQuery() == null ? "" : exchange.getRequestURI().getRawQuery());
+        environment.put(
+                "QUERY_STRING",
+                exchange.getRequestURI().getRawQuery() == null
+                        ? ""
+                        : exchange.getRequestURI().getRawQuery());
         environment.put("REMOTE_ADDR", "127.0.0.1");
         environment.put("CONTENT_LENGTH", Integer.toString(body.length));
         header(exchange, "Content-Type", "CONTENT_TYPE", environment);

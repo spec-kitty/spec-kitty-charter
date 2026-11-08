@@ -135,7 +135,9 @@ class GitCommandTest {
     void gitRunsInTheRunsOwnDirectory() throws IOException {
         command().run(List.of("rev-parse"), 1024);
 
-        assertThat(shim.calls()).singleElement().satisfies(call -> assertThat(Path.of(call.cwd())).isEqualTo(home));
+        assertThat(shim.calls())
+                .singleElement()
+                .satisfies(call -> assertThat(Path.of(call.cwd())).isEqualTo(home));
     }
 
     @Test
@@ -155,13 +157,12 @@ class GitCommandTest {
         shim.exit("fetch", 128).err("fetch", "fatal: couldn't find remote ref refs/heads/nope\n");
         GitCommand git = new GitCommand(shim.executable(), home, Duration.ofSeconds(30), GitTransport.NONE);
 
-        assertThatThrownBy(() -> git.run(List.of("fetch"), 1024))
-                .isInstanceOfSatisfying(GitFailure.class, failure -> {
-                    assertThat(failure.kind()).isEqualTo(Kind.EXIT);
-                    assertThat(failure.exitStatus()).isEqualTo(128);
-                    assertThat(failure.stderr()).contains("couldn't find remote ref");
-                    assertThat(failure.getMessage()).doesNotContain("remote ref").doesNotContain("fatal");
-                });
+        assertThatThrownBy(() -> git.run(List.of("fetch"), 1024)).isInstanceOfSatisfying(GitFailure.class, failure -> {
+            assertThat(failure.kind()).isEqualTo(Kind.EXIT);
+            assertThat(failure.exitStatus()).isEqualTo(128);
+            assertThat(failure.stderr()).contains("couldn't find remote ref");
+            assertThat(failure.getMessage()).doesNotContain("remote ref").doesNotContain("fatal");
+        });
     }
 
     @Test
@@ -171,7 +172,8 @@ class GitCommandTest {
         GitCommand git = new GitCommand(shim.executable(), home, Duration.ofSeconds(30), GitTransport.NONE);
 
         assertThatThrownBy(() -> git.run(List.of("ls-tree"), 1000))
-                .isInstanceOfSatisfying(GitFailure.class, failure -> assertThat(failure.kind()).isEqualTo(Kind.OUTPUT_TOO_LARGE));
+                .isInstanceOfSatisfying(
+                        GitFailure.class, failure -> assertThat(failure.kind()).isEqualTo(Kind.OUTPUT_TOO_LARGE));
     }
 
     @Test
@@ -189,11 +191,10 @@ class GitCommandTest {
         shim.err("fetch", "e".repeat(500_000)).exit("fetch", 1);
         GitCommand git = new GitCommand(shim.executable(), home, Duration.ofSeconds(30), GitTransport.NONE);
 
-        assertThatThrownBy(() -> git.run(List.of("fetch"), 1024))
-                .isInstanceOfSatisfying(GitFailure.class, failure -> {
-                    assertThat(failure.kind()).isEqualTo(Kind.EXIT);
-                    assertThat(failure.stderr().length()).isBetween(1, 16 * 1024);
-                });
+        assertThatThrownBy(() -> git.run(List.of("fetch"), 1024)).isInstanceOfSatisfying(GitFailure.class, failure -> {
+            assertThat(failure.kind()).isEqualTo(Kind.EXIT);
+            assertThat(failure.stderr().length()).isBetween(1, 16 * 1024);
+        });
     }
 
     @Test
@@ -205,7 +206,8 @@ class GitCommandTest {
         long started = System.nanoTime();
 
         assertThatThrownBy(() -> git.run(List.of("fetch"), 1024))
-                .isInstanceOfSatisfying(GitFailure.class, failure -> assertThat(failure.kind()).isEqualTo(Kind.DEADLINE));
+                .isInstanceOfSatisfying(
+                        GitFailure.class, failure -> assertThat(failure.kind()).isEqualTo(Kind.DEADLINE));
 
         assertThat(Duration.ofNanos(System.nanoTime() - started)).isLessThan(Duration.ofSeconds(10));
     }
@@ -218,7 +220,8 @@ class GitCommandTest {
 
         git.run(List.of("fetch"), 1024);
         assertThatThrownBy(() -> git.run(List.of("fetch"), 1024))
-                .isInstanceOfSatisfying(GitFailure.class, failure -> assertThat(failure.kind()).isEqualTo(Kind.DEADLINE));
+                .isInstanceOfSatisfying(
+                        GitFailure.class, failure -> assertThat(failure.kind()).isEqualTo(Kind.DEADLINE));
     }
 
     @Test
@@ -228,7 +231,8 @@ class GitCommandTest {
         Thread.sleep(200);
 
         assertThatThrownBy(() -> git.run(List.of("rev-parse"), 1024))
-                .isInstanceOfSatisfying(GitFailure.class, failure -> assertThat(failure.kind()).isEqualTo(Kind.DEADLINE));
+                .isInstanceOfSatisfying(
+                        GitFailure.class, failure -> assertThat(failure.kind()).isEqualTo(Kind.DEADLINE));
         assertThat(shim.calls()).isEmpty();
     }
 
@@ -242,7 +246,8 @@ class GitCommandTest {
         long started = System.nanoTime();
 
         assertThatThrownBy(() -> git.run(List.of("--git-dir=" + repository, "fetch"), 1024))
-                .isInstanceOfSatisfying(GitFailure.class, failure -> assertThat(failure.kind()).isEqualTo(Kind.TOO_LARGE));
+                .isInstanceOfSatisfying(
+                        GitFailure.class, failure -> assertThat(failure.kind()).isEqualTo(Kind.TOO_LARGE));
 
         assertThat(Duration.ofNanos(System.nanoTime() - started)).isLessThan(Duration.ofSeconds(4));
         assertThat(directorySize(repository)).isGreaterThan(1_000_000);
@@ -272,7 +277,9 @@ class GitCommandTest {
         try (GitCommand.Running running = git.stream(List.of("cat-file", "--batch"), null)) {
             running.stdout().readAllBytes();
             assertThatThrownBy(running::finish)
-                    .isInstanceOfSatisfying(GitFailure.class, failure -> assertThat(failure.kind()).isEqualTo(Kind.EXIT));
+                    .isInstanceOfSatisfying(
+                            GitFailure.class,
+                            failure -> assertThat(failure.kind()).isEqualTo(Kind.EXIT));
         }
     }
 
@@ -292,10 +299,15 @@ class GitCommandTest {
 
     @Test
     void aBinaryThatCannotBeStartedIsAStartFailure() throws IOException {
-        GitCommand git = new GitCommand(temp.resolve("no-such-git"), Files.createDirectories(temp.resolve("h")), Duration.ofSeconds(5), GitTransport.NONE);
+        GitCommand git = new GitCommand(
+                temp.resolve("no-such-git"),
+                Files.createDirectories(temp.resolve("h")),
+                Duration.ofSeconds(5),
+                GitTransport.NONE);
 
         assertThatThrownBy(() -> git.run(List.of("init"), 1024))
-                .isInstanceOfSatisfying(GitFailure.class, failure -> assertThat(failure.kind()).isEqualTo(Kind.START));
+                .isInstanceOfSatisfying(
+                        GitFailure.class, failure -> assertThat(failure.kind()).isEqualTo(Kind.START));
     }
 
     private static long directorySize(Path directory) {

@@ -144,9 +144,7 @@ class PackSourceStagersTest {
             }
         };
         PackSourceStagers stagers = new PackSourceStagers(
-                List.of(
-                        noGit,
-                        fetcher(PackSourceKind.HTTPS_ARCHIVE, new Staged(new StagedPack(directory), Map.of()))),
+                List.of(noGit, fetcher(PackSourceKind.HTTPS_ARCHIVE, new Staged(new StagedPack(directory), Map.of()))),
                 loader);
         PackSourceRequest git = new PackSourceRequest(
                 PackSourceKind.GIT, "https://git.example.org/a.git", "refs/tags/v1", null, null, null);

@@ -52,7 +52,8 @@ class GitHostTest {
     Path temp;
 
     @BeforeAll
-    static void startServer(@TempDir(cleanup = org.junit.jupiter.api.io.CleanupMode.NEVER) Path parent) throws IOException {
+    static void startServer(@TempDir(cleanup = org.junit.jupiter.api.io.CleanupMode.NEVER) Path parent)
+            throws IOException {
         check = GitVersionCheck.resolve(null, System.getenv("PATH"));
         if (!check.enabled() && Boolean.getBoolean("charter.requireGitHost")) {
             throw new AssertionError("the git-source job needs git 2.50.1 or later: " + check.describe());
@@ -124,7 +125,8 @@ class GitHostTest {
     void aCommitThatIsTheRefsIsAcceptedAndOneThatIsNotIsRefusedAfterTheFetch() throws IOException {
         String commit = publish("acme/pinned.git", PACK, "refs/heads/main");
 
-        assertThat(fetch("https://git.example.org/acme/pinned.git", "refs/heads/main", commit).source())
+        assertThat(fetch("https://git.example.org/acme/pinned.git", "refs/heads/main", commit)
+                        .source())
                 .containsEntry("commit", commit);
         assertThatThrownBy(() -> fetch("https://git.example.org/acme/pinned.git", "refs/heads/main", "0".repeat(40)))
                 .satisfies(refusal -> assertThat(reasonOf(refusal)).isEqualTo("commit_mismatch"));
@@ -162,7 +164,11 @@ class GitHostTest {
         GitHttpsFixture.git(work, "init", "-q");
         GitHttpsFixture.git(work, "add", "pack.yaml");
         GitHttpsFixture.git(
-                work, "update-index", "--add", "--cacheinfo", "160000,0123456789abcdef0123456789abcdef01234567,vendored");
+                work,
+                "update-index",
+                "--add",
+                "--cacheinfo",
+                "160000,0123456789abcdef0123456789abcdef01234567,vendored");
         fixture.commitIndex(bare, work, "refs/heads/main");
 
         assertThatThrownBy(() -> fetch("https://git.example.org/acme/submodule.git", "refs/heads/main", null))
@@ -186,7 +192,8 @@ class GitHostTest {
         publish("acme/hostile.git", PACK, "refs/heads/main");
         int before = fixture.requests();
 
-        for (String ref : List.of("--upload-pack=evil", "refs/heads/../secret", "refs/heads/a@{1}", "refs/heads/topic.lock")) {
+        for (String ref :
+                List.of("--upload-pack=evil", "refs/heads/../secret", "refs/heads/a@{1}", "refs/heads/topic.lock")) {
             assertThatThrownBy(() -> fetch("https://git.example.org/acme/hostile.git", ref, null))
                     .satisfies(refusal -> assertThat(reasonOf(refusal)).isEqualTo("bad_ref"));
         }
@@ -198,8 +205,10 @@ class GitHostTest {
     void gitReachesTheServerOnlyThroughThePinnedAddress() throws IOException {
         publish("acme/pin.git", PACK, "refs/heads/main");
 
-        // The host resolves nowhere: without the pin git cannot connect, so the pin is what lets it, and only to its address.
-        assertThatThrownBy(() -> fetch(fixture.remote(false, true), "https://git.example.org/acme/pin.git", "refs/heads/main", null))
+        // The host resolves nowhere: without the pin git cannot connect, so the pin is what lets it, and only to its
+        // address.
+        assertThatThrownBy(() -> fetch(
+                        fixture.remote(false, true), "https://git.example.org/acme/pin.git", "refs/heads/main", null))
                 .isInstanceOf(SourceUpstreamException.class);
         assertThat(fetch(fixture.remote(true, true), "https://git.example.org/acme/pin.git", "refs/heads/main", null))
                 .isNotNull();
@@ -209,7 +218,8 @@ class GitHostTest {
     void aServerWhoseCertificateIsNotTrustedIsNotFetchedFrom() throws IOException {
         publish("acme/tls.git", PACK, "refs/heads/main");
 
-        assertThatThrownBy(() -> fetch(fixture.remote(true, false), "https://git.example.org/acme/tls.git", "refs/heads/main", null))
+        assertThatThrownBy(() -> fetch(
+                        fixture.remote(true, false), "https://git.example.org/acme/tls.git", "refs/heads/main", null))
                 .isInstanceOf(SourceUpstreamException.class);
     }
 
@@ -242,8 +252,10 @@ class GitHostTest {
                                     "+refs/heads/main:refs/charter/fetched"),
                             4096))
                     .as(location)
-                    .isInstanceOfSatisfying(GitFailure.class, failure -> assertThat(failure.stderr().toLowerCase(java.util.Locale.ROOT))
-                            .contains("not allowed"));
+                    .isInstanceOfSatisfying(
+                            GitFailure.class,
+                            failure -> assertThat(failure.stderr().toLowerCase(java.util.Locale.ROOT))
+                                    .contains("not allowed"));
         }
         assertThat(marker).doesNotExist();
     }

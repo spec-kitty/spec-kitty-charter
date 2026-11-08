@@ -62,7 +62,9 @@ class GitVersionCheckTest {
 
         assertThat(found.executable()).isEqualTo(shim.executable());
         assertThat(found.version()).contains(new GitVersion(2, 50, 1));
-        assertThat(found.describe()).contains("2.50.1").contains(shim.executable().toString());
+        assertThat(found.describe())
+                .contains("2.50.1")
+                .contains(shim.executable().toString());
     }
 
     @ParameterizedTest
@@ -138,7 +140,8 @@ class GitVersionCheckTest {
 
     @Test
     void aConfiguredPathMustBeAbsolute() {
-        assertThat(GitVersionCheck.resolve(Path.of("git"), "/usr/bin").status()).isEqualTo(GitVersionCheck.Status.MISSING);
+        assertThat(GitVersionCheck.resolve(Path.of("git"), "/usr/bin").status())
+                .isEqualTo(GitVersionCheck.Status.MISSING);
     }
 
     @Test
@@ -163,7 +166,8 @@ class GitVersionCheckTest {
         GitShim configured = GitShim.in(temp.resolve("a")).version("git version 2.50.1\n");
         GitShim onPath = GitShim.in(temp.resolve("b")).version("git version 2.43.0\n");
 
-        GitVersionCheck found = GitVersionCheck.resolve(configured.executable(), onPath.directory().toString());
+        GitVersionCheck found = GitVersionCheck.resolve(
+                configured.executable(), onPath.directory().toString());
 
         assertThat(found.status()).isEqualTo(GitVersionCheck.Status.ENABLED);
         assertThat(found.executable()).isEqualTo(configured.executable());
@@ -192,7 +196,8 @@ class GitVersionCheckTest {
                             "LC_ALL",
                             "GIT_ALLOW_PROTOCOL",
                             "GIT_LFS_SKIP_SMUDGE");
-            assertThat(call.environment()).containsEntry("PATH", shim.directory().toString());
+            assertThat(call.environment())
+                    .containsEntry("PATH", shim.directory().toString());
         });
     }
 
@@ -206,7 +211,8 @@ class GitVersionCheckTest {
     @Test
     void theMinimumIsTwoFiftyOne() {
         assertThat(GitVersionCheck.MINIMUM).isEqualTo(new GitVersion(2, 50, 1));
-        assertThat(Optional.of(GitVersionCheck.MINIMUM).map(GitVersion::toString)).contains("2.50.1");
+        assertThat(Optional.of(GitVersionCheck.MINIMUM).map(GitVersion::toString))
+                .contains("2.50.1");
     }
 
     private Path script(String name, String text) throws IOException {

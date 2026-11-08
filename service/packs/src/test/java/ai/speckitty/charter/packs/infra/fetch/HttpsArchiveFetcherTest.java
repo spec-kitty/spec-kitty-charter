@@ -127,8 +127,7 @@ class HttpsArchiveFetcherTest {
 
         Staged staged = fetcher().fetch(request(presigned, null), directory);
 
-        assertThat(staged.source())
-                .containsExactlyInAnyOrderEntriesOf(Map.of("kind", "https_archive", "url", URL));
+        assertThat(staged.source()).containsExactlyInAnyOrderEntriesOf(Map.of("kind", "https_archive", "url", URL));
         assertThat(staged.source().values()).noneMatch(value -> value.contains("s3cr3t"));
         assertThat(requested).containsExactly(URI.create(presigned));
     }

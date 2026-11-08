@@ -23,7 +23,8 @@ import org.junit.jupiter.params.provider.ValueSource;
  */
 class GitSourceRulesTest {
 
-    private static final GuideAllowlist ALLOWED = new GuideAllowlist(Set.of("git.example.org", "xn--bcher-kva.example"));
+    private static final GuideAllowlist ALLOWED =
+            new GuideAllowlist(Set.of("git.example.org", "xn--bcher-kva.example"));
     private static final String HEX40 = "0123456789abcdef0123456789abcdef01234567";
     private static final String HEX64 = HEX40 + "0123456789abcdef01234567";
 
@@ -119,12 +120,15 @@ class GitSourceRulesTest {
 
         assertThatThrownBy(() -> GitSourceRules.repository(hostile, ALLOWED))
                 .isInstanceOf(CharterRefusal.class)
-                .satisfies(refusal -> assertThat(refusal.getMessage()).doesNotContain("s3cr3t").doesNotContain("example"));
+                .satisfies(refusal -> assertThat(refusal.getMessage())
+                        .doesNotContain("s3cr3t")
+                        .doesNotContain("example"));
     }
 
     @Test
     void anEmptyAllowlistRefusesEveryHost() {
-        assertThat(refusedWith(() -> GitSourceRules.repository("https://git.example.org/a/b.git", GuideAllowlist.EMPTY)))
+        assertThat(refusedWith(
+                        () -> GitSourceRules.repository("https://git.example.org/a/b.git", GuideAllowlist.EMPTY)))
                 .isEqualTo(SourceRefusal.HOST_NOT_ALLOWED);
     }
 
@@ -223,7 +227,9 @@ class GitSourceRulesTest {
     @Test
     void theRefusalOfARefNamesNothingTheClientSent() {
         assertThatThrownBy(() -> GitSourceRules.ref("--upload-pack=s3cr3t"))
-                .satisfies(refusal -> assertThat(refusal.getMessage()).doesNotContain("s3cr3t").doesNotContain("upload"));
+                .satisfies(refusal -> assertThat(refusal.getMessage())
+                        .doesNotContain("s3cr3t")
+                        .doesNotContain("upload"));
     }
 
     @Test
@@ -234,7 +240,15 @@ class GitSourceRulesTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"", "main", "--upload-pack=x", "refs/heads/main", "ABCDEF0123456789ABCDEF0123456789ABCDEF01", "0123"})
+    @ValueSource(
+            strings = {
+                "",
+                "main",
+                "--upload-pack=x",
+                "refs/heads/main",
+                "ABCDEF0123456789ABCDEF0123456789ABCDEF01",
+                "0123"
+            })
     void aCommitThatIsNotAFullIdIsRefused(String commit) {
         assertThat(refusedWith(() -> GitSourceRules.commit(commit))).isEqualTo(SourceRefusal.BAD_REF);
     }

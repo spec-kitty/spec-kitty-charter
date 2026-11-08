@@ -23,7 +23,8 @@ final class GitEnvironment {
      */
     static Map<String, String> from(Path executable, Path home) {
         Map<String, String> environment = new LinkedHashMap<>();
-        Path directory = Objects.requireNonNull(executable.toAbsolutePath().getParent(), "the git binary has a directory");
+        Path directory =
+                Objects.requireNonNull(executable.toAbsolutePath().getParent(), "the git binary has a directory");
         environment.put("PATH", directory.toString());
         environment.put("HOME", home.toString());
         environment.put("XDG_CONFIG_HOME", home.toString());

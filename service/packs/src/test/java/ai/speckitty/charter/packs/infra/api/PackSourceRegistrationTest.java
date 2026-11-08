@@ -97,9 +97,7 @@ class PackSourceRegistrationTest {
 
     private MockMvc mvcWith(List<PackSourceFetcher> fetchers, ServiceInfoQuery info) {
         PackSourceIntake intake = new PackSourceIntake(
-                sources,
-                new PackSourceStagers(fetchers, mock(WholePackWriteStore.Loader.class)),
-                info::worktree);
+                sources, new PackSourceStagers(fetchers, mock(WholePackWriteStore.Loader.class)), info::worktree);
         PackRegistrationController controller = new PackRegistrationController(
                 jobs,
                 mock(PackSummaryQuery.class),

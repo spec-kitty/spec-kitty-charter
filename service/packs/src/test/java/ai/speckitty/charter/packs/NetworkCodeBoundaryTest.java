@@ -95,7 +95,9 @@ class NetworkCodeBoundaryTest {
 
         assertThat(fixtures).isNotEmpty();
         // No class of the fixture is selected by the rule, which is the point: the git package is outside its subject.
-        assertThatCode(() -> PROCESSES_START_ONLY_IN_THE_GIT_ADAPTER.allowEmptyShould(true).check(fixtures))
+        assertThatCode(() -> PROCESSES_START_ONLY_IN_THE_GIT_ADAPTER
+                        .allowEmptyShould(true)
+                        .check(fixtures))
                 .doesNotThrowAnyException();
     }
 
