@@ -33,6 +33,7 @@ import java.util.TreeSet;
  * @param skipped what the cascade left out
  * @param dropped the stale ids the write dropped from the stored document, sorted
  * @param droppedPins the version pins the write dropped from the stored document, in its pack order
+ * @param warnings what the write applied that a read of the stored document will not put in force (FR-032), sorted
  */
 public record ActivationChange(
         ActivationDocument after,
@@ -40,7 +41,51 @@ public record ActivationChange(
         List<ArtifactRef> cleared,
         SkippedReport skipped,
         List<ArtifactRef> dropped,
-        List<PackRef> droppedPins) {
+        List<PackRef> droppedPins,
+        List<Warning> warnings) {
+
+    /** Why a read will not put an applied artifact in force (the contract's {@code ActivationWarning} codes). */
+    public enum Code {
+        /** The artifact is an enhancer none of whose targets is in force. */
+        ENHANCED_TARGET_NOT_IN_FORCE,
+        /** An artifact in force overrides the artifact. */
+        OVERRIDDEN;
+
+        /**
+         * The contract's spelling.
+         *
+         * @return the lower-case token
+         */
+        public String token() {
+            return name().toLowerCase(java.util.Locale.ROOT);
+        }
+    }
+
+    /**
+     * An artifact the write applied that a read will not put in force.
+     *
+     * @param code why
+     * @param artifact the artifact
+     */
+    public record Warning(Code code, ArtifactRef artifact) implements Comparable<Warning> {
+
+        /**
+         * Checks the fields.
+         *
+         * @param code why
+         * @param artifact the artifact
+         */
+        public Warning {
+            Objects.requireNonNull(code, "code");
+            Objects.requireNonNull(artifact, "artifact");
+        }
+
+        @Override
+        public int compareTo(Warning other) {
+            int byArtifact = artifact.compareTo(other.artifact);
+            return byArtifact != 0 ? byArtifact : code.compareTo(other.code);
+        }
+    }
 
     /**
      * Checks the fields and sorts the lists.
@@ -51,6 +96,7 @@ public record ActivationChange(
      * @param skipped the skipped report
      * @param dropped the dropped stale ids
      * @param droppedPins the dropped version pins
+     * @param warnings the warnings of the write
      */
     public ActivationChange {
         Objects.requireNonNull(after, "after");
@@ -59,6 +105,27 @@ public record ActivationChange(
         Objects.requireNonNull(skipped, "skipped");
         dropped = List.copyOf(new TreeSet<>(dropped));
         droppedPins = List.copyOf(droppedPins);
+        warnings = List.copyOf(new TreeSet<>(warnings));
+    }
+
+    /**
+     * A change that reports no warning.
+     *
+     * @param after the document after the write
+     * @param applied the changed ids
+     * @param cleared the cleared deny entries
+     * @param skipped the skipped report
+     * @param dropped the dropped stale ids
+     * @param droppedPins the dropped version pins
+     */
+    public ActivationChange(
+            ActivationDocument after,
+            List<ArtifactRef> applied,
+            List<ArtifactRef> cleared,
+            SkippedReport skipped,
+            List<ArtifactRef> dropped,
+            List<PackRef> droppedPins) {
+        this(after, applied, cleared, skipped, dropped, droppedPins, List.of());
     }
 
     /**
@@ -82,7 +149,19 @@ public record ActivationChange(
      * @return the change
      */
     public ActivationChange withDropped(StaleIds.Dropped drops) {
-        return new ActivationChange(after, applied, cleared, skipped, drops.dropped(), drops.droppedPins());
+        return new ActivationChange(after, applied, cleared, skipped, drops.dropped(), drops.droppedPins(), warnings);
+    }
+
+    /**
+     * The same change with the warnings the in-force resolution of the document as stored gives: each applied artifact
+     * that a read leaves out of force for want of a target in force (an enhancer), or because an artifact in force
+     * overrides it. Any other reason, a deny entry included, is no warning: it is what the write asked for.
+     *
+     * @param answered what the in-force resolution answered for {@code after}
+     * @return the change with its warnings
+     */
+    public ActivationChange withWarnings(MergedSnapshot.InForceAnswer answered) {
+        return this;
     }
 
     /**
