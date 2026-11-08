@@ -922,7 +922,8 @@
       "notes": [
         "WP26 done: T131 architecture pages (resolution-model.md, offering-and-activation.md), T132 divergences DIV-216..237 (DIV-209..215 taken by PR A0; DIV-205 ratified; DIV-201/202 opened), T133 ADR-0053 d5 note, ADR-0059 D5 amendment and ticks, ADR-0020 D6 amendment, rules page (E7 to R13, E20, C28, E5, E9), trace PR B rows, changelog docs/changelog/2026-11-07-b-effective-reads.md. check_docs all, markdownlint and cspell clean.",
         "Changes requested: F1 rules page W33 and G20 built in PR B (warnings, activationsAffected) but marked unbuilt/PR C; F2 rest-resource-conventions.md:134/:138 stale 'one conditional read'/'Proposed'. No overclaim found. check_docs ok, markdownlint 0, cspell 0, DivergenceRegisterTest 3/3 green.",
-        "Cycle 2: W33 and G20 partly built, G2/G3/C36 built, G8 partly built, rest-resource-conventions lead-in, yaml blank line, new Changed fragment 2026-11-08-b-write-cascade-merged-edges.md cited by the changelog. Checks clean; :contracts:check and DivergenceRegisterTest pass."
+        "Cycle 2: W33 and G20 partly built, G2/G3/C36 built, G8 partly built, rest-resource-conventions lead-in, yaml blank line, new Changed fragment 2026-11-08-b-write-cascade-merged-edges.md cited by the changelog. Checks clean; :contracts:check and DivergenceRegisterTest pass.",
+        "Review passed (cycle 2): F1 W33/G20 partly built, F2 rest-resource-conventions, F3 fragment 2026-11-08-b-write-cascade-merged-edges.md accurate vs 500 declarations, F5 fixed; C36/G8 verified. Closeout: G3 prose and G7 table mismatched, G1 stale, OfferingUnreadable reasons. check_docs ok, markdownlint 0, cspell 0, :contracts:check + DivergenceRegisterTest green."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
