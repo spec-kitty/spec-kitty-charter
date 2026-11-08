@@ -94,6 +94,22 @@ final class ClosureViewSession implements PacksSession {
      */
     static MergedSnapshot mergedOf(ClosureView.MergedView merged) {
         MergedClosure closure = merged.closure();
+        Map<ArtifactRef, MergedSnapshot.Winner> winners = winnersOf(closure);
+        Map<ArtifactRef, Set<String>> languages = new LinkedHashMap<>();
+        closure.languages()
+                .forEach((urn, declared) ->
+                        activatable(urn).filter(winners::containsKey).ifPresent(ref -> languages.put(ref, declared)));
+        return new MergedSnapshot(winners, languages, edgesOf(merged, winners.keySet()), overridesOf(closure));
+    }
+
+    /**
+     * The version in force of each artifact of an activatable kind: the configured id and level of the pack that holds
+     * it, and its mutability level.
+     *
+     * @param closure the layer merge
+     * @return the winners, in the order the closure first holds the artifacts
+     */
+    static Map<ArtifactRef, MergedSnapshot.Winner> winnersOf(MergedClosure closure) {
         Map<ArtifactRef, MergedSnapshot.Winner> winners = new LinkedHashMap<>();
         closure.winners()
                 .forEach((urn, winner) -> activatable(urn)
@@ -104,11 +120,7 @@ final class ClosureViewSession implements PacksSession {
                                         winner.level(),
                                         EffectiveSet.Policy.valueOf(
                                                 winner.policy().level().name())))));
-        Map<ArtifactRef, Set<String>> languages = new LinkedHashMap<>();
-        closure.languages()
-                .forEach((urn, declared) ->
-                        activatable(urn).filter(winners::containsKey).ifPresent(ref -> languages.put(ref, declared)));
-        return new MergedSnapshot(winners, languages, edgesOf(merged, winners.keySet()), overridesOf(closure));
+        return winners;
     }
 
     /** The edges of the winners that end at a winner, from the merged index the layer merge re-homed. */

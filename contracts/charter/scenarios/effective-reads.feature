@@ -2577,6 +2577,91 @@ Feature: The effective reads answer what an activation puts in force, and why th
       directive:O
       """
 
+  Scenario: B4 - a registration that changes only the version in force of a selected artifact lists the activation
+    FR-027, B4: the built-in pack core holds A. a-1 is rooted at core and house and selects A, which is in force from
+    core. house version 1.1.0 holds A as well, so the org version replaces the built-in one: the artifacts in force are
+    the same (A), but the version in force is another pack's at another level, and the effective set differs. The
+    succeeded registration lists a-1 in notices.activationsAffected. a-2, rooted at core alone, is the control: its closure
+    does not hold house, so it is not listed, though A is in force there too.
+    Given registration is switched on
+    And the built-in pack "core" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: core-pack
+      pack_level: built-in
+      """
+    And the built-in pack "core" with the file "directives/A.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: A
+      title: A in core
+      intent: A
+      enforcement: required
+      """
+    And the archive "house-v1" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+      pack_version: 1.0.0
+      parent_pack: null
+      name: house-pack
+      pack_level: org
+      depends_on:
+        - pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+          range: '>=1.0'
+      """
+    And the archive "house-v2" is a copy of the archive "house-v1"
+    And the archive "house-v2" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+      pack_version: 1.1.0
+      parent_pack: null
+      name: house-pack
+      pack_level: org
+      depends_on:
+        - pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+          range: '>=1.0'
+      """
+    And the archive "house-v2" holds the file "directives/A.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: A
+      title: A in house
+      intent: A
+      enforcement: required
+      """
+    When I PUT "/packs/house" with the archive "house-v1"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+    When I PUT "/activations/a-1" with the body:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "core"}, {"packId": "house"}], "selected": {"directive": ["A"]}}
+      """
+    Then the response status is 201
+    When I PUT "/activations/a-2" with the body:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "core"}], "selected": {"directive": ["A"]}}
+      """
+    Then the response status is 201
+    When I PUT "/packs/house" with the archive "house-v2"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+    And the field at "/result/notices/activationsAffected" holds exactly the ids:
+      """
+      a-1
+      """
+    When I GET "/activations/a-1/artifacts?kind=directive&state=active"
+    Then the response status is 200
+    And the field at "/items" holds exactly the ids:
+      """
+      directive:A
+      """
+    And the field at "/items/0/packId" is "house"
+    When I GET "/activations/a-2/artifacts?kind=directive&state=active"
+    Then the response status is 200
+    And the field at "/items/0/packId" is "core"
+
   Scenario: US3 AS7 - after the v1 to v2 write the tag changes once
     US3 AS7, FR-042, A7 Q4: a stored version 1 document is read as its version 2 upgrade and a read writes nothing. A
     write stores version 2 and the tag changes (the old tag is 200 with a new ETag); further reads then keep the new tag
