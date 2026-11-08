@@ -1,7 +1,7 @@
 {
-  "event_count": 266,
-  "last_event_id": "01M6Y67R4TW8W1MVDNNS02RHT2",
-  "materialized_at": "2026-11-08T18:20:24.602341+00:00",
+  "event_count": 267,
+  "last_event_id": "01M6Y6ATCYNV02J3W44J0DTJRR",
+  "materialized_at": "2026-11-08T18:22:05.214793+00:00",
   "mission_number": "",
   "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
   "mission_type": "",
@@ -12,9 +12,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 0,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 5
   },
   "work_packages": {
@@ -840,22 +840,22 @@
     },
     "WP24": {
       "actor": "claude",
-      "agent": "claude:sonnet:java-jenny",
+      "agent": "claude:opus:reviewer-renata",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude:sonnet:java-jenny",
-      "lane": "for_review",
-      "last_event_id": "01M6Y67R4TW8W1MVDNNS02RHT2",
-      "last_transition_at": "2026-11-08T18:20:24.602341+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M6Y6ATCYNV02J3W44J0DTJRR",
+      "last_transition_at": "2026-11-08T18:22:05.214793+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "WP24 done: PacksSession.merged()/inForce() as values (MergedSnapshot, InForceQuery/InForceAnswer), EffectiveSet, EffectiveSkippedReport, EffectiveTag (activation/skipped/artifacts variants). 8 commits, red before green. :activations:check and :packs:check green; :deployable:test red only on OperationCoverage R-20 (HexagonalArchitectureTest 61/61 green). Shared edits: packs ArtifactState.overriddenBy (+3 tests), deployable ActivationTestWiring (two port methods)."
       ],
       "provider": "__resolved_provider_absent__",
-      "role": "implementer",
-      "shell_pid": 7131,
-      "shell_pid_created_at": "1794160160.92",
+      "role": "reviewer",
+      "shell_pid": 21745,
+      "shell_pid_created_at": "1794162120.81",
       "subtasks": {
         "T120": "done",
         "T121": "done",
