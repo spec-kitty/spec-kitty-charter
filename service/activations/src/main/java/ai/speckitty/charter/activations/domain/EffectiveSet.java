@@ -1,15 +1,29 @@
 package ai.speckitty.charter.activations.domain;
 
+import ai.speckitty.charter.activations.domain.EffectiveSkippedReport.EnhancerWithoutTarget;
+import ai.speckitty.charter.activations.domain.EffectiveSkippedReport.Overridden;
+import ai.speckitty.charter.activations.domain.EffectiveSkippedReport.PinNotHeld;
+import ai.speckitty.charter.activations.domain.MergedSnapshot.ArtifactState;
+import ai.speckitty.charter.activations.domain.MergedSnapshot.Edge;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
+import ai.speckitty.charter.activations.domain.SkippedReport.SkippedDeactivated;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.domain.RelationType;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.EnumSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * What an activation puts in force, and why the rest is not (FR-013, FR-017): one {@link EffectiveArtifact} per winning
@@ -210,7 +224,42 @@ public record EffectiveSet(List<EffectiveArtifact> artifacts, EffectiveSkippedRe
      * @param locked the artifacts a pack locks
      * @param skipped the entries across the buckets of the skipped report
      */
-    public record Summary(int active, int inactive, int excluded, int required, int locked, int skipped) {}
+    public record Summary(int active, int inactive, int excluded, int required, int locked, int skipped) {
+
+        /**
+         * The counts of a set.
+         *
+         * @param artifacts every artifact of the set
+         * @param skipped the skipped report of the set
+         * @return the counts; a required artifact counts when it is in force or an override of it satisfies it
+         */
+        static Summary of(List<EffectiveArtifact> artifacts, EffectiveSkippedReport skipped) {
+            return new Summary(
+                    count(artifacts, artifact -> artifact.state() == State.ACTIVE),
+                    count(artifacts, artifact -> artifact.state() == State.INACTIVE),
+                    count(artifacts, artifact -> artifact.state() == State.EXCLUDED),
+                    count(
+                            artifacts,
+                            artifact -> artifact.required()
+                                    && (artifact.state() == State.ACTIVE
+                                            || artifact.satisfiedBy().isPresent())),
+                    count(artifacts, artifact -> artifact.policy() == Policy.LOCKED),
+                    skipped.count());
+        }
+
+        private static int count(List<EffectiveArtifact> artifacts, Predicate<EffectiveArtifact> in) {
+            return (int) artifacts.stream().filter(in).count();
+        }
+    }
+
+    /** The relations that reach an artifact for certain: the cascade's, but {@code suggests}. */
+    private static final Set<RelationType> HARD_RELATIONS = hardRelations();
+
+    private static Set<RelationType> hardRelations() {
+        Set<RelationType> hard = EnumSet.copyOf(CascadeRules.CASCADE_RELATIONS);
+        hard.remove(RelationType.SUGGESTS);
+        return Set.copyOf(hard);
+    }
 
     /**
      * Checks the fields.
@@ -233,7 +282,15 @@ public record EffectiveSet(List<EffectiveArtifact> artifacts, EffectiveSkippedRe
      * @return the query to put to {@link ai.speckitty.charter.activations.application.PacksSession#inForce}
      */
     public static InForceQuery queryOf(ActivationDocument document) {
-        return new InForceQuery(Set.of(), Set.of(), Optional.empty(), Map.of());
+        Map<String, String> pins = new LinkedHashMap<>();
+        document.packs()
+                .orElseGet(List::of)
+                .forEach(pack -> pack.version().ifPresent(version -> pins.put(pack.packId(), version)));
+        return new InForceQuery(
+                ActivationChange.refs(document.selected()),
+                ActivationChange.refs(document.deactivated()),
+                document.languages().map(Set::copyOf),
+                pins);
     }
 
     /**
@@ -247,6 +304,95 @@ public record EffectiveSet(List<EffectiveArtifact> artifacts, EffectiveSkippedRe
      */
     public static EffectiveSet of(
             ActivationDocument document, ClosureSnapshot closure, MergedSnapshot merged, InForceAnswer answered) {
-        return new EffectiveSet(List.of(), EffectiveSkippedReport.empty(), new Summary(0, 0, 0, 0, 0, 0));
+        Map<ArtifactRef, Suggestion> suggestions = suggestionsOf(merged.edges(), answered.states());
+        List<EffectiveArtifact> artifacts = answered.states().values().stream()
+                .flatMap(state -> artifactOf(state, merged, suggestions).stream())
+                .sorted(Comparator.comparing(EffectiveArtifact::ref))
+                .toList();
+        EffectiveSkippedReport skipped = skippedOf(document, closure, answered);
+        return new EffectiveSet(artifacts, skipped, Summary.of(artifacts, skipped));
+    }
+
+    private static Optional<EffectiveArtifact> artifactOf(
+            ArtifactState state, MergedSnapshot merged, Map<ArtifactRef, Suggestion> suggestions) {
+        return Optional.ofNullable(merged.winners().get(state.ref()))
+                .map(winner -> new EffectiveArtifact(
+                        state.ref(),
+                        winner.packId(),
+                        winner.level(),
+                        state.state(),
+                        state.required(),
+                        state.satisfiedBy(),
+                        winner.policy(),
+                        state.reason(),
+                        Optional.ofNullable(suggestions.get(state.ref()))));
+    }
+
+    /**
+     * The artifacts reached only through {@code suggests}: an artifact out of force that an artifact in force suggests,
+     * and that no artifact in force reaches through a hard relation. It reads the edges among the winners one hop at a
+     * time and walks nothing. Of several suggesters, the edge of the smallest wins.
+     */
+    private static Map<ArtifactRef, Suggestion> suggestionsOf(
+            List<Edge> edges, Map<ArtifactRef, ArtifactState> states) {
+        List<Edge> fromForce =
+                edges.stream().filter(edge -> inForce(states, edge.source())).toList();
+        Set<ArtifactRef> reachedHard = fromForce.stream()
+                .filter(edge -> HARD_RELATIONS.contains(edge.relation()))
+                .map(Edge::target)
+                .collect(Collectors.toSet());
+        Map<ArtifactRef, Suggestion> suggestions = new LinkedHashMap<>();
+        fromForce.stream()
+                .filter(edge -> edge.relation() == RelationType.SUGGESTS
+                        && !reachedHard.contains(edge.target())
+                        && !inForce(states, edge.target()))
+                .sorted(Comparator.comparing(Edge::source))
+                .forEach(edge -> suggestions.putIfAbsent(edge.target(), new Suggestion(edge.when(), edge.rationale())));
+        return suggestions;
+    }
+
+    private static boolean inForce(Map<ArtifactRef, ArtifactState> states, ArtifactRef ref) {
+        return Optional.ofNullable(states.get(ref))
+                .filter(state -> state.state() == State.ACTIVE)
+                .isPresent();
+    }
+
+    private static EffectiveSkippedReport skippedOf(
+            ActivationDocument document, ClosureSnapshot closure, InForceAnswer answered) {
+        Collection<ArtifactState> states = answered.states().values();
+        return new EffectiveSkippedReport(
+                answered.staleIds(),
+                answered.denyNotApplied(),
+                inBucket(states, Bucket.ENHANCED_TARGET_NOT_IN_FORCE)
+                        .map(state -> new EnhancerWithoutTarget(
+                                state.ref(), answered.enhancedTargets().getOrDefault(state.ref(), List.of())))
+                        .toList(),
+                answered.overrideNotApplied(),
+                answered.requiredNotHeld(),
+                answered.requiredNotInForce(),
+                StaleIds.drop(document, closure).droppedPins().stream()
+                        .flatMap(pin -> pin.version().map(version -> new PinNotHeld(pin.packId(), version)).stream())
+                        .toList(),
+                refsIn(states, Bucket.LANGUAGE_FILTERED),
+                refsIn(states, Bucket.MISSION_TYPE_NOT_IN_FORCE),
+                inBucket(states, Bucket.DEACTIVATED)
+                        .map(state -> new SkippedDeactivated(state.ref(), false, List.of()))
+                        .toList(),
+                inBucket(states, Bucket.OVERRIDDEN)
+                        .map(state -> new Overridden(
+                                state.ref(),
+                                state.overriddenBy()
+                                        .orElseThrow(() -> new IllegalStateException(
+                                                state.ref() + " is overridden by an artifact in force"))))
+                        .toList());
+    }
+
+    private static Stream<ArtifactState> inBucket(Collection<ArtifactState> states, Bucket bucket) {
+        return states.stream()
+                .filter(state -> state.bucket().filter(bucket::equals).isPresent());
+    }
+
+    private static List<ArtifactRef> refsIn(Collection<ArtifactState> states, Bucket bucket) {
+        return inBucket(states, bucket).map(ArtifactState::ref).toList();
     }
 }
