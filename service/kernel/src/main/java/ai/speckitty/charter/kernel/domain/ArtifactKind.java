@@ -54,7 +54,12 @@ public enum ArtifactKind {
      * A lifecycle: a declared, reusable state machine a mission step runs as a submachine (ADR-0050 decision 17). It is
      * in force with its pack, like a guard: never activated, required or selected.
      */
-    LIFECYCLE("lifecycle", "lifecycles", false);
+    LIFECYCLE("lifecycle", "lifecycles", false),
+    /**
+     * A step enhancement: add-only guards, emits and prompt fragments joined to a step by an enhances edge
+     * (ADR-0053 decision 22, ADR-0066). It is activated explicitly or by a preset's activated_step_enhancements list.
+     */
+    STEP_ENHANCEMENT("step_enhancement", "step_enhancements", true);
 
     private final String token;
     private final String plural;

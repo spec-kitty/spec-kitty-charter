@@ -221,6 +221,7 @@ class PackDescriptorReaderTest {
 
         assertThat(declared)
                 .containsExactly(
+                        "schema_version",
                         "pack_id",
                         "pack_version",
                         "parent_pack",

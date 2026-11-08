@@ -45,6 +45,7 @@ class PackLevelSchemasTest {
             activated_glossary_packs: [{id: g}]
             activated_skills: [{id: s}]
             activated_mission_types: [{id: software-dev, must_have: true}]
+            activated_step_enhancements: [{id: spdd-specify}]
             """;
 
     private static final String MANIFEST = """

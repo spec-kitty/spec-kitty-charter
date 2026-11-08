@@ -362,6 +362,10 @@ public class RefusalHandler {
                     PACK_REFERENCE_UNQUALIFIED,
                     PACK_REFERENCE_PACK_MISSING,
                     PACK_REFERENCE_ARTIFACT_MISSING,
+                    PROMPT_SLOT_MALFORMED,
+                    PROMPT_SLOT_NOT_EMPTY,
+                    PROMPT_FRAGMENT_INVALID,
+                    PROMPT_SLOT_MISSING,
                     INTERNAL_ERROR,
                     STALE_INPUT -> HttpStatus.INTERNAL_SERVER_ERROR;
         };

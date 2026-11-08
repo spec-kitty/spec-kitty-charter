@@ -156,6 +156,15 @@
       "minItems": 1,
       "title": "Activated Mission Types",
       "type": "array"
+    },
+    "activated_step_enhancements": {
+      "description": "The step enhancements this preset activates, in authored order: a plain member list, applied as selected.step_enhancement. Their prompt fragments have no second activation gate (ADR-0066 decision 4). Absent when the preset selects none; never empty.",
+      "items": {
+        "$ref": "#/$defs/item"
+      },
+      "minItems": 1,
+      "title": "Activated Step Enhancements",
+      "type": "array"
     }
   },
   "required": [

@@ -8,7 +8,8 @@ in `service/packs`) and with the scenario validator (`ActivationConfigConformanc
 
 - `valid/`: each document passes, at `schemaVersion: 2` (the one kind model, IC-20). They pin the
   three states (`selected.mission_type: []` and absent, `selected.skill: []`), packs with and without
-  `version`, every activatable kind (`mission_type` included, selected and denied), and the languages
+  `version`, every activatable kind (`mission_type` and `step_enhancement` included, selected and denied), and the
+  languages
   pattern.
 - `invalid/`: each document fails, for one reason its name gives: a missing or wrong
   `schemaVersion` (`1` included: a stored version 1 document is upgraded by the service, never

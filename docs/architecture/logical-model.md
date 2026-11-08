@@ -295,6 +295,7 @@ facts; it does not restate them.
 | `asset` | `asset` | no | no | yes | no | all |
 | `template` | `template` | no | no | no | no | all |
 | `mission_type` (service only, DIV-501) | `mission-type` | yes | yes | no | no | all |
+| `step_enhancement` (service only) | `step-enhancement` | no | yes | yes | yes | none |
 
 - **Activatable**: the kind can appear in an `activated_<plural>` list. `template` and `asset`
   resolve specially and are never activated as a live rule.
@@ -318,6 +319,10 @@ facts; it does not restate them.
   own domain model ([Mission types](#mission-types-actions-and-step-contracts)). It is activatable
   because a preset lists it in its own `activated_mission_types` slot, not among its activated
   kinds.
+- `step_enhancement`: an add-only enhancement joined to a mission step by an `enhances` edge
+  (ADR-0053 decision 22), with guards, emits and prompt fragments for slots the step declares
+  ([ADR-0066](/adr/0066-a-step-enhancement-may-contribute-prompt-fragments/)). A preset lists it
+  in `activated_step_enhancements`; `none` means the service activates none when the key is absent.
 
 ### Accepted kinds and kind changes (epic #142, not built yet)
 
@@ -353,6 +358,7 @@ service it is the node of the `mission_type` artifact kind (DIV-501):
 |---|---|---|
 | `action` | `action:software-dev/plan` | One action of one mission type. Action-scoped context starts here. |
 | `mission_type` | `mission_type:software-dev` | A mission type, artifact-backed in the service. Its `requires` edges give the action sequence; its `scope` edges carry type-wide governance. |
+| `step_enhancement` | `step_enhancement:spdd-specify` | Add-only contributions joined to a step by `enhances`; prompt fragments address slots in the step's prompt (ADR-0066). |
 | `glossary_scope` / `glossary` (retiring in core) | `glossary:<id>` | Glossary scoping and vocabulary targets. Core's `drg/models.py` (lines 60-66) fences them off for deletion; `glossary_pack` survives. |
 
 ### Relations

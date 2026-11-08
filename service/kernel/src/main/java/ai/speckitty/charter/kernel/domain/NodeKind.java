@@ -38,7 +38,9 @@ public enum NodeKind {
     /** A node of the artifact kind {@link ArtifactKind#GUARD}, for example {@code guard:subtasks-complete}. */
     GUARD,
     /** A node of the artifact kind {@link ArtifactKind#LIFECYCLE}, for example {@code lifecycle:work-package}. */
-    LIFECYCLE;
+    LIFECYCLE,
+    /** A node of the artifact kind {@link ArtifactKind#STEP_ENHANCEMENT}. */
+    STEP_ENHANCEMENT;
 
     /**
      * The spelling used in URNs.
@@ -104,7 +106,7 @@ public enum NodeKind {
      * refused).
      *
      * @param plural the plural kind as written in {@code drg/fragment.yaml}
-     * @return the node kind, or empty when the name is not one of the 17 plurals
+     * @return the node kind, or empty when the name is not one of the 18 plurals
      */
     public static Optional<NodeKind> fromPlural(String plural) {
         return switch (plural) {

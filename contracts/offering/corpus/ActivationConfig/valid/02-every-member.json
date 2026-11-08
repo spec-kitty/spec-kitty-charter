@@ -19,6 +19,9 @@
     ],
     "mission_type": [
       "software-dev"
+    ],
+    "step_enhancement": [
+      "spdd-specify"
     ]
   },
   "deactivated": {

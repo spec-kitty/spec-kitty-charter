@@ -152,6 +152,14 @@ description: >-
   unresolved_edge_endpoint is no longer raised: a graph edge endpoint is a URN, and an endpoint
   that is not one is refused as drg_schema_error. The value stays in the enum so that the
   contract keeps accepting it.
+
+  Four codes are reserved for ADR-0066 prompt slots and fragments, raised: false until #424 builds their checks:
+  prompt_slot_malformed (a bad, repeated, nested or unpaired slot declaration), prompt_slot_not_empty (non-whitespace
+  between paired markers at descriptor schema_version "1.0"), prompt_fragment_invalid (an invalid enhancement or
+  fragment at load, including a repeated slot, blank or frontmatter-bearing fragment, slot marker or non-step target),
+  and prompt_slot_missing (the prompt in force declares no slot an active or inactive enhancement names at compose).
+  They are 500: the configured packs, not the request, are broken. pack_reference_pack_missing,
+  pack_reference_artifact_missing and artifact_locked keep their existing meanings for the other ADR-0066 refusals.
 type: string
 enum:
   - mission_type_not_found
@@ -203,6 +211,10 @@ enum:
   - override_cycle
   - registration_timed_out
   - pack_storage_full
+  - prompt_slot_malformed
+  - prompt_slot_not_empty
+  - prompt_fragment_invalid
+  - prompt_slot_missing
 x-refusal:
   mission_type_not_found:
     status: 404
@@ -690,6 +702,26 @@ x-refusal:
     retryable: true
     raised: true
     description: less than the per-job peak, about three times the archive bound, is free
+  prompt_slot_malformed:
+    status: 500
+    retryable: false
+    raised: false
+    description: a base prompt's slot declaration is malformed, repeated, nested or unpaired (ADR-0066, reserved for #424)
+  prompt_slot_not_empty:
+    status: 500
+    retryable: false
+    raised: false
+    description: a slot is not empty at descriptor schema_version 1.0 (ADR-0066, reserved for #424)
+  prompt_fragment_invalid:
+    status: 500
+    retryable: false
+    raised: false
+    description: an enhancement or Markdown prompt fragment breaks its load-time rules (ADR-0066, reserved for #424)
+  prompt_slot_missing:
+    status: 500
+    retryable: false
+    raised: false
+    description: the prompt in force declares no slot an enhancement names (ADR-0066, reserved for #424)
 x-source:
   path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RefusalCode.java
   symbol: RefusalCode
