@@ -22,8 +22,9 @@ changes.
     - `If-Match` (`parameters/IfMatch.yaml`, extended to cover a pack revision; there is no `PackIfMatch`) is
       optional: absent means the last writer wins, and stale answers `412`;
     - `If-None-Match: *` makes the request create-only: `412` when the pack exists;
-    - an identical archive answers `200` (`unchanged`) even under a stale `If-Match`, because the version rule runs
-      first. The description says so, citing RFC 9110 §13.1.1.
+    - an identical archive is an `unchanged` no-op for the `If-Match` check under the lock, because the version rule
+      runs first; a stale `If-Match` is a synchronous `412` at acceptance, before any job exists (spec US1 AS6). The
+      description says so, citing RFC 9110 §13.1.1.
   - **Answers (asynchronous, A5; folded 2026-11-06):**
     - `202`: accepted. `PackRegistrationStatus` (`pending`), `Location: /api/v1/pack-registrations/{registrationId}`.
       Every answer below except `400`, `401`, `403`, `412` (at acceptance), `413`, `415` and `503` is now the
@@ -80,7 +81,7 @@ changes.
     checked under the registry lock (research R-lock).
   - **Answers:**
     - `204`, with `ETag` (the new revision);
-    - `404`: `pack_not_found`, `kind_not_found` (existing) or `artifact_not_found`, each its own code;
+    - `404`: `pack_not_found`, `kind_not_found` (existing) or the per-kind not-found code, as `getPackArtifact` answers on the same path (`directive_not_found`, ...; decision `DM-01M6TWVNN6EXVYWVVM9M2GZP3C`), each its own code;
     - `409`:
       - `artifact_referenced`, whose `packs` member (at most 100) names the referring packs and whose `violations`
         name every referring artifact, a preset item or a descriptor `overrides` entry included (A10, B3).
@@ -148,7 +149,6 @@ changes.
 - **Existing, not added:** `kind_not_found` (404, raised; `CharterRefusalCode.yaml` and `RefusalCode.KIND_NOT_FOUND`).
   `deletePackArtifact` is added to its text only.
 - **Raised by the new operations,** under ADR-0056's per-operation status (`x-refusal.operations`):
-  - `artifact_not_found` (404 on `deletePackArtifact`);
   - `validation_failed` (422);
   - `registration_conflict` (409);
   - `governance_policy_violation` (409);
@@ -294,7 +294,7 @@ changes.
 - **PR A refusal codes (post-tasks squad; now also in the "Added" list above, 2026-11-07).** `registration_timed_out` (the job's end state at the source deadline +
   30 s, NFR-008), `pack_storage_full` (`503`, less than 2× the archive bound free, NFR-009), `registration_not_found`
   (`404`). `PUT`/`POST /packs` answer no `428`, except a git source naming a branch ref without a `commit` and without
-  `If-Match` (`428`).
+  `If-Match` or `If-None-Match: *` (`428`; `If-None-Match: *` only creates, so it satisfies the rule, WP18 review 2026-11-08).
 - **Paging.** `listEffectiveArtifacts` uses a keyset cursor over (`kind`, `id`) bound to the `ETag`; a cursor from
   another tag is `400`. `summary` is computed over the whole set and is identical on every page.
 - **Breaking declarations.** Each PR's fragment carries one `### Breaking` block listing all its breaks.

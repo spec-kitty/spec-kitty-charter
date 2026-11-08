@@ -9,6 +9,7 @@ requirement_refs:
 - FR-006
 - FR-007
 - FR-036
+- FR-025
 planning_base_branch: issue-10-layer-merge-effective-reads
 merge_target_branch: issue-10-layer-merge-effective-reads
 branch_strategy: Planning artifacts for this mission were generated on issue-10-layer-merge-effective-reads. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-10-layer-merge-effective-reads unless the human explicitly redirects the landing branch.
@@ -132,7 +133,7 @@ These files are owned by another WP (the no-overlap rule) but this WP must make 
 
 ### T094: Artifact removal
 
-Load → `404` per code (`pack_not_found`, `kind_not_found`, `artifact_not_found`) → inbound scan (`409 artifact_referenced`, referrers listed, same-pack referrer included; built by WP14's `InboundReferences` from `edges()`, presets and descriptor `overrides`, never from `PackCompositionFacts.references`; the data-only fields of ADR-0064 D11 do not count) → write gate with the new `REMOVE` operation through the staged-closure variant (`409 governance_policy_violation`; after B8/A15 it fires only when an ancestor holds and locks the id; a pack removes its own artifact freely) → mutate staging (file and companions, outgoing edges **from `registered.graph.yaml` only**, preset items) → revalidate the whole aggregate and run IC-15's impact check on the result (`422`, strict) → atomic swap.
+Load → `404` per code (`pack_not_found`, `kind_not_found`, or the per-kind not-found code, as `getPackArtifact` answers on the same path (`directive_not_found`, ...; decision `DM-01M6TWVNN6EXVYWVVM9M2GZP3C`)) → inbound scan (`409 artifact_referenced`, referrers listed, same-pack referrer included; built by WP14's `InboundReferences` from `edges()`, presets and descriptor `overrides`, never from `PackCompositionFacts.references`; the data-only fields of ADR-0064 D11 do not count) → write gate with the new `REMOVE` operation through the staged-closure variant (`409 governance_policy_violation`; after B8/A15 it fires only when an ancestor holds and locks the id; a pack removes its own artifact freely) → mutate staging (file and companions, outgoing edges **from `registered.graph.yaml` only**, preset items) → revalidate the whole aggregate and run IC-15's impact check on the result (`422`, strict) → atomic swap.
 
 - A preset key whose last item is removed is **deleted** from the preset file. Every preset list has `minItems: 1`, so writing `[]` makes the pack unreadable (`PresetFiles`). Test: remove the only item of a key and read the pack back, with a positive control that the other keys survive.
 - Decision `DM-01M6TR1KDAJ64GMJD6AYNZKT59`: an edge from the artifact, or a node declaration of it, in an author-written graph document is not rewritten; the `DELETE` answers `409 registration_conflict` ("written in the pack's graph documents: register the whole pack"). Pin it with a scenario and say so in the hand-off note.
@@ -177,3 +178,17 @@ Service and controller unit tests, `RemovalConcurrencyTest`, `pack-removal.featu
 - Check each behaviour against the plan IC and the rule ids cited, not against core's Python answers (C-004).
 - Check the red-first evidence (the commit order or the run log) and that no test was weakened to pass.
 - Check that nothing outside `owned_files` changed beyond the listed shared-file edits.
+
+## Operator ruling 2026-11-07: the per-artifact writes run the impact check
+
+Decision `01M6VG6GC40AKYYFRR35SV8HVW` (plan IC-15). Beside the `DELETE` check, the per-artifact writes
+(`PUT`/`POST /packs/{packId}/artifacts/...` and the relationship writes) run IC-15's impact check over the pack as it
+will be after the write, under the registry lock, reusing WP15's `RegistrationImpact` (one listing and one descriptor
+resolution per check). A refusal answers as a registration's does (`422` with the IC-15 code, or the composition
+code), naming the closure's root and the packs involved.
+- Red first: WP15's review case (a `PUT` of `OPEN_ONE` into `mid`, an org pack built on `base`, also org, leaves two
+  packs of one level defining one id: refused with the sibling-conflict composition code), plus one relation-rule
+  case (an `overrides` edge onto a non-open target through the relationship write) and a control that still succeeds.
+- Contract: declare the impact-check responses on the per-artifact paths, with a `### Changed` fragment (a write that
+  was accepted may now be refused; record it as `### Breaking` if a previously documented success becomes a refusal).
+- Existing scenarios that wrote such a closure must change their expectation; name each in the commit body.
