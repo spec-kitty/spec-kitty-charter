@@ -122,6 +122,18 @@ class HttpsArchiveFetcherTest {
     }
 
     @Test
+    void theRecordKeepsNoQueryFragmentOrUserInformationOfAPresignedUrl() throws Exception {
+        String presigned = "https://packs.example.org/acme.tar.gz?X-Amz-Signature=s3cr3t&X-Amz-Expires=60#part";
+
+        Staged staged = fetcher().fetch(request(presigned, null), directory);
+
+        assertThat(staged.source())
+                .containsExactlyInAnyOrderEntriesOf(Map.of("kind", "https_archive", "url", URL));
+        assertThat(staged.source().values()).noneMatch(value -> value.contains("s3cr3t"));
+        assertThat(requested).containsExactly(URI.create(presigned));
+    }
+
+    @Test
     void theSpoolFileIsOwnerOnlyAndInsideTheJobsDirectory() throws Exception {
         fetcher().fetch(request(URL, null), directory);
 
