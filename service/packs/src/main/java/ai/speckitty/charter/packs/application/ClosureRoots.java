@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 
 /**
  * Which closures a registration joins (IC-15, plan delta squad finding 7): the closure of every pack whose composition
@@ -62,19 +63,34 @@ final class ClosureRoots {
     }
 
     /**
+     * The closures a registration joins.
+     *
+     * @param closures the roots of each distinct closure that holds the written pack, packs first and then activations
+     * @param holding the roots of the closure an activation's root set composes, when it holds the written pack; empty
+     *     for a root set whose closure does not hold it, that names a pack nobody configures or whose root cannot be read
+     */
+    record Found(List<Roots> closures, Function<Optional<List<String>>, Optional<Roots>> holding) {
+
+        Found {
+            closures = List.copyOf(closures);
+        }
+    }
+
+    /**
      * The closures the written pack joins.
      *
      * @param packs the stored packs with the written one in place
      * @param writtenPackId the descriptor {@code pack_id} of the written pack
      * @param activations the root sets of the stored activations; an empty optional roots at every configured pack
-     * @return the roots of each distinct closure that holds the written pack, packs first and then activations
+     * @return the roots of each distinct closure that holds the written pack, packs first and then activations, and the
+     *     way to find the one an activation's root set composes
      */
-    static List<Roots> of(StagedPackViews.View packs, String writtenPackId, List<Optional<List<String>>> activations) {
+    static Found of(StagedPackViews.View packs, String writtenPackId, List<Optional<List<String>>> activations) {
         ClosureRoots found = new ClosureRoots(packs, writtenPackId);
         found.readDescriptors();
         found.addHolders();
         activations.forEach(found::addActivation);
-        return List.copyOf(found.byClosure.values());
+        return new Found(List.copyOf(found.byClosure.values()), found::holding);
     }
 
     /** Every descriptor once; a pack whose descriptor cannot be read is in no closure that can be walked. */
@@ -130,24 +146,42 @@ final class ClosureRoots {
      * read has no closure to walk; both are left out.
      */
     private void addActivation(Optional<List<String>> listed) {
-        List<PackIdentifier> ids = listed.map(
-                        names -> names.stream().map(PackIdentifier::new).toList())
-                .orElseGet(() -> packs.catalog().configured().stream()
-                        .map(ConfiguredPack::id)
-                        .toList());
+        List<PackIdentifier> ids = idsOf(listed);
         if (!ids.isEmpty() && readable.keySet().containsAll(ids)) {
             add(new Roots(ids));
         }
     }
 
+    /** The configured packs an activation roots at: the ones it names, or every configured pack when it names none. */
+    private List<PackIdentifier> idsOf(Optional<List<String>> listed) {
+        return listed.map(names -> names.stream().map(PackIdentifier::new).toList())
+                .orElseGet(() -> packs.catalog().configured().stream()
+                        .map(ConfiguredPack::id)
+                        .toList());
+    }
+
+    /** The roots of the closure an activation's root set composes, when that closure holds the written pack. */
+    private Optional<Roots> holding(Optional<List<String>> listed) {
+        List<PackIdentifier> ids = idsOf(listed);
+        if (ids.isEmpty() || !readable.keySet().containsAll(ids)) {
+            return Optional.empty();
+        }
+        Set<String> closure = closureOf(new Roots(ids));
+        return closure.contains(writtenPackId) ? Optional.ofNullable(byClosure.get(closure)) : Optional.empty();
+    }
+
     private void add(Roots roots) {
+        Set<String> closure = closureOf(roots);
+        if (closure.contains(writtenPackId)) {
+            byClosure.putIfAbsent(closure, roots);
+        }
+    }
+
+    private Set<String> closureOf(Roots roots) {
         List<String> rootPackIds = roots.ids().stream()
                 .map(id ->
                         Objects.requireNonNull(readable.get(id), "read above").packId())
                 .toList();
-        Set<String> closure = PackCompositionResolver.compositionClosure(rootPackIds, firstByPackId);
-        if (closure.contains(writtenPackId)) {
-            byClosure.putIfAbsent(new HashSet<>(closure), roots);
-        }
+        return new HashSet<>(PackCompositionResolver.compositionClosure(rootPackIds, firstByPackId));
     }
 }

@@ -746,7 +746,8 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     Then the response status is 404
     And the problem code is "artifact_not_found"
     When I GET "/activations/a-1"
-    Then the response header "ETag" is the stored ETag
+    Then the field at "/revision" is the stored revision
+    And the response header "ETag" differs from the stored ETag
 
   Scenario: A cascade that mixes all with kinds is refused
     US3 AS8.
@@ -1270,7 +1271,8 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     And the problem code is "artifact_locked"
     And the field at "/requiredBy/0/packId" is "main"
     When I GET "/activations/a-1"
-    Then the response header "ETag" is the stored ETag
+    Then the field at "/revision" is the stored revision
+    And the response header "ETag" differs from the stored ETag
 
   Scenario: Deactivating a required artifact is 409 artifact_required and stores nothing
     US4 AS3, FR-007: main's governing preset requires RQ.
@@ -1286,7 +1288,8 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     And the problem code is "artifact_required"
     And the field at "/requiredBy/0/packId" is "main"
     When I GET "/activations/a-1"
-    Then the response header "ETag" is the stored ETag
+    Then the field at "/revision" is the stored revision
+    And the response header "ETag" differs from the stored ETag
 
   Scenario: A stored deny entry on the floor is tolerated by a write of another id
     ADR-0059 D4, data model ("a stored one is tolerated but not applied"): D2 was denied before main's governing
@@ -1489,7 +1492,8 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     Then the response status is 404
     And the problem code is "artifact_not_found"
     When I GET "/activations/a-1"
-    Then the response header "ETag" is the stored ETag
+    Then the field at "/revision" is the stored revision
+    And the response header "ETag" differs from the stored ETag
 
   Scenario: Re-activating a denied artifact clears its deny entry and omits the emptied list
     US4 AS4.

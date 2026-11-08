@@ -78,6 +78,18 @@ class ClosureViewMergedTest {
         return new PackCompositionFacts(List.of(), List.of(held), List.of(), policy, List.of(), edges, languages);
     }
 
+    private static PackCompositionFacts bound(Map<String, String> bindings, String... held) {
+        return new PackCompositionFacts(
+                List.of(),
+                List.of(held),
+                List.of(),
+                MutabilityPolicySource.empty(),
+                List.of(),
+                List.of(),
+                Map.of(),
+                bindings);
+    }
+
     private static PackCompositionFacts holding(String... held) {
         return holding(MutabilityPolicySource.empty(), Map.of(), List.of(), held);
     }
@@ -425,5 +437,66 @@ class ClosureViewMergedTest {
             assertThat(state.active()).isFalse();
             assertThat(state.reason()).isEqualTo(InForceStates.Reason.ENHANCED_TARGET_NOT_IN_FORCE);
         });
+    }
+
+    // ---- the binding to a mission type (A7 Q1, rule E6)
+
+    private static final Urn M = new Urn(NodeKind.MISSION_TYPE, "M");
+    private static final Urn CM = new Urn(NodeKind.MISSION_STEP_CONTRACT, "cm");
+    private static final Urn CN = new Urn(NodeKind.MISSION_STEP_CONTRACT, "cn");
+
+    @Test
+    void aStepContractBoundToAMissionTypeIsInForceOnlyWhileTheMissionTypeIs() {
+        pack(
+                "alpha",
+                PackLevel.ORG,
+                List.of(),
+                bound(
+                        Map.of(
+                                "mission_step_contract:cm", "mission_type:M",
+                                "mission_step_contract:cn", "mission_type:N"),
+                        "mission_type:M",
+                        "mission_type:N",
+                        "mission_step_contract:cm",
+                        "mission_step_contract:cn"));
+
+        InForceStates states = snapshot().inForce(selecting(M, CM, CN));
+
+        assertThat(states.states().get(CM).state()).isEqualTo(InForceStates.State.ACTIVE);
+        assertThat(states.states().get(CN).state()).isEqualTo(InForceStates.State.INACTIVE);
+        assertThat(states.states().get(CN).reason()).isEqualTo(InForceStates.Reason.MISSION_TYPE_NOT_IN_FORCE);
+        assertThat(states.states().get(CN).bucket()).contains(InForceStates.Bucket.MISSION_TYPE_NOT_IN_FORCE);
+    }
+
+    @Test
+    void aStepContractBoundToAMissionTypeNoPackHoldsStaysOut() {
+        pack(
+                "alpha",
+                PackLevel.ORG,
+                List.of(),
+                bound(Map.of("mission_step_contract:cm", "mission_type:M"), "mission_step_contract:cm"));
+
+        InForceStates states = snapshot().inForce(selecting(CM));
+
+        assertThat(states.states().get(CM).reason()).isEqualTo(InForceStates.Reason.MISSION_TYPE_NOT_IN_FORCE);
+    }
+
+    @Test
+    void theBindingIsTheOneOfThePackThatHoldsTheVersionInForce() {
+        pack(
+                "beta",
+                PackLevel.BUILT_IN,
+                List.of(),
+                bound(
+                        Map.of("mission_step_contract:cm", "mission_type:N"),
+                        "mission_type:N",
+                        "mission_step_contract:cm"));
+        pack("alpha", PackLevel.ORG, List.of("beta"), holding("mission_step_contract:cm"));
+
+        InForceStates states = snapshot().inForce(selecting(CM));
+
+        assertThat(states.states().get(CM).state())
+                .as("the org version replaces the built-in one whole, and binds nothing")
+                .isEqualTo(InForceStates.State.ACTIVE);
     }
 }

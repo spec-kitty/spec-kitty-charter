@@ -79,6 +79,17 @@ public class CharterSteps {
         return remembered.get(key);
     }
 
+    /**
+     * The header an earlier step remembered ({@code I remember the header ...}), for the steps of other glue classes that
+     * send it back.
+     *
+     * @param name the header's name
+     * @return the remembered value; {@code null} when nothing was remembered
+     */
+    public @Nullable String rememberedHeader(String name) {
+        return remembered.get(HEADER + name);
+    }
+
     @Before
     public void freshPacks() {
         packs.reset();
@@ -274,9 +285,11 @@ public class CharterSteps {
         assertThat(JSON.readTree(http.body()).path(field).asString()).matches(SHA256);
     }
 
+    /** Remembers a member of the body, named as it is or, when the name starts with {@code /}, by its JSON pointer. */
     @When("I remember the field {string} of the response body")
     public void remember(String field) throws Exception {
-        remembered.put(field, JSON.readTree(http.body()).path(field).asString());
+        JsonNode body = JSON.readTree(http.body());
+        remembered.put(field, (field.startsWith("/") ? body.at(field) : body.path(field)).asString());
     }
 
     @Then("the field {string} of the response body is the remembered one")
@@ -507,7 +520,7 @@ public class CharterSteps {
         return field;
     }
 
-    private static String linkOf(JsonNode answer, String relation) {
+    static String linkOf(JsonNode answer, String relation) {
         JsonNode href = answer.path(LINKS).path(relation).path("href");
         assertThat(href.isString())
                 .as("the answer has the link %s: %s", relation, answer)
@@ -516,7 +529,7 @@ public class CharterSteps {
     }
 
     /** A link's href with the server prefix taken off, as the request steps expect a path below it. */
-    private static String belowBase(String href) {
+    static String belowBase(String href) {
         assertThat(href).as("a link's href starts with the server prefix").startsWith(BASE + "/");
         return href.substring(BASE.length());
     }

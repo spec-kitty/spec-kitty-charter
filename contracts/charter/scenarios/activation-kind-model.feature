@@ -295,7 +295,8 @@ Feature: One kind model on the activation document
     And the problem code is "artifact_required"
     And the field at "/requiredBy/0/packId" is "main"
     When I GET "/activations/a-1"
-    Then the response header "ETag" is the stored ETag
+    Then the field at "/revision" is the stored revision
+    And the response header "ETag" differs from the stored ETag
     When I PUT "/activations/a-1/exclusions/mission_type/research" with the stored ETag and the body:
       """
       {}
@@ -316,7 +317,8 @@ Feature: One kind model on the activation document
     And the problem code is "artifact_locked"
     And the field at "/requiredBy/0/packId" is "main"
     When I GET "/activations/a-1"
-    Then the response header "ETag" is the stored ETag
+    Then the field at "/revision" is the stored revision
+    And the response header "ETag" differs from the stored ETag
 
   Scenario: A document that denies a required mission type is 409 on create, and one that denies another is 201
     Q2 on the document write, with its positive control.
@@ -390,7 +392,8 @@ Feature: One kind model on the activation document
     And the problem code is "validation_failed"
     And the field at "/violations" holds exactly 2 items
     When I GET "/activations/a-1"
-    Then the response header "ETag" is the stored ETag
+    Then the field at "/revision" is the stored revision
+    And the response header "ETag" differs from the stored ETag
 
   # Q3: a preset may name any kind.
 
@@ -436,17 +439,19 @@ Feature: One kind model on the activation document
       """
     And the response body has no field at "/config/selected/tactic"
     And the response body has no field at "/config/selected/mission_type"
-    When I remember the header "ETag"
-    And I remember the ETag
+    When I remember the ETag
+    And I remember the field "revision" of the response body
     And I remember the stored file of the activation "a-1"
     And I PUT "/activations/a-1" with the remembered ETag and the body:
       """
       {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["SD"], "tactic": [], "mission_type": []}}
       """
     Then the response status is 200
-    And the response header "ETag" is the remembered header
+    And the response header "ETag" is the quoted field "/revision"
+    And the field "revision" of the response body is the remembered one
     And the stored file of the activation "a-1" is the remembered one
-    When I PUT "/activations/a-1" with the remembered ETag and the body:
+    When I remember the header "ETag"
+    And I PUT "/activations/a-1" with the remembered ETag and the body:
       """
       {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["OTHER"]}}
       """
@@ -486,7 +491,7 @@ Feature: One kind model on the activation document
     When I remember the stored file of the activation "a-1"
     And I GET "/activations/a-1"
     Then the response status is 200
-    When I remember the header "ETag"
+    When I remember the field "revision" of the response body
     And I remember the ETag
     And I GET "/activations/a-1/packs"
     Then the response status is 200
@@ -496,6 +501,7 @@ Feature: One kind model on the activation document
       {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["SD"], "mission_type": ["software-dev"]}}
       """
     Then the response status is 200
-    And the response header "ETag" is the remembered header
+    And the response header "ETag" is the quoted field "/revision"
+    And the field "revision" of the response body is the remembered one
     And the stored file of the activation "a-1" differs from the remembered one
     And the stored file of the activation "a-1" has the field "/schemaVersion" equal to 2

@@ -100,7 +100,7 @@ public class ActivationSelectionService {
             Reach reach = ActivationWrites.walk(
                     session, CascadeRules.planSelect(before, target, scope, includeDeactivated, depth));
             ActivationChange change = CascadeRules.applySelect(before, target, scope, includeDeactivated, depth, reach);
-            return writes.commit(loaded, change, session.snapshot());
+            return writes.commit(loaded, change, session);
         });
     }
 
@@ -128,7 +128,7 @@ public class ActivationSelectionService {
                     session.snapshot(), target, ActivationWrites.selects(loaded.document(), target));
             ActivationDocument before = ActivationWrites.current(loaded, session.snapshot());
             ActivationDocument after = before.withoutSelected(target.kind(), target.id());
-            return writes.commit(loaded, ActivationChange.of(before, after, SkippedReport.empty()), session.snapshot());
+            return writes.commit(loaded, ActivationChange.of(before, after, SkippedReport.empty()), session);
         });
     }
 }

@@ -78,6 +78,16 @@ class PackRegistrationMapperNoticesTest {
     }
 
     @Test
+    void theActivationsAffectedAreServedInTheOrderGivenAndTheListIsAlwaysThere() {
+        PackRegistration some = resultWith(
+                new RegistrationImpact.Notices(List.of(), List.of(), List.of(), List.of(), List.of("a-1", "a-3")));
+        PackRegistration none = resultWith(RegistrationImpact.Notices.NONE);
+
+        assertThat(some.getNotices().getActivationsAffected()).containsExactly("a-1", "a-3");
+        assertThat(none.getNotices().getActivationsAffected()).isNotNull().isEmpty();
+    }
+
+    @Test
     void anActivatableEntryIsKeptAndNothingIsLogged() {
         Logger logger = (Logger) LoggerFactory.getLogger(PackRegistrationMapper.class);
         ListAppender<ILoggingEvent> events = new ListAppender<>();

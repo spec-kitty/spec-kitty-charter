@@ -137,7 +137,8 @@ final class PackRegistrationMapper {
                 .floorAdded(references(notices.floorAdded()))
                 .floorRemoved(references(notices.floorRemoved()))
                 .locksAdded(references(notices.locksAdded()))
-                .locksRemoved(references(notices.locksRemoved()));
+                .locksRemoved(references(notices.locksRemoved()))
+                .activationsAffected(notices.activationsAffected());
     }
 
     /**
