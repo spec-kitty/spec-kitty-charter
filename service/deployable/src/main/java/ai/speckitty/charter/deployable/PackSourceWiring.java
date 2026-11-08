@@ -6,6 +6,7 @@ import ai.speckitty.charter.packs.application.PackSourceKind;
 import ai.speckitty.charter.packs.application.PackSourceStagers;
 import ai.speckitty.charter.packs.application.PackTreeReader;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
+import ai.speckitty.charter.packs.application.StagingArea;
 import ai.speckitty.charter.packs.application.WholePackWriteStore;
 import ai.speckitty.charter.packs.infra.api.PackSourceIntake;
 import ai.speckitty.charter.packs.infra.api.PackSourceSwitch;
@@ -86,13 +87,14 @@ public class PackSourceWiring {
      * @param exchange the guarded exchange, on the archive allowlist
      * @param reader the archive extractor
      * @param properties the bound source configuration
+     * @param staging the staging area registrations work in
      * @return the fetcher
      */
     @Bean
     PackSourceFetcher httpsArchiveFetcher(
-            HttpsExchange exchange, PackArchiveReader reader, PackSourceProperties properties) {
+            HttpsExchange exchange, PackArchiveReader reader, PackSourceProperties properties, StagingArea staging) {
         return new HttpsArchiveFetcher(
-                exchange, reader, properties.https().maxSize().toBytes());
+                exchange, reader, properties.https().maxSize().toBytes(), staging);
     }
 
     /**

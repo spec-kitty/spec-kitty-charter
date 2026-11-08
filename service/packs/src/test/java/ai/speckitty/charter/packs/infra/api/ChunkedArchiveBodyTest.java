@@ -14,6 +14,7 @@ import ai.speckitty.charter.packs.application.PackRegistrationService;
 import ai.speckitty.charter.packs.application.PackSummaryQuery;
 import ai.speckitty.charter.packs.application.RegistrationJobs;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
+import ai.speckitty.charter.packs.infra.storage.FileStagingArea;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
 import ai.speckitty.charter.web.RefusalHandler;
 import java.nio.file.Path;
@@ -46,7 +47,7 @@ class ChunkedArchiveBodyTest {
                 (AuditLog) entry -> {},
                 RegistrationJobs.JobGate.OPEN,
                 RegistrationJobs.StorageRoom.UNBOUNDED,
-                staging));
+                new FileStagingArea(staging)));
         try {
             ServiceInfoQuery info =
                     new ServiceInfoQuery("worktree-chunked", new ConsistentRead(new FileSystemPackSources(List::of)));

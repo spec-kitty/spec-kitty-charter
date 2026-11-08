@@ -9,6 +9,7 @@ import ai.speckitty.charter.packs.application.PackSourceKind;
 import ai.speckitty.charter.packs.application.PackSourceRequest;
 import ai.speckitty.charter.packs.application.RegistrationJobs.Staged;
 import ai.speckitty.charter.packs.infra.archive.BoundedArchiveExtractor;
+import ai.speckitty.charter.packs.infra.storage.FileStagingArea;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import java.io.ByteArrayOutputStream;
@@ -89,7 +90,7 @@ class HttpsArchiveFetcherLoopbackTest {
                 host -> List.of(GLOBAL),
                 toLoopback,
                 GuardedHttpsExchange.LOOKUP_SLOTS);
-        return new HttpsArchiveFetcher(exchange, new BoundedArchiveExtractor(), MIB);
+        return new HttpsArchiveFetcher(exchange, new BoundedArchiveExtractor(), MIB, new FileStagingArea(directory));
     }
 
     private static PackSourceRequest request(String path) {

@@ -130,7 +130,7 @@ public class PackRegistrationController implements RegistrationApi {
         }
         // The status the 202 answers is read before the job can start: a worker may be running it at once.
         RegistrationJobs.Status accepted = reservation.status();
-        reservation.start(ArchiveStaging.of(archives, archive.format(), file));
+        reservation.start(ArchiveStaging.of(jobs.staging(), archives, archive.format(), file));
         AuditContext.of(request).handedToJob();
         return accepted(reservation.id(), accepted);
     }
