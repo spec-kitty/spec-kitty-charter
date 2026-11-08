@@ -237,4 +237,59 @@ class PackRemovalControllerTest {
                 .singleElement()
                 .satisfies(entry -> assertThat(entry.outcome()).isEqualTo("refused:400"));
     }
+
+    @Test
+    void aRefusedDeleteEntersTheRevisionTheServiceFoundAsTheRevisionBeforeAndTheUnchangedPackAfter() throws Exception {
+        List<Throwable> refusals = List.of(
+                new CharterRefusal(RefusalCode.ARTIFACT_REFERENCED, "Referred to."),
+                new PreconditionException(PreconditionException.Kind.STALE, "Stale."),
+                new CharterRefusal(RefusalCode.PACK_SIBLING_CONFLICT, "Broken."));
+
+        for (Throwable refusal : refusals) {
+            when(artifacts.remove(any(PackIdentifier.class), eq("directive"), eq("D1"), any(), any()))
+                    .thenAnswer(invocation -> refusedAfterFinding(invocation.getArgument(4), refusal));
+            when(relationships.remove(
+                            any(PackIdentifier.class),
+                            any(PackQualifiedReference.class),
+                            any(PackQualifiedReference.class),
+                            any(),
+                            any()))
+                    .thenAnswer(invocation -> refusedAfterFinding(invocation.getArgument(4), refusal));
+            entries.clear();
+
+            mvc.perform(withIfMatch(delete(ARTIFACT)));
+            mvc.perform(withIfMatch(delete(RELATIONSHIP)));
+
+            assertThat(entries)
+                    .as("both deletes refused with %s", refusal.getClass().getSimpleName())
+                    .hasSize(2)
+                    .allSatisfy(entry -> {
+                        assertThat(entry.outcome()).startsWith("refused:");
+                        assertThat(entry.revisionBefore())
+                                .as("the revision the service found")
+                                .isEqualTo(BEFORE.token());
+                        assertThat(entry.revisionAfter())
+                                .as("nothing moved, so the pack is as it was")
+                                .isEqualTo(BEFORE.token());
+                    });
+        }
+    }
+
+    @Test
+    void aDeleteRefusedBeforeTheServiceReadTheRevisionEntersNoRevision() throws Exception {
+        artifactRemovalAnswers(new PreconditionException(PreconditionException.Kind.MISSING, "Required."));
+
+        mvc.perform(withIfMatch(delete(ARTIFACT))).andExpect(status().is(428));
+
+        assertThat(entries).singleElement().satisfies(entry -> {
+            assertThat(entry.revisionBefore()).isEmpty();
+            assertThat(entry.revisionAfter()).isEmpty();
+        });
+    }
+
+    /** What the services do on a refusal after the If-Match check: tell the trail what was found, then refuse. */
+    private static Object refusedAfterFinding(RevisionTrail trail, Throwable refusal) throws Throwable {
+        trail.found(BEFORE);
+        throw refusal;
+    }
 }

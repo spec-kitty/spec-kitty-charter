@@ -56,11 +56,23 @@ final class PackRemovalController {
         return noContent(revision);
     }
 
-    /** The revisions the removal found and left, entered in the audit entry of the request (NFR-010). */
+    /**
+     * The revisions the removal found and left, entered in the audit entry of the request (NFR-010). The revision found
+     * is entered as soon as the service has read it, so a removal refused after that (409, 412, 422) still carries it;
+     * the revision left is entered only when the pack moved.
+     */
     private static RevisionTrail trailOf(AuditContext audit) {
-        return (before, after) -> {
-            audit.revisionBefore(before.token());
-            audit.revisionAfter(after.token());
+        return new RevisionTrail() {
+            @Override
+            public void found(PackRevision before) {
+                audit.revisionBefore(before.token());
+            }
+
+            @Override
+            public void moved(PackRevision before, PackRevision after) {
+                audit.revisionBefore(before.token());
+                audit.revisionAfter(after.token());
+            }
         };
     }
 
