@@ -3,6 +3,9 @@ package ai.speckitty.charter.deployable;
 import ai.speckitty.charter.packs.application.PackArchiveReader;
 import ai.speckitty.charter.packs.application.PackSourceFetcher;
 import ai.speckitty.charter.packs.application.PackSourceKind;
+import ai.speckitty.charter.packs.application.PackSourceRequest;
+import ai.speckitty.charter.packs.application.RegistrationJobs.Staged;
+import ai.speckitty.charter.packs.infra.fetch.git.GitVersionCheck;
 import ai.speckitty.charter.packs.application.PackSourceStagers;
 import ai.speckitty.charter.packs.application.PackTreeReader;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
@@ -110,6 +113,39 @@ public class PackSourceWiring {
         ConfigRoot configured = configRoot.getIfAvailable();
         Path config = configured == null ? null : configured.root();
         return new LocalSourceReader(properties.filesystem().root(), config, tree);
+    }
+
+    /**
+     * The git the git source may use, resolved once (NFR-011).
+     *
+     * @param properties the bound source configuration
+     * @return the check; the git source is available only when it is enabled
+     */
+    @Bean
+    GitVersionCheck gitVersionCheck(PackSourceProperties properties) {
+        return GitVersionCheck.resolve(properties.git().executable(), System.getenv("PATH"));
+    }
+
+    /**
+     * The git source (scaffold).
+     *
+     * @param properties the bound source configuration
+     * @param check the resolved git
+     * @return the fetcher
+     */
+    @Bean
+    PackSourceFetcher gitSourceFetcher(PackSourceProperties properties, GitVersionCheck check) {
+        return new PackSourceFetcher() {
+            @Override
+            public PackSourceKind kind() {
+                return PackSourceKind.GIT;
+            }
+
+            @Override
+            public Staged fetch(PackSourceRequest request, Path directory) {
+                throw new IllegalStateException("not built");
+            }
+        };
     }
 
     /**
