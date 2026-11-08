@@ -104,7 +104,8 @@ public final class ArtifactRemovalService {
      * @param kindToken the kind's token as the request names it
      * @param artifactId the artifact's id
      * @param ifMatch the {@code If-Match} precondition, required
-     * @param trail told, once, when the removal changed the pack; never told of a refusal
+     * @param trail told the stored revision once the {@code If-Match} check has read it, and once more when the removal
+     *     changed the pack; a refusal never tells it a move
      * @return the revision after the removal
      * @throws CharterRefusal as for {@link #remove(PackIdentifier, String, String, String)}
      * @throws ai.speckitty.charter.kernel.transport.PreconditionException {@code MISSING} (428) or {@code STALE} (412)
@@ -123,7 +124,7 @@ public final class ArtifactRemovalService {
             PackIdentifier pack, String kindToken, String artifactId, @Nullable String ifMatch, RevisionTrail trail) {
         Pack current = packs.load(pack);
         Urn artifact = requireHeld(current, pack, kindToken, artifactId);
-        PackRevision before = RemovalPrecondition.require(store, pack, ifMatch);
+        PackRevision before = RemovalPrecondition.require(store, pack, ifMatch, trail);
         List<Relationship> registered = store.registeredRelationships(pack);
         List<Relationship> outgoing =
                 registered.stream().filter(edge -> edge.from().equals(artifact)).toList();

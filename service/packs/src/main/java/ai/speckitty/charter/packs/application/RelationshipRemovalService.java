@@ -77,7 +77,8 @@ public final class RelationshipRemovalService {
      * @param from one end
      * @param to the other end
      * @param ifMatch the {@code If-Match} precondition, required
-     * @param trail told, once, when the removal changed the pack; never told of a refusal
+     * @param trail told the stored revision once the {@code If-Match} check has read it, and once more when the removal
+     *     changed the pack; a refusal never tells it a move
      * @return the revision after the removal
      * @throws CharterRefusal as for {@link #remove(PackIdentifier, PackQualifiedReference, PackQualifiedReference,
      *     String)}
@@ -104,7 +105,7 @@ public final class RelationshipRemovalService {
             @Nullable String ifMatch,
             RevisionTrail trail) {
         Pack current = packs.load(pack);
-        PackRevision before = RemovalPrecondition.require(store, pack, ifMatch);
+        PackRevision before = RemovalPrecondition.require(store, pack, ifMatch, trail);
         List<Relationship> registered = store.registeredRelationships(pack);
         List<Relationship> named =
                 registered.stream().filter(edge -> names(edge, from, to)).toList();
