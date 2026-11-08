@@ -1052,6 +1052,9 @@
     If-Match precondition, so a re-send of an archive with the same version after a per-artifact PUT
     moved the revision is 409, not 412; the 412 race needs a new version. A history entry that the
     service restores after a repair carries the time of the repair, not of the lost registration.
+    The service restores the stored pair only when the history has no entry for the stored
+    pack_version: a per-artifact write moves the revision without registering anything, so a version
+    registered with revision A stays restorable with A after a PUT moved the stored revision.
   rationale: >-
     A version that names content must keep naming it, or a client that pins a version reads
     different packs under one label.

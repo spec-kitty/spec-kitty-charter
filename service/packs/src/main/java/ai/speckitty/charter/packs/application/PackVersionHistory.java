@@ -86,4 +86,21 @@ public final class PackVersionHistory {
         next.add(entry);
         return List.copyOf(next);
     }
+
+    /**
+     * The history with the pair the stored pack has now, put back when the history knows nothing of that
+     * {@code pack_version}: a registration whose entry was never published (the process died between its swap and the
+     * publish). A history that already holds the version is returned as it is, whatever revision the stored pack has: a
+     * per-artifact write moves the stored revision without registering anything, so its revision is no registration of
+     * the version, and recording it would put a second revision under the label and make the label unrestorable.
+     *
+     * @param history the history
+     * @param stored the pair the stored pack has now
+     * @return a new list, or the history when it holds the stored pair's {@code pack_version}
+     */
+    public static List<Entry> healed(List<Entry> history, Entry stored) {
+        Objects.requireNonNull(stored, "stored");
+        boolean known = history.stream().anyMatch(entry -> entry.packVersion().equals(stored.packVersion()));
+        return known ? history : appended(history, stored);
+    }
 }

@@ -252,7 +252,9 @@ other callers get `503`. This is a known limit, accepted for this release.
   a per-artifact `PUT` moved the revision, answers `409 pack_version_conflict`, not `412`. The `412` race needs a new
   version.
 - When the service restores a lost history entry, the entry carries the time of the repair, not of the lost
-  registration.
+  registration. It restores only a `pack_version` the history does not hold at all: a per-artifact `PUT` that moved the
+  revision of a version registered earlier does not make that version unrestorable. Send the archive that was
+  registered and it is accepted.
 
 ## What a registration is refused for
 

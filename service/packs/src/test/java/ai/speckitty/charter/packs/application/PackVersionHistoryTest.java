@@ -5,12 +5,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Outcome;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditions;
 import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Packs;
 import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Rig;
 import ai.speckitty.charter.packs.application.PackVersionHistory.Entry;
+import ai.speckitty.charter.packs.domain.Guide;
+import ai.speckitty.charter.packs.domain.Toolguide;
+import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -77,6 +81,21 @@ class PackVersionHistoryTest {
         assertThat(PackVersionHistory.appended(history, entry("3.0.0", "c")))
                 .as("a new version goes last")
                 .containsExactly(entry("1.0.0", "a"), entry("2.0.0", "b"), entry("3.0.0", "c"));
+    }
+
+    @Test
+    void aStoredPairIsHealedInOnlyWhenTheHistoryKnowsNothingOfItsVersion() {
+        List<Entry> history = List.of(entry("1.0.0", "a"));
+
+        assertThat(PackVersionHistory.healed(history, entry("2.0.0", "b")))
+                .as("a lost registration: the version is new to the history")
+                .containsExactly(entry("1.0.0", "a"), entry("2.0.0", "b"));
+        assertThat(PackVersionHistory.healed(history, entry("1.0.0", "moved")))
+                .as("the version is known with another revision: a per-artifact write moved it, nothing was registered")
+                .isSameAs(history);
+        assertThat(PackVersionHistory.healed(history, entry("1.0.0", "a")))
+                .as("the pair is held")
+                .isSameAs(history);
     }
 
     @Test
@@ -214,6 +233,47 @@ class PackVersionHistoryTest {
                         .outcome())
                 .as("the control: the content 2.0.0 had")
                 .isEqualTo(Outcome.REPLACED);
+    }
+
+    @Test
+    void aVersionStaysRestorableAfterAPerArtifactWriteMovedTheRevisionAndAnotherVersionWasRegistered(
+            @TempDir Path host) {
+        Rig rig = new Rig(host);
+        PackIdentifier pack = new PackIdentifier("pack-x");
+        PackRegistrationService.RegistrationOutcome first =
+                rig.register("pack-x", rig.stage(pack("1.0.0", "First")), Preconditions.none());
+        PackRevision moved =
+                rig.writeStore.exclusively(pack, () -> rig.commits.commit(pack, null, toolguide(pack), null));
+        assertThat(moved).as("the per-artifact PUT moved the revision of 1.0.0").isNotEqualTo(first.revision());
+        rig.register("pack-x", rig.stage(pack("2.0.0", "Second")), Preconditions.none());
+
+        assertThat(rig.commits.versionHistory("pack-x"))
+                .extracting(Entry::packVersion, Entry::revision)
+                .as("1.0.0 keeps the revision it was registered with: the moved one is no registration of it")
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple(
+                                "1.0.0", first.revision().token()),
+                        org.assertj.core.groups.Tuple.tuple(
+                                "2.0.0", rig.writeStore.currentRevision(pack).token()));
+        assertThat(rig.register("pack-x", rig.stage(pack("1.0.0", "First")), Preconditions.none())
+                        .outcome())
+                .as("the content 1.0.0 was registered with is accepted again")
+                .isEqualTo(Outcome.REPLACED);
+        assertThat(refusalOf(() -> rig.register("pack-x", rig.stage(pack("1.0.0", "Other")), Preconditions.none())))
+                .as("the control: other content under 1.0.0 is still refused")
+                .isEqualTo(RefusalCode.PACK_VERSION_CONFLICT);
+    }
+
+    private static Toolguide toolguide(PackIdentifier pack) {
+        return Toolguide.builder()
+                .id(new ToolguideIdentifier("fd"))
+                .packId(pack)
+                .schemaVersion("1.0")
+                .tool("ripgrep")
+                .title("Use ripgrep")
+                .guide(Guide.of("How to use the tool."))
+                .summary("How to search.")
+                .build();
     }
 
     @Test
