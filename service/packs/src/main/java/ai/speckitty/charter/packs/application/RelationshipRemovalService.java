@@ -9,6 +9,7 @@ import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackRepository;
+import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -39,12 +40,15 @@ public final class RelationshipRemovalService {
      *
      * @param packs loads the pack
      * @param store locks and swaps
+     * @param gate the mutability gate consulted before the edge goes
      * @param impact the impact check
      */
     @Autowired
-    public RelationshipRemovalService(PackRepository packs, PackRemovalStore store, RegistrationImpact impact) {
+    public RelationshipRemovalService(
+            PackRepository packs, PackRemovalStore store, WritePolicyGate gate, RegistrationImpact impact) {
         this.packs = Objects.requireNonNull(packs, "packs");
         this.store = Objects.requireNonNull(store, "store");
+        Objects.requireNonNull(gate, "gate");
         this.impact = Objects.requireNonNull(impact, "impact");
     }
 
