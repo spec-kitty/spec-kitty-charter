@@ -1,7 +1,7 @@
 {
-  "event_count": 235,
-  "last_event_id": "01M6X1X9XJVRTEBTG6CRGP0PQM",
-  "materialized_at": "2026-11-08T07:45:33.606766+00:00",
+  "event_count": 236,
+  "last_event_id": "01M6X2BATPG206QA5A56XN67GE",
+  "materialized_at": "2026-11-08T07:53:13.302731+00:00",
   "mission_number": "",
   "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
   "mission_type": "",
@@ -12,8 +12,8 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 0,
-    "in_progress": 1,
+    "for_review": 1,
+    "in_progress": 0,
     "in_review": 0,
     "planned": 9
   },
@@ -704,9 +704,9 @@
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
       "implementer_of_record": "claude:sonnet:java-jenny",
-      "lane": "in_progress",
-      "last_event_id": "01M6X1X9XJVRTEBTG6CRGP0PQM",
-      "last_transition_at": "2026-11-08T07:45:33.606766+00:00",
+      "lane": "for_review",
+      "last_event_id": "01M6X2BATPG206QA5A56XN67GE",
+      "last_transition_at": "2026-11-08T07:53:13.302731+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "Docs, divergences DIV-601..613, notice WARN, relationship DELETE gate and qualified compare; verifyAll and docs checks green"
@@ -723,10 +723,10 @@
       "shell_pid": null,
       "shell_pid_created_at": null,
       "subtasks": {
-        "T099": "planned",
-        "T100": "planned",
-        "T101": "planned",
-        "T102": "planned"
+        "T099": "done",
+        "T100": "done",
+        "T101": "done",
+        "T102": "done"
       }
     },
     "WP21": {
