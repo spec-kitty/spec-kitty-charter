@@ -348,7 +348,9 @@ class HttpsArchiveFetcherTest {
                         "digest_mismatch",
                         "name_mismatch",
                         "source_malformed",
-                        "path_refused");
+                        "path_refused",
+                        "bad_ref",
+                        "commit_mismatch");
     }
 
     @Test
