@@ -2,7 +2,8 @@ title: SkippedReport
 description: >-
   What a cascade or the effective set left out, and why (ADR-0013 D4, ADR-0020 D6). Every list may be empty, and each
   is sorted by kind and id, so the answer is byte-stable. At read (getActivationSkippedReport, and the skipped of an
-  action context) each artifact that is not in force appears once, in the bucket of the first rule that decided it;
+  action context) each artifact that is not in force appears once, in the bucket of the first rule that decided it (a
+  required or locked artifact that the enhancer rule or the binding prunes, once, in requiredNotInForce);
   denyNotApplied and overrideNotApplied list rules that were not applied, not artifacts out of force. A write's
   ActivationChange.skipped answers the read buckets as [].
 type: object
@@ -171,7 +172,8 @@ properties:
       $ref: RequiredNotInForce.yaml
     description: >-
       The required artifacts that cannot stand in force: an enhancer none of whose targets is in force, or an artifact
-      bound to a mission type not in force. Each is also out of force in the list, with required true.
+      bound to a mission type not in force. Each is also out of force in the list, with required true. Such an artifact
+      is listed once, here, and not again in enhancedTargetNotInForce or missionTypeNotInForce.
     x-derived:
       rule: The required artifacts kept out by the enhancer rule or by the mission type binding.
       inputs:

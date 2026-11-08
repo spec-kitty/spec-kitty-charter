@@ -1,7 +1,7 @@
 description: >-
   A deactivation the pack policy forbids, refused with 409: by a deactivate, or by a document that holds a deny
   entry on an artifact a pack requires (artifact_required) or locks (artifact_locked). Nothing is stored. requiredBy
-  names every requiring or locking pack (ADR-0020 D9, D10).
+  names every requiring or locking pack (ADR-0020 D9, D10). The requirement of a governing preset id is the union, across the levels (built-in, org, project), of the must-have items of the copy in force at each level. Within one level the copy of the pack last in closure order replaces the others, a child pack's copy its parent's, and a replaced copy requires nothing. A deny of an artifact only an earlier level's copy requires, which a later level's copy replaced, is 409 artifact_required naming that earlier level's pack.
 headers:
   Charter-Contract-Version:
     $ref: ../headers/CharterContractVersion.yaml

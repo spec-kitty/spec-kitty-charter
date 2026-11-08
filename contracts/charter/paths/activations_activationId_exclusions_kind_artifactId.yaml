@@ -13,7 +13,7 @@ put:
     artifact a pack requires or locks: it is kept, with what it reaches, and a selected one the cascade reached is
     reported in skippedShared when another active artifact still references it, named by that artifact; one only the
     floor keeps is not reported. A named artifact a pack requires or locks is 409, naming every requiring pack, and
-    nothing is stored; only the deny entry the write adds is judged against that floor, so a stored one a pack
+    nothing is stored (A1: The requirement of a governing preset id is the union, across the levels (built-in, org, project), of the must-have items of the copy in force at each level. Within one level the copy of the pack last in closure order replaces the others, a child pack's copy its parent's, and a replaced copy requires nothing. A deny of an artifact only an earlier level's copy requires, which a later level's copy replaced, is 409 artifact_required naming that earlier level's pack.); only the deny entry the write adds is judged against that floor, so a stored one a pack
     upgrade put on it is tolerated (ADR-0059 D4). Requires If-Match (ADR-0020 D6), the quoted revision or the current getActivation tag (a closure tag that no longer matches is 412; the answer keeps the revision as its ETag). An If-Match that is neither * nor one quoted sha256 tag (the revision or the getActivation tag) breaks its pattern and is 400 before anything
     else is judged. Then the preconditions, in this order: 428 without If-Match, 404 activation_not_found, 412 when
     stale; each comes before any 422, a fault of the body included. A cascading deactivate removes the reached artifacts from selected only where the kind holds a list; an absent

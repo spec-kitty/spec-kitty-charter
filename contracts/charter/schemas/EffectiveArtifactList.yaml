@@ -38,12 +38,16 @@ properties:
     allOf:
     - $ref: Sha256Digest.yaml
     description: >-
-      The source fingerprint, as ServiceInfo.sourceFingerprint, of the packs of the activation's closure that this
-      answer was computed from; with revision, it ties the answer to both the document and the packs.
+      The charter-closure/v1 digest of the packs of the activation's closure alone: the configured id and level of each
+      closure pack and the files of those packs, taken in the same consistent read as the answer. It is not
+      ServiceInfo.sourceFingerprint and not the Charter-Source-Fingerprint header, which digest the whole source; a
+      change to a pack outside the closure leaves it unchanged. With revision, it ties the answer to both the document
+      and the packs of its closure.
     x-derived:
-      rule: The source fingerprint of the packs the answer was computed from.
+      rule: sha256 of "charter-closure/v1", the configured id and level of each pack of the activation's closure, and
+        those packs' files; the packs outside the closure are not read into it.
       inputs:
-      - schemas/ServiceInfo.yaml#/properties/sourceFingerprint
+      - schemas/ActivationConfig.yaml
   summary:
     $ref: ActivationSummary.yaml
   items:

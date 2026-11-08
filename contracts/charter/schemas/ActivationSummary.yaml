@@ -21,7 +21,9 @@ properties:
   inactive:
     type: integer
     minimum: 0
-    description: Artifacts the offering holds that are not in force.
+    description: >-
+      Artifacts the offering holds that are not in force and not excluded, a denied artifact that the enhancer or binding
+      rule prunes included.
     x-derived:
       rule: The count in state inactive.
       inputs:
@@ -29,7 +31,9 @@ properties:
   excluded:
     type: integer
     minimum: 0
-    description: Artifacts deactivated by the document.
+    description: >-
+      Artifacts deactivated by the document, those whose reason is deactivated. A denied artifact that the enhancer
+      rule or the mission type binding prunes is inactive, not excluded (E9).
     x-derived:
       rule: The count in state excluded.
       inputs:
@@ -59,7 +63,9 @@ properties:
   skipped:
     type: integer
     minimum: 0
-    description: Entries across the buckets of the skipped report.
+    description: >-
+      Entries across the buckets of the skipped report. Each artifact is counted once: a required or locked artifact
+      that the enhancer rule or the binding prunes is listed in requiredNotInForce only.
     x-derived:
       rule: The count of entries of the skipped report.
       inputs:

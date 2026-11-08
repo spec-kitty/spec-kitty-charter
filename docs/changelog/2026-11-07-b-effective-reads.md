@@ -18,29 +18,35 @@ audience:
 
 # 2026-11-07 — Layer merge and effective reads (PR B)
 
-PR B of the layer-merge mission builds the read side. Divergences: DIV-216 to DIV-237
-([register](/conformance/divergence-register/)). Contract: the `2026-11-07-b-*.md` and `2026-11-08-b-*.md` fragments.
-The file is dated with the mission's PR B, as the PR A page is; it landed on 2026-11-08.
+PR B builds the read side. Divergences: DIV-216 to DIV-237 ([register](/conformance/divergence-register/)). Contract: the
+`2026-11-07-b-*.md` and `2026-11-08-b-*.md` fragments.
 
-- **Layer merge.** The version from the level that applies replaces the artifact whole, and #357's settlement puts the
-  named member's version in force. See [Resolution model](/architecture/resolution-model/#the-layer-merge).
-- **Two reads answer.** `listEffectiveArtifacts` and `getActivationSkippedReport` no longer answer `501`. What is in
-  force is four strata to a fixed point; the list carries the state and reason of each artifact, the report a typed
-  bucket. The graph and the action context are PR C.
-- **Writes.** `warnings` on a write, `activationsAffected` on a registration, and a cascade that walks the merged edges.
-  A write over a closure that does not merge answers `500` (`pack_unreadable` or `pack_sibling_conflict`), a response the
-  write paths already declare (`2026-11-08-b-write-cascade-merged-edges.md`).
+- **Layer merge.** The version from the level that applies replaces the artifact whole
+  ([Resolution model](/architecture/resolution-model/#the-layer-merge)).
+- **Two reads answer.** `listEffectiveArtifacts` and `getActivationSkippedReport` no longer answer `501`.
+- **Writes.** `warnings` on a write, `activationsAffected` on a registration, and a cascade over the merged edges.
 - **Tags.** Each read's `ETag` names one representation and the closure. `If-Match` takes either tag.
 
 ## Breaking
 
 - `EffectiveArtifact` gains the required `packId` and `level`; `EffectiveArtifactReason` loses `kind_default` and
-  `kind_not_activated`.
-- `SkippedReport` gains ten required buckets, and `ActivationChange` the required `warnings`. `Activation` gains
-  `denyNotApplied` and `PackRegistrationNotices` gains `activationsAffected`, both optional.
-- The `ETag` of `getActivation` is no longer the revision: it covers the revision and the closure's packs, and the
-  read can answer `500`. A write's `If-Match` takes the revision or that tag; a stale closure tag is `412`.
-- **From PR A.** Create and replace now refuse a wrong-type scalar and a duplicate member with `422`; they were coerced
-  or last-wins before.
+  `kind_not_activated`. `SkippedReport` gains ten required buckets, `ActivationChange` the required `warnings`;
+  `Activation` gains `denyNotApplied` and the notices `activationsAffected`, both optional.
+- The `ETag` of `getActivation` covers the revision and the closure's packs, and the read can answer `500`. A write's
+  `If-Match` takes the revision or that tag; a stale closure tag is `412`.
+- **The A1 floor in writes and notices** (`2026-11-08-b-a1-floor-in-writes.md`). The floor is the union, across the
+  levels, of the must-have items of the copy in force at each level. A deny of an artifact only an earlier level's copy
+  requires is `409 artifact_required` (it was `200`), and `floorAdded` and `floorRemoved` follow the rule (DIV-204).
+- **Reclassified from PR A.** Create and replace refuse a wrong-type scalar and a duplicate member with `422`
+  (`2026-11-08-b-activation-body-strictness-breaking.md`).
 
-Core must regenerate its strict DTOs first. Nothing is edited or filed in core (C-003).
+## Changed
+
+- `warnings` name additions only; an unselect, a deny and a reactivation never warn
+  (`2026-11-08-b-warnings-on-additions.md`, DIV-237).
+- A pruned required or locked artifact is skipped once, in `requiredNotInForce` (same fragment, DIV-228).
+- `activationsAffected` counts a change of the version in force
+  (`2026-11-08-b-affected-activations-follow-the-winner.md`).
+- The facts cache keys on a path-inclusive digest, so a rename misses (DIV-236).
+
+Core must regenerate its strict DTOs first. Nothing is edited in core (C-003).
