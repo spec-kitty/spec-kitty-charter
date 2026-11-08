@@ -70,7 +70,7 @@ public final class LayerMerge {
                 overrides.add(overrideOf(urn, winner, loser));
             }
         });
-        return new MergedClosure(winners, overrides);
+        return new MergedClosure(winners, overrides, Map.of(), new RequiredFloor(Map.of()));
     }
 
     /**

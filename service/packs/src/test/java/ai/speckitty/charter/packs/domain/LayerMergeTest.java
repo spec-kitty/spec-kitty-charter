@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
@@ -35,7 +36,7 @@ class LayerMergeTest {
     static final class Fixture {
 
         private final List<PackUnderResolution> packs = new ArrayList<>();
-        private final Map<String, PackCompositionFacts> facts = new HashMap<>();
+        private final Map<String, List<Preset>> presets = new HashMap<>();
         private final Map<String, MutabilityPolicySource> policies = new HashMap<>();
 
         Fixture pack(String name, PackLevel level, String... held) {
@@ -55,7 +56,11 @@ class LayerMergeTest {
                     overrides);
             packs.add(new PackUnderResolution(
                     new ConfiguredPack(new PackIdentifier(name), level), descriptor, List.of(), Arrays.asList(held)));
-            facts.put(name, new PackCompositionFacts(List.of(), Arrays.asList(held), List.of()));
+            return this;
+        }
+
+        Fixture preset(String name, Preset preset) {
+            presets.computeIfAbsent(name, ignored -> new ArrayList<>()).add(preset);
             return this;
         }
 
@@ -69,6 +74,18 @@ class LayerMergeTest {
         }
 
         MergedClosure merge() {
+            Map<String, PackCompositionFacts> facts = new HashMap<>();
+            for (PackUnderResolution pack : packs) {
+                String name = pack.configured().id().value();
+                facts.put(
+                        name,
+                        new PackCompositionFacts(
+                                List.of(),
+                                pack.definedArtifacts(),
+                                List.of(),
+                                MutabilityPolicySource.empty(),
+                                presets.getOrDefault(name, List.of())));
+            }
             return LayerMerge.merge(closure(), facts, new PerPackPolicy(policies));
         }
     }
@@ -124,7 +141,24 @@ class LayerMergeTest {
                         "C21",
                         "a third pack that raised the level refuses the override",
                         LayerMergeTest::c21RaisedByAnotherPack),
-                new Row("C22", "the policy of the closure is each winner's policy", LayerMergeTest::c22));
+                new Row("C22", "the policy of the closure is each winner's policy", LayerMergeTest::c22),
+                new Row(
+                        "C29",
+                        "the copy of a preset id held last in merge order is the one applied",
+                        LayerMergeTest::c29),
+                new Row(
+                        "C31",
+                        "a project copy without the org's must-have items does not drop them (A1)",
+                        LayerMergeTest::c31Union),
+                new Row(
+                        "C31",
+                        "a requirement only tightens: a convenience copy adds none and drops none",
+                        LayerMergeTest::c31Tighten),
+                new Row(
+                        "C31",
+                        "a must-have item no pack holds is reported, never required (A10)",
+                        LayerMergeTest::c31Unheld),
+                new Row("C31", "a mission type is a must-have item like any other", LayerMergeTest::c31MissionType));
     }
 
     @ParameterizedTest(name = "{0}")
@@ -307,6 +341,87 @@ class LayerMergeTest {
         assertThat(winner(merged, urn("directive:E")).policy())
                 .isEqualTo(new PerPackPolicy.Level(MutabilityLevel.LOCKED, Optional.of(packId("builtin"))));
         assertThat(winner(merged, urn("directive:D")).policy()).isEqualTo(PerPackPolicy.Level.OPEN);
+    }
+
+    private static Preset preset(String id, String... mustHave) {
+        return new Preset(
+                id,
+                "a preset",
+                Map.of(
+                        ArtifactKind.DIRECTIVE,
+                        Arrays.stream(mustHave).map(PresetItem::mustHave).toList()));
+    }
+
+    private static Preset convenience(String id, String directive) {
+        return new Preset(id, "a preset", Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.of(directive))));
+    }
+
+    private static void c29() {
+        MergedClosure merged = new Fixture()
+                .pack("org", PackLevel.ORG, "directive:A")
+                .pack("project", PackLevel.PROJECT, "directive:B")
+                .preset("org", preset("team", "A"))
+                .preset("project", preset("team", "B"))
+                .merge();
+
+        assertThat(merged.presets()).containsOnlyKeys("team");
+        assertThat(merged.presets().get("team").descriptorPackId()).isEqualTo(packId("project"));
+        assertThat(merged.presets().get("team").preset()).isEqualTo(preset("team", "B"));
+    }
+
+    private static void c31Union() {
+        MergedClosure merged = new Fixture()
+                .pack("org", PackLevel.ORG, "directive:A", "directive:B")
+                .pack("project", PackLevel.PROJECT, "directive:C")
+                .preset("org", preset("team", "A", "B"))
+                .preset("project", preset("team", "C"))
+                .merge();
+
+        assertThat(merged.presets().get("team").mustHave())
+                .containsExactly(urn("directive:A"), urn("directive:B"), urn("directive:C"));
+        assertThat(merged.floor().requiredBy())
+                .containsOnlyKeys(urn("directive:A"), urn("directive:B"), urn("directive:C"));
+        assertThat(merged.floor().requiringPacks(urn("directive:A"))).containsExactly(packId("org"));
+        assertThat(merged.floor().requiringPacks(urn("directive:C"))).containsExactly(packId("project"));
+    }
+
+    private static void c31Tighten() {
+        MergedClosure merged = new Fixture()
+                .pack("org", PackLevel.ORG, "directive:A", "directive:D")
+                .pack("project", PackLevel.PROJECT, "directive:B")
+                .preset("org", preset("team", "A"))
+                .preset("project", convenience("team", "D"))
+                .merge();
+
+        assertThat(merged.presets().get("team").preset()).isEqualTo(convenience("team", "D"));
+        assertThat(merged.floor().requiredBy())
+                .as("the winning copy requires nothing, and the org's requirement stays")
+                .containsOnlyKeys(urn("directive:A"));
+    }
+
+    private static void c31Unheld() {
+        MergedClosure merged = new Fixture()
+                .pack("org", PackLevel.ORG, "directive:A")
+                .preset("org", preset("team", "A", "GONE"))
+                .merge();
+
+        assertThat(merged.floor().requiredBy()).containsOnlyKeys(urn("directive:A"));
+        assertThat(merged.floor().unheld()).containsOnlyKeys(urn("directive:GONE"));
+        assertThat(merged.presets().get("team").mustHave()).containsExactly(urn("directive:A"), urn("directive:GONE"));
+    }
+
+    private static void c31MissionType() {
+        MergedClosure merged = new Fixture()
+                .pack("org", PackLevel.ORG, "mission_type:M")
+                .preset(
+                        "org",
+                        new Preset(
+                                "team",
+                                "a preset",
+                                Map.of(ArtifactKind.MISSION_TYPE, List.of(PresetItem.mustHave("M")))))
+                .merge();
+
+        assertThat(merged.floor().requiredBy()).containsOnlyKeys(urn("mission_type:M"));
     }
 
     @Test

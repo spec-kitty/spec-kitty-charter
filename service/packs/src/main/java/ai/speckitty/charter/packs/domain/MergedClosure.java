@@ -18,11 +18,44 @@ import java.util.Optional;
  * @param winners each held URN with the version in force, in the order the closure first holds the URNs
  * @param layerOverrides every version a later level replaced, in the order the closure first holds the artifacts and,
  *     per artifact, from the nearest built-in level to the farthest
+ * @param presets each preset id once, with the copy in force and the must-have items of every copy (A1, rule C31)
+ * @param floor the must-have items of every copy of every governing preset that the merged closure holds, with the
+ *     requiring packs; the items it holds no version of are in its {@link RequiredFloor#unheld()} report (A10)
  */
-public record MergedClosure(Map<Urn, Winner> winners, List<LayerOverride> layerOverrides) {
+public record MergedClosure(
+        Map<Urn, Winner> winners,
+        List<LayerOverride> layerOverrides,
+        Map<String, MergedPreset> presets,
+        RequiredFloor floor) {
 
-    /** A closure that holds nothing: no winner and no override. */
-    public static final MergedClosure EMPTY = new MergedClosure(Map.of(), List.of());
+    /** A closure that holds nothing: no winner, no override, no preset. */
+    public static final MergedClosure EMPTY =
+            new MergedClosure(Map.of(), List.of(), Map.of(), new RequiredFloor(Map.of()));
+
+    /**
+     * A preset id as the merge answers it (ADR-0053 d6, A1): the copy in force, and the requirement that only ever
+     * tightens, computed beside the winner.
+     *
+     * @param preset the copy held by the last pack in closure order, the one applied
+     * @param descriptorPackId the {@code pack_id} of the pack that holds the copy in force
+     * @param mustHave the must-have items of every copy of the id across levels, each once, in closure order; items no
+     *     pack holds included (the floor reports those)
+     */
+    public record MergedPreset(Preset preset, String descriptorPackId, List<Urn> mustHave) {
+
+        /**
+         * Checks and copies the fields.
+         *
+         * @param preset the copy in force
+         * @param descriptorPackId the holding pack
+         * @param mustHave the union of the must-have items
+         */
+        public MergedPreset {
+            Objects.requireNonNull(preset, "preset");
+            Objects.requireNonNull(descriptorPackId, "descriptorPackId");
+            mustHave = List.copyOf(Objects.requireNonNull(mustHave, "mustHave"));
+        }
+    }
 
     /**
      * The version of an artifact in force.
@@ -60,10 +93,14 @@ public record MergedClosure(Map<Urn, Winner> winners, List<LayerOverride> layerO
      *
      * @param winners each held URN with its winner
      * @param layerOverrides every replaced version
+     * @param presets each preset id with its merged requirement
+     * @param floor the floor over every copy of every governing preset
      */
     public MergedClosure {
         winners = Collections.unmodifiableMap(new LinkedHashMap<>(Objects.requireNonNull(winners, "winners")));
         layerOverrides = List.copyOf(Objects.requireNonNull(layerOverrides, "layerOverrides"));
+        presets = Collections.unmodifiableMap(new LinkedHashMap<>(Objects.requireNonNull(presets, "presets")));
+        Objects.requireNonNull(floor, "floor");
     }
 
     /**
