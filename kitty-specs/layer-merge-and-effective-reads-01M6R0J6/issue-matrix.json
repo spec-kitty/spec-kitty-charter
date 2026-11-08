@@ -275,6 +275,18 @@
       "title": null,
       "verdict": "in-mission",
       "wp": null
+    },
+    "#423": {
+      "evidence_ref": "A pull request, not an issue: it merged the #418 follow-ups to main (dabf5093), which the planning branch is rebased onto; it carries no work for this mission",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
     }
   },
   "schema_version": 1
