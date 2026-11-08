@@ -40,13 +40,17 @@ import org.springframework.test.web.servlet.MockMvc;
             "charter.pack-sources.git.allowed-hosts=git.example.org"
         })
 @AutoConfigureMockMvc
-public class CucumberSpringConfiguration {
+public final class CucumberSpringConfiguration {
 
     /**
      * One name per JVM, so that two suites on one machine (two worktrees) never share a staging directory or a filesystem
      * source root: the steps empty the root before and after each scenario, which would delete the other suite's packs.
      */
     private static final String RUN = UUID.randomUUID().toString();
+
+    private CucumberSpringConfiguration() {
+        // Only annotations and static members: Cucumber and Spring read the class, they do not construct it.
+    }
 
     /**
      * The registration staging directory and the filesystem source root: under the temporary directory, never the user's
