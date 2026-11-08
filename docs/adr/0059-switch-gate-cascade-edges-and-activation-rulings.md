@@ -2,7 +2,7 @@
 title: "ADR-0059: The switch gate, the cascade edges, the layer-override grain and the activation write rulings"
 description: "Operator rulings of 2026-11-04 to 2026-11-07: BDD scenarios and contract tests gate each core switch; cascade edges; whole-artifact layer overrides; ADR-0020 questions 4 to 7."
 doc_status: active
-updated: 2026-11-07T00:00:00Z
+updated: 2026-11-08T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-11-04'
 type: ADR
@@ -37,7 +37,9 @@ or changed this record's defaults, ruled the questions it had left open and rule
 [amendment](#amendment-2026-11-06) below records it, and each amended decision points there.
 On 2026-11-07 the layer-merge mission's PR A0 built the rulings that change what #399 shipped (ruleset review A4, B1 and
 B5), the one kind model (A7) and a `depth` on the cascade (#408); the [amendment of 2026-11-07](#amendment-2026-11-07)
-records them, and D2, D4 and D6 carry a note where it changes them.
+records them, and D2, D4 and D6 carry a note where it changes them. On 2026-11-08 the mission's PR B built the layer
+merge and two effective reads; the [amendment of 2026-11-08](#amendment-2026-11-08) records the two operator decisions
+that change D5 and ticks the follow-ups PR B closes.
 
 This record answers [ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/) open question 1 and
 [ADR-0020](/adr/0020-offering-and-activations/) open questions 4 to 7. It also settles two points that
@@ -201,7 +203,9 @@ the offering has not made stale; ADR-0020 D6 carries a note.
   effective read carries it is settled with the contract change in #291. `governanceFingerprint` leaves
   `Activation`; the effective reads already carry it (it follows the offering, so the strong `ETag` would not otherwise
   match the bytes). The answer's bytes then depend only on the stored document, and its strong `ETag`
-  is the revision.
+  is the revision. *Amended 2026-11-08: `getActivation` carries `denyNotApplied`, which depends on the packs, so its
+  strong `ETag` covers the revision and the closure's `governanceFingerprint`. See the
+  [amendment](#amendment-2026-11-08).*
 - `getActivation` and the four effective reads, `listEffectiveArtifacts`, `getActivationSkippedReport`,
   `getEffectiveGraph` and `getEffectiveActionContext`, are to declare `If-None-Match` and `304 Not Modified` in the
   contract change; today only `getOpenApiDocument` declares them. An effective read's `ETag` covers the revision and
@@ -297,8 +301,8 @@ replace round trip, where A4 above is `enhances`. The contract changes are the `
   to recover. `replaceActivation`, the four per-artifact writes and `applyActivationPreset` drop a pin no pack of the
   closure holds and report it in `droppedPins` (`ActivationChange.droppedPins`, and `Activation.droppedPins` on a
   replace answer), so a pack upgrade never leaves an activation that only a full `PUT` can repair. `createActivation`
-  keeps `422 version_not_held` for a pin in its own body, an input error. The reads' half (`pinNotHeld`) is planned
-  for PR B. DIV-209.
+  keeps `422 version_not_held` for a pin in its own body, an input error. The reads' half (`pinNotHeld`) is built
+  in PR B (2026-11-08). DIV-209.
 - **A7. One kind model, Q1 to Q4.** Decisions `DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY`, `DM-01M6RCXTS0SMDNTWZ8G7GJ2P5S` (Q1),
   `DM-01M6RCXZ9HSHT4K3443YYZ8ZFC` (Q2), `DM-01M6RCY40CQQTHC130RWF43W0D` (Q3), `DM-01M6RCY8MYNGNPJ247M2Y4880N` (Q4).
   It supersedes the kind gate that D2.2 bounded the pull by, and refines D2 and D6.
@@ -321,7 +325,8 @@ replace round trip, where A4 above is `enhances`. The contract changes are the `
     `selected.mission_type`, every selection is kept, `activatedKinds` is discarded; decision
     `DM-01M6RMJHDKNTXAM055Q8WR6SDN`) and stored as version 2 on the next write (decision `DM-01M6RFGMDH859CJP3RHHF9YC3H`),
     so every revision and `ETag` changes once. DIV-213.
-  - **Reads.** The reasons `kind_not_activated` and `kind_default` go with the effective reads of PR B (FR-022).
+  - **Reads.** The reasons `kind_not_activated` and `kind_default` went with the effective reads of PR B (FR-022;
+    built 2026-11-08, DIV-229).
 - **#408 ruling 1. The write cascade gains `depth`.** Decisions `DM-01M6TDH0SY5Q224GX709DXWG8K`,
   `DM-01M6TF3BA808JMW0W0A0CPXBNW`; built by WP30. It amends D2.1: the cascade keeps its relations with no limit by
   default, and `SelectionRequest` and `ExclusionRequest` take an optional `depth` for iterative deepening.
@@ -351,7 +356,29 @@ replace round trip, where A4 above is `enhances`. The contract changes are the `
   language-neutral, and a read with no activation applies no filtering (FR-013 and FR-017, PR B). A `suggests` edge's
   `when` surfaces as conditional in the effective reads, above all the effective action context: an artifact reached
   only through `suggests` is listed as a suggestion carrying its `when` and `reason`, while one reached through
-  `requires` and the other hard relations stays a plain entry (FR-013 and FR-019, PR B and C). Neither is built.
+  `requires` and the other hard relations stays a plain entry (FR-013 and FR-019, PR B and C). *Built on 2026-11-08
+  for the effective artifact list (PR B); the action context's half is PR C.*
+
+## Amendment 2026-11-08
+
+**Two operator decisions of 2026-11-08 on the layer-merge mission (`layer-merge-and-effective-reads-01M6R0J6`), built by
+its PR B.** They amend D5 as stated; the rest of this record stands. The contract change is the `### Breaking` block of
+`contracts/charter/changes/2026-11-07-b-effective-reads.md`, and the divergences are DIV-231, DIV-233 and DIV-234 of the
+[divergence register](/conformance/divergence-register/).
+
+- **D5. `getActivation`'s `ETag` covers the closure** (decision `01M6Y11E55YP5TG1EJ1MDKCFRP`). `Activation` keeps the
+  `denyNotApplied` of the plan (a stored deny entry the required floor or a lock overrides, judged against the packs of
+  the closure). The answer's bytes then depend on the packs as well as the stored document, so its strong `ETag` is no
+  longer the quoted revision: it is the tag of the revision and the closure's `governanceFingerprint`, the digest of
+  the packs of the activation's closure, as an effective read's tag is. It changes when a pack of the closure changes,
+  and not when a pack outside it does. `getActivation` can answer `500` with a composition code or `pack_unreadable`,
+  and still sends no `Charter-Source-Fingerprint`. `summary` stays out of `Activation`. The effective reads' tags
+  follow D5's first rule and are per representation: `kind`, `state`, the cursor and the page size are part of the
+  digest's input, and the digest is the closure's, no longer `ServiceInfo.sourceFingerprint`.
+- **`If-Match` takes either tag** (decision `01M6Y3GZFRC5WEQQ7G6GT0YMW3`; [ADR-0020](/adr/0020-offering-and-activations/)
+  D6 carries the note). An activation write's `If-Match` is `*`, the quoted revision or the current `getActivation`
+  tag, and a closure tag that no longer matches is `412`. A write's answer keeps the revision as its `ETag` and carries
+  no `denyNotApplied`.
 
 ## Consequences
 
@@ -393,28 +420,35 @@ replace round trip, where A4 above is `enhances`. The contract changes are the `
   `docs/conformance/README.md` (the corpus as what holds the service to core),
   `contracts/charter/scenarios/README.md` (`@provisional`, decided by the corpus) and
   [ADR-0016](/adr/0016-conformance-corpus-harness-over-core-cli/) D4.
-- Add the divergence-register entries for D2.2, D2.4, D3 and D4.
+- Add the divergence-register entries for D2.2, D2.4, D3 and D4. *D3: DIV-216 to DIV-220 (PR B, 2026-11-08).*
 - Change the contract for D5 (`summary` and `governanceFingerprint` leave `Activation`; `If-None-Match` and `304` on
   five operations) and the round-trip text of `contracts/charter/paths/activations_activationId.yaml` for D4.
 - Add the skipped-report bucket or buckets for D4 and a `DiagnosticCode` value for D3's layer-override report, as
   0.x contract changes under [ADR-0022](/adr/0022-contract-versions-start-at-0-x/) in the #291 contract
-  change.
+  change. *Done in PR B (2026-11-08) for the buckets: the skipped report has ten new typed ones (DIV-228). D3's report
+  is the typed `LayerOverride` list that the effective graph carries (PR C), not a `DiagnosticCode` value.*
 - Add the `EffectiveArtifactReason` value for D2.2 (no longer needed: A4 of the 2026-11-06 amendment removes the
   read-time pull) and widen both the description and the `x-derived` rule of
   `SkippedDeactivated.requiredBy`, as 0.x contract changes in the #291 contract change. The same change widens
   `skippedByScope`'s rule to mean outside `activatedKinds` at read and separates it from `kind_not_activated`.
+  *Done in PR B (2026-11-08), as built: with the kind gate gone, `skippedByScope` is always empty at read, and
+  `skippedDeactivated` has `viaRequires` false and `requiredBy` empty at read (DIV-228, DIV-229).*
 - State in the #291 contract change whether `ActivationChange.skipped` includes what the read-time pull skips (moot:
   A4 of the 2026-11-06 amendment removes the read-time pull).
 - Have `getEffectiveGraph` carry the layer-override report in the #291 contract change. `Diagnostic` today describes
   one pack's load, so the contract change either widens its description or adds a schema that carries the report.
 - Update `docs/architecture/offering-and-activation.md` for D2.2, D4 and D5 (the `Activation` example and canonical
-  form, and the cascade text). Include the `docs/development/http-status-codes.md` 304 row, whose Proposed note on an
+  form, and the cascade text). *D5 corrected for the amendment of 2026-11-08 in PR B.* Include the `docs/development/http-status-codes.md` 304 row, whose Proposed note on an
   activation's `ETag` is now decided (D5), in the contract-change follow-up.
 - Note the answer on ADR-0010 and ADR-0021 D5 (done in this change).
-- Build D4 to D6 in #291 and D2 and D3 in #10 and #11.
+- Build D4 to D6 in #291 and D2 and D3 in #10 and #11. *D3 is built in PR B (2026-11-08): the layer merge and the
+  effective list and skipped report.*
 - Amendment of 2026-11-07: PR A0 builds B5, A4, B1, A7 and `depth`; the reads' halves (`pinNotHeld`, the language filter
   at read, the conditional `suggests` entries) are for PRs B and C; the ruleset page's floor and override rules Q6, Q8
-  and Q9 remain the planned amendment A6.
+  and Q9 remain the planned amendment A6. *PR B (2026-11-08) built `pinNotHeld`, the language filter at read, the
+  suggestion on the effective list, and Q6 and Q8. The action context's suggestion and Q9 (a deny entry an override
+  satisfies, the relaxed write rule) are not built.*
+- Amendment of 2026-11-08: amend D5 for the closure tag and ADR-0020 D6 for the either-tag `If-Match` (done here).
 
 ## References
 

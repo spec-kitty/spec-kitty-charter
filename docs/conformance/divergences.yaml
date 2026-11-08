@@ -3,7 +3,7 @@
 # one by one, the context-read and activation entries in a table). DivergenceRegisterTest fails
 # when an id is listed twice here or is on one of the two and not the other. The blocks are pack
 # schemas (DIV-001..099, ADR-0017), context read (DIV-101..110, ADR-0018), activation
-# (DIV-201..215, ADR-0020; DIV-208 withdrawn before it landed, so its id stays taken; DIV-201 and DIV-202 proposed), pack-level files (DIV-301..399, ADR-0042), procedures and
+# (DIV-201..237, ADR-0020; DIV-208 withdrawn before it landed, so its id stays taken; DIV-201 and DIV-202 were proposed until PR B), pack-level files (DIV-301..399, ADR-0042), procedures and
 # toolguide guides (DIV-401..499, ADR-0043), mission types (DIV-501..599, ADR-0044) and registration (DIV-601..699, ADR-0065). Consumers: the
 # conformance gate (#72) and the pack doctor parity test (#115) read this file; a difference from
 # core that is not listed here with status `open` fails them, so a `proposed` entry is not yet
@@ -565,17 +565,18 @@
 - id: DIV-201
   surface: A required or locked artifact under an explicit allow list that omits it, on read
   core: Does not add it under such an allow list; doctor and list warn.
-  service: Keeps it active on read even under an allow list that omits it (ADR-0020 D7).
+  service: >-
+    Keeps it active on read even under an allow list that omits it (ADR-0020 D7). A required one
+    that an active override of it satisfies is satisfied by that override instead (DIV-225).
   rationale: >-
     A required or locked floor is not opt-out: the read keeps it active so the allow list cannot
-    silently drop a required artifact. Proposed with the activation resource; the operation is not
-    built yet, so the gate does not enforce it.
+    silently drop a required artifact. Proposed with the activation resource; open since
+    2026-11-08, when PR B built the effective reads.
   ruling: ADR-0020 (proposed on #123); agreed with core's activation ledger mission 2026-10-20
-  status: proposed
+  status: open
   since: 2026-10-20
   note: >-
-    Page-only until the activation operations are built; recorded here so the page and this file
-    list the same ids. Not enforced by the gate while the status is proposed.
+    Proposed until the effective reads were built (PR B, 2026-11-08), then enforced by the gate.
   evidence:
     - "corpus case: required-under-allow-list"
 
@@ -585,14 +586,13 @@
   service: Derives the required floor from the packs at read time and never stores it (ADR-0020 D4).
   rationale: >-
     Deriving the floor at read time keeps it correct as packs change, rather than freezing a
-    written copy. Proposed with the activation resource; the operation is not built yet, so the
-    gate does not enforce it.
+    written copy. Proposed with the activation resource; open since 2026-11-08, when PR B built
+    the effective reads.
   ruling: ADR-0020 (proposed on #123); agreed with core's activation ledger mission 2026-10-20
-  status: proposed
+  status: open
   since: 2026-10-20
   note: >-
-    Page-only until the activation operations are built; recorded here so the page and this file
-    list the same ids. Not enforced by the gate while the status is proposed.
+    Proposed until the effective reads were built (PR B, 2026-11-08), then enforced by the gate.
   evidence:
     - "corpus case: required-promoted-at-write"
 
@@ -651,9 +651,13 @@
     Requirement is authored as a preset (ADR-0031), and only the packs an activation builds on
     govern it. The closure scope was an assumed default of the mission, and the operator ruled on
     2026-11-06 that it stands.
-  ruling: operator ruling of 2026-11-06 (decision DM-01M6PCWSA65497T9A7J80K6V56 of mission activation-register-and-closure-01M6NXBD had assumed it on 2026-11-05)
+  ruling: operator ruling of 2026-11-06, decision DM-01M6R0TK6F4CC0Z00CZTS21V72 of mission layer-merge-and-effective-reads-01M6R0J6 (ratified; decision DM-01M6PCWSA65497T9A7J80K6V56 of mission activation-register-and-closure-01M6NXBD had assumed it on 2026-11-05)
   status: open
   since: 2026-11-05
+  note: >-
+    Ratified on 2026-11-06, and since 2026-11-08 the effective reads take the floor from the merged
+    closure: the union of the must-have items of every governing copy of a preset id (decision
+    DM-01M6RA7FHRC5K8QPX7KN5FZ4S8, A1).
   evidence:
     - "charter: service/activations/src/main/java/ai/speckitty/charter/activations/domain/ClosureSnapshot.java"
     - "corpus case: floor-closure-scoped"
@@ -877,6 +881,574 @@
     - "charter: contracts/charter/changes/2026-11-07-a0-cascade-depth.md"
     - "charter: contracts/charter/scenarios/activation-cascade-depth.feature (A cascading select at depth 0 selects the target and its hard closure only; A cascading deactivate at depth 1 undoes a cascading select at depth 1; The round trip is not exact when another active artifact suggests a candidate)"
     - "corpus case: cascade-depth"
+
+- id: DIV-216
+  surface: >-
+    A layer override: the version from the level that applies replaces the artifact whole
+  core: >-
+    Merges the layers field by field (core ADR `3.x/2026-05-16-1`, as ADR-0059 D3 cites it); not
+    re-run against core's code here.
+  service: >-
+    The version from the level that applies (built-in, then org, then project) is the artifact
+    in force, whole: no field of a losing version is read and nothing is inherited. The answer
+    names the winner's `packId` and `level`. An edge that starts at a losing version is dropped
+    with it; an edge that ends at the overridden id, written bare or as `<pack>::<id>`, resolves
+    to the winner. One winner function picks the version of an artifact and the copy of a
+    preset. `/offering` stays the unmerged catalog and merges nothing; only the effective reads
+    and the writes build the merge.
+  rationale: >-
+    An overriding artifact says everything it takes from no lower level, so no field of a lower
+    one surprises a reader. An `enhances` edge adds to an artifact without replacing it.
+  ruling: >-
+    ADR-0059 D3; ADR-0053 d6; decision `DM-01M6R0TNEBR7KGJMW2SQXQGJ0A` (provenance); FR-009,
+    FR-010, FR-023
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: service/packs/src/main/java/ai/speckitty/charter/packs/domain/LayerMerge.java"
+    - "charter: contracts/charter/scenarios/layer-merge.feature (US3 AS1 - a directive held at built-in and at project level is listed once, with the project version's provenance)"
+    - "corpus case: layer-override-replaces-whole"
+
+- id: DIV-217
+  surface: >-
+    The mutability gate on a layer override
+  core: >-
+    A collision warning (ADR-0059 D3). The service's understanding of core, to be confirmed
+    against core: no mutability level refuses a layer override.
+  service: >-
+    A layer override is allowed only when the overridden artifact is `open`. The level is judged
+    along the closure with the winning pack left out, so the losers' own files and any pack that
+    raised the level count, and a pack never blocks its own override. Otherwise the read refuses
+    `500 pack_unreadable`, naming the artifact, both packs and the level; it is not
+    `governance_policy_violation`, which ADR-0012 d9 names. Every write that builds the merge
+    answers it too (DIV-230).
+  rationale: >-
+    Only an `open` artifact may be replaced by a later level (ADR-0012 d1). The contract answers
+    a read that cannot merge with the composition's `500` codes, and a refusal of the closure is
+    never a partial answer.
+  ruling: >-
+    ADR-0012 d1, d8; ADR-0059 D3; ADR-0063 D3; FR-011; research R3
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: contracts/charter/scenarios/layer-merge.feature (A layer override the overridden artifact's level forbids is 500 pack_unreadable, and one of an open artifact is served)"
+    - "charter: service/packs/src/test/java/ai/speckitty/charter/packs/domain/LayerMergeTest.java"
+    - "corpus case: layer-override-mutability-gate"
+
+- id: DIV-218
+  surface: >-
+    A same-level contest settled by an `overrides` entry; a step contest no entry settles
+  core: >-
+    Merges two org packs that declare one URN by load order: the later-declared pack wins (core
+    `59d190a7`, #87). The service's understanding of core, to be confirmed against core: core
+    has no settlement entry.
+  service: >-
+    A contest at one level that exactly one descriptor `overrides` entry settles puts the named
+    member's version in force (#357, ADR-0053 d5), and no load order decides. A step
+    (`action:<mission type>/<step>`) shares its mission type's settlement. The compose refuses
+    an unsettled contest of every artifact but a step, so a step contest no entry settles
+    reaches the merge, which refuses it at read as `500 pack_sibling_conflict` (the compose lets
+    it through). A settled loser has no `LayerOverride` record; the winner's provenance shows
+    the settlement. Two copies of one preset at one level are parent and child, and the child
+    holds it.
+  rationale: >-
+    A settled contest is a choice the distribution pack made, not a layer override. The merge
+    never answers part of a conflict.
+  ruling: >-
+    ADR-0048 d9; ADR-0053 d5; FR-012; research R3; WP21 review, cycle 1
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: contracts/charter/scenarios/layer-merge.feature (US6 AS1 - a distribution pack's settlement puts the named member's version in force (#357); US6 AS2 - the same conflict without a settlement is refused, and an activation that avoids it still answers)"
+    - "charter: service/packs/src/test/java/ai/speckitty/charter/packs/domain/LayerMergeTest.java (the unsettled step)"
+    - "corpus case: sibling-settlement-in-force"
+
+- id: DIV-219
+  surface: >-
+    The settlement entry is not gated by level until #358
+  core: >-
+    The service's understanding of core, to be confirmed against core: core has no settlement
+    entry (DIV-218).
+  service: >-
+    Any pack of the compose may declare the settling `overrides` entry, and the settlement is
+    not gated by level: C21 judges cross-level overrides only. Until #358 lets only the
+    distribution pack settle a sibling contest, a pack of the closure can settle a contest in
+    favour of a sibling and displace an artifact that is locked, with no level check. A known
+    gap, recorded, not ruled acceptable.
+  rationale: >-
+    The ruling of the WP21 review (a): C21, research R3 and ADR-0063 D3 judge cross-level
+    overrides only, and #358 owns who may settle.
+  ruling: >-
+    ADR-0053 d5 as amended 2026-11-03; research R3; WP21 review, cycle 1, ruling (a); #358
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: docs/architecture/composition-and-activation-rules.md (C15, C21)"
+    - "charter: service/packs/src/main/java/ai/speckitty/charter/packs/domain/LayerMerge.java"
+    - "corpus case: sibling-settlement-not-level-gated"
+
+- id: DIV-220
+  surface: >-
+    A graph node counts as holding an artifact
+  core: >-
+    The service's understanding of core, to be confirmed against core: core merges artifacts by
+    file, and a graph document's node holds nothing.
+  service: >-
+    The merge counts every holder of a URN, a node a graph document declares included. An org
+    pack whose graph only declares the node of a built-in step replaces that step whole at its
+    level and drops the step's built-in edges. A qualified source (`built-in::action:<mission
+    type>/<step>`) restates an edge without holding the node.
+  rationale: >-
+    One winner function over every holder keeps provenance and edges on one rule. A pack author
+    who restates a node replaces it; the record says so.
+  ruling: >-
+    ADR-0059 D3; ADR-0064; WP21 review, cycle 1
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: service/packs/src/main/java/ai/speckitty/charter/packs/domain/LayerMerge.java"
+    - "charter: service/packs/src/test/java/ai/speckitty/charter/packs/domain/LayerMergeTest.java"
+    - "corpus case: graph-node-holds"
+
+- id: DIV-221
+  surface: >-
+    An active `E overrides T` at read
+  core: >-
+    The service's understanding of core, to be confirmed against core: core's read does not hide
+    an artifact because another overrides it, and a requirement on T is not satisfied by an
+    override.
+  service: >-
+    Overrides compose transitively from the top: in `F -> E -> T` only `F` stays in force, and
+    `F` satisfies a requirement on `E` and on `T`. A hidden artifact that was selected is
+    `inactive` with reason `overridden`, in the `overridden` bucket with its `overriddenBy`; an
+    unselected one stays `not_selected`. A required target an override satisfies keeps its state
+    and gains `satisfiedBy`. A target that is not `open` (locked, or `extendable`) is never
+    hidden: it stays, and the pair is in `overrideNotApplied`. The edge is judged at
+    registration and again at read, because a later pack may tighten the target.
+  rationale: >-
+    One gate for both override paths: only an `open` artifact can be replaced, by a later level
+    or by an edge (A6).
+  ruling: >-
+    Decisions `DM-01M6R0TGX3DSR54EVS58Q1V8FV`, `DM-01M6R2X2SW8KVAJCDX23PGJBMT`,
+    `DM-01M6RA7RPNZS810FTFC98Z13GH` (A3), `DM-01M6RA86QPBM1VE5QZTB9AZ195` (A6); research R11,
+    R13; FR-016
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: contracts/charter/scenarios/effective-reads.feature (US3 AS6 - an active override hides its target with reason overridden; A3 - in a chain F overrides E overrides T only F stays in force; A required T hidden by an active override is satisfied by it; An override of a locked T is not applied)"
+    - "charter: service/packs/src/main/java/ai/speckitty/charter/packs/domain/InForceResolution.java"
+    - "corpus case: override-hides-and-satisfies"
+
+- id: DIV-222
+  surface: >-
+    An `overrides` cycle at read
+  core: >-
+    The service's understanding of core, to be confirmed against core: core's read applies no
+    `overrides` edge, so it has no cycle to refuse.
+  service: >-
+    A cycle of `overrides` edges among `open` artifacts that the candidates or the required
+    floor reach is refused `500 pack_unreadable`, naming a node of it (`override_cycle`); no
+    pick breaks it. A cycle that nothing reaches is not judged. A registration refuses the same
+    cycle (PR A).
+  rationale: >-
+    The requirement iteration must end, and no arbitrary pick may decide which artifact in a
+    ring stays.
+  ruling: >-
+    Decisions `DM-01M6RA7M56M1409EV9JX1EW83K` (A2), `DM-01M6RN6BWE6SVZZE8ERQ8Z9MV6`; FR-016;
+    research R13
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: service/packs/src/test/java/ai/speckitty/charter/packs/domain/InForceResolutionTest.java (anOverrideCycleAmongTheCandidatesIsRefusedAsUnreadable; anOverrideCycleNothingReachesIsNotJudged)"
+    - "corpus case: override-cycle-refused"
+
+- id: DIV-223
+  surface: >-
+    An in-force set that has no stable answer
+  core: >-
+    The service's understanding of core, to be confirmed against core: core resolves no enhancer
+    or override at read.
+  service: >-
+    What is in force is solved in four strata to a fixed point (research R13): candidates,
+    overrides, the requirement, then enhancers. An overrider that the enhancer or binding
+    pruning removes loses its overrides, and the requirement and the pruning run again until no
+    overrider is newly removed. When an overrider is pruned while its overrides apply and is in
+    force once they are withdrawn, the answer has no stable value, and the read refuses `500
+    pack_unreadable` (`override_unstable`). This replaces the earlier rule of one re-run.
+  rationale: >-
+    A single pass lets a later step undo an earlier judgement, and a greatest fixed point lets
+    an enhancer ring hold itself up. A refusal is better than an arbitrary order.
+  ruling: >-
+    Decisions `DM-01M6RA8S9G57W4BW55SNVHBQ10` (A11), `DM-01M6RA8G0RGRWSFW4DERH8W319` (A8);
+    research R13
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: service/packs/src/main/java/ai/speckitty/charter/packs/domain/InForceResolution.java"
+    - "charter: service/packs/src/test/java/ai/speckitty/charter/packs/domain/InForceResolutionPropertyTest.java"
+    - "corpus case: in-force-fixed-point"
+
+- id: DIV-224
+  surface: >-
+    An enhancer, or an artifact bound to a mission type, is in force only while what it needs is
+  core: >-
+    The service's understanding of core, to be confirmed against core: core returns an
+    enhancement without asking whether its target is in force.
+  service: >-
+    An artifact that declares `enhances` is in force only when a target of its enhancement is in
+    force and the support chain reaches an artifact that enhances nothing (a least fixed point),
+    so an `enhances` ring is not in force. Otherwise it is `inactive` with reason
+    `enhanced_target_not_in_force`, in the `enhancedTargetNotInForce` bucket naming its targets.
+    A step contract is bound to its mission type and is in force only while the mission type is
+    (`mission_type_not_in_force`); only step contracts are bound, and the binding of a step
+    enhancer is PR C. A write that selects such an enhancer is accepted and answers a warning
+    (`warnings`, `enhanced_target_not_in_force`).
+  rationale: >-
+    Enhancers do not stand on their own (operator ruling Q8), and nothing bound to a mission
+    type outlives it.
+  ruling: >-
+    Operator ruling Q8 of 2026-11-06; decisions `DM-01M6R3YTNT1P2MBERBN7WV71ND`,
+    `DM-01M6R4W3ZMSESETMQ0ZQTCZCFJ`, `DM-01M6RA8G0RGRWSFW4DERH8W319` (A8),
+    `DM-01M6RCXTS0SMDNTWZ8G7GJ2P5S`; FR-015
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: contracts/charter/scenarios/effective-reads.feature (An enhancer whose target is out of force is inactive with enhanced_target_not_in_force; A8 - an enhancer ring is not in force, and an enhancer of a target in force is; A step of a denied mission type is not in force (the binding))"
+    - "charter: contracts/charter/scenarios/effective-reads.feature (B6/B7 - a select of an enhancer whose target is denied is 200 with the warning enhanced_target_not_in_force)"
+    - "corpus case: enhancer-needs-target"
+
+- id: DIV-225
+  surface: >-
+    A required artifact is a requirement, not a forced member
+  core: >-
+    Promotes org `required_*` into the allow list at write time (DIV-202). The service's
+    understanding of core, to be confirmed against core: an override does not satisfy a required
+    artifact.
+  service: >-
+    A required artifact is satisfied by itself in force or by an artifact in force that
+    overrides it, directly or through a chain (`satisfiedBy` names it), never by an enhancement.
+    Otherwise it is put in force with reason `required`, and a deny entry on it is listed in
+    `denyNotApplied`. A locked artifact is in force whatever else is said. The requirement is
+    the union of the must-have items of every governing copy of a preset id in the closure, read
+    from the merged closure (DIV-205); a must-have item no pack holds is in `requiredNotHeld`.
+    The writes still judge the floor from the winning copies of a preset only. A required or
+    locked artifact that the enhancer or binding rule prunes stays out of force and is in
+    `requiredNotInForce`. A required, unselected artifact an override hides is `not_selected`
+    with `satisfiedBy`.
+  rationale: >-
+    Requirement is authored as a preset (ADR-0031). `required` means the artifact, or an
+    override of it, must be in force (operator ruling Q6).
+  ruling: >-
+    Operator rulings Q6 and Q8 of 2026-11-06; decisions `DM-01M6R0TK6F4CC0Z00CZTS21V72`,
+    `DM-01M6RA7FHRC5K8QPX7KN5FZ4S8` (A1), `DM-01M6R3YTNT1P2MBERBN7WV71ND`,
+    `DM-01M6RFGFW3S0YJ222QMHD2W11B`; research R11
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: contracts/charter/scenarios/effective-reads.feature (US3 AS2 - a denied required directive stays in force with reason required, and the deny entry is not applied; An enhancer alone does not satisfy a required T, which is put in force; A required step whose mission type is not in force is dropped and reported; A10 - a must-have item no pack holds is in requiredNotHeld, and a held one is required and in force)"
+    - "charter: contracts/charter/scenarios/layer-merge.feature (A1 - the requirement of a preset id is the union of every governing copy across levels)"
+    - "corpus case: required-is-a-requirement"
+
+- id: DIV-226
+  surface: >-
+    A required artifact the language filter excludes is put in force
+  core: >-
+    The service's understanding of core, to be confirmed against core: the sources of this
+    mission do not say how core combines its language filter with a required artifact.
+  service: >-
+    The language filter narrows the candidates, and the requirement then adds a required
+    artifact whatever its `applies_to_languages` say; a locked artifact is a candidate whatever
+    the filter says. Such an artifact is `active` with reason `required` or `locked`, and is not
+    in the `languageFiltered` bucket, which lists only a selected artifact the filter excluded.
+  rationale: >-
+    A requirement must hold under every filter; a filter that dropped a required artifact would
+    let a language setting opt out of the floor.
+  ruling: >-
+    Rules E3 and E5 (the Unclear note of E5 resolved on 2026-11-08); decision
+    `DM-01M6R2X2SW8KVAJCDX23PGJBMT`
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: service/packs/src/test/java/ai/speckitty/charter/packs/domain/InForceResolutionTest.java (aRequiredArtifactTheLanguageFilterExcludesIsStillPutInForce)"
+    - "corpus case: required-despite-language-filter"
+
+- id: DIV-227
+  surface: >-
+    The language filter applies at read only
+  core: >-
+    The service's understanding of core, to be confirmed against core: core applies `languages`
+    where it builds the active list, not only on a read.
+  service: >-
+    The activation document stays language-neutral, and a write applies no language filter. The
+    two effective reads apply it: an artifact with a non-empty `applies_to_languages` that
+    shares none with the document's `languages` is `inactive` with reason `language_filtered`.
+    An absent `languages` filters nothing; `[]` filters every tagged artifact. This is the one
+    absent list that does not mean none (DIV-203). A read with no activation applies no
+    filtering.
+  rationale: >-
+    The document records what a project selects, and what it can use depends on its languages
+    (operator ruling 2 on #408).
+  ruling: >-
+    Operator ruling on #408 of 2026-11-07 (ruling 2); FR-013, FR-017
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: contracts/charter/scenarios/effective-reads.feature (The language filter applies at read only: no languages filters nothing, and what it filtered is in the bucket)"
+    - "charter: service/activations/src/test/java/ai/speckitty/charter/activations/domain/EffectiveSetTest.java"
+    - "corpus case: language-filter-at-read-only"
+
+- id: DIV-228
+  surface: >-
+    The skipped report is typed, and each artifact is reported once
+  core: >-
+    The skipped report takes core's structure (ADR-0020 D6): `skippedByScope`,
+    `skippedDeactivated`, `unreachedBehindDeactivated` and `skippedShared`, which describe a
+    cascade. The service's understanding of core, to be confirmed against core: core has no
+    typed bucket for what a read leaves out.
+  service: >-
+    `getActivationSkippedReport` lists each artifact that is not in force once, in the bucket of
+    the first rule that decided it. `SkippedReport` gains ten required buckets: `staleIds`,
+    `denyNotApplied`, `languageFiltered`, `overridden`, `missionTypeNotInForce`,
+    `overrideNotApplied`, `enhancedTargetNotInForce`, `pinNotHeld`, `requiredNotHeld` and
+    `requiredNotInForce`. `skippedByScope`, `unreachedBehindDeactivated` and `skippedShared`
+    stay and are always empty at read; at read `skippedDeactivated` has `viaRequires` false and
+    `requiredBy` empty. A write's `skipped` and the action context answer every new bucket as
+    `[]`.
+  rationale: >-
+    One typed bucket per rule makes the answer checkable, where a diagnostic list shared by the
+    reads was not. The cascade's buckets describe a write, so a read leaves them empty.
+  ruling: >-
+    Decisions `DM-01M6R0TNEBR7KGJMW2SQXQGJ0A`, `DM-01M6RN5MTWC98PXEVJNFQSRRJX`; ADR-0059 D4;
+    FR-017
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: contracts/charter/changes/2026-11-07-b-effective-reads.md (Breaking, SkippedReport)"
+    - "charter: contracts/charter/scenarios/effective-reads.feature (US4 AS1 - each artifact not in force is in exactly one bucket, and the report carries the revision)"
+    - "corpus case: skipped-report-typed"
+
+- id: DIV-229
+  surface: >-
+    The reasons `kind_default` and `kind_not_activated` are gone
+  core: >-
+    Has a per-kind default (DIV-203) and a kind gate, `activated_kinds` (DIV-212). The service's
+    earlier contract named a reason for each; whether core reports them as reasons is not
+    confirmed.
+  service: >-
+    `EffectiveArtifactReason` loses `kind_default` and `kind_not_activated`. Nothing is in force
+    because its kind is activated, and an absent list means none, so neither reason can arise.
+    The enum gains `overridden`, `mission_type_not_in_force` and `enhanced_target_not_in_force`.
+    A client that switches on the closed enum must regenerate.
+  rationale: >-
+    ADR-0053 d10 made `kind_default` unreachable, and the kind gate is gone (A7).
+  ruling: >-
+    ADR-0053 d10; decisions `DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY`, `DM-01M6RCY8MYNGNPJ247M2Y4880N`;
+    FR-022
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: contracts/charter/changes/2026-11-07-b-effective-reads.md (Breaking, EffectiveArtifactReason)"
+    - "corpus case: reasons-without-kind-gate"
+
+- id: DIV-230
+  surface: >-
+    The write cascade walks the merged edges, so a write can answer `500 pack_unreadable`
+  core: >-
+    The service's understanding of core, to be confirmed against core: the cascade walks the one
+    graph core merges (DIV-216).
+  service: >-
+    The cascade of a select or a deactivate walks the edges of the merged closure, so it never
+    follows an edge a losing version declared. Where no layer override exists the answer is
+    unchanged. A write over a closure whose merge refuses (DIV-217, DIV-218, DIV-222, DIV-223)
+    answers `500 pack_unreadable` or `pack_sibling_conflict`, as a read does; before PR B no
+    write could. A write's preconditions are still judged first.
+  rationale: >-
+    A cascade that followed an edge of a replaced version would select what the version in force
+    no longer names.
+  ruling: >-
+    Research R2 (open point, resolved); decision `DM-01M6R4W1H9P3451V89KHP97XKM`; FR-038; rule
+    E20
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: service/packs/src/main/java/ai/speckitty/charter/packs/application/ClosureView.java (reach)"
+    - "charter: service/packs/src/test/java/ai/speckitty/charter/packs/application/ClosureViewMergedTest.java"
+    - "corpus case: write-cascade-over-merged-edges"
+
+- id: DIV-231
+  surface: >-
+    The tag of an effective read names one representation and the closure
+  core: >-
+    The service's understanding of core, to be confirmed against core: no activation read
+    carries a validator that covers a closure.
+  service: >-
+    The `ETag` of `listEffectiveArtifacts` and of `getActivationSkippedReport` is `sha256:` over
+    a domain tag, the read, the activation's revision, the digest of the packs in the
+    activation's closure and the normalized query (`kind`, `state`, cursor, page size). A page,
+    a filter or the other read never matches the tag of another, and a pack outside the closure
+    changes nothing. The body's `governanceFingerprint` is that closure digest, no longer
+    `ServiceInfo.sourceFingerprint`. A read carries three digests: the revision, the closure
+    digest and, in `Charter-Source-Fingerprint`, the digest of the whole source. A matching
+    `If-None-Match` answers `304`.
+  rationale: >-
+    An answer depends on the document and the packs it was computed from, and a strong tag must
+    change with the bytes (RFC 9110).
+  ruling: >-
+    ADR-0059 D5; research R5; decision `01M6Y11E55YP5TG1EJ1MDKCFRP`; FR-020
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: service/activations/src/main/java/ai/speckitty/charter/activations/domain/EffectiveTag.java"
+    - "charter: contracts/charter/scenarios/effective-reads.feature (US3 AS7 - a state, a kind and a cursor page never answer 304 to the tag of another representation; US3 AS7 - a change to a pack outside the closure keeps the tag)"
+    - "corpus case: effective-tag-per-representation"
+
+- id: DIV-232
+  surface: >-
+    A page cursor is bound to its set, and the page links name `pageSize` only when the request
+    did
+  core: >-
+    The service's understanding of core, to be confirmed against core: core has no paged
+    effective list.
+  service: >-
+    `listEffectiveArtifacts` is paged by a keyset cursor over `(kind, id)`. The cursor binds the
+    tag of the set it pages (the same kind and state, no cursor, no page size), so a cursor from
+    another set, or after the revision or a pack of the closure changed, is `400` without a
+    code, as a malformed one is. `summary` counts the whole set and is identical on every page.
+    The `self`, `first` and `next` links repeat `pageSize` only when the request named it.
+  rationale: >-
+    A cursor over a recomputed set would skip or repeat items; refusing it tells the client to
+    read the first page again.
+  ruling: >-
+    Decision `DM-01M6R0TNEBR7KGJMW2SQXQGJ0A`; FR-013, FR-020
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: contracts/charter/scenarios/effective-reads.feature (The list is paged by a keyset cursor, and summary is identical on every page; A cursor from another tag is 400, and a fresh cursor of the new tag pages on)"
+    - "corpus case: effective-list-keyset-cursor"
+
+- id: DIV-233
+  surface: >-
+    The `ETag` of `getActivation` covers the closure
+  core: >-
+    The service's understanding of core, to be confirmed against core: core stores its
+    activation in files and has no such read.
+  service: >-
+    The `ETag` of `getActivation` is no longer the bare quoted revision. It is the tag of the
+    revision and the closure's digest, because the answer now carries `denyNotApplied`, which is
+    judged against the packs of the closure. It changes when a pack of the closure changes, and
+    not when a pack outside it does. `getActivation` can also answer `500` with a composition
+    code or `pack_unreadable`. It sends no `Charter-Source-Fingerprint`, as before. A write's
+    answer keeps the revision as its `ETag` and carries no `denyNotApplied`.
+  rationale: >-
+    A strong `ETag` must change with the bytes. The operator chose a covering tag over dropping
+    the field or accepting a stale tag.
+  ruling: >-
+    Operator decision `01M6Y11E55YP5TG1EJ1MDKCFRP` (amends ADR-0059 D5); FR-027
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: contracts/charter/scenarios/effective-reads.feature (B4 - the ETag of getActivation changes when a pack of the closure changes, and not for an unrelated pack; B4 - GET /activations/{id} lists a deny entry the floor overrides in denyNotApplied, and not an applied one)"
+    - "corpus case: get-activation-tag-covers-closure"
+
+- id: DIV-234
+  surface: >-
+    `If-Match` on an activation write takes either tag, and a closure tag costs a read
+  core: >-
+    The service's understanding of core, to be confirmed against core: core's seam sends no
+    `If-Match` that names a closure.
+  service: >-
+    A write (`PUT`, `DELETE` and the five sub-resource writes) accepts `If-Match` carrying the
+    quoted revision or the current `getActivation` tag, so a client may send what it read; `*`
+    still matches any stored document. A closure tag that no longer matches is `412`. The
+    revision is checked first and costs no read. A tag-shaped header that is not the revision
+    costs one verified read of the closure to compute the current tag, and the write then reads
+    the packs again for its own judgment; a pack change between the two reads could let a
+    just-stale tag pass.
+  rationale: >-
+    A client that read the activation can write with what it read, whichever validator it kept.
+  ruling: >-
+    Operator decision `01M6Y3GZFRC5WEQQ7G6GT0YMW3` (amends ADR-0020 D6); FR-027
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: service/activations/src/main/java/ai/speckitty/charter/activations/application/IfMatchTags.java"
+    - "charter: contracts/charter/scenarios/effective-reads.feature (B4 - a write takes the getActivation tag or the revision as If-Match, and a stale closure tag is 412)"
+    - "corpus case: if-match-either-tag"
+
+- id: DIV-235
+  surface: >-
+    Only a `not_selected` artifact carries a suggestion
+  core: >-
+    The service's understanding of core, to be confirmed against core: core's action context
+    lists a `suggests` target without a reason carrier.
+  service: >-
+    `EffectiveArtifact.suggestion {when, reason}` is present only for an artifact that is out of
+    force with reason `not_selected` and that a `suggests` edge of an active artifact reaches;
+    the edge's `rationale` is served as `reason`. A denied, overridden, language-filtered or
+    mission-type-filtered artifact is out of force for its own reason, and its reason says so.
+    `enhances` is not a hard relation, so an artifact an active one enhances keeps its
+    suggestion. PR C's action context uses the same definition.
+  rationale: >-
+    A suggestion is something the client may still choose; attaching one to an artifact the
+    rules exclude would invite selecting it.
+  ruling: >-
+    Operator ruling on #408 of 2026-11-07 (ruling 3); decisions `01M6Y0X5E9ANR25MC8RPFXYM72`,
+    `01M6Y6VE6VZQ4MXD98N93JB3GJ`; FR-013
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: contracts/charter/scenarios/effective-reads.feature (An artifact reached only through suggests is listed as a suggestion with its when and reason)"
+    - "corpus case: suggestion-only-not-selected"
+
+- id: DIV-236
+  surface: >-
+    A pack's composition facts are cached, and every read still reads the pack revision
+  core: >-
+    The service's understanding of core, to be confirmed against core: core has no composition
+    facts to cache.
+  service: >-
+    `CompositionFactsCache` keeps the composition facts of each pack between reads, keyed by the
+    pack's configured name and valid for one write generation and one revision together. It
+    never fills or serves from a read whose generation was odd or moved, from a holder of the
+    registry write lock, or from a failure, and by default it keeps at most 256 packs. It reads
+    the pack revision, a listing and a digest, on every call, because a change no write
+    bracketed (an out-of-band edit) must miss. PR B therefore claims no gain on #416.
+  rationale: >-
+    The cache follows #416's invariants rather than a second mechanism, and the revision read is
+    what makes an out-of-band edit visible.
+  ruling: >-
+    Decision `DM-01M6XT2FKK7YPV1GCESFW1ANZ7`; NFR-007; #416, #418 R5
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: service/packs/src/main/java/ai/speckitty/charter/packs/application/CompositionFactsCache.java"
+    - "charter: service/packs/src/test/java/ai/speckitty/charter/packs/application/CompositionFactsCacheTest.java"
+    - "corpus case: composition-facts-cache"
+
+- id: DIV-237
+  surface: >-
+    A write warns what a read will not put in force, and a registration lists the activations it
+    affects
+  core: >-
+    The service's understanding of core, to be confirmed against core: core's writes answer
+    neither.
+  service: >-
+    `ActivationChange.warnings` (`[{code, artifact}]`, `[]` when none) lists each artifact the
+    write applied that a read will not put in force: `enhanced_target_not_in_force` and
+    `overridden`. A write still succeeds. `PackRegistration.notices.activationsAffected` lists,
+    bounded and sorted, the stored activations whose in-force set a registration changes; an
+    activation whose closure cannot be merged counts as changed.
+  rationale: >-
+    Writes stay total and reads explain (R17); a client learns at write time what the read will
+    say.
+  ruling: >-
+    Decisions `DM-01M6RAA2B2G9PNXN2F9SJ7B1CR` (B6, B7), `DM-01M6RA9SAKCBSKGX165JM3CAGS` (B4);
+    FR-027, FR-032
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: contracts/charter/scenarios/effective-reads.feature (B6/B7 - a select of an enhancer whose target is denied is 200 with the warning enhanced_target_not_in_force; B6/B7 - a select of an artifact an active override hides is 200 with the warning overridden; B4 - a registration that changes an activation's in-force set lists it in activationsAffected, and not an unrelated one)"
+    - "corpus case: write-warnings"
 
 # Pack-level files (DIV-301..399), mission pack-level-files-round-trip-01M60H1A (#195, ADR-0042).
 - id: DIV-301
