@@ -1,8 +1,10 @@
 title: EffectiveArtifactList
 description: >-
-  The artifacts of the offering under an activation, one page at a time (ADR-0020 D7), with the counts of the whole
-  effective set (summary), which moved here from Activation (ADR-0059 D5): they depend on the offering, so they are
-  answered with governanceFingerprint and covered by this read's ETag.
+  The artifacts of the merged closure under an activation, one page at a time (ADR-0020 D7): every artifact with its
+  state, so "in force" is state active (operator ruling Q1). The summary counts the whole set and is identical on every
+  page; it moved here from Activation (ADR-0059 D5) because it depends on the packs, so it is answered with
+  governanceFingerprint and covered by this read's ETag. Items are ordered by kind, then by id in code-point order, and
+  paged by a keyset cursor.
 type: object
 additionalProperties: false
 required:
@@ -36,8 +38,8 @@ properties:
     allOf:
     - $ref: Sha256Digest.yaml
     description: >-
-      The digest of the offering this answer was computed from, as ServiceInfo.sourceFingerprint; with revision,
-      it ties the answer to both the document and the packs.
+      The source fingerprint, as ServiceInfo.sourceFingerprint, of the packs of the activation's closure that this
+      answer was computed from; with revision, it ties the answer to both the document and the packs.
     x-derived:
       rule: The source fingerprint of the packs the answer was computed from.
       inputs:
@@ -50,7 +52,7 @@ properties:
       $ref: EffectiveArtifact.yaml
     description: The artifacts of this page.
     x-derived:
-      rule: The effective set, filtered by kind and state and paged.
+      rule: The effective set of the merged closure, filtered by kind and state and paged by (kind, id).
       inputs:
       - schemas/ActivationConfig.yaml
   pageInfo:

@@ -60,9 +60,11 @@ class ReservedOperationCoverageTest {
     }
 
     @Test
-    void theActivationSetReservesFourOperations() {
-        // #291 built the per-artifact writes and the preset write: only the four effective reads stay reserved.
-        assertThat(reservedOperations("activation")).hasSize(4);
+    void theActivationSetReservesTwoOperations() {
+        // #291 built the per-artifact writes and the preset write, and PR B (WP22) unreserved the effective artifact
+        // list and the skipped report: only the effective graph and the effective action context stay reserved, until
+        // PR C (IC-11) builds them.
+        assertThat(reservedOperations("activation")).hasSize(2);
     }
 
     @Test

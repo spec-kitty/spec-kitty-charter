@@ -20,7 +20,7 @@ put:
     packs of the closure hold one preset id, the last in merge order wins. A preset member the closure does not hold
     (a preset a pack upgrade left stale) is 422 activation_invalid with an unknown_artifact violation at the whole
     request (pointer ""), since the write has no body list to point into; nothing is stored. Requires If-Match
-    (ADR-0020 D6). An If-Match that is neither * nor one quoted revision breaks its pattern and is 400 before anything
+    (ADR-0020 D6), the quoted revision or the current getActivation tag (a closure tag that no longer matches is 412; the answer keeps the revision as its ETag),. An If-Match that is neither * nor one quoted revision breaks its pattern and is 400 before anything
     else is judged. Then the preconditions, in this order: 428 without If-Match, 404 activation_not_found, 412 when
     stale; each comes before any 422, a fault of the body included, and before the preset is judged. One write, one new revision; answers the
     ActivationChange and the new ETag. A write that changes nothing answers 200 with the same revision and an empty

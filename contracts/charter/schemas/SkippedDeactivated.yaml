@@ -1,5 +1,7 @@
 title: SkippedDeactivated
-description: An artifact a cascade reached and skipped because it is deactivated (ADR-0013 D4).
+description: >-
+  An artifact a cascade reached and skipped because it is deactivated (ADR-0013 D4). At read, the artifacts the document selects
+  and denies: viaRequires is false and requiredBy is [].
 type: object
 additionalProperties: false
 required:
