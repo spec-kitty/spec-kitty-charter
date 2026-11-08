@@ -2,7 +2,7 @@
 title: Offering and activation
 description: "The /offering tree, the activation document, its closure read, the per-artifact writes and their cascade, the two ways core builds one, and how each maps onto the service."
 doc_status: draft
-updated: 2026-11-06T00:00:00Z
+updated: 2026-11-08T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -40,8 +40,10 @@ knows nothing of projects.
 > **Status:** partly built. The activation register (create, read, replace, delete), the closure read and the five
 > per-artifact writes (select, unselect, deactivate, re-activate, apply a preset) with their cascade are built
 > ([#291](https://github.com/spec-kitty/spec-kitty-charter/issues/291),
-> [#360](https://github.com/spec-kitty/spec-kitty-charter/issues/360)). The four effective reads are declared and
-> answer `501`; they come with the resolution mission, and so does the layer merge.
+> [#360](https://github.com/spec-kitty/spec-kitty-charter/issues/360)). Since PR B of the layer-merge mission
+> (2026-11-08) the layer merge is built and two of the four effective reads, `artifacts` and `skipped`, answer
+> ([The effective reads](#the-effective-reads)). The effective graph and the effective action context are declared and
+> answer `501`; they are PR C's.
 > The rest of this page is the design decided by ADR-0020 and
 > [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/). [What the labels mean](/#status).
 
@@ -65,8 +67,8 @@ knows nothing of projects.
         ├── selections/{kind}/{artifactId}     PUT select (cascade), DELETE unselect (built)
         ├── exclusions/{kind}/{artifactId}     PUT deactivate (cascade), DELETE re-activate (built)
         ├── presets/{presetId}                 PUT apply a preset (built)
-        ├── artifacts{?kind,state}             effective: state, policy, reason          R9
-        ├── skipped                            the skipped report                        R9
+        ├── artifacts{?kind,state}             effective: state, policy, reason (built)  R9
+        ├── skipped                            the skipped report (built)                R9
         ├── graph                              the activation-filtered graph             R9
         └── mission-types/{missionType}/actions/{action}/context{?depth}   effective      R9
 ```
@@ -74,10 +76,10 @@ knows nothing of projects.
 Every resource under `activations` is declared in the contract (#125). The built ones are `POST /activations`,
 `PUT`, `GET` and `DELETE /activations/{activationId}` and `GET …/packs`, which the behavioral `@contract` scenarios in
 `contracts/charter/scenarios/activation-register.feature` pin, and the five per-artifact writes (`selections`,
-`exclusions`, `presets`), which `activation-selections.feature` and `activation-presets.feature` pin. The four
-effective reads (`artifacts`, `skipped`, `graph`, the effective context) still answer `501` (ADR-0020 D8): each
-carries `x-reserved`, and one `@contract @reserved` scenario per operation pins its `501`
-(`contracts/charter/scenarios/activations.feature`). The R-numbers are the read inventory's
+`exclusions`, `presets`), which `activation-selections.feature` and `activation-presets.feature` pin. Two effective
+reads, `artifacts` and `skipped`, are built since PR B; `effective-reads.feature` and `layer-merge.feature` pin them.
+The other two (`graph`, the effective context) still answer `501` (ADR-0020 D8): each carries `x-reserved`, and one
+`@contract @reserved` scenario per operation pins its `501` (`contracts/charter/scenarios/activations.feature`). The R-numbers are the read inventory's
 ([#94](https://github.com/spec-kitty/spec-kitty-charter/issues/94)).
 
 ## Two answers for one action
@@ -87,7 +89,7 @@ carries `x-reserved`, and one `@contract @reserved` scenario per operation pins 
 | Path | `/offering/mission-types/{mt}/actions/{a}/context` | `/activations/{id}/mission-types/{mt}/actions/{a}/context` |
 | Schema | `ActionContext` | `EffectiveActionContext` |
 | Answers | What the offering says governs the action | What applies under one activation: filtered, with exclusions and the skipped report |
-| Freshness | `governanceFingerprint` | `governanceFingerprint` and the activation's `revision` (not built yet) |
+| Freshness | `governanceFingerprint` | `governanceFingerprint` and the activation's `revision` (not built yet; the built effective reads carry the same two) |
 
 The two never share a URL or a schema, so a client cannot mistake one for the other (ADR-0018 D1).
 
@@ -117,9 +119,13 @@ The two never share a URL or a schema, so a client cannot mistake one for the ot
 The values are illustrative; the schemas are in the contract (`Activation`, and `ActivationConfig`, canonical as
 JSON Schema 2020-12 in `contracts/offering/schemas/`). Per-entry provenance, context activations and applied presets
 are not part of the document (ADR-0020, amendment of 2026-10-31). The answer carries no `summary` and no
-`governanceFingerprint`, so its bytes depend only on the stored document and its strong `ETag` is the quoted
-`revision` ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) D5); `summary` moves to the
-effective artifact list. `GET` honors `If-None-Match` and answers `304` without a body when it matches.
+`governanceFingerprint`; `summary` moves to the effective artifact list
+([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) D5). Since PR B it does carry
+`denyNotApplied`, the stored deny entries that the required floor or a lock overrides (present only when there is one,
+judged against the packs of the closure), so its strong `ETag` is no longer the quoted `revision`: it covers the
+revision and the closure's digest, as an effective read's does ([The effective reads](#the-effective-reads); decision
+`01M6Y11E55YP5TG1EJ1MDKCFRP`). `revision` is still in the body and is still what a write's answer sends as its `ETag`.
+`GET` honors `If-None-Match` and answers `304` without a body when it matches.
 `config` is the `ActivationConfig`: the whole document a client authors. Core keeps its own file
 layout and maps it to and from `config` in one seam module. Everything else is the service's: `revision` (also the
 `ETag`) and the links. `_links` holds `self`; the answer carries no write links (`edit`, `select`, `exclude`, …).
@@ -127,7 +133,7 @@ layout and maps it to and from `config` in one seam module. Everything else is t
 **Canonical form.** The service stores ids as the offering's artifact ids, sorted and without
 duplicates. An empty deny list is refused, never stored. `revision` is the `sha256:` digest of the RFC 8785
 serialization of the canonical `config`. A `PUT` of a fetched `config` answers `200` with the same
-`ETag`, for a document the offering has not made stale (ADR-0059 D4): a stale document is served as stored, and
+`revision` (the write's `ETag`), for a document the offering has not made stale (ADR-0059 D4): a stale document is served as stored, and
 writing it back is refused until the client removes the ids the offering no longer has (`422`) and the deny entries
 on artifacts now required or locked (`409`). A write evaluates its preconditions before it judges the document
 (RFC 9110 §13.2.2): a stale `If-Match`, or `If-None-Match: *` on a stored id, answers `412` whatever the document
@@ -208,7 +214,7 @@ sequenceDiagram
   Core->>Svc: PUT …/exclusions/directive/EVD_004, If-Match: r2
   Svc-->>Core: 200 ActivationChange, ETag r3
   Core->>Svc: GET /activations/{id}
-  Svc-->>Core: 200 Activation, ETag r3
+  Svc-->>Core: 200 Activation, revision r3, ETag t3 (the closure tag)
   Core->>Core: map Activation.config onto its own files
 ```
 
@@ -232,11 +238,12 @@ Five operations change one part of a stored document (ADR-0020 D6):
 | `reactivateActivationArtifact` | `DELETE …/exclusions/{kind}/{artifactId}` | Removes the artifact's deny entry (a deny list it empties is dropped); nothing else, no cascade |
 | `applyActivationPreset` | `PUT …/presets/{presetId}`, body `force` | Replaces each key the preset lists; see [Presets](#presets) |
 
-An `If-Match` that is neither `*` nor one quoted revision breaks its pattern and is `400`, before anything else is judged. All
+An `If-Match` that is neither `*` nor one quoted sha256 tag (the revision or the `getActivation` tag) breaks its pattern and is `400`, before anything else is judged. All
 five operations declare that `400`. Every other answer comes from one flow (`ActivationWrites`), in this order:
 
 1. The preconditions, before the packs are read: no `If-Match` is `428`, an id nothing is stored under is
-   `404 activation_not_found`, and an `If-Match` that does not name the stored revision is `412`.
+   `404 activation_not_found`, and an `If-Match` that names neither the stored revision nor the current
+   `getActivation` tag is `412` ([either tag](#either-tag-if-match)).
 2. The body, the path's kind and the body's `cascade`, still before the packs are read. A body fault is
    `422 activation_invalid` at its pointer: a member the schema does not declare, a `null`, a value of the wrong
    type, an empty `cascade`, a body that is too large, not JSON or missing. The inbound adapter records the fault while it
@@ -276,12 +283,14 @@ five operations declare that `400`. Every other answer comes from one flow (`Act
 A per-artifact write has no body list for a pointer to index, so a `422` the document's rules raise on the computed
 document points at the whole request (`""`), and keeps the codes and the details.
 
-Each write answers an `ActivationChange` with the new revision as its `ETag`. `applied` lists every id the write
+Each write answers an `ActivationChange` with the new revision as its `ETag` (never a closure tag). `applied` lists every id the write
 added to or removed from `selected`, `deactivated` or `missionTypes`; `cleared` lists the deny entries it removed;
 `dropped`, present only when there is one, lists the stale ids it dropped first. `applied` and `cleared` are measured
 after that drop, against the stored document without the stale ids, so a dropped id appears only in `dropped`, even
 when the path of an unselect or a re-activate names it;
-`skipped` is the write-time report of the cascade, never what a read leaves out (the effective reads report that). A write's path has no `GET`, so the answer carries no `self`: its `up` link names the
+`skipped` is the write-time report of the cascade, never what a read leaves out (the effective reads report that).
+`warnings` lists each artifact the write applied that a read will not put in force (`enhanced_target_not_in_force`,
+`overridden`), `[]` when none; the write still succeeds (DIV-237). A write's path has no `GET`, so the answer carries no `self`: its `up` link names the
 activation.
 
 ### Presets
@@ -377,11 +386,12 @@ With a cascade:
 A deactivate's `skippedByScope` lists only the out-of-scope artifacts the target reached that are selected; one that
 is not selected is left alone and not reported.
 
-**`enhances` at read** (ADR-0059 amendment A4, recorded for the effective reads of
-[#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103), which answer `501`). An enhancement is returned
-only when it is itself active. `E enhances T` also reads "T is enhanced by E", so resolving T returns E when E is
-active. There is no automatic read-time pull: an enhancer does not come into force because its target does, nor a
-target because its enhancer does. This supersedes the read-time pull ADR-0059 D2.2 ruled on 2026-11-05.
+**`enhances` at read** (ADR-0059 amendment A4, [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103)).
+An enhancement is returned only when it is itself active. There is no automatic read-time pull: an enhancer does not
+come into force because its target does, nor a target because its enhancer does. This supersedes the read-time pull
+ADR-0059 D2.2 ruled on 2026-11-05. Since PR B the effective list and skipped report apply it, and add the operator's
+ruling Q8: an enhancer is in force only while a target of its enhancement is (DIV-224). Reading `E enhances T` from
+the side of `T`, "T is enhanced by E", is the effective graph's and the action context's, which are PR C's.
 
 **Who owns what.** `packs` owns the traversal: `Reachability` runs every walk on `GraphWalk` over the closure's edges
 (`reach`), and `ClosureView` exposes it. `activations` owns the policy:
@@ -409,6 +419,66 @@ sequenceDiagram
   S-->>C: ActivationChange, new revision
 ```
 
+## The effective reads
+
+Two reads answer what an activation puts in force (PR B; FR-013 to FR-017, FR-020, FR-021). The rules that decide it
+are in [Resolution model](/architecture/resolution-model/#what-is-in-force) and
+[Composition and activation rules](/architecture/composition-and-activation-rules/) (E1 to E14, E17 to E19).
+
+| Read | Request | Answers |
+|---|---|---|
+| `listEffectiveArtifacts` | `GET /activations/{id}/artifacts{?kind,state,pageSize,pageCursor}` | Every winning artifact of an activatable kind in the activation's merged closure, with `state`, `reason`, `required`, policy, `packId`, `level`, `satisfiedBy` and `suggestion`; `summary` counts the whole set |
+| `getActivationSkippedReport` | `GET /activations/{id}/skipped` | Each artifact not in force once, in the typed bucket of its first deciding rule, with the activation's `revision` |
+
+"In force" is `state=active`; use `state=active` for it. Items are ordered by kind, then id in code-point order, and
+paged by a keyset cursor over `(kind, id)`.
+
+**Buckets of the skipped report.** `staleIds` (a selected or denied id no pack holds), `denyNotApplied`,
+`languageFiltered`, `overridden` (with `overriddenBy`), `missionTypeNotInForce`, `overrideNotApplied`,
+`enhancedTargetNotInForce` (with the targets), `pinNotHeld`, `requiredNotHeld` and `requiredNotInForce`, beside
+`skippedDeactivated`. `skippedByScope`, `unreachedBehindDeactivated`, `skippedShared` and `skippedByDepth` are the
+cascade's and are empty at read; at read `skippedDeactivated` has `viaRequires` false and `requiredBy` empty
+([DIV-228](/conformance/divergence-register/)).
+
+**Suggestions.** `suggestion {when, reason}` is on an artifact that is `not_selected` and reached by a `suggests` edge of
+an active artifact, with the edge's `when` and its `rationale` as `reason`. No other out-of-force artifact has one, and
+`enhances` is not a hard relation (decisions `01M6Y0X5E9ANR25MC8RPFXYM72`, `01M6Y6VE6VZQ4MXD98N93JB3GJ`, DIV-235).
+
+**Refusals.** An unknown activation is `404 activation_not_found`. A closure that cannot compose or merge is `500` with
+its code (`pack_unreadable` for an override the level forbids, an override cycle or an unstable answer;
+`pack_sibling_conflict` for a step contest no entry settles), and the answer is never partial. `stale_input` and
+`internal_error` may be retried. `getActivation` answers the same `500`s, because it too reads the closure. A cursor
+that belongs to another set, a malformed one or a `pageSize` out of range is `400`.
+
+### Tags
+
+An effective read's `ETag` is `sha256:` over a domain tag, the read, the activation's revision, the digest of the packs
+in the activation's closure and the normalized query: `kind`, `state`, the cursor and the page size. It is therefore
+per representation, so a page, a filter or the other read never answers `304` to the tag of another. A pack outside
+the closure changes nothing, and a change to a pack of the closure changes it. A matching `If-None-Match` answers
+`304` without computing the merge. `getActivation`'s tag is built the same way, with no query. The body's
+`governanceFingerprint` is the closure digest, no longer `ServiceInfo.sourceFingerprint`, and `Charter-Source-Fingerprint`
+still carries the digest of the whole source. A read thus carries three digests: the revision, the closure digest and
+the source digest ([DIV-231](/conformance/divergence-register/)). The cursor binds the tag of its set, and the page
+links repeat `pageSize` only when the request named it ([DIV-232](/conformance/divergence-register/)).
+
+### Either-tag If-Match
+
+`getActivation` sends the closure tag, and a write answers the revision. A write's `If-Match` takes either: the quoted
+revision, or the current `getActivation` tag, so a client may send what it read (operator decision
+`01M6Y3GZFRC5WEQQ7G6GT0YMW3`). `*` still matches any stored document. A closure tag that no longer matches, because the
+document or a pack of the closure changed, is `412`. The revision is checked first and costs no read. A tag-shaped
+header that is not the revision costs one verified read of the closure to compute the current tag, and the write reads
+the packs again for its own judgment, so a pack change between the two reads could let a just-stale tag pass
+([DIV-234](/conformance/divergence-register/)). A client that compared `getActivation`'s `ETag` with `revision` must stop
+doing so.
+
+### Write-time verdicts
+
+A write reports in `warnings` what a read will not put in force, and a registration lists in
+`notices.activationsAffected` the stored activations whose in-force set it changes (an activation whose closure cannot be
+merged counts as changed). `getActivation` lists `denyNotApplied` (DIV-233, DIV-237).
+
 ## Who holds what
 
 | Item | Held by | Notes |
@@ -427,7 +497,8 @@ sequenceDiagram
 | `/offering/…/context` | `ActionContextQuery` (built) | the walk (ADR-0018) |
 | `/activations`, `/activations/{id}` and `…/packs` (built) | activation services | the activation document and its write rules; `ActivationRepository` and `AvailablePacks` ports |
 | `/activations/{id}/…` writes (built) | `ActivationSelectionService`, `ActivationExclusionService`, `ActivationPresetService` over `ActivationWrites` | `CascadeRules`, `PresetRules`; walks through the `PacksSession` an `AvailablePacks` adapter opens on one `ClosureView` |
-| `/activations/{id}/…` effective reads (not built) | effective-set queries | the effective-set algebra over the closure and the document |
+| `/activations/{id}/artifacts` and `…/skipped` (built, PR B) | `EffectiveReadService`, `IfMatchTags` | `EffectiveSet`, `EffectiveTag`; the in-force resolution and the layer merge come through `AvailablePacks` from `packs` (`InForceResolution`, `LayerMerge`) |
+| `/activations/{id}/graph` and the effective context (not built, PR C) | effective-set queries | the same in-force set over the merged closure |
 | Every resource's problem and refusal bodies, and the JSON body guard | module `web-transport`, package `ai.speckitty.charter.web` (`RefusalHandler`, `ProblemHandler`, `Problems`, `JsonBodyGuard`, `ProblemJson`) | none: a transport ring shared by `packs.infra.api` and `activations.infra.api`, naming no slice |
 
 `activations` is a top-level slice that depends on `packs`. It owns the activation document, its storage, its write
@@ -454,9 +525,9 @@ flowchart LR
 
 These are proposed, not bound. What is bound for the built operations is
 `contracts/charter/scenarios/activation-register.feature`, `activation-selections.feature` and
-`activation-presets.feature`, and for each reserved operation one 501 pin
-(`contracts/charter/scenarios/activations.feature`). The scenarios below stay proposed until the effective reads are
-built; the per-artifact writes they use are bound by those files. They describe what a client does, not which endpoint it calls, so
+`activation-presets.feature`, `effective-reads.feature` and `layer-merge.feature` for the two built effective reads, and
+for each reserved operation one 501 pin (`contracts/charter/scenarios/activations.feature`). The scenarios below stay
+proposed until the effective action context is built; the per-artifact writes they use are bound by those files. They describe what a client does, not which endpoint it calls, so
 they hold whatever the paths become; the step definitions map each step onto the contract.
 
 ```gherkin
@@ -521,9 +592,9 @@ Feature: The activation document round-trips, and the pack policy holds
 
   Scenario: An activation operation that is not built yet says so
     Given the activation "a-1" is registered
-    When I retrieve the effective artifacts of the activation "a-1"
+    When I retrieve the effective graph of the activation "a-1"
     Then the request is refused as not implemented yet
 ```
 
-The last scenario holds only while the operation is reserved; it is removed when the operation is
-built.
+The last scenario holds only while the effective graph is reserved; it is removed when the operation is
+built. It named the effective artifact list until PR B built that read.

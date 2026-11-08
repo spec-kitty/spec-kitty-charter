@@ -2,7 +2,7 @@
 title: Resolution model
 description: What the charter domain computes (layer merge, activation, cascade, action-scoped context, profile resolution) and the fail-loud rules it inherits.
 doc_status: draft
-updated: 2026-11-06T00:00:00Z
+updated: 2026-11-08T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -26,7 +26,10 @@ audience:
 
 What the charter domain computes from its inputs: layer merge, activation, cascade, action-scoped context and profile resolution, and the fail-loud rules it keeps.
 
-> **Status:** exists in core. The Java domain must reproduce it fixture for fixture before it answers in production; a wrong core behavior is fixed in Python first, with a fixture. Mutability levels, persistent exclusions and the `impacts` relation are provisional decisions of 2026-10-19, not yet built in core; since 2026-10-26 the relation is `tension` and `impacts` is a per-value list ([ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/)), removal is distinct from deactivation ([ADR-0030](/adr/0030-removal-is-distinct-from-deactivation/)) and requirement is authored as a preset ([ADR-0031](/adr/0031-requirement-is-authored-as-a-preset/)). [What the labels mean](/#status).
+> **Status:** exists in core, and partly built in the service. Since PR B of the layer-merge mission (2026-11-08) the
+> service merges the layers of an activation's closure and resolves what is in force over the merge; the two effective
+> reads that serve it, the artifact list and the skipped report, answer. The effective graph and the effective action
+> context are PR C and still answer `501`. The Java domain must reproduce core fixture for fixture before it answers in production; a wrong core behavior is fixed in Python first, with a fixture. Mutability levels, persistent exclusions and the `impacts` relation are provisional decisions of 2026-10-19, not yet built in core; since 2026-10-26 the relation is `tension` and `impacts` is a per-value list ([ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/)), removal is distinct from deactivation ([ADR-0030](/adr/0030-removal-is-distinct-from-deactivation/)) and requirement is authored as a preset ([ADR-0031](/adr/0031-requirement-is-authored-as-a-preset/)). [What the labels mean](/#status).
 
 ## Inputs
 
@@ -68,22 +71,22 @@ flowchart LR
    land in the same graph that cascade reads; they are not kept on a separate,
    diagnostic-only path (a defect the charter-resolution program fixed). Each artifact's
    mutability level is checked against what later packs do to it: a change the level does not
-   allow is the refusal `governance_policy_violation`, which the registration writes already raise (#293); the merge
-   does not raise it yet
-   ([ADR-0012](/adr/0012-pack-mutability-policy/)). When org packs declare the same URN, the
+   allow is a refusal ([ADR-0012](/adr/0012-pack-mutability-policy/)): the registration writes raise
+   `governance_policy_violation` (#293), and the merge refuses a layer override the level forbids as
+   `500 pack_unreadable` (DIV-217). When org packs declare the same URN, the
    later-declared pack wins for every URN and every restated edge (core `59d190a7`, #87).
    *2026-11-05: across levels the artifact from the level that applies takes the place of the other one whole; no
    field merge ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) decision 3).*
 
-   > **Partly built:** for sibling packs at one level,
+   > **Built, with one gap:** for sibling packs at one level,
    > [ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/) decision 9 is built: two siblings that both
    > change or both define the same artifact, of any kind, are refused with `pack_sibling_conflict` unless an
-   > `overrides` edge naming a contesting member settles it, so siblings leave no "last loaded wins". A definer and an
-   > enhancer of one artifact do not conflict. Until
-   > [#357](https://github.com/spec-kitty/spec-kitty-charter/issues/357) the edge only clears the refusal: the named
-   > member's version is not yet put in force, and the merge does not apply the settled choice. Until #358 any pack of
-   > the compose may declare the edge. The layer merge across levels keeps the rule above: the same id at two levels is
-   > a legitimate override. Every composition refusal is in the table of
+   > `overrides` entry naming a contesting member settles it, so siblings leave no "last loaded wins". A definer and an
+   > enhancer of one artifact do not conflict. Since PR B the merge applies the settled choice
+   > ([#357](https://github.com/spec-kitty/spec-kitty-charter/issues/357)): the named member's version is the one in
+   > force at that level (DIV-218). The compose leaves out of its refusal a step contest that no entry settles, and the
+   > merge refuses it at read with `pack_sibling_conflict`. Until #358 any pack of the compose may declare the entry,
+   > and a settlement is not gated by level (DIV-219). Every composition refusal is in the table of
    > [Compose packs](/guides/compose-packs/#read-a-refusal); the split's remaining moves are the open-packs work, not
    > this page's pipeline.
    **Compose roots** (built, #360). The offering composes every configured pack. An activation
@@ -91,8 +94,9 @@ flowchart LR
    and that closure is what its writes are checked against and what its closure read answers.
    The per-artifact writes (select, unselect, deactivate, re-activate, apply a preset) are served
    over that closure, and a select or a deactivate with a `cascade` walks it; the rules are in
-   [The cascade](/architecture/offering-and-activation/#the-cascade). Merging the closure's layers
-   for an activation, and returning an active enhancement at read (ADR-0059 A4), are the next mission's.
+   [The cascade](/architecture/offering-and-activation/#the-cascade). The closure's layers are merged for the
+   effective reads and for the write cascade ([The layer merge](#the-layer-merge)); `/offering` composes and never
+   merges.
 3. **Activate.** In core, a per-kind activation key that is absent means what the kind's
    `effective_when_absent` says (`all` for most kinds; `required` for `skill`). In the service's
    activation document an absent key means none, `skill` included
@@ -128,6 +132,87 @@ What applies in one project (activation, exclusions, selection roots) is a later
 (#103). The rules and the reasons are in
 [ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/); the differences from core are
 in the [divergence register](/conformance/divergence-register/).
+
+## The layer merge
+
+An activation reads its closure through a merge of the layers (built in PR B; FR-009 to FR-012, rules C15 and C17 to
+C21). `LayerMerge` in `packs` is pure: it reads a composed closure and the facts the verified read already holds, and
+answers a `MergedClosure`. `ClosureView.merged()` builds it once per read, on first use, and the `AvailablePacks` port
+carries it to `activations` as a value (C-002). `/offering` composes and never merges (FR-023).
+
+1. **Per level** (C15, #357). The packs of one level that hold an id contest it. A contest that exactly one descriptor
+   `overrides` entry settles puts the named member's version in force at that level; an unsettled one is refused
+   `pack_sibling_conflict` (DIV-218). A step of a mission type shares its mission type's settlement. Two copies of one
+   preset at one level are parent and child, and the child holds it (C29, C34).
+2. **Across levels** (C17, C18). In merge order (built-in, org, project) the level that applies wins, and its artifact
+   replaces the others whole: nothing of a losing version is read (DIV-216). A graph document's node counts as holding
+   its URN, so an org graph that only declares a built-in step's node replaces that step (DIV-220).
+3. **Edges** (C19, C20). An edge from a losing version is dropped with it; an edge to the overridden id, bare or
+   `<pack>::`-written, resolves to the winner.
+4. **The gate** (C21). An override is allowed only when the overridden artifact is `open`, judged along the closure
+   without the winning pack. Otherwise the merge refuses `500 pack_unreadable` (DIV-217). A settled contest is not
+   level-gated until [#358](https://github.com/spec-kitty/spec-kitty-charter/issues/358) (DIV-219).
+
+Every winner carries its `packId`, `level` and mutability level. The merge also keeps one `LayerOverride` record
+(artifact, winner, loser) per losing version, in merge order; a settled sibling loser has none, and the winner's
+provenance shows it. It carries the `applies_to_languages` of each winner, one winner per preset id, and the required
+floor as the union of the must-have items of every governing copy of a preset id, restricted to what the closure holds
+(C31, A1, [DIV-205](/conformance/divergence-register/)). The writes' floor (`ClosureView.floor()`) still reads the
+winning copies only. A winning mission type does not take the unique steps of its losers, so a built-in step survives
+under a project mission type of the same id; PR C confirms this with the architecture owner.
+
+The write cascade walks the merged edges, so it never follows an edge a losing version declared (rule E20, DIV-230).
+A write over a closure whose merge refuses therefore answers `500` as a read does. The compose facts of each pack are
+kept between reads by `CompositionFactsCache`, which follows the invariants of #416 and still reads each pack's
+revision on every call (DIV-236).
+
+## What is in force
+
+The effective reads answer what an activation puts in force, and why the rest is not (PR B; FR-013 to FR-017). The
+input is the merged closure and the activation document: `selected`, `deactivated`, `languages` and the version pins.
+`InForceResolution` in `packs` decides, because every stratum walks edges (C-002); `activations` turns its answer into
+the list, the report and the summary. It is a pure function. "In force" is `state=active` (operator ruling Q1).
+
+The set is solved in four strata, each a fixed point over the one below (research R13; rules E2 to E7):
+
+1. **Candidates.** The selected artifacts of the merged closure within the language filter, minus the deny entries,
+   plus every locked artifact. A required artifact is a candidate only when it is selected.
+2. **Overrides.** Transitive from the top: in `F -> E -> T` only `F` stays, and `F` satisfies a requirement on `E` and
+   `T`. A target that is not `open` stays, and the pair is reported as `overrideNotApplied` (DIV-221). A cycle of
+   overrides that the candidates or the floor reach is refused `500 pack_unreadable` (DIV-222).
+3. **The requirement.** A required artifact is satisfied by itself in force or by an artifact in force that overrides
+   it, never by an enhancement; otherwise it is put in force, whatever the language filter says (DIV-225, DIV-226). This
+   repeats until no required artifact is unsatisfied on the final set.
+4. **Enhancers and bindings.** A least fixed point: an enhancer is in force only when its support chain reaches an
+   artifact that enhances nothing and is in force, and a step contract only while its mission type is (DIV-224). A
+   required or locked artifact this removes stays out and is reported `requiredNotInForce`.
+
+An overrider that stratum 4 removes loses its overrides, and the strata run again without it, until no overrider is
+newly removed. If an overrider is removed while its overrides apply and is in force once they are withdrawn, the
+answer has no stable value and the read refuses `500 pack_unreadable` (rule E7, DIV-223).
+
+Each artifact then gets one state and one reason, the first row of the precedence of rule E9: a bound artifact whose
+mission type is out, then an enhancer with no target in force, then `locked`, `required` or `selected` when in force;
+`language_filtered`, `deactivated`, `not_selected`, and `overridden` for a selected artifact an override hides. An
+artifact that is not selected stays `not_selected` even when an override hides it, and a required one then carries
+`satisfiedBy`. There is no `kind_default` or `kind_not_activated` (DIV-229). The language filter applies at read only
+(DIV-227).
+
+Two reads serve it, and both answer from one verified read of the closure (E19), retried up to three times on
+`stale_input`:
+
+- `listEffectiveArtifacts` lists every winning artifact of an activatable kind with its state, reason, `required`,
+  policy, `packId`, `level`, `satisfiedBy` and `suggestion`, filtered by `kind` and `state` and paged by a keyset
+  cursor; `summary` counts the whole set.
+- `getActivationSkippedReport` lists each artifact not in force once, in the bucket of its first deciding rule
+  (DIV-228). `skippedByScope`, `unreachedBehindDeactivated` and `skippedShared` are the cascade's and stay empty.
+
+The reports of what is not applied are `denyNotApplied` (a deny entry a lock or the floor overrides), `overrideNotApplied`,
+`requiredNotInForce`, `requiredNotHeld` (a must-have item no pack holds) and `pinNotHeld`. A write reports the same
+reads' verdict as `warnings` (DIV-237). A suggestion is only a `not_selected` artifact a `suggests` edge of an active
+artifact reaches (DIV-235). The two effective reads that PR C builds, the graph and the action context, use the same
+in-force set. [Offering and activation](/architecture/offering-and-activation/#the-effective-reads) has the
+request and response behavior, the tags and the refusals.
 
 ## Writes
 

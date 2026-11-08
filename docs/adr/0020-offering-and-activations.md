@@ -2,8 +2,8 @@
 title: "ADR-0020: The offering and activations are separate resources, and the service stores activations"
 description: Proposes /offering for what can be used and /activations for active charters the service stores, activation writes reserved before 1.0.0, and a hosted-first contract.
 doc_status: active
-updated: 2026-11-07T00:00:00Z
-decision_status: Accepted; superseded in part by ADR-0033 (2026-10-26); amended 2026-10-31 (#125); the `packs` row and amendment ruling 7 superseded in part by ADR-0048, and `missionTypes` and the amendment's mission-type rules by ADR-0050 (2026-11-02); open questions 4 to 7 ruled, and the cascade relations settled, by ADR-0059 (2026-11-04); the activation document's kind model amended 2026-11-07 (`activatedKinds` and `missionTypes` removed, `schemaVersion` 2)
+updated: 2026-11-08T00:00:00Z
+decision_status: Accepted; superseded in part by ADR-0033 (2026-10-26); amended 2026-10-31 (#125); the `packs` row and amendment ruling 7 superseded in part by ADR-0048, and `missionTypes` and the amendment's mission-type rules by ADR-0050 (2026-11-02); open questions 4 to 7 ruled, and the cascade relations settled, by ADR-0059 (2026-11-04); the activation document's kind model amended 2026-11-07 (`activatedKinds` and `missionTypes` removed, `schemaVersion` 2); D6's `If-Match` takes either tag, amended 2026-11-08
 decision_date: '2026-10-24'
 type: ADR
 kind: ADR
@@ -72,6 +72,9 @@ Superseded in part by [ADR-0033](/adr/0033-local-active-charter-is-source-of-tru
 Amended 2026-11-07 (the layer-merge mission, PR A0): the document loses `activatedKinds` and `missionTypes`, a mission
 type is an ordinary kind of `selected` and `deactivated`, and a stored document is `schemaVersion` 2. See
 [Amendment 2026-11-07](#amendment-2026-11-07-one-kind-model-in-the-activation-document).
+
+Amended 2026-11-08 (the layer-merge mission, PR B): an activation write's `If-Match` takes the quoted revision or the
+current `getActivation` tag. See [Amendment 2026-11-08](#amendment-2026-11-08-if-match-takes-either-tag).
 
 Amended 2026-10-31 (operator rulings on #125): the activation set is declared in the contract and reserved; its open
 questions 1 and 2 are ruled. See [Amendment 2026-10-31](#amendment-2026-10-31-the-activation-set-is-declared-125).
@@ -273,7 +276,8 @@ without it the write is last-writer-wins, because core's content is what it mean
    included, and an absent `packs` means every configured pack. Core then selects what it wants rather than
    narrowing a default ([DIV-203](/conformance/divergence-register/)). The round trip below holds for a document the
    offering has not made stale ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) D4).*
-2. **Configure it** with sub-resource writes. Each one needs `If-Match: <revision>` and answers
+2. **Configure it** with sub-resource writes. Each one needs `If-Match: <revision>` (*2026-11-08: or the current
+   `getActivation` tag; see the [amendment](#amendment-2026-11-08-if-match-takes-either-tag)*) and answers
    `200` with an `ActivationChange` (the new `revision`, the ids applied, the skipped report and
    `_links`):
 
@@ -646,7 +650,9 @@ change.
   the fingerprint. JCS sorts keys itself, so the revision does not depend on member order; the service writes
   members in schema order.
   *2026-11-05: superseded in part by [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/)
-  decision 5: `governanceFingerprint` and `summary` leave `Activation`, so its bytes depend only on the revision.*
+  decision 5: `governanceFingerprint` and `summary` leave `Activation`, so its bytes depend only on the revision.
+  2026-11-08: superseded again for the `ETag`: `getActivation` carries `denyNotApplied`, so its `ETag` covers the
+  revision and the closure's digest, and `If-Match` takes either (amendment below).*
 - **Conditional headers are optional parameters**: a sub-resource write without `If-Match` is the declared `428`,
   not a framework `400`.
 - **`mission_type` is a `{kind}` under `selections/` only**: mission types have no deny list, so an exclusion of one
@@ -695,6 +701,28 @@ the [divergence register](/conformance/divergence-register/).
 
 The version stays on the 0.x line ([ADR-0022](/adr/0022-contract-versions-start-at-0-x/)): no `contract-charter-v*`
 baseline exists, so the break is allowed.
+
+## Amendment 2026-11-08: `If-Match` takes either tag
+
+**Operator decision `01M6Y3GZFRC5WEQQ7G6GT0YMW3` of 2026-11-08 on the layer-merge mission, built by its PR B.** It amends
+D6 and nothing else of this record. The contract change is the `### Breaking` block of
+`contracts/charter/changes/2026-11-07-b-effective-reads.md`, and the divergence is DIV-234 of the
+[divergence register](/conformance/divergence-register/).
+
+[ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) D5, as amended on the same day, makes the `ETag` of
+`getActivation` cover the revision and the closure's `governanceFingerprint` (decision `01M6Y11E55YP5TG1EJ1MDKCFRP`),
+while a write's answer keeps the revision as its `ETag`. So a client that read an activation holds a tag that is not the
+revision. D6's `If-Match` therefore takes either:
+
+1. The activation writes that take `If-Match` (`replaceActivation`, `deleteActivation` and the five sub-resource
+   writes) accept it carrying the quoted revision or the current `getActivation` tag, or `*`.
+2. A closure tag that no longer matches, because the document or a pack of its closure changed, is `412`.
+3. A write's answer keeps the revision as its `ETag` and carries no `denyNotApplied`.
+4. The revision is checked first and costs no read of the packs. A tag-shaped header that is not the revision costs one
+   verified read of the closure to compute the current tag.
+
+D6's round trip is unchanged for the revision: a `PUT` of a fetched `config` answers `200` with the same revision. It no
+longer answers the `ETag` that `getActivation` sent, which is the closure tag.
 
 ## References
 
