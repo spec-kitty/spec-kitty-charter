@@ -251,6 +251,18 @@
       "title": null,
       "verdict": "deferred-with-followup",
       "wp": "WP20"
+    },
+    "#418": {
+      "evidence_ref": "Closed by #423 (merged; main at dabf5093). Its 'correctness to settle before PR B' item, the per-pack generation key (R5, 53dfb013), is verified by WP21's facts cache keying on the configured name (decision 01M6XT2FKK7YPV1GCESFW1ANZ7)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "verified-already-fixed",
+      "wp": "WP21"
     }
   },
   "schema_version": 1
