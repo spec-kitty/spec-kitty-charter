@@ -1,7 +1,7 @@
 ### Breaking
 
 - The write gate treats an id that a pack below the written pack already holds as a replace of that pack's artifact, on
-  both entry points: the whole-pack registration (`registerPackFromArchive`, `registerPackFromSource`, still reserved) and
+  both entry points: the whole-pack registration (`registerPackFromArchive`, `registerPackFromSource`) and
   the per-artifact registrations (`registerPackDirective`, `putPackDirective` and the other kinds' `registerPack*` and
   `putPack*`, which are served). The level is that of the holder's policy, scoped to what the holder and the packs it builds
   on hold (A15), and the written pack's own policy never judges it (B8). `locked` and `extendable` refuse it with `409

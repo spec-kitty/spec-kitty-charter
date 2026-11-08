@@ -3,7 +3,9 @@
 - `deletePackArtifact` (`DELETE /packs/{packId}/artifacts/{kind}/{artifactId}`) and `deletePackRelationship`
   (`DELETE /packs/{packId}/relationships`) are built (ADR-0065 D4; FR-005, FR-006, FR-007, FR-036; PR A of the layer merge
   mission): they lose `x-reserved` and their `501`, and the two `501` pins of
-  `scenarios/registration/reserved-registration.feature` go with them. `POST /packs` stays reserved. Both are
+  `scenarios/registration/reserved-registration.feature` go with them. With `POST /packs` built as well
+  (`2026-11-07-a-pack-source-served.md`), no operation of the `pack-registration` set is reserved, and
+  `reserved-registration.feature` is deleted. Both are
   synchronous, run under the registry lock and then the pack's lock, and answer `204` with the pack's new revision as the
   `ETag`; `If-Match` is required (`428` without it, `412` with a stale one, judged under the locks). The artifact
   `DELETE` removes the artifact, its companion files, its outgoing edges from `registered.graph.yaml` and the preset
