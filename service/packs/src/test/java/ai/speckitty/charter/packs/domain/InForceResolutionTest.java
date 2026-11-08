@@ -840,4 +840,61 @@ class InForceResolutionTest {
         expectBucket(states, "tactic:X", Bucket.ENHANCED_TARGET_NOT_IN_FORCE);
         assertThat(states.enhancedTargets()).containsKey(u("tactic:X"));
     }
+
+    // ---- a skipped artifact is listed once (decision 01M6YM02EG3X5V8G33T1HT5N0K) ----
+
+    @Test
+    void aSelectedRequiredEnhancerWithoutATargetIsInRequiredNotInForceAndInNoBucket() {
+        InForceStates states = new Closure()
+                .open("tactic:T", "tactic:X")
+                .enhances("tactic:X", "tactic:T")
+                .requires("tactic:X")
+                .select("tactic:X");
+
+        expect(states, "tactic:X", State.INACTIVE, Reason.ENHANCED_TARGET_NOT_IN_FORCE);
+        assertThat(states.requiredNotInForce())
+                .containsExactly(
+                        new InForceStates.RequiredNotInForce(u("tactic:X"), Reason.ENHANCED_TARGET_NOT_IN_FORCE));
+        assertThat(states.stateOf(u("tactic:X")).orElseThrow().bucket())
+                .as("listed once: in requiredNotInForce, not in the enhanced-target bucket as well")
+                .isEmpty();
+    }
+
+    @Test
+    void aSelectedLockedEnhancerWithoutATargetIsInRequiredNotInForceAndInNoBucket() {
+        InForceStates states = new Closure()
+                .open("tactic:T")
+                .locked("tactic:X")
+                .enhances("tactic:X", "tactic:T")
+                .select("tactic:X");
+
+        assertThat(states.requiredNotInForce())
+                .containsExactly(
+                        new InForceStates.RequiredNotInForce(u("tactic:X"), Reason.ENHANCED_TARGET_NOT_IN_FORCE));
+        assertThat(states.stateOf(u("tactic:X")).orElseThrow().bucket()).isEmpty();
+    }
+
+    @Test
+    void aSelectedRequiredStepOfAMissionTypeNotInForceIsInRequiredNotInForceAndInNoBucket() {
+        InForceStates states = new Closure()
+                .open("mission_type:m", "action:m/s")
+                .requires("action:m/s")
+                .select("action:m/s");
+
+        assertThat(states.requiredNotInForce())
+                .containsExactly(
+                        new InForceStates.RequiredNotInForce(u("action:m/s"), Reason.MISSION_TYPE_NOT_IN_FORCE));
+        assertThat(states.stateOf(u("action:m/s")).orElseThrow().bucket()).isEmpty();
+    }
+
+    @Test
+    void anArtifactThatIsNeitherRequiredNorLockedStaysInItsBucketWhenPruned() {
+        InForceStates states = new Closure()
+                .open("tactic:T", "tactic:X")
+                .enhances("tactic:X", "tactic:T")
+                .select("tactic:X");
+
+        assertThat(states.requiredNotInForce()).isEmpty();
+        expectBucket(states, "tactic:X", Bucket.ENHANCED_TARGET_NOT_IN_FORCE);
+    }
 }
