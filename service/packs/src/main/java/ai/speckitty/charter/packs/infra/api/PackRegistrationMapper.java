@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -38,6 +40,7 @@ import org.springframework.stereotype.Component;
 @Component
 final class PackRegistrationMapper {
 
+    private static final Logger LOG = LoggerFactory.getLogger(PackRegistrationMapper.class);
     private static final String PACKS = "packs";
     private static final String REGISTRATIONS = "pack-registrations";
     private static final String ARTIFACTS = "artifacts";
@@ -137,12 +140,25 @@ final class PackRegistrationMapper {
                 .locksRemoved(references(notices.locksRemoved()));
     }
 
-    /** The artifacts as references; a URN of a kind the contract does not list is left out, as no pack holds one. */
+    /**
+     * The artifacts as references. Notices name activatable kinds only: an entry of another kind (a template, an asset,
+     * a guard, a lifecycle) is left out of the response and logged at WARN with its URN (operator ruling; widening the
+     * kinds is issue #417).
+     */
     private static List<ArtifactReference> references(List<String> urns) {
         return urns.stream()
                 .flatMap(token -> Urn.parse(token).stream())
-                .flatMap(urn -> kindOf(urn).stream().map(kind -> new ArtifactReference(kind, urn.id())))
+                .flatMap(urn -> reference(urn).stream())
                 .toList();
+    }
+
+    private static java.util.Optional<ArtifactReference> reference(Urn urn) {
+        java.util.Optional<ArtifactReference> reference =
+                kindOf(urn).map(kind -> new ArtifactReference(kind, urn.id()));
+        if (reference.isEmpty()) {
+            LOG.warn("registration notice for {} left out: its kind is not an activatable kind (issue #417)", urn);
+        }
+        return reference;
     }
 
     private static java.util.Optional<ArtifactReference.KindEnum> kindOf(Urn urn) {

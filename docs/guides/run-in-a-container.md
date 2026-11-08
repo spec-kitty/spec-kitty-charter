@@ -2,13 +2,15 @@
 title: Run the service in a container
 description: Run the charter service under the container profile with docker compose, with its token as a mounted secret file and nothing secret committed.
 doc_status: draft
-updated: 2026-11-05T00:00:00Z
+updated: 2026-11-08T00:00:00Z
 type: Guide
 kind: How-To
 related:
   - adr/0041-containerized-configuration-model
   - architecture/service-lifecycle
   - adr/0061-one-replica-per-deployment
+  - guides/service-build
+  - guides/compose-packs
 audience:
   - profile: governance-lead
     guidance_text: Follow this to run the charter service for a team in a container, and to see where its secrets go.
@@ -25,6 +27,10 @@ committed file holds one.
 
 No container image is published yet ([#234](https://github.com/spec-kitty/spec-kitty-charter/issues/234)). You need one
 you built yourself.
+
+If your image will register packs from a git repository, it must carry git 2.50.1 or later (see
+[Registering packs](#registering-packs)). No published image carries it yet: adding git to a published image is the scope
+of #234.
 
 ## Steps
 
@@ -104,6 +110,29 @@ Among other checks, the service refuses to start, naming the property, file or d
   `DEBUG` stays allowed.
 - the configuration root is unset or does not exist, or the port is 0.
 - `charter.insecure-no-token` or `charter.project-config-dir` is set.
+
+## Registering packs
+
+Registration is off by default. These settings switch it on and name where packs may come from. Set them as env vars or
+properties like any other setting (`CHARTER_REGISTRATION_ENABLED`, and so on). The full list, with defaults, is in
+[Building the service](/guides/service-build/#registering-packs).
+
+- `charter.registration.enabled=true` allows `PUT /packs/{packId}` and `POST /packs`. While it is off, a registration
+  answers `503 pack_source_unavailable`.
+- Each source kind is off until its own flag is on: `charter.pack-sources.https.enabled`,
+  `charter.pack-sources.git.enabled` and `charter.pack-sources.filesystem.enabled`. A flag is read at every request.
+- Allowlists and the root are empty by default, so a source nobody configured is refused: set
+  `charter.pack-sources.https.allowed-hosts`, `charter.pack-sources.git.allowed-hosts` and
+  `charter.pack-sources.filesystem.root`. A path source switched on with no root stops the start.
+- The image must carry **git 2.50.1 or later** for the git source, on the `PATH` or at
+  `charter.pack-sources.git.executable`. The service checks the version at every start. With an old or missing git, the
+  git source answers `503 pack_source_unavailable` and the other kinds work. The service never uses JGit and never
+  checks out a work tree.
+- Registration spools its upload under `<config-root>/staging`, on the volume of the packs, unless
+  `charter.registration.staging-dir` names another directory. Keep it on the same volume as the packs.
+- Two registrations run and eight wait. A registration takes its slot before the service reads the body, so a few slow
+  uploads can make other callers get `503` with `Retry-After`. Put a proxy with an upload timeout in front if clients
+  are slow.
 
 ## Health check
 

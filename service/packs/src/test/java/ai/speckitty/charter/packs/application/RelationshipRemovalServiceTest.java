@@ -8,10 +8,16 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.domain.Relationship;
+import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditions;
 import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Packs;
 import ai.speckitty.charter.packs.application.PackRegistrationServiceTest.Rig;
+import ai.speckitty.charter.packs.domain.WritePolicyGate;
+import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
+import ai.speckitty.charter.packs.infra.storage.RelationshipShard;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +51,16 @@ class RelationshipRemovalServiceTest {
                 .directive("D3", "D3");
     }
 
+    /** The real mutability gate, over the rig's packs. */
+    private static WritePolicyGate gateOf(Rig rig) {
+        ConsistentRead read = new ConsistentRead(new FileSystemPackSources(rig.locations::all), rig.generation);
+        return new PackMutabilityPolicy(
+                new OfferingReadService(rig.repository, rig.repository, rig.repository, read),
+                rig.repository,
+                rig.repository,
+                read);
+    }
+
     private static PackQualifiedReference reference(String text) {
         return PackQualifiedReference.parse(text);
     }
@@ -55,7 +71,7 @@ class RelationshipRemovalServiceTest {
 
         Removals(Rig rig) {
             this.rig = rig;
-            this.service = new RelationshipRemovalService(rig.repository, rig.writeStore, rig.impact);
+            this.service = new RelationshipRemovalService(rig.repository, rig.writeStore, gateOf(rig), rig.impact);
         }
 
         PackRevision remove(String from, String to) {
@@ -210,7 +226,8 @@ class RelationshipRemovalServiceTest {
                         .registeredEdge("SHARED_ONE", "OTHER"));
         rig.install("sib-b", Packs.of(SIBLING_B, "sib-b", "1.0.0", "org").directive("SHARED_ONE", "Yours"));
         rig.activations.add(Optional.of(List.of("sib-a", "sib-b")));
-        RelationshipRemovalService service = new RelationshipRemovalService(rig.repository, rig.writeStore, rig.impact);
+        RelationshipRemovalService service =
+                new RelationshipRemovalService(rig.repository, rig.writeStore, gateOf(rig), rig.impact);
         PackIdentifier pack = new PackIdentifier("sib-a");
         Map<String, String> before = rig.filesOf(rig.packs.resolve("sib-a"));
 
@@ -225,6 +242,138 @@ class RelationshipRemovalServiceTest {
         service.remove(pack, reference("directive:SHARED_ONE"), reference("directive:OTHER"), "*");
         assertThat(rig.writeStore.registeredRelationships(pack))
                 .as("the control")
+                .isEmpty();
+    }
+
+    // ---- the edge gate (WP20 item 2; DM-01M6TR1KDAJ64GMJD6AYNZKT59 item 4)
+    // ---------------------------------------------
+
+    private static final String BASE_ID = PackRegistrationServiceTest.ulid('C');
+    private static final String DERIVED_ID = PackRegistrationServiceTest.ulid('D');
+
+    private static Packs base() {
+        return Packs.of(BASE_ID, "base", "1.0.0", "org", "mutability_policy: policy.yaml\n")
+                .file("policy.yaml", "schema_version: 1\nartifacts:\n  directive:LOCKED_ONE: locked\n")
+                .directive("LOCKED_ONE", "Locked")
+                .directive("OPEN_ONE", "Open");
+    }
+
+    private static Packs derivedWithEdgesFrom(String... sources) {
+        List<Relationship> edges = new java.util.ArrayList<>();
+        for (String source : sources) {
+            edges.add(new Relationship(
+                    Urn.parse("directive:" + source).orElseThrow(),
+                    Optional.of("base"),
+                    Urn.parse("directive:DERIVED_ONE").orElseThrow(),
+                    Optional.empty(),
+                    RelationType.REQUIRES,
+                    Optional.empty(),
+                    Optional.empty()));
+        }
+        return Packs.of(
+                        DERIVED_ID,
+                        "derived",
+                        "1.0.0",
+                        "project",
+                        "depends_on:\n  - pack_id: " + BASE_ID + "\n    range: '>=1.0'\n")
+                .directive("DERIVED_ONE", "Own")
+                .file("registered.graph.yaml", RelationshipShard.write(edges));
+    }
+
+    @Test
+    void anEdgeWhoseSourceIsALockedArtifactOfAnAncestorIsNotRemovedAndOneFromAnOpenArtifactIs(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("base", rig.stage(base()), Preconditions.none());
+        rig.install("derived", derivedWithEdgesFrom("LOCKED_ONE", "OPEN_ONE"));
+        RelationshipRemovalService service =
+                new RelationshipRemovalService(rig.repository, rig.writeStore, gateOf(rig), rig.impact);
+        PackIdentifier derived = new PackIdentifier("derived");
+        Map<String, String> before = rig.filesOf(rig.packs.resolve("derived"));
+
+        assertThat(refusal(() -> service.remove(
+                                derived,
+                                reference("base::directive:LOCKED_ONE"),
+                                reference("directive:DERIVED_ONE"),
+                                "*"))
+                        .code())
+                .as("a whole-pack replace is refused for dropping this edge: so is the DELETE")
+                .isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
+        assertThat(rig.filesOf(rig.packs.resolve("derived")))
+                .as("nothing changed")
+                .isEqualTo(before);
+
+        service.remove(derived, reference("base::directive:OPEN_ONE"), reference("directive:DERIVED_ONE"), "*");
+        assertThat(rig.writeStore.registeredRelationships(derived))
+                .as("the control: the edge from an open artifact goes")
+                .extracting(edge -> edge.from().toString())
+                .containsExactly("directive:LOCKED_ONE");
+    }
+
+    // ---- pack-qualified targets (WP20 item 3) ---------------------------------------------------------------------
+
+    private static Relationship edgeToX(String targetPack) {
+        return new Relationship(
+                Urn.parse("directive:D1").orElseThrow(),
+                Optional.empty(),
+                Urn.parse("directive:X").orElseThrow(),
+                Optional.ofNullable(targetPack),
+                RelationType.REQUIRES,
+                Optional.empty(),
+                Optional.empty());
+    }
+
+    private static final String PACK_ONE = PackRegistrationServiceTest.ulid('Y');
+    private static final String PACK_TWO = PackRegistrationServiceTest.ulid('Z');
+
+    /** Two packs that both hold {@code directive:X}, and {@code qa}, which depends on both and has an edge to each. */
+    private static Rig rigWithTwoEdgesToTheSameIdInTwoPacks(Path host) {
+        Rig rig = new Rig(host);
+        rig.install("base", Packs.of(PACK_ONE, "base", "1.0.0", "built-in").directive("X", "Base X"));
+        rig.install("other", Packs.of(PACK_TWO, "other", "1.0.0", "org").directive("X", "Other X"));
+        rig.install(
+                "qa",
+                Packs.of(
+                                QA_ID,
+                                "qa",
+                                "1.0.0",
+                                "project",
+                                "depends_on:\n  - pack_id: " + PACK_ONE + "\n    range: '>=1.0'\n  - pack_id: "
+                                        + PACK_TWO + "\n    range: '>=1.0'\n")
+                        .directive("D1", "D1")
+                        .file(
+                                "registered.graph.yaml",
+                                RelationshipShard.write(List.of(edgeToX("base"), edgeToX("other")))));
+        return rig;
+    }
+
+    private static List<String> targetsOf(Rig rig) {
+        return rig.writeStore.registeredRelationships(QA).stream()
+                .map(edge -> edge.toReference().toString())
+                .toList();
+    }
+
+    @Test
+    void aDeleteThatNamesOnePackQualifiedTargetRemovesOnlyThatEdge(@TempDir Path host) {
+        Rig rig = rigWithTwoEdgesToTheSameIdInTwoPacks(host);
+        Removals removals = new Removals(rig);
+        assertThat(targetsOf(rig))
+                .as("the fixture holds both")
+                .containsExactly("base::directive:X", "other::directive:X");
+
+        removals.remove("directive:D1", "base::directive:X");
+
+        assertThat(targetsOf(rig)).containsExactly("other::directive:X");
+    }
+
+    @Test
+    void aDeleteThatNamesNoPackKeepsTheKernelComparisonAndRemovesTheEdgeOnThatPair(@TempDir Path host) {
+        Rig rig = rigWithTwoEdgesToTheSameIdInTwoPacks(host);
+        Removals removals = new Removals(rig);
+
+        removals.remove("directive:D1", "directive:X");
+
+        assertThat(targetsOf(rig))
+                .as("the unqualified reference matches by the kernel's pair")
                 .isEmpty();
     }
 }

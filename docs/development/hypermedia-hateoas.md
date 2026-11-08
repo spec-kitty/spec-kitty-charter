@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: Hypermedia (HATEOAS)
 description: How charter API responses link to what a client can do next, through one closed Links component and documented relation names.
 doc_status: draft
-updated: 2026-10-31T00:00:00Z
+updated: 2026-11-08T00:00:00Z
 type: Guide
 kind: Reference
 related:
@@ -143,7 +143,7 @@ used.
 | `mission-types` | `/api/v1/offering/mission-types` | `GET` | The offering | Proposed |
 | `context` | `/api/v1/offering/mission-types/{missionType}/actions/{action}/context{?depth}` | `GET` | An action | Proposed |
 | `activations` | `/api/v1/activations` | `POST` | Root, once activation writes are built | Proposed |
-| `edit` | The activation | `PUT` | An activation, once writes are built. Not used in this minor: no answer carries an `edit` link, so an artifact's registration is not advertised by a link | Proposed |
+| `edit` | The activation | `PUT` | An activation, once writes are built. Not used in this minor: no answer carries an `edit` link, so neither an artifact's, a pack's nor a whole-pack registration is advertised by a link | Proposed |
 | `delete` | The activation | `DELETE` | An activation, once writes are built | Proposed |
 | `skipped` | `…/activations/{activationId}/skipped` | `GET` | An activation | Proposed |
 | `effective-context` | `…/activations/{activationId}/mission-types/{missionType}/actions/{action}/context{?depth}` | `GET` | An activation | Proposed |
