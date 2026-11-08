@@ -42,14 +42,22 @@ public final class ArchiveStaging {
             try (InputStream body = Files.newInputStream(archive)) {
                 return new Staged(reader.extract(body, format, into), Map.of());
             } catch (ArchiveRefusal refused) {
-                throw refusal(refused);
+                throw refusalOf(refused);
             } catch (IOException unreadable) {
                 throw new IllegalStateException("cannot read the spooled archive", unreadable);
             }
         };
     }
 
-    private static CharterRefusal refusal(ArchiveRefusal refused) {
+    /**
+     * The {@code 422 validation_failed} an archive the extractor refuses ends a registration with, naming each entry and
+     * the rule it broke. A source that walks a tree rather than an archive (git) answers a tree the writer refuses the same
+     * way.
+     *
+     * @param refused what the extractor or the tree writer found
+     * @return the refusal
+     */
+    public static CharterRefusal refusalOf(ArchiveRefusal refused) {
         List<RefusalViolation> violations = refused.violations().stream()
                 .map(violation -> new RefusalViolation(
                         "",

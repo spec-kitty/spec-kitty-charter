@@ -1,6 +1,9 @@
 package ai.speckitty.charter.packs.infra.fetch.git;
 
+import java.net.Inet6Address;
 import java.net.InetAddress;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Where git is sent for a repository the service has checked: the location it is given after {@code --} and what the run
@@ -11,6 +14,9 @@ import java.net.InetAddress;
  */
 @FunctionalInterface
 public interface GitRemote {
+
+    /** The only port git is sent to, and the one the pin names. */
+    int HTTPS_PORT = 443;
 
     /**
      * What git is given for a repository.
@@ -30,11 +36,19 @@ public interface GitRemote {
     Target target(GitRepository repository, InetAddress address);
 
     /**
-     * The production remote: the canonical https URL, with the checked address pinned.
+     * The production remote: the canonical https URL, with the checked address pinned for git's own connection
+     * ({@code http.curloptResolve=<host>:443:<address>}), so git cannot resolve the host again and be answered another
+     * address (rebinding). The pin is built from the canonical host, never from the URL as sent.
      *
      * @return the remote
      */
     static GitRemote https() {
-        return (repository, address) -> new Target(repository.url(), GitTransport.NONE);
+        return (repository, address) -> {
+            String literal = address instanceof Inet6Address
+                    ? "[" + address.getHostAddress() + "]"
+                    : address.getHostAddress();
+            String pin = "http.curloptResolve=" + repository.host() + ":" + HTTPS_PORT + ":" + literal;
+            return new Target(repository.url(), new GitTransport(List.of(pin), Map.of()));
+        };
     }
 }

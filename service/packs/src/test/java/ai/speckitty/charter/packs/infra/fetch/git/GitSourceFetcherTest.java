@@ -182,8 +182,9 @@ class GitSourceFetcherTest {
         return call.arguments().subList(PIN_ARGUMENTS + remotePins * 2, call.arguments().size());
     }
 
+    /** No git command ran, the version check of building the fetcher aside, and nothing was looked up or left behind. */
     private void assertNothingStarted() {
-        assertThat(shim.calls()).isEmpty();
+        assertThat(shim.calls()).allSatisfy(call -> assertThat(call.arguments()).containsExactly("--version"));
         assertThat(lookups).isEmpty();
         assertThat(leftovers()).isEmpty();
     }
@@ -202,11 +203,11 @@ class GitSourceFetcherTest {
 
         List<GitShim.Call> calls = shim.calls();
         assertThat(calls).hasSize(6);
-        // calls.get(0) is the version check; the five that follow are the fetch.
-        Path repository = Path.of(after(calls.get(1), 0).get(3));
+        // calls.get(0) is the version check; the five that follow are the fetch, each with the remote's pin.
+        Path repository = Path.of(after(calls.get(1), 1).get(3));
         assertThat(repository.getFileName().toString()).isEqualTo("repo.git");
         assertThat(repository.getParent().getParent()).isEqualTo(directory);
-        assertThat(after(calls.get(1), 0)).containsExactly("init", "--bare", "--template=", repository.toString());
+        assertThat(after(calls.get(1), 1)).containsExactly("init", "--bare", "--template=", repository.toString());
         assertThat(after(calls.get(2), 1))
                 .containsExactly(
                         "--git-dir=" + repository,
@@ -217,16 +218,16 @@ class GitSourceFetcherTest {
                         "--",
                         URL,
                         "+" + REF + ":refs/charter/fetched");
-        assertThat(after(calls.get(3), 0))
+        assertThat(after(calls.get(3), 1))
                 .containsExactly(
                         "--git-dir=" + repository,
                         "rev-parse",
                         "--verify",
                         "--end-of-options",
                         "refs/charter/fetched^{commit}");
-        assertThat(after(calls.get(4), 0))
+        assertThat(after(calls.get(4), 1))
                 .containsExactly("--git-dir=" + repository, "ls-tree", "-r", "-t", "-z", "--end-of-options", COMMIT);
-        assertThat(after(calls.get(5), 0)).containsExactly("--git-dir=" + repository, "cat-file", "--batch");
+        assertThat(after(calls.get(5), 1)).containsExactly("--git-dir=" + repository, "cat-file", "--batch");
         assertThat(staged.pack().directory().resolve("pack.yaml")).hasContent("name: acme\n");
         assertThat(staged.pack().directory().resolve("docs/readme.md")).hasContent("# acme\n");
     }
@@ -259,11 +260,11 @@ class GitSourceFetcherTest {
     }
 
     @Test
-    void aBranchAndACommitAreFetchedByTheirNameAndTheirId() {
+    void aBranchAndACommitAreFetchedByTheirNameAndTheirId() throws IOException {
         fetcher().fetch(request(URL, "refs/heads/main", null), directory);
         assertThat(after(shim.calls().get(2), 1)).endsWith("+refs/heads/main:refs/charter/fetched");
 
-        fetcher().fetch(request(URL, COMMIT, null), directory);
+        fetcher().fetch(request(URL, COMMIT, null), Files.createDirectories(temp.resolve("job-2")));
         List<GitShim.Call> calls = shim.calls();
         assertThat(after(calls.get(calls.size() - 4), 1)).endsWith("+" + COMMIT + ":refs/charter/fetched");
     }
@@ -441,7 +442,9 @@ class GitSourceFetcherTest {
 
     @Test
     void blobsPastTheLimitAfterAnEarlierViolationAreStillStoppedAtTheLimit() throws IOException {
-        tree(Blob.file("../evil.txt", "x"), Blob.file("pack.yaml", "name: acme\n"));
+        shim.out(
+                "ls-tree",
+                "100644 blob " + oid(0) + "\t../evil.txt" + "\0" + "100644 blob " + oid(1) + "\tpack.yaml" + "\0");
         ByteArrayOutputStream cat = new ByteArrayOutputStream();
         cat.write((oid(0) + " blob 1\nx\n").getBytes(StandardCharsets.US_ASCII));
         cat.write((oid(1) + " blob 99999999999\n").getBytes(StandardCharsets.US_ASCII));
