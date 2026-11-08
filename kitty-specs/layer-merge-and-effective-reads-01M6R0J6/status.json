@@ -806,7 +806,8 @@
       "last_transition_at": "2026-11-08T16:59:58.772675+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "InForceResolution (packs.domain): four strata to a fixed point, A2/mutual-override/cross-stratum pinned; InForceRequest/InForceStates plain values; ClosureView.inForce and reach over merged edges (FR-038). :packs:check, HexagonalArchitectureTest, :activations:check and full :deployable:test green. Property test 2,000 seeded closures."
+        "InForceResolution (packs.domain): four strata to a fixed point, A2/mutual-override/cross-stratum pinned; InForceRequest/InForceStates plain values; ClosureView.inForce and reach over merged edges (FR-038). :packs:check, HexagonalArchitectureTest, :activations:check and full :deployable:test green. Property test 2,000 seeded closures.",
+        "Approved, cycle 1. Strata E2-E9 and A2/A3/A8 are correct; the A2, mutual-override and cross-stratum answers are pinned exactly. Both test corrections are required by E4, not a weakening (I reproduced the old oracle's false failure on seed 20261108 case 47). The ClosureViewMergedTest edit is required by FR-038. Writes building the merge are accepted per FR-038; plan IC-07 and rules E20 contradict it, and a contract fragment plus a divergence entry are due before PR B closes. C28 reachable and the E7 unstable refusal are sound, but must be recorded. E7 and data-model still state the superseded one-rerun rule; R13 governs. Non-blocking: N1-N3 tests. Ran :packs:check, :activations:check and :deployable:test (1127 tests, 0 failures); red-first confirmed on 6b683349, a8ac2549, 9945ae51 and c9687861."
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
