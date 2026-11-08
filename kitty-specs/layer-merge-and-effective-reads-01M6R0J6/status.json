@@ -840,7 +840,7 @@
     },
     "WP24": {
       "actor": "claude",
-      "agent": "claude:opus:reviewer-renata",
+      "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -850,9 +850,11 @@
       "last_transition_at": "2026-11-08T18:30:26.291424+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "WP24 done: PacksSession.merged()/inForce() as values (MergedSnapshot, InForceQuery/InForceAnswer), EffectiveSet, EffectiveSkippedReport, EffectiveTag (activation/skipped/artifacts variants). 8 commits, red before green. :activations:check and :packs:check green; :deployable:test red only on OperationCoverage R-20 (HexagonalArchitectureTest 61/61 green). Shared edits: packs ArtifactState.overriddenBy (+3 tests), deployable ActivationTestWiring (two port methods)."
+        "WP24 done: PacksSession.merged()/inForce() as values (MergedSnapshot, InForceQuery/InForceAnswer), EffectiveSet, EffectiveSkippedReport, EffectiveTag (activation/skipped/artifacts variants). 8 commits, red before green. :activations:check and :packs:check green; :deployable:test red only on OperationCoverage R-20 (HexagonalArchitectureTest 61/61 green). Shared edits: packs ArtifactState.overriddenBy (+3 tests), deployable ActivationTestWiring (two port methods).",
+        "Changes requested (cycle 1). F1 High: EffectiveTag digests the all-configured PackSources fingerprint, so a pack outside the closure changes the tag (T123 case 3, EffectiveETag.yaml); its test is fake green. F2 Medium (decide): suggestion attached to excluded/overridden/filtered artifacts, not only not_selected. F3 Low enhances counted as hard relation; F4 Low summary wording; F5 nit. Commands: :activations:check :packs:check green (EffectiveSet 24, EffectiveTag 7, PacksAvailability 18, InForceResolution 53); :deployable:test only R-20 fails, Hexagonal 61/61; red sampled at 57e14be6 and 80698b9c."
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/layer-merge-and-effective-reads-01M6R0J6-coord/kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP24-b-effective-set-port/review-cycle-1.md",
         "reference": "review-cycle://layer-merge-and-effective-reads-01M6R0J6/WP24-b-effective-set-port/review-cycle-1.md",
@@ -860,14 +862,14 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 21745,
-      "shell_pid_created_at": "1794162120.81",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T120": "done",
-        "T121": "done",
-        "T122": "done",
-        "T123": "done",
-        "T124": "done"
+        "T120": "planned",
+        "T121": "planned",
+        "T122": "planned",
+        "T123": "planned",
+        "T124": "planned"
       }
     },
     "WP25": {
