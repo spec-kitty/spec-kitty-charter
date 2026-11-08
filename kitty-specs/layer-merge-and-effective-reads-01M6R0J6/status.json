@@ -1,7 +1,7 @@
 {
-  "event_count": 258,
-  "last_event_id": "01M6Y1XYNC2BMAPT75CYRWETH7",
-  "materialized_at": "2026-11-08T17:05:09.292329+00:00",
+  "event_count": 260,
+  "last_event_id": "01M6Y3HJ7G9WAP0CVR8VER3M55",
+  "materialized_at": "2026-11-08T17:33:20.483814+00:00",
   "mission_number": "",
   "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
   "mission_type": "",
@@ -13,9 +13,9 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 7
+    "planned": 6
   },
   "work_packages": {
     "WP01": {
@@ -775,9 +775,9 @@
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
       "implementer_of_record": "claude:sonnet:java-jenny",
-      "lane": "planned",
-      "last_event_id": "01M6Y1XYNC2BMAPT75CYRWETH7",
-      "last_transition_at": "2026-11-08T17:05:09.292329+00:00",
+      "lane": "in_progress",
+      "last_event_id": "01M6Y3HJ7G9WAP0CVR8VER3M55",
+      "last_transition_at": "2026-11-08T17:33:20.483814+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "Contract B declared (effective list, skipped report, IC-17 write members, EffectiveArtifact.suggestion, getActivation ETag over revision plus closure fingerprint), two reads unreserved (ReservedOperationCoverageTest 4 to 2), fragments, 37 @WIP scenarios. :contracts:check green; targeted deployable tests green. Whole :deployable:test stays red ONLY on OperationCoverage R-20 (GET artifacts 200 and skipped 200) until WP25 binds the two reads; accepted per the plan split, not re-reserved.",
@@ -791,7 +791,7 @@
         "reviewer": "claude:opus:reviewer-renata",
         "verdict": "changes_requested"
       },
-      "role": "reviewer",
+      "role": "implementer",
       "shell_pid": null,
       "shell_pid_created_at": null,
       "subtasks": {
