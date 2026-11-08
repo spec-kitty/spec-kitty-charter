@@ -22,6 +22,8 @@ public record PackSourceRequest(
         @Nullable String sha256,
         @Nullable String path) {
 
+    private static final String BRANCHES = "refs/heads/";
+
     /**
      * Checks the kind.
      *
@@ -44,6 +46,6 @@ public record PackSourceRequest(
      * @return true for {@code refs/heads/...} with no {@code commit}
      */
     public boolean branchWithoutCommit() {
-        return false;
+        return kind == PackSourceKind.GIT && commit == null && ref != null && ref.startsWith(BRANCHES);
     }
 }
