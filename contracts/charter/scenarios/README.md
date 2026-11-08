@@ -235,13 +235,22 @@ that calls it. A run that selects only some scenarios reports the others' operat
   count of `suggests` hops, `skippedByDepth`, the round trip of a deactivate and its gap, and the refusals at `/depth`.
 - `activations.feature`: the activation operations still reserved (ADR-0020 D8), the four effective reads: one 501
   pin per operation, each removed when its operation is built.
+- `registration/reserved-registration.feature`: the six whole-pack registration operations still reserved (contract set
+  `pack-registration`): one 501 pin per operation, the PUT and the POST before their body is bound. Not `@WIP`. Each
+  pin is removed when its operation is built.
 - `relationships.feature`: a registered relationship from a mission type the pack holds, and the refusal of one it
   does not hold (#194, ADR-0044).
 - `composition.feature`: the compose of the configured packs' `depends_on` closure on `GET /offering`, in the
   resolver's order with each entry's resolved dependencies, and the eleven pack-composition refusals, each with a
   negative control (ADR-0048, ADR-0053).
 - `journeys/journey-NN-<slug>.feature`: the eleven user journeys, each a mix of runnable and `@WIP` scenarios.
-- `registration/`, `trust/`, `integrity/`, `distribution/`: the pack registration and distribution scenarios of
+- `registration/whole-pack-registration.feature`: whole-pack registration (ADR-0065, FR-001 to FR-004, FR-024,
+  FR-025): `PUT /packs/{packId}` and `POST /packs`, the status resource, the version rule, the preconditions, the
+  impact check and the load's refusals, each refusal with a control. The file is `@contract` and each scenario is
+  `@WIP` until the serving work package binds it (the comment above a scenario names which); see "Registration steps".
+- `pack-removal.feature`: the artifact `DELETE` and the relationship `DELETE` (ADR-0065 D4, FR-005, FR-006), their
+  `404`, `409`, `412`, `422` and `428` answers, each with a control. `@contract`, each scenario `@WIP` until WP19.
+- `trust/`, `integrity/`, `distribution/`, and the rest of the pack registration and distribution scenarios of
   ADR-0005 and ADR-0019 (#43), every one `@WIP` and none `@contract`. The surface is decided, not built, and
   outside the cutover scope (ADR-0055 D1), so they are not executed, by decision (#374); each file's header says
   what changes when they are bound. Their fixtures stay in `src/test/resources/fixtures/`.
@@ -249,12 +258,53 @@ that calls it. A run that selects only some scenarios reports the others' operat
   (`PR-CHARTER-REFUSAL-001`), `@WIP` until the effective profile is built (#380); its header states the provisional
   target answer.
 
+## Registration steps
+
+The steps of `registration/whole-pack-registration.feature` and `pack-removal.feature` that the serving work packages
+bind (WP15 to WP19). Until a step is bound, the scenario that uses it is `@WIP`. Each response step is the existing
+vocabulary above.
+
+- `Given registration is switched on` and `Given registration is switched off`: `charter.registration.enabled`, which is
+  off by default. `Given the filesystem source is switched off` and `... is switched on`: the source kind's own flag.
+- `Given the archive "<name>" holds the file "<path>":` followed by a doc string: a file of the named archive, which is
+  built as a `tar.gz` of those files (the entry name is the path as written, so a path that leaves the pack can be
+  tested). A path named twice holds the later text. `Given the archive "<name>" is a copy of the archive "<other>"` and
+  `Given the archive "<name>" lacks the file "<path>"`.
+- `When I PUT "<path>" with the archive "<name>"` sends the archive with `Content-Type: application/gzip`;
+  `... as a zip archive` sends it as `application/zip`; `... as "<media type>"` sends it with that `Content-Type`;
+  `When I PUT "<path>" with the gzip archive "<name>" as "<media type>"` sends the gzip bytes under a media type that
+  does not match them; `When I PUT "<path>" with an archive larger than the body limit`. Each also takes `and the header
+  "<name>": "<value>"`, `and the headers "<name>": "<value>" and "<name>": "<value>"`, `and the remembered ETag` and
+  `without the worktree token`.
+- `When I POST "<path>" as JSON with the header "<name>": "<value>" and the body:` is the `POST` with an extra header.
+- `When I poll the registration until it ends` follows the `Location` of the last answer, polling until the state is
+  `succeeded` or `refused`, and leaves the last status as the answer. `When I remember the Location header`,
+  `When I GET the remembered registration` and `When I poll the remembered registration until it ends` do the same for a
+  registration accepted earlier.
+- `Then the path of the Location header starts with "<text>"`, `Then the field at "<json-pointer>" is present`,
+  `Then the field at "<json-pointer>" is absent` and `Then the field at "<json-pointer>" is the remembered one` (the
+  remember step is `When I remember the field "<field>" of the response body`).
+- The `RegistrationJobs` seam: `Given the registration jobs are held before they run`, `Given the registration queue is full` (two
+  held jobs run and eight wait, ADR-0065 D8), `When I release the held
+  registration jobs`, `When I release the held registration jobs and hold them while they run` (the job is then
+  `running`) and `When the service forgets the ended registrations` (the clock passes the hour the status is kept).
+- One seam per source kind: `Given the https host "<host>" is allowed`, `Given the https host "<host>" serves "<url>" with
+  the archive "<name>"` (a stub exchange, never the network); `Given the git host "<host>" is allowed`, `Given the git
+  repository "<url>" holds the archive "<name>" at the ref "<ref>"` and `Then the field at "<json-pointer>" is the commit
+  of the ref "<ref>"` (a local bare repository); `Given the filesystem source root holds the directory "<path>" with the
+  archive "<name>"`.
+- `When I DELETE "<path>" with the remembered ETag`: a `DELETE` whose `If-Match` is the `ETag` last remembered with `When I
+  remember the ETag`, from `getPack` or from a write's answer.
+
 ## Tags
 
 - `@contract`: the scenario is part of the charter contract. The suite runs only scenarios with
   this tag, so a file placed here is not picked up until it is bound and tagged. A file whose steps are not bound
   carries no `@contract`: only `@WIP`, plus its cluster's tag for the four cluster folders (`@registration`,
-  `@trust`, `@integrity`, `@distribution`). `profiles.feature` carries `@WIP` alone.
+  `@trust`, `@integrity`, `@distribution`). `profiles.feature` carries `@WIP` alone. The two files of the whole-pack
+  registration (`registration/whole-pack-registration.feature` and `pack-removal.feature`) are the exception: they carry
+  `@contract` on the feature, as `activation-ruling-changes.feature` does, and tag each scenario `@WIP` until the work
+  package that serves it binds its steps and removes the tag.
 - `@provisional`: the behavior is not settled yet; the conformance corpus (issue #9) decides
   it. It is still asserted exactly, so a change to it is deliberate, and it matches an
   `x-provisional` part of `../openapi.yaml`.
@@ -266,7 +316,7 @@ that calls it. A run that selects only some scenarios reports the others' operat
     the codes from the `x-refusal` map, so a code the map marks `raised: false` is enforced without editing it.
   - A *501 pin* pins a reserved operation (ADR-0020 D8). It sends one well-formed request to the operation and ends
     with `Then the operation is refused as not implemented`. Its feature names `ReservedOperationCoverageTest`, which
-    keeps the 501 pins and the operations that carry `x-reserved` one to one, and the issue that will build the
+    keeps the 501 pins and the operations that carry `x-reserved` one to one, contract set by contract set, and the issue that will build the
     operation. The pin is removed, with the operation's `501` and `x-reserved`, when the operation is built.
 
   The charter's refusal score counts behavioral codes apart from the declared ones.

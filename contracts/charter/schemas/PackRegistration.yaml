@@ -1,0 +1,100 @@
+title: PackRegistration
+description: >-
+  A Charter Pack the service holds, as a whole-pack write leaves it, and the answer of GET /packs/{packId}. In the
+  result of a succeeded registration it carries the outcome of the write and its notices (FR-027); getPack answers the
+  stored pack without them. It is a response schema only: the request body of a registration is the archive itself
+  (PUT /packs/{packId}) or a PackSource (POST /packs). The ETag of getPack is the quoted revision. Registering a pack
+  replaces the whole pack (ADR-0065 D1): after a replace the pack holds exactly the staged tree.
+type: object
+additionalProperties: false
+required:
+- packId
+- descriptorPackId
+- name
+- version
+- level
+- revision
+- _links
+properties:
+  packId:
+    type: string
+    minLength: 1
+    description: The identifier the pack is configured under, the one a path /packs/{packId} takes.
+    x-derived:
+      rule: The directory name of the pack under the configured packs; the packId path segment of a PUT.
+      inputs:
+      - parameters/PackId.yaml
+  descriptorPackId:
+    type: string
+    minLength: 1
+    maxLength: 64
+    description: The pack_id (ULID) the pack's pack.yaml declares. On a replace it equals the stored pack's, and a registration
+      that changes it is refused.
+    x-derived:
+      rule: The pack_id of the pack's descriptor.
+      inputs:
+      - the pack.yaml of the pack
+  name:
+    allOf:
+    - $ref: Slug.yaml
+    description: The name the pack's pack.yaml declares, the handle a pack-qualified reference uses. It is unique among the
+      configured packs.
+    x-derived:
+      rule: The name of the pack's descriptor.
+      inputs:
+      - the pack.yaml of the pack
+  version:
+    type: string
+    minLength: 1
+    description: 'The pack_version the pack''s pack.yaml declares. The version is a label, not an order (ADR-0065 D2): any
+      version replaces, the same version with the same revision is unchanged, and the same version with another revision is
+      refused.'
+    x-derived:
+      rule: The pack_version of the pack's descriptor.
+      inputs:
+      - the pack.yaml of the pack
+  level:
+    type: string
+    enum:
+    - org
+    - project
+    description: 'The pack_level the pack''s pack.yaml declares: org or project, never built-in, which is read-only. On a
+      replace it equals the stored pack''s, and a registration that changes it is refused.'
+    x-derived:
+      rule: The pack_level of the pack's descriptor.
+      inputs:
+      - the pack.yaml of the pack
+  revision:
+    allOf:
+    - $ref: Sha256Digest.yaml
+    description: 'The revision of the stored tree: sha256: and 64 lower-case hex digits. It is the ETag of getPack (quoted)
+      and the value an If-Match names on a later write.'
+    x-derived:
+      rule: The pack revision over the stored tree, as every pack write answers it.
+      inputs:
+      - the stored files of the pack
+  outcome:
+    type: string
+    enum:
+    - created
+    - replaced
+    - unchanged
+    description: 'Only in the result of a succeeded registration: created (no pack was stored under the packId), replaced
+      (the stored pack was replaced), or unchanged (the same version and the same revision: nothing was written). getPack
+      carries no outcome.'
+    x-derived:
+      rule: Judged against the stored pack and its version history when the job ran.
+      inputs:
+      - the stored pack
+      - the version history of the pack
+  source:
+    $ref: PackSourceRecord.yaml
+  notices:
+    $ref: PackRegistrationNotices.yaml
+  _links:
+    $ref: Links.yaml
+x-derived:
+  rule: The pack the registration job stored, or left unchanged, or the pack the service holds under the packId.
+  inputs:
+  - the stored pack
+  - the registration job

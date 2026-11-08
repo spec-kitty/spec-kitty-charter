@@ -1,0 +1,96 @@
+post:
+  operationId: registerPackFromSource
+  summary: Register a whole Charter Pack from a source the service fetches.
+  description: >-
+    Names one source (a PackSource: an allowlisted https archive, a git repository and ref, or a local path under a
+    configured root) and the target packId, and the service fetches the pack, validates it as PUT /packs/{packId}
+    does and replaces the pack it holds under that packId whole (ADR-0065 D1, D10, FR-004). It answers as the PUT
+    does: 202 with a PackRegistrationStatus (pending) and a Location, the URI of GET
+    /pack-registrations/{registrationId}. The fetch runs in the job, outside every lock, so the answer comes first.
+    The body is a JSON PackSource, guarded by the shared body limit. It takes the same If-Match and If-None-Match: * as
+    the PUT, applied to the target packId: If-Match is optional (the last writer wins on the whole pack), a stale one
+    is 412 at acceptance, and both validators together are 400. The one 428 of a registration is a git source whose ref
+    is a branch and that names no commit, sent without If-Match, which would otherwise register whatever the branch
+    points at. Every answer of the flow after acceptance is the problem of a refused status, as on the PUT, with these
+    that belong to a source: a source the service refuses (a host that is not on the allowlist, an address that is not
+    global, a bad ref, the wrong media type, a digest or commit mismatch, a descriptor whose name is not the target
+    packId) ends refused with 422 pack_source_refused and a reason from a fixed set; an upstream failure ends refused
+    with 502 and an upstream timeout with 504, both plain problems; a source kind that is switched off, or a system
+    git that is missing or older than 2.50.1, answers 503 pack_source_unavailable. A body that breaks the
+    PackSource schema (a missing or unknown member, a value outside its pattern, such as a path with a .. segment) is
+    400 before anything is judged. The synchronous answers are 202, 400, 401, 403, 412, 413 (the JSON body over the
+    limit), 415 (a body that is not application/json), 428 (the git branch-ref rule only) and 503. The operation is reserved until the registration service is built (ADR-0020 D8).
+  tags:
+  - Registration
+  x-reserved:
+    contractSet: pack-registration
+    issue: '#10'
+  parameters:
+  - $ref: ../parameters/IfMatch.yaml
+  - name: If-None-Match
+    in: header
+    required: false
+    description: >-
+      * to create only: when a pack is stored under the target packId the answer is 412 (ADR-0065 D2). Any other value
+      is a malformed precondition, answered 400. Sent together with If-Match it is 400.
+    schema:
+      type: string
+      pattern: ^\*$
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../schemas/PackSource.yaml
+  responses:
+    '202':
+      description: >-
+        The registration was accepted and a job will fetch the source and run it. The body is the status, pending, and
+        Location is the URI to poll.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Location:
+          description: The URI of the registration's status, /api/v1/pack-registrations/{registrationId}.
+          required: true
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/PackRegistrationStatus.yaml
+          examples:
+            accepted:
+              $ref: ../examples/PackRegistrationStatus.accepted.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '412':
+      $ref: ../responses/PackPreconditionFailed.yaml
+    '413':
+      description: >-
+        The JSON body is over the shared body limit: 413, a Problem with no code, answered before the body is read.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../../_shared/schemas/Problem.yaml
+    '415':
+      $ref: ../responses/UnsupportedMediaType.yaml
+    '428':
+      $ref: ../responses/PreconditionRequired.yaml
+    '501':
+      $ref: ../responses/NotImplemented.yaml
+    '503':
+      $ref: ../responses/PackRegistrationUnavailable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml
