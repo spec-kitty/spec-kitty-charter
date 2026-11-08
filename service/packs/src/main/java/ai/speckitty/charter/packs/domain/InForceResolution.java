@@ -399,6 +399,7 @@ public final class InForceResolution {
                     reason,
                     required.contains(urn) || locked.contains(urn),
                     satisfiedBy(urn, outcome),
+                    Optional.empty(),
                     bucketOf(urn, state, reason));
         }
 
