@@ -58,6 +58,24 @@ class RegistrationJobsTest {
         opened.forEach(RegistrationJobs::close);
     }
 
+    // ---- the limits --------------------------------------------------------------------------------------------
+
+    /** The numbers ADR-0065 D8 and NFR-008 name, by literal: a test that compares a constant with itself pins nothing. */
+    @Test
+    void theLimitsAreThoseOfTheDecisionAndTheDeadlineIsNinetySeconds() {
+        assertThat(RegistrationJobs.RUNNING_LIMIT)
+                .as("registrations that run at once")
+                .isEqualTo(2);
+        assertThat(RegistrationJobs.WAITING_LIMIT).as("registrations that wait").isEqualTo(8);
+        assertThat(RegistrationJobs.DEADLINE)
+                .as("the source deadline plus 30 s")
+                .isEqualTo(Duration.ofSeconds(90));
+        assertThat(RegistrationJobs.RETENTION)
+                .as("how long an ended status is kept")
+                .isEqualTo(Duration.ofHours(1));
+        assertThat(RegistrationJobs.MAX_RETAINED).as("the most statuses kept").isEqualTo(1000);
+    }
+
     // ---- the lifecycle -----------------------------------------------------------------------------------------
 
     @Test
