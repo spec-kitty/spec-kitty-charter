@@ -18,6 +18,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.UnaryOperator;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -167,7 +168,63 @@ public final class RegistrationImpact {
      */
     public Notices check(Replacement replacement) {
         Objects.requireNonNull(replacement, "replacement");
+        return check(views.session(), replacement);
+    }
+
+    /**
+     * Judges every closure a stored pack joins once one write to it, an artifact or a relationship or a removal, is
+     * stored (operator ruling DM-01M6VG6GC40AKYYFRR35SV8HVW): the pack is read from the same session the closures are
+     * composed through, so the check lists the configured locations and reads the pack once, and the write is laid over
+     * the facts it read. The descriptor is the stored one, which a per-artifact write does not change.
+     *
+     * @param pack the pack written to, by the name it is configured under or by its declared {@code pack_id}
+     * @param write what the pack's facts become once the write is stored
+     * @return the floor and lock changes over those closures
+     * @throws CharterRefusal {@code pack_not_found} when no configured pack has this identifier, or as
+     *     {@link #check(Replacement)} refuses
+     */
+    public Notices check(PackIdentifier pack, UnaryOperator<PackCompositionFacts> write) {
+        Objects.requireNonNull(pack, "pack");
+        Objects.requireNonNull(write, "write");
         StagedPackViews.Session session = views.session();
+        StagedPackViews.View stored = session.stored();
+        ConfiguredPack configured = configuredAs(stored, pack);
+        Replacement written = new Replacement(
+                configured,
+                stored.descriptors().get(configured.id()),
+                write.apply(stored.artifacts().compositionFacts(configured.id())));
+        return check(session, written);
+    }
+
+    /** The configured pack an identifier names: by configured name first, otherwise by the {@code pack_id} it declares. */
+    private static ConfiguredPack configuredAs(StagedPackViews.View stored, PackIdentifier pack) {
+        List<ConfiguredPack> configured = stored.catalog().configured();
+        Optional<ConfiguredPack> named = configured.stream()
+                .filter(candidate -> candidate.id().equals(pack))
+                .findFirst();
+        if (named.isPresent()) {
+            return named.get();
+        }
+        for (ConfiguredPack candidate : configured) {
+            if (declares(stored, candidate, pack)) {
+                return candidate;
+            }
+        }
+        throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "Pack " + pack.value() + " was not found.");
+    }
+
+    private static boolean declares(StagedPackViews.View stored, ConfiguredPack candidate, PackIdentifier pack) {
+        try {
+            return stored.descriptors()
+                    .find(candidate.id())
+                    .filter(descriptor -> descriptor.packId().equals(pack.value()))
+                    .isPresent();
+        } catch (CharterRefusal unreadable) {
+            return false;
+        }
+    }
+
+    private Notices check(StagedPackViews.Session session, Replacement replacement) {
         StagedPackViews.View stored = session.stored();
         StagedPackViews.View staged = session.with(replacement);
         List<ClosureRoots.Roots> closures =

@@ -23,7 +23,7 @@ import org.snakeyaml.engine.v2.api.LoadSettings;
  * (ADR-0020 D8): every reserved operation of a set is pinned by a scenario of the set's feature that calls it, and every
  * pin calls a reserved operation of that set. A reserved operation without a pin, or a pin whose operation was built
  * (its {@code x-reserved} removed) but whose scenario was not, fails here. The set {@code activation} is pinned by
- * {@code activations.feature}; the set {@code pack-registration} by {@code registration/reserved-registration.feature}.
+ * {@code activations.feature}. The set {@code pack-registration} reserves nothing any more: its pin file is gone.
  * A set the contract reserves that this class does not know fails too. Only the request lines of the {@code @reserved}
  * scenarios count: a scenario of the file that is not a pin may call a built operation.
  */
@@ -31,9 +31,7 @@ class ReservedOperationCoverageTest {
 
     private static final String OPENAPI = "contract/charter/openapi.yaml";
     /** The pin file of each contract set. */
-    private static final Map<String, String> FEATURES = Map.of(
-            "activation", "scenarios/activations.feature",
-            "pack-registration", "scenarios/registration/reserved-registration.feature");
+    private static final Map<String, String> FEATURES = Map.of("activation", "scenarios/activations.feature");
 
     private static final Pattern REQUEST =
             Pattern.compile("^\\s*(?:When|And) I (?:send )?(GET|PUT|POST|DELETE|PATCH) \"([^\"?]+)(?:\\?[^\"]*)?\"");
@@ -68,10 +66,11 @@ class ReservedOperationCoverageTest {
     }
 
     @Test
-    void thePackRegistrationSetStillReservesTwoOperations() {
-        // The two DELETEs, of an artifact and of a relationship. The PUT, the stored-pack read and the status read are
-        // built (WP16) and so is POST /packs (WP17); each serving work package removes one with its pin.
-        assertThat(reservedOperations("pack-registration")).hasSize(2);
+    void thePackRegistrationSetReservesNoOperation() {
+        // Every operation of the set is built: the PUT, the stored-pack read and the status read (WP16), POST /packs
+        // (WP17, WP18) and the two DELETEs of an artifact and of a relationship (WP19). Each removed its pin, and the
+        // pin file went with the last.
+        assertThat(reservedOperations("pack-registration")).isEmpty();
     }
 
     @Test

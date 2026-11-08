@@ -5,7 +5,6 @@ import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
@@ -568,31 +567,15 @@ public final class PackRegistrationService {
         }
     }
 
-    /**
-     * The refusal names every referrer by its pack and artifact: the packs member lists each referring pack once, in
-     * the order of the first referrer, and the violations hold the pack in their pointer.
-     */
+    /** The refusal names every referrer by its pack and artifact (see {@link InboundReferences#refusal}). */
     private static CharterRefusal referenced(Upload upload, List<InboundReferences.Referrer> referrers) {
-        List<RefusalViolation> violations = referrers.stream()
-                .map(referrer -> new RefusalViolation(
-                        referrer.pack().value() + "/" + referrer.referrer(),
-                        "artifact_referenced",
-                        referrer.referrer() + " of the pack " + referrer.name() + " refers to " + referrer.removed()
-                                + ", which the registration removes."))
-                .toList();
-        List<RefusalPack> packs = referrers.stream()
-                .map(referrer -> new RefusalPack(
-                        referrer.descriptorPackId(), referrer.pack().value(), referrer.name()))
-                .distinct()
-                .toList();
-        return CharterRefusal.withPacksAndViolations(
-                RefusalCode.ARTIFACT_REFERENCED,
+        return InboundReferences.refusal(
                 "The pack " + upload.packId() + " cannot drop " + referrers.size()
                         + " artifact(s) that other packs still refer to; the first is "
                         + referrers.getFirst().removed()
                         + ".",
-                packs,
-                violations);
+                "registration",
+                referrers);
     }
 
     // ---- step 9: the impact check ---------------------------------------------------------------------------------

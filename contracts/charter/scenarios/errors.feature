@@ -178,9 +178,10 @@ Feature: Failures outside the charter's refusals
     pack_version_conflict and artifact_referenced, and its impact check adds override_not_permitted, enhances_cycle,
     conflicting_relations, self_override and override_cycle (ReservedRefusalCodesTest holds the flag to the main code that
     names the code), and the registration job and its admission add registration_not_found, pack_source_unavailable,
-    registration_timed_out and pack_storage_full, and the https_archive and filesystem source fetchers add
-    pack_source_refused. relationship_not_found and relationship_not_registered are raised by the two DELETEs, which stay
-    reserved until they are built. action_not_found is not raised: the
+    registration_timed_out and pack_storage_full, the https_archive, filesystem and git source fetchers add
+    pack_source_refused, and the two DELETEs add relationship_not_found and relationship_not_registered (and
+    artifact_referenced, the code of the removal of an artifact another pack refers to). action_not_found is not raised:
+    the
     operation that answered it is gone, and the reserved activation operation that will answer it again
     (ADR-0020 D7) answers 501 until it is built. unresolved_edge_endpoint, and, with the load that
     judged a pack's graph, pack_level_mismatch and drg_schema_error, are raised by no operation (no
@@ -204,6 +205,8 @@ Feature: Failures outside the charter's refusals
       | governance_policy_violation |
       | pack_version_conflict       |
       | artifact_referenced         |
+      | relationship_not_found      |
+      | relationship_not_registered |
       | override_not_permitted      |
       | enhances_cycle              |
       | conflicting_relations       |

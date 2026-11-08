@@ -27,6 +27,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.locks.ReentrantLock;
@@ -208,6 +209,66 @@ public final class PackCommitStore implements WholePackWriteStore {
             @Nullable String ifMatch,
             @Nullable CharterArtifact artifact,
             @Nullable String relationshipShardText) {
+        return commitEdited(pack, ifMatch, (staging, parent) -> {
+            if (artifact != null) {
+                PackIdentifier stagingKey = new PackIdentifier(String.valueOf(staging.getFileName()));
+                DomainRepositoryService.writeArtifact(new FilesystemPackStore(parent, strategy), stagingKey, artifact);
+            }
+            if (relationshipShardText != null) {
+                Files.writeString(
+                        staging.resolve(RelationshipShard.SHARD_PATH), relationshipShardText, StandardCharsets.UTF_8);
+            }
+        });
+    }
+
+    /**
+     * Commits a removal as one atomic directory swap and returns its new revision: the files go, the registered shard and
+     * the presets given are written whole, and nothing else of the pack is rewritten. The version history is not touched:
+     * a removal registers no version (IC-16). The caller holds the registry lock and the pack's lock, and has checked the
+     * {@code If-Match} under them.
+     *
+     * @param pack the pack to commit
+     * @param files the pack-relative files to remove: an artifact's own and its companions
+     * @param relationshipShardText the registered-relationship shard text to persist, or null to leave it as staged
+     * @param presets the text of each preset file to write, by its pack-relative path
+     * @return the revision of the committed state
+     * @throws CharterRefusal with {@code PACK_NOT_FOUND} when no configured pack has this identifier, or with
+     *     {@code PACK_UNREADABLE} when the pack is read-only through the service or the commit fails; in every failure
+     *     case the live pack directory is unchanged
+     */
+    PackRevision remove(
+            PackIdentifier pack,
+            List<String> files,
+            @Nullable String relationshipShardText,
+            Map<String, String> presets) {
+        return commitEdited(pack, null, (staging, parent) -> {
+            for (String file : files) {
+                Files.deleteIfExists(staging.resolve(file));
+            }
+            if (relationshipShardText != null) {
+                Files.writeString(
+                        staging.resolve(RelationshipShard.SHARD_PATH), relationshipShardText, StandardCharsets.UTF_8);
+            }
+            for (Map.Entry<String, String> preset : presets.entrySet()) {
+                Files.writeString(staging.resolve(preset.getKey()), preset.getValue(), StandardCharsets.UTF_8);
+            }
+        });
+    }
+
+    /** What a commit does to its staged copy of the pack before the swap. */
+    @FunctionalInterface
+    private interface StagingEdit {
+        /**
+         * Edits the staged copy.
+         *
+         * @param staging the staged copy of the live directory
+         * @param parent the directory that holds the live directory and the staged copy
+         * @throws IOException when a write fails; the commit then changes nothing
+         */
+        void apply(Path staging, Path parent) throws IOException;
+    }
+
+    private PackRevision commitEdited(PackIdentifier pack, @Nullable String ifMatch, StagingEdit edit) {
         Objects.requireNonNull(pack, "pack");
         // The commit stages beside the live directory and swaps it, so a configured link keeps the link and its target
         // takes the new content (#174); the real path is captured once and reused below so a retargeted link cannot
@@ -223,14 +284,7 @@ public final class PackCommitStore implements WholePackWriteStore {
             hideStaleAsides(liveDir); // so a stale aside copy is never restored over this pack later (#281)
             staging = Files.createTempDirectory(parent, ".pack-commit-");
             copyTree(liveDir, staging);
-            if (artifact != null) {
-                PackIdentifier stagingKey = new PackIdentifier(String.valueOf(staging.getFileName()));
-                DomainRepositoryService.writeArtifact(new FilesystemPackStore(parent, strategy), stagingKey, artifact);
-            }
-            if (relationshipShardText != null) {
-                Files.writeString(
-                        staging.resolve(RelationshipShard.SHARD_PATH), relationshipShardText, StandardCharsets.UTF_8);
-            }
+            edit.apply(staging, parent);
             PackRevision revision = revisionOf(staging, pack);
             rename.swap(staging, liveDir);
             staging = null; // swapped into place; there is nothing left to clean up

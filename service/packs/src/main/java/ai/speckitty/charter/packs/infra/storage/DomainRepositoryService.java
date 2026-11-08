@@ -443,7 +443,7 @@ public final class DomainRepositoryService
      * One graph-document edge as the kernel's typed edge, with each endpoint's qualifier as written; empty for an
      * endpoint or a relation that is no reference, which the reads that judge the document report.
      */
-    private static Optional<Relationship> typedEdge(GraphDocument.Edge edge) {
+    static Optional<Relationship> typedEdge(GraphDocument.Edge edge) {
         try {
             PackQualifiedReference source = PackQualifiedReference.parse(edge.source());
             PackQualifiedReference target = PackQualifiedReference.parse(edge.target());
