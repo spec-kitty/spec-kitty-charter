@@ -1,0 +1,36 @@
+title: OverriddenArtifact
+description: >-
+  An artifact an active override concerns, and the artifact whose overrides edge reaches it. In the overridden bucket
+  the override is applied and the artifact is out of force; in overrideNotApplied the target is locked, so both stay in
+  force.
+type: object
+additionalProperties: false
+required:
+- kind
+- artifactId
+- overriddenBy
+properties:
+  kind:
+    allOf:
+    - $ref: ActivatableKind.yaml
+    description: The kind of the overridden artifact.
+    x-derived:
+      rule: The kind of the target of the overrides edge.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  artifactId:
+    allOf:
+    - $ref: ArtifactId.yaml
+    description: The declared id of the overridden artifact.
+    x-derived:
+      rule: The id of the target of the overrides edge.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  overriddenBy:
+    allOf:
+    - $ref: ArtifactReference.yaml
+    description: The active artifact that overrides it.
+    x-derived:
+      rule: The source of the overrides edge, an artifact in force.
+      inputs:
+      - schemas/ActivationConfig.yaml

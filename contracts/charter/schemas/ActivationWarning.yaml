@@ -1,0 +1,30 @@
+title: ActivationWarning
+description: >-
+  A warning on a write (FR-032, B6/B7): an artifact the write applied that a read of the document as stored will not
+  put in force. The write is still accepted.
+type: object
+additionalProperties: false
+required:
+- code
+- artifact
+properties:
+  code:
+    type: string
+    enum:
+    - enhanced_target_not_in_force
+    - overridden
+    description: >-
+      enhanced_target_not_in_force: the artifact is an enhancer none of whose targets is in force. overridden: an
+      active override hides the artifact.
+    x-derived:
+      rule: The effective-set rule that keeps the applied artifact out of force.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  artifact:
+    allOf:
+    - $ref: ArtifactReference.yaml
+    description: The artifact the write applied and the read will not put in force.
+    x-derived:
+      rule: An artifact of the write's applied list that the in-force resolution of the stored document leaves out.
+      inputs:
+      - schemas/ActivationConfig.yaml

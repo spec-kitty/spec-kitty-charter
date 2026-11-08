@@ -1,10 +1,11 @@
 title: Activation
 description: >-
-  One stored activation document (ADR-0020 D4). The ETag is the quoted revision; the answer's bytes depend only on the
-  stored document (ADR-0059 D5), so nothing derived from the offering is in it: the counts are on the effective
-  artifact list (EffectiveArtifactList.summary) and the packs the document builds on are on its closure read
-  (listActivationPacks). dropped and droppedPins are on a replaceActivation answer only, and only when that write
-  dropped something (A4, B1): a read never carries them, so a read's bytes still depend on the stored document alone.
+  One stored activation document (ADR-0020 D4). The ETag is the quoted revision. Apart from denyNotApplied the answer
+  depends only on the stored document (ADR-0059 D5): the counts are on the effective artifact list
+  (EffectiveArtifactList.summary) and the packs the document builds on are on its closure read (listActivationPacks).
+  denyNotApplied (B4, FR-027) is the one member judged against the packs when the activation is read. dropped and
+  droppedPins are on a replaceActivation answer only, and only when that write dropped something (A4, B1): a read never
+  carries them.
 type: object
 additionalProperties: false
 required:
@@ -58,6 +59,19 @@ properties:
       order. Present only when the write dropped one; createActivation refuses such a pin (422 version_not_held).
     x-derived:
       rule: The body's packs entries whose version no pack of the activation's closure holds.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  denyNotApplied:
+    type: array
+    minItems: 1
+    items:
+      $ref: Urn.yaml
+    description: >-
+      The deny entries of the stored document that the required floor or a lock overrides (B4, FR-027): each as the URN
+      of the artifact, which stays in force. Present only when there is one, so a deny entry that is applied is never
+      listed. getActivationSkippedReport reports the same entries, with the reason, as denyNotApplied.
+    x-derived:
+      rule: The URNs of the deactivated entries that name a locked artifact or a required one no active override satisfies.
       inputs:
       - schemas/ActivationConfig.yaml
   _links:

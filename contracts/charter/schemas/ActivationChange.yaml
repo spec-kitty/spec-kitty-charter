@@ -2,7 +2,8 @@ title: ActivationChange
 description: >-
   The answer of one sub-resource write: the new revision and what the write changed (ADR-0020 D6). skipped reports
   what the write-time cascade walk left out; what a read leaves out is reported by the effective reads
-  (getActivationSkippedReport), not here.
+  (getActivationSkippedReport), not here; its read buckets are answered as []. warnings predicts what the read will not
+  put in force.
 type: object
 additionalProperties: false
 required:
@@ -11,6 +12,7 @@ required:
 - cleared
 - skipped
 - droppedPins
+- warnings
 - _links
 properties:
   revision:
@@ -76,6 +78,19 @@ properties:
       (version_not_held).
     x-derived:
       rule: The stored packs entries whose version no pack of the activation's closure holds.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  warnings:
+    type: array
+    items:
+      $ref: ActivationWarning.yaml
+    description: >-
+      The artifacts the write applied that a read of the document as stored will not put in force (FR-032, B6/B7): an
+      enhancer none of whose targets is in force (enhanced_target_not_in_force), or an artifact an active override hides
+      (overridden). The write is accepted either way, so a client learns what the read will show. Always present; []
+      when there is none.
+    x-derived:
+      rule: The applied artifacts that the in-force resolution of the stored document leaves out for those two reasons.
       inputs:
       - schemas/ActivationConfig.yaml
   _links:

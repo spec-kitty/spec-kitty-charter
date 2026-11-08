@@ -1,0 +1,39 @@
+title: DenyNotApplied
+description: >-
+  A deny entry of the activation the effective set did not apply (ADR-0013 D2): it names an artifact that stays in
+  force, so it is a rule not applied, not an artifact out of force.
+type: object
+additionalProperties: false
+required:
+- kind
+- artifactId
+- reason
+properties:
+  kind:
+    allOf:
+    - $ref: ActivatableKind.yaml
+    description: The kind of the artifact the deny entry names.
+    x-derived:
+      rule: The kind of the deny entry.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  artifactId:
+    allOf:
+    - $ref: ArtifactId.yaml
+    description: The declared id of the artifact the deny entry names.
+    x-derived:
+      rule: The id of the deny entry.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  reason:
+    type: string
+    enum:
+    - required
+    - locked
+    description: >-
+      Why the entry was not applied: locked, a pack of the closure locks the artifact; required, a governing preset
+      requires it and no active override of it satisfies the requirement.
+    x-derived:
+      rule: locked when a pack of the closure locks the artifact, required when only the floor holds it.
+      inputs:
+      - schemas/ActivationConfig.yaml
