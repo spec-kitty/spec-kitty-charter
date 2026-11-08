@@ -87,6 +87,11 @@ class InForceResolutionTest {
             return this;
         }
 
+        Closure bound(String urn, String missionType) {
+            bindings.put(u(urn), u(missionType));
+            return this;
+        }
+
         Closure requires(String... urns) {
             Arrays.stream(urns).forEach(urn -> required.put(u(urn), List.of("id-pack")));
             return this;
@@ -504,6 +509,212 @@ class InForceResolutionTest {
                 .overrides("tactic:B", "tactic:A");
 
         assertThatThrownBy(() -> closure.select())
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+    }
+
+    // ---- stratum 4: enhancer and binding pruning (E6, A7, A8, I11) ----
+
+    @Test
+    void anEnhancerWithATargetInForceIsInForce() {
+        InForceStates states = new Closure()
+                .open("tactic:T", "tactic:X")
+                .enhances("tactic:X", "tactic:T")
+                .select("tactic:T", "tactic:X");
+
+        expect(states, "tactic:X", State.ACTIVE, Reason.SELECTED);
+        expect(states, "tactic:T", State.ACTIVE, Reason.SELECTED);
+    }
+
+    @Test
+    void anEnhancerWhoseTargetIsNotInForceIsPrunedAndReported() {
+        InForceStates states = new Closure()
+                .open("tactic:T", "tactic:X")
+                .enhances("tactic:X", "tactic:T")
+                .select("tactic:X");
+
+        expect(states, "tactic:X", State.INACTIVE, Reason.ENHANCED_TARGET_NOT_IN_FORCE);
+        assertThat(states.stateOf(u("tactic:X")).orElseThrow().bucket()).contains(Bucket.ENHANCED_TARGET_NOT_IN_FORCE);
+        assertThat(states.enhancedTargets()).containsEntry(u("tactic:X"), List.of(u("tactic:T")));
+    }
+
+    @Test
+    void anEnhancerIsInForceOnlyByItsOwnRoute() {
+        InForceStates states = new Closure()
+                .open("tactic:T", "tactic:X")
+                .enhances("tactic:X", "tactic:T")
+                .select("tactic:T");
+
+        expect(states, "tactic:X", State.INACTIVE, Reason.NOT_SELECTED);
+    }
+
+    @Test
+    void thePruningRepeatsDownAChainOfEnhancers() {
+        Closure closure = new Closure()
+                .open("tactic:T", "tactic:E1", "tactic:E2")
+                .enhances("tactic:E1", "tactic:T")
+                .enhances("tactic:E2", "tactic:E1");
+
+        InForceStates grounded = closure.select("tactic:T", "tactic:E1", "tactic:E2");
+        InForceStates ungrounded = closure.select("tactic:E1", "tactic:E2");
+
+        expect(grounded, "tactic:E2", State.ACTIVE, Reason.SELECTED);
+        expect(ungrounded, "tactic:E1", State.INACTIVE, Reason.ENHANCED_TARGET_NOT_IN_FORCE);
+        expect(ungrounded, "tactic:E2", State.INACTIVE, Reason.ENHANCED_TARGET_NOT_IN_FORCE);
+    }
+
+    @Test
+    void aRingOfEnhancersHoldsNothingUp() {
+        InForceStates states = new Closure()
+                .open("tactic:E1", "tactic:E2", "tactic:E3")
+                .enhances("tactic:E1", "tactic:E2")
+                .enhances("tactic:E2", "tactic:E1")
+                .enhances("tactic:E3", "tactic:E3")
+                .select("tactic:E1", "tactic:E2", "tactic:E3");
+
+        states.states()
+                .values()
+                .forEach(state ->
+                        expect(states, state.urn().toString(), State.INACTIVE, Reason.ENHANCED_TARGET_NOT_IN_FORCE));
+    }
+
+    @Test
+    void anEnhancerWithOneTargetInForceOfTwoStays() {
+        InForceStates states = new Closure()
+                .open("tactic:T1", "tactic:T2", "tactic:X")
+                .enhances("tactic:X", "tactic:T1")
+                .enhances("tactic:X", "tactic:T2")
+                .select("tactic:T2", "tactic:X");
+
+        expect(states, "tactic:X", State.ACTIVE, Reason.SELECTED);
+    }
+
+    @Test
+    void aRequiredEnhancerWithoutATargetIsDroppedAndReported() {
+        InForceStates states = new Closure()
+                .open("tactic:T", "tactic:X")
+                .enhances("tactic:X", "tactic:T")
+                .requires("tactic:X")
+                .select();
+
+        expect(states, "tactic:X", State.INACTIVE, Reason.ENHANCED_TARGET_NOT_IN_FORCE);
+        assertThat(states.stateOf(u("tactic:X")).orElseThrow().required()).isTrue();
+        assertThat(states.requiredNotInForce())
+                .containsExactly(
+                        new InForceStates.RequiredNotInForce(u("tactic:X"), Reason.ENHANCED_TARGET_NOT_IN_FORCE));
+    }
+
+    @Test
+    void aLockedEnhancerWithoutATargetIsDroppedAndReportedToo() {
+        InForceStates states = new Closure()
+                .open("tactic:T")
+                .locked("tactic:X")
+                .enhances("tactic:X", "tactic:T")
+                .select();
+
+        expect(states, "tactic:X", State.INACTIVE, Reason.ENHANCED_TARGET_NOT_IN_FORCE);
+        assertThat(states.requiredNotInForce())
+                .containsExactly(
+                        new InForceStates.RequiredNotInForce(u("tactic:X"), Reason.ENHANCED_TARGET_NOT_IN_FORCE));
+    }
+
+    @Test
+    void aStepOfAMissionTypeNotInForceIsOut() {
+        InForceStates states =
+                new Closure().open("mission_type:m", "action:m/s").select("action:m/s");
+
+        expect(states, "action:m/s", State.INACTIVE, Reason.MISSION_TYPE_NOT_IN_FORCE);
+        assertThat(states.stateOf(u("action:m/s")).orElseThrow().bucket()).contains(Bucket.MISSION_TYPE_NOT_IN_FORCE);
+    }
+
+    @Test
+    void aStepStaysWhileItsMissionTypeIsInForce() {
+        InForceStates states =
+                new Closure().open("mission_type:m", "action:m/s", "action:m/t").select("mission_type:m", "action:m/s");
+
+        expect(states, "action:m/s", State.ACTIVE, Reason.SELECTED);
+        expect(states, "action:m/t", State.INACTIVE, Reason.NOT_SELECTED);
+    }
+
+    @Test
+    void anArtifactBoundToAMissionTypeIsInForceOnlyWhileItIs() {
+        Closure closure = new Closure().open("mission_type:m", "tactic:B").bound("tactic:B", "mission_type:m");
+
+        expect(closure.select("tactic:B"), "tactic:B", State.INACTIVE, Reason.MISSION_TYPE_NOT_IN_FORCE);
+        expect(closure.select("tactic:B", "mission_type:m"), "tactic:B", State.ACTIVE, Reason.SELECTED);
+    }
+
+    @Test
+    void aRequiredStepOfAMissionTypeNotInForceIsDroppedAndReported() {
+        InForceStates states = new Closure()
+                .open("mission_type:m", "action:m/s")
+                .requires("action:m/s")
+                .select();
+
+        expect(states, "action:m/s", State.INACTIVE, Reason.MISSION_TYPE_NOT_IN_FORCE);
+        assertThat(states.requiredNotInForce())
+                .containsExactly(
+                        new InForceStates.RequiredNotInForce(u("action:m/s"), Reason.MISSION_TYPE_NOT_IN_FORCE));
+    }
+
+    @Test
+    void aRequiredMissionTypeKeepsItsSelectedStepsInForce() {
+        InForceStates states = new Closure()
+                .open("mission_type:m", "action:m/s")
+                .requires("mission_type:m")
+                .select("action:m/s");
+
+        expect(states, "mission_type:m", State.ACTIVE, Reason.REQUIRED);
+        expect(states, "action:m/s", State.ACTIVE, Reason.SELECTED);
+    }
+
+    @Test
+    void anEnhancerOfAStepFollowsTheStepsMissionType() {
+        InForceStates states = new Closure()
+                .open("mission_type:m", "action:m/s", "tactic:X")
+                .enhances("tactic:X", "action:m/s")
+                .select("action:m/s", "tactic:X");
+
+        expect(states, "action:m/s", State.INACTIVE, Reason.MISSION_TYPE_NOT_IN_FORCE);
+        expect(states, "tactic:X", State.INACTIVE, Reason.ENHANCED_TARGET_NOT_IN_FORCE);
+    }
+
+    /** The floor is no exception to the binding: F is pruned, and the fixed point judges T again. */
+    @Test
+    void anOverriderPrunedByItsBindingNoLongerSatisfiesTheRequirement() {
+        InForceStates states = new Closure()
+                .open("mission_type:m", "tactic:F", "tactic:T")
+                .bound("tactic:F", "mission_type:m")
+                .overrides("tactic:F", "tactic:T")
+                .requires("tactic:T")
+                .select("tactic:F");
+
+        expect(states, "tactic:F", State.INACTIVE, Reason.MISSION_TYPE_NOT_IN_FORCE);
+        expect(states, "tactic:T", State.ACTIVE, Reason.REQUIRED);
+        assertThat(states.stateOf(u("tactic:T")).orElseThrow().satisfiedBy()).isEmpty();
+    }
+
+    @Test
+    void anOverriderPrunedAsAnEnhancerWithdrawsItsOverride() {
+        InForceStates states = new Closure()
+                .open("tactic:A", "tactic:X", "tactic:T")
+                .enhances("tactic:X", "tactic:A")
+                .overrides("tactic:X", "tactic:T")
+                .select("tactic:X", "tactic:T");
+
+        expect(states, "tactic:X", State.INACTIVE, Reason.ENHANCED_TARGET_NOT_IN_FORCE);
+        expect(states, "tactic:T", State.ACTIVE, Reason.SELECTED);
+    }
+
+    @Test
+    void anOverriderThatOverridesItsOwnMissionTypeHasNoStableAnswerAndIsRefused() {
+        Closure closure = new Closure()
+                .open("mission_type:m", "tactic:F")
+                .bound("tactic:F", "mission_type:m")
+                .overrides("tactic:F", "mission_type:m");
+
+        assertThatThrownBy(() -> closure.select("tactic:F", "mission_type:m"))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
