@@ -710,7 +710,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "Docs, divergences DIV-601..613, notice WARN, relationship DELETE gate and qualified compare; verifyAll and docs checks green",
-        "Review cycle 1 addressed in d9fefa1c: salvage rule, core claims, no getPack edit link, 504 deadline"
+        "Review cycle 1 addressed in d9fefa1c: salvage rule, core claims, no getPack edit link, 504 deadline",
+        "Review passed (d9fefa1c). verifyAll green; check_docs all+wordlist exit 0. Blocker fixed: compose-packs.md, DIV-604 in divergence-register.md and divergences.yaml describe the salvage as built: file by file, declared id plus path stem, each readable graph entry an edge, left-out artifact = REMOVE through gate and inbound scan, dropped edge = RELATIONSHIP on its source, unbindable stored artifact = REPLACE, undeterminable set = pack_unreadable; DM-01M6V4WMF8CD8NBN7A065E9ZQ5 and DM-01M6V6N74ER28H8S6TSVZ8ZEY2 cited; no copy of the old wording remains in docs/ or contracts/. The core: lines of DIV-601..613 are reworded as the service's understanding of core, to be confirmed. The edit link is dropped from the getPack description and both examples, with a Changed fragment; the mapper sends self+artifacts on the pack and self+pack on the status, so no edit anywhere; hypermedia-hateoas.md updated. The 504 row reads 90 s = 60 s source deadline + 30 s (NFR-008). Closeout: confirm the core: lines against core; first green git-source CI run and required-check wiring; WP18 native ProcessBuilder hints and PIT floor for infra.fetch.git."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
