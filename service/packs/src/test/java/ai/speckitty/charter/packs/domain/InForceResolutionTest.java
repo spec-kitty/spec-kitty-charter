@@ -783,4 +783,61 @@ class InForceResolutionTest {
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
     }
+
+    // ---- the order of the reason rows (E9): each adjacent pair of rows, with an artifact that both rows catch ----
+
+    private static void expectBucket(InForceStates states, String urn, Bucket bucket) {
+        assertThat(states.stateOf(u(urn)).orElseThrow().bucket()).as(urn + " bucket").contains(bucket);
+    }
+
+    @Test
+    void anArtifactBoundToAMissionTypeOutOfForceAndEnhancingATargetOutOfForceIsReportedForItsMissionTypeFirst() {
+        InForceStates states = new Closure()
+                .open("tactic:X", "tactic:T", "mission_type:M")
+                .bound("tactic:X", "mission_type:M")
+                .enhances("tactic:X", "tactic:T")
+                .select("tactic:X");
+
+        expect(states, "tactic:X", State.INACTIVE, Reason.MISSION_TYPE_NOT_IN_FORCE);
+        expectBucket(states, "tactic:X", Bucket.MISSION_TYPE_NOT_IN_FORCE);
+    }
+
+    @Test
+    void anEnhancerWhoseTargetIsOutOfForceAndWhoseLanguageIsFilteredIsReportedForItsTargetFirst() {
+        Closure closure = new Closure()
+                .open("tactic:X", "tactic:T")
+                .enhances("tactic:X", "tactic:T")
+                .languages("tactic:X", "java");
+        InForceRequest request =
+                new InForceRequest(urns("tactic:X"), Set.of(), Optional.of(Set.of("python")), Map.of());
+
+        InForceStates states = closure.resolve(request);
+
+        expect(states, "tactic:X", State.INACTIVE, Reason.ENHANCED_TARGET_NOT_IN_FORCE);
+        expectBucket(states, "tactic:X", Bucket.ENHANCED_TARGET_NOT_IN_FORCE);
+    }
+
+    @Test
+    void aDeniedArtifactWhoseLanguageIsFilteredIsReportedForItsLanguageFirstAndIsNotExcluded() {
+        Closure closure = new Closure().open("tactic:X").languages("tactic:X", "java");
+        InForceRequest request = new InForceRequest(
+                urns("tactic:X"), urns("tactic:X"), Optional.of(Set.of("python")), Map.of());
+
+        InForceStates states = closure.resolve(request);
+
+        expect(states, "tactic:X", State.INACTIVE, Reason.LANGUAGE_FILTERED);
+        expectBucket(states, "tactic:X", Bucket.LANGUAGE_FILTERED);
+    }
+
+    @Test
+    void aDeniedEnhancerWhoseTargetIsOutOfForceIsInactiveForItsTargetNotExcludedAndNotDeactivated() {
+        InForceStates states = new Closure()
+                .open("tactic:X", "tactic:T")
+                .enhances("tactic:X", "tactic:T")
+                .resolve(urns("tactic:X"), urns("tactic:X"));
+
+        expect(states, "tactic:X", State.INACTIVE, Reason.ENHANCED_TARGET_NOT_IN_FORCE);
+        expectBucket(states, "tactic:X", Bucket.ENHANCED_TARGET_NOT_IN_FORCE);
+        assertThat(states.enhancedTargets()).containsKey(u("tactic:X"));
+    }
 }
