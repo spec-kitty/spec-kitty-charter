@@ -1,7 +1,7 @@
 #!/bin/sh
 # A fake git for the tests of the git source (WP18, T152). It runs no repository: it
 #   - prints the text of the file "version" beside it for --version (default: git version 2.51.0),
-#   - appends the arguments it got and its whole environment to the file "record" beside it,
+#   - appends the arguments it got, its working directory and its whole environment to the file "record" beside it,
 #   - and, per subcommand SUB (the first argument that is not a -c pair or a --git-dir), replays the files beside it:
 #       SUB.out   copied to stdout (for cat-file, the bytes git would print),
 #       SUB.err   copied to stderr,
@@ -20,6 +20,7 @@ PATH=/usr/bin:/bin
 
 {
     printf 'begin\n'
+    printf 'cwd:%s\n' "$(pwd)"
     for argument in "$@"; do
         printf 'argv:%s\n' "$argument"
     done
