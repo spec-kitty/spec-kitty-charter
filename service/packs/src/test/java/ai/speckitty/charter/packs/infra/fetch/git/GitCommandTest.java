@@ -47,14 +47,14 @@ class GitCommandTest {
     private GitShim shim;
     private Path home;
 
-    private GitCommand command(Duration timeout, GitCommand.Transport transport) throws IOException {
+    private GitCommand command(Duration timeout, GitTransport transport) throws IOException {
         shim = GitShim.in(temp);
         home = Files.createDirectories(temp.resolve("home"));
         return new GitCommand(shim.executable(), home, timeout, transport);
     }
 
     private GitCommand command() throws IOException {
-        return command(Duration.ofSeconds(30), GitCommand.Transport.NONE);
+        return command(Duration.ofSeconds(30), GitTransport.NONE);
     }
 
     private static List<String> pinned(String... arguments) {
@@ -80,7 +80,7 @@ class GitCommandTest {
 
     @Test
     void aTransportAddsItsPinsAfterTheFixedOnesAndItsVariablesOverTheFixedOnes() throws IOException {
-        GitCommand.Transport transport = new GitCommand.Transport(
+        GitTransport transport = new GitTransport(
                 List.of("http.curloptResolve=git.example.org:443:93.184.216.34"), Map.of("GIT_ALLOW_PROTOCOL", "file"));
 
         command(Duration.ofSeconds(30), transport).run(List.of("fetch", "--", "https://git.example.org/a.git"), 1024);
@@ -143,7 +143,7 @@ class GitCommandTest {
         command();
         shim.out("rev-parse", "0123456789abcdef0123456789abcdef01234567\n");
 
-        byte[] output = new GitCommand(shim.executable(), home, Duration.ofSeconds(30), GitCommand.Transport.NONE)
+        byte[] output = new GitCommand(shim.executable(), home, Duration.ofSeconds(30), GitTransport.NONE)
                 .run(List.of("rev-parse", "x"), 1024);
 
         assertThat(new String(output, StandardCharsets.UTF_8)).isEqualTo("0123456789abcdef0123456789abcdef01234567\n");
@@ -153,7 +153,7 @@ class GitCommandTest {
     void anExitStatusThatIsNotZeroFailsWithWhatGitSaidOnStderrKeptApart() throws IOException {
         command();
         shim.exit("fetch", 128).err("fetch", "fatal: couldn't find remote ref refs/heads/nope\n");
-        GitCommand git = new GitCommand(shim.executable(), home, Duration.ofSeconds(30), GitCommand.Transport.NONE);
+        GitCommand git = new GitCommand(shim.executable(), home, Duration.ofSeconds(30), GitTransport.NONE);
 
         assertThatThrownBy(() -> git.run(List.of("fetch"), 1024))
                 .isInstanceOfSatisfying(GitFailure.class, failure -> {
@@ -168,7 +168,7 @@ class GitCommandTest {
     void outputOverTheCallersCapEndsTheRun() throws IOException {
         command();
         shim.out("ls-tree", "x".repeat(5000));
-        GitCommand git = new GitCommand(shim.executable(), home, Duration.ofSeconds(30), GitCommand.Transport.NONE);
+        GitCommand git = new GitCommand(shim.executable(), home, Duration.ofSeconds(30), GitTransport.NONE);
 
         assertThatThrownBy(() -> git.run(List.of("ls-tree"), 1000))
                 .isInstanceOfSatisfying(GitFailure.class, failure -> assertThat(failure.kind()).isEqualTo(Kind.OUTPUT_TOO_LARGE));
@@ -178,7 +178,7 @@ class GitCommandTest {
     void outputAtTheCapIsTaken() throws IOException {
         command();
         shim.out("ls-tree", "x".repeat(1000));
-        GitCommand git = new GitCommand(shim.executable(), home, Duration.ofSeconds(30), GitCommand.Transport.NONE);
+        GitCommand git = new GitCommand(shim.executable(), home, Duration.ofSeconds(30), GitTransport.NONE);
 
         assertThat(git.run(List.of("ls-tree"), 1000)).hasSize(1000);
     }
@@ -187,7 +187,7 @@ class GitCommandTest {
     void stderrIsDrainedAndCappedSoAChattyGitNeitherBlocksNorGrowsTheHeap() throws IOException {
         command();
         shim.err("fetch", "e".repeat(500_000)).exit("fetch", 1);
-        GitCommand git = new GitCommand(shim.executable(), home, Duration.ofSeconds(30), GitCommand.Transport.NONE);
+        GitCommand git = new GitCommand(shim.executable(), home, Duration.ofSeconds(30), GitTransport.NONE);
 
         assertThatThrownBy(() -> git.run(List.of("fetch"), 1024))
                 .isInstanceOfSatisfying(GitFailure.class, failure -> {
@@ -201,7 +201,7 @@ class GitCommandTest {
         command();
         // The shim sleeps in a child of its own; the run is over only when that child is gone too.
         shim.sleep("fetch", 30);
-        GitCommand git = new GitCommand(shim.executable(), home, Duration.ofMillis(700), GitCommand.Transport.NONE);
+        GitCommand git = new GitCommand(shim.executable(), home, Duration.ofMillis(700), GitTransport.NONE);
         long started = System.nanoTime();
 
         assertThatThrownBy(() -> git.run(List.of("fetch"), 1024))
@@ -214,7 +214,7 @@ class GitCommandTest {
     void theDeadlineIsOverTheWholeFetchNotEachRun() throws IOException {
         command();
         shim.sleep("fetch", 1);
-        GitCommand git = new GitCommand(shim.executable(), home, Duration.ofMillis(1500), GitCommand.Transport.NONE);
+        GitCommand git = new GitCommand(shim.executable(), home, Duration.ofMillis(1500), GitTransport.NONE);
 
         git.run(List.of("fetch"), 1024);
         assertThatThrownBy(() -> git.run(List.of("fetch"), 1024))
@@ -224,7 +224,7 @@ class GitCommandTest {
     @Test
     void aRunStartedAfterTheDeadlineIsNeverStarted() throws IOException, InterruptedException {
         command();
-        GitCommand git = new GitCommand(shim.executable(), home, Duration.ofMillis(50), GitCommand.Transport.NONE);
+        GitCommand git = new GitCommand(shim.executable(), home, Duration.ofMillis(50), GitTransport.NONE);
         Thread.sleep(200);
 
         assertThatThrownBy(() -> git.run(List.of("rev-parse"), 1024))
@@ -237,7 +237,7 @@ class GitCommandTest {
         command();
         Path repository = Files.createDirectories(temp.resolve("repo.git"));
         shim.grow("fetch", 2_000_000);
-        GitCommand git = new GitCommand(shim.executable(), home, Duration.ofSeconds(60), GitCommand.Transport.NONE)
+        GitCommand git = new GitCommand(shim.executable(), home, Duration.ofSeconds(60), GitTransport.NONE)
                 .watching(() -> directorySize(repository) > 1_000_000);
         long started = System.nanoTime();
 
@@ -253,7 +253,7 @@ class GitCommandTest {
         command();
         shim.out("cat-file", "blob-bytes");
         Path stdin = Files.writeString(temp.resolve("oids"), "0123\n");
-        GitCommand git = new GitCommand(shim.executable(), home, Duration.ofSeconds(30), GitCommand.Transport.NONE);
+        GitCommand git = new GitCommand(shim.executable(), home, Duration.ofSeconds(30), GitTransport.NONE);
 
         try (GitCommand.Running running = git.stream(List.of("cat-file", "--batch"), stdin)) {
             InputStream out = running.stdout();
@@ -267,7 +267,7 @@ class GitCommandTest {
     void aStreamedRunThatFailsSaysSoWhenItIsFinished() throws IOException {
         command();
         shim.exit("cat-file", 128).err("cat-file", "fatal: bad object\n");
-        GitCommand git = new GitCommand(shim.executable(), home, Duration.ofSeconds(30), GitCommand.Transport.NONE);
+        GitCommand git = new GitCommand(shim.executable(), home, Duration.ofSeconds(30), GitTransport.NONE);
 
         try (GitCommand.Running running = git.stream(List.of("cat-file", "--batch"), null)) {
             running.stdout().readAllBytes();
@@ -280,7 +280,7 @@ class GitCommandTest {
     void closingAStreamedRunEndsItsProcessTree() throws IOException {
         command();
         shim.sleep("cat-file", 30);
-        GitCommand git = new GitCommand(shim.executable(), home, Duration.ofSeconds(60), GitCommand.Transport.NONE);
+        GitCommand git = new GitCommand(shim.executable(), home, Duration.ofSeconds(60), GitTransport.NONE);
         long started = System.nanoTime();
 
         try (GitCommand.Running running = git.stream(List.of("cat-file", "--batch"), null)) {
@@ -292,7 +292,7 @@ class GitCommandTest {
 
     @Test
     void aBinaryThatCannotBeStartedIsAStartFailure() throws IOException {
-        GitCommand git = new GitCommand(temp.resolve("no-such-git"), Files.createDirectories(temp.resolve("h")), Duration.ofSeconds(5), GitCommand.Transport.NONE);
+        GitCommand git = new GitCommand(temp.resolve("no-such-git"), Files.createDirectories(temp.resolve("h")), Duration.ofSeconds(5), GitTransport.NONE);
 
         assertThatThrownBy(() -> git.run(List.of("init"), 1024))
                 .isInstanceOfSatisfying(GitFailure.class, failure -> assertThat(failure.kind()).isEqualTo(Kind.START));

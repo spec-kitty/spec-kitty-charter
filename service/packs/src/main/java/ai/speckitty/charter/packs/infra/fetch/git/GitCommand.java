@@ -55,29 +55,10 @@ final class GitCommand {
     private static final long WATCH_TICK_MILLIS = 25;
     private static final long DRAIN_JOIN_MILLIS = 2000;
 
-    /**
-     * What a remote adds to every run: configuration pins after the fixed ones, and environment variables over the
-     * fixed ones. The https remote adds the pin of the checked address; a test remote adds the transport of its
-     * repository.
-     *
-     * @param pins {@code key=value} pairs given with {@code -c}
-     * @param environment variables set after the environment built from empty
-     */
-    record Transport(List<String> pins, Map<String, String> environment) {
-
-        /** Adds nothing. */
-        static final Transport NONE = new Transport(List.of(), Map.of());
-
-        Transport {
-            pins = List.copyOf(pins);
-            environment = Map.copyOf(environment);
-        }
-    }
-
     private final Path executable;
     private final Path home;
     private final long deadlineNanos;
-    private final Transport transport;
+    private final GitTransport transport;
     private final BooleanSupplier overLimit;
 
     /**
@@ -88,11 +69,11 @@ final class GitCommand {
      * @param timeout the deadline over every run of the fetch, from now
      * @param transport what the remote adds
      */
-    GitCommand(Path executable, Path home, Duration timeout, Transport transport) {
+    GitCommand(Path executable, Path home, Duration timeout, GitTransport transport) {
         this(executable, home, System.nanoTime() + timeout.toNanos(), transport, () -> false);
     }
 
-    private GitCommand(Path executable, Path home, long deadlineNanos, Transport transport, BooleanSupplier overLimit) {
+    private GitCommand(Path executable, Path home, long deadlineNanos, GitTransport transport, BooleanSupplier overLimit) {
         this.executable = executable;
         this.home = home;
         this.deadlineNanos = deadlineNanos;
