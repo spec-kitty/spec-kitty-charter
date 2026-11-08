@@ -124,6 +124,25 @@ public final class OfferingReadService {
         this.resolution = this::resolveNow;
     }
 
+    /**
+     * A service whose composition facts are kept between reads.
+     *
+     * @param catalog the port that lists the configured packs
+     * @param descriptors the port that looks each pack's descriptor up
+     * @param packArtifacts the port that reads the artifacts each pack changes or defines and the references it writes
+     * @param read the verifier that digests the inputs before and after the read
+     * @param facts the cache the facts of each pack are read through
+     */
+    public OfferingReadService(
+            PackCatalogRepository catalog,
+            PackDescriptorRepository descriptors,
+            PackArtifactRepository packArtifacts,
+            ConsistentRead read,
+            CompositionFactsCache facts) {
+        this(catalog, descriptors, packArtifacts, read);
+        Objects.requireNonNull(facts, "facts");
+    }
+
     private OfferingReadService(OfferingReadService source, Supplier<Resolution> resolution) {
         this.catalog = source.catalog;
         this.descriptors = source.descriptors;
