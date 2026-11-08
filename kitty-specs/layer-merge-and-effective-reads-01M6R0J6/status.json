@@ -1,7 +1,7 @@
 {
-  "event_count": 285,
-  "last_event_id": "01M6YH42MQT79X4X93QG99FKMG",
-  "materialized_at": "2026-11-08T21:30:38.604102+00:00",
+  "event_count": 286,
+  "last_event_id": "01M6YHB2KKD43JZ09F0DYA9JMX",
+  "materialized_at": "2026-11-08T21:34:27.955285+00:00",
   "mission_number": "",
   "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
   "mission_type": "",
@@ -12,8 +12,8 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 0,
-    "in_progress": 1,
+    "for_review": 1,
+    "in_progress": 0,
     "in_review": 0,
     "planned": 3
   },
@@ -915,9 +915,9 @@
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
       "implementer_of_record": "claude:sonnet:java-jenny",
-      "lane": "in_progress",
-      "last_event_id": "01M6YH42MQT79X4X93QG99FKMG",
-      "last_transition_at": "2026-11-08T21:30:38.604102+00:00",
+      "lane": "for_review",
+      "last_event_id": "01M6YHB2KKD43JZ09F0DYA9JMX",
+      "last_transition_at": "2026-11-08T21:34:27.955285+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "WP26 done: T131 architecture pages (resolution-model.md, offering-and-activation.md), T132 divergences DIV-216..237 (DIV-209..215 taken by PR A0; DIV-205 ratified; DIV-201/202 opened), T133 ADR-0053 d5 note, ADR-0059 D5 amendment and ticks, ADR-0020 D6 amendment, rules page (E7 to R13, E20, C28, E5, E9), trace PR B rows, changelog docs/changelog/2026-11-07-b-effective-reads.md. check_docs all, markdownlint and cspell clean.",
@@ -935,9 +935,9 @@
       "shell_pid": null,
       "shell_pid_created_at": null,
       "subtasks": {
-        "T131": "planned",
-        "T132": "planned",
-        "T133": "planned"
+        "T131": "done",
+        "T132": "done",
+        "T133": "done"
       }
     },
     "WP27": {
