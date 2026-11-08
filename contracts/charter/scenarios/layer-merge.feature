@@ -1,6 +1,6 @@
 # PR B of layer-merge-and-effective-reads, contract B (IC-08; WP22, T113): the layer merge as the effective reads
-# answer it. Written red first and committed @WIP (decision DM-01M6RN6GC7PJS8BGHMAYM4JSSW): WP25 binds the glue, records
-# the red assertion failure (every step bound, a wrong status or body) and removes the tag scenario by scenario.
+# answer it. Written red first and committed with a WIP tag (decision DM-01M6RN6GC7PJS8BGHMAYM4JSSW); WP25 bound the glue,
+# recorded the red assertion failure (every step bound, a wrong status or body) and removed the tag.
 # Every When asserts 200 (or the refusal) and a non-empty answer, and every absence is read beside a positive control in
 # the same answer. The fixture packs are authored inline, per rule (plan.md, Fixtures).
 #
@@ -23,7 +23,6 @@ Feature: The layer merge decides which version of an artifact the effective read
   only by a distribution pack's overrides entry (#357). The effective list answers the winner with its provenance (packId
   and level, FR-013). An override the overridden artifact's mutability level forbids refuses the read (ADR-0063 D3, C21).
 
-  @WIP
   Scenario: US3 AS1 - a directive held at built-in and at project level is listed once, with the project version's provenance
     US3 AS1, FR-013: core (built-in) holds D and X, proj (project) holds its own D. The layer merge keeps the project
     version of D whole (ADR-0059 D3), so D appears once with packId proj and level project. X, which no later level
@@ -87,7 +86,6 @@ Feature: The layer merge decides which version of an artifact the effective read
     And the field at "/items/1/level" is "built-in"
     And the field at "/summary/active" is 2
 
-  @WIP
   Scenario: A1 - the requirement of a preset id is the union of every governing copy across levels
     A1, FR-014, FR-028: the built-in pack's governing preset requires D1 and the org pack's preset of the same id
     requires D2. The copy at the later level does not replace the earlier one's requirement: both D1 and D2 are
@@ -178,7 +176,6 @@ Feature: The layer merge decides which version of an artifact the effective read
     And the field at "/items/0/required" is false
     And the field at "/items/0/reason" is "not_selected"
 
-  @WIP
   Scenario: US6 AS1 - a distribution pack's settlement puts the named member's version in force (#357)
     US6 AS1, #357, ADR-0053 d5: the org packs a and b both define D, and the distribution pack x declares
     overrides: [{artifact: directive:D, member: <b>}]. The settlement is applied before the levels merge, so b's D
@@ -251,7 +248,6 @@ Feature: The layer merge decides which version of an artifact the effective read
     And the field at "/items/1/packId" is "b"
     And the field at "/items/1/level" is "org"
 
-  @WIP
   Scenario: US6 AS2 - the same conflict without a settlement is refused, and an activation that avoids it still answers
     US6 AS2: the same two siblings with no distribution pack. A read of an activation whose closure holds both
     refuses 500 with the composition code pack_sibling_conflict (the read never answers part of a conflict). The
@@ -303,7 +299,7 @@ Feature: The layer merge decides which version of an artifact the effective read
       """
     And the stored file of the activation "a-1" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "a"}, {"packId": "b"}], "selected": {"directive": ["D"]}}
+      {"packs":[{"packId":"a"},{"packId":"b"}],"schemaVersion":2,"selected":{"directive":["D"]}}
       """
     When I GET "/activations/a-1/artifacts"
     Then the response status is 500
@@ -320,13 +316,13 @@ Feature: The layer merge decides which version of an artifact the effective read
       directive:A1
       """
 
-  @WIP
   Scenario: A layer override the overridden artifact's level forbids is 500 pack_unreadable, and one of an open artifact is served
     FR-011, ADR-0063 D3, C21: core (built-in) locks LK and leaves OP open. The project pack proj replaces LK, which a
     locked artifact does not allow, so the read of an activation over core and proj refuses 500 pack_unreadable,
     naming the artifact, both packs and the level. The project pack proj-ok replaces the open OP: the control, an
-    activation over core and proj-ok, answers 200 and lists OP with proj-ok's provenance in the same scenario. Both
-    refused and served activations are stored past the API.
+    activation over core and proj-ok, answers 200 and lists OP with proj-ok's provenance in the same scenario, beside LK,
+    which core's lock keeps in force whatever the activation selects. Both refused and served activations are stored
+    past the API.
     Given the built-in pack "core" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943R
@@ -392,11 +388,11 @@ Feature: The layer merge decides which version of an artifact the effective read
       """
     And the stored file of the activation "a-1" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "core"}, {"packId": "proj"}], "selected": {"directive": ["LK"]}}
+      {"packs":[{"packId":"core"},{"packId":"proj"}],"schemaVersion":2,"selected":{"directive":["LK"]}}
       """
     And the stored file of the activation "a-2" holds:
       """
-      {"schemaVersion": 2, "packs": [{"packId": "core"}, {"packId": "proj-ok"}], "selected": {"directive": ["OP"]}}
+      {"packs":[{"packId":"core"},{"packId":"proj-ok"}],"schemaVersion":2,"selected":{"directive":["OP"]}}
       """
     When I GET "/activations/a-1/artifacts"
     Then the response status is 500
@@ -414,7 +410,10 @@ Feature: The layer merge decides which version of an artifact the effective read
     Then the response status is 200
     And the field at "/items" holds exactly the ids:
       """
+      directive:LK
       directive:OP
       """
-    And the field at "/items/0/packId" is "proj-ok"
-    And the field at "/items/0/level" is "project"
+    And the field at "/items/0/reason" is "locked"
+    And the field at "/items/0/packId" is "core"
+    And the field at "/items/1/packId" is "proj-ok"
+    And the field at "/items/1/level" is "project"

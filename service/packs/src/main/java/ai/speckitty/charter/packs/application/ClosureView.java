@@ -109,9 +109,24 @@ public record ClosureView(
         synchronized MergedView merged(PerPackPolicy policy, EdgeIndex edges) {
             if (built == null) {
                 MergedClosure merged = LayerMerge.merge(packs, facts, policy);
-                built = new MergedView(merged, edges.merged(merged));
+                built = new MergedView(merged, edges.merged(merged), bindingsOf(merged));
             }
             return built;
+        }
+
+        /**
+         * The mission type each winner is bound to, as the pack that holds the version in force declares it: an artifact
+         * a later level replaced is bound as the replacing version is, which may be to no mission type.
+         */
+        private Map<Urn, Urn> bindingsOf(MergedClosure merged) {
+            Map<Urn, Urn> bindings = new LinkedHashMap<>();
+            merged.winners()
+                    .forEach((urn, winner) -> Optional.ofNullable(
+                                    facts.get(winner.packId().value()))
+                            .map(held -> held.bindings().get(urn.toString()))
+                            .flatMap(Urn::parse)
+                            .ifPresent(missionType -> bindings.put(urn, missionType)));
+            return bindings;
         }
     }
 
@@ -121,18 +136,32 @@ public record ClosureView(
      *
      * @param closure the winners, the layer overrides, the languages and the merged presets
      * @param edges the closure's edges with no edge from a losing place and every edge to one ending at the winner
+     * @param bindings the mission type each winner that is bound to one is bound to (A7 Q1): a step contract to its
+     *     mission
      */
-    public record MergedView(MergedClosure closure, EdgeIndex edges) {
+    public record MergedView(MergedClosure closure, EdgeIndex edges, Map<Urn, Urn> bindings) {
 
         /**
          * Checks the fields.
          *
          * @param closure the layer merge
          * @param edges the merged edges
+         * @param bindings the mission type each bound winner is bound to
          */
         public MergedView {
             Objects.requireNonNull(closure, "closure");
             Objects.requireNonNull(edges, "edges");
+            bindings = Map.copyOf(Objects.requireNonNull(bindings, "bindings"));
+        }
+
+        /**
+         * A merged view whose winners are bound to no mission type.
+         *
+         * @param closure the layer merge
+         * @param edges the merged edges
+         */
+        public MergedView(MergedClosure closure, EdgeIndex edges) {
+            this(closure, edges, Map.of());
         }
 
         /**
@@ -159,7 +188,7 @@ public record ClosureView(
                             .resolve(urn)
                             .ifPresent(node -> node.derivedRelationships()
                                     .forEach(edge -> record(urn, edge, overrides, enhances))));
-            return new InForceResolution.Edges(overrides, enhances, Map.of());
+            return new InForceResolution.Edges(overrides, enhances, bindings);
         }
 
         /** Files an {@code overrides} or {@code enhances} edge to a winner under its source; any other edge is not read. */

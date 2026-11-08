@@ -12,10 +12,12 @@ import ai.speckitty.charter.activations.application.ActivationSelectionService;
 import ai.speckitty.charter.activations.application.ActivationService;
 import ai.speckitty.charter.activations.application.ActivationWrites;
 import ai.speckitty.charter.activations.application.AvailablePacks;
+import ai.speckitty.charter.activations.application.EffectiveReadService;
 import ai.speckitty.charter.activations.domain.ActivationRepository;
 import ai.speckitty.charter.activations.infra.api.ActivationChangeMapper;
 import ai.speckitty.charter.activations.infra.api.ActivationController;
 import ai.speckitty.charter.activations.infra.api.ActivationMapper;
+import ai.speckitty.charter.activations.infra.api.EffectiveReadMapper;
 import ai.speckitty.charter.api.ActivationApi;
 import ai.speckitty.charter.kernel.transport.ReservedOperation;
 import java.lang.reflect.Proxy;
@@ -55,7 +57,9 @@ class ReservedActivationOperationTest {
                 new ActivationExclusionService(writes),
                 new ActivationPresetService(writes),
                 mapper,
-                new ActivationChangeMapper(mapper));
+                new ActivationChangeMapper(mapper),
+                new EffectiveReadService(repository, packs),
+                new EffectiveReadMapper(mapper));
     }
 
     /** A port that fails the test when any of its methods is called: a reserved operation reaches no use case. */
@@ -105,7 +109,7 @@ class ReservedActivationOperationTest {
 
     @Test
     void aReservedActivationReadAnswers501() throws Exception {
-        mvc.perform(get("/api/v1/activations/a1/skipped").accept(MediaType.APPLICATION_JSON))
+        mvc.perform(get("/api/v1/activations/a1/graph").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotImplemented());
     }
 

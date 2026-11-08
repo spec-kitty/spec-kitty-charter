@@ -257,7 +257,9 @@ class ActivationSelectionServiceTest {
                 .isInstanceOfSatisfying(
                         PreconditionException.class,
                         refused -> assertThat(refused.kind()).isEqualTo(PreconditionException.Kind.STALE));
-        assertThat(packs.calls()).isZero();
+        assertThat(packs.calls())
+                .as("the one read that sees whether the tag-shaped header is the closure tag; the path is not judged")
+                .isEqualTo(1);
     }
 
     @Test

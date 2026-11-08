@@ -241,7 +241,11 @@ public class ActivationService {
     }
 
     /**
-     * Reads a stored document, as stored (ADR-0059 D5).
+     * Reads a stored document, as stored (ADR-0059 D5), under its revision as the tag.
+     *
+     * <p>No route serves this since PR B: {@code getActivation} answers through {@link EffectiveReadService#activation},
+     * under the closure tag and with its {@code denyNotApplied} (decision {@code 01M6Y11E55YP5TG1EJ1MDKCFRP}). It stays
+     * for the register's own tests of the revision comparison, and is to be removed with them.
      *
      * @param id the activation's id
      * @param ifNoneMatch the {@code If-None-Match} header, verbatim; null when absent
@@ -381,7 +385,7 @@ public class ActivationService {
 
     private StoredActivation matchedActivation(ActivationId id, String ifMatch) {
         StoredActivation current = repository.find(id).orElseThrow(() -> stale(id));
-        if (!EntityTags.matches(ifMatch, current.revision().token())) {
+        if (!IfMatchTags.names(ifMatch, current, packs)) {
             throw stale(id);
         }
         return current;

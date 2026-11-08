@@ -113,7 +113,7 @@ public class ActivationExclusionService {
             Set<ArtifactRef> floor = floorOf(snapshot);
             Reach others = ActivationWrites.walk(session, CascadeRules.planShared(before, target, scope, own, floor));
             ActivationChange change = CascadeRules.applyDeactivate(before, target, scope, depth, own, others, floor);
-            return writes.commit(loaded, change, snapshot);
+            return writes.commit(loaded, change, session);
         });
     }
 
@@ -141,7 +141,7 @@ public class ActivationExclusionService {
                     session.snapshot(), target, ActivationWrites.denies(loaded.document(), target));
             ActivationDocument before = ActivationWrites.current(loaded, session.snapshot());
             ActivationDocument after = before.withoutDeny(target.kind(), target.id());
-            return writes.commit(loaded, ActivationChange.of(before, after, SkippedReport.empty()), session.snapshot());
+            return writes.commit(loaded, ActivationChange.of(before, after, SkippedReport.empty()), session);
         });
     }
 

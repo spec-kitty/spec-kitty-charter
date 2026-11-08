@@ -447,7 +447,8 @@ Feature: Cascade depth: how many suggests hops a cascading select or deactivate 
     And the field at "/violations/0/pointer" is "/depth"
     And the field at "/violations/0/code" is "unreadable_body"
     When I GET "/activations/a-1"
-    Then the response header "ETag" is the stored ETag
+    Then the field at "/revision" is the stored revision
+    And the response header "ETag" differs from the stored ETag
 
   Scenario: A select whose depth is a decimal is 422 at /depth and stores nothing
     The refusal is judged after the preconditions (FR-010), and nothing is stored.
@@ -464,7 +465,8 @@ Feature: Cascade depth: how many suggests hops a cascading select or deactivate 
     And the field at "/violations/0/pointer" is "/depth"
     And the field at "/violations/0/code" is "unreadable_body"
     When I GET "/activations/a-1"
-    Then the response header "ETag" is the stored ETag
+    Then the field at "/revision" is the stored revision
+    And the response header "ETag" differs from the stored ETag
 
   Scenario: A select whose depth is a negative number is 422 at /depth and stores nothing
     The refusal is judged after the preconditions (FR-010), and nothing is stored.
@@ -481,7 +483,8 @@ Feature: Cascade depth: how many suggests hops a cascading select or deactivate 
     And the field at "/violations/0/pointer" is "/depth"
     And the field at "/violations/0/code" is "below_minimum"
     When I GET "/activations/a-1"
-    Then the response header "ETag" is the stored ETag
+    Then the field at "/revision" is the stored revision
+    And the response header "ETag" differs from the stored ETag
 
   Scenario: A select whose depth is a number past the int32 range is 422 at /depth and stores nothing
     The refusal is judged after the preconditions (FR-010), and nothing is stored.
@@ -498,7 +501,8 @@ Feature: Cascade depth: how many suggests hops a cascading select or deactivate 
     And the field at "/violations/0/pointer" is "/depth"
     And the field at "/violations/0/code" is "above_maximum"
     When I GET "/activations/a-1"
-    Then the response header "ETag" is the stored ETag
+    Then the field at "/revision" is the stored revision
+    And the response header "ETag" differs from the stored ETag
 
   Scenario: A deactivate whose depth is negative is 422 at /depth and stores nothing
     The exclusion body is judged as the selection body is.
@@ -515,7 +519,8 @@ Feature: Cascade depth: how many suggests hops a cascading select or deactivate 
     And the field at "/violations/0/pointer" is "/depth"
     And the field at "/violations/0/code" is "below_minimum"
     When I GET "/activations/a-1"
-    Then the response header "ETag" is the stored ETag
+    Then the field at "/revision" is the stored revision
+    And the response header "ETag" differs from the stored ETag
 
   Scenario: A deactivate whose depth is a decimal is 422 at /depth and stores nothing
     The exclusion body is judged as the selection body is.
@@ -532,4 +537,5 @@ Feature: Cascade depth: how many suggests hops a cascading select or deactivate 
     And the field at "/violations/0/pointer" is "/depth"
     And the field at "/violations/0/code" is "unreadable_body"
     When I GET "/activations/a-1"
-    Then the response header "ETag" is the stored ETag
+    Then the field at "/revision" is the stored revision
+    And the response header "ETag" differs from the stored ETag

@@ -11,6 +11,7 @@ import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.SkippedReport;
 import ai.speckitty.charter.activations.domain.StaleIds;
 import ai.speckitty.charter.activations.domain.StoredActivation;
+import ai.speckitty.charter.api.model.ActivationWarning;
 import ai.speckitty.charter.api.model.ArtifactReference;
 import ai.speckitty.charter.api.model.PackPin;
 import ai.speckitty.charter.api.model.SharedSkip;
@@ -121,5 +122,34 @@ class ActivationChangeMapperTest {
         assertThat(answer.getApplied()).isEmpty();
         assertThat(answer.getCleared()).isEmpty();
         assertThat(answer.getSkipped().getSkippedShared()).isEmpty();
+    }
+
+    @Test
+    void warningsAreMappedSortedByArtifactAndAlwaysPresent() {
+        ActivationDocument after = ActivationDocument.builder().build().document();
+        StoredActivation stored = StoredActivation.of(new ActivationId("a-1"), after);
+        ActivationChange none = new ActivationChange(after, List.of(), List.of(), SkippedReport.empty());
+        ActivationChange some = new ActivationChange(
+                after,
+                List.of(X, T),
+                List.of(),
+                SkippedReport.empty(),
+                List.of(),
+                List.of(),
+                List.of(
+                        new ActivationChange.Warning(ActivationChange.Code.OVERRIDDEN, X),
+                        new ActivationChange.Warning(ActivationChange.Code.ENHANCED_TARGET_NOT_IN_FORCE, T)));
+
+        assertThat(mapper.toChange(new ActivationWrites.Outcome(stored, none)).getWarnings())
+                .as("always present, [] when none")
+                .isEmpty();
+        assertThat(mapper.toChange(new ActivationWrites.Outcome(stored, some)).getWarnings())
+                .containsExactly(
+                        new ActivationWarning(
+                                ActivationWarning.CodeEnum.ENHANCED_TARGET_NOT_IN_FORCE,
+                                reference(ArtifactReference.KindEnum.TACTIC, "t")),
+                        new ActivationWarning(
+                                ActivationWarning.CodeEnum.OVERRIDDEN,
+                                reference(ArtifactReference.KindEnum.TACTIC, "x")));
     }
 }
