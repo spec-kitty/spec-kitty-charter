@@ -66,7 +66,7 @@ class LinkChecksTest {
                           "effective-context": {
                             "href": "/api/v1/activations/a-1/mission-types/software-dev/actions/implement/context"
                           },
-                          "skipped": {"href": "/api/v1/activations/a-1/skipped"}
+                          "graph": {"href": "/api/v1/activations/a-1/graph"}
                         }}"""))
                 .as("ADR-0020 D8: a reserved operation answers 501, so no link may point to it")
                 .hasSize(2)
@@ -75,7 +75,7 @@ class LinkChecksTest {
                 .anySatisfy(violation -> assertThat(violation)
                         .contains(
                                 "GET /activations/{activationId}/mission-types/{missionType}/actions/{action}/context"))
-                .anySatisfy(violation -> assertThat(violation).contains("GET /activations/{activationId}/skipped"));
+                .anySatisfy(violation -> assertThat(violation).contains("GET /activations/{activationId}/graph"));
     }
 
     @Test
