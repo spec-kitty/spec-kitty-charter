@@ -1,7 +1,7 @@
 {
-  "event_count": 241,
-  "last_event_id": "01M6XWMJZXKTE09ZSRF5PBC9Q5",
-  "materialized_at": "2026-11-08T15:32:39.549083+00:00",
+  "event_count": 242,
+  "last_event_id": "01M6XWRWRC86AYRMECMFA4S48G",
+  "materialized_at": "2026-11-08T15:35:00.620189+00:00",
   "mission_number": "",
   "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
   "mission_type": "",
@@ -12,9 +12,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 0,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 8
   },
   "work_packages": {
@@ -733,22 +733,22 @@
     },
     "WP21": {
       "actor": "claude",
-      "agent": "claude:sonnet:java-jenny",
+      "agent": "claude:opus:reviewer-renata",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude:sonnet:java-jenny",
-      "lane": "for_review",
-      "last_event_id": "01M6XWMJZXKTE09ZSRF5PBC9Q5",
-      "last_transition_at": "2026-11-08T15:32:39.549083+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M6XWRWRC86AYRMECMFA4S48G",
+      "last_transition_at": "2026-11-08T15:35:00.620189+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "LayerMerge (C15 settled sibling, C17/C18 winner and whole replacement, C21 override gate, C29/C31 preset union per A1), MergedClosure/LayerOverride, EdgeIndex.merged (C19, C20, C36), languages in the facts, CompositionFactsCache (#416 invariants, wired into OfferingReadService), ClosureView.merged(). Red-first commits per subtask. :packs:check green (with -PopenPacksDir=/home/user/open-packs) and HexagonalArchitectureTest green."
       ],
       "provider": "__resolved_provider_absent__",
-      "role": "implementer",
-      "shell_pid": 4342,
-      "shell_pid_created_at": "1794149167.22",
+      "role": "reviewer",
+      "shell_pid": 22414,
+      "shell_pid_created_at": "1794152095.29",
       "subtasks": {
         "T103": "done",
         "T104": "done",
