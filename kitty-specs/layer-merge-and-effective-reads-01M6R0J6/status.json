@@ -1,7 +1,7 @@
 {
-  "event_count": 282,
-  "last_event_id": "01M6YGPZFKM8RG34JGFP8PVFDY",
-  "materialized_at": "2026-11-08T21:23:29.395369+00:00",
+  "event_count": 285,
+  "last_event_id": "01M6YH42MQT79X4X93QG99FKMG",
+  "materialized_at": "2026-11-08T21:30:38.604102+00:00",
   "mission_number": "",
   "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
   "mission_type": "software-dev",
@@ -13,8 +13,8 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
-    "in_review": 1,
+    "in_progress": 1,
+    "in_review": 0,
     "planned": 3
   },
   "work_packages": {
@@ -910,26 +910,34 @@
     },
     "WP26": {
       "actor": "claude",
-      "agent": "claude:opus:reviewer-renata",
+      "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
-      "force_count": 0,
+      "force_count": 1,
       "implementer_of_record": "claude:sonnet:java-jenny",
-      "lane": "in_review",
-      "last_event_id": "01M6YGPZFKM8RG34JGFP8PVFDY",
-      "last_transition_at": "2026-11-08T21:23:29.395369+00:00",
+      "lane": "in_progress",
+      "last_event_id": "01M6YH42MQT79X4X93QG99FKMG",
+      "last_transition_at": "2026-11-08T21:30:38.604102+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "WP26 done: T131 architecture pages (resolution-model.md, offering-and-activation.md), T132 divergences DIV-216..237 (DIV-209..215 taken by PR A0; DIV-205 ratified; DIV-201/202 opened), T133 ADR-0053 d5 note, ADR-0059 D5 amendment and ticks, ADR-0020 D6 amendment, rules page (E7 to R13, E20, C28, E5, E9), trace PR B rows, changelog docs/changelog/2026-11-07-b-effective-reads.md. check_docs all, markdownlint and cspell clean."
+        "WP26 done: T131 architecture pages (resolution-model.md, offering-and-activation.md), T132 divergences DIV-216..237 (DIV-209..215 taken by PR A0; DIV-205 ratified; DIV-201/202 opened), T133 ADR-0053 d5 note, ADR-0059 D5 amendment and ticks, ADR-0020 D6 amendment, rules page (E7 to R13, E20, C28, E5, E9), trace PR B rows, changelog docs/changelog/2026-11-07-b-effective-reads.md. check_docs all, markdownlint and cspell clean.",
+        "Changes requested: F1 rules page W33 and G20 built in PR B (warnings, activationsAffected) but marked unbuilt/PR C; F2 rest-resource-conventions.md:134/:138 stale 'one conditional read'/'Proposed'. No overclaim found. check_docs ok, markdownlint 0, cspell 0, DivergenceRegisterTest 3/3 green."
       ],
       "provider": "__resolved_provider_absent__",
-      "role": "reviewer",
-      "shell_pid": 14740,
-      "shell_pid_created_at": "1794173005.04",
+      "review": null,
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/layer-merge-and-effective-reads-01M6R0J6-coord/kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP26-b-docs-merge-reads/review-cycle-1.md",
+        "reference": "review-cycle://layer-merge-and-effective-reads-01M6R0J6/WP26-b-docs-merge-reads/review-cycle-1.md",
+        "reviewer": "claude:opus:reviewer-renata",
+        "verdict": "changes_requested"
+      },
+      "role": "implementer",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T131": "done",
-        "T132": "done",
-        "T133": "done"
+        "T131": "planned",
+        "T132": "planned",
+        "T133": "planned"
       }
     },
     "WP27": {
