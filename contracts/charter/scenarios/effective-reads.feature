@@ -450,11 +450,11 @@ Feature: The effective reads answer what an activation puts in force, and why th
       """
 
   Scenario: A required T hidden by an active override is satisfied by it
-    R11, operator ruling Q6: the governing preset requires T and F, selected, overrides T, which the document selects
+    R11, operator ruling Q6: the governing preset requires T, and F, selected, overrides T, which the document selects
     too. The requirement is satisfied by the override: T stays out of force (inactive, overridden) and carries
     satisfiedBy F, and it is not put in force and not reported as unsatisfied. F, in force, is the control in the same
-    answer. (A required T the document does not select is not_selected, the row that comes before overridden in E9 and in
-    EffectiveArtifactReason, and carries satisfiedBy F all the same.)
+    answer. A required T the document does not select is not_selected, the row that comes before overridden in E9 and in
+    EffectiveArtifactReason, and carries satisfiedBy F all the same: a-2 selects F alone.
     Given the org pack "main" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943R
@@ -523,6 +523,22 @@ Feature: The effective reads answer what an activation puts in force, and why th
       directive:T
       """
     And the field at "/report/denyNotApplied" holds exactly 0 items
+    And the field at "/report/requiredNotInForce" holds exactly 0 items
+    Given the activation "a-2" holds:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["F"]}}
+      """
+    When I GET "/activations/a-2/artifacts?kind=directive&state=inactive"
+    Then the response status is 200
+    And the field at "/items" holds exactly the ids:
+      """
+      directive:T
+      """
+    And the field at "/items/0/reason" is "not_selected"
+    And the field at "/items/0/required" is true
+    And the field at "/items/0/satisfiedBy/artifactId" is "F"
+    When I GET "/activations/a-2/skipped"
+    Then the response status is 200
     And the field at "/report/requiredNotInForce" holds exactly 0 items
 
   Scenario: An enhancer alone does not satisfy a required T, which is put in force
