@@ -80,6 +80,15 @@ class LayerMergeTest {
         }
 
         MergedClosure merge() {
+            return LayerMerge.merge(closure(), facts(), new PerPackPolicy(policies));
+        }
+
+        /** The floor {@link LayerMerge#floorOf} answers, which the writes read beside {@link #merge()}'s. */
+        RequiredFloor floorOf() {
+            return LayerMerge.floorOf(closure(), facts());
+        }
+
+        private Map<String, PackCompositionFacts> facts() {
             Map<String, PackCompositionFacts> facts = new HashMap<>();
             for (PackUnderResolution pack : packs) {
                 String name = pack.configured().id().value();
@@ -94,7 +103,7 @@ class LayerMergeTest {
                                 List.of(),
                                 languages.getOrDefault(name, Map.of())));
             }
-            return LayerMerge.merge(closure(), facts, new PerPackPolicy(policies));
+            return facts;
         }
     }
 
@@ -176,7 +185,15 @@ class LayerMergeTest {
                         "C31",
                         "a must-have item no pack holds is reported, never required (A10)",
                         LayerMergeTest::c31Unheld),
-                new Row("C31", "a mission type is a must-have item like any other", LayerMergeTest::c31MissionType));
+                new Row("C31", "a mission type is a must-have item like any other", LayerMergeTest::c31MissionType),
+                new Row(
+                        "C31",
+                        "within one level the child's copy replaces its parent's, and the replaced copy requires nothing",
+                        LayerMergeTest::c31SameLevel),
+                new Row(
+                        "C31",
+                        "the union is across levels: a same-level replaced copy drops out, the other levels' stay",
+                        LayerMergeTest::c31SameLevelBesideOtherLevels));
     }
 
     @ParameterizedTest(name = "{0}")
@@ -490,6 +507,44 @@ class LayerMergeTest {
                 .merge();
 
         assertThat(merged.floor().requiredBy()).containsOnlyKeys(urn("mission_type:M"));
+    }
+
+    private static void c31SameLevel() {
+        Fixture fixture = new Fixture()
+                .pack("a-parent", PackLevel.ORG, "directive:A")
+                .pack("b-child", PackLevel.ORG, "directive:B")
+                .preset("a-parent", preset("team", "A"))
+                .preset("b-child", preset("team", "B"));
+        MergedClosure merged = fixture.merge();
+
+        assertThat(merged.presets().get("team").preset()).isEqualTo(preset("team", "B"));
+        assertThat(merged.presets().get("team").mustHave())
+                .as("the replaced parent copy contributes no must-have item")
+                .containsExactly(urn("directive:B"));
+        assertThat(merged.floor().requiredBy()).containsOnlyKeys(urn("directive:B"));
+        assertThat(fixture.floorOf().requiredBy())
+                .as("floorOf feeds the writes and answers as the merge does")
+                .containsOnlyKeys(urn("directive:B"));
+    }
+
+    private static void c31SameLevelBesideOtherLevels() {
+        Fixture fixture = new Fixture()
+                .pack("core", PackLevel.BUILT_IN, "directive:K")
+                .pack("a-parent", PackLevel.ORG, "directive:A")
+                .pack("b-child", PackLevel.ORG, "directive:B")
+                .pack("project", PackLevel.PROJECT, "directive:C")
+                .preset("core", preset("team", "K"))
+                .preset("a-parent", preset("team", "A"))
+                .preset("b-child", preset("team", "B"))
+                .preset("project", preset("team", "C"));
+        MergedClosure merged = fixture.merge();
+
+        assertThat(merged.presets().get("team").mustHave())
+                .containsExactly(urn("directive:K"), urn("directive:B"), urn("directive:C"));
+        assertThat(merged.floor().requiredBy())
+                .containsOnlyKeys(urn("directive:K"), urn("directive:B"), urn("directive:C"));
+        assertThat(fixture.floorOf().requiredBy())
+                .containsOnlyKeys(urn("directive:K"), urn("directive:B"), urn("directive:C"));
     }
 
     @Test

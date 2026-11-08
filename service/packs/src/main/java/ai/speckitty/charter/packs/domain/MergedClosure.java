@@ -22,8 +22,8 @@ import java.util.Set;
  *     per artifact, from the nearest built-in level to the farthest
  * @param languages each winner's {@code applies_to_languages}, read from the winner's own pack alone; a winner that
  *     declares none is absent
- * @param presets each preset id once, with the copy in force and the must-have items of every copy (A1, rule C31)
- * @param floor the must-have items of every copy of every governing preset that the merged closure holds, with the
+ * @param presets each preset id once, with the copy in force and the must-have items of the copy in force at each level (A1, rule C31)
+ * @param floor the must-have items of the copy of every governing preset in force at each level that the merged closure holds, with the
  *     requiring packs; the items it holds no version of are in its {@link RequiredFloor#unheld()} report (A10)
  */
 public record MergedClosure(
@@ -43,7 +43,7 @@ public record MergedClosure(
      *
      * @param preset the copy held by the last pack in closure order, the one applied
      * @param descriptorPackId the {@code pack_id} of the pack that holds the copy in force
-     * @param mustHave the must-have items of every copy of the id across levels, each once, in closure order; items no
+     * @param mustHave the must-have items of the copy of the id in force at each level, each once, in closure order; items no
      *     pack holds included (the floor reports those)
      */
     public record MergedPreset(Preset preset, String descriptorPackId, List<Urn> mustHave) {
@@ -100,7 +100,7 @@ public record MergedClosure(
      * @param layerOverrides every replaced version
      * @param languages the languages of each winner
      * @param presets each preset id with its merged requirement
-     * @param floor the floor over every copy of every governing preset
+     * @param floor the floor over the copy of every governing preset in force at each level
      */
     public MergedClosure {
         winners = Collections.unmodifiableMap(new LinkedHashMap<>(Objects.requireNonNull(winners, "winners")));
