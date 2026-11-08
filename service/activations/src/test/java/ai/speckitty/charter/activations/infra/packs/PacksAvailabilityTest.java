@@ -49,8 +49,8 @@ import ai.speckitty.charter.packs.domain.ResolvedEdge;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
-import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -403,8 +403,7 @@ class PacksAvailabilityTest {
     }
 
     private static Relationship edge(String from, RelationType type, String to, String when, String rationale) {
-        return new Relationship(
-                urn(from), urn(to), type, Optional.ofNullable(when), Optional.ofNullable(rationale));
+        return new Relationship(urn(from), urn(to), type, Optional.ofNullable(when), Optional.ofNullable(rationale));
     }
 
     /**
@@ -514,7 +513,11 @@ class PacksAvailabilityTest {
         Preset governing = new Preset(
                 "governing",
                 "T and a ghost are required.",
-                Map.of(ArtifactKind.TACTIC, List.of(PresetItem.mustHave("T")), ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("ghost"))));
+                Map.of(
+                        ArtifactKind.TACTIC,
+                        List.of(PresetItem.mustHave("T")),
+                        ArtifactKind.DIRECTIVE,
+                        List.of(PresetItem.mustHave("ghost"))));
         Merging closure = new Merging()
                 .pack(
                         "alpha",
@@ -526,8 +529,8 @@ class PacksAvailabilityTest {
                         MutabilityPolicySource.empty(),
                         edge("tactic:E", RelationType.OVERRIDES, "tactic:U", null, null));
         closures.answers(Optional.empty(), closure.view());
-        InForceQuery query = new InForceQuery(
-                Set.of(ref("tactic:E"), ref("tactic:U")), Set.of(), Optional.empty(), Map.of());
+        InForceQuery query =
+                new InForceQuery(Set.of(ref("tactic:E"), ref("tactic:U")), Set.of(), Optional.empty(), Map.of());
 
         InForceAnswer answered = adapter.session(Optional.empty()).inForce(query);
 
@@ -584,11 +587,13 @@ class PacksAvailabilityTest {
         PacksSession session = adapter.session(Optional.empty());
 
         assertThatThrownBy(session::merged)
-                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> assertThat(refusal.code())
-                        .isEqualTo(RefusalCode.PACK_UNREADABLE));
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
         assertThatThrownBy(() -> session.inForce(new InForceQuery(Set.of(), Set.of(), Optional.empty(), Map.of())))
-                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> assertThat(refusal.code())
-                        .isEqualTo(RefusalCode.PACK_UNREADABLE));
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
     }
 
     @Test

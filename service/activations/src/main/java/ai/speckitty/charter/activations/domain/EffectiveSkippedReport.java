@@ -45,17 +45,8 @@ public record EffectiveSkippedReport(
         List<Overridden> overridden) {
 
     private static final EffectiveSkippedReport EMPTY = new EffectiveSkippedReport(
-            List.of(),
-            List.of(),
-            List.of(),
-            List.of(),
-            List.of(),
-            List.of(),
-            List.of(),
-            List.of(),
-            List.of(),
-            List.of(),
-            List.of());
+            List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(),
+            List.of(), List.of());
 
     /** Why a deny entry was not applied. */
     public enum DenyReason {
@@ -211,9 +202,8 @@ public record EffectiveSkippedReport(
      */
     public EffectiveSkippedReport {
         staleIds = sorted(staleIds, Comparator.naturalOrder());
-        denyNotApplied = sorted(
-                denyNotApplied,
-                Comparator.comparing(DenyNotApplied::ref).thenComparing(DenyNotApplied::reason));
+        denyNotApplied =
+                sorted(denyNotApplied, Comparator.comparing(DenyNotApplied::ref).thenComparing(DenyNotApplied::reason));
         enhancedTargetNotInForce = sorted(enhancedTargetNotInForce, Comparator.comparing(EnhancerWithoutTarget::ref));
         overrideNotApplied = sorted(
                 overrideNotApplied,

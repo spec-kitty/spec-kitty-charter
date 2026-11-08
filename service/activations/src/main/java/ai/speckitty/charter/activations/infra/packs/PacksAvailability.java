@@ -50,6 +50,10 @@ import org.springframework.stereotype.Component;
  *
  * <p>Each pack's {@code parent_pack} is copied as the configured id of its parent ({@link ClosureView#parentOf}), so
  * the activation domain can name a refusal's extends chain ({@link ClosureSnapshot#extendsChain}).
+ *
+ * <p>The same read answers {@link PacksSession#merged} and {@link PacksSession#inForce} ({@link ClosureViewSession}): the
+ * layer merge is built from the facts the read holds, on the first question and not before, and never reads again
+ * (NFR-007).
  */
 @Component
 public class PacksAvailability implements AvailablePacks {
