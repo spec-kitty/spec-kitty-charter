@@ -27,6 +27,9 @@ import java.util.Objects;
  * @param languages the {@code applies_to_languages} of each held artifact that declares any, by bare URN text, from the
  *     same assembly (a tactic, a styleguide, a toolguide, a procedure or an agent profile); an artifact that declares
  *     none is absent
+ * @param bindings the mission type each held artifact is bound to, by bare URN text, from the same assembly: a mission
+ *     step contract is bound to the mission its {@code mission} names (A7 Q1, rule E6); an artifact bound to none is
+ *     absent
  */
 public record PackCompositionFacts(
         List<String> changed,
@@ -35,7 +38,8 @@ public record PackCompositionFacts(
         MutabilityPolicySource policy,
         List<Preset> presets,
         List<Relationship> edges,
-        Map<String, List<String>> languages) {
+        Map<String, List<String>> languages,
+        Map<String, String> bindings) {
 
     /** A pack that changes, holds and writes nothing, declares no policy and holds no preset. */
     public static final PackCompositionFacts NONE = new PackCompositionFacts(List.of(), List.of(), List.of());
@@ -50,6 +54,7 @@ public record PackCompositionFacts(
      * @param presets the presets it holds
      * @param edges the typed edges it writes
      * @param languages the languages each held artifact applies to, by bare URN text
+     * @param bindings the mission type each held artifact is bound to, by bare URN text
      */
     public PackCompositionFacts {
         Objects.requireNonNull(changed, "changed");
@@ -59,6 +64,7 @@ public record PackCompositionFacts(
         Objects.requireNonNull(presets, "presets");
         Objects.requireNonNull(edges, "edges");
         Objects.requireNonNull(languages, "languages");
+        Objects.requireNonNull(bindings, "bindings");
         changed = List.copyOf(changed);
         defined = List.copyOf(defined);
         references = List.copyOf(references);
@@ -67,6 +73,29 @@ public record PackCompositionFacts(
         Map<String, List<String>> copy = new LinkedHashMap<>();
         languages.forEach((urn, declared) -> copy.put(urn, List.copyOf(declared)));
         languages = Collections.unmodifiableMap(copy);
+        bindings = Collections.unmodifiableMap(new LinkedHashMap<>(bindings));
+    }
+
+    /**
+     * The facts of a pack whose artifacts are bound to no mission type.
+     *
+     * @param changed the artifacts it changes
+     * @param defined the artifacts it holds
+     * @param references the references it writes
+     * @param policy the mutability policy it declares
+     * @param presets the presets it holds
+     * @param edges the typed edges it writes
+     * @param languages the languages each held artifact applies to, by bare URN text
+     */
+    public PackCompositionFacts(
+            List<String> changed,
+            List<String> defined,
+            List<String> references,
+            MutabilityPolicySource policy,
+            List<Preset> presets,
+            List<Relationship> edges,
+            Map<String, List<String>> languages) {
+        this(changed, defined, references, policy, presets, edges, languages, Map.of());
     }
 
     /**
