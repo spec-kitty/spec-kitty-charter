@@ -22,10 +22,11 @@ class EffectiveTagTest {
             ActivationDocument.builder().build().document().revision();
     private static final Query FIRST_PAGE = new Query(Optional.empty(), Optional.empty(), Optional.empty(), 100);
 
-    private static ClosureSnapshot closure(String fingerprint) {
+    private static ClosureSnapshot closure(String closureFingerprint) {
         return ClosureSnapshots.snapshot()
                 .pack("alpha", "1.0.0")
-                .fingerprint(fingerprint)
+                .fingerprint("sha256:every-configured-pack")
+                .closureFingerprint(closureFingerprint)
                 .build();
     }
 
@@ -57,12 +58,13 @@ class EffectiveTagTest {
         ClosureSnapshot before = closure("sha256:one");
         ClosureSnapshot after = ClosureSnapshots.snapshot()
                 .pack("alpha", "1.0.0")
-                .held(ArtifactKind.DIRECTIVE, "D1")
-                .fingerprint("sha256:one")
+                .fingerprint("sha256:a-pack-outside-the-closure-changed")
+                .closureFingerprint("sha256:one")
                 .build();
 
+        assertThat(after.fingerprint()).isNotEqualTo(before.fingerprint());
         assertThat(EffectiveTag.artifacts(REVISION, after, FIRST_PAGE))
-                .as("the fingerprint digests the packs in the closure alone, so a pack outside it never reaches it")
+                .as("the tag covers the digest of the closure's own packs, not the one of every configured pack")
                 .isEqualTo(EffectiveTag.artifacts(REVISION, before, FIRST_PAGE));
         assertThat(EffectiveTag.activation(REVISION, after)).isEqualTo(EffectiveTag.activation(REVISION, before));
         assertThat(EffectiveTag.skipped(REVISION, after)).isEqualTo(EffectiveTag.skipped(REVISION, before));

@@ -132,7 +132,9 @@ public class PacksAvailability implements AvailablePacks {
                 requiredBy(view, configuredIdOf),
                 lockedBy(view, configuredIdOf),
                 presets(view),
-                view.fingerprint());
+                view.fingerprint(),
+                view.fingerprint(),
+                Set.of());
     }
 
     private static ClosureSnapshot.PackEntry entryOf(

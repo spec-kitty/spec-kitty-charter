@@ -11,12 +11,14 @@ import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.activations.domain.DocumentRules;
 import ai.speckitty.charter.activations.domain.EffectiveSet;
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport;
+import ai.speckitty.charter.activations.domain.EffectiveTag;
 import ai.speckitty.charter.activations.domain.MergedSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
 import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
+import ai.speckitty.charter.activations.domain.Revision;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
@@ -29,8 +31,11 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.application.ClosureQueries;
 import ai.speckitty.charter.packs.application.ClosureView;
+import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.EdgeIndex;
+import ai.speckitty.charter.packs.application.OfferingReadService;
 import ai.speckitty.charter.packs.application.OfferingReadService.OfferingEntry;
 import ai.speckitty.charter.packs.application.ReachRequest;
 import ai.speckitty.charter.packs.application.ReachResult;
@@ -39,13 +44,20 @@ import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.InForceStates;
 import ai.speckitty.charter.packs.domain.MutabilityLevel;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
+import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
+import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.PresetItem;
 import ai.speckitty.charter.packs.domain.RequiredFloor;
 import ai.speckitty.charter.packs.domain.ResolvedEdge;
+import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
+import ai.speckitty.charter.packs.infra.storage.PackLocation;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
@@ -58,6 +70,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 /**
  * The adapter over the packs slice: one {@code ClosureQueries.snapshot} per call, copied field by field, with each pack
@@ -374,6 +387,10 @@ class PacksAvailabilityTest {
         }
 
         ClosureView view() {
+            return view("sha256:merged");
+        }
+
+        ClosureView view(String closureFingerprint) {
             PerPackPolicy policy = new PerPackPolicy(policies);
             return new ClosureView(
                     List.of(),
@@ -386,7 +403,8 @@ class PacksAvailabilityTest {
                     Map.of(),
                     "sha256:merged",
                     EdgeIndex.of(packs, facts),
-                    new ClosureView.MergeInputs(packs, facts));
+                    new ClosureView.MergeInputs(packs, facts),
+                    closureFingerprint);
         }
 
         static String descriptorId(String name) {
@@ -543,6 +561,94 @@ class PacksAvailabilityTest {
                     assertThat(state.required()).isTrue();
                 });
         assertThat(answered.requiredNotHeld()).containsExactly(ref("directive:ghost"));
+    }
+
+    @Test
+    void theSnapshotCarriesTheDigestOfTheClosureAloneBesideTheSourceFingerprint() {
+        closures.answers(Optional.empty(), layered().view("sha256:closure-alone"));
+
+        ClosureSnapshot snapshot = adapter.snapshot(Optional.empty());
+
+        assertThat(snapshot.fingerprint()).isEqualTo("sha256:merged");
+        assertThat(snapshot.closureFingerprint()).isEqualTo("sha256:closure-alone");
+    }
+
+    /**
+     * The tags of an activation over alpha, which depends on beta, with gamma configured beside them: the real
+     * ClosureQueries and ConsistentRead over the real files of three pack directories, and the descriptors and facts of
+     * each pack in memory.
+     */
+    @Test
+    void aPackOutsideTheClosureLeavesTheTagAndAPackOfTheClosureChangesItOverRealPackDirectories(@TempDir Path dir)
+            throws IOException {
+        Map<String, Path> roots = new LinkedHashMap<>();
+        for (String name : List.of("alpha", "beta", "gamma")) {
+            roots.put(name, Files.createDirectories(dir.resolve(name)));
+            Files.writeString(roots.get(name).resolve("pack.yaml"), "name: " + name + "\n");
+        }
+        PacksAvailability real = new PacksAvailability(closureQueriesOver(roots));
+        Revision revision = ActivationDocument.builder().build().document().revision();
+        EffectiveTag.Query page = new EffectiveTag.Query(Optional.empty(), Optional.empty(), Optional.empty(), 100);
+        ClosureSnapshot before = real.snapshot(Optional.of(List.of("alpha")));
+
+        Files.writeString(roots.get("gamma").resolve("pack.yaml"), "name: gamma\nchanged: true\n");
+        ClosureSnapshot gammaChanged = real.snapshot(Optional.of(List.of("alpha")));
+        Files.writeString(roots.get("beta").resolve("pack.yaml"), "name: beta\nchanged: true\n");
+        ClosureSnapshot betaChanged = real.snapshot(Optional.of(List.of("alpha")));
+
+        assertThat(gammaChanged.fingerprint()).as("every configured pack").isNotEqualTo(before.fingerprint());
+        assertThat(EffectiveTag.artifacts(revision, gammaChanged, page))
+                .as("a pack outside the closure")
+                .isEqualTo(EffectiveTag.artifacts(revision, before, page));
+        assertThat(EffectiveTag.activation(revision, gammaChanged))
+                .isEqualTo(EffectiveTag.activation(revision, before));
+        assertThat(EffectiveTag.artifacts(revision, betaChanged, page))
+                .as("a pack of the closure, a dependency of the root")
+                .isNotEqualTo(EffectiveTag.artifacts(revision, before, page));
+        assertThat(EffectiveTag.activation(revision, betaChanged))
+                .isNotEqualTo(EffectiveTag.activation(revision, before));
+    }
+
+    private static ClosureQueries closureQueriesOver(Map<String, Path> roots) {
+        List<ConfiguredPack> configured = roots.keySet().stream()
+                .map(name -> new ConfiguredPack(new PackIdentifier(name), PackLevel.ORG))
+                .toList();
+        Map<String, PackDescriptor> descriptors = new LinkedHashMap<>();
+        roots.keySet()
+                .forEach(name -> descriptors.put(
+                        name,
+                        new PackDescriptor(
+                                name,
+                                "1.0.0",
+                                Optional.empty(),
+                                name + " pack",
+                                Optional.empty(),
+                                Optional.empty(),
+                                PackPaths.none(),
+                                name.equals("alpha") ? List.of(new PackDependency("beta", ">=1.0")) : List.of())));
+        PackDescriptorRepository repository = new PackDescriptorRepository() {
+            @Override
+            public PackDescriptor get(PackIdentifier pack) {
+                return find(pack).orElseThrow();
+            }
+
+            @Override
+            public Optional<PackDescriptor> find(PackIdentifier pack) {
+                return Optional.ofNullable(descriptors.get(pack.value()));
+            }
+
+            @Override
+            public void save(PackIdentifier pack, PackDescriptor descriptor) {
+                throw new UnsupportedOperationException("the closure never writes");
+            }
+        };
+        PackCatalogRepository catalog = () -> configured;
+        ConsistentRead read = new ConsistentRead(new FileSystemPackSources(() -> roots.entrySet().stream()
+                .map(entry -> new PackLocation(entry.getKey(), PackLevel.ORG, entry.getValue()))
+                .toList()));
+        OfferingReadService offering =
+                new OfferingReadService(catalog, repository, pack -> PackCompositionFacts.NONE, read);
+        return new ClosureQueries(offering, catalog, read);
     }
 
     @Test
