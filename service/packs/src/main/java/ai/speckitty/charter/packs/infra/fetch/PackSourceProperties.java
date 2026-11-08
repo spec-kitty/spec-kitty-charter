@@ -23,6 +23,9 @@ public record PackSourceProperties(
         @DefaultValue Git git,
         @DefaultValue Filesystem filesystem) {
 
+    /** The archive bound of a registration, 32 MiB (NFR-004), which the free-space check is sized from. */
+    private static final long ARCHIVE_BOUND_BYTES = 32L * 1024 * 1024;
+
     private static final String HTTPS_HOSTS = "charter.pack-sources.https.allowed-hosts";
     private static final String GIT_HOSTS = "charter.pack-sources.git.allowed-hosts";
 
@@ -33,7 +36,8 @@ public record PackSourceProperties(
      * @param allowedHosts the hosts an archive may be fetched from, matched exactly after lower-casing and stripping a
      *     trailing dot; empty by default, and every URL is then refused ({@code host_not_allowed})
      * @param timeout the deadline over the whole fetch: resolution, every hop and the body (60 s)
-     * @param maxSize the largest archive accepted (32 MiB)
+     * @param maxSize the largest archive accepted (32 MiB; a larger value fails the start, because the free-space check
+     *     is sized from that bound)
      * @param maxRedirects the most redirects followed (3)
      */
     public record Https(
@@ -51,8 +55,14 @@ public record PackSourceProperties(
          * @param timeout the deadline over the whole fetch
          * @param maxSize the largest archive accepted
          * @param maxRedirects the most redirects followed
+         * @throws IllegalArgumentException when {@code maxSize} is over 32 MiB, the archive bound the free-space check of a
+         *     registration is sized from
          */
         public Https {
+            if (maxSize.toBytes() > ARCHIVE_BOUND_BYTES) {
+                throw new IllegalArgumentException("charter.pack-sources.https.max-size is " + maxSize.toBytes()
+                        + " bytes; it is at most 32 MiB, the archive bound the free-space check is sized from.");
+            }
             allowedHosts = List.copyOf(allowedHosts);
         }
 

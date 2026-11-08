@@ -379,7 +379,7 @@ request, so an operator can switch a kind off without a restart. How a client us
 | `charter.pack-sources.https.enabled` | `false` | Allows `POST /packs` with an `https_archive` source. |
 | `charter.pack-sources.https.allowed-hosts` | empty | The hosts an archive may be fetched from, matched exactly after lower-casing and stripping a trailing dot. Empty refuses every URL (`host_not_allowed`). |
 | `charter.pack-sources.https.timeout` | `60s` | One deadline over resolution, every hop and the body. |
-| `charter.pack-sources.https.max-size` | `32MB` | The largest archive accepted. |
+| `charter.pack-sources.https.max-size` | `32MB` | The largest archive accepted. At most 32 MiB: a larger value stops the start, because the free-space check of a registration is sized from that bound. |
 | `charter.pack-sources.https.max-redirects` | `3` | The most redirects followed; each target is checked again. |
 | `charter.pack-sources.git.enabled` | `false` | Allows `POST /packs` with a `git` source. |
 | `charter.pack-sources.git.allowed-hosts` | empty | The hosts a repository may be fetched from. Empty refuses every URL. |
