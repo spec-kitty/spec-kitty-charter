@@ -3,16 +3,13 @@ package ai.speckitty.charter.packs.infra.api;
 import ai.speckitty.charter.api.model.Artifact;
 import ai.speckitty.charter.api.model.ArtifactSummary;
 import ai.speckitty.charter.api.model.Directive;
-import ai.speckitty.charter.api.model.DirectiveReference;
 import ai.speckitty.charter.api.model.Link;
 import ai.speckitty.charter.api.model.Paradigm;
-import ai.speckitty.charter.api.model.ParadigmReference;
 import ai.speckitty.charter.api.model.Styleguide;
 import ai.speckitty.charter.api.model.StyleguideAntiPattern;
 import ai.speckitty.charter.api.model.StyleguidePattern;
 import ai.speckitty.charter.api.model.StyleguideToolEntry;
 import ai.speckitty.charter.api.model.Tactic;
-import ai.speckitty.charter.api.model.TacticReference;
 import ai.speckitty.charter.api.model.TacticStep;
 import ai.speckitty.charter.api.model.Toolguide;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
@@ -137,20 +134,11 @@ final class ArtifactDtos {
                 tactic.notes().orElse(null),
                 tactic.steps().stream().map(ArtifactDtos::tacticStep).toList(),
                 tactic.failureModes(),
-                tactic.appliesToLanguages(),
-                tactic.references().stream().map(ArtifactDtos::tacticReference).toList());
+                tactic.appliesToLanguages());
     }
 
     private static TacticStep tacticStep(ai.speckitty.charter.packs.domain.TacticStep step) {
-        return new TacticStep(
-                step.title(),
-                step.description().orElse(null),
-                step.examples(),
-                step.references().stream().map(ArtifactDtos::tacticReference).toList());
-    }
-
-    private static TacticReference tacticReference(ai.speckitty.charter.packs.domain.TacticReference reference) {
-        return new TacticReference(reference.name(), reference.type(), reference.id(), reference.when());
+        return new TacticStep(step.title(), step.description().orElse(null), step.examples());
     }
 
     // ---- directive ----------------------------------------------------------------------------------------------
@@ -163,23 +151,9 @@ final class ArtifactDtos {
                 directive.intent(),
                 directive.enforcement().token(),
                 directive.scope().orElse(null),
-                directive.procedures(),
                 directive.integrityRules(),
                 directive.validationCriteria(),
-                directive.explicitAllowances(),
-                directive.references().stream()
-                        .map(ArtifactDtos::directiveReference)
-                        .toList(),
-                directive.relationships().stream().map(RelationshipWire::toWire).toList());
-    }
-
-    private static DirectiveReference directiveReference(
-            ai.speckitty.charter.packs.domain.DirectiveReference reference) {
-        return new DirectiveReference(
-                reference.type(),
-                reference.id(),
-                reference.when().orElse(null),
-                reference.reason().orElse(null));
+                directive.explicitAllowances());
     }
 
     // ---- styleguide ---------------------------------------------------------------------------------------------
@@ -203,11 +177,7 @@ final class ArtifactDtos {
                         .structuralLintConfig()
                         .map(ArtifactDtos::styleguideConfig)
                         .orElse(null),
-                styleguide.appliesToLanguages(),
-                styleguide.references(),
-                styleguide.relationships().stream()
-                        .map(RelationshipWire::toWire)
-                        .toList());
+                styleguide.appliesToLanguages());
     }
 
     private static StyleguidePattern styleguidePattern(ai.speckitty.charter.packs.domain.StyleguidePattern pattern) {
@@ -239,19 +209,7 @@ final class ArtifactDtos {
 
     static Paradigm paradigm(ai.speckitty.charter.packs.domain.Paradigm paradigm) {
         return new Paradigm(
-                paradigm.id().value(),
-                paradigm.schemaVersion().orElseThrow(),
-                paradigm.name(),
-                paradigm.summary(),
-                paradigm.directiveRefs(),
-                paradigm.references().stream()
-                        .map(ArtifactDtos::paradigmReference)
-                        .toList(),
-                paradigm.relationships().stream().map(RelationshipWire::toWire).toList());
-    }
-
-    private static ParadigmReference paradigmReference(ai.speckitty.charter.packs.domain.ParadigmReference reference) {
-        return new ParadigmReference(reference.type(), reference.id());
+                paradigm.id().value(), paradigm.schemaVersion().orElseThrow(), paradigm.name(), paradigm.summary());
     }
 
     // ---- toolguide ----------------------------------------------------------------------------------------------
@@ -266,7 +224,6 @@ final class ArtifactDtos {
                 toolguide.summary(),
                 toolguide.commands(),
                 toolguide.appliesToLanguages(),
-                toolguide.lastUpdated().orElse(null),
-                toolguide.references());
+                toolguide.lastUpdated().orElse(null));
     }
 }

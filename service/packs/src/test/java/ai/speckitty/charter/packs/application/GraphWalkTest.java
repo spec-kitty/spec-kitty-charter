@@ -335,7 +335,7 @@ class GraphWalkTest {
         }
 
         @Override
-        public List<Relationship> relationships() {
+        public List<Relationship> derivedRelationships() {
             return relationships;
         }
 

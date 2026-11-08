@@ -42,6 +42,10 @@ Under the `container` profile, the service reads `application-container.yaml`:
   - A secret is a file named after its property, such as `/run/secrets/charter.worktree-token`, or an env var, which
     outranks the file.
   - A file in the directory may set only the token and `charter.container.*` keys.
+- **Host names.** The request guard accepts the names in `charter.container.allowed-hosts` instead of the loopback
+  names.
+- **Health check.** `GET /actuator/health` answers up or down without the token. Every other path needs it.
+- **One replica.** A deployment runs one replica ([ADR-0061](/adr/0061-one-replica-per-deployment/)).
 - **How-to.** [Run the service in a container](/guides/run-in-a-container/).
 
 ## One service per worktree

@@ -14,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -41,10 +42,12 @@ class FileActivationRepositoryFailureTest {
         for (int i = 0; i < count; i++) {
             packs.add(PackRef.pinned("pack-" + i + "-" + random.nextInt(1000), "1." + random.nextInt(50)));
         }
-        List<ArtifactKind> kinds = List.copyOf(ActivationDocument.kinds());
+        List<ArtifactKind> kinds = Arrays.stream(ArtifactKind.values())
+                .filter(ArtifactKind::activatable)
+                .toList();
         return ActivationDocument.builder()
                 .packs(packs)
-                .activatedKinds(List.of(kinds.get(random.nextInt(kinds.size()))))
+                .selected(kinds.get(random.nextInt(kinds.size())), List.of("selected-" + random.nextInt(10_000)))
                 .languages(List.of("lang-" + random.nextInt(100), "é-" + random.nextInt(100)))
                 .deactivated(ArtifactKind.TACTIC, List.of("tactic-" + random.nextInt(10_000)))
                 .build()
@@ -63,7 +66,7 @@ class FileActivationRepositoryFailureTest {
 
     @Test
     void aMoveThatThrowsAnIoExceptionLeavesTheOldDocumentAndNoTempFile() throws IOException {
-        FileActivationRepository.Rename failing = (temp, target) -> {
+        FileActivationRepository.Durability failing = (temp, target) -> {
             throw new IOException("injected: the disk is gone");
         };
         everyRunKeepsTheOldDocument(failing);
@@ -71,13 +74,13 @@ class FileActivationRepositoryFailureTest {
 
     @Test
     void aMoveThatThrowsARuntimeExceptionLeavesTheOldDocumentAndNoTempFile() throws IOException {
-        FileActivationRepository.Rename failing = (temp, target) -> {
+        FileActivationRepository.Durability failing = (temp, target) -> {
             throw new IllegalStateException("injected: the move blew up");
         };
         everyRunKeepsTheOldDocument(failing);
     }
 
-    private void everyRunKeepsTheOldDocument(FileActivationRepository.Rename failing) throws IOException {
+    private void everyRunKeepsTheOldDocument(FileActivationRepository.Durability failing) throws IOException {
         Random random = new Random(SEED);
         for (int run = 0; run < RUNS; run++) {
             ActivationId id = new ActivationId("run-" + run);

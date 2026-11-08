@@ -3,21 +3,17 @@ package ai.speckitty.charter.packs.infra.storage;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
-import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RelationType;
-import ai.speckitty.charter.kernel.domain.Relationship;
-import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
+import ai.speckitty.charter.packs.domain.PackEdge;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackInspector.Scope;
 import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.Procedure;
-import ai.speckitty.charter.packs.domain.ProcedureReference;
-import ai.speckitty.charter.packs.domain.Tactic;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
@@ -27,52 +23,38 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * A procedure's references are kept but never minted as relationships (research D3, #189). The fixture pack holds a
- * tactic and a procedure whose references point at the same directive in the same pack: the tactic is the positive
- * control that the store does mint a typed reference as {@code SUGGESTS}, so the procedure's empty relationships can
- * only come from the procedure not minting, not from a loader that mints nothing.
+ * A pack's relationships are the edges of its graph documents, and no artifact derives one from a field (ADR-0064).
+ * The fixture pack holds a tactic and a procedure that both relate to the same directive, and one root graph shard that
+ * holds those two edges: the edge port reads them back in document order, while every loaded artifact derives none, so
+ * the edges can only come from the graph document.
  */
-@DisplayName("A loaded procedure keeps its references and mints no relationship; a loaded tactic mints its (#194)")
+@DisplayName("A loaded pack's edges come from its graph document; no artifact derives one (ADR-0064)")
 class ProcedureEdgesTest {
 
     private static final PackIdentifier PACK = new PackIdentifier("01M60H9BPR0CEDVREEDGES000A");
-    private static final Urn TACTIC = new Urn(NodeKind.of(ArtifactKind.TACTIC), "land-with-review");
-    private static final Urn PROCEDURE = new Urn(NodeKind.of(ArtifactKind.PROCEDURE), "land-a-change");
-    private static final Urn DIRECTIVE = new Urn(NodeKind.of(ArtifactKind.DIRECTIVE), "REVIEW_FIRST");
 
     @Test
-    @DisplayName("in one pack, the tactic mints SUGGESTS to the directive while the procedure holds the same "
-            + "reference and mints none")
-    void theTacticMintsAndTheProcedureDoesNot(@TempDir Path host) throws IOException {
+    @DisplayName("the edge port answers the graph document's edges in order, and every artifact derives none")
+    void theEdgesAreTheGraphDocumentsAndNoArtifactDerivesOne(@TempDir Path host) throws IOException {
         Path pack = PackFixtures.copyOf("procedure/edges-pack", host);
         PackLocation location = new PackLocation("edges-pack", PackLevel.ORG, pack);
+        DomainRepositoryService repository =
+                new DomainRepositoryService(() -> List.of(location), new YamlSerializationStrategy());
 
-        Pack loaded = new DomainRepositoryService(() -> List.of(location), new YamlSerializationStrategy()).load(PACK);
+        Pack loaded = repository.load(PACK);
 
         assertThat(loaded.violations()).as("every fixture file loads").isEmpty();
         assertThat(loaded.artifacts(ArtifactKind.DIRECTIVE))
-                .as("the reference target exists")
+                .as("the edge target exists")
                 .hasSize(1);
-
-        // Positive control: the store mints the tactic's typed reference.
-        Tactic tactic = loaded.artifacts(ArtifactKind.TACTIC, Tactic.class).getFirst();
-        assertThat(tactic.relationships())
-                .containsExactly(new Relationship(
-                        TACTIC, DIRECTIVE, RelationType.SUGGESTS, Optional.of("Before landing."), Optional.empty()));
-
-        // The procedure: same reference, kept on the entity, never minted.
-        Procedure procedure =
-                loaded.artifacts(ArtifactKind.PROCEDURE, Procedure.class).getFirst();
-        assertThat(procedure.references())
-                .containsExactly(new ProcedureReference(
-                        ArtifactKind.DIRECTIVE, "REVIEW_FIRST", Optional.of("Before landing."), Optional.empty()));
-        assertThat(procedure.relationships()).isEmpty();
-        assertThat(loaded.artifacts().stream()
-                        .flatMap(artifact -> artifact.relationships().stream())
-                        .filter(relationship -> relationship.from().equals(PROCEDURE)
-                                || relationship.to().equals(PROCEDURE)))
-                .as("no artifact of the pack holds a relationship of the procedure")
-                .isEmpty();
+        assertThat(repository.edges(new PackIdentifier("edges-pack")))
+                .containsExactly(
+                        new PackEdge("tactic:land-with-review", "directive:REVIEW_FIRST", RelationType.SUGGESTS),
+                        new PackEdge("procedure:land-a-change", "directive:REVIEW_FIRST", RelationType.REQUIRES));
+        assertThat(loaded.artifacts())
+                .allSatisfy(artifact -> assertThat(artifact.derivedRelationships())
+                        .as(artifact.urn().toString())
+                        .isEmpty());
     }
 
     @Test

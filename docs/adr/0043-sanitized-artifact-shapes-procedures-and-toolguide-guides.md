@@ -2,8 +2,8 @@
 title: "ADR-0043: Sanitized artifact shapes; procedures and toolguide guides in the pack store"
 description: Sanitized-shape rules for artifact kinds; the procedure shape; the structured toolguide guide as a Markdown companion, sent over HTTP as content or a fetched URI.
 doc_status: draft
-updated: 2026-11-02T00:00:00Z
-decision_status: Proposed; decision 3 superseded by ADR-0052 (2026-11-02)
+updated: 2026-11-05T00:00:00Z
+decision_status: Proposed, with Amendment 2026-11-05 (ADR-0064); decision 3 superseded by ADR-0052 (2026-11-02)
 decision_date: '2026-10-29'
 type: ADR
 kind: ADR
@@ -54,6 +54,17 @@ classifies except its own rule (decision 3), and it has new refusal reasons (dec
 carries a dated amendment under its Status, with each point annotated where it stands; the amendment
 takes effect when this record is accepted.
 
+### Amendment 2026-11-05
+
+The operator ruled on [#240](https://github.com/spec-kitty/spec-kitty-charter/issues/240) on 2026-11-05 that an edge is authored only in a pack's graph documents,
+which decides the edge authority this record left to #189 ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/)). The original text stands, and
+each changed point is annotated:
+
+- decision 1, rule S14: no artifact keeps a reference field, so the rule has no field to shape; an edge
+  is a graph-document edge ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decision 2);
+- decision 2: a procedure's `references` is dropped; a reference it held is a graph edge from
+  `procedure:<id>` ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decision 2, Q2 ruling).
+
 ## Context
 
 Issue #194 asks the whole-pack round trip to cover procedures, the inline anti-patterns and the
@@ -71,6 +82,7 @@ Five facts force a decision:
 - **Procedure references would mint conflicting edges.** `ArtifactEdges` mints a typed reference
   as `suggests`, while `procedure.graph.yaml` holds the same pair as `requires`. Which source is
   authoritative for an edge is [#189](https://github.com/spec-kitty/spec-kitty-charter/issues/189).
+  *Decided by [ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) ([#240](https://github.com/spec-kitty/spec-kitty-charter/issues/240)): the graph documents are the only source.*
 - **The 24 guides share no skeleton.** No H2 heading occurs in more than three of them, but the
   content squad found recurring meanings: an overview (24 of 24), cautions (14), usage (13) and
   setup (11). The operator asked for a structured guide: fixed blocks plus freeform sections.
@@ -102,7 +114,7 @@ For artifact kinds the rules are extended by:
 | S11. `description` is the summary | The one "what is this" field is `description`. A field with a distinct meaning keeps its own name (`entry_condition`, `on_failure`). |
 | S12. `content` is a body | A field that carries a body of text is `content`. Freeform sections are `{title, content}`. |
 | S13. `<role>_path` names a file | A field that names another pack file is `<role>_path`, relative to the artifact's file. Every companion is named by a field (ADR-0039 decision 1). |
-| S14. One reference shape | Where references are kept they are `{type, id, when?, reason?}`, `type` an artifact-kind token. Keeping a reference never mints a relationship until #189 rules on edge authority. |
+| S14. One reference shape | Where references are kept they are `{type, id, when?, reason?}`, `type` an artifact-kind token. Keeping a reference never mints a relationship until #189 rules on edge authority. *Amended 2026-11-05 ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decision 2): no artifact keeps a reference field; a relationship is a graph-document edge.* |
 | S15. `role` names who acts | Who performs a step is `role`, an open role token such as `operator` (ADR-0032); absent means any role may act. |
 | S16. An empty optional list is refused | An optional list holds at least one entry (`minItems: 1`); an empty one is left out, never written `[]`. This is ADR-0042 decision 3's rule, so S6 (one spelling per meaning) holds with no comparator exception. |
 
@@ -125,6 +137,7 @@ ADR-0015) and closed at every level:
 - `references`: optional, `{type, id, when?, reason?}` (S14). They are kept on the procedure,
   verbatim and in authored order, and `Procedure.relationships()` is always empty: a procedure mints
   no relationship, pending #189;
+  *Amended 2026-11-05 ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decision 2): `references` is dropped from the procedure; a reference it held is a graph edge from `procedure:<id>`.*
 - `notes` (not empty) and `applies_to_languages`: optional;
 - each optional list (`anti_patterns`, `references`, `applies_to_languages`) holds at least one
   entry when present (S16).
@@ -357,6 +370,7 @@ ADR-0039 decision 8 recorded its own:
 
 - Procedure references are stored and never minted. Until #189 rules, a reader that wants them as
   edges reads the graph shards.
+  *Decided by [ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) ([#240](https://github.com/spec-kitty/spec-kitty-charter/issues/240)): the field is dropped, and the graph documents are the only source of an edge.*
 - The structured guide is fixed by seven headings. A block the packs come to need is a schema and
   enum change.
 
@@ -365,6 +379,7 @@ ADR-0039 decision 8 recorded its own:
 - **Round-trip as-is.** The issue's wording. Overruled by the operator (sanitized shapes).
 - **Mint procedure references.** Conflicting `suggests` and `requires` edges for one pair, and it
   decides #189 ahead of time. **Drop them** decides #189 ahead of time too.
+  *(#189's question is decided by [ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) ([#240](https://github.com/spec-kitty/spec-kitty-charter/issues/240)): the references are dropped.)*
 - **A standalone anti-pattern kind.** ADR-0037 decision 4 keeps anti-patterns out of the registry.
 - **The guide as a plain text companion, an inline YAML block, or sections only.** The operator
   wanted structure. Inline YAML was also refused because the service's emitter has no scalar-style

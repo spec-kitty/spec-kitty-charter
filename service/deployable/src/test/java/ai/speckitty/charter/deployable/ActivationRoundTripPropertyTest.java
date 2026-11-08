@@ -4,10 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
-import ai.speckitty.charter.activations.domain.ActivationDocument;
 import ai.speckitty.charter.activations.infra.storage.InMemoryActivationRepository;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import org.junit.jupiter.api.Test;
@@ -49,6 +49,11 @@ class ActivationRoundTripPropertyTest {
     private static final JsonMapper JSON = JsonMapper.builder().build();
     private static final List<String> LANGUAGES = List.of("go", "java", "python", "c++");
 
+    /** The kinds whose ids the fixture holds as {@link ActivationTestWiring#IDS}: every activatable kind but one. */
+    private static final List<ArtifactKind> ARTIFACT_KINDS = Arrays.stream(ArtifactKind.values())
+            .filter(kind -> kind.activatable() && kind != ArtifactKind.MISSION_TYPE)
+            .toList();
+
     @Autowired
     MockMvc mvc;
 
@@ -88,11 +93,20 @@ class ActivationRoundTripPropertyTest {
 
         MockHttpServletResponse read = send(get(path));
         assertThat(read.getStatus()).as(what).isEqualTo(200);
-        assertThat(read.getHeader(HttpHeaders.ETAG)).as(what).isEqualTo(etag);
+        String readTag = read.getHeader(HttpHeaders.ETAG);
+        assertThat(readTag)
+                .as(what + ": the read's tag is the closure tag, not the revision")
+                .isNotEqualTo(etag);
+        assertThat("\""
+                        + JSON.readTree(read.getContentAsString())
+                                .path("revision")
+                                .asString() + "\"")
+                .as(what)
+                .isEqualTo(etag);
         JsonNode config = JSON.readTree(read.getContentAsString()).path("config");
 
         MockHttpServletResponse again = send(put(path)
-                .header(HttpHeaders.IF_MATCH, etag)
+                .header(HttpHeaders.IF_MATCH, readTag)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(config.toString()));
         assertThat(again.getStatus())
@@ -106,25 +120,20 @@ class ActivationRoundTripPropertyTest {
 
     /** One valid document of the fixture's closure. */
     private static ObjectNode document(Random random) {
-        ObjectNode document = JSON.createObjectNode().put("schemaVersion", 1);
+        ObjectNode document = JSON.createObjectNode().put("schemaVersion", 2);
         if (random.nextBoolean()) {
             ObjectNode pack = document.putArray("packs").addObject().put("packId", "fixture");
             if (random.nextBoolean()) {
                 pack.put("version", "1.0.0");
             }
         }
-        maybeList(
-                random,
-                document,
-                "activatedKinds",
-                ActivationDocument.kinds().stream().map(ArtifactKind::token).toList());
-        maybeList(random, document, "missionTypes", ActivationTestWiring.MISSION_TYPES);
         maybeList(random, document, "languages", LANGUAGES);
         if (random.nextInt(3) > 0) {
             ObjectNode selected = document.putObject("selected");
-            for (ArtifactKind kind : ActivationDocument.kinds()) {
+            for (ArtifactKind kind : ARTIFACT_KINDS) {
                 maybeList(random, selected, kind.token(), ActivationTestWiring.IDS);
             }
+            maybeList(random, selected, ArtifactKind.MISSION_TYPE.token(), ActivationTestWiring.MISSION_TYPES);
         }
         if (random.nextBoolean()) {
             deactivated(random, document.putObject("deactivated"));
@@ -144,17 +153,26 @@ class ActivationRoundTripPropertyTest {
         }
     }
 
-    /** Non-empty deny lists of some kinds, never naming the fixture's required directive. */
+    /**
+     * Non-empty deny lists of some kinds, mission types included (one kind model, IC-20: a mission type is denied like
+     * any kind), never naming the fixture's required directive.
+     */
     private static void deactivated(Random random, ObjectNode deactivated) {
-        for (ArtifactKind kind : ActivationDocument.kinds()) {
+        for (ArtifactKind kind : ARTIFACT_KINDS) {
             List<String> pool = ActivationTestWiring.IDS.stream()
                     .filter(id -> kind != ArtifactKind.DIRECTIVE || !id.equals(ActivationTestWiring.REQUIRED))
                     .toList();
-            if (random.nextInt(4) == 0) {
-                ArrayNode list = deactivated.putArray(kind.token());
-                List<String> ids = subset(random, pool);
-                (ids.isEmpty() ? List.of(pool.getFirst()) : ids).forEach(list::add);
-            }
+            denyList(random, deactivated, kind, pool);
+        }
+        denyList(random, deactivated, ArtifactKind.MISSION_TYPE, ActivationTestWiring.MISSION_TYPES);
+    }
+
+    /** Leaves the kind's deny list absent, or writes a non-empty random subset of the pool. */
+    private static void denyList(Random random, ObjectNode deactivated, ArtifactKind kind, List<String> pool) {
+        if (random.nextInt(4) == 0) {
+            ArrayNode list = deactivated.putArray(kind.token());
+            List<String> ids = subset(random, pool);
+            (ids.isEmpty() ? List.of(pool.getFirst()) : ids).forEach(list::add);
         }
     }
 

@@ -1,0 +1,26 @@
+title: EffectiveArtifactSuggestion
+description: >-
+  Why an artifact is listed as a suggestion (#408 ruling 3): it is reached only through a suggests edge, and this
+  carries that edge's when and reason, so the agent decides when it applies. Both members are the edge's own and either may be
+  absent: an edge may state neither, and the member is then an empty object (the artifact is still a suggestion).
+type: object
+additionalProperties: false
+properties:
+  when:
+    type: string
+    description: The condition the suggests edge states for the artifact to apply.
+    x-derived:
+      rule: The when of the suggests edge that reaches the artifact.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  reason:
+    type: string
+    description: The reason the suggests edge gives for the suggestion.
+    x-derived:
+      rule: The reason of the suggests edge that reaches the artifact.
+      inputs:
+      - schemas/ActivationConfig.yaml
+x-derived:
+  rule: The when and reason of the suggests edge that reaches the artifact.
+  inputs:
+  - schemas/ActivationConfig.yaml

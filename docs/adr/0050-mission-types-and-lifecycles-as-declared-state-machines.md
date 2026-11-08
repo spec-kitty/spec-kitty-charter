@@ -2,8 +2,8 @@
 title: "ADR-0050: Mission types and lifecycles as declared state machines"
 description: "A mission type declares a state machine (explicit transitions, guards, emit actions); a lifecycle kind holds the per-work-package lanes; packs enhance or override steps."
 doc_status: active
-updated: 2026-11-03T00:00:00Z
-decision_status: 'Accepted, with Amendment 2026-11-02 (ADR-0053; decision 14 superseded by ADR-0054)'
+updated: 2026-11-07T00:00:00Z
+decision_status: 'Accepted, with Amendment 2026-11-02 (ADR-0053; decision 14 superseded by ADR-0054), Amendment 2026-11-05 (ADR-0064) and Amendment 2026-11-07 (decision 6 built)'
 decision_date: '2026-11-02'
 type: ADR
 kind: ADR
@@ -53,7 +53,9 @@ Two narrower points of ADR-0044 change too. Decision 3's references gain two nei
 values: a `terms` list of `term:` URNs (ADR-0049) and a `rejects` list of `{type: anti_pattern, id, reason}`
 ([ADR-0052](/adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts/)); like references, both are
 kept verbatim and mint no relationship until [#189](https://github.com/spec-kitty/spec-kitty-charter/issues/189)
-rules on edge authority. Gates and lifecycles are bound through `guard` and `work_package_lifecycle`, not through
+rules on edge authority. *Amended 2026-11-05: edge authority is decided by [ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) ([#240](https://github.com/spec-kitty/spec-kitty-charter/issues/240)),
+decisions 1 and 12. The `rejects` list is not added: a mission type or step rejects an anti-pattern with a `rejects`
+edge in the graph documents. A `terms` list, if the schema work builds it, mints no edge.* Gates and lifecycles are bound through `guard` and `work_package_lifecycle`, not through
 references. Decision 5's path rule and the `contracts/packs/file-kinds.yaml` rules anchored to `missions/` (the
 prompt and guidelines `files` rules, the README and hidden-file exclusions, the template payload rule) move to
 `mission_types/`, and decision 6 gains retired rules for the old `missions/` layout so a stale copy is refused rather
@@ -84,6 +86,39 @@ this record; the original text stands and each changed point is annotated where 
 - decisions 22 and 23: a step enhancement is an additions artifact plus a CRG `enhances` edge, the mechanism profile
   augmentation uses, not a mechanism of its own ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 22);
 - decisions 26 to 28: the defaults are ruled ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 24).
+
+### Amendment 2026-11-05
+
+The operator ruled on [#240](https://github.com/spec-kitty/spec-kitty-charter/issues/240) on 2026-11-05 that an edge is authored only in a pack's graph documents
+([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/)). The original text stands, and each changed point is annotated:
+
+- the ADR-0044 decision 3 neighbors named under Status: the `rejects` list is not added; a rejection is a `rejects`
+  edge in the graph documents ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decision 12);
+- decision 22: a step enhancement's additions are guards and `emit` entries; guidance it adds is a graph edge, not a
+  `references` entry ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decision 12).
+
+### Amendment 2026-11-07
+
+Decision 6 (activation) is **built** by the layer-merge mission (`layer-merge-and-effective-reads-01M6R0J6`), PR A0,
+on the operator's rulings of 2026-11-06 (A7, decision `DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY`; Q1 to Q4, decisions
+`DM-01M6RCXTS0SMDNTWZ8G7GJ2P5S`, `DM-01M6RCXZ9HSHT4K3443YYZ8ZFC`, `DM-01M6RCY40CQQTHC130RWF43W0D`,
+`DM-01M6RCY8MYNGNPJ247M2Y4880N`). The decision text stands; decision 6 carries a note.
+
+- **"Absent means all" is reconciled with ADR-0053 decision 10.** The Status above says the ordinary rule for an
+  absent list is "all". ADR-0053 decision 10 ruled afterwards that an absent activation key means none, and ADR-0020's
+  amendment of 2026-11-05 built it (DIV-203). A mission type is an ordinary kind, so an absent
+  `selected.mission_type` means none, the same as `[]`; there is no `missionTypes` list left to read otherwise.
+- **The cascade source (Q1).** Selecting a mission type with a cascade crosses to the steps it holds like `requires`,
+  and what the steps reach is selected. PR A0 built the selection, the cascade and the deny of mission types like any
+  other kind, and the cascade to steps. That a step, and any artifact bound to the mission type, is in force only while
+  the mission type is, is binding rule E6: ruled, not built, planned for PR B with the effective reads (FR-022, US3
+  AS4). The earlier rule that a mission type never cascades (W32) is withdrawn.
+- **Deny and listing (Q2).** A mission type is denied under `deactivated.mission_type` unless it is required or locked
+  (`409 artifact_required`, `artifact_locked`). `mission_type` joins `ActivatableKind`, `SelectedArtifacts`,
+  `DeactivatedArtifacts` and `CascadeKind`, and the `{kind}` segment of the selections and exclusions paths.
+- **`activatedKinds` and `missionTypes` are refused** on a create or replace (`422 validation_failed`), and the
+  stored document is `schemaVersion` 2 (Q4).
+- **Divergences.** DIV-501 is updated, and DIV-203, DIV-210, DIV-212, DIV-213 and DIV-214 record the rest.
 
 ## Context
 
@@ -186,6 +221,10 @@ up the formal meaning of a term used here.
 6. **Activation** (M4). A mission type is the cascade source, and is otherwise an ordinary kind: presets, the
    deny list and listing apply to it as to any kind. No kind token has a special path (core's
    `CHARTER_KIND_TOKENS` mission-type path and `MissionTypeNotAnArtifactKind` go; DIV-501 closes).
+   *Built 2026-11-07 (PR A0, see the amendment above): a mission type is selected under `selected.mission_type`, denied
+   under `deactivated.mission_type` unless required or locked, and cascades to its steps. "Absent means all" in the
+   Status is read as none, with ADR-0053 decision 10. DIV-501 stays `open`: the service still differs from core's
+   mission-type path, so it is updated, not closed.*
 7. **The shipped types stay in the foundation pack.** Topical packs plug in through `scope` edges or step
    enhancements (decision 22).
 
@@ -284,6 +323,7 @@ up the formal meaning of a term used here.
     mechanism of its own: the CRG's `enhances` relation keeps its field-merge meaning for the other kinds
     (profiles, for example), and a step enhancement is authored as a file (decision 23), not as that relation. A specialist or org pack attaches more to an existing step:
     references (guidance), guards on the step's outgoing transitions, and `emit` entries on its action points.
+    *Amended 2026-11-05 ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decision 12): an enhancement holds no `references`; guidance it adds to a step is an edge in the enhancing pack's graph documents.*
     An enhancement only adds. It cannot remove or reorder steps, change their transitions, or remove a guard.
     *Amended 2026-11-02 ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 22): the enhancement is an artifact in the enhancing pack that holds only the additions, joined to the target step by a CRG `enhances` edge, the same mechanism profile augmentation uses. It is no longer a mechanism of its own, so the sentence above that separates it from the relation no longer holds; the add-only rule stands.*
 23. **How an enhancement is authored** (proposed): a step-enhancement file in the enhancing pack,
@@ -339,7 +379,9 @@ up the formal meaning of a term used here.
 Nothing below is applied in this record; each lands in a later contract-family PR.
 
 - **Pack schemas** (#114): `mission-type.schema.json` gains `transitions`, `on_enter`, `on_exit`,
-  `work_package_lifecycle`, `terms`, `rejects` and the requirement kinds; new `lifecycle.schema.json`,
+  `work_package_lifecycle`, `terms`, `rejects` (*not added:
+  [ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/) decision 12*) and the requirement
+  kinds; new `lifecycle.schema.json`,
   `gate.schema.json` and `step-enhancement.schema.json`. `mission-step-contract.schema.json` loses `gates` and
   `$defs.GateBinding` (whose `on_transition` is a lane string, a second meaning of the name this record gives an
   action point); an existing binding migrates to a `guard` on the matching lifecycle transition. The vocabulary

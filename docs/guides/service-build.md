@@ -2,7 +2,7 @@
 title: Building the service
 description: How to build and test the charter service, what each verification task checks, how to change the contract or a dependency, and how a release is cut.
 doc_status: active
-updated: 2026-11-05T00:00:00Z
+updated: 2026-11-08T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -14,6 +14,10 @@ related:
   - adr/0060-native-build-runs-nightly-and-per-release
   - guides/generate-a-client
   - adr/0062-nightly-mutation-floor
+  - guides/compose-packs
+  - guides/run-in-a-container
+  - conformance/divergence-register
+  - changelog/2026-11-07-a-pack-registration
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this before you build, test or change the contract.
@@ -49,6 +53,10 @@ How to build the charter service and run every check CI runs.
   records with the contract's major version. A release whose tag is not yet merged (as on a
   release PR) is skipped, and a new major version has no baseline, so it needs no tag. Fetch the
   tags if one is missing.
+- **A system `git` of 2.50.1 or later, only for the `git-host` tests.** `verifyAll` does not need it: the git source's
+  argument list, environment, version check and deadline run against a fake git. The tests that run the real git
+  are tagged `git-host` and run with `./gradlew :packs:gitHostTest -PrequireGitHost=true`. With that property they
+  fail when git is missing or older, so they cannot pass by skipping. CI runs them in the `git-source` job (below).
 - **Network access on the first run.** The contract checks download vacuum and oasdiff at
   pinned versions and verify each archive's SHA-256 before using it (Linux and macOS, x86-64
   and arm64).
@@ -87,23 +95,26 @@ until it is.
 Not in `verifyAll`: mutation testing. It runs nightly, against a floor per module, and no pull request runs it; see
 [Mutation testing](#mutation-testing).
 
-Not in `verifyAll` either, yet: the whole-pack round-trip gate (below).
+Not in `verifyAll` either: the whole-pack round-trip gate (below), which CI runs as its own required group.
 
 Not in `verifyAll` by design: the CPU-time budgets, the tests tagged `timing`
 ([#316](https://github.com/spec-kitty/spec-kitty-charter/issues/316)). A budget only means something on a quiet
 machine, and `verifyAll` runs every module's tests at once. Run them in an invocation of their own, as the only task
-named; CI runs them as a step of their own after `verifyAll`. That step is **report-only**: a budget over its limit
-raises a warning and a job-summary line, and never fails the job or blocks a pull request
-([ADR-0057](/adr/0057-performance-budgets-never-block-a-pull-request/)). Each prints the CPU time it measured against its
-budget, and the task fails rather than skips where symbolic links cannot be made:
+named; CI runs both modules' tasks with `--no-parallel`, nightly and on demand in a workflow of their own
+(`timing-nightly.yml`), not on pull requests. A gating step compiles the tests first. Only the following budget step is **report-only**: a failure there raises a warning and a job-summary line and
+never fails the job ([ADR-0057](/adr/0057-performance-budgets-never-block-a-pull-request/)). An overrun opens no issue
+and sends no notification; inspect the Actions page for a slowdown that persists across nights. Each budget prints the
+CPU time it measured, and its task fails rather than skips where symbolic links cannot be made:
 
 ```bash
-./gradlew :packs:timingBudgets
+./gradlew :packs:timingBudgets --no-parallel
+./gradlew :activations:timingBudgets --no-parallel
 ```
 
-Today that is `PackFileSetBudgetTest`, the 10 s CPU-time budget of the generated-tree checks (NFR-001 of the verified
-source fingerprint). The checks themselves, whether the fingerprint changes exactly when it must and the store loads
-exactly the planted files, stay in `:packs:test` (`PackFileSetExactnessTest`). A test that holds work to a time or
+For example, the packs task includes `PackFileSetBudgetTest`, the 10 s CPU-time budget of the generated-tree checks
+(NFR-001 of the verified source fingerprint); activations has its own timing-tagged budgets. The generated-tree checks
+themselves, whether the fingerprint changes exactly when it must and the store loads exactly the planted files, stay in
+`:packs:test` (`PackFileSetExactnessTest`). A test that holds work to a time or
 CPU-time budget is tagged `timing`. A hang cap (`@Timeout`) and a deadline check, which proves a guard cuts work off
 within a bound far above the work's own time, are not budgets and need no tag. A deadline check is written as a hang
 cap of 30 s, next to an assertion of the cause it proves; the cap stops the test's wait, not work that ignores an
@@ -128,14 +139,16 @@ versions, the HTML and XML reports and PIT's default mutators:
 
 | Module | Floor group | Mutated | Floor |
 |---|---|---|--:|
-| kernel | `kernel` | the whole module | 65 % |
+| kernel | `kernel` | the whole module | 75 % |
 | missions | `missions` | the whole module | 70 % |
-| profiles | `profiles` | the whole module | 50 % |
+| profiles | `profiles` | the whole module | 90 % |
+| activations | `activations` | the whole module | 85 % |
 | packs | `domain+application` | `packs.domain`, `packs.application`, without `application.config` | 85 % |
 | packs | `infra.storage` | `packs.infra.storage`, `infra.storage.config` included | 85 % |
 | packs | `infra.fetch` | `packs.infra.fetch`, without `infra.fetch.config` | 70 % |
 
-Kernel, missions and profiles apply the plugin through `charter.domain-conventions`; packs applies it directly. Packs
+Kernel, missions and profiles apply the plugin through `charter.domain-conventions`; packs and activations apply it
+directly. Packs
 never mutates the Spring wiring (`application.config`, `infra.fetch.config`) or `infra.api` (the REST adapter), and
 PIT runs only the unit tests of the mutated packages: no `*WiredTest`, and no test tagged `open-packs`, `whole-pack` or
 `timing`. The three packs groups come from the one `:packs:pitest` run, which took 45m54s on an idle 4-core machine
@@ -154,7 +167,7 @@ detected over covered mutants, is reported and never gated. A group passes when 
 floor; printed figures are truncated to one decimal, never rounded up. A group below its floor fails the task:
 
 ```text
-:kernel kernel: mutation score 64.9 % is below its floor 65 % (#239, ADR-0062)
+:kernel kernel: mutation score 74.9 % is below its floor 75 % (#239, ADR-0062)
 ```
 
 A group with no mutants, a missing `mutations.xml` and `<mutation>` elements without a status or a mutated class each
@@ -278,8 +291,10 @@ Where the gate still differs from ADR-0036, on purpose and only towards false re
   `excluding`), not derived from the schemas; a kind that brings an open map adds it there.
 
 The report, per kind and per file, is written to `service/packs/build/reports/whole-pack/report.md`. CI runs the gate
-in its own workflow, `.github/workflows/whole-pack.yml`, which is not part of `CI gate / gate` and not a required
-check until the gate is green.
+in its own workflow, `.github/workflows/whole-pack.yml`, and requires it: `CI gate / gate` calls the workflow for its
+`wholepack` group whenever a pull request changes `contracts/`, `service/`, the build or the workflow, so every such
+pull request has to keep the packs round-tripping (epic [#186](https://github.com/spec-kitty/spec-kitty-charter/issues/186),
+operator ruling of 2026-11-05).
 
 ### When a shape change refuses the pinned packs
 
@@ -348,6 +363,62 @@ toolguide's title (optional when sent, since the service writes it; required in 
 it is derived from the title), no text before `## Overview`, then the fixed blocks and freeform sections
 (ADR-0043 decision 4). The `markdown` content form reads it, and diverges from CommonMark on
 purpose: an HTML comment is text, so a column-0 `##` inside one is a heading.
+
+## Registering packs
+
+Whole-pack registration (`PUT /packs/{packId}`, `POST /packs`), the two removals of a pack and the sources of a registration are configured under
+`charter.registration` and `charter.pack-sources`. Every kind of source is off by default, and each flag is read at every
+request, so an operator can switch a kind off without a restart. How a client uses it is in
+[Compose packs](/guides/compose-packs/#register-a-pack). The differences from core are
+[DIV-609 to DIV-614](/conformance/divergence-register/#registration-div-601699-adr-0065).
+
+| Property | Default | What it does |
+|---|---|---|
+| `charter.registration.enabled` | `false` | Allows registration and the two removals of a pack (`DELETE` of an artifact and of a relationship). While it is off, each answers `503 pack_source_unavailable`. It needs `charter.config-root`. |
+| `charter.registration.staging-dir` | `<config-root>/staging` | Where a registration spools and extracts its upload. Keep it on the volume of the packs. A registration needs about three times its archive free (at most 96 MiB on one volume; on two, 64 MiB here and 32 MiB on the packs volume), else `503 pack_storage_full`. The service refuses to start when it is `charter.config-root`, holds it, is or lies inside the `packs` or `activations` directory, or lies under `/proc`, `/sys` or `/dev`: the sweep removes the job directories it finds there, and only those. |
+| `charter.pack-sources.https.enabled` | `false` | Allows `POST /packs` with an `https_archive` source. |
+| `charter.pack-sources.https.allowed-hosts` | empty | The hosts an archive may be fetched from, matched exactly after lower-casing and stripping a trailing dot. Empty refuses every URL (`host_not_allowed`). |
+| `charter.pack-sources.https.timeout` | `60s` | One deadline over resolution, every hop and the body. |
+| `charter.pack-sources.https.max-size` | `32MB` | The largest archive accepted. At most 32 MiB: a larger value stops the start, because the free-space check of a registration is sized from that bound. |
+| `charter.pack-sources.https.max-redirects` | `3` | The most redirects followed; each target is checked again. |
+| `charter.pack-sources.git.enabled` | `false` | Allows `POST /packs` with a `git` source. |
+| `charter.pack-sources.git.allowed-hosts` | empty | The hosts a repository may be fetched from. Empty refuses every URL. |
+| `charter.pack-sources.git.executable` | unset | The absolute path of the git binary. Unset, the service looks for `git` on the `PATH`. |
+| `charter.pack-sources.git.timeout` | `60s` | One deadline over the lookup, the wait for a slot and every git command. |
+| `charter.pack-sources.filesystem.enabled` | `false` | Allows `POST /packs` with a `filesystem` source. |
+| `charter.pack-sources.filesystem.root` | unset | The directory a path is read under. Switching the kind on with no root stops the start. |
+
+- **The filesystem root** must not lie under `/proc`, `/sys` or `/dev`, and must not overlap `charter.config-root`. A
+  path is relative, has no empty, `.` or `..` segment, and is read under the root. Every local-path refusal answers one
+  `path_refused`; the reason is in the operator log only.
+- **The resolver guard** (`GlobalAddressResolverProvider`) acts on the union of the guide, https archive and git hosts,
+  as for guides (see [Fetching toolguide guides](#fetching-toolguide-guides)). An archive fetch and a git fetch are direct,
+  use no proxy, and accept only https on port 443 with no redirect, user information or IP literal. The git source
+  follows no redirect at all, not even to the same host.
+- **Git.** The git source needs the system `git`, version 2.50.1 or later, on the `PATH` or at
+  `charter.pack-sources.git.executable`. The service never uses JGit and never checks out a work tree: it runs the host
+  binary into a bare work repository, with a fixed argument list and a cleaned environment. It checks the version at
+  every start. An old or missing git makes the git kind answer `503 pack_source_unavailable` while the other kinds
+  work. A link, a submodule or an odd mode in the fetched tree is refused `422 validation_failed` with the violation
+  `entry_type`, as for an archive. Repositories that use the sha256 object format are untested: the work repository is
+  created as sha1.
+- **Git's memory.** Every git run carries `-c` pins that bound what git inflates and maps: `core.bigFileThreshold=1m`
+  (a larger blob is streamed, not inflated whole), `pack.windowMemory=16m`, `pack.threads=1`, `core.packedGitLimit=64m`,
+  `core.packedGitWindowSize=16m` and `core.deltaBaseCacheLimit=16m`. They keep the resident memory of a fetch to tens of
+  MiB, and a pack up to the 32 MiB source bound is still fetched, only more slowly. **Residual risk:** the pins do not cap
+  address space (git maps pack windows with `mmap`) or the time git spends, which the one deadline bounds. Run the
+  service with an operating-system memory limit as well.
+- **A refused source** ends the registration `422 pack_source_refused`. The detail is `<token>: <fixed sentence>`, with
+  no URL, path or upstream text. The tokens are `host_not_allowed`, `address_not_global`, `url_refused`,
+  `redirect_refused`, `wrong_media_type`, `too_large`, `digest_mismatch`, `name_mismatch`, `source_malformed`,
+  `path_refused`, `bad_ref` and `commit_mismatch`. An upstream failure is a plain `502` and a timeout a plain `504`.
+- **Known limit of the local source.** The file-key and link-count checks look a file up by name, not on the open handle,
+  because the JDK has no `fstat` on a channel. A race between the check and the open needs write access under the root.
+  Give the root to the service alone.
+
+The `git-source` job of `service.yml` runs the real-git tests on a git of 2.50.1 or later. It is a job of the `service`
+workflow, so the `service` result that `CI gate / gate` counts includes it. Branch protection requires only
+`CI gate / gate` ([ADR-0023](/adr/0023-ci-gate-required-check/)), so no setting changes for the new job.
 
 ## Exceptions to a gate
 

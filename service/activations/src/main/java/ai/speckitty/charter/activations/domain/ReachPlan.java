@@ -4,6 +4,7 @@ import ai.speckitty.charter.kernel.domain.RelationType;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Objects;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -15,9 +16,15 @@ import java.util.TreeSet;
  * @param relations the forward relations the walk crosses
  * @param stopAt the artifacts the walk stops at and reports
  * @param lineage whether the {@code specializes_from} lineage passes {@code requires} and {@code scope} through
+ * @param suggestsBound the number of {@code suggests} hops the walk may cross (IC-21, FR-043); empty for an unlimited
+ *     walk. Every other relation is walked in full
  */
 public record ReachPlan(
-        Set<ArtifactRef> starts, Set<RelationType> relations, Set<ArtifactRef> stopAt, boolean lineage) {
+        Set<ArtifactRef> starts,
+        Set<RelationType> relations,
+        Set<ArtifactRef> stopAt,
+        boolean lineage,
+        OptionalInt suggestsBound) {
 
     /**
      * Checks and copies the fields.
@@ -26,6 +33,8 @@ public record ReachPlan(
      * @param relations the relations
      * @param stopAt the stops
      * @param lineage whether the lineage passes through
+     * @param suggestsBound the {@code suggests} hops the walk may cross; empty for no bound
+     * @throws IllegalArgumentException when the bound is negative
      */
     public ReachPlan {
         starts = Collections.unmodifiableSortedSet(new TreeSet<>(Objects.requireNonNull(starts, "starts")));
@@ -34,6 +43,22 @@ public record ReachPlan(
                         ? EnumSet.noneOf(RelationType.class)
                         : EnumSet.copyOf(relations));
         stopAt = Collections.unmodifiableSortedSet(new TreeSet<>(Objects.requireNonNull(stopAt, "stopAt")));
+        if (Objects.requireNonNull(suggestsBound, "suggestsBound").isPresent() && suggestsBound.getAsInt() < 0) {
+            throw new IllegalArgumentException(
+                    "A walk crosses no fewer than 0 suggests hops, not " + suggestsBound.getAsInt());
+        }
+    }
+
+    /**
+     * A plan with no bound on the {@code suggests} hops.
+     *
+     * @param starts the starts
+     * @param relations the relations crossed
+     * @param stopAt the stops
+     * @param lineage whether the lineage passes through
+     */
+    public ReachPlan(Set<ArtifactRef> starts, Set<RelationType> relations, Set<ArtifactRef> stopAt, boolean lineage) {
+        this(starts, relations, stopAt, lineage, OptionalInt.empty());
     }
 
     /**

@@ -37,15 +37,21 @@ properties:
   required:
     type: integer
     minimum: 0
-    description: Artifacts a pack requires; always active.
+    description: >-
+      Artifacts a governing preset requires or a pack locks (the artifact's required member is true), in force or
+      satisfied by an active override of them. Not "always active": a requirement is satisfied by the artifact or an
+      override of it, never by an enhancement, and one that is an enhancer with no target in force, or is bound to a
+      mission type not in force, counts in neither.
     x-derived:
-      rule: The count of required artifacts.
+      rule: The count of required artifacts, in force or satisfied.
       inputs:
       - schemas/ActivationConfig.yaml
   locked:
     type: integer
     minimum: 0
-    description: Artifacts a pack locks; always active.
+    description: >-
+      Artifacts a pack locks, whatever their state: a locked artifact is in force unless it is an enhancer with no target
+      in force or is bound to a mission type not in force (E9).
     x-derived:
       rule: The count of locked artifacts.
       inputs:
@@ -53,7 +59,7 @@ properties:
   skipped:
     type: integer
     minimum: 0
-    description: Artifacts in the skipped report.
+    description: Entries across the buckets of the skipped report.
     x-derived:
       rule: The count of entries of the skipped report.
       inputs:
