@@ -5,6 +5,7 @@ import ai.speckitty.charter.api.model.ActivationChange;
 import ai.speckitty.charter.api.model.ActivationConfig;
 import ai.speckitty.charter.api.model.ArtifactReference;
 import ai.speckitty.charter.api.model.DeactivatedArtifacts;
+import ai.speckitty.charter.api.model.EffectiveArtifact;
 import ai.speckitty.charter.api.model.ExclusionRequest;
 import ai.speckitty.charter.api.model.Link;
 import ai.speckitty.charter.api.model.PackPin;
@@ -46,6 +47,7 @@ public class ActivationRuntimeHints implements RuntimeHintsRegistrar {
                         ExclusionRequest.class,
                         PresetApplication.class,
                         ActivationChange.class,
+                        EffectiveArtifact.class,
                         SkippedReport.class,
                         SkippedDeactivated.class,
                         SharedSkip.class,
