@@ -23,7 +23,8 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
- * The synchronous checks of {@code PUT /packs/{packId}} that come before its body is read (IC-14, IC-18), in the order the
+ * The synchronous checks of {@code PUT /packs/{packId}} that come before its body is read (IC-14, IC-18), and of
+ * {@code POST /packs} that need no body (registration on, the conditional headers), in the order the
  * contract lists them, each its own answer: registration switched off ({@code 503 pack_source_unavailable}), the
  * {@code packId} grammar ({@code 400}, decision DM-01M6TV6VDNHNCVWRHHC74WATV0), the conditional headers ({@code 400} for
  * a malformed one or both together), a declared length over 32 MiB ({@code 413}), and then the registration's slot: a
@@ -38,7 +39,11 @@ public class RegistrationAdmission implements HandlerInterceptor, WebMvcConfigur
     /** The request attribute that holds the slot the admission took. */
     static final String RESERVATION = RegistrationAdmission.class.getName() + ".reservation";
 
+    /** The request attribute that holds the preconditions the admission judged. */
+    static final String PRECONDITIONS = RegistrationAdmission.class.getName() + ".preconditions";
+
     private static final String UPLOAD = "registerPackFromArchive";
+    private static final String SOURCE = "registerPackFromSource";
     private static final Pattern PACK_ID = Pattern.compile("^[a-z0-9][a-z0-9-]{0,62}$");
     private static final Pattern IF_MATCH = Pattern.compile("^(\\*|\"sha256:[0-9a-f]{64}\")$");
 
@@ -67,16 +72,21 @@ public class RegistrationAdmission implements HandlerInterceptor, WebMvcConfigur
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
-        if (!(handler instanceof HandlerMethod method)
-                || !UPLOAD.equals(method.getMethod().getName())) {
+        if (!(handler instanceof HandlerMethod method)) {
             return true;
         }
-        AuditContext audit = AuditContext.of(request);
-        if (!registration.enabled()) {
-            throw new CharterRefusal(
-                    RefusalCode.PACK_SOURCE_UNAVAILABLE,
-                    "Registration is switched off: charter.registration.enabled is not true.");
+        String name = method.getMethod().getName();
+        if (SOURCE.equals(name)) {
+            admitSource(request);
+        } else if (UPLOAD.equals(name)) {
+            admitUpload(request);
         }
+        return true;
+    }
+
+    private void admitUpload(HttpServletRequest request) {
+        AuditContext audit = AuditContext.of(request);
+        requireRegistrationOn();
         String packId = packIdOf(request);
         audit.packId(packId);
         audit.source("archive", "");
@@ -87,7 +97,37 @@ public class RegistrationAdmission implements HandlerInterceptor, WebMvcConfigur
         RegistrationJobs.Reservation reservation = jobs.reserve(packId, preconditions, origin);
         request.setAttribute(RESERVATION, reservation);
         audit.revisionBefore(reservation.revisionBefore());
-        return true;
+    }
+
+    /**
+     * The checks of {@code POST /packs} that need no body: registration on, and the conditional headers. The target pack,
+     * the kind and the slot come with the body, which the controller reads, so they are the controller's.
+     */
+    private void admitSource(HttpServletRequest request) {
+        requireRegistrationOn();
+        request.setAttribute(PRECONDITIONS, preconditionsOf(request));
+    }
+
+    private void requireRegistrationOn() {
+        if (!registration.enabled()) {
+            throw new CharterRefusal(
+                    RefusalCode.PACK_SOURCE_UNAVAILABLE,
+                    "Registration is switched off: charter.registration.enabled is not true.");
+        }
+    }
+
+    /**
+     * The conditional headers the admission judged for this request.
+     *
+     * @param request the request
+     * @return the preconditions
+     * @throws IllegalStateException when the admission did not run
+     */
+    static Preconditions admittedPreconditions(HttpServletRequest request) {
+        if (request.getAttribute(PRECONDITIONS) instanceof Preconditions preconditions) {
+            return preconditions;
+        }
+        throw new IllegalStateException("the registration was not admitted");
     }
 
     @Override

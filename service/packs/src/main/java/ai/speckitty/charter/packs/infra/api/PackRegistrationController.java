@@ -9,6 +9,8 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.transport.ReservedOperation;
 import ai.speckitty.charter.packs.application.ArchiveStaging;
 import ai.speckitty.charter.packs.application.PackArchiveReader;
+import ai.speckitty.charter.packs.application.PackSourceKind;
+import ai.speckitty.charter.packs.application.PackSourceRequest;
 import ai.speckitty.charter.packs.application.PackSummaryQuery;
 import ai.speckitty.charter.packs.application.RegistrationJobs;
 import jakarta.servlet.http.HttpServletRequest;
@@ -37,9 +39,10 @@ import org.springframework.web.server.ResponseStatusException;
  * the body is read (the flags, the packId grammar, the headers, the declared length, the queue) are
  * {@link RegistrationAdmission}'s, the body's size and media type {@link ArchiveBodyAdvice}'s, and the {@code 401} the
  * guard's; this class spools the judged body into the slot the admission took, hands the job its stager, and answers.
- * Everything after the {@code 202} is the job's. {@code POST /packs} and the two {@code DELETE}s are still reserved
- * (ADR-0020 D8): each is marked, so the composition root's {@code ReservedOperationInterceptor} answers {@code 501}
- * before the request is bound.
+ * {@code POST /packs} names a source instead: its kind's flag and availability, the slot and the preconditions come after
+ * the JSON body is bound (the target and the kind are in it), and the fetch is the job's. Everything after the {@code 202}
+ * is the job's. The two {@code DELETE}s are still reserved (ADR-0020 D8): each is marked, so the composition root's
+ * {@code ReservedOperationInterceptor} answers {@code 501} before the request is bound.
  */
 @RestController
 @RequestMapping("${charter.api.base-path:/api/v1}")
@@ -51,25 +54,45 @@ public class PackRegistrationController implements RegistrationApi {
     private final PackSummaryQuery summaries;
     private final PackArchiveReader archives;
     private final PackRegistrationMapper mapper;
+    private final PackSourceIntake intake;
 
     /**
-     * A controller over the registration jobs and the stored packs.
+     * A controller over the registration jobs and the stored packs, with no source of a registration built.
      *
      * @param jobs the registration jobs
      * @param summaries the stored-pack read
      * @param archives the archive extractor
      * @param mapper the contract shapes
      */
-    @Autowired
     PackRegistrationController(
             RegistrationJobs jobs,
             PackSummaryQuery summaries,
             PackArchiveReader archives,
             PackRegistrationMapper mapper) {
+        this(jobs, summaries, archives, mapper, PackSourceIntake.none());
+    }
+
+    /**
+     * A controller over the registration jobs, the stored packs and the sources a registration may name.
+     *
+     * @param jobs the registration jobs
+     * @param summaries the stored-pack read
+     * @param archives the archive extractor
+     * @param mapper the contract shapes
+     * @param intake what takes a registration from a source
+     */
+    @Autowired
+    PackRegistrationController(
+            RegistrationJobs jobs,
+            PackSummaryQuery summaries,
+            PackArchiveReader archives,
+            PackRegistrationMapper mapper,
+            PackSourceIntake intake) {
         this.jobs = Objects.requireNonNull(jobs, "jobs");
         this.summaries = Objects.requireNonNull(summaries, "summaries");
         this.archives = Objects.requireNonNull(archives, "archives");
         this.mapper = Objects.requireNonNull(mapper, "mapper");
+        this.intake = Objects.requireNonNull(intake, "intake");
     }
 
     @Override
@@ -117,18 +140,60 @@ public class PackRegistrationController implements RegistrationApi {
         } catch (IOException failure) {
             throw new UncheckedIOException("cannot spool the archive of a registration", failure);
         }
+        // The status the 202 answers is read before the job can start: a worker may be running it at once.
+        RegistrationJobs.Status accepted = reservation.status();
         reservation.start(ArchiveStaging.of(archives, archive.format(), file));
         AuditContext.of(request).handedToJob();
-        return ResponseEntity.status(HttpStatus.ACCEPTED)
-                .location(URI.create(mapper.statusPath(reservation.id())))
-                .body(mapper.status(reservation.status()));
+        return accepted(reservation.id(), accepted);
     }
 
     @Override
-    @ReservedOperation
     public ResponseEntity<PackRegistrationStatus> registerPackFromSource(
             PackSource packSource, @Nullable String ifMatch, @Nullable String ifNoneMatch) {
-        throw notBuilt();
+        HttpServletRequest request = currentRequest();
+        PackSourceRequest source = sourceOf(packSource);
+        String locator = AuditLocators.of(source);
+        AuditContext audit = AuditContext.of(request);
+        audit.packId(packSource.getPackId());
+        audit.source(source.kind().wire(), locator);
+        RegistrationJobs.Stager stager = intake.stagerFor(source, packSource.getPackId());
+        RegistrationJobs.Origin origin = new RegistrationJobs.Origin(
+                intake.worktree(),
+                AuditContext.credentialOf(request),
+                "registerPackFromSource",
+                source.kind().wire(),
+                locator);
+        RegistrationJobs.Reservation reservation =
+                jobs.reserve(packSource.getPackId(), RegistrationAdmission.admittedPreconditions(request), origin);
+        try {
+            audit.revisionBefore(reservation.revisionBefore());
+            // The status the 202 answers is read before the job can start: a worker may be running it at once.
+            RegistrationJobs.Status accepted = reservation.status();
+            reservation.start(stager);
+            audit.handedToJob();
+            return accepted(reservation.id(), accepted);
+        } catch (RuntimeException failure) {
+            reservation.abandon();
+            throw failure;
+        }
+    }
+
+    private ResponseEntity<PackRegistrationStatus> accepted(String id, RegistrationJobs.Status status) {
+        return ResponseEntity.status(HttpStatus.ACCEPTED)
+                .location(URI.create(mapper.statusPath(id)))
+                .body(mapper.status(status));
+    }
+
+    private static PackSourceRequest sourceOf(PackSource packSource) {
+        PackSourceKind kind = PackSourceKind.fromWire(packSource.getKind().getValue())
+                .orElseThrow(() -> new IllegalStateException("a source kind the contract lists has no kind"));
+        return new PackSourceRequest(
+                kind,
+                packSource.getUrl(),
+                packSource.getRef(),
+                packSource.getCommit(),
+                packSource.getSha256(),
+                packSource.getPath());
     }
 
     private static ArchiveBody archiveOf(Resource body) {

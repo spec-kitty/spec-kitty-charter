@@ -40,7 +40,7 @@ properties:
         - the request body
   url:
     type: string
-    pattern: '^https://'
+    pattern: '^https://\S+$'
     maxLength: 2048
     description: >-
       For https_archive and git: the https URL (a URI) of the archive or of the repository. Its host must be on the exact
