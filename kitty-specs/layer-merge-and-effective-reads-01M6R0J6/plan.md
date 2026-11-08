@@ -301,7 +301,7 @@ A → B → C.
     status; WP11 confirms) and `pack_storage_full` (503), and the five registration
     relation codes of IC-15 (`override_not_permitted`, `enhances_cycle`, `conflicting_relations`, `self_override`,
     `override_cycle`, all 422). `registration_timed_out` is the job's end state at the source deadline plus 30 s
-    (NFR-008); `pack_storage_full` is the refusal when less than 2x the archive bound is free (NFR-009). Both appear in
+    (NFR-008); `pack_storage_full` is the refusal when the free space falls short of the job's per-job peak (NFR-009, as amended by #418). Both appear in
     WP11's list and are now in this concern and in IC-14.
   - Existing, marked as such: `kind_not_found` (404, raised; `CharterRefusalCode.yaml` and `RefusalCode.KIND_NOT_FOUND`),
     `pack_not_found`, `artifact_not_found`, `registration_conflict`, `validation_failed` and
@@ -882,7 +882,8 @@ IC-03 to IC-09 above and into the concerns below.
 - **Refusal codes of the job (plan delta squad, finding 9, 2026-11-07).** The `409` and `422` answers of IC-04 and
   IC-05 are the `problem` of a `refused` status, never a synchronous answer (IC-02). The job also ends `refused` with
   `registration_timed_out` (504; NFR-008: at the source deadline plus 30 s, pinned by a fake-clock test) or
-  `pack_storage_full` (503; NFR-009: less than 2x the archive bound free, checked before anything is written). Both
+  `pack_storage_full` (503; NFR-009 as amended by #418: the free space falls short of the per-job peak on the staging
+  or the pack volume, judged at admission and again when the job runs, before anything is written). Both
   are declared in IC-02's list and in contract-delta. `getPackRegistration` is the operation whose `x-refusal.operations`
   entries carry them (IC-02).
 - **`DELETE`s stay synchronous**: they read no source and do one bounded compose.

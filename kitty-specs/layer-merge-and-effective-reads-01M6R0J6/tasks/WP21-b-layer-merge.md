@@ -170,3 +170,4 @@ Lazy, from the same verified read; `/offering` and the write paths byte-identica
 ## Hand-off from WP12 (2026-11-07)
 
 - Key the facts cache on the canonical pack id (the resolved entry), not on the identifier a write named: WP12's `PackWriteGeneration.ofPack(id)` counters are keyed on the name the write used, so a write by configured name and one by declared `pack_id` bump different counters (WP12 review).
+- Update (2026-11-08, #418 R5, merged as 53dfb013): every pack write now brackets the generation with the pack's configured name (`location.name()` for per-artifact commits and removals, the resolved name for whole-pack swaps). Key the facts cache on the configured name, and read `ofPack` with it; the `ofPack` Javadoc ("as the write named it") is stale and may be corrected in passing.
