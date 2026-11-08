@@ -26,7 +26,7 @@ public interface PackSources {
      * @param packNames the configured names of the packs
      * @return {@code sha256:} and 64 lower-case hex digits
      * @throws CharterRefusal with {@link RefusalCode#PACK_UNREADABLE} when a named pack or one of its files cannot be
-     *     read
+     *     read, or, in an adapter that tells the packs apart, when no configured pack bears a name
      */
     default String fingerprintOf(Collection<String> packNames) {
         return fingerprint();
