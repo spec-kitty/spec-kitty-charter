@@ -20,18 +20,21 @@ final class RemovalPrecondition {
      * @param revisions the revisions of the stored packs
      * @param pack the pack's identity
      * @param ifMatch the {@code If-Match} field value, or null when the request carried none
+     * @return the stored revision the precondition was judged against
      * @throws PreconditionException {@code MISSING} (428) when none was sent, {@code STALE} (412) when it is not the
      *     stored revision
      */
-    static void require(PackRevisions revisions, PackIdentifier pack, @Nullable String ifMatch) {
+    static PackRevision require(PackRevisions revisions, PackIdentifier pack, @Nullable String ifMatch) {
         if (ifMatch == null) {
             throw new PreconditionException(
                     PreconditionException.Kind.MISSING,
                     "A removal requires an If-Match precondition on the pack revision.");
         }
-        if (!PackRevision.matches(ifMatch, revisions.currentRevision(pack))) {
+        PackRevision stored = revisions.currentRevision(pack);
+        if (!PackRevision.matches(ifMatch, stored)) {
             throw new PreconditionException(
                     PreconditionException.Kind.STALE, "The If-Match precondition is stale; read the pack again.");
         }
+        return stored;
     }
 }

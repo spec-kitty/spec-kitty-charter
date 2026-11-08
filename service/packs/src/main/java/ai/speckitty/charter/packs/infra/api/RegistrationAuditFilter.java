@@ -75,7 +75,6 @@ public class RegistrationAuditFilter extends OncePerRequestFilter {
             HttpServletRequest request, RegistrationPaths.Attempt attempt, AuditContext context, int status) {
         String outcome = status >= 200 && status < 300 ? "succeeded:" + status : "refused:" + status;
         Instant now = clock.instant();
-        String revision = context.revisionBefore();
         audit.record(new AuditLog.Entry(
                 now,
                 info.worktree(),
@@ -85,7 +84,7 @@ public class RegistrationAuditFilter extends OncePerRequestFilter {
                 context.sourceKind(attempt.sourceKind()),
                 context.locator(),
                 outcome,
-                revision,
-                revision));
+                context.revisionBefore(),
+                context.revisionAfter()));
     }
 }

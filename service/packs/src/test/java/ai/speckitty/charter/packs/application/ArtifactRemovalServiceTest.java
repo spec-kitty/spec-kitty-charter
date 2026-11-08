@@ -154,6 +154,30 @@ class ArtifactRemovalServiceTest {
     }
 
     @Test
+    void theTrailIsToldTheRevisionTheDeleteFoundAndTheOneItLeftAndNothingOnARefusal(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("qa", rig.stage(qa().registeredEdge("D1", "D3")), Preconditions.none());
+        Removals removals = new Removals(rig);
+        PackRevision stored = rig.writeStore.currentRevision(QA);
+        List<PackRevision[]> trail = new ArrayList<>();
+
+        assertThat(refusal(() -> removals.service.remove(
+                                QA, "directive", "D3", "*", (b, a) -> trail.add(new PackRevision[] {b, a})))
+                        .code())
+                .as("D3 is the target of D1's edge: refused")
+                .isEqualTo(RefusalCode.ARTIFACT_REFERENCED);
+        assertThat(trail).as("a refused delete tells the trail nothing").isEmpty();
+
+        PackRevision after =
+                removals.service.remove(QA, "directive", "D1", "*", (b, a) -> trail.add(new PackRevision[] {b, a}));
+
+        assertThat(trail).singleElement().satisfies(moved -> {
+            assertThat(moved[0]).as("found").isEqualTo(stored);
+            assertThat(moved[1]).as("left").isEqualTo(after).isEqualTo(rig.writeStore.currentRevision(QA));
+        });
+    }
+
+    @Test
     void aPresetKeyWhoseLastItemIsRemovedIsDeletedNotWrittenEmptyAndThePackStillReads(@TempDir Path host) {
         Rig rig = new Rig(host);
         rig.register("qa", rig.stage(qa()), Preconditions.none());

@@ -5,12 +5,16 @@ import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.packs.application.ArtifactRemovalService;
 import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.RelationshipRemovalService;
+import ai.speckitty.charter.packs.application.RevisionTrail;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
@@ -40,14 +44,31 @@ final class PackRemovalController {
     }
 
     ResponseEntity<Void> deleteArtifact(String packId, String kind, String artifactId, @Nullable String ifMatch) {
-        PackRevision revision = artifacts.remove(new PackIdentifier(packId), kind, artifactId, ifMatch);
+        AuditContext audit = AuditContext.of(currentRequest());
+        PackRevision revision = artifacts.remove(new PackIdentifier(packId), kind, artifactId, ifMatch, trailOf(audit));
         return noContent(revision);
     }
 
     ResponseEntity<Void> deleteRelationship(String packId, String from, String to, @Nullable String ifMatch) {
-        PackRevision revision =
-                relationships.remove(new PackIdentifier(packId), reference(from), reference(to), ifMatch);
+        AuditContext audit = AuditContext.of(currentRequest());
+        PackRevision revision = relationships.remove(
+                new PackIdentifier(packId), reference(from), reference(to), ifMatch, trailOf(audit));
         return noContent(revision);
+    }
+
+    /** The revisions the removal found and left, entered in the audit entry of the request (NFR-010). */
+    private static RevisionTrail trailOf(AuditContext audit) {
+        return (before, after) -> {
+            audit.revisionBefore(before.token());
+            audit.revisionAfter(after.token());
+        };
+    }
+
+    private static HttpServletRequest currentRequest() {
+        if (RequestContextHolder.currentRequestAttributes() instanceof ServletRequestAttributes servlet) {
+            return servlet.getRequest();
+        }
+        throw new IllegalStateException("no servlet request is being handled");
     }
 
     private static ResponseEntity<Void> noContent(PackRevision revision) {

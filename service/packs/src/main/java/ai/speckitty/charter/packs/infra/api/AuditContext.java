@@ -20,6 +20,7 @@ final class AuditContext {
     private volatile String sourceKind = "";
     private volatile String locator = "";
     private volatile String revisionBefore = "";
+    private volatile String revisionAfter = "";
     private volatile boolean handedToJob;
 
     /**
@@ -79,6 +80,15 @@ final class AuditContext {
         this.revisionBefore = revision;
     }
 
+    /**
+     * Records the revision a write left, when it changed the pack.
+     *
+     * @param revision the revision token after the write
+     */
+    void revisionAfter(String revision) {
+        this.revisionAfter = revision;
+    }
+
     /** The registration job took the attempt over and writes its entry when it ends. */
     void handedToJob() {
         this.handedToJob = true;
@@ -102,5 +112,10 @@ final class AuditContext {
 
     String revisionBefore() {
         return revisionBefore;
+    }
+
+    /** The revision the write left; the revision before when the attempt changed nothing. */
+    String revisionAfter() {
+        return revisionAfter.isEmpty() ? revisionBefore : revisionAfter;
     }
 }
