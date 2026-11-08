@@ -31,7 +31,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 /**
  * The wire form of the effective reads (IC-09): the page of effective artifacts with its summary, its paging state and
  * its {@code self}, {@code first} and {@code next} links, and the skipped report with its ten read buckets (the buckets
- * of a write's cascade stay empty at read). The page's links keep the filters and the page size of the request, so a
+ * of a write's cascade stay empty at read). The page's links keep the filters and the page size of the request, as the
+ * request wrote them, so {@code self} is the request that was made and a
  * followed {@code next} reads the next page of the same set; the cursor it carries is the position of the page's last
  * item and the tag of its set ({@link EffectiveCursor}).
  */
@@ -54,9 +55,11 @@ public class EffectiveReadMapper {
      * A page of the effective artifacts.
      *
      * @param page the page the service read
+     * @param pageSizeGiven whether the request named a {@code pageSize}: the links repeat it only then, so that
+     *     {@code self} is the request that was made
      * @return its wire form
      */
-    public EffectiveArtifactList toList(Page page) {
+    public EffectiveArtifactList toList(Page page, boolean pageSizeGiven) {
         String id = page.stored().id().value();
         Optional<String> next = page.next().map(after -> EffectiveCursor.encode(after.position(), after.setTag()));
         PageInfo info =
@@ -68,7 +71,7 @@ public class EffectiveReadMapper {
                 summary(page.summary()),
                 page.items().stream().map(EffectiveReadMapper::item).toList(),
                 info,
-                pageLinks(id, page.query(), next));
+                pageLinks(id, page.query(), pageSizeGiven, next));
     }
 
     /**
@@ -122,20 +125,22 @@ public class EffectiveReadMapper {
         return wire;
     }
 
-    private Map<String, Link> pageLinks(String id, PageQuery query, Optional<String> next) {
+    private Map<String, Link> pageLinks(String id, PageQuery query, boolean pageSizeGiven, Optional<String> next) {
         Map<String, Link> links = new LinkedHashMap<>();
-        links.put("self", link(id, query, query.after().map(EffectiveReadService.After::cursor)));
-        links.put("first", link(id, query, Optional.empty()));
-        next.ifPresent(cursor -> links.put("next", link(id, query, Optional.of(cursor))));
+        links.put("self", link(id, query, pageSizeGiven, query.after().map(EffectiveReadService.After::cursor)));
+        links.put("first", link(id, query, pageSizeGiven, Optional.empty()));
+        next.ifPresent(cursor -> links.put("next", link(id, query, pageSizeGiven, Optional.of(cursor))));
         return links;
     }
 
-    /** The page's own request, with the filters and the page size it was made with and the given cursor. */
-    private Link link(String id, PageQuery query, Optional<String> cursor) {
+    /** The page's own request, with the filters and, when the request named one, the page size, and the given cursor. */
+    private Link link(String id, PageQuery query, boolean pageSizeGiven, Optional<String> cursor) {
         UriComponentsBuilder href = UriComponentsBuilder.fromPath(activations.self(id) + "/artifacts");
         query.kind().ifPresent(kind -> href.queryParam("kind", kind.token()));
         query.state().ifPresent(state -> href.queryParam("state", state.token()));
-        href.queryParam("pageSize", query.pageSize());
+        if (pageSizeGiven) {
+            href.queryParam("pageSize", query.pageSize());
+        }
         cursor.ifPresent(value -> href.queryParam("pageCursor", value));
         return new Link(href.build().encode().toUriString());
     }

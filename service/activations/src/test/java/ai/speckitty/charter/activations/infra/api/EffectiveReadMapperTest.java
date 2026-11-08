@@ -87,7 +87,7 @@ class EffectiveReadMapperTest {
                                 Optional.of(new Suggestion(Optional.of("on release"), Optional.of("it helps")))),
                         item(T, Optional.empty(), Optional.empty())));
 
-        EffectiveArtifactList wire = mapper.toList(page);
+        EffectiveArtifactList wire = mapper.toList(page, true);
 
         assertThat(wire.getActivationId()).isEqualTo("a-1");
         assertThat(wire.getRevision()).isEqualTo(stored.revision().token());
@@ -119,15 +119,20 @@ class EffectiveReadMapperTest {
 
     @Test
     void aSuggestionWithOnlyAReasonOrOnlyAWhenKeepsTheOtherMemberAbsent() {
-        EffectiveArtifactList wire = mapper.toList(page(
-                new PageQuery(Optional.empty(), Optional.empty(), 50, Optional.empty()),
-                Optional.empty(),
-                List.of(
-                        item(A, Optional.empty(), Optional.of(new Suggestion(Optional.empty(), Optional.of("why")))),
-                        item(
-                                B,
-                                Optional.empty(),
-                                Optional.of(new Suggestion(Optional.of("when"), Optional.empty()))))));
+        EffectiveArtifactList wire = mapper.toList(
+                page(
+                        new PageQuery(Optional.empty(), Optional.empty(), 50, Optional.empty()),
+                        Optional.empty(),
+                        List.of(
+                                item(
+                                        A,
+                                        Optional.empty(),
+                                        Optional.of(new Suggestion(Optional.empty(), Optional.of("why")))),
+                                item(
+                                        B,
+                                        Optional.empty(),
+                                        Optional.of(new Suggestion(Optional.of("when"), Optional.empty()))))),
+                true);
 
         assertThat(wire.getItems()).hasSize(2);
         assertThat(wire.getItems().getFirst().getSuggestion().getWhen()).isNull();
@@ -138,10 +143,12 @@ class EffectiveReadMapperTest {
 
     @Test
     void theLastPageHasNoCursorAndNoNextLink() {
-        EffectiveArtifactList wire = mapper.toList(page(
-                new PageQuery(Optional.empty(), Optional.empty(), 50, Optional.empty()),
-                Optional.empty(),
-                List.of(item(A, Optional.empty(), Optional.empty()))));
+        EffectiveArtifactList wire = mapper.toList(
+                page(
+                        new PageQuery(Optional.empty(), Optional.empty(), 50, Optional.empty()),
+                        Optional.empty(),
+                        List.of(item(A, Optional.empty(), Optional.empty()))),
+                true);
 
         assertThat(wire.getPageInfo().getHasNextPage()).isFalse();
         assertThat(wire.getPageInfo().getNextPageCursor()).isNull();
@@ -155,10 +162,14 @@ class EffectiveReadMapperTest {
     void aPageThatIsNotTheLastHasACursorOfItsLastItemAndANextLinkThatKeepsTheFiltersAndThePageSize() {
         PageQuery query =
                 new PageQuery(Optional.of(ArtifactKind.DIRECTIVE), Optional.of(State.ACTIVE), 2, Optional.empty());
-        EffectiveArtifactList wire = mapper.toList(page(
-                query,
-                Optional.of(new After(B, SET_TAG, "unused")),
-                List.of(item(A, Optional.empty(), Optional.empty()), item(B, Optional.empty(), Optional.empty()))));
+        EffectiveArtifactList wire = mapper.toList(
+                page(
+                        query,
+                        Optional.of(new After(B, SET_TAG, "unused")),
+                        List.of(
+                                item(A, Optional.empty(), Optional.empty()),
+                                item(B, Optional.empty(), Optional.empty()))),
+                true);
 
         String cursor = wire.getPageInfo().getNextPageCursor();
         assertThat(wire.getPageInfo().getHasNextPage()).isTrue();
@@ -183,12 +194,34 @@ class EffectiveReadMapperTest {
         PageQuery query =
                 new PageQuery(Optional.empty(), Optional.empty(), 5, Optional.of(new After(A, SET_TAG, "the-cursor")));
 
-        EffectiveArtifactList wire = mapper.toList(page(query, Optional.empty(), List.of()));
+        EffectiveArtifactList wire = mapper.toList(page(query, Optional.empty(), List.of()), true);
 
         assertThat(wire.getLinks()).containsKeys("self", "first");
         assertThat(wire.getLinks().get("self").getHref())
                 .isEqualTo("/api/v1/activations/a-1/artifacts?pageSize=5&pageCursor=the-cursor");
         assertThat(wire.getLinks().get("first").getHref()).isEqualTo("/api/v1/activations/a-1/artifacts?pageSize=5");
+    }
+
+    @Test
+    void theLinksRepeatThePageSizeOnlyWhenTheRequestNamedOne() {
+        PageQuery query = new PageQuery(Optional.of(ArtifactKind.DIRECTIVE), Optional.empty(), 50, Optional.empty());
+
+        EffectiveArtifactList wire = mapper.toList(
+                page(
+                        query,
+                        Optional.of(new After(B, SET_TAG, "unused")),
+                        List.of(item(A, Optional.empty(), Optional.empty()))),
+                false);
+
+        assertThat(wire.getPageInfo().getPageSize())
+                .as("the page size applied is still reported")
+                .isEqualTo(50);
+        assertThat(wire.getLinks().get("self").getHref()).isEqualTo("/api/v1/activations/a-1/artifacts?kind=directive");
+        assertThat(wire.getLinks().get("first").getHref())
+                .isEqualTo("/api/v1/activations/a-1/artifacts?kind=directive");
+        assertThat(wire.getLinks().get("next").getHref())
+                .startsWith("/api/v1/activations/a-1/artifacts?kind=directive&pageCursor=")
+                .doesNotContain("pageSize");
     }
 
     // ---- the cursor

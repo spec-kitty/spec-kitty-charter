@@ -40,6 +40,7 @@ import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 /**
  * The activation set (ADR-0020). The register is built: {@code createActivation}, {@code getActivation},
@@ -205,7 +206,7 @@ public class ActivationController implements ActivationApi {
             return verified(
                     effective.list(new ActivationId(activationId), query, ifNoneMatch),
                     EffectiveReadService.Page::sourceFingerprint,
-                    reads::toList);
+                    page -> reads.toList(page, pageSizeGiven()));
         } catch (EffectiveReadService.StaleCursorException anotherSet) {
             throw new ErrorResponseException(HttpStatus.BAD_REQUEST, anotherSet);
         }
@@ -307,6 +308,14 @@ public class ActivationController implements ActivationApi {
                         .header(SOURCE_FINGERPRINT, fingerprint.apply(value))
                         .body(body.apply(value));
         };
+    }
+
+    /** Whether the request named a page size: it has a default, so this is read from the request itself. */
+    private static boolean pageSizeGiven() {
+        return ServletUriComponentsBuilder.fromCurrentRequest()
+                .build()
+                .getQueryParams()
+                .containsKey("pageSize");
     }
 
     /** The kind filter: an activatable kind, or a {@code 400} problem without a code. */
