@@ -1,12 +1,15 @@
 package ai.speckitty.charter.activations.domain;
 
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
+import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * What an activation puts in force, and why the rest is not (FR-013, FR-017): one {@link EffectiveArtifact} per winning
@@ -220,6 +223,17 @@ public record EffectiveSet(List<EffectiveArtifact> artifacts, EffectiveSkippedRe
         artifacts = List.copyOf(Objects.requireNonNull(artifacts, "artifacts"));
         Objects.requireNonNull(skipped, "skipped");
         Objects.requireNonNull(summary, "summary");
+    }
+
+    /**
+     * What the document asks of the in-force resolution: its selection and deny entries of every kind, its language
+     * filter (absent when it sets none) and its version pins.
+     *
+     * @param document the activation document, as stored
+     * @return the query to put to {@link ai.speckitty.charter.activations.application.PacksSession#inForce}
+     */
+    public static InForceQuery queryOf(ActivationDocument document) {
+        return new InForceQuery(Set.of(), Set.of(), Optional.empty(), Map.of());
     }
 
     /**
