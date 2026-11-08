@@ -95,7 +95,7 @@ class ExpiredReservationTest {
             }
         };
         RegistrationJobs jobs = mock(RegistrationJobs.class);
-        when(jobs.openUpload()).thenReturn(upload);
+        when(jobs.openUpload(anyLong())).thenReturn(upload);
         when(jobs.staging()).thenReturn(new FileStagingArea(host));
         when(jobs.reserve(any(), any(), any(), any(), anyLong())).thenReturn(ended);
         ServiceInfoQuery info =

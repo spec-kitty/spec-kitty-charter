@@ -45,8 +45,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 /**
- * A slow upload holds no slot of the queue while its body arrives (#418, A4): more uploads than the queue has slots may
- * be arriving at once, each is accepted when its body is spooled, and a full queue is still answered before a body is
+ * A slow upload holds no slot of the queue while its body arrives (#418, A4): as many uploads as the queue has slots may
+ * be arriving at once (the next is refused at admission), each is accepted when its body is spooled, and a full queue is still answered before a body is
  * read. The design is ADR-0065 D8's note of 2026-11-08: the slot is taken after the body is spooled.
  */
 class SlowUploadTest {
@@ -103,8 +103,8 @@ class SlowUploadTest {
     }
 
     @Test
-    void moreUploadsThanTheQueueHasSlotsMayBeArrivingAtOnceAndEachIsAcceptedWhenItsBodyIsSpooled() throws Exception {
-        int uploads = SLOTS + 1;
+    void asManyUploadsAsTheQueueHasSlotsMayBeArrivingAtOnceAndEachIsAcceptedWhenItsBodyIsSpooled() throws Exception {
+        int uploads = SLOTS;
         List<CountDownLatch> release = new ArrayList<>();
         List<Future<MockHttpServletResponse>> responses = new ArrayList<>();
         CountDownLatch arriving = new CountDownLatch(uploads);
@@ -139,10 +139,58 @@ class SlowUploadTest {
     }
 
     @Test
+    void theEleventhUploadIsRefusedAtAdmissionAndAFinishedUploadFreesItsPlace() throws Exception {
+        List<CountDownLatch> release = new ArrayList<>();
+        List<Future<MockHttpServletResponse>> responses = new ArrayList<>();
+        CountDownLatch arriving = new CountDownLatch(SLOTS);
+        for (int i = 0; i < SLOTS; i++) {
+            CountDownLatch gate = new CountDownLatch(1);
+            release.add(gate);
+            responses.add(clients.submit(() -> mvc.perform(put("/api/v1/packs/acme")
+                            .contentType("application/gzip")
+                            .content(gzip())
+                            .with(request -> stalling(request, arriving, gate)))
+                    .andReturn()
+                    .getResponse()));
+        }
+        assertThat(arriving.await(20, TimeUnit.SECONDS)).isTrue();
+        long readBefore = requestBytesRead.get();
+        int directoriesBefore = staged();
+        byte[] body = gzip();
+
+        MockHttpServletResponse refused = mvc.perform(put("/api/v1/packs/acme")
+                        .contentType("application/gzip")
+                        .content(body)
+                        .with(request -> counting(request, body)))
+                .andReturn()
+                .getResponse();
+
+        assertThat(refused.getStatus()).as("ten uploads are open: the eleventh is refused").isEqualTo(503);
+        assertThat(refused.getHeader("Retry-After")).isNotNull();
+        assertThat(requestBytesRead.get()).as("not a byte of its body was read").isEqualTo(readBefore);
+        assertThat(staged()).as("and it staged nothing").isEqualTo(directoriesBefore);
+
+        release.get(0).countDown();
+        assertThat(responses.get(0).get(20, TimeUnit.SECONDS).getStatus()).isEqualTo(202);
+        MockHttpServletResponse next = mvc.perform(put("/api/v1/packs/acme")
+                        .contentType("application/gzip")
+                        .content(body)
+                        .with(request -> counting(request, body)))
+                .andReturn()
+                .getResponse();
+        assertThat(next.getStatus()).as("the finished upload's place is free again").isEqualTo(202);
+
+        for (int i = 1; i < SLOTS; i++) {
+            release.get(i).countDown();
+            assertThat(responses.get(i).get(20, TimeUnit.SECONDS).getStatus()).isEqualTo(202);
+        }
+    }
+
+    @Test
     void aFullQueueIsRefusedBeforeTheBodyIsReadAndLeavesNothingStaged() throws Exception {
         List<RegistrationJobs.Reservation> held = new ArrayList<>();
         for (int i = 0; i < SLOTS; i++) {
-            held.add(jobs.reserve("pack-" + i, Preconditions.none(), origin(), jobs.openUpload(), 1));
+            held.add(jobs.reserve("pack-" + i, Preconditions.none(), origin(), jobs.openUpload(1), 1));
         }
         assertThat(held).hasSize(SLOTS);
         int directoriesBefore = staged();

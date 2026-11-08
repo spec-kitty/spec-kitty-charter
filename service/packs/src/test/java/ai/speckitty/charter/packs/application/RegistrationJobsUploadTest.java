@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,7 +35,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 /**
  * The upload path of the registration jobs (#418, A4): a body that is still arriving holds a directory in staging and no
- * slot of the queue, the slot is taken once the body is spooled, and a job the deadline ended before it was started is
+ * slot of the queue, at most ten (the queue's size) are open at once, the slot is taken once the body is spooled, and a job the deadline ended before it was started is
  * answered by its own end, never by a failure of the request that was about to start it.
  */
 class RegistrationJobsUploadTest {
@@ -50,6 +51,9 @@ class RegistrationJobsUploadTest {
     private final TestGate gate = new TestGate();
     private final RecordingAudit audit = new RecordingAudit();
     private final List<Long> roomAsked = new CopyOnWriteArrayList<>();
+    private final List<Long> admissionAsked = new CopyOnWriteArrayList<>();
+    private final List<Long> openBytesAsked = new CopyOnWriteArrayList<>();
+    private final AtomicReference<CharterRefusal> full = new AtomicReference<>();
     private RegistrationJobs jobs;
 
     @BeforeEach
@@ -73,6 +77,16 @@ class RegistrationJobsUploadTest {
                     public void require(long archiveBytes) {
                         roomAsked.add(archiveBytes);
                     }
+
+                    @Override
+                    public void require(long archiveBytes, long openUploadBytes) {
+                        CharterRefusal refusal = full.get();
+                        if (refusal != null) {
+                            throw refusal;
+                        }
+                        admissionAsked.add(archiveBytes);
+                        openBytesAsked.add(openUploadBytes);
+                    }
                 },
                 new FileStagingArea(host.resolve("staging"))));
     }
@@ -84,25 +98,89 @@ class RegistrationJobsUploadTest {
     }
 
     @Test
-    void anyNumberOfUploadsMayBeArrivingAndNoneHoldsASlot() {
+    void atMostTenUploadsAreOpenAtOnceAndTheEleventhIsRefusedAsAFullQueueIsAndNoneHoldsASlot() {
         List<RegistrationJobs.Upload> uploads = new ArrayList<>();
-        for (int i = 0; i < 3 * SLOTS; i++) {
-            uploads.add(jobs.openUpload());
+        for (int i = 0; i < SLOTS; i++) {
+            uploads.add(jobs.openUpload(1));
         }
 
+        assertThatThrownBy(() -> jobs.openUpload(1))
+                .as("the eleventh open upload is refused at admission, with a Retry-After like the full queue's")
+                .isInstanceOfSatisfying(
+                        RetryLaterException.class, refused -> assertThat(refused.retryAfterSeconds()).isPositive());
+        assertThat(admissionAsked).as("the room is not asked for an upload that has no place").hasSize(SLOTS);
+        assertThat(jobs.owned()).as("the refused upload left no directory").hasSize(SLOTS);
         assertThatCodeNothing(() -> jobs.precheck("acme", Preconditions.none()));
+        assertThat(jobs.retained()).as("open uploads hold no queue slot").isZero();
         Reservation reservation = jobs.reserve("acme", Preconditions.none(), ORIGIN, uploads.get(0), 10);
         assertThat(reservation.id()).isEqualTo(uploads.get(0).id());
+    }
+
+    @Test
+    void aDiscardedOrReservedUploadFreesItsPlaceForTheNextOne() {
+        List<RegistrationJobs.Upload> uploads = new ArrayList<>();
+        for (int i = 0; i < SLOTS; i++) {
+            uploads.add(jobs.openUpload(1));
+        }
+        assertThatThrownBy(() -> jobs.openUpload(1)).isInstanceOf(RetryLaterException.class);
+
+        uploads.get(0).discard();
+        RegistrationJobs.Upload second = jobs.openUpload(1);
+        assertThatThrownBy(() -> jobs.openUpload(1))
+                .as("the place of the discarded upload was taken, no more")
+                .isInstanceOf(RetryLaterException.class);
+
+        Reservation reserved = jobs.reserve("acme", Preconditions.none(), ORIGIN, uploads.get(1), 1);
+        RegistrationJobs.Upload third = jobs.openUpload(1);
+        assertThatThrownBy(() -> jobs.openUpload(1)).isInstanceOf(RetryLaterException.class);
+
+        reserved.abandon();
+        assertThatThrownBy(() -> jobs.openUpload(1))
+                .as("the place was freed when the body was spooled, not when the job ended")
+                .isInstanceOf(RetryLaterException.class);
+        second.discard();
+        third.discard();
+        assertThatCodeNothing(() -> jobs.openUpload(1));
+    }
+
+    @Test
+    void anUploadTheRoomRefusedHoldsNeitherAPlaceNorADirectory() {
+        full.set(new CharterRefusal(RefusalCode.PACK_STORAGE_FULL, "full"));
+        for (int i = 0; i < 3 * SLOTS; i++) {
+            assertThatThrownBy(() -> jobs.openUpload(1)).isInstanceOf(CharterRefusal.class);
+        }
+        full.set(null);
+
+        assertThat(jobs.owned()).isEmpty();
+        for (int i = 0; i < SLOTS; i++) {
+            jobs.openUpload(1);
+        }
+        assertThatThrownBy(() -> jobs.openUpload(1)).isInstanceOf(RetryLaterException.class);
+    }
+
+    @Test
+    void theFreeSpaceCheckAtAdmissionSubtractsTheBytesOfTheUploadsAlreadyOpen() {
+        long bound = RegistrationJobs.StorageRoom.ARCHIVE_BOUND_BYTES;
+        jobs.openUpload(100);
+        RegistrationJobs.Upload second = jobs.openUpload(200);
+        jobs.openUpload(RegistrationJobs.StorageRoom.UNKNOWN_BYTES);
+        second.discard();
+        jobs.openUpload(5);
+
+        assertThat(admissionAsked).containsExactly(100L, 200L, RegistrationJobs.StorageRoom.UNKNOWN_BYTES, 5L);
+        assertThat(openBytesAsked)
+                .as("the declared bytes of the open uploads, the bound for the one of unknown length")
+                .containsExactly(0L, 100L, 300L, 100L + bound);
     }
 
     @Test
     void theSlotIsTakenWhenTheBodyIsSpooledAndTheLimitsAreTheSame() {
         List<Reservation> held = new ArrayList<>();
         for (int i = 0; i < SLOTS; i++) {
-            held.add(jobs.reserve("pack-" + i, Preconditions.none(), ORIGIN, jobs.openUpload(), 1));
+            held.add(jobs.reserve("pack-" + i, Preconditions.none(), ORIGIN, jobs.openUpload(1), 1));
         }
         assertThat(held).hasSize(SLOTS);
-        RegistrationJobs.Upload late = jobs.openUpload();
+        RegistrationJobs.Upload late = jobs.openUpload(1);
 
         assertThatThrownBy(() -> jobs.precheck("acme", Preconditions.none()))
                 .as("a full queue is known before the body is read")
@@ -122,7 +200,7 @@ class RegistrationJobsUploadTest {
         Preconditions stale = Preconditions.ifMatch("\"sha256:" + "ab".repeat(32) + "\"");
 
         assertThatThrownBy(() -> jobs.precheck("acme", stale)).isInstanceOf(PreconditionException.class);
-        RegistrationJobs.Upload upload = jobs.openUpload();
+        RegistrationJobs.Upload upload = jobs.openUpload(1);
         assertThatThrownBy(() -> jobs.reserve("acme", stale, ORIGIN, upload, 1))
                 .isInstanceOf(PreconditionException.class);
         upload.discard();
@@ -130,7 +208,7 @@ class RegistrationJobsUploadTest {
 
     @Test
     void anUploadInProgressIsOwnedSoTheSweepNeverDeletesItAndDiscardingItEndsThat() {
-        RegistrationJobs.Upload upload = jobs.openUpload();
+        RegistrationJobs.Upload upload = jobs.openUpload(1);
 
         assertThat(jobs.owned()).contains(upload.directory());
         upload.discard();
@@ -140,7 +218,7 @@ class RegistrationJobsUploadTest {
 
     @Test
     void theReservationAdoptsTheUploadsDirectoryAndDiscardingTheAdoptedUploadKeepsIt() throws IOException {
-        RegistrationJobs.Upload upload = jobs.openUpload();
+        RegistrationJobs.Upload upload = jobs.openUpload(1);
         Files.writeString(upload.directory().resolve("archive"), "spooled");
 
         Reservation reservation = jobs.reserve("acme", Preconditions.none(), ORIGIN, upload, 7);
@@ -158,7 +236,7 @@ class RegistrationJobsUploadTest {
     @Test
     void theJobChecksTheRoomForTheSizeThatWasSpooled() throws Exception {
         gate.releaseBeforeRun();
-        RegistrationJobs.Upload upload = jobs.openUpload();
+        RegistrationJobs.Upload upload = jobs.openUpload(1);
         Reservation reservation = jobs.reserve("acme", Preconditions.none(), ORIGIN, upload, 1234);
 
         reservation.start(directory -> {
@@ -171,7 +249,7 @@ class RegistrationJobsUploadTest {
 
     @Test
     void aJobTheDeadlineEndedBeforeItWasStartedAnswersItsTimeoutAndIsNotAFailureOfTheRequest() {
-        RegistrationJobs.Upload upload = jobs.openUpload();
+        RegistrationJobs.Upload upload = jobs.openUpload(1);
         Reservation reservation = jobs.reserve("acme", Preconditions.none(), ORIGIN, upload, 1);
         clock.advance(RegistrationJobs.DEADLINE.plus(Duration.ofSeconds(1)));
         jobs.expireOverdue();
@@ -200,7 +278,7 @@ class RegistrationJobsUploadTest {
     @Test
     void startingAJobThatIsRunningIsStillAnError() throws Exception {
         gate.releaseBeforeRun();
-        RegistrationJobs.Upload upload = jobs.openUpload();
+        RegistrationJobs.Upload upload = jobs.openUpload(1);
         Reservation reservation = jobs.reserve("acme", Preconditions.none(), ORIGIN, upload, 1);
         reservation.start(directory -> {
             throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, "ends");
@@ -216,7 +294,7 @@ class RegistrationJobsUploadTest {
     void aServiceThatIsStoppingTakesNoUpload() {
         jobs.close();
 
-        assertThatThrownBy(() -> jobs.openUpload()).isInstanceOf(RetryLaterException.class);
+        assertThatThrownBy(() -> jobs.openUpload(1)).isInstanceOf(RetryLaterException.class);
         assertThatThrownBy(() -> jobs.precheck("acme", Preconditions.none())).isInstanceOf(RetryLaterException.class);
     }
 

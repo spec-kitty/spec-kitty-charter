@@ -95,6 +95,33 @@ class FreeSpaceCheckTest {
     }
 
     @Test
+    void theBytesOfTheUploadsAlreadyOpenAreNotFreeForTheNextOne() {
+        assertThatThrownBy(() -> new FreeSpaceCheck(() -> storeWith(74 * MIB)).require(1 * MIB, 10 * MIB))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_STORAGE_FULL);
+                    assertThat(refusal.getMessage()).contains("74 MiB").contains("75 MiB");
+                });
+        assertThatCode(() -> new FreeSpaceCheck(() -> storeWith(75 * MIB)).require(1 * MIB, 10 * MIB))
+                .as("1 MiB and the two bounds, and the 10 MiB the open uploads will write")
+                .doesNotThrowAnyException();
+        assertThatCode(() -> new FreeSpaceCheck(() -> storeWith(75 * MIB)).require(1 * MIB, 0))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void onTwoVolumesTheOpenUploadsAreSubtractedFromTheStagingVolumeOnly() {
+        FileStore tightStaging = storeWith(42 * MIB);
+        FileStore packs = storeWith(32 * MIB);
+        assertThatThrownBy(() -> new FreeSpaceCheck(() -> packs, () -> tightStaging).require(1 * MIB, 10 * MIB))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> assertThat(refusal.getMessage())
+                        .contains("staging volume")
+                        .contains("42 MiB").contains("43 MiB"));
+
+        assertThatCode(() -> new FreeSpaceCheck(() -> packs, () -> storeWith(43 * MIB)).require(1 * MIB, 10 * MIB))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
     void aVolumeWhoseSpaceCannotBeReadRefusesRatherThanGuesses() {
         FreeSpaceCheck check = new FreeSpaceCheck(() -> new FakeStore(-1));
         FreeSpaceCheck stagingUnreadable = new FreeSpaceCheck(() -> storeWith(1024 * MIB), () -> new FakeStore(-1));

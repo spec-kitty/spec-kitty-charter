@@ -379,6 +379,9 @@ public final class RegistrationJobs implements AutoCloseable {
         /** The archive size that is not known: a chunked body, a source. It is judged as a full-size archive. */
         long UNKNOWN_BYTES = -1;
 
+        /** The archive bound of a registration, 32 MiB (NFR-004): what an upload of unknown length is taken to write. */
+        long ARCHIVE_BOUND_BYTES = 32L * 1024 * 1024;
+
         /**
          * Checks the room for an archive of the largest size a registration takes.
          *
@@ -394,6 +397,19 @@ public final class RegistrationJobs implements AutoCloseable {
          */
         default void require(long archiveBytes) {
             require();
+        }
+
+        /**
+         * Checks the room for an archive of this size when other uploads are open: the bytes they are declared to write
+         * are not free for this one.
+         *
+         * @param archiveBytes the archive's size, or {@link #UNKNOWN_BYTES}
+         * @param openUploadBytes the declared bytes of the uploads already open ({@link #ARCHIVE_BOUND_BYTES} for each
+         *     of unknown length)
+         * @throws CharterRefusal {@code PACK_STORAGE_FULL} when a volume has less than the peak plus these bytes free
+         */
+        default void require(long archiveBytes, long openUploadBytes) {
+            require(archiveBytes);
         }
     }
 
@@ -559,10 +575,11 @@ public final class RegistrationJobs implements AutoCloseable {
      * Opens the directory a body is spooled in. It holds no slot: any number of bodies may be arriving, each bounded at
      * 32 MiB by the body guard and the free-space check, and the sweep leaves a directory that is open (#418, A4).
      *
+     * @param declaredBytes the declared length of the body, or {@link StorageRoom#UNKNOWN_BYTES}
      * @return the upload
      * @throws RetryLaterException when the service is stopping
      */
-    public Upload openUpload() {
+    public Upload openUpload(long declaredBytes) {
         requireOpen();
         String id = Ulid.next(clock.instant(), random);
         Path directory;
