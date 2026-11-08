@@ -17,6 +17,8 @@ import ai.speckitty.charter.packs.infra.fetch.HttpsExchange;
 import ai.speckitty.charter.packs.application.PackTreeReader;
 import ai.speckitty.charter.packs.infra.archive.BoundedTreeStager;
 import ai.speckitty.charter.packs.infra.fetch.PackSourceProperties;
+import ai.speckitty.charter.packs.infra.fetch.git.GitHostResolver;
+import ai.speckitty.charter.packs.infra.fetch.git.GitRemote;
 import ai.speckitty.charter.packs.infra.storage.ConfigRoot;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -40,6 +42,11 @@ class PackSourceWiringTest {
 
     private static final ObjectProvider<ConfigRoot> NO_CONFIG_ROOT =
             new StaticListableBeanFactory().getBeanProvider(ConfigRoot.class);
+
+    private static final ObjectProvider<GitRemote> NO_REMOTE =
+            new StaticListableBeanFactory().getBeanProvider(GitRemote.class);
+    private static final ObjectProvider<GitHostResolver> NO_RESOLVER =
+            new StaticListableBeanFactory().getBeanProvider(GitHostResolver.class);
 
     @TempDir
     Path root;
@@ -96,7 +103,7 @@ class PackSourceWiringTest {
         List<PackSourceFetcher> fetchers = List.of(
                 wiring.httpsArchiveFetcher(exchange, archives, properties),
                 wiring.filesystemSourceFetcher(properties, tree, NO_CONFIG_ROOT),
-                wiring.gitSourceFetcher(properties, wiring.gitVersionCheck(properties)));
+                wiring.gitSourceFetcher(properties, wiring.gitVersionCheck(properties), tree, NO_REMOTE, NO_RESOLVER));
         return wiring.packSourceStagers(fetchers, mock(WholePackWriteStore.Loader.class));
     }
 

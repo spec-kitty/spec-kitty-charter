@@ -3,8 +3,9 @@ package ai.speckitty.charter.deployable;
 import ai.speckitty.charter.packs.application.PackArchiveReader;
 import ai.speckitty.charter.packs.application.PackSourceFetcher;
 import ai.speckitty.charter.packs.application.PackSourceKind;
-import ai.speckitty.charter.packs.application.PackSourceRequest;
-import ai.speckitty.charter.packs.application.RegistrationJobs.Staged;
+import ai.speckitty.charter.packs.infra.fetch.git.GitHostResolver;
+import ai.speckitty.charter.packs.infra.fetch.git.GitRemote;
+import ai.speckitty.charter.packs.infra.fetch.git.GitSourceFetcher;
 import ai.speckitty.charter.packs.infra.fetch.git.GitVersionCheck;
 import ai.speckitty.charter.packs.application.PackSourceStagers;
 import ai.speckitty.charter.packs.application.PackTreeReader;
@@ -29,8 +30,9 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * Composes the sources of a pack registration (FR-004, IC-05, IC-18): which kinds are switched on, from
- * {@code charter.pack-sources.<kind>.enabled}; the fetcher of each kind that is built (the https archive and the local
- * path; the git source is WP18's); and the intake that joins them to the inbound adapter. The ports and adapters are the
+ * {@code charter.pack-sources.<kind>.enabled}; the fetcher of each kind that is built (the https archive, the local
+ * path and the git source over the host git, which the stagers leave unbuilt on a host with no git of 2.50.1 or later,
+ * NFR-011); and the intake that joins them to the inbound adapter. The ports and adapters are the
  * packs slice's, and only the composition root names both sides.
  *
  * <p>Nothing is fetched that is not switched on and not allowlisted: every flag is off by default, the https and git
@@ -41,6 +43,8 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(PackSourceProperties.class)
 public class PackSourceWiring {
+
+    private static final System.Logger LOG = System.getLogger(PackSourceWiring.class.getName());
 
     /** For Spring, which instantiates the configuration class. */
     public PackSourceWiring() {}
@@ -116,36 +120,51 @@ public class PackSourceWiring {
     }
 
     /**
-     * The git the git source may use, resolved once (NFR-011).
+     * The git the git source may use, resolved once and reported to the operator (NFR-011): the binary is
+     * {@code charter.pack-sources.git.executable} or {@code git} on the {@code PATH}, and the source is available only
+     * when it is 2.50.1 or later. The service starts without it; a git source then answers
+     * {@code 503 pack_source_unavailable}.
      *
      * @param properties the bound source configuration
-     * @return the check; the git source is available only when it is enabled
+     * @return the check
      */
     @Bean
     GitVersionCheck gitVersionCheck(PackSourceProperties properties) {
-        return GitVersionCheck.resolve(properties.git().executable(), System.getenv("PATH"));
+        GitVersionCheck check = GitVersionCheck.resolve(properties.git().executable(), System.getenv("PATH"));
+        System.Logger.Level level =
+                properties.git().enabled() && !check.enabled() ? System.Logger.Level.WARNING : System.Logger.Level.INFO;
+        LOG.log(level, check.describe());
+        return check;
     }
 
     /**
-     * The git source (scaffold).
+     * The git source, over the host git. It is built whatever the version, and says it is not available below 2.50.1 or
+     * without a binary, so the stagers leave the kind unbuilt; the other kinds are not affected. A test or a deployment
+     * that fetches from somewhere else supplies its own {@link GitRemote} and {@link GitHostResolver}.
      *
      * @param properties the bound source configuration
      * @param check the resolved git
+     * @param tree the writer of a walked tree
+     * @param remote where git is sent, when the composition supplies one; the https remote otherwise
+     * @param resolver the name resolution of the host check, when the composition supplies one; the JVM resolver
+     *     otherwise
      * @return the fetcher
      */
     @Bean
-    PackSourceFetcher gitSourceFetcher(PackSourceProperties properties, GitVersionCheck check) {
-        return new PackSourceFetcher() {
-            @Override
-            public PackSourceKind kind() {
-                return PackSourceKind.GIT;
-            }
-
-            @Override
-            public Staged fetch(PackSourceRequest request, Path directory) {
-                throw new IllegalStateException("not built");
-            }
-        };
+    PackSourceFetcher gitSourceFetcher(
+            PackSourceProperties properties,
+            GitVersionCheck check,
+            PackTreeReader tree,
+            ObjectProvider<GitRemote> remote,
+            ObjectProvider<GitHostResolver> resolver) {
+        PackSourceProperties.Git git = properties.git();
+        return new GitSourceFetcher(
+                check,
+                git.allowlist(),
+                git.timeout(),
+                tree,
+                resolver.getIfAvailable(GitHostResolver::system),
+                remote.getIfAvailable(GitRemote::https));
     }
 
     /**
