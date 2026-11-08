@@ -92,10 +92,7 @@ public final class FileSystemPackSources implements PackSources {
     }
 
     private static void addPack(
-            Fingerprint fingerprint,
-            Path directory,
-            String name,
-            BiFunction<Path, String, List<String>> filesOf) {
+            Fingerprint fingerprint, Path directory, String name, BiFunction<Path, String, List<String>> filesOf) {
         Path root = directory.toAbsolutePath().normalize();
         if (!Files.isDirectory(root)) {
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + name + " is not a directory");

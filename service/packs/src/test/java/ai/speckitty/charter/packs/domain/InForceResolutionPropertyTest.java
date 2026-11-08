@@ -204,8 +204,12 @@ class InForceResolutionPropertyTest {
                 .as(what + " " + urn + " reported as required but not in force")
                 .isIn(Reason.ENHANCED_TARGET_NOT_IN_FORCE, Reason.MISSION_TYPE_NOT_IN_FORCE);
         assertThat(state.reason()).as(what + " " + urn + " reason").isEqualTo(entry.reason());
-        assertThat(state.active()).as(what + " " + urn + " reported, so not in force").isFalse();
-        assertThat(state.required()).as(what + " " + urn + " is required or locked").isTrue();
+        assertThat(state.active())
+                .as(what + " " + urn + " reported, so not in force")
+                .isFalse();
+        assertThat(state.required())
+                .as(what + " " + urn + " is required or locked")
+                .isTrue();
         if (entry.reason() == Reason.ENHANCED_TARGET_NOT_IN_FORCE) {
             Set<Urn> targets = generated.edges().enhances().getOrDefault(urn, Set.of());
             assertThat(targets).as(what + " " + urn + " enhances something").isNotEmpty();
@@ -231,8 +235,11 @@ class InForceResolutionPropertyTest {
             boolean candidate = request.selected().contains(urn)
                     && !request.deactivated().contains(urn)
                     && request.admits(closure.languages().getOrDefault(urn, Set.of()));
-            boolean put = candidate || winner.policy().level() == MutabilityLevel.LOCKED || closure.floor().isRequired(urn);
-            boolean hidden = inForce.stream().anyMatch(by -> reach.getOrDefault(by, Set.of()).contains(urn));
+            boolean put = candidate
+                    || winner.policy().level() == MutabilityLevel.LOCKED
+                    || closure.floor().isRequired(urn);
+            boolean hidden = inForce.stream()
+                    .anyMatch(by -> reach.getOrDefault(by, Set.of()).contains(urn));
             if (put && !hidden && !pruned(generated.edges(), inForce, urn)) {
                 assertThat(inForce)
                         .as(what + " liveness: " + urn + " is put forward, hidden by nothing in force and grounded: "
@@ -246,7 +253,9 @@ class InForceResolutionPropertyTest {
     private static boolean pruned(Edges edges, Set<Urn> inForce, Urn urn) {
         Set<Urn> targets = edges.enhances().getOrDefault(urn, Set.of());
         boolean enhancerOut = !targets.isEmpty() && targets.stream().noneMatch(inForce::contains);
-        boolean bindingOut = bindingOf(edges, urn).filter(mission -> !inForce.contains(mission)).isPresent();
+        boolean bindingOut = bindingOf(edges, urn)
+                .filter(mission -> !inForce.contains(mission))
+                .isPresent();
         return enhancerOut || bindingOut;
     }
 

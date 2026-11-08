@@ -75,7 +75,9 @@ class FileSystemPackSourcesTest {
         Files.writeString(inside.resolve("pack.yaml"), "name: inside\n");
         FileSystemPackSources sources =
                 new FileSystemPackSources(() -> List.of(new PackLocation("inside", PackLevel.ORG, inside)));
-        assertThat(sources.fingerprintOf(List.of("inside"))).as("the control: a configured name").startsWith("sha256:");
+        assertThat(sources.fingerprintOf(List.of("inside")))
+                .as("the control: a configured name")
+                .startsWith("sha256:");
 
         assertThatThrownBy(() -> sources.fingerprintOf(List.of("inside", "ghost")))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {

@@ -170,14 +170,7 @@ class PacksAvailabilityTest {
     private static ClosureView.MergeInputs mergeInputs(Preset governing) {
         List<String> held = List.of("directive:D1", "directive:D2");
         Merging merging = new Merging(Map.of("beta", BETA, "alpha", ALPHA))
-                .pack(
-                        "beta",
-                        PackLevel.BUILT_IN,
-                        List.of(),
-                        held,
-                        Map.of(),
-                        List.of(),
-                        MutabilityPolicySource.empty())
+                .pack("beta", PackLevel.BUILT_IN, List.of(), held, Map.of(), List.of(), MutabilityPolicySource.empty())
                 .pack(
                         "alpha",
                         PackLevel.ORG,
@@ -229,10 +222,10 @@ class PacksAvailabilityTest {
 
     /** A1: the built-in copy of the governing preset requires D1, the org copy of the same id requires D2. */
     private static Merging unionOfTwoCopies() {
-        Preset core = new Preset(
-                "governing", "Core.", Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("D1"))));
-        Preset house = new Preset(
-                "governing", "House.", Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("D2"))));
+        Preset core =
+                new Preset("governing", "Core.", Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("D1"))));
+        Preset house =
+                new Preset("governing", "House.", Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("D2"))));
         return new Merging()
                 .pack(
                         "core",
