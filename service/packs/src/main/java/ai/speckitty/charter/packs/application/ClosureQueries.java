@@ -134,7 +134,8 @@ public final class ClosureQueries {
                 presets,
                 parentsOf(packs),
                 fingerprint,
-                EdgeIndex.of(packs, composed.facts()));
+                EdgeIndex.of(packs, composed.facts()),
+                new ClosureView.MergeInputs(packs, composed.facts()));
     }
 
     /** The held ids per kind, and the first holder of each URN in closure order. */

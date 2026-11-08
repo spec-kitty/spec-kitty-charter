@@ -45,7 +45,13 @@ public final class WriteFacts {
         List<String> defined = new ArrayList<>(facts.defined());
         defined.add(held);
         return new PackCompositionFacts(
-                facts.changed(), defined, facts.references(), facts.policy(), facts.presets(), facts.edges());
+                facts.changed(),
+                defined,
+                facts.references(),
+                facts.policy(),
+                facts.presets(),
+                facts.edges(),
+                facts.languages());
     }
 
     /**
@@ -91,7 +97,8 @@ public final class WriteFacts {
                 edgeless.presets().stream()
                         .map(preset -> withoutItems(preset, artifact))
                         .toList(),
-                edgeless.edges());
+                edgeless.edges(),
+                languagesWithout(edgeless.languages(), artifact));
     }
 
     /**
@@ -127,6 +134,13 @@ public final class WriteFacts {
                 && item.id().equals(artifact.id());
     }
 
+    /** The languages of the artifacts that remain: a removed artifact declares none. */
+    private static Map<String, List<String>> languagesWithout(Map<String, List<String>> languages, Urn artifact) {
+        Map<String, List<String>> remaining = new LinkedHashMap<>(languages);
+        remaining.remove(artifact.toString());
+        return remaining;
+    }
+
     private static PackCompositionFacts withEdges(
             PackCompositionFacts facts, List<Relationship> dropped, List<Relationship> added) {
         Set<String> droppedKeys = keysOf(dropped);
@@ -142,7 +156,8 @@ public final class WriteFacts {
                 referencesAfter(facts.references(), dropped, added, remaining),
                 facts.policy(),
                 facts.presets(),
-                remaining);
+                remaining,
+                facts.languages());
     }
 
     /** The {@code overrides} targets: those of the dropped edges go unless another edge still overrides them. */
