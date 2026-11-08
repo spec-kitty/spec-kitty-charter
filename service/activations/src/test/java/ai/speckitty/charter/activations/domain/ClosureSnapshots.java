@@ -24,6 +24,7 @@ public final class ClosureSnapshots {
     private final Map<String, String> lockedBy = new LinkedHashMap<>();
     private final Map<String, PresetView> presets = new LinkedHashMap<>();
     private String fingerprint = "sha256:fixture";
+    private String closureFingerprint;
 
     private ClosureSnapshots() {}
 
@@ -75,8 +76,22 @@ public final class ClosureSnapshots {
         return this;
     }
 
+    /** The verified digest of the closure's own packs; the source fingerprint when a test sets none. */
+    public ClosureSnapshots closureFingerprint(String value) {
+        closureFingerprint = value;
+        return this;
+    }
+
     /** The snapshot. */
     public ClosureSnapshot build() {
-        return new ClosureSnapshot(packs, held, requiredBy, lockedBy, presets, fingerprint);
+        return new ClosureSnapshot(
+                packs,
+                held,
+                requiredBy,
+                lockedBy,
+                presets,
+                fingerprint,
+                closureFingerprint == null ? fingerprint : closureFingerprint,
+                Set.of());
     }
 }
