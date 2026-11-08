@@ -4,9 +4,11 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import org.jspecify.annotations.Nullable;
 
 /**
  * What one sub-resource write changed (ADR-0020 D6, the contract's {@code ActivationChange}): the document after it,
@@ -161,7 +163,21 @@ public record ActivationChange(
      * @return the change with its warnings
      */
     public ActivationChange withWarnings(MergedSnapshot.InForceAnswer answered) {
-        return this;
+        List<Warning> found = applied.stream()
+                .flatMap(ref -> warningOf(ref, answered.states().get(ref)).stream())
+                .toList();
+        return new ActivationChange(after, applied, cleared, skipped, dropped, droppedPins, found);
+    }
+
+    private static Optional<Warning> warningOf(ArtifactRef ref, MergedSnapshot.@Nullable ArtifactState state) {
+        if (state == null) {
+            return Optional.empty();
+        }
+        return switch (state.reason()) {
+            case ENHANCED_TARGET_NOT_IN_FORCE -> Optional.of(new Warning(Code.ENHANCED_TARGET_NOT_IN_FORCE, ref));
+            case OVERRIDDEN -> Optional.of(new Warning(Code.OVERRIDDEN, ref));
+            default -> Optional.empty();
+        };
     }
 
     /**

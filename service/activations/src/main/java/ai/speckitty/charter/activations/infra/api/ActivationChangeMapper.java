@@ -5,6 +5,7 @@ import ai.speckitty.charter.activations.domain.ActivationChange;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.SkippedReport;
+import ai.speckitty.charter.api.model.ActivationWarning;
 import ai.speckitty.charter.api.model.ArtifactReference;
 import ai.speckitty.charter.api.model.Link;
 import ai.speckitty.charter.api.model.PackPin;
@@ -20,9 +21,10 @@ import org.springframework.stereotype.Component;
  * The wire form of a per-artifact write's answer (the contract's {@code ActivationChange}, ADR-0020 D6): the revision
  * as stored after the write, {@code applied} and {@code cleared} as {@code ArtifactReference} items, the four skipped
  * lists, each sorted, {@code skippedByDepth} only when the cascade ran under a {@code depth} (IC-21), {@code dropped} only when the write dropped a stale id (ADR-0059 amendment A5),
- * {@code droppedPins} always (B1: the pins it dropped, each as stored, {@code []} when none; {@link #pins}), and the
- * links. The read buckets of the skipped report and {@code warnings} answer {@code []} until WP25 serves them (contract
- * B declares them required). The write's path has no {@code GET}, so the answer has no {@code self}; its {@code up} is the activation the
+ * {@code droppedPins} always (B1: the pins it dropped, each as stored, {@code []} when none; {@link #pins}), the
+ * {@code warnings} of the write (FR-032: always present, {@code []} when none, sorted by artifact), and the links. The
+ * ten read buckets of the skipped report answer {@code []}: a write reports what its cascade left out, and what a read
+ * leaves out is the effective reads' to report. The write's path has no {@code GET}, so the answer has no {@code self}; its {@code up} is the activation the
  * write applied to.
  */
 @Component
@@ -54,7 +56,7 @@ public class ActivationChangeMapper {
                 references(change.cleared()),
                 skipped(change.skipped()),
                 pins(change.droppedPins()),
-                List.of(),
+                warnings(change.warnings()),
                 Map.of("up", new Link(activations.self(outcome.stored().id().value()))));
         if (!change.dropped().isEmpty()) {
             answer.setDropped(references(change.dropped()));
@@ -92,6 +94,13 @@ public class ActivationChangeMapper {
                 List.of());
         report.skippedByDepth().map(ActivationChangeMapper::references).ifPresent(skipped::setSkippedByDepth);
         return skipped;
+    }
+
+    private static List<ActivationWarning> warnings(List<ActivationChange.Warning> warnings) {
+        return warnings.stream()
+                .map(warning -> new ActivationWarning(
+                        ActivationWarning.CodeEnum.fromValue(warning.code().token()), reference(warning.artifact())))
+                .toList();
     }
 
     /**

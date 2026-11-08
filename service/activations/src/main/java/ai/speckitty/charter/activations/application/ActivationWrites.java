@@ -10,6 +10,7 @@ import ai.speckitty.charter.activations.domain.ArtifactSpellings;
 import ai.speckitty.charter.activations.domain.CascadeScope;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.activations.domain.DocumentRules;
+import ai.speckitty.charter.activations.domain.EffectiveSet;
 import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
@@ -368,12 +369,14 @@ public class ActivationWrites {
      *
      * @param loaded the activation as loaded
      * @param computed what the write computed from {@link #current}
-     * @param snapshot the closure the rules judge the document against
+     * @param session the request's session: its closure is what the rules judge the document against, and its in-force
+     *     resolution gives the warnings of the change
      * @return the outcome
      * @throws CharterRefusal when the computed document breaks its closure
      * @throws PreconditionException ({@code STALE}) when another writer came in between
      */
-    Outcome commit(StoredActivation loaded, ActivationChange computed, ClosureSnapshot snapshot) {
+    Outcome commit(StoredActivation loaded, ActivationChange computed, PacksSession session) {
+        ClosureSnapshot snapshot = session.snapshot();
         ActivationChange change = computed.withDropped(StaleIds.drop(loaded.document(), snapshot));
         ActivationDocument after = change.after();
         if (after.equals(loaded.document())
@@ -386,11 +389,24 @@ public class ActivationWrites {
                 .ifPresent(refusal -> {
                     throw refusal;
                 });
+        ActivationChange reported = warned(change, session);
         CasResult result = repository.replace(loaded.id(), Optional.of(loaded.revision()), after);
         return switch (result) {
-            case CasResult.Written(StoredActivation stored, boolean _) -> new Outcome(stored, change);
+            case CasResult.Written(StoredActivation stored, boolean _) -> new Outcome(stored, reported);
             case CasResult.Stale _, CasResult.Missing _ -> throw stale(loaded.id());
         };
+    }
+
+    /**
+     * The change with its warnings (IC-17, FR-032): what the write applied that a read of the stored document will not
+     * put in force. The resolution is asked once, of the session the write holds, before anything is stored, so a closure
+     * whose resolution refuses ({@code pack_unreadable}) leaves the write refused and the document as it was. A write that
+     * applied nothing asks nothing.
+     */
+    private static ActivationChange warned(ActivationChange change, PacksSession session) {
+        return change.applied().isEmpty()
+                ? change
+                : change.withWarnings(session.inForce(EffectiveSet.queryOf(change.after())));
     }
 
     /** A refusal of the computed document, its violations pointing at the whole request. */
