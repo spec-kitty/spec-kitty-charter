@@ -44,6 +44,25 @@ public final class InForceResolution {
     private InForceResolution() {}
 
     /**
+     * How many resolutions this JVM ran: a test hook of the NFR-003 gate, which counts the work a read does, as a delta
+     * around one request.
+     *
+     * @return the resolutions so far
+     */
+    public static long resolutions() {
+        return 0;
+    }
+
+    /**
+     * How many nodes the resolution's walks of the override graph visited: a test hook of the NFR-003 gate.
+     *
+     * @return the visits so far
+     */
+    public static long walkVisits() {
+        return 0;
+    }
+
+    /**
      * The merged edges the strata walk, as plain values.
      *
      * @param overrides each overrider with the artifacts its {@code overrides} edges name

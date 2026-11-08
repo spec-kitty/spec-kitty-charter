@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
@@ -22,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -133,6 +136,27 @@ class InForceResolutionTest {
         assertThat(states.stateOf(u(urn)).orElseThrow().satisfiedBy())
                 .as(urn + " satisfiedBy")
                 .contains(u(by));
+    }
+
+    // ---- the scale of NFR-003 ----
+
+    @Test
+    void aClosureOfTwoThousandArtifactsWithAnOverrideEdgeResolves() {
+        // The walk's bound is the closure size cubed: in int arithmetic that overflows at 1,291 artifacts, which made
+        // every walk of a closure of the NFR-003 size fail with its own bound (found by the NFR-003 gate).
+        String[] held = IntStream.range(0, 2_000)
+                .mapToObj(index -> "directive:D" + index)
+                .toArray(String[]::new);
+        Closure closure = new Closure().open(held).overrides("directive:D0", "directive:D1");
+        AtomicReference<InForceStates> answer = new AtomicReference<>();
+
+        assertThatCode(() -> answer.set(closure.select("directive:D0", "directive:D1")))
+                .as("a closure of 2,000 artifacts resolves")
+                .doesNotThrowAnyException();
+
+        assertThat(answer.get()).isNotNull();
+        expect(answer.get(), "directive:D0", State.ACTIVE, Reason.SELECTED);
+        expect(answer.get(), "directive:D1", State.INACTIVE, Reason.OVERRIDDEN);
     }
 
     // ---- stratum 1: the candidate set (E1, E2, E3, E9) ----

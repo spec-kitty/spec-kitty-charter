@@ -58,7 +58,7 @@ put:
     an id nothing is stored under is 412, not 404: no stored revision matches it (RFC 9110 section 13.1.1). A document
     that deactivates a required or locked artifact is 409 and nothing is stored; an unknown pack, kind or artifact
     is 422 with violations. Both If-Match and If-None-Match on one request is 400, and so is an If-None-Match other
-    than * (a malformed precondition); so is an If-Match that is neither a quoted revision nor *, and an id outside the
+    than * (a malformed precondition); so is an If-Match that is neither * nor one quoted sha256 tag (the revision or the getActivation tag), and an id outside the
     declared pattern. A body over 1 MiB, an unknown member or a null is 422 activation_invalid. A body that sends
     activatedKinds or missionTypes is 422 validation_failed, with one violation per member at its pointer naming its
     replacement (selected.mission_type for missionTypes; selected.<kind> for activatedKinds): the two members are not
@@ -144,7 +144,7 @@ delete:
   description: >-
     Removes the document: 204, honouring If-Match (the quoted revision or the current getActivation tag; a stale closure tag is 412). A second DELETE is 404 activation_not_found (ADR-0020 D6). With
     If-Match, an id nothing is stored under is 412, not 404: no stored revision matches it (RFC 9110 section
-    13.1.1). An If-Match that is neither a quoted revision nor *, and an id outside the declared pattern, are 400. The
+    13.1.1). An If-Match that is neither * nor one quoted sha256 tag (the revision or the getActivation tag), and an id outside the declared pattern, are 400. The
     delete takes no snapshot of the packs, so its only 500 is internal_error, a failure of the storage; a storage 500
     may follow a committed change (the document is gone), so read before retrying.
   tags:

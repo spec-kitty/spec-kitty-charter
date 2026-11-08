@@ -62,7 +62,8 @@ properties:
   required:
     type: boolean
     description: >-
-      True when a governing preset requires it or a pack locks it. A locked artifact is always active. A required one
+      True when a governing preset requires it or a pack locks it. A locked artifact is active unless it is an enhancer
+      none of whose targets is in force or is bound to a mission type not in force (E9). A required one
       is active unless an active override of it satisfies the requirement (satisfiedBy then names the override), or it
       cannot stand in force: a required enhancer none of whose targets is in force, or a required artifact bound to a
       mission type not in force, stays out of force with required true. An enhancement never satisfies a requirement.

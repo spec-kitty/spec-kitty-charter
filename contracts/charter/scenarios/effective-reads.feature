@@ -1827,23 +1827,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
       intent: A
       enforcement: required
       """
-    And the archive "acme-v2" is a copy of the archive "acme-v1"
-    And the archive "acme-v2" holds the file "pack.yaml":
-      """
-      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
-      pack_version: 1.1.0
-      parent_pack: null
-      name: acme
-      pack_level: org
-      """
-    And the archive "acme-v2" holds the file "directives/A.directive.yaml":
-      """
-      schema_version: '1.0'
-      id: A
-      title: A at version 2
-      intent: A
-      enforcement: required
-      """
     And the archive "other-v1" holds the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943S
@@ -1857,23 +1840,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
       schema_version: '1.0'
       id: O
       title: O at version 1
-      intent: O
-      enforcement: required
-      """
-    And the archive "other-v2" is a copy of the archive "other-v1"
-    And the archive "other-v2" holds the file "pack.yaml":
-      """
-      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
-      pack_version: 1.1.0
-      parent_pack: null
-      name: other
-      pack_level: org
-      """
-    And the archive "other-v2" holds the file "directives/O.directive.yaml":
-      """
-      schema_version: '1.0'
-      id: O
-      title: O at version 2
       intent: O
       enforcement: required
       """
@@ -1954,23 +1920,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
       intent: O
       enforcement: required
       """
-    And the archive "other-v2" is a copy of the archive "other-v1"
-    And the archive "other-v2" holds the file "pack.yaml":
-      """
-      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
-      pack_version: 1.1.0
-      parent_pack: null
-      name: other
-      pack_level: org
-      """
-    And the archive "other-v2" holds the file "directives/O.directive.yaml":
-      """
-      schema_version: '1.0'
-      id: O
-      title: O at version 2
-      intent: O
-      enforcement: required
-      """
     When I PUT "/packs/acme" with the archive "acme-v1"
     And I poll the registration until it ends
     Then the field at "/state" is "succeeded"
@@ -2020,23 +1969,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
       schema_version: '1.0'
       id: A
       title: A at version 1
-      intent: A
-      enforcement: required
-      """
-    And the archive "acme-v2" is a copy of the archive "acme-v1"
-    And the archive "acme-v2" holds the file "pack.yaml":
-      """
-      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
-      pack_version: 1.1.0
-      parent_pack: null
-      name: acme
-      pack_level: org
-      """
-    And the archive "acme-v2" holds the file "directives/A.directive.yaml":
-      """
-      schema_version: '1.0'
-      id: A
-      title: A at version 2
       intent: A
       enforcement: required
       """
@@ -2346,23 +2278,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
       intent: O
       enforcement: required
       """
-    And the archive "other-v2" is a copy of the archive "other-v1"
-    And the archive "other-v2" holds the file "pack.yaml":
-      """
-      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
-      pack_version: 1.1.0
-      parent_pack: null
-      name: other
-      pack_level: org
-      """
-    And the archive "other-v2" holds the file "directives/O.directive.yaml":
-      """
-      schema_version: '1.0'
-      id: O
-      title: O at version 2
-      intent: O
-      enforcement: required
-      """
     When I PUT "/packs/acme" with the archive "acme-v1"
     And I poll the registration until it ends
     Then the field at "/state" is "succeeded"
@@ -2434,23 +2349,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
       intent: A
       enforcement: required
       """
-    And the archive "acme-v2" is a copy of the archive "acme-v1"
-    And the archive "acme-v2" holds the file "pack.yaml":
-      """
-      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
-      pack_version: 1.1.0
-      parent_pack: null
-      name: acme
-      pack_level: org
-      """
-    And the archive "acme-v2" holds the file "directives/A.directive.yaml":
-      """
-      schema_version: '1.0'
-      id: A
-      title: A at version 2
-      intent: A
-      enforcement: required
-      """
     And the archive "other-v1" holds the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943S
@@ -2464,23 +2362,6 @@ Feature: The effective reads answer what an activation puts in force, and why th
       schema_version: '1.0'
       id: O
       title: O at version 1
-      intent: O
-      enforcement: required
-      """
-    And the archive "other-v2" is a copy of the archive "other-v1"
-    And the archive "other-v2" holds the file "pack.yaml":
-      """
-      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
-      pack_version: 1.1.0
-      parent_pack: null
-      name: other
-      pack_level: org
-      """
-    And the archive "other-v2" holds the file "directives/O.directive.yaml":
-      """
-      schema_version: '1.0'
-      id: O
-      title: O at version 2
       intent: O
       enforcement: required
       """

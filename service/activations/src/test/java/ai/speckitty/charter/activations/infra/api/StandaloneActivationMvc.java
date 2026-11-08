@@ -29,7 +29,7 @@ import tools.jackson.databind.json.JsonMapper;
  * {@link ActivationProblems}) and the shared web transport's ({@link RefusalHandler}, {@link ProblemHandler}), and
  * writing JSON with the activation and problem mix-ins. The packs hold {@link #IDS} of every kind.
  */
-final class StandaloneActivationMvc {
+public final class StandaloneActivationMvc {
 
     /** The ids the fixture packs hold of each kind. */
     static final String[] IDS = {"a-1", "b-2", "c-3", "d-4"};
@@ -42,7 +42,7 @@ final class StandaloneActivationMvc {
      * @param repository the register's store
      * @return the MockMvc
      */
-    static MockMvc over(InMemoryActivationRepository repository) {
+    public static MockMvc over(InMemoryActivationRepository repository) {
         ClosureSnapshots closure = ClosureSnapshots.snapshot().pack("fixture", "1.0.0");
         for (ArtifactKind kind : ArtifactKind.values()) {
             closure.held(kind, IDS);
@@ -57,7 +57,7 @@ final class StandaloneActivationMvc {
      * @param packs the packs, which a test answers as it needs
      * @return the MockMvc
      */
-    static MockMvc over(InMemoryActivationRepository repository, FakeAvailablePacks packs) {
+    public static MockMvc over(InMemoryActivationRepository repository, AvailablePacks packs) {
         ActivationController controller = controller(repository, packs);
         RefusalHandler refusals = new RefusalHandler();
         JsonMapper json = JsonMapper.builder()

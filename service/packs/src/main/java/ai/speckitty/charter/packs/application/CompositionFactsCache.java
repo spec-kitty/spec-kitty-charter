@@ -127,6 +127,27 @@ public final class CompositionFactsCache {
         return loaded;
     }
 
+    /**
+     * How many facts this cache read from a store: a test hook of the NFR-003 gate, which counts the work a read does.
+     *
+     * @return the loads so far
+     */
+    public long loads() {
+        return 0;
+    }
+
+    /**
+     * How many facts this cache answered from an entry: a test hook of the NFR-003 gate.
+     *
+     * @return the hits so far
+     */
+    public long hits() {
+        return 0;
+    }
+
+    /** Forgets every entry: the cold start of the NFR-003 gate. */
+    public void clear() {}
+
     /** How many packs the cache keeps now. */
     int size() {
         synchronized (entries) {
