@@ -1,13 +1,37 @@
 package ai.speckitty.charter.packs.domain;
 
+import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.domain.PackOverride;
+import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
+import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
- * The layer merge: the one winner function over a composed closure, its facts and its policies (FR-009 to FR-012). It
- * is pure: it reads what it is given and answers a {@link MergedClosure}; it reads no store and holds no state.
+ * The layer merge: the one winner function over a composed closure, its facts and its policies (FR-009 to FR-012,
+ * rules C15, C17 and C18). It is pure: it reads what it is given and answers a {@link MergedClosure}; it reads no store,
+ * holds no state and judges nothing the compose has not judged.
+ *
+ * <p>The version of an artifact id in force is chosen in two steps, in the order the rules give:
+ *
+ * <ol>
+ *   <li><strong>Per level</strong> (C15, #357). The packs of one level that hold the id contest it. The compose has
+ *       refused the contest unless a descriptor {@code overrides} entry settles it, and the member the entry names holds
+ *       the version in force at that level. The step of a mission type ({@code action:<M>/<step>}) is part of {@code M},
+ *       so the entry that settles {@code M} settles its steps. A contest no entry settles cannot reach this function; if
+ *       it did, the pack last in closure order would hold the level, the rule ADR-0053 d6 applies to presets.
+ *   <li><strong>Across levels</strong> (C17, C18, ADR-0059 D3). In merge order (built-in, then org, then project) the
+ *       level that applies wins, and its artifact replaces the others whole: nothing of a losing version is read.
+ * </ol>
  */
 public final class LayerMerge {
 
@@ -28,6 +52,107 @@ public final class LayerMerge {
         Objects.requireNonNull(closure, "closure");
         Objects.requireNonNull(factsByConfiguredId, "factsByConfiguredId");
         Objects.requireNonNull(policy, "policy");
-        return MergedClosure.EMPTY;
+        List<String> closurePackIds =
+                closure.stream().map(pack -> pack.descriptor().packId()).toList();
+        Map<String, Set<String>> settlements = settlements(closure);
+        Map<Urn, MergedClosure.Winner> winners = new LinkedHashMap<>();
+        List<LayerOverride> overrides = new ArrayList<>();
+        holdersByUrn(closure).forEach((urn, holders) -> {
+            List<PackUnderResolution> byLevel =
+                    levelWinners(holders, settlements.getOrDefault(settlementKey(urn), Set.of()));
+            PackUnderResolution winner = byLevel.getLast();
+            winners.put(urn, winnerOf(winner, urn, policy.levelIn(closurePackIds, urn)));
+            byLevel.subList(0, byLevel.size() - 1).forEach(loser -> overrides.add(overrideOf(urn, winner, loser)));
+        });
+        return new MergedClosure(winners, overrides);
+    }
+
+    private static MergedClosure.Winner winnerOf(PackUnderResolution pack, Urn urn, PerPackPolicy.Level policy) {
+        return new MergedClosure.Winner(
+                urn,
+                pack.configured().id(),
+                pack.descriptor().packId(),
+                pack.configured().level(),
+                policy);
+    }
+
+    private static LayerOverride overrideOf(Urn urn, PackUnderResolution winner, PackUnderResolution loser) {
+        return new LayerOverride(urn, sideOf(winner), sideOf(loser));
+    }
+
+    private static LayerOverride.Side sideOf(PackUnderResolution pack) {
+        PackIdentifier id = pack.configured().id();
+        return new LayerOverride.Side(id, pack.configured().level());
+    }
+
+    /** Every held URN with the packs that hold it, in closure order; the URNs in the order the closure first holds them. */
+    private static Map<Urn, List<PackUnderResolution>> holdersByUrn(List<PackUnderResolution> closure) {
+        Map<Urn, List<PackUnderResolution>> holders = new LinkedHashMap<>();
+        for (PackUnderResolution pack : closure) {
+            for (String defined : pack.definedArtifacts()) {
+                Urn.parse(defined).ifPresent(urn -> {
+                    List<PackUnderResolution> held = holders.computeIfAbsent(urn, ignored -> new ArrayList<>());
+                    if (!held.contains(pack)) {
+                        held.add(pack);
+                    }
+                });
+            }
+        }
+        return holders;
+    }
+
+    /**
+     * The pack holding the version in force at each level that holds the id, from the nearest built-in level to the
+     * farthest.
+     */
+    private static List<PackUnderResolution> levelWinners(List<PackUnderResolution> holders, Set<String> settled) {
+        Map<PackLevel, List<PackUnderResolution>> byLevel = new EnumMap<>(PackLevel.class);
+        holders.forEach(pack -> byLevel.computeIfAbsent(pack.configured().level(), level -> new ArrayList<>())
+                .add(pack));
+        return byLevel.values().stream()
+                .map(siblings -> settledAmong(siblings, settled))
+                .toList();
+    }
+
+    /** The sibling a descriptor {@code overrides} entry names; the last in closure order when none does (C15). */
+    private static PackUnderResolution settledAmong(List<PackUnderResolution> siblings, Set<String> settled) {
+        return siblings.stream()
+                .filter(pack -> settled.contains(pack.descriptor().packId()))
+                .findFirst()
+                .orElse(siblings.getLast());
+    }
+
+    /** The members the closure's descriptors name as the winner of each artifact, by bare artifact URN text. */
+    private static Map<String, Set<String>> settlements(List<PackUnderResolution> closure) {
+        Map<String, Set<String>> members = new LinkedHashMap<>();
+        for (PackUnderResolution pack : closure) {
+            for (PackOverride override : pack.descriptor().overrides()) {
+                members.computeIfAbsent(bare(override.artifact()), key -> new HashSet<>())
+                        .add(override.member());
+            }
+        }
+        return members;
+    }
+
+    /**
+     * What settles a contest for the URN: the URN itself, or for a step {@code action:<M>/<step>} the mission type
+     * {@code M}, whose contest the step shares.
+     */
+    private static String settlementKey(Urn urn) {
+        int slash = urn.id().indexOf('/');
+        if (urn.kind() == NodeKind.ACTION && slash > 0) {
+            return Urn.missionType(urn.id().substring(0, slash)).toString();
+        }
+        return urn.toString();
+    }
+
+    /** The bare URN an {@code overrides.artifact} names: a {@code <pack>::} qualifier says where it is read, not which. */
+    private static String bare(String reference) {
+        try {
+            PackQualifiedReference parsed = PackQualifiedReference.parse(reference);
+            return parsed.asUrn().map(Urn::toString).orElse(parsed.urn());
+        } catch (IllegalArgumentException malformed) {
+            return reference;
+        }
     }
 }
