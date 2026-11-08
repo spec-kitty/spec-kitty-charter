@@ -34,6 +34,7 @@ import tools.jackson.databind.ObjectMapper;
  */
 public class PackRegistrationSteps {
 
+    private static final System.Logger LOG = System.getLogger(PackRegistrationSteps.class.getName());
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final String API = "/api/v1";
     private static final String GZIP = "application/gzip";
@@ -223,7 +224,18 @@ public class PackRegistrationSteps {
         while (true) {
             http.get(path);
             String state = JSON.readTree(http.body()).path("state").asString();
-            if (state.equals("succeeded") || state.equals("refused")) {
+            if (state.equals("refused")) {
+                // A scenario that expected another end finds its reason here, not only "refused".
+                JsonNode problem = JSON.readTree(http.body()).path("problem");
+                LOG.log(
+                        System.Logger.Level.WARNING,
+                        "The registration at {0} ended refused: code {1}, detail {2}",
+                        location,
+                        problem.path("code").asString(),
+                        problem.path("detail").asString());
+                return;
+            }
+            if (state.equals("succeeded")) {
                 return;
             }
             if (System.nanoTime() > deadline) {

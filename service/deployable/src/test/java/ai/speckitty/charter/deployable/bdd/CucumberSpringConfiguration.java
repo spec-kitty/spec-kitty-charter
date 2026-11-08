@@ -10,11 +10,20 @@ import ai.speckitty.charter.packs.infra.storage.DomainRepositoryService;
 import ai.speckitty.charter.packs.infra.storage.ProjectConfigSources;
 import io.cucumber.spring.CucumberContextConfiguration;
 import io.cucumber.spring.ScenarioScope;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Comparator;
+import java.util.UUID;
+import java.util.stream.Stream;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 /** One Spring context for every scenario; each scenario supplies its own packs through {@link ScenarioPacks}. */
@@ -24,16 +33,51 @@ import org.springframework.test.web.servlet.MockMvc;
         properties = {
             "charter.worktree-id=scenario-worktree",
             "charter.worktree-token=" + ScenarioHttp.TOKEN,
-            // The registration staging directory is under the temporary directory, never the user's home.
-            "charter.registration.staging-dir=${java.io.tmpdir}/charter-scenario-staging",
-            // The filesystem source reads under a directory of the scenarios' own, never the user's home.
-            "charter.pack-sources.filesystem.root=${java.io.tmpdir}/charter-scenario-sources",
+            // charter.registration.staging-dir and charter.pack-sources.filesystem.root are set by
+            // perJvmDirectories: under the temporary directory, never the user's home, and per JVM.
             // The git source of the scenarios fetches from repositories of its own (GitFixtureServer), for the one host
             // the scenarios allow; the host is on the allowlist, and the kind's own flag is what a step switches on.
             "charter.pack-sources.git.allowed-hosts=git.example.org"
         })
 @AutoConfigureMockMvc
 public class CucumberSpringConfiguration {
+
+    /**
+     * One name per JVM, so that two suites on one machine (two worktrees) never share a staging directory or a filesystem
+     * source root: the steps empty the root before and after each scenario, which would delete the other suite's packs.
+     */
+    private static final String RUN = UUID.randomUUID().toString();
+
+    /**
+     * The registration staging directory and the filesystem source root: under the temporary directory, never the user's
+     * home, and of this JVM alone. They are created when the context binds them and removed when the JVM ends.
+     *
+     * @param registry the properties of the scenarios' context
+     */
+    @DynamicPropertySource
+    static void perJvmDirectories(DynamicPropertyRegistry registry) {
+        Path temporary = Path.of(System.getProperty("java.io.tmpdir"));
+        Path staging = temporary.resolve("charter-scenario-staging-" + RUN);
+        Path sources = temporary.resolve("charter-scenario-sources-" + RUN);
+        registry.add("charter.registration.staging-dir", staging::toString);
+        registry.add("charter.pack-sources.filesystem.root", sources::toString);
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            deleteTree(staging);
+            deleteTree(sources);
+        }));
+    }
+
+    private static void deleteTree(Path root) {
+        if (!Files.exists(root)) {
+            return;
+        }
+        try (Stream<Path> tree = Files.walk(root)) {
+            tree.sorted(Comparator.reverseOrder()).forEach(path -> path.toFile().delete());
+        } catch (IOException | UncheckedIOException unreadable) {
+            // The directory is this JVM's own, in the temporary directory: what stays is the operating system's to
+            // clean.
+        }
+    }
 
     @TestConfiguration(proxyBeanMethods = false)
     static class Packs {
