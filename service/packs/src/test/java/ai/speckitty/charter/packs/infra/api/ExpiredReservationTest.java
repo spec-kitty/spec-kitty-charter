@@ -62,46 +62,7 @@ class ExpiredReservationTest {
             @Override
             public void discard() {}
         };
-        String detail = "The registration did not finish within 90 seconds.";
-        RegistrationJobs.Status timedOut = new RegistrationJobs.Status(
-                upload.id(),
-                "acme",
-                RegistrationJobs.State.REFUSED,
-                Instant.parse("2026-11-08T10:00:00Z"),
-                Instant.parse("2026-11-08T10:01:30Z"),
-                new RegistrationJobs.Refused(
-                        RegistrationJobs.Kind.CODED,
-                        new CharterRefusal(RefusalCode.REGISTRATION_TIMED_OUT, detail),
-                        detail));
-        RegistrationJobs.Reservation ended = new RegistrationJobs.Reservation() {
-            @Override
-            public String id() {
-                return upload.id();
-            }
-
-            @Override
-            public Path directory() {
-                return directory;
-            }
-
-            @Override
-            public boolean start(RegistrationJobs.Stager stager) {
-                return false;
-            }
-
-            @Override
-            public void abandon() {}
-
-            @Override
-            public RegistrationJobs.Status status() {
-                return timedOut;
-            }
-
-            @Override
-            public String revisionBefore() {
-                return "";
-            }
-        };
+        RegistrationJobs.Reservation ended = new EndedBeforeItStarts(upload.id(), directory);
         RegistrationJobs jobs = mock(RegistrationJobs.class);
         when(jobs.openUpload(anyLong())).thenReturn(upload);
         when(jobs.staging()).thenReturn(new FileStagingArea(host));
@@ -133,7 +94,7 @@ class ExpiredReservationTest {
 
     @Test
     void aSourceJobEndedByTheDeadlineBeforeItStartedIsAnsweredWithItsTimeoutToo() throws Exception {
-        RegistrationJobs.Reservation ended = new EndedBeforeItStarts("01J0000000000000000000000B");
+        RegistrationJobs.Reservation ended = new EndedBeforeItStarts("01J0000000000000000000000B", null);
         RegistrationJobs jobs = mock(RegistrationJobs.class);
         when(jobs.reserve(any(), any(), any())).thenReturn(ended);
         ServiceInfoQuery info =
@@ -178,14 +139,17 @@ class ExpiredReservationTest {
 
     /**
      * A reservation the deadline ended before the controller started it: it answers {@code pending} until
-     * {@code start} is called, and then its refused end, and {@code start} reports that nothing was started.
+     * {@code start} is called, and then its refused end, and {@code start} reports that nothing was started. A controller
+     * that does not read the status again after {@code start} answers {@code pending}, which the tests refuse.
      */
     static final class EndedBeforeItStarts implements RegistrationJobs.Reservation {
         private final String id;
+        private final Path directory;
         private boolean startAsked;
 
-        EndedBeforeItStarts(String id) {
+        EndedBeforeItStarts(String id, Path directory) {
             this.id = id;
+            this.directory = directory;
         }
 
         @Override
@@ -195,7 +159,7 @@ class ExpiredReservationTest {
 
         @Override
         public Path directory() {
-            throw new UnsupportedOperationException("not used");
+            return directory;
         }
 
         @Override
