@@ -145,3 +145,38 @@ README.md (requirements section) and `run-in-a-container.md`: git ≥ 2.50.1 on 
 - Check each behaviour against the plan IC and the rule ids cited, not against core's Python answers (C-004).
 - Check the red-first evidence (the commit order or the run log) and that no test was weakened to pass.
 - Check that nothing outside `owned_files` changed beyond the listed shared-file edits.
+
+## Added by the runner (2026-11-07)
+
+- `contracts/charter/schemas/Link.yaml` still says a pack write is never `DELETE`; reword it for the two `DELETE`s of PR A (decision `DM-01M6TVMGH94ZF07KSWSCANEASV`), and update the `edit` relation row in `docs/architecture/hypermedia-hateoas.md` (WP11 hand-off).
+
+## Hand-off from WP14 (2026-11-07)
+
+Divergence-register entries (core merges per artifact; PR A replaces the whole pack):
+- A registration replaces the stored pack rather than merging into it; the same revision answers `unchanged`.
+- The same version with another revision is `409 pack_version_conflict`.
+- `REMOVE` joins the write gate, and edges are gated as `RELATIONSHIP` writes on their source.
+- A stored pack that cannot be read is repaired by a whole-pack replace (the diff treats every uploaded artifact as a
+  replace and removes nothing).
+- From WP15: the version history (IC-16: a downgrade is refused, the history is written inside the swap) and the strict
+  impact check (a registration whose resulting closures fail to compose or break a relation rule is refused; core
+  warns) are divergences to register. The start-up census WARNs for stored packs that would now be refused.
+- From WP15's review: under the strict rule (DM-01M6TQ67C9ZTNGZB9CY28JS54F), one stored dependent that cannot be read
+  makes every registration of its ancestor fail `pack_unreadable`; say so, with the repair (fix or remove the dependent).
+- From WP15's review: a history entry restored by the heal carries the time of the heal, not of the lost registration.
+
+## Hand-off from the WP16 review, cycle 1 (2026-11-07)
+
+Document these, from review-cycle-1 of WP16:
+
+- A re-send of an archive with the same `pack_version` after a per-artifact `PUT` moved the revision answers `409 pack_version_conflict`, not `412`: the version rule (IC-04 step 5) runs before the precondition (step 6). The 412 race needs a new version.
+- The 90 s registration deadline counts the time a job waits in the queue, not only its run.
+- Known limit, accepted for this mission: a registration slot is reserved before the request body is read, so a slow upload holds a slot for its whole transfer, and a few slow uploads can make other callers get `503` with `Retry-After`. Say so in the operator docs, with the slot counts (2 running, 8 waiting).
+
+## Operator ruling 2026-11-07: notices name activatable kinds only (decision `01M6VXMCDQJWBJXGRQNMF5G6SV`)
+
+`PackRegistrationMapper.kindOf` drops a notice entry whose kind is not an `ActivatableKind` (template, asset, guard, lifecycle). The operator kept the drop. In this WP:
+
+- Say in the contract (the `PackRegistrationNotices` description, as a description change only, with no schema change) that notices name activatable kinds only, and that entries of other kinds are left out. Add an entry under `### Changed` in the registration fragment if the wording changes the documented meaning.
+- Have the mapper log each dropped entry (WARN, naming the URN). Write the unit test first: a notice on a template is not in the response and is logged.
+- Point to #417, which tracks widening the notice kinds.

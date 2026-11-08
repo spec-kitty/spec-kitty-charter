@@ -12,6 +12,9 @@ requirement_refs:
 planning_base_branch: issue-10-layer-merge-effective-reads
 merge_target_branch: issue-10-layer-merge-effective-reads
 branch_strategy: Planning artifacts for this mission were generated on issue-10-layer-merge-effective-reads. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-10-layer-merge-effective-reads unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-layer-merge-and-effective-reads-01M6R0J6
+base_commit: 2efe0685a10e4a8a3c812c49fb82df4f8cab31f9
+created_at: '2026-11-07T11:39:29.271189+00:00'
 subtasks:
 - T058
 - T059
@@ -173,3 +176,8 @@ In `service/packs/build.gradle.kts`:
 - Check each behaviour against the plan IC and the rule ids cited, not against core's Python answers (C-004).
 - Check the red-first evidence (the commit order or the run log) and that no test was weakened to pass.
 - Check that nothing outside `owned_files` changed beyond the listed shared-file edits.
+
+## Hand-off from WP12 (2026-11-07)
+
+- Exclude the `stress` JUnit tag from PIT (WP12's `MixedReadConcurrencyTest` and `RegistryLockOrderTest` carry it).
+- Optionally restore one stress case in `MixedReadConcurrencyTest` that calls `ClosureQueries.snapshot` itself, so T057's 'retries end in a version' is pinned end to end (WP12 review cycle 2).

@@ -182,3 +182,8 @@ Diff added/changed/removed artifacts and gate them (`REGISTER`, `REPLACE`, the n
 - Check each behaviour against the plan IC and the rule ids cited, not against core's Python answers (C-004).
 - Check the red-first evidence (the commit order or the run log) and that no test was weakened to pass.
 - Check that nothing outside `owned_files` changed beyond the listed shared-file edits.
+
+## Hand-off from WP12 (2026-11-07)
+
+- Map `RegistryBusyException` (WP12: the 5 s registry `tryLock` timed out) to a refused `503` with `Retry-After` in the registration job, and give the synchronous per-artifact writes the same `503` (ADR-0065 D12; today it surfaces as `500 internal_error`).
+- WP12 brackets the whole commit with the write generation; when `PackCommitStore` gains `replaceWhole`/`create`, narrow the bracket to the swap itself, or give the per-kind reads the `ClosureQueries` retry, so a per-kind read does not answer `stale_input` for a whole commit.
