@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 
 /**
  * The layer merge: the one winner function over a composed closure, its facts and its policies (FR-009 to FR-012,
@@ -31,8 +33,10 @@ import java.util.Set;
  *   <li><strong>Per level</strong> (C15, #357). The packs of one level that hold the id contest it. The compose has
  *       refused the contest unless a descriptor {@code overrides} entry settles it, and the member the entry names holds
  *       the version in force at that level. The step of a mission type ({@code action:<M>/<step>}) is part of {@code M},
- *       so the entry that settles {@code M} settles its steps. A contest no entry settles cannot reach this function; if
- *       it did, the pack last in closure order would hold the level, the rule ADR-0053 d6 applies to presets.
+ *       so the entry that settles {@code M} settles its steps. The compose refuses an unsettled contest of every
+ *       artifact but a step, so a step contest no entry settles can reach this function: it is refused here with
+ *       {@code pack_sibling_conflict}, never decided by load order. A preset has no such entry: two copies of one level
+ *       are parent and child (C34), and the child, last in closure order, holds the level (ADR-0053 d6, C29).
  *   <li><strong>Across levels</strong> (C17, C18, ADR-0059 D3). In merge order (built-in, then org, then project) the
  *       level that applies wins, and its artifact replaces the others whole: nothing of a losing version is read.
  * </ol>
@@ -63,7 +67,7 @@ public final class LayerMerge {
         List<LayerOverride> overrides = new ArrayList<>();
         holdersByUrn(closure).forEach((urn, holders) -> {
             List<PackUnderResolution> byLevel =
-                    levelWinners(holders, settlements.getOrDefault(settlementKey(urn), Set.of()));
+                    levelWinners(holders, settledBy(urn, settlements.getOrDefault(settlementKey(urn), Set.of())));
             PackUnderResolution winner = byLevel.getLast();
             winners.put(urn, winnerOf(winner, urn, policy.levelIn(closurePackIds, urn)));
             for (PackUnderResolution loser : byLevel.subList(0, byLevel.size() - 1)) {
@@ -174,7 +178,8 @@ public final class LayerMerge {
         Map<String, MergedClosure.MergedPreset> merged = new LinkedHashMap<>();
         copiesById(closure, facts).forEach((id, copies) -> {
             List<PackUnderResolution> holders = copies.stream().map(Copy::pack).toList();
-            PackUnderResolution winner = levelWinners(holders, Set.of()).getLast();
+            PackUnderResolution winner =
+                    levelWinners(holders, LayerMerge::lastHolder).getLast();
             Preset applied = copies.stream()
                     .filter(copy -> copy.pack()
                             .descriptor()
@@ -248,21 +253,46 @@ public final class LayerMerge {
      * The pack holding the version in force at each level that holds the id, from the nearest built-in level to the
      * farthest.
      */
-    private static List<PackUnderResolution> levelWinners(List<PackUnderResolution> holders, Set<String> settled) {
+    private static List<PackUnderResolution> levelWinners(
+            List<PackUnderResolution> holders, UnaryOperator<List<PackUnderResolution>> pickAmongSiblings) {
         Map<PackLevel, List<PackUnderResolution>> byLevel = new EnumMap<>(PackLevel.class);
         holders.forEach(pack -> byLevel.computeIfAbsent(pack.configured().level(), level -> new ArrayList<>())
                 .add(pack));
         return byLevel.values().stream()
-                .map(siblings -> settledAmong(siblings, settled))
+                .map(siblings -> siblings.size() == 1 ? siblings : pickAmongSiblings.apply(siblings))
+                .map(List::getLast)
                 .toList();
     }
 
-    /** The sibling a descriptor {@code overrides} entry names; the last in closure order when none does (C15). */
-    private static PackUnderResolution settledAmong(List<PackUnderResolution> siblings, Set<String> settled) {
-        return siblings.stream()
+    /**
+     * The sibling a descriptor {@code overrides} entry names, as a one-element list (C15). A contest no entry settles is
+     * refused, never decided by load order: the compose leaves a step ({@code action:<M>/<step>}) out of the sibling
+     * contest, so two packs that both declare one can reach this point.
+     */
+    private static UnaryOperator<List<PackUnderResolution>> settledBy(Urn urn, Set<String> settled) {
+        return siblings -> List.of(siblings.stream()
                 .filter(pack -> settled.contains(pack.descriptor().packId()))
                 .findFirst()
-                .orElse(siblings.getLast());
+                .orElseThrow(() -> unsettled(urn, siblings)));
+    }
+
+    /** The preset copy of the sibling last in closure order: a child merges after the parent it extends (C29, C34). */
+    private static List<PackUnderResolution> lastHolder(List<PackUnderResolution> siblings) {
+        return List.of(siblings.getLast());
+    }
+
+    private static CharterRefusal unsettled(Urn urn, List<PackUnderResolution> siblings) {
+        return new CharterRefusal(
+                RefusalCode.PACK_SIBLING_CONFLICT,
+                "packs "
+                        + siblings.stream()
+                                .map(pack -> "`" + pack.descriptor().name() + "` ("
+                                        + pack.descriptor().packId() + ")")
+                                .collect(Collectors.joining(" and "))
+                        + " at "
+                        + siblings.getFirst().configured().level().token() + " both hold `" + urn
+                        + "`, and no overrides entry names the one whose version is in force",
+                siblings.stream().map(LayerMerge::refusalPack).toList());
     }
 
     /** The members the closure's descriptors name as the winner of each artifact, by bare artifact URN text. */

@@ -5,6 +5,7 @@ import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.Urn;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -106,7 +107,8 @@ public record MergedClosure(
         layerOverrides = List.copyOf(Objects.requireNonNull(layerOverrides, "layerOverrides"));
         Map<Urn, Set<String>> languageCopy = new LinkedHashMap<>();
         Objects.requireNonNull(languages, "languages")
-                .forEach((urn, declared) -> languageCopy.put(urn, Set.copyOf(declared)));
+                .forEach((urn, declared) ->
+                        languageCopy.put(urn, Collections.unmodifiableSet(new LinkedHashSet<>(declared))));
         languages = Collections.unmodifiableMap(languageCopy);
         presets = Collections.unmodifiableMap(new LinkedHashMap<>(Objects.requireNonNull(presets, "presets")));
         Objects.requireNonNull(floor, "floor");
