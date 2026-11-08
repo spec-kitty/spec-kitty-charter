@@ -1,0 +1,54 @@
+# Ruleset consistency review (2026-11-06)
+
+Subject: `docs/architecture/composition-and-activation-rules.md` (C1–C33, G1–G18, W1–W32, E1–E20, I1–I18).
+Three read-only lenses: logical consistency and fixed points, unintended behaviour for users, and fidelity to the
+sources and the built code. Findings are deduplicated across lenses and ranked. Each item gives its counter-example,
+the kind of problem (conflict, strange interaction, likely unintended), and the smallest change proposed.
+
+## A. Conflicts and broken invariants (decide before PR B)
+
+| # | Rules | Counter-example | Kind | Proposed change |
+|---|---|---|---|---|
+| A1 | C29, C30, C31; ADR-0031 | Project pack `r` holds a preset with the same id as the org's governing `baseline`, without its must-have items. C29 lets `r`'s copy win, so the org requirement vanishes and a deny on it is accepted. No mutability rule gates presets. (The landed same-level preset conflict does not cover this cross-level case.) | Likely unintended: governance bypass | `Req` is the union of must-have items over **every** governing copy of a preset id. Requirements only tighten, like locks. |
+| A2 | E4, E5, E13, I10, I16, C28 | `overrides(E,T)`, `overrides(U,E)`, T and U required, E and T selected. E5 judges T satisfied by E, then puts U in force, which hides E. Result `{U}`: T is neither in force nor overridden by anything in force. Also: two required artifacts overriding each other are both put in, then both hidden (C28 only looks at active artifacts). | Conflict: I10 fails | Iterate E5 to a fixed point, judging satisfaction on the final set. Run C28 over base ∪ unsatisfied. |
+| A3 | E4, E9, E10, E5, W26 | Chain `F→E→T`, all selected: E4 hides T through E, which is itself hidden. E9 says "overridden by an active artifact", which is false. If T is required, E5 puts it back. "Active" means the base set in E4, A₁ in E5 and the effective set in E10/W26. | Conflict | Name the base set "candidate". Rule whether a hidden overrider still hides, and whether F satisfies T through the chain. |
+| A4 | W6, W26, W14, I5 | Select E and T (E overrides required T); deactivate T (accepted by the relaxed rule); unselect E (never refused); then GET and PUT the same body: **409 artifact_required**. The round trip breaks with no pack change. Same for a GET→PUT after an org upgrade (stale id gives 422; a newly required deny gives 409), while the per-artifact writes tolerate both. | Conflict: I5 fails; PUT vs per-artifact asymmetry | Replace judges the floor only on deny entries it **adds** (Den(D')∖Den(D)), like W25. Optionally a no-op check before W6. |
+| A5 | G7, G8, C21, C25, C16, C28 | A project pack registers `directive:x`, which a built-in pack locks, without depending on it. Registration judges only its own closure, so it passes. Every activation whose closure holds both (every `packs=⊥` one) then answers 500 on all reads. Likewise: a global G8 compose blocks an author over an unrelated project's conflicting id or dangling reference, which they cannot see or fix. | Likely unintended | One registration-time **impact check** over every closure that contains the pack: C17–C21, C28 and the floor. The refusal names the packs. G8 is scoped to closures containing the pack, not one global compose. |
+| A6 | C21, C25, C27, E4; ADR-0012 d1 | T is `extendable`. A project layer override of T is refused (C21), but a CRG `overrides(E,T)` passes C25 and hides T at read. With T required, a deny on T is then accepted. | Conflict: two override paths, two gates | Exempt targets not `open` (not only locked) in C27/E4, and treat an `overrides` edge as the "override" operation in C25. |
+| A7 | E2, E9, E10, E5, E16, W17 | (a) E2 exempts mission types from the kind gate, but E9 still makes them `kind_not_activated`; W17 strips `mission_type` from `kinds` on preset apply. (b) A required mission type is "active, required" in the listing, yet its action contexts are empty because E16 uses the document's `mts`. | Conflict | E9: kind ∉ kinds ∪ {mission_type}. Mission types in force = `mts` ∪ required ∪ locked mission types, used by E2 and E16. |
+| A8 | E6, I11; Q8 | `enhances` cycle E1→E2→E3→E1 (or `enhances(E,E)`), all selected, no grounded target: under the greatest fixed point all stay in force. | Conflict with Q8 ("enhancers do not stand on their own") | E6 uses the **least** fixed point: support must be grounded in a non-enhancer in force. |
+| A9 | E5, E6, I10; DM-01M6R4W3ZM | A required enhancer whose target is not in force is pruned. This is now ruled (the enhancer rule wins), but I10 and E13 still claim every required artifact is in force. | Stale invariant | Make I10 conditional: "…unless it is an enhancer without a target in force (reported required-but-ungrounded)". |
+| A10 | C31, E1, E5, G9, G10 | A governing preset's must-have names `directive:Z`, which only pack p holds. `DELETE Z` from p passes, because G9 counts only artifact references. Z stays in `Req`, so E5 puts an unheld URN in force, E1 calls a selection of Z stale, and W24 treats Z as active. | Conflict | Restrict `Req` to held ids and report unheld must-have items. Count other packs' preset items as inbound references in G9. |
+| A11 | E7, E4, C27 | E with both `enhances(E,T)` and `overrides(E,T)`: E is pruned, its overrides are withdrawn, T returns, E is grounded again. The result `{E,T}` contradicts E4 and has no stable answer, yet E7 still answers. | Conflict / non-determinism | Refuse (or report) when an artifact whose overrides were withdrawn is back in force after the rerun. |
+| A12 | C12, C17, C20, E4, C28 | `r` layer-overrides `X` and also declares `overrides: b::X`. C20 re-points the edge to the winner, giving `overrides(X,X)`: X hides itself, or a one-node cycle answers 500. | Strange interaction | C20 drops an edge whose re-pointed target is its own source. |
+| A13 | W13, W15, W23, W24, I14 | `requires(t,y)` with y already selected. A cascading select of t, then a cascading deactivate of t, leaves the selection empty: y is lost although the user had chosen it. | Invariant false | Either the deactivate keeps what was selected before the select (needs history), or I14 is weakened to "less t and what its walk reached". Operator call. |
+| A14 | C14, C15 | Two org packs each enhancing built-in T count as a sibling conflict, because `changes` includes `enhances`, though enhancements are additive (ADR-0059 D3). C15's text settles on any entry; the code requires exactly one named winner. | Conflict + fidelity | Drop `enhances` from `changes`; make C15 state "exactly one named winner", as built. |
+| A15 | C22, C23, C32, E3, W25 | `μ_p(u)` is not limited to the artifacts p holds: a project pack's `kind_defaults: {directive: locked}` locks every directive in its closure, which (locked ⇒ in force) puts all of them in force for every activation that composes it. | Likely unintended | Limit `μ_p(u)` to `holds(p,u)` (or to p's lineage). Rule whether "locked" must also mean "forced active" (the C32 note). |
+
+## B. User-surprising behaviour (rulings to confirm or revisit)
+
+| # | Rules | Scenario | Question |
+|---|---|---|---|
+| B1 | G3, W12, W5 | An activation pins `(org-pack, 1.0)`; the author registers 2.0. Every per-artifact write now answers 422 `version_not_held` (even an unselect); only a full PUT recovers. Later, 1.0 re-registered with different content is accepted, because G3 compares only against the stored version. | Should writes drop or report an unsatisfiable pin, as stale ids are dropped? Should version→content be remembered, so a version can never be reused? What do reads answer for an unheld pin? |
+| B2 | W11, W29; R5 | A pack mistakenly registered without `x` for ten minutes: any per-artifact write on any activation in that window permanently drops `x` from `selected` and `deny`. | Keep eager dropping on every write, or drop only on a write that names the id, or keep stale ids until the user clears them? |
+| B3 | G9, G10, G11 | Two artifacts of one pack that reference each other through body fields can never be deleted, and a whole-pack replace that removes both may still be blocked if the scan counts referrers removed by the same replace. The 409 does not name the referrers. | Compute inbound references against the staged tree, excluding what the same request removes, and list the referrers in the 409? Should references from another level or another project block an org delete? |
+| B4 | G2, G7, C31, C32, E3, W25 | A pack upgrade adds a must-have item or a lock: what is in force changes in every activation with no notice beyond a changed ETag, and a project's deny entry silently stops applying (and silently applies again if the upgrade is reverted). | Should the registration response report the changes to the floor and locks, and should `GET /activations/{id}` surface deny entries that no longer apply? |
+| B5 | W22, W14, I12 | A select with `includeDeactivated` clears the deny entries of passed lineage ancestors it never selects; unselect does not restore them, and there is no inverse of a cascading select. | Limit clearing to reached artifacts (not passed ancestors)? Offer a cascading unselect? |
+| B6 | W19, E6, E9 | Selecting an enhancer whose target is denied or out of scope answers 200 with `applied={E}`, but the read shows E inactive. | Add a hint (e.g. `enhancedTargetNotInForce`) to the write report? |
+| B7 | W13, W17, E2, W2 | Per-artifact selects never change `activatedKinds`, so a select on an empty activation succeeds but nothing comes into force; absent `languages` means "no filter" while every other absent key means "none". | Should a select add the artifact's kind to `activatedKinds`, or warn? Confirm the `languages` exception. |
+| B8 | C25, G7, C21 | A pack's own lock blocks its per-artifact PUT (409), yet a whole-pack PUT that both opens the policy and changes the artifact passes. | Exclude a pack's own policy in C25 (as C21 does), or judge G7 against the stored policy? |
+
+## C. Fidelity corrections (documentation only, folded without a ruling)
+
+The page predates the landed #398 commits and has these stale or missing rules:
+- W3: id spellings are now normalized (DIV-208 withdrawn); `ambiguous_artifact`; `missionTypes` stays exact.
+- W7 and W10: how a path id is resolved.
+- C5 and C6: `parent_pack` orders the compose and counts as a cycle edge.
+- C12: the `depends_on`-only closure.
+- C15: exactly one winner.
+- New rules: the same-level preset conflict; refusing a preset item or policy lock that matches a held id only by case; repair writes (ADR-0063 amendment, ruled not built).
+- G4 split between ruled and planned.
+- W5 and C31 sources.
+- C25's `ops` notation.
+- The status-label pin (to the landed head).
+- Two ⚠ notes are settled by the rulings of 2026-11-06: the cascade walks merged edges, and a floor enhancer without a target is not in force.

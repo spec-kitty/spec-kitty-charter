@@ -1,0 +1,55 @@
+title: PackRegistrationNotices
+description: >-
+  Only in the result of a succeeded registration (FR-027): what the write changed about the floor and the locks, so no
+  change of force is silent. Every list is empty when the write changed nothing of its kind. The activations whose in-
+  force set changes join in a later minor. Notices name activatable kinds only: an entry of another kind (a template, an
+  asset, a guard, a lifecycle) is left out of the lists, and the service logs it. Widening the kinds is tracked in
+  issue #417.
+type: object
+additionalProperties: false
+properties:
+  floorAdded:
+    type: array
+    items:
+      $ref: ArtifactReference.yaml
+    description: The must-have items of the pack's governing presets that the write added to the required floor.
+    x-derived:
+      rule: The must-have items of the staged pack's governing presets that the stored pack's did not name.
+      inputs:
+      - the stored pack before the write
+      - the staged pack
+  floorRemoved:
+    type: array
+    items:
+      $ref: ArtifactReference.yaml
+    description: The must-have items that the write took off the required floor.
+    x-derived:
+      rule: The must-have items of the stored pack's governing presets that the staged pack's do not name.
+      inputs:
+      - the stored pack before the write
+      - the staged pack
+  locksAdded:
+    type: array
+    items:
+      $ref: ArtifactReference.yaml
+    description: The artifacts the write put under a lock of the pack's policy.
+    x-derived:
+      rule: The artifacts the staged pack's policy locks that the stored pack's did not.
+      inputs:
+      - the stored pack before the write
+      - the staged pack
+  locksRemoved:
+    type: array
+    items:
+      $ref: ArtifactReference.yaml
+    description: The artifacts the write released from a lock of the pack's policy.
+    x-derived:
+      rule: The artifacts the stored pack's policy locks that the staged pack's does not.
+      inputs:
+      - the stored pack before the write
+      - the staged pack
+x-derived:
+  rule: The floor and lock items of the pack's presets and policy before and after the write.
+  inputs:
+  - the stored pack before the write
+  - the staged pack

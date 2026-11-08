@@ -20,14 +20,21 @@ put:
     kind selects none (absent means none), so there is nothing to remove, and the deny entry on the named artifact
     excludes it. A write that changes nothing (the id is already denied and not selected) answers 200 with the same
     revision and an empty applied and cleared. A path id the activation's closure does not hold is 404
-    artifact_not_found; a kind outside the path's enum, mission_type included, is 422 activation_invalid with a
-    violation at the path. Stale ids are dropped on write (ADR-0059 amendment of 2026-11-06): the write first removes from the
+    artifact_not_found (mission_type_not_found for kind mission_type); a kind outside the path's enum is 422
+    activation_invalid with a violation at the path. A mission type is denied like any kind (one kind model, IC-20;
+    Q2, decision DM-01M6RCXZ9HSHT4K3443YYZ8ZFC): it joins deactivated.mission_type, and a mission type a pack
+    requires or locks is 409 artifact_required or artifact_locked, naming every requiring pack. A cascading
+    deactivate of a mission type walks the steps it holds as a cascading select does (rule W20), and unselects what
+    only it kept (rule W23). Stale ids are dropped on write (ADR-0059 amendment of 2026-11-06): the write first
+    removes from the
     stored document every id the activation's closure no longer declares (a pack upgrade removed it), in selected,
-    deactivated and missionTypes, and lists them in dropped; such a write is never a no-op, so it answers a new
+    deactivated and selected.mission_type, and lists them in dropped; such a write is never a no-op, so it answers a
+    new revision. A pack pinned to a version no pack of the closure holds is dropped too (B1, decision
+    DM-01M6RN5Y406SB4KA13QYMQ2P8J): the pin leaves packs and is listed in droppedPins, which also makes a new
     revision. A path id the closure no longer holds is still 404 artifact_not_found and nothing is dropped, even when
     the stored document still names it. An
-    unknown pack or a pinned version the closure does not hold is not dropped: the write is still 422
-    activation_invalid (unknown_pack, version_not_held), and only a replaceActivation recovers the document.
+    unknown pack is not dropped: the write is still 422 activation_invalid (unknown_pack), and only a
+    replaceActivation recovers the document.
   tags:
   - Activation
   parameters:
@@ -75,6 +82,8 @@ put:
       $ref: ../responses/PreconditionRequired.yaml
     '500':
       $ref: ../responses/OfferingUnreadable.yaml
+    '503':
+      $ref: ../responses/RegistryBusy.yaml
     default:
       $ref: ../../_shared/responses/Problem.yaml
 delete:
@@ -85,18 +94,21 @@ delete:
     id is in cleared and in applied (removed from deactivated). Requires If-Match (ADR-0020 D6). A write that
     changes nothing (the id is not in the list) answers 200 with the same revision and an empty applied and
     cleared. A re-activate adds no deny entry, so it is never 409. A path id the activation's closure does not hold, and the stored document does not deny either, is 404
-    artifact_not_found, judged after every 422; a kind outside the path's
-    enum, mission_type included, is 422 activation_invalid with a violation at the path. An If-Match that is neither * nor one quoted revision breaks its pattern and is 400 before anything
+    artifact_not_found (mission_type_not_found for kind mission_type), judged after every 422; a kind outside the
+    path's enum is 422 activation_invalid with a violation at the path. An If-Match that is neither * nor one quoted
+    revision breaks its pattern and is 400 before anything
     else is judged. Then the preconditions, in this order: 428 without If-Match, 404 activation_not_found, 412 when
     stale; each comes before any 422, the path's kind included. Stale ids are dropped on write (ADR-0059 amendment of 2026-11-06): the write first removes from the
     stored document every id the activation's closure no longer declares (a pack upgrade removed it), in selected,
-    deactivated and missionTypes, and lists them in dropped; such a write is never a no-op, so it answers a new
+    deactivated and selected.mission_type, and lists them in dropped; such a write is never a no-op, so it answers a
+    new revision. A pack pinned to a version no pack of the closure holds is dropped too (B1, decision
+    DM-01M6RN5Y406SB4KA13QYMQ2P8J): the pin leaves packs and is listed in droppedPins, which also makes a new
     revision. A path id the closure no longer holds but the stored document still denies, in deactivated, is not
     refused: it is dropped with every other stale id, listed in dropped and not in applied or cleared, and the write
     answers 200 with a new revision. A path id that is neither held by the closure nor in that stored list is still
     404 artifact_not_found and nothing is dropped. An
-    unknown pack or a pinned version the closure does not hold is not dropped: the write is still 422
-    activation_invalid (unknown_pack, version_not_held), and only a replaceActivation recovers the document.
+    unknown pack is not dropped: the write is still 422 activation_invalid (unknown_pack), and only a
+    replaceActivation recovers the document.
   tags:
   - Activation
   parameters:
@@ -131,5 +143,7 @@ delete:
       $ref: ../responses/PreconditionRequired.yaml
     '500':
       $ref: ../responses/OfferingUnreadable.yaml
+    '503':
+      $ref: ../responses/RegistryBusy.yaml
     default:
       $ref: ../../_shared/responses/Problem.yaml

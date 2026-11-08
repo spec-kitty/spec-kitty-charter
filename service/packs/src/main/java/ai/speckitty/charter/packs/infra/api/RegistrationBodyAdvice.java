@@ -5,6 +5,7 @@ import ai.speckitty.charter.api.model.ParadigmRegistration;
 import ai.speckitty.charter.api.model.RelationshipRegistration;
 import ai.speckitty.charter.api.model.StyleguideRegistration;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.transport.BodyLimit;
 import ai.speckitty.charter.web.JsonBodyGuard;
 import ai.speckitty.charter.web.JsonBodyGuard.BodyFault;
@@ -12,6 +13,7 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpHeaders;
@@ -48,21 +50,30 @@ public class RegistrationBodyAdvice extends RequestBodyAdviceAdapter {
      * A guarded registration: its kind, as a refusal names it, and its list members, read off the generated DTO; none
      * for a registration without a list.
      */
-    private record Guarded(String kind, List<String> lists) {
+    private record Guarded(String kind, List<String> lists, Set<String> members) {
         Guarded(String kind, Class<?> dto) {
-            this(kind, RegistrationLists.of(dto));
+            this(kind, RegistrationLists.of(dto), RegistrationLists.members(dto));
+        }
+
+        static Guarded withoutLists(String kind, Class<?> dto) {
+            return new Guarded(kind, List.of(), RegistrationLists.members(dto));
         }
     }
 
     /**
-     * The registrations this advice guards. The relationship registration has no list ({@code RegistrationBodyAdviceTest}
-     * pins that), so it names none rather than read them off its DTO, which would refuse to start.
+     * The registrations this advice guards. The paradigm and relationship registrations have no list
+     * ({@code RegistrationBodyAdviceTest} pins that), so they name none rather than read them off their DTO, which
+     * would refuse to start; their members are still checked.
      */
     private static final Map<Type, Guarded> GUARDED = Map.of(
-            DirectiveRegistration.class, new Guarded("directive", DirectiveRegistration.class),
-            ParadigmRegistration.class, new Guarded("paradigm", ParadigmRegistration.class),
-            StyleguideRegistration.class, new Guarded("styleguide", StyleguideRegistration.class),
-            RelationshipRegistration.class, new Guarded("relationship", List.of()));
+            DirectiveRegistration.class,
+            new Guarded("directive", DirectiveRegistration.class),
+            ParadigmRegistration.class,
+            Guarded.withoutLists("paradigm", ParadigmRegistration.class),
+            StyleguideRegistration.class,
+            new Guarded("styleguide", StyleguideRegistration.class),
+            RelationshipRegistration.class,
+            Guarded.withoutLists("relationship", RelationshipRegistration.class));
 
     /**
      * An advice over the directive, paradigm, styleguide and relationship registrations; a test constructs it directly.
@@ -91,6 +102,12 @@ public class RegistrationBodyAdvice extends RequestBodyAdviceAdapter {
         HttpHeaders headers = inputMessage.getHeaders();
         Function<BodyFault, CharterRefusal> refusal = RegistrationLists.refusal(guarded.kind());
         byte[] body = JsonBodyGuard.readBounded(inputMessage, BodyLimit.MAX_BYTES, refusal);
+        RegistrationLists.firstUnknown(body, headers.getContentType(), guarded.members())
+                .ifPresent(member -> {
+                    throw new CharterRefusal(
+                            RefusalCode.VALIDATION_FAILED,
+                            RegistrationLists.unknownMemberDetail(guarded.kind(), member));
+                });
         if (guarded.lists().isEmpty()) {
             return JsonBodyGuard.replay(headers, body);
         }

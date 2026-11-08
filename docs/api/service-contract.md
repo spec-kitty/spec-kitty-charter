@@ -2,11 +2,13 @@
 title: Service contract
 description: The OpenAPI 3.1 contract of the charter service — the built operations, the planned reads and writes, the error model and the transports.
 doc_status: draft
-updated: 2026-11-04T00:00:00Z
+updated: 2026-11-08T00:00:00Z
 type: API
 kind: Reference
 related:
   - architecture/contract-and-dtos
+  - guides/compose-packs
+  - changelog/2026-11-07-a-pack-registration
   - adr/0002-contract-source-of-record
   - adr/0018-action-context-read-and-seam-access-surface
   - conformance/divergence-register
@@ -208,12 +210,15 @@ the conventions in [Development conventions](/development/).
 
 | Method | Path | Proposed operationId | Purpose | Inventory issue |
 |---|---|---|---|---|
-| `GET` | `/packs/{packId}` | `getPack` | One pack: today's `PackSummary` fields | — |
+| `GET` | `/packs/{packId}` | `getPack` | One pack: its identity, version, level and revision, with the revision as the `ETag`. **Built** | — |
 | `GET` | `/packs/{packId}/graph` | `getPackGraph` | The nodes and edges the pack declares | [#97](https://github.com/spec-kitty/spec-kitty-charter/issues/97) |
 | `GET` | `/packs/{packId}/presets` | `listPackPresets` | The pack's activation presets | [#98](https://github.com/spec-kitty/spec-kitty-charter/issues/98) |
 | `GET` | `/packs/{packId}/assets` | `listPackAssets` | The pack's asset paths | [#105](https://github.com/spec-kitty/spec-kitty-charter/issues/105) |
 | `GET` | `/packs/{packId}/assets/{path}` | `getPackAsset` | One asset file | [#105](https://github.com/spec-kitty/spec-kitty-charter/issues/105) |
-| `POST` | `/packs` | `registerPack` | Register a pack (ADR-0005); `201` with `Location` (needs the lint amendment of ADR-0020 D9) | — |
+| `POST` | `/packs` | `registerPackFromSource` | Register a pack from an https archive, a git repository or a local path, replacing the pack held under the target `packId`. **Built**: `202` with a status and a `Location` | — |
+| `PUT` | `/packs/{packId}` | `registerPackFromArchive` | Register a whole pack from an archive, replacing the pack held. **Built**: `202` with a status and a `Location` | — |
+| `GET` | `/pack-registrations/{registrationId}` | `getPackRegistration` | The status of a registration: `pending`, `running`, `succeeded` or `refused`. **Built** | — |
+| `DELETE` | `/packs/{packId}/artifacts/{kind}/{artifactId}`, `/packs/{packId}/relationships` | `deletePackArtifact`, `deletePackRelationship` | Remove one artifact, or one registered edge, from a pack; `204` with the new revision as the `ETag`. **Built** | — |
 | `GET` | `/packs/{packId}/resolution` | `getPackResolution` | Read-only resolution state (ADR-0007 decision 7) | — |
 | `POST` | `/packs/{packId}/distributions` | `distributePack` | Distribute a pack (ADR-0005) | — |
 
@@ -246,7 +251,7 @@ sequences, is in [Offering and activation](/architecture/offering-and-activation
 | `GET` | `/offering/mission-types/{missionType}/actions/{action}/context` | Today's action-context read, **moved here before 1.0.0** | [#95](https://github.com/spec-kitty/spec-kitty-charter/issues/95) |
 | `POST` | `/activations` | `createActivation`: create an activation; the service mints the id. **Built** | [#125](https://github.com/spec-kitty/spec-kitty-charter/issues/125) |
 | `PUT`, `GET`, `DELETE` | `/activations/{activationId}` | `replaceActivation`, `getActivation`, `deleteActivation`: register or replace, read, remove an activation. **Built** | [#125](https://github.com/spec-kitty/spec-kitty-charter/issues/125) |
-| `GET` | `/activations/{activationId}/packs` | `listActivationPacks`: the `depends_on` closure rooted at the document's packs. **Built** | [#360](https://github.com/spec-kitty/spec-kitty-charter/issues/360) |
+| `GET` | `/activations/{activationId}/packs` | `listActivationPacks`: the `depends_on` and `parent_pack` closure rooted at the document's packs. **Built** | [#360](https://github.com/spec-kitty/spec-kitty-charter/issues/360) |
 | `PUT`, `DELETE` | `…/{activationId}/selections/{kind}/{artifactId}`, `…/exclusions/{kind}/{artifactId}`; `PUT …/presets/{presetId}` | `selectActivationArtifact`, `unselectActivationArtifact`, `deactivateActivationArtifact`, `reactivateActivationArtifact`, `applyActivationPreset`: change one choice, with `If-Match`. **Built** | [#125](https://github.com/spec-kitty/spec-kitty-charter/issues/125) declares them; [#291](https://github.com/spec-kitty/spec-kitty-charter/issues/291) builds them |
 | `GET` | `…/{activationId}/artifacts`, `skipped`, `graph`, `mission-types/…/context` | `listEffectiveArtifacts`, `getActivationSkippedReport`, `getEffectiveGraph`, `getEffectiveActionContext`: the effective reads (R9). **Declared, reserved (501)**; R9 gates cutover stage 3 | [#125](https://github.com/spec-kitty/spec-kitty-charter/issues/125) declares them; [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103) builds them |
 

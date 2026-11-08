@@ -1,0 +1,80 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-11-05T16:42:25.692137Z",
+      "decision_id": "01M6P9E60WTKQ737QKQRC61CT8",
+      "final_answer": "Drop it. Operator ruling 2026-11-05 (#240 comment 6664407049): the prose steps become procedure artifacts in open-packs, shared where reusable, and each directive requires them through a graph edge.",
+      "input_key": "directive_procedures",
+      "mission_id": "01M6P9D0EW24EPHFS7S4TD7DHV",
+      "mission_slug": "graph-documents-sole-edge-source-01M6P9D0",
+      "opened_by": "cli",
+      "options": [
+        "Keep as text that mints no edge",
+        "Drop and move text into the body (open-packs)",
+        "Drop and lose the text",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "A directive's procedures field holds prose steps (192 entries), not procedure ids: keep it as text that mints no edge, move the text into the body, or drop it?",
+      "rationale": null,
+      "resolved_at": "2026-11-06T07:20:48.532411Z",
+      "resolved_by": null,
+      "slot_key": "specify.scope.directive-procedures",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-05T16:42:29.556817Z",
+      "decision_id": "01M6P9E9SMVNKD968XCPMXSYS8",
+      "final_answer": "All of them. Operator ruling 2026-11-05: every reference field goes; each dropped reference keeps a live graph edge, and a citation that names no artifact moves into the artifact's text.",
+      "input_key": "reference_fields",
+      "mission_id": "01M6P9D0EW24EPHFS7S4TD7DHV",
+      "mission_slug": "graph-documents-sole-edge-source-01M6P9D0",
+      "opened_by": "cli",
+      "options": [
+        "All typed references plus styleguide/toolguide references",
+        "Only fields that mint edges today",
+        "Typed references only; keep styleguide/toolguide citations for external URLs",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Which reference fields go: only those minting edges today (directive/paradigm/tactic typed references), also non-minting typed references (procedure, mission type, tactic step), and styleguide/toolguide citation references?",
+      "rationale": null,
+      "resolved_at": "2026-11-06T07:20:51.176538Z",
+      "resolved_by": null,
+      "slot_key": "specify.scope.reference-fields",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-05T16:42:33.255000Z",
+      "decision_id": "01M6P9EDD6KC327Y1KK0Q2SM7K",
+      "final_answer": "Yes. Operator ruling 2026-11-05 (Q5 accepted): the read shapes lose their relationships arrays, and the references read takes its relation from the graph documents.",
+      "input_key": "read_shapes",
+      "mission_id": "01M6P9D0EW24EPHFS7S4TD7DHV",
+      "mission_slug": "graph-documents-sole-edge-source-01M6P9D0",
+      "opened_by": "cli",
+      "options": [
+        "Yes: remove from read shapes; relation from graph documents",
+        "No: keep read-shape relationships as a derived view",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Do the per-kind read shapes lose their relationships arrays too, with listArtifactReferences.relation filled from the graph documents?",
+      "rationale": null,
+      "resolved_at": "2026-11-06T07:20:53.655162Z",
+      "resolved_by": null,
+      "slot_key": "specify.scope.read-shapes",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M6P9D0EW24EPHFS7S4TD7DHV",
+  "version": 1
+}

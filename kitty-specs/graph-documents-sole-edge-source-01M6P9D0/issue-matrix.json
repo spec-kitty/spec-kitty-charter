@@ -1,0 +1,77 @@
+{
+  "rows": {
+    "#125": {
+      "evidence_ref": "context only: later contract minor, kept out of this change",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#126": {
+      "evidence_ref": "context only: later contract minor, kept out of this change",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#167": {
+      "evidence_ref": "ADR-0061 decision 10: one edge source, the provenance divergence is gone",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "in-mission",
+      "wp": null
+    },
+    "#189": {
+      "evidence_ref": "ADR-0061 decision 12: edge authority decided, the held reference fields dropped",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "in-mission",
+      "wp": null
+    },
+    "#240": {
+      "evidence_ref": "ADR-0061; lane-a code; open-packs patches A/A2",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "in-mission",
+      "wp": null
+    },
+    "#376": {
+      "evidence_ref": "<auto-classified: no action required>",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<auto-classified: pr_or_commit_ref>",
+      "verdict": "not-applicable",
+      "wp": null
+    }
+  },
+  "schema_version": 1
+}

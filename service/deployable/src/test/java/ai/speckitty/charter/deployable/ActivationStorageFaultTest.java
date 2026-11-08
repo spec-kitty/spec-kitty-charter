@@ -104,6 +104,6 @@ class ActivationStorageFaultTest {
         isAnInternalErrorThatLeaksNothing(send(put("/api/v1/activations/" + BROKEN)
                 .header(HttpHeaders.IF_MATCH, "*")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"schemaVersion\": 1}")));
+                .content("{\"schemaVersion\": 2}")));
     }
 }

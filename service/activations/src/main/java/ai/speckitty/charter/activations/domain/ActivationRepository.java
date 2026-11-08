@@ -1,5 +1,6 @@
 package ai.speckitty.charter.activations.domain;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -23,6 +24,15 @@ import java.util.Optional;
  * unchecked exception; it is the service's fault, not the client's, and the inbound adapter answers it as such.
  */
 public interface ActivationRepository {
+
+    /**
+     * Every stored activation that can be read, in no particular order: the registration impact check asks which packs
+     * the stored activations root at (IC-15). A document that cannot be read, or an entry of the store that is no
+     * activation, is left out; the read of that activation answers its fault, which this listing does not repeat.
+     *
+     * @return the readable stored activations; empty when none is stored
+     */
+    List<StoredActivation> list();
 
     /**
      * The stored activation.

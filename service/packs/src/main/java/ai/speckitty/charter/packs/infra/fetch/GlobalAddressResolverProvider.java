@@ -12,17 +12,18 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 /**
- * The JVM-wide name-resolution guard that closes DNS rebinding for guide fetches (JEP 418, research D8a). The JDK's
- * {@code HttpClient} resolves the host itself when it connects and offers no way to pin the address the fetcher
- * checked, so the check is made where every lookup passes: this provider delegates to the built-in resolver and, for
- * a host on the guide allowlist only, refuses the whole answer when any address in it is not global unicast
+ * The JVM-wide name-resolution guard that closes DNS rebinding for every outbound fetch (JEP 418, research D8a, R9). The
+ * JDK's {@code HttpClient} resolves the host itself when it connects and offers no way to pin the address the fetcher
+ * checked, so the check is made where every lookup passes: this provider delegates to the built-in resolver and, for a
+ * host on the installed allowlist only, refuses the whole answer when any address in it is not global unicast
  * ({@link AddressPolicy}). Every other lookup passes through untouched.
  *
- * <p>The JDK, not Spring, instantiates this class (through
- * {@code META-INF/services/java.net.spi.InetAddressResolverProvider}, on the first name lookup of the JVM), so the
- * allowlist reaches it through a static holder that the fetcher's Spring configuration fills at startup
- * ({@link #install}). The holder starts empty: until something installs an allowlist the guard acts on no host, and
- * resolution behaves exactly as without it.
+ * <p>The installed allowlist is the union of every allowlist a fetcher checks (the guides', the https archives' and the
+ * git repositories'), so a host that only one fetcher's list names is guarded like any other. The JDK, not Spring,
+ * instantiates this class (through {@code META-INF/services/java.net.spi.InetAddressResolverProvider}, on the first name
+ * lookup of the JVM), so the allowlist reaches it through a static holder that the fetchers' Spring configuration fills at
+ * startup ({@link #install}). The holder starts empty: until something installs an allowlist the guard acts on no host,
+ * and resolution behaves exactly as without it.
  *
  * <p>The guard fails closed: the JDK picks its resolver once, on the JVM's first lookup, through the context class
  * loader of that moment, so a packaging in which this provider is not visible then leaves the built-in resolver in
@@ -60,9 +61,11 @@ public final class GlobalAddressResolverProvider extends InetAddressResolverProv
 
     static void installRequiringGuard(GuideAllowlist allowlist, BooleanSupplier guardIsTheJvmResolver) {
         if (!allowlist.hosts().isEmpty() && !guardIsTheJvmResolver.getAsBoolean()) {
-            throw new IllegalStateException("charter.guide-fetch.allowed-hosts is set, but the JVM did not install the"
-                    + " guide-fetch resolver guard (META-INF/services/java.net.spi.InetAddressResolverProvider);"
-                    + " refusing to fetch guides without DNS-rebinding protection");
+            throw new IllegalStateException("an allowlist names a host (charter.guide-fetch.allowed-hosts,"
+                    + " charter.pack-sources.https.allowed-hosts or charter.pack-sources.git.allowed-hosts), but the JVM"
+                    + " did not install the fetch resolver guard"
+                    + " (META-INF/services/java.net.spi.InetAddressResolverProvider); refusing to fetch without"
+                    + " DNS-rebinding protection");
         }
         install(allowlist);
     }

@@ -1,8 +1,11 @@
 title: StyleguideRegistration
 description: >-
-  The registration body of a styleguide: its fields only. A styleguide mints no relationships (its references
-  are bare citation strings), so — unlike a directive — this body carries no relationships array; a
-  cross-authored edge is registered through PUT /packs/{packId}/relationships. On POST to the collection the id
+  The registration body of a styleguide: its fields only. A styleguide carries no relationships — every relationship
+  is authored in the pack's graph documents and registered through PUT /packs/{packId}/relationships, the only
+  operation that writes one (ADR-0064).
+  A member this schema does not declare is refused 422 validation_failed, naming the member, before the body is bound
+  and nothing is written (ADR-0064).
+  On POST to the collection the id
   is optional (the server answers with Location); on PUT the id is taken from the path. The tooling map is
   carried as ordered {tool, configuration} entries and the structural-lint-config tree as its JSON text,
   matching the read shape.
@@ -95,11 +98,3 @@ properties:
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Styleguide.java
       symbol: Styleguide.appliesToLanguages
-  references:
-    type: array
-    description: The bare citation strings, in authored order.
-    items:
-      type: string
-    x-source:
-      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Styleguide.java
-      symbol: Styleguide.references

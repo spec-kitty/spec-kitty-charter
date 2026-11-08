@@ -3,14 +3,15 @@ package ai.speckitty.charter.packs.application;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
-import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.RequiredFloor;
+import java.time.Duration;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -34,6 +35,12 @@ import org.springframework.stereotype.Service;
 public final class ClosureQueries {
 
     private static final String STALE = "The packs changed while the closure was read; read it again.";
+
+    /** How many times a stale read is tried again (research R-lock); after that {@code stale_input} is the answer. */
+    private static final int RETRIES = 3;
+
+    /** The longest a retry waits for a running swap to end before it reads again. */
+    private static final Duration SWAP_WAIT = Duration.ofMillis(250);
 
     private final OfferingReadService offering;
     private final PackCatalogRepository catalog;
@@ -60,11 +67,26 @@ public final class ClosureQueries {
      * @param roots the configured identifiers the closure is rooted at; empty for every configured pack
      * @return the closure's view, with the verified fingerprint
      * @throws CharterRefusal with a composition refusal when the closure cannot compose, {@code PACK_UNREADABLE} when an
-     *     input of it cannot be read, or {@code STALE_INPUT} when the inputs changed during the read
+     *     input of it cannot be read, or {@code STALE_INPUT} when the inputs changed during the read and three retries,
+     *     each after the running swap ended, changed again
      * @throws UnknownRootException when a root names no configured pack, naming every such root; nothing is composed
      */
     public ClosureView snapshot(Optional<List<PackIdentifier>> roots) {
         Objects.requireNonNull(roots, "roots");
+        for (int retry = 0; ; retry++) {
+            try {
+                return snapshotOnce(roots);
+            } catch (CharterRefusal refused) {
+                if (refused.code() != RefusalCode.STALE_INPUT || retry >= RETRIES) {
+                    throw refused;
+                }
+                read.awaitWrites(SWAP_WAIT);
+            }
+        }
+    }
+
+    /** One verified read of the closure. */
+    private ClosureView snapshotOnce(Optional<List<PackIdentifier>> roots) {
         ConsistentRead.Verified<OfferingReadService.ComposedClosure> verified =
                 read.read(STALE, () -> roots.map(this::composedOfKnownRoots).orElseGet(offering::composedWithFacts));
         return viewOf(verified.value(), verified.fingerprint());
@@ -106,14 +128,14 @@ public final class ClosureQueries {
                 OfferingReadService.entriesOf(packs),
                 heldIds,
                 holderOf,
-                heldIds.getOrDefault(ArtifactKind.MISSION_TYPE, Set.of()),
-                RequiredFloor.of(byHolder(closurePackIds, presets)),
+                RequiredFloor.of(byHolder(closurePackIds, presets), holderOf.keySet()),
                 policyOf(composed),
                 closurePackIds,
                 presets,
                 parentsOf(packs),
                 fingerprint,
-                EdgeIndex.of(packs, composed.facts()));
+                EdgeIndex.of(packs, composed.facts()),
+                new ClosureView.MergeInputs(packs, composed.facts()));
     }
 
     /** The held ids per kind, and the first holder of each URN in closure order. */
@@ -134,7 +156,9 @@ public final class ClosureQueries {
 
     /**
      * The closure's presets, each id once, de-duplicated once: when two packs hold one preset id, the last holder in
-     * merge order wins (ADR-0053 d6). The list is in first-seen order of the ids.
+     * merge order wins (ADR-0053 d6). The compose has refused two packs of one level that hold one id unless one
+     * extends the other, so the last holder is a pack of a nearer level or a child, which merges after its parent.
+     * The list is in first-seen order of the ids.
      */
     private static List<ClosureView.HeldPreset> winningPresets(OfferingReadService.ComposedClosure composed) {
         Map<String, ClosureView.HeldPreset> byId = new LinkedHashMap<>();
@@ -170,12 +194,12 @@ public final class ClosureQueries {
         return parents;
     }
 
-    /** The policy of each closure pack, by descriptor {@code pack_id}, from the facts the compose read. */
+    /**
+     * The policy of each closure pack, by descriptor {@code pack_id}, from the facts the compose read, scoped to what
+     * the pack and the packs it builds on hold (A15, {@link PackMutabilityPolicy#scopedPolicies}).
+     */
     private static PerPackPolicy policyOf(OfferingReadService.ComposedClosure composed) {
-        Map<String, MutabilityPolicySource> byPack = new HashMap<>();
-        composed.packs()
-                .forEach(pack -> byPack.put(
-                        pack.descriptor().packId(), composed.factsOf(pack).policy()));
-        return new PerPackPolicy(byPack);
+        return new PerPackPolicy(PackMutabilityPolicy.scopedPolicies(
+                composed.packs(), pack -> composed.factsOf(pack).policy()));
     }
 }
