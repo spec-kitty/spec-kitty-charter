@@ -1,0 +1,70 @@
+title: PackRegistrationStatus
+description: >-
+  The status of one registration (ADR-0065 D8, FR-024): the body of the 202 that PUT /packs/{packId} and POST /packs
+  answer, and of GET /pack-registrations/{registrationId}. state moves only forward: pending (accepted, waiting for a
+  worker), running, then succeeded (result holds the PackRegistration) or refused (problem holds the refusal the
+  synchronous API would have answered: the 409 and 422 answers of the registration flow are never synchronous). The
+  status is kept in memory for one hour after the job ends, at most 1,000 entries, and a restart forgets it: its URI
+  then answers 404 registration_not_found, and a client re-sends the pack, which the version rule makes idempotent. A
+  succeeded status carries a pack link (the stored pack, GET /packs/{packId}) beside its self.
+type: object
+additionalProperties: false
+required:
+- registrationId
+- state
+- packId
+- acceptedAt
+- _links
+properties:
+  registrationId:
+    type: string
+    pattern: ^[0-9A-HJKMNP-TV-Z]{26}$
+    description: The id the service minted for the registration (a ULID), the last segment of the status URI.
+    x-derived:
+      rule: A ULID the service mints when it accepts the registration.
+      inputs:
+      - the request
+  state:
+    type: string
+    enum:
+    - pending
+    - running
+    - succeeded
+    - refused
+    description: pending, running, succeeded or refused. A job ends succeeded or refused and then never changes. result is
+      present exactly when the state is succeeded, and problem exactly when it is refused.
+    x-derived:
+      rule: The point the registration job has reached.
+      inputs:
+      - the registration job
+  packId:
+    type: string
+    minLength: 1
+    description: The target pack, the identifier the registration writes to.
+    x-derived:
+      rule: The packId of the PUT path, or of the PackSource of the POST.
+      inputs:
+      - parameters/PackId.yaml
+      - schemas/PackSource.yaml
+  acceptedAt:
+    type: string
+    format: date-time
+    description: When the service accepted the registration (the moment of the 202).
+    x-derived:
+      rule: The service clock at acceptance.
+      inputs:
+      - the request
+  finishedAt:
+    type: string
+    format: date-time
+    description: When the job ended, succeeded or refused. Absent while it is pending or running.
+    x-derived:
+      rule: The service clock when the job ended.
+      inputs:
+      - the registration job
+  result:
+    $ref: PackRegistration.yaml
+  problem:
+    $ref: PackRegistrationProblem.yaml
+  _links:
+    $ref: Links.yaml

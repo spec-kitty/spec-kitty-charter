@@ -4,7 +4,6 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
-import ai.speckitty.charter.packs.domain.DirectiveReference;
 import ai.speckitty.charter.packs.domain.Enforcement;
 
 /** The {@link KindBinding} of the directive: {@link DirectiveDso} to {@link Directive} and back. */
@@ -43,13 +42,9 @@ enum DirectiveBinding implements KindBinding<DirectiveDso, Directive> {
                 .enforcement(Enforcement.fromToken(dso.enforcement())
                         .orElseThrow(() -> new IllegalArgumentException("unknown enforcement: " + dso.enforcement())))
                 .scope(dso.scope().orElse(null));
-        dso.procedures().forEach(builder::procedure);
         dso.integrityRules().forEach(builder::integrityRule);
         dso.validationCriteria().forEach(builder::validationCriterion);
         dso.explicitAllowances().forEach(builder::explicitAllowance);
-        dso.references()
-                .forEach(ref ->
-                        builder.reference(new DirectiveReference(ref.type(), ref.id(), ref.when(), ref.reason())));
         return builder.build();
     }
 
@@ -62,12 +57,8 @@ enum DirectiveBinding implements KindBinding<DirectiveDso, Directive> {
                 directive.intent(),
                 directive.enforcement().token(),
                 directive.scope(),
-                directive.procedures(),
                 directive.integrityRules(),
                 directive.validationCriteria(),
-                directive.explicitAllowances(),
-                directive.references().stream()
-                        .map(ref -> new DirectiveDso.Reference(ref.type(), ref.id(), ref.when(), ref.reason()))
-                        .toList());
+                directive.explicitAllowances());
     }
 }

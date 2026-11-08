@@ -3,8 +3,6 @@ package ai.speckitty.charter.packs.domain;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
-import ai.speckitty.charter.kernel.domain.Relationship;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
@@ -95,12 +93,6 @@ public final class Template implements CharterArtifact {
     @Override
     public Optional<String> description() {
         return Optional.empty();
-    }
-
-    /** A template mints no relationships. */
-    @Override
-    public List<Relationship> relationships() {
-        return List.of();
     }
 
     /**

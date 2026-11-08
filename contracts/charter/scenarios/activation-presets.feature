@@ -2,12 +2,13 @@
 Feature: Applying a preset to an activation
   PUT …/activations/{activationId}/presets/{presetId} applies one preset the activation's closure holds
   (ADR-0059 D6, ADR-0020 D6, FR-016, User Story 5). Each key the preset lists replaces that key of the document:
-  each selected.<kind> it lists, activatedKinds and missionTypes. A key the preset does not list is left as it is.
+  each selected.<kind> it lists, mission types under selected.mission_type (one kind model, IC-20; Q3: a preset may
+  name any kind). A key the preset does not list is left as it is.
   A preset lists a key when its file holds at least one member for it; the packs read an absent list and an empty
   one alike, so an empty list counts as not listed (A7). Without force a member the document denies is not
   selected and its deny entry stays; with force true the deny entries of the preset's members are cleared and
-  reported in cleared. applied lists every id the write added to or removed from selected, deactivated or
-  missionTypes, so the ids a replaced key drops are listed too; a kind is never an entry. A preset id no pack of
+  reported in cleared. applied lists every id the write added to or removed from selected or deactivated, so the
+  ids a replaced key drops are listed too; a kind is never an entry. A preset id no pack of
   the closure holds is 404 preset_not_found; when two packs of the closure hold one preset id, the last in merge
   order wins: a pack merges after the pack it extends by parent_pack, and two packs of one level that hold one
   preset id without being related by parent_pack are refused (pack_sibling_conflict). The write requires If-Match and answers an ActivationChange with the new revision as its ETag; a
@@ -15,8 +16,8 @@ Feature: Applying a preset to an activation
 
   The fixture is one org pack, main, over a second, shared, and a third pack, other, the activation does not
   name. main holds directives A, B, C and M, tactic t and the mission types old-type and software-dev. Its
-  presets: team (directives B and C, the kind gate [directives]), also held by shared with tactic u, where
-  main's wins because main extends shared by parent_pack; force-me (directives B and M); no-kinds (directive A and no kind gate); mission-types
+  presets: team (directives B and C), also held by shared with tactic u, where main's wins because main extends
+  shared by parent_pack; force-me (directives B and M); no-kinds (directive A); mission-types
   (activated_mission_types [software-dev]). other holds the preset outside.
 
   Background:
@@ -122,8 +123,6 @@ Feature: Applying a preset to an activation
       schema_version: '1.0'
       id: team
       description: The team's directives.
-      activated_kinds:
-        - directives
       activated_directives:
         - id: B
         - id: C
@@ -141,7 +140,7 @@ Feature: Applying a preset to an activation
       """
       schema_version: '1.0'
       id: no-kinds
-      description: A, with no kind gate.
+      description: A.
       activated_directives:
         - id: A
       """
@@ -181,12 +180,12 @@ Feature: Applying a preset to an activation
   # User Story 5: apply a preset.
 
   Scenario: A preset replaces each key it lists and leaves the others untouched
-    US5 AS1 (ADR-0059 D6): team lists directives and the kind gate, so selected.directive becomes [B, C] and
-    activatedKinds [directive]; selected.tactic is not listed and stays [t]. applied lists A, which the replaced
+    US5 AS1 (ADR-0059 D6): team lists directives, so selected.directive becomes [B, C]; selected.tactic is not listed
+    and stays [t]. applied lists A, which the replaced
     key dropped, as well as B and C (A1), and no kind. main's team wins over shared's, which lists tactic u.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "selected": {"directive": ["A"], "tactic": ["t"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["A"], "tactic": ["t"]}}
       """
     When I PUT "/activations/a-1/presets/team" with the stored ETag and the body:
       """
@@ -212,17 +211,14 @@ Feature: Applying a preset to an activation
       """
       t
       """
-    And the field at "/config/activatedKinds" holds exactly the ids:
-      """
-      directive
-      """
+    And the response body has no field at "/config/activatedKinds"
 
-  Scenario: A preset that lists no kind leaves activatedKinds untouched
-    A7: no-kinds has no activated_kinds, which the packs read as they read an empty list, so the key is not
-    listed and the document's kind gate stays.
+  Scenario: A preset that lists one kind leaves the selections of the other kinds untouched
+    A7, rewritten for the one kind model (IC-20): no-kinds lists directives only, so selected.tactic and
+    selected.mission_type, which it does not list, stay as they are.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "activatedKinds": ["tactic"], "selected": {"directive": ["B"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["B"], "mission_type": ["old-type"], "tactic": ["t"]}}
       """
     When I PUT "/activations/a-1/presets/no-kinds" with the stored ETag and the body:
       """
@@ -235,9 +231,13 @@ Feature: Applying a preset to an activation
       directive:B
       """
     When I GET "/activations/a-1"
-    Then the field at "/config/activatedKinds" holds exactly the ids:
+    Then the field at "/config/selected/tactic" holds exactly the ids:
       """
-      tactic
+      t
+      """
+    And the field at "/config/selected/mission_type" holds exactly the ids:
+      """
+      old-type
       """
     And the field at "/config/selected/directive" holds exactly the ids:
       """
@@ -248,7 +248,7 @@ Feature: Applying a preset to an activation
     US5 AS2, first half: M is denied, so force-me selects B alone; M is neither selected nor applied.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "deactivated": {"directive": ["M"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "deactivated": {"directive": ["M"]}}
       """
     When I PUT "/activations/a-1/presets/force-me" with the stored ETag and the body:
       """
@@ -274,7 +274,7 @@ Feature: Applying a preset to an activation
     US5 AS2, second half (ADR-0020 D6).
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "deactivated": {"directive": ["M"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "deactivated": {"directive": ["M"]}}
       """
     When I PUT "/activations/a-1/presets/force-me" with the stored ETag and the body:
       """
@@ -298,11 +298,12 @@ Feature: Applying a preset to an activation
       """
     And the response body has no field at "/config/deactivated"
 
-  Scenario: A preset that lists mission types replaces missionTypes
-    FR-016, R7: the replaced key's dropped id is in applied too (A1).
+  Scenario: A preset that lists mission types replaces selected.mission_type
+    FR-016, R7: the replaced key's dropped id is in applied too (A1). Mission types are selected under
+    selected.mission_type (IC-20).
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "missionTypes": ["old-type"]}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"mission_type": ["old-type"]}}
       """
     When I PUT "/activations/a-1/presets/mission-types" with the stored ETag and the body:
       """
@@ -315,15 +316,16 @@ Feature: Applying a preset to an activation
       mission_type:software-dev
       """
     When I GET "/activations/a-1"
-    Then the field at "/config/missionTypes" holds exactly the ids:
+    Then the field at "/config/selected/mission_type" holds exactly the ids:
       """
       software-dev
       """
+    And the response body has no field at "/config/missionTypes"
 
-  Scenario: A preset that lists no mission types leaves missionTypes untouched
+  Scenario: A preset that lists no mission types leaves selected.mission_type untouched
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "missionTypes": ["old-type"]}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"mission_type": ["old-type"]}}
       """
     When I PUT "/activations/a-1/presets/team" with the stored ETag and the body:
       """
@@ -331,7 +333,7 @@ Feature: Applying a preset to an activation
       """
     Then the response status is 200
     When I GET "/activations/a-1"
-    Then the field at "/config/missionTypes" holds exactly the ids:
+    Then the field at "/config/selected/mission_type" holds exactly the ids:
       """
       old-type
       """
@@ -341,7 +343,7 @@ Feature: Applying a preset to an activation
     empty applied and cleared, no dropped (the write dropped nothing), and nothing is stored.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "activatedKinds": ["directive"], "selected": {"directive": ["B", "C"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["B", "C"]}}
       """
     When I PUT "/activations/a-1/presets/team" with the stored ETag and the body:
       """
@@ -357,7 +359,7 @@ Feature: Applying a preset to an activation
     US5 AS3.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}]}
       """
     When I PUT "/activations/a-1/presets/no-such-preset" with the stored ETag and the body:
       """
@@ -372,7 +374,7 @@ Feature: Applying a preset to an activation
     FR-010: other holds outside, but the activation builds on main alone.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}]}
       """
     When I PUT "/activations/a-1/presets/outside" with the stored ETag and the body:
       """
@@ -395,7 +397,7 @@ Feature: Applying a preset to an activation
       """
     And the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}]}
       """
     When I PUT "/activations/a-1/presets/stale" with the stored ETag and the body:
       """
@@ -431,7 +433,7 @@ Feature: Applying a preset to an activation
       """
     And the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "selected": {"directive": ["GONE"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["GONE"]}}
       """
     And the file "directives/GONE.directive.yaml" of the pack "main" is deleted
     When I PUT "/activations/a-1/presets/stale" with the stored ETag and the body:
@@ -454,7 +456,7 @@ Feature: Applying a preset to an activation
     the preconditions (FR-010), and never read as true. Nothing is stored.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}]}
       """
     When I PUT "/activations/a-1/presets/team" with the stored ETag and the body:
       """
@@ -472,7 +474,7 @@ Feature: Applying a preset to an activation
   Scenario: Applying a preset without If-Match is 428
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}]}
       """
     When I PUT "/activations/a-1/presets/team" with the body:
       """
@@ -483,7 +485,7 @@ Feature: Applying a preset to an activation
   Scenario: Applying a preset with a stale If-Match is 412, before the preset is judged
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}]}
       """
     When I PUT "/activations/a-1/presets/no-such-preset" with If-Match "\"sha256:1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f\"" and the body:
       """

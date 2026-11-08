@@ -598,19 +598,34 @@ final class FilesystemPackStore {
      */
     <D> Optional<D> readOne(PackIdentifier id, KindBinding<D, ?> kind, String elementId) {
         Path directory = existingDirectory(id);
-        return locate(directory, kind, elementId).flatMap(file -> {
-            String name = directory
-                    .relativize(file)
-                    .toString()
-                    .replace(file.getFileSystem().getSeparator(), "/");
-            return switch (readFile(file, name, text -> strategy.read(kind, text, name))) {
-                case FileRead.Read<D> good ->
-                    withCompanions(
-                            companionRules, directory, name, kind, good.value(), new ArrayList<>(), new HashSet<>());
-                case FileRead.Unreadable<D> bad -> Optional.empty();
-                case FileRead.Absent<D> absent -> Optional.empty();
-            };
-        });
+        return locate(directory, kind, elementId)
+                .flatMap(file -> readListed(
+                        directory,
+                        directory
+                                .relativize(file)
+                                .toString()
+                                .replace(file.getFileSystem().getSeparator(), "/"),
+                        kind));
+    }
+
+    /**
+     * Reads one file that was listed, as its kind, with its companions: the one way a single file is read, shared by the
+     * lookup by id ({@link #readOne}) and by a bulk read that has the listing ({@code WholePackStore#salvageStored}),
+     * which must not look each file up again.
+     *
+     * @param directory the pack directory
+     * @param name the file's pack-relative path
+     * @param kind the kind's binding
+     * @param <D> the kind's persistence shape
+     * @return the element, or empty when the file cannot be read as the kind or a companion is refused
+     */
+    <D> Optional<D> readListed(Path directory, String name, KindBinding<D, ?> kind) {
+        return switch (readFile(directory.resolve(name), name, text -> strategy.read(kind, text, name))) {
+            case FileRead.Read<D> good ->
+                withCompanions(companionRules, directory, name, kind, good.value(), new ArrayList<>(), new HashSet<>());
+            case FileRead.Unreadable<D> bad -> Optional.empty();
+            case FileRead.Absent<D> absent -> Optional.empty();
+        };
     }
 
     /**
@@ -696,7 +711,7 @@ final class FilesystemPackStore {
      * be a file the pack holds and digests as a template, never a file the table excludes or retires. A link is
      * followed, as the pack walk follows one, as long as its real place stays in the pack.
      *
-     * @param directory the pack directory
+     * @param directory the pack directory, absolute and normalized (the callers normalize it; #319)
      * @param file the artifact's pack-relative path
      * @param named the paths it names, relative to its file, with what names each
      * @param table the table that classifies the named file
@@ -1072,12 +1087,27 @@ final class FilesystemPackStore {
         return directory;
     }
 
+    /** Files parsed by lookups by id, for the test that holds a bulk read to a bounded number of parses. */
+    private static final java.util.concurrent.atomic.LongAdder LOOKUP_PARSES =
+            new java.util.concurrent.atomic.LongAdder();
+
+    /**
+     * How many files lookups by id have parsed in this JVM. A lookup parses files until one declares the id, so a bulk
+     * read that looks every file up by id grows with the square of the pack; this is the counter that tells.
+     *
+     * @return the count
+     */
+    static long lookupParses() {
+        return LOOKUP_PARSES.sum();
+    }
+
     /**
      * The existing file of the kind whose id (under the kind's {@link KindBinding#idKey()}) is {@code elementId}; the
      * first in path order if several do.
      */
     private static Optional<Path> locate(Path directory, KindBinding<?, ?> kind, String elementId) {
         for (String file : PackFileSet.files(directory, kind.kind())) {
+            LOOKUP_PARSES.increment();
             ParsedYaml parsed =
                     ParsedYaml.parse(readText(directory.resolve(file)).orElse(""), file);
             if (parsed.document() instanceof java.util.Map<?, ?> map && elementId.equals(map.get(kind.idKey()))) {

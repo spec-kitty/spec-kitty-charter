@@ -1,0 +1,12 @@
+title: PackRegistrationProblem
+description: >-
+  The refusal a registration job ended with, in the Problem shape of every other refusal: a code, and violations or
+  packs where the code carries them. It is a refusal code of CharterRefusalCode when the job was refused by a rule of the
+  registration flow, and has no code for a stale If-Match after the 202 (a 412) or an upstream failure (502 or 504).
+  Its status is the one x-refusal gives that code for getPackRegistration.
+allOf:
+  - $ref: ../../_shared/schemas/Problem.yaml
+x-derived:
+  rule: The refusal that ended the registration job.
+  inputs:
+  - schemas/CharterRefusalCode.yaml

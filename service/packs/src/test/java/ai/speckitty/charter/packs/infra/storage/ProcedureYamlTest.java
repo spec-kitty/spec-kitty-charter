@@ -59,7 +59,6 @@ class ProcedureYamlTest {
                         "exit_condition",
                         "steps",
                         "anti_patterns",
-                        "references",
                         "notes",
                         "applies_to_languages");
     }
@@ -112,29 +111,6 @@ class ProcedureYamlTest {
     }
 
     @Test
-    @DisplayName("references keep their when and reason when stated, omit them when not, and keep order and duplicates")
-    void referencesKeepTheirOptionalTexts() throws IOException {
-        ProcedureDso dso = read(fixture("full"));
-
-        assertThat(ProcedureBinding.INSTANCE.toEntity(PACK, dso).references())
-                .extracting(ref -> ref.type().token() + ":" + ref.id() + ":"
-                        + ref.when().isPresent() + ":" + ref.reason().isPresent())
-                .containsExactly(
-                        "tactic:review-first:true:true",
-                        "directive:REVIEW_FIRST:false:false",
-                        "tactic:review-first:true:false",
-                        "styleguide:commit-style:false:true");
-        assertThat(entries(written(dso), "references"))
-                .extracting(Map::keySet)
-                .map(List::copyOf)
-                .containsExactly(
-                        List.of("type", "id", "when", "reason"),
-                        List.of("type", "id"),
-                        List.of("type", "id", "when"),
-                        List.of("type", "id", "reason"));
-    }
-
-    @Test
     @DisplayName("a procedure with only the required fields writes no optional key back")
     void theMinimalFixtureWritesNoOptionalKey() throws IOException {
         String source = fixture("minimal");
@@ -142,8 +118,7 @@ class ProcedureYamlTest {
         String written = written(dso);
 
         assertThat(read(written)).isEqualTo(dso);
-        assertThat(map(Yaml.load(written)))
-                .doesNotContainKeys("anti_patterns", "references", "notes", "applies_to_languages");
+        assertThat(map(Yaml.load(written))).doesNotContainKeys("anti_patterns", "notes", "applies_to_languages");
         assertThat(MeaningComparator.adr0036().compareTexts("procedure", source, written))
                 .isEmpty();
     }
@@ -203,7 +178,7 @@ class ProcedureYamlTest {
     @Test
     @DisplayName("a list entry that is not a mapping is a reader's error, thrown, never skipped (N6)")
     void aListEntryThatIsNoMappingIsThrownNotSkipped() {
-        for (String key : List.of("steps", "anti_patterns", "references")) {
+        for (String key : List.of("steps", "anti_patterns")) {
             Map<String, Object> root = new java.util.LinkedHashMap<>(Map.of(
                     "schema_version", "1.0",
                     "id", "p",

@@ -6,7 +6,9 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.packs.application.PackRevision;
+import ai.speckitty.charter.packs.application.PackWriteGeneration;
 import ai.speckitty.charter.packs.application.PackWriteStore;
+import ai.speckitty.charter.packs.application.RegistryWriteLock;
 import ai.speckitty.charter.packs.domain.PackFinding;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -32,7 +34,9 @@ import org.springframework.stereotype.Service;
  * {@link PackCommitStore} do (a configured name wins, otherwise the location whose {@code pack.yaml} declares the
  * {@code pack_id}), and reads the revision and the shard text from that directory. It never mutates the pack itself;
  * {@link #commit} delegates the stage-and-swap to {@link PackCommitStore}, under the same per-pack in-JVM write lock
- * ({@link PackWriteLocks}) {@link #exclusively} holds across a registration's load, precondition and commit.
+ * ({@link PackWriteLocks}) {@link #exclusively} holds across a registration's load, precondition and commit. That lock is
+ * taken inside the {@link RegistryWriteLock}, always in that order (R-lock), and {@link #commit} brackets its swap with
+ * the {@link PackWriteGeneration}, so a verified read can tell a swap ran.
  */
 @Service
 public final class CommitStorePackWriteStore implements PackWriteStore {
@@ -40,6 +44,8 @@ public final class CommitStorePackWriteStore implements PackWriteStore {
     private final DomainRepositoryService.Locations locations;
     private final SerializationStrategy strategy;
     private final PackCommitStore commitStore;
+    private final RegistryWriteLock registryLock;
+    private final PackWriteGeneration generation;
 
     /**
      * An adapter over the configured locations and WP04's commit store.
@@ -51,9 +57,30 @@ public final class CommitStorePackWriteStore implements PackWriteStore {
     @Autowired
     public CommitStorePackWriteStore(
             DomainRepositoryService.Locations locations, SerializationStrategy strategy, PackCommitStore commitStore) {
+        this(locations, strategy, commitStore, RegistryWriteLock.shared(), PackWriteGeneration.shared());
+    }
+
+    /**
+     * An adapter over an explicit registry lock and write generation; a test injects a short lock timeout and a
+     * generation of its own.
+     *
+     * @param locations the configured pack locations
+     * @param strategy the serialization format
+     * @param commitStore WP04's aggregate-commit store
+     * @param registryLock the lock every write takes before the pack's own
+     * @param generation the write generation a commit's swap is bracketed with
+     */
+    public CommitStorePackWriteStore(
+            DomainRepositoryService.Locations locations,
+            SerializationStrategy strategy,
+            PackCommitStore commitStore,
+            RegistryWriteLock registryLock,
+            PackWriteGeneration generation) {
         this.locations = Objects.requireNonNull(locations, "locations");
         this.strategy = Objects.requireNonNull(strategy, "strategy");
         this.commitStore = Objects.requireNonNull(commitStore, "commitStore");
+        this.registryLock = Objects.requireNonNull(registryLock, "registryLock");
+        this.generation = Objects.requireNonNull(generation, "generation");
     }
 
     @Override
@@ -100,10 +127,17 @@ public final class CommitStorePackWriteStore implements PackWriteStore {
 
     @Override
     public <T> T exclusively(PackIdentifier pack, Supplier<T> work) {
-        // Keyed by the resolved entry, so a pack addressed by its configured name and by its declared id shares one
-        // lock,
-        // the lock the listing takes to repair an interrupted commit (#281).
-        Path directory = resolve(pack);
+        // The registry lock first, then the pack's own (R-lock): every pack write goes through here, so the per-kind
+        // registrations and the relationship write all take them in that order. A busy registry refuses before the
+        // work.
+        // The pack is resolved under the registry lock too: with no swap running, a listing cannot miss a directory
+        // that a concurrent writer is renaming.
+        return registryLock.exclusively(() -> underPackLock(resolve(pack), work));
+    }
+
+    /** Runs {@code work} under the lock of the resolved entry, so a pack addressed by name and by id shares one lock,
+     * the lock the listing takes to repair an interrupted commit (#281). */
+    private <T> T underPackLock(Path directory, Supplier<T> work) {
         ReentrantLock lock = PackWriteLocks.of(directory);
         lock.lock();
         try {
@@ -123,7 +157,8 @@ public final class CommitStorePackWriteStore implements PackWriteStore {
     public PackRevision commit(PackIdentifier pack, @Nullable String ifMatch, Change change) {
         @Nullable String shard = change.relationships().map(RelationshipShard::write).orElse(null);
         @Nullable CharterArtifact artifact = change.artifact().orElse(null);
-        return exclusively(pack, () -> commitStore.commit(pack, ifMatch, artifact, shard));
+        return exclusively(
+                pack, () -> generation.bracket(pack.value(), () -> commitStore.commit(pack, ifMatch, artifact, shard)));
     }
 
     /** The pack's live directory, resolved as {@link DomainRepositoryService}/{@link PackCommitStore} resolve it. */

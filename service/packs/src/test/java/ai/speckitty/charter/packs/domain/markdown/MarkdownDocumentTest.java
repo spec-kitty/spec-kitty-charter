@@ -14,7 +14,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * The construction invariants and the equality of {@link MarkdownDocument}: each invariant is shown refused and with
@@ -36,7 +36,7 @@ class MarkdownDocumentTest {
     class Titles {
 
         @ParameterizedTest(name = "title {0} is refused")
-        @ValueSource(strings = {"Two\nlines", "Carriage\rreturn", "", "   ", " Leading", "Trailing "})
+        @MethodSource("ai.speckitty.charter.packs.domain.markdown.MarkdownRuleCases#refusedTitles")
         @DisplayName("a multi-line, blank or space-padded title is refused, naming the field")
         void refusedTitles(String title) {
             assertThatIllegalArgumentException()
@@ -48,7 +48,7 @@ class MarkdownDocumentTest {
         }
 
         @ParameterizedTest(name = "title {0} is refused")
-        @ValueSource(strings = {"Title ##", "#", "Release #", "Tabbed\t#"})
+        @MethodSource("ai.speckitty.charter.packs.domain.markdown.MarkdownRuleCases#titlesThatDoNotReadBack")
         @DisplayName("#271: a title that would not read back as a heading's text (a closing # sequence) is refused")
         void titlesThatDoNotReadBackAreRefused(String title) {
             assertThatIllegalArgumentException()
@@ -60,7 +60,7 @@ class MarkdownDocumentTest {
         }
 
         @ParameterizedTest(name = "title {0} is accepted")
-        @ValueSource(strings = {"Two lines", "Carriage return", "x", "Inner  spaces", "C#", "Release #1", "#hashtag"})
+        @MethodSource("ai.speckitty.charter.packs.domain.markdown.MarkdownRuleCases#acceptedTitles")
         @DisplayName("the single-line, non-blank, unpadded neighbours are accepted")
         void acceptedTitles(String title) {
             assertThat(withTitle(title).title()).contains(title);
@@ -73,19 +73,7 @@ class MarkdownDocumentTest {
     class Blocks {
 
         @ParameterizedTest(name = "block {0} is refused")
-        @ValueSource(
-                strings = {
-                    "\ntext",
-                    "  \ntext",
-                    "text\n",
-                    "text\n  ",
-                    "text\r\nmore",
-                    "## Heading",
-                    "text\n\n# Heading",
-                    "```\nunclosed",
-                    " ## indented heading",
-                    "Paragraph\n==="
-                })
+        @MethodSource("ai.speckitty.charter.packs.domain.markdown.MarkdownRuleCases#refusedBlocks")
         @DisplayName("a leading or trailing blank line, a CR, a heading, an open fence or an ambiguity is refused")
         void refusedBlocks(String block) {
             assertThatIllegalArgumentException()
@@ -97,17 +85,7 @@ class MarkdownDocumentTest {
         }
 
         @ParameterizedTest(name = "block {0} is accepted")
-        @ValueSource(
-                strings = {
-                    "",
-                    "text",
-                    "text\n\n\nmore",
-                    "### Heading",
-                    "text\n\n#Heading",
-                    "```\n## Heading\n```",
-                    "    ## indented four, so text",
-                    "Paragraph\n\n==="
-                })
+        @MethodSource("ai.speckitty.charter.packs.domain.markdown.MarkdownRuleCases#acceptedBlocks")
         @DisplayName("the neighbours (empty, inner blank lines, H3, fenced or deeply indented headings) are accepted")
         void acceptedBlocks(String block) {
             assertThat(withPreamble(block).preamble()).isEqualTo(block);
@@ -123,7 +101,7 @@ class MarkdownDocumentTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {"---", "---\nx", "\uFEFFintro"})
+        @MethodSource("ai.speckitty.charter.packs.domain.markdown.MarkdownRuleCases#openingPreambles")
         @DisplayName("a preamble that opens the text is refused when it would not read back; behind a title it is not")
         void openingPreamble(String preamble) {
             assertThatIllegalArgumentException()
