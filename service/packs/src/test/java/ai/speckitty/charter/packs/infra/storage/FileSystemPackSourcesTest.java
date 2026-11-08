@@ -70,6 +70,21 @@ class FileSystemPackSourcesTest {
     }
 
     @Test
+    void theFingerprintOfANameNoConfiguredPackBearsIsRefusedNotSkipped(@TempDir Path dir) throws IOException {
+        Path inside = Files.createDirectories(dir.resolve("inside"));
+        Files.writeString(inside.resolve("pack.yaml"), "name: inside\n");
+        FileSystemPackSources sources =
+                new FileSystemPackSources(() -> List.of(new PackLocation("inside", PackLevel.ORG, inside)));
+        assertThat(sources.fingerprintOf(List.of("inside"))).as("the control: a configured name").startsWith("sha256:");
+
+        assertThatThrownBy(() -> sources.fingerprintOf(List.of("inside", "ghost")))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+                    assertThat(refusal.getMessage()).contains("ghost");
+                });
+    }
+
+    @Test
     void aPackThatIsNoDirectoryHasNoSourceFingerprint(@TempDir Path dir) {
         assertThatThrownBy(() -> sources(dir.resolve("missing")).fingerprint())
                 .isInstanceOfSatisfying(

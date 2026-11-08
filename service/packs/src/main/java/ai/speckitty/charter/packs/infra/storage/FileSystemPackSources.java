@@ -38,8 +38,14 @@ public final class FileSystemPackSources implements PackSources {
 
     @Override
     public String fingerprintOf(Collection<String> packNames) {
+        List<PackLocation> configured = locations.get();
+        for (String name : packNames) {
+            if (configured.stream().noneMatch(location -> location.name().equals(name))) {
+                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + name + " is not configured");
+            }
+        }
         return digestNamed(
-                locations.get().stream()
+                configured.stream()
                         .filter(location -> packNames.contains(location.name()))
                         .toList(),
                 PackFileSet::digested);
