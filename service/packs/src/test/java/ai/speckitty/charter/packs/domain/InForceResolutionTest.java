@@ -82,6 +82,16 @@ class InForceResolutionTest {
             return this;
         }
 
+        Closure enhances(String from, String to) {
+            enhances.computeIfAbsent(u(from), k -> new LinkedHashSet<>()).add(u(to));
+            return this;
+        }
+
+        Closure requires(String... urns) {
+            Arrays.stream(urns).forEach(urn -> required.put(u(urn), List.of("id-pack")));
+            return this;
+        }
+
         Closure languages(String urn, String... declared) {
             languages.put(u(urn), Set.of(declared));
             return this;
@@ -112,6 +122,12 @@ class InForceResolutionTest {
             assertThat(actual.state()).as(urn + " state").isEqualTo(state);
             assertThat(actual.reason()).as(urn + " reason").isEqualTo(reason);
         });
+    }
+
+    private static void expectSatisfiedBy(InForceStates states, String urn, String by) {
+        assertThat(states.stateOf(u(urn)).orElseThrow().satisfiedBy())
+                .as(urn + " satisfiedBy")
+                .contains(u(by));
     }
 
     // ---- stratum 1: the candidate set (E1, E2, E3, E9) ----
@@ -316,5 +332,180 @@ class InForceResolutionTest {
                         .orElseThrow()
                         .active())
                 .isTrue();
+    }
+
+    // ---- stratum 3: the floor, to a fixed point (E5, E13, I10, A2, A3, C28) ----
+
+    @Test
+    void aRequiredArtifactNothingSatisfiesIsPutInForce() {
+        InForceStates states =
+                new Closure().open("tactic:T").requires("tactic:T").select();
+
+        expect(states, "tactic:T", State.ACTIVE, Reason.REQUIRED);
+        assertThat(states.stateOf(u("tactic:T")).orElseThrow().required()).isTrue();
+    }
+
+    @Test
+    void aRequiredArtifactTheDocumentSelectsIsInForceAsRequired() {
+        InForceStates states =
+                new Closure().open("tactic:T").requires("tactic:T").select("tactic:T");
+
+        expect(states, "tactic:T", State.ACTIVE, Reason.REQUIRED);
+    }
+
+    @Test
+    void aDenyEntryOnARequiredArtifactNothingSatisfiesIsNotApplied() {
+        InForceStates states =
+                new Closure().open("tactic:T").requires("tactic:T").resolve(urns(), urns("tactic:T"));
+
+        expect(states, "tactic:T", State.ACTIVE, Reason.REQUIRED);
+        assertThat(states.denyNotApplied()).containsExactly(new DenyNotApplied(u("tactic:T"), DenyReason.REQUIRED));
+    }
+
+    @Test
+    void aRequiredArtifactTheLanguageFilterExcludesIsStillPutInForce() {
+        Closure closure = new Closure().open("tactic:T").requires("tactic:T").languages("tactic:T", "java");
+        InForceRequest request = new InForceRequest(urns("tactic:T"), Set.of(), Optional.of(Set.of("go")), Map.of());
+
+        expect(closure.resolve(request), "tactic:T", State.ACTIVE, Reason.REQUIRED);
+    }
+
+    @Test
+    void aRequiredArtifactAnActiveOverrideSatisfiesIsNotPutInForce() {
+        InForceStates states = new Closure()
+                .open("tactic:E", "tactic:T")
+                .requires("tactic:T")
+                .overrides("tactic:E", "tactic:T")
+                .select("tactic:E", "tactic:T");
+
+        expect(states, "tactic:E", State.ACTIVE, Reason.SELECTED);
+        expect(states, "tactic:T", State.INACTIVE, Reason.OVERRIDDEN);
+        expectSatisfiedBy(states, "tactic:T", "tactic:E");
+        assertThat(states.denyNotApplied()).isEmpty();
+    }
+
+    @Test
+    void aDenyEntryOnARequiredArtifactAnOverrideSatisfiesStands() {
+        InForceStates states = new Closure()
+                .open("tactic:E", "tactic:T")
+                .requires("tactic:T")
+                .overrides("tactic:E", "tactic:T")
+                .resolve(urns("tactic:E"), urns("tactic:T"));
+
+        expect(states, "tactic:T", State.EXCLUDED, Reason.DEACTIVATED);
+        expectSatisfiedBy(states, "tactic:T", "tactic:E");
+        assertThat(states.denyNotApplied()).isEmpty();
+    }
+
+    @Test
+    void anEnhancerNeverSatisfiesARequirement() {
+        InForceStates states = new Closure()
+                .open("tactic:T", "tactic:X")
+                .requires("tactic:T")
+                .enhances("tactic:X", "tactic:T")
+                .select("tactic:X");
+
+        expect(states, "tactic:T", State.ACTIVE, Reason.REQUIRED);
+        expect(states, "tactic:X", State.ACTIVE, Reason.SELECTED);
+    }
+
+    @Test
+    void aChainOfOverridesSatisfiesARequirementOnItsEnd() {
+        InForceStates states = new Closure()
+                .open("tactic:F", "tactic:E", "tactic:T")
+                .requires("tactic:T")
+                .overrides("tactic:F", "tactic:E")
+                .overrides("tactic:E", "tactic:T")
+                .select("tactic:F", "tactic:T");
+
+        expect(states, "tactic:T", State.INACTIVE, Reason.OVERRIDDEN);
+        expectSatisfiedBy(states, "tactic:T", "tactic:F");
+    }
+
+    @Test
+    void anOverriderPutInForceByTheRequirementHidesItsTargets() {
+        InForceStates states = new Closure()
+                .open("tactic:U", "tactic:X")
+                .requires("tactic:U")
+                .overrides("tactic:U", "tactic:X")
+                .select("tactic:X");
+
+        expect(states, "tactic:U", State.ACTIVE, Reason.REQUIRED);
+        expect(states, "tactic:X", State.INACTIVE, Reason.OVERRIDDEN);
+    }
+
+    @Test
+    void aRequiredOverriderOfAnotherRequiredArtifactSatisfiesIt() {
+        InForceStates states = new Closure()
+                .open("tactic:R1", "tactic:R2")
+                .requires("tactic:R1", "tactic:R2")
+                .overrides("tactic:R1", "tactic:R2")
+                .select();
+
+        expect(states, "tactic:R1", State.ACTIVE, Reason.REQUIRED);
+        expect(states, "tactic:R2", State.INACTIVE, Reason.NOT_SELECTED);
+        expectSatisfiedBy(states, "tactic:R2", "tactic:R1");
+    }
+
+    @Test
+    void anOverriderTheDocumentDeniesDoesNotSatisfyARequirement() {
+        InForceStates states = new Closure()
+                .open("tactic:E", "tactic:T")
+                .requires("tactic:T")
+                .overrides("tactic:E", "tactic:T")
+                .resolve(urns("tactic:E"), urns("tactic:E"));
+
+        expect(states, "tactic:T", State.ACTIVE, Reason.REQUIRED);
+    }
+
+    @Test
+    void aSatisfiedRequirementNamesTheSmallestOverriderInForce() {
+        InForceStates states = new Closure()
+                .open("tactic:E2", "tactic:E1", "tactic:T")
+                .requires("tactic:T")
+                .overrides("tactic:E2", "tactic:T")
+                .overrides("tactic:E1", "tactic:T")
+                .select("tactic:E1", "tactic:E2", "tactic:T");
+
+        expectSatisfiedBy(states, "tactic:T", "tactic:E1");
+    }
+
+    @Test
+    void aLockedRequiredArtifactIsLockedNotRequired() {
+        InForceStates states =
+                new Closure().locked("tactic:L").requires("tactic:L").select();
+
+        expect(states, "tactic:L", State.ACTIVE, Reason.LOCKED);
+    }
+
+    /** A2: the requirement is judged on the final set, to a fixed point, with overrides composed transitively (A3). */
+    @Test
+    void theRequirementIsJudgedOnTheFinalSetAndTheAnswerIsExactlyTheRuledOne() {
+        InForceStates states = new Closure()
+                .open("tactic:E", "tactic:T", "tactic:U")
+                .overrides("tactic:E", "tactic:T")
+                .overrides("tactic:U", "tactic:E")
+                .requires("tactic:T", "tactic:U")
+                .select("tactic:E", "tactic:T");
+
+        expect(states, "tactic:U", State.ACTIVE, Reason.REQUIRED);
+        expect(states, "tactic:E", State.INACTIVE, Reason.OVERRIDDEN);
+        expect(states, "tactic:T", State.INACTIVE, Reason.OVERRIDDEN);
+        expectSatisfiedBy(states, "tactic:T", "tactic:U");
+        assertThat(states.stateOf(u("tactic:E")).orElseThrow().satisfiedBy()).isEmpty();
+    }
+
+    @Test
+    void twoRequiredArtifactsOverridingEachOtherAreRefusedAsUnreadable() {
+        Closure closure = new Closure()
+                .open("tactic:A", "tactic:B")
+                .requires("tactic:A", "tactic:B")
+                .overrides("tactic:A", "tactic:B")
+                .overrides("tactic:B", "tactic:A");
+
+        assertThatThrownBy(() -> closure.select())
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
     }
 }
