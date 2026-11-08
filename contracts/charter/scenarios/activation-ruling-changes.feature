@@ -7,10 +7,9 @@
 # - A4's first counter-example in the review denies a required T that an active override E satisfies. Accepting that
 #   deny entry is IC-13's relaxed write rule, which PR B builds; the A0 scenario below reaches the same state (a deny
 #   entry on a now-required artifact in the stored document) through a pack change instead.
-# - A10's report of the unheld must-have item is a read of PR B (requiredNotHeld, WP22 and WP25), and the DELETE of an artifact
-#   another pack's preset names is PR A's deletePackArtifact (WP19), which bound its scenario: the report one is still
-#   its own @WIP scenario at the end. WP22 declares the requiredNotHeld bucket and keeps the scenario in line with it;
-#   WP25, which serves the skipped report, binds it and removes the tag.
+# - A10's report of the unheld must-have item is a read of PR B (the skipped report's requiredNotHeld, WP22 and WP25),
+#   and the DELETE of an artifact another pack's preset names is PR A's deletePackArtifact (WP19): both scenarios are
+#   bound.
 
 @contract @activations
 Feature: The A0 rulings on activation writes and on the packs
@@ -176,13 +175,14 @@ Feature: The A0 rulings on activation writes and on the packs
     When I GET "/activations/a-1"
     Then the response status is 200
     When I remember the ETag
-    And I remember the header "ETag"
+    And I remember the field "revision" of the response body
     And I PUT "/activations/a-1" with the remembered ETag and the body:
       """
       {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["D1"]}, "deactivated": {"directive": ["R"]}}
       """
     Then the response status is 200
-    And the response header "ETag" is the remembered header
+    And the response header "ETag" is the quoted field "/revision"
+    And the field "revision" of the response body is the remembered one
     And the field at "/config/deactivated/directive" holds exactly the ids:
       """
       R
@@ -200,7 +200,10 @@ Feature: The A0 rulings on activation writes and on the packs
 
   Scenario: A4 - a PUT of the body read before a pack upgrade removed an id drops the id and lists it in dropped
     Before A4 the PUT was 422 unknown_artifact. The id the replaced document named is dropped; D1, which the pack
-    still holds, stays selected (the control in the same answer).
+    still holds, stays selected (the control in the same answer). The tag the GET answered is the closure tag
+    (decision 01M6Y11E55YP5TG1EJ1MDKCFRP): the pack upgrade changed the closure, so that tag is stale and a write that
+    sends it is 412 (decision 01M6Y3GZFRC5WEQQ7G6GT0YMW3); the same body with the stored revision is the write the
+    scenario is about.
     Given the activation "a-1" holds:
       """
       {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["D1", "X"]}}
@@ -210,6 +213,11 @@ Feature: The A0 rulings on activation writes and on the packs
     When I remember the ETag
     And the file "directives/X.directive.yaml" of the pack "main" is deleted
     And I PUT "/activations/a-1" with the remembered ETag and the body:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["D1", "X"]}}
+      """
+    Then the response status is 412
+    When I PUT "/activations/a-1" with the stored ETag and the body:
       """
       {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["D1", "X"]}}
       """
@@ -414,6 +422,13 @@ Feature: The A0 rulings on activation writes and on the packs
     When I GET "/packs/right/artifacts"
     Then the response status is 200
     And the field at "/items/0/id" is "right-way"
+    When I GET "/activations/a-1/artifacts?kind=tactic"
+    Then the response status is 200
+    And the field at "/items" holds exactly the ids:
+      """
+      tactic:left-way
+      tactic:right-way
+      """
 
   # A15: a pack's policy locks only its own artifacts and those of the packs it builds on.
 
@@ -495,14 +510,12 @@ Feature: The A0 rulings on activation writes and on the packs
     When I GET "/packs/main/artifacts/directive/D1"
     Then the response status is 200
 
-  # WP22 (PR B) declares the skipped report and its requiredNotHeld bucket; WP25 (PR B) serves it, binds this scenario,
-  # surfaces floor.unheld() and removes the @WIP tag. The answer is ActivationSkippedReport: the report is at /report.
-  @WIP
+  # The skipped report (PR B) answers requiredNotHeld from floor.unheld(). The answer is ActivationSkippedReport: the
+  # report is at /report.
   Scenario: A10 - the unheld must-have item is in requiredNotHeld
-    WIP: the report of an unheld must-have item is PR B's skipped report (requiredNotHeld, declared by WP22 and served
-    by WP25, which binds this scenario and removes the tag). The preset item is spelled as a bare id, as the preset item
-    grammar requires (a pack-qualified main::D1 is refused), and names main's D1. The held item D1 is the control: it is
-    required and in force, and it is not in the bucket.
+    The report of an unheld must-have item is the skipped report's requiredNotHeld. The preset item is spelled as a bare
+    id, as the preset item grammar requires (a pack-qualified main::D1 is refused), and names main's D1. The held item
+    D1 is the control: it is required and in force, and it is not in the bucket.
     Given the org pack "other" with the file "presets/governing.yaml":
       """
       schema_version: '1.0'

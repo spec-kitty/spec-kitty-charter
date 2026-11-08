@@ -65,22 +65,28 @@ Feature: The activation register and the packs an activation builds on
     And the path of the Location header is the href of the link "self"
 
   Scenario: A fetched config registered unchanged answers 200 with the same ETag
-    US1 AS2, the round trip (ADR-0020 D6).
+    US1 AS2, the round trip (ADR-0020 D6). getActivation's ETag is the closure tag (operator decision
+    01M6Y11E55YP5TG1EJ1MDKCFRP), not the revision: the GET tag differs from the stored revision, a PUT may carry it as
+    If-Match (decision 01M6Y3GZFRC5WEQQ7G6GT0YMW3), and the write answers the unchanged revision as its ETag.
     Given the activation "a-1" holds:
       """
       {"schemaVersion": 2, "selected": {"directive": ["DIRECTIVE_001"]}}
       """
     When I GET "/activations/a-1"
     Then the response status is 200
-    And the response header "ETag" is the quoted field "/revision"
+    And the response header "ETag" differs from the stored ETag
+    And the field at "/revision" is the stored revision
     When I remember the ETag
     And I remember the header "ETag"
+    And I remember the field "revision" of the response body
     And I PUT "/activations/a-1" with the remembered ETag and the body:
       """
       {"schemaVersion": 2, "selected": {"directive": ["DIRECTIVE_001"]}}
       """
     Then the response status is 200
-    And the response header "ETag" is the remembered header
+    And the response header "ETag" is the quoted field "/revision"
+    And the field "revision" of the response body is the remembered one
+    And the response header "ETag" differs from the remembered header
 
   Scenario: A stale If-Match is refused and the current revision is kept
     US1 AS3: the If-Match names the first revision after another write replaced it.
@@ -103,7 +109,7 @@ Feature: The activation register and the packs an activation builds on
     And the problem has no code
     When I GET "/activations/a-1"
     Then the response status is 200
-    And the response header "ETag" is the remembered header
+    And the field at "/revision" is the remembered header "ETag" without its quotes
     And the field at "/config/selected/directive/0" is "DIRECTIVE_002"
 
   Scenario: Without If-Match the last writer wins
@@ -137,7 +143,7 @@ Feature: The activation register and the packs an activation builds on
     And the response header "ETag" is the remembered header
     When I GET "/activations/a-2"
     Then the field at "/config/selected/directive/0" is "DIRECTIVE_001"
-    And the response header "ETag" is the remembered header
+    And the field at "/revision" is the remembered header "ETag" without its quotes
 
   Scenario: A deny entry spelled as a URN is judged as the declared id
     Given the org pack "alpha" with the file "presets/governing.yaml":
@@ -405,14 +411,21 @@ Feature: The activation register and the packs an activation builds on
     Then the response status is 412
 
   Scenario: A read whose If-None-Match matches the ETag answers 304 without a body
-    FR-002, ADR-0059 D5.
+    FR-002, ADR-0059 D5 as amended (operator decision 01M6Y11E55YP5TG1EJ1MDKCFRP): the ETag of the read is the closure
+    tag, so the tag the read answered is the one that matches; the revision, which a write answers, is not the read's
+    tag and answers 200 (the control).
     Given the activation "a-1" holds:
       """
       {"schemaVersion": 2}
       """
+    When I GET "/activations/a-1"
+    Then the response status is 200
     When I remember the header "ETag"
-    And I GET "/activations/a-1" with If-None-Match the stored ETag
+    And I GET "/activations/a-1" with If-None-Match the remembered header "ETag"
     Then the response status is 304
+    And the response header "ETag" is the remembered header
+    When I GET "/activations/a-1" with If-None-Match the stored ETag
+    Then the response status is 200
     And the response header "ETag" is the remembered header
 
   Scenario: Reading an unknown activation answers 404
@@ -567,11 +580,13 @@ Feature: The activation register and the packs an activation builds on
       """
       {"schemaVersion": 2, "selected": {"directive": ["DIRECTIVE_002"]}}
       """
-    And the file "directives/DIRECTIVE_002.directive.yaml" of the pack "alpha" is deleted
-    When I GET "/activations/a-1" with If-None-Match the stored ETag
-    Then the response status is 304
     When I GET "/activations/a-1"
     Then the response status is 200
+    When I remember the header "ETag"
+    And the file "directives/DIRECTIVE_002.directive.yaml" of the pack "alpha" is deleted
+    And I GET "/activations/a-1" with If-None-Match the remembered header "ETag"
+    Then the response status is 200
+    And the response header "ETag" differs from the remembered header
     And the field at "/config/selected/directive/0" is "DIRECTIVE_002"
     When I PUT "/activations/a-1" with the body:
       """
@@ -657,13 +672,14 @@ Feature: The activation register and the packs an activation builds on
     Then the response status is 200
     And the field at "/config/deactivated/directive/0" is "DIRECTIVE_001"
     When I remember the ETag
-    And I remember the header "ETag"
+    And I remember the field "revision" of the response body
     And I PUT "/activations/a-1" with the remembered ETag and the body:
       """
       {"schemaVersion": 2, "deactivated": {"directive": ["DIRECTIVE_001"]}}
       """
     Then the response status is 200
-    And the response header "ETag" is the remembered header
+    And the response header "ETag" is the quoted field "/revision"
+    And the field "revision" of the response body is the remembered one
     And the field at "/config/deactivated/directive/0" is "DIRECTIVE_001"
     When I PUT "/activations/a-2" with the body:
       """

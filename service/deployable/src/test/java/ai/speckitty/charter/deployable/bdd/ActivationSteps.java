@@ -64,6 +64,15 @@ public class ActivationSteps {
         }
     }
 
+    /**
+     * The {@code ETag} the last stored activation was stored with, which is its revision, quoted.
+     *
+     * @return the quoted tag
+     */
+    public String storedETag() {
+        return stored();
+    }
+
     @Given("the project activates the pack(s) {string}")
     public void projectActivates(String packIds) throws Exception {
         String packs = Arrays.stream(packIds.split(","))

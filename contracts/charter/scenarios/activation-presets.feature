@@ -368,7 +368,8 @@ Feature: Applying a preset to an activation
     Then the response status is 404
     And the problem code is "preset_not_found"
     When I GET "/activations/a-1"
-    Then the response header "ETag" is the stored ETag
+    Then the field at "/revision" is the stored revision
+    And the response header "ETag" differs from the stored ETag
 
   Scenario: A preset held only by a pack outside the activation's closure is 404 preset_not_found
     FR-010: other holds outside, but the activation builds on main alone.
@@ -408,7 +409,8 @@ Feature: Applying a preset to an activation
     And the field at "/violations/0/pointer" is ""
     And the field at "/violations/0/code" is "unknown_artifact"
     When I GET "/activations/a-1"
-    Then the response header "ETag" is the stored ETag
+    Then the field at "/revision" is the stored revision
+    And the response header "ETag" differs from the stored ETag
 
   Scenario: A stale preset member the stored document already names is 422, never a no-op
     ADR-0059 amendment A5: a pack upgrade removed GONE, which the stored selected.directive and the preset still
@@ -445,7 +447,8 @@ Feature: Applying a preset to an activation
     And the field at "/violations/0/pointer" is ""
     And the field at "/violations/0/code" is "unknown_artifact"
     When I GET "/activations/a-1"
-    Then the response header "ETag" is the stored ETag
+    Then the field at "/revision" is the stored revision
+    And the response header "ETag" differs from the stored ETag
     And the field at "/config/selected/directive" holds exactly the ids:
       """
       GONE
@@ -467,7 +470,8 @@ Feature: Applying a preset to an activation
     And the field at "/violations/0/pointer" is "/force"
     And the field at "/violations/0/code" is "unreadable_body"
     When I GET "/activations/a-1"
-    Then the response header "ETag" is the stored ETag
+    Then the field at "/revision" is the stored revision
+    And the response header "ETag" differs from the stored ETag
 
   # The preconditions are judged before the content (FR-010).
 

@@ -66,7 +66,7 @@ Feature: The guards of the activation register
     And the problem has no code
     When I GET "/activations/a-1"
     Then the response status is 200
-    And the response header "ETag" is the remembered header
+    And the field at "/revision" is the remembered header "ETag" without its quotes
 
   Scenario: If-None-Match * on a stored id is refused before the body is judged
     Given the activation "a-1" holds:
