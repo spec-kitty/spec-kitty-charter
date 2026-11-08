@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.domain;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.InForceStates.ArtifactState;
@@ -9,6 +10,7 @@ import ai.speckitty.charter.packs.domain.InForceStates.DenyNotApplied;
 import ai.speckitty.charter.packs.domain.InForceStates.DenyReason;
 import ai.speckitty.charter.packs.domain.InForceStates.OverrideNotApplied;
 import ai.speckitty.charter.packs.domain.InForceStates.Reason;
+import ai.speckitty.charter.packs.domain.InForceStates.RequiredNotInForce;
 import ai.speckitty.charter.packs.domain.InForceStates.State;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -86,13 +88,14 @@ public final class InForceResolution {
         return model.states(model.solve());
     }
 
-    /** What the strata settle: the set the requirement and the pruning leave, and the overrides that were withdrawn. */
-    private record Outcome(Set<Urn> inForce, Map<Urn, Set<Urn>> reach) {}
+    /** What the strata settle: the set in force, what the pruning removed, and the overrides still applied. */
+    private record Outcome(Set<Urn> inForce, Set<Urn> pruned, Map<Urn, Set<Urn>> reach) {}
 
     /** The closure as the strata read it: the held ids, the locked and required ones, and the override graph. */
     private static final class Model {
 
         private final MergedClosure merged;
+        private final Edges edges;
         private final InForceRequest request;
         private final Set<Urn> held;
         private final Set<Urn> locked = new LinkedHashSet<>();
@@ -103,6 +106,7 @@ public final class InForceResolution {
 
         Model(MergedClosure merged, Edges edges, InForceRequest request) {
             this.merged = merged;
+            this.edges = edges;
             this.request = request;
             this.held = merged.winners().keySet();
             this.bound = held.size() + 1;
@@ -179,26 +183,30 @@ public final class InForceResolution {
         }
 
         /** Every artifact an artifact overrides, directly or through a chain, over the edges not withdrawn (E4). */
-        Map<Urn, Set<Urn>> reach() {
+        Map<Urn, Set<Urn>> reach(Set<Urn> withdrawn) {
             Map<Urn, Set<Urn>> reach = new HashMap<>();
             for (Urn urn : held) {
-                reach.put(urn, descendants(urn));
+                reach.put(urn, descendants(urn, withdrawn));
             }
             return reach;
         }
 
-        private Set<Urn> descendants(Urn source) {
+        private Set<Urn> descendants(Urn source, Set<Urn> withdrawn) {
             Set<Urn> seen = new LinkedHashSet<>();
-            List<Urn> todo = new ArrayList<>(overridable.getOrDefault(source, Set.of()));
+            List<Urn> todo = new ArrayList<>(edgesOf(source, withdrawn));
             int steps = 0;
             while (!todo.isEmpty()) {
                 Urn next = todo.removeLast();
                 if (seen.add(next)) {
-                    todo.addAll(overridable.getOrDefault(next, Set.of()));
+                    todo.addAll(edgesOf(next, withdrawn));
                 }
                 steps = bounded(steps);
             }
             return seen;
+        }
+
+        private Set<Urn> edgesOf(Urn source, Set<Urn> withdrawn) {
+            return withdrawn.contains(source) ? Set.of() : overridable.getOrDefault(source, Set.of());
         }
 
         /** Counts one step of a walk and fails loudly when a walk takes more steps than the closure can need. */
@@ -211,22 +219,109 @@ public final class InForceResolution {
         }
 
         /**
-         * The strata 1 to 3 (E4, E5): the candidates less what an overrider among them hides, then the requirement
-         * iterated until no required artifact is unsatisfied on the final set (A2).
+         * The four strata, to a fixed point (R13): the requirement and the pruning are run again, without the overrides of
+         * every overrider the pruning removed, until no overrider is newly removed. A removed overrider that comes back
+         * in force with its overrides withdrawn has no stable answer and is refused (E7).
          */
         Outcome solve() {
-            Map<Urn, Set<Urn>> reach = reach();
+            Set<Urn> withdrawn = new LinkedHashSet<>();
+            for (int round = 0; round <= bound; round++) {
+                Outcome outcome = settle(withdrawn);
+                Set<Urn> removed = minus(overridersOf(outcome.pruned()), withdrawn);
+                if (removed.isEmpty()) {
+                    refuseUnstable(withdrawn, outcome);
+                    return outcome;
+                }
+                withdrawn.addAll(removed);
+            }
+            throw new IllegalStateException(
+                    "the in-force resolution crossed its bound of " + bound + " (closure size) without settling");
+        }
+
+        private Set<Urn> overridersOf(Set<Urn> urns) {
+            Set<Urn> overriders = new LinkedHashSet<>(urns);
+            overriders.retainAll(overridable.keySet());
+            return overriders;
+        }
+
+        private void refuseUnstable(Set<Urn> withdrawn, Outcome outcome) {
+            TreeSet<Urn> back = new TreeSet<>(withdrawn);
+            back.retainAll(outcome.inForce());
+            if (!back.isEmpty()) {
+                throw new CharterRefusal(
+                        RefusalCode.PACK_UNREADABLE,
+                        "`" + back.first()
+                                + "` is pruned while its overrides apply and in force once they are withdrawn: the"
+                                + " in-force set has no stable answer (override_unstable)");
+            }
+        }
+
+        /** One pass of the strata 1 to 4 (E4 to E6) over the overrides not withdrawn. */
+        private Outcome settle(Set<Urn> withdrawn) {
+            Map<Urn, Set<Urn>> reach = reach(withdrawn);
+            Set<Urn> demanded = requirement(reach);
+            Set<Urn> inForce = prune(demanded);
+            return new Outcome(inForce, minus(demanded, inForce), reach);
+        }
+
+        /** The candidates less what an overrider among them hides, then the requirement iterated to a fixed point (A2). */
+        private Set<Urn> requirement(Map<Urn, Set<Urn>> reach) {
             Set<Urn> base = base();
             Set<Urn> inForce = minus(base, hiddenBy(base, reach));
             for (int round = 0; round <= bound; round++) {
                 Set<Urn> next = step(inForce, reach);
                 if (next.equals(inForce)) {
-                    return new Outcome(inForce, reach);
+                    return inForce;
                 }
                 inForce = next;
             }
             throw new IllegalStateException(
                     "the requirement iteration crossed its bound of " + bound + " (closure size) without settling");
+        }
+
+        /** The least fixed point of the grounding (E6, A8): an enhancer needs a target in the set, a bound one its mission type. */
+        private Set<Urn> prune(Set<Urn> candidates) {
+            Set<Urn> grounded = new LinkedHashSet<>();
+            for (int round = 0; round <= bound; round++) {
+                Set<Urn> next = groundedIn(candidates, grounded);
+                if (next.equals(grounded)) {
+                    return grounded;
+                }
+                grounded = next;
+            }
+            throw new IllegalStateException(
+                    "the enhancer pruning crossed its bound of " + bound + " (closure size) without settling");
+        }
+
+        private Set<Urn> groundedIn(Set<Urn> candidates, Set<Urn> set) {
+            Set<Urn> next = new LinkedHashSet<>();
+            candidates.stream().filter(urn -> standsOn(urn, set)).forEach(next::add);
+            return next;
+        }
+
+        /** Whether an artifact is grounded in the set: a target of its enhancement in it, and its mission type in it. */
+        private boolean standsOn(Urn urn, Set<Urn> set) {
+            return !enhancerOut(urn, set) && !bindingOut(urn, set);
+        }
+
+        private boolean enhancerOut(Urn urn, Set<Urn> inForce) {
+            Set<Urn> targets = edges.enhances().getOrDefault(urn, Set.of());
+            return !targets.isEmpty() && targets.stream().noneMatch(inForce::contains);
+        }
+
+        private boolean bindingOut(Urn urn, Set<Urn> inForce) {
+            return bindingOf(urn)
+                    .filter(missionType -> !inForce.contains(missionType))
+                    .isPresent();
+        }
+
+        /** The mission type an artifact is bound to: a step by its URN, any other by the closure's bindings. */
+        private Optional<Urn> bindingOf(Urn urn) {
+            int slash = urn.id().indexOf('/');
+            if (urn.kind() == NodeKind.ACTION && slash > 0) {
+                return Optional.of(Urn.missionType(urn.id().substring(0, slash)));
+            }
+            return Optional.ofNullable(edges.bindings().get(urn));
         }
 
         /** One step of the requirement (E5): add what no artifact in force satisfies, then hide what that hides. */
@@ -270,8 +365,29 @@ public final class InForceResolution {
                     denyNotApplied(outcome),
                     overrideNotApplied(outcome),
                     sorted(merged.floor().unheld().keySet()),
-                    List.of(),
-                    Map.of());
+                    requiredNotInForce(outcome, states),
+                    enhancedTargets(states));
+        }
+
+        /** The required or locked artifacts the pruning removed (the enhancer and binding rules win over the floor). */
+        private List<RequiredNotInForce> requiredNotInForce(Outcome outcome, Map<Urn, ArtifactState> states) {
+            return sorted(outcome.pruned()).stream()
+                    .filter(urn -> required.contains(urn) || locked.contains(urn))
+                    .map(urn -> new RequiredNotInForce(
+                            urn,
+                            Objects.requireNonNull(states.get(urn), "a held artifact has a state")
+                                    .reason()))
+                    .toList();
+        }
+
+        private Map<Urn, List<Urn>> enhancedTargets(Map<Urn, ArtifactState> states) {
+            Map<Urn, List<Urn>> targets = new LinkedHashMap<>();
+            states.forEach((urn, state) -> {
+                if (state.reason() == Reason.ENHANCED_TARGET_NOT_IN_FORCE) {
+                    targets.put(urn, sorted(edges.enhances().getOrDefault(urn, Set.of())));
+                }
+            });
+            return targets;
         }
 
         private ArtifactState stateOf(Urn urn, Outcome outcome) {
@@ -309,6 +425,12 @@ public final class InForceResolution {
                 return locked.contains(urn)
                         ? Reason.LOCKED
                         : required.contains(urn) ? Reason.REQUIRED : Reason.SELECTED;
+            }
+            if (bindingOut(urn, outcome.inForce())) {
+                return Reason.MISSION_TYPE_NOT_IN_FORCE;
+            }
+            if (enhancerOut(urn, outcome.inForce())) {
+                return Reason.ENHANCED_TARGET_NOT_IN_FORCE;
             }
             if (!request.admits(merged.languages().getOrDefault(urn, Set.of()))) {
                 return Reason.LANGUAGE_FILTERED;

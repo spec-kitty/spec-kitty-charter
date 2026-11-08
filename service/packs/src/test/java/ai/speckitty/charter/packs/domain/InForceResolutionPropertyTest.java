@@ -10,9 +10,9 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.InForceResolution.Edges;
 import ai.speckitty.charter.packs.domain.InForceStates.ArtifactState;
-import ai.speckitty.charter.packs.domain.InForceStates.Reason;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -52,29 +52,40 @@ class InForceResolutionPropertyTest {
 
     @Test
     void everyGeneratedClosureHoldsTheInvariants() {
-        int checked = 0;
+        Map<Outcome, Integer> seen = new EnumMap<>(Outcome.class);
         for (long seed : SEEDS) {
             Random random = new Random(seed);
             for (int n = 0; n < CASES; n++) {
-                check(seed, n, generate(random));
-                checked++;
+                seen.merge(check(seed, n, generate(random)), 1, Integer::sum);
             }
         }
+        int checked = seen.values().stream().mapToInt(Integer::intValue).sum();
         assertThat(checked).isEqualTo(SEEDS.size() * CASES).isGreaterThanOrEqualTo(1_000);
+        assertThat(seen.getOrDefault(Outcome.ANSWERED, 0)).as(seen.toString()).isGreaterThan(checked / 2);
+        assertThat(seen.getOrDefault(Outcome.CYCLE_REFUSED, 0))
+                .as(seen.toString())
+                .isPositive();
     }
 
-    private static void check(long seed, int n, Case generated) {
+    /** How a generated closure was answered. */
+    private enum Outcome {
+        ANSWERED,
+        CYCLE_REFUSED,
+        UNSTABLE_REFUSED
+    }
+
+    private static Outcome check(long seed, int n, Case generated) {
         String what = "seed " + seed + ", case " + n + ": " + generated;
         Optional<InForceStates> answer = answer(generated, what);
         if (generated.cyclic() && hasReachableCycle(generated)) {
             assertThat(answer).as(what + " (an override cycle is refused)").isEmpty();
-            return;
+            return Outcome.CYCLE_REFUSED;
         }
         if (answer.isEmpty()) {
             assertThat(generated.boundOverrider())
                     .as(what + " (only a bound or enhancing overrider can be refused as unstable)")
                     .isTrue();
-            return;
+            return Outcome.UNSTABLE_REFUSED;
         }
         InForceStates states = answer.get();
         assertThat(states.states().keySet())
@@ -87,6 +98,7 @@ class InForceResolutionPropertyTest {
                         shuffled(generated.request(), seed + n)))
                 .as(what + " (the answer does not depend on input order)")
                 .isEqualTo(states);
+        return Outcome.ANSWERED;
     }
 
     private static Optional<InForceStates> answer(Case generated, String what) {
@@ -100,7 +112,8 @@ class InForceResolutionPropertyTest {
 
     private static void invariants(Case generated, InForceStates states, String what) {
         Set<Urn> inForce = activeOf(states);
-        Map<Urn, Set<Urn>> reach = reachOf(generated, states);
+        Map<Urn, Set<Urn>> reach = reachOf(generated);
+        Map<Urn, Set<Urn>> direct = directOverrides(generated);
         MergedClosure closure = generated.closure();
         Set<Urn> reported = new HashSet<>();
         states.requiredNotInForce().forEach(entry -> reported.add(entry.urn()));
@@ -116,7 +129,7 @@ class InForceResolutionPropertyTest {
             }
             if (state.active()) {
                 enhancedAndBound(generated, inForce, urn, what);
-                reach.getOrDefault(urn, Set.of())
+                hiddenBy(generated, direct, urn)
                         .forEach(hidden -> assertThat(inForce)
                                 .as(what + " " + urn + " in force hides " + hidden)
                                 .doesNotContain(hidden));
@@ -126,6 +139,24 @@ class InForceResolutionPropertyTest {
                 .as(what + " requiredNotHeld")
                 .containsExactlyElementsOf(
                         new TreeSet<>(closure.floor().unheld().keySet()));
+    }
+
+    /**
+     * What an overrider in force must hide: its direct targets, and the targets of every unprunable artifact among them
+     * (one that enhances nothing and is bound to nothing, so nothing could have withdrawn its overrides).
+     */
+    private static Set<Urn> hiddenBy(Case generated, Map<Urn, Set<Urn>> direct, Urn overrider) {
+        Set<Urn> hidden = new HashSet<>();
+        List<Urn> todo = new ArrayList<>(direct.getOrDefault(overrider, Set.of()));
+        while (!todo.isEmpty()) {
+            Urn next = todo.removeLast();
+            boolean unprunable = !generated.edges().enhances().containsKey(next)
+                    && bindingOf(generated.edges(), next).isEmpty();
+            if (hidden.add(next) && unprunable) {
+                todo.addAll(direct.getOrDefault(next, Set.of()));
+            }
+        }
+        return hidden;
     }
 
     private static boolean satisfied(ArtifactState state, Set<Urn> inForce, Map<Urn, Set<Urn>> reach, Urn urn) {
@@ -165,18 +196,22 @@ class InForceResolutionPropertyTest {
         return active;
     }
 
-    /** The transitive overrides, over the edges whose source was not pruned: a pruned overrider withdraws its edges. */
-    private static Map<Urn, Set<Urn>> reachOf(Case generated, InForceStates states) {
+    /** The open targets each overrider names directly, over every edge of the case. */
+    private static Map<Urn, Set<Urn>> directOverrides(Case generated) {
         Map<Urn, Set<Urn>> direct = new HashMap<>();
-        generated.edges().overrides().forEach((source, targets) -> {
-            Reason reason = states.stateOf(source).orElseThrow().reason();
-            if (reason != Reason.MISSION_TYPE_NOT_IN_FORCE && reason != Reason.ENHANCED_TARGET_NOT_IN_FORCE) {
-                targets.stream()
+        generated
+                .edges()
+                .overrides()
+                .forEach((source, targets) -> targets.stream()
                         .filter(target -> overridable(generated.closure(), target))
                         .forEach(target -> direct.computeIfAbsent(source, k -> new HashSet<>())
-                                .add(target));
-            }
-        });
+                                .add(target)));
+        return direct;
+    }
+
+    /** The chains of overrides over every edge of the case: an upper bound of what any overrider in force hides. */
+    private static Map<Urn, Set<Urn>> reachOf(Case generated) {
+        Map<Urn, Set<Urn>> direct = directOverrides(generated);
         Map<Urn, Set<Urn>> reach = new HashMap<>();
         for (Urn source : generated.closure().winners().keySet()) {
             reach.put(source, descendants(direct, source));
@@ -202,14 +237,7 @@ class InForceResolutionPropertyTest {
 
     /** Whether an override cycle is reachable from the candidate set or the floor, judged on the generated edges. */
     private static boolean hasReachableCycle(Case generated) {
-        Map<Urn, Set<Urn>> direct = new HashMap<>();
-        generated
-                .edges()
-                .overrides()
-                .forEach((source, targets) -> targets.stream()
-                        .filter(target -> overridable(generated.closure(), target))
-                        .forEach(target -> direct.computeIfAbsent(source, k -> new HashSet<>())
-                                .add(target)));
+        Map<Urn, Set<Urn>> direct = directOverrides(generated);
         Set<Urn> roots = new HashSet<>();
         generated.closure().winners().forEach((urn, winner) -> {
             boolean candidate = generated.request().selected().contains(urn)
