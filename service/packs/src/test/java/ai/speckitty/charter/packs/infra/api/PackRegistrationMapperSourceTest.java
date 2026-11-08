@@ -22,7 +22,10 @@ import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
-/** What the status of a registration from a source answers (IC-05): the source as sent, and a plain 502 or 504. */
+/**
+ * What the status of a registration from a source answers (IC-05): the source as recorded (a git source with the commit
+ * its ref resolved to), and a plain 502 or 504.
+ */
 class PackRegistrationMapperSourceTest {
 
     private static final Instant NOW = Instant.parse("2026-11-07T10:00:00Z");
@@ -59,6 +62,25 @@ class PackRegistrationMapperSourceTest {
         assertThat(status.getResult().getSource().getKind().getValue()).isEqualTo("https_archive");
         assertThat(status.getResult().getSource().getUrl()).isEqualTo("https://packs.example.org/a.tgz?x=1");
         assertThat(status.getResult().getSource().getPath()).isNull();
+    }
+
+    @Test
+    void aGitResultCarriesItsRefAndTheCommitTheRefResolvedTo() {
+        String commit = "0123456789abcdef0123456789abcdef01234567";
+        PackRegistrationStatus status = statusOf(
+                new Succeeded(
+                        outcome(),
+                        Map.of(
+                                "kind", "git",
+                                "url", "https://git.example.org/acme/packs.git",
+                                "ref", "refs/heads/main",
+                                "commit", commit)),
+                State.SUCCEEDED);
+
+        assertThat(status.getResult().getSource().getKind().getValue()).isEqualTo("git");
+        assertThat(status.getResult().getSource().getUrl()).isEqualTo("https://git.example.org/acme/packs.git");
+        assertThat(status.getResult().getSource().getRef()).isEqualTo("refs/heads/main");
+        assertThat(status.getResult().getSource().getCommit()).isEqualTo(commit);
     }
 
     @Test
