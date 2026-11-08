@@ -27,6 +27,8 @@ import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackSources;
+import ai.speckitty.charter.packs.domain.Preset;
+import ai.speckitty.charter.packs.domain.PresetItem;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
 import ai.speckitty.charter.packs.infra.storage.PackLocation;
 import java.io.IOException;
@@ -51,16 +53,27 @@ import org.springframework.test.web.servlet.MockMvc;
  * and controller, and MockMvc in front. Only the facts of a pack are authored in memory instead of read from files, and
  * each pack's directory holds the one file the digests read.
  *
+ * <p>The first pack also holds a directive {@code R} that its governing preset requires and the activation does not
+ * select (the requirement adds it, so the requirement iterates), and a directive {@code G} that the head of the chain
+ * enhances while no artifact puts {@code G} in force: the head is pruned, its overrides are withdrawn and the strata run
+ * a second time (the fixed point iterates). One resolution therefore walks a known number of nodes, which
+ * {@link EffectiveReadOperationBudgetTest} derives from the constants above.
+ *
  * <p>{@link #revise()} gives every pack a new revision, so the facts cache misses on the next read: the cache key varies.
  */
 final class EffectiveReadFixture {
 
     static final int PACKS = 10;
     static final int ARTIFACTS_PER_PACK = 200;
-    static final int ARTIFACTS = PACKS * ARTIFACTS_PER_PACK;
+    /** The artifacts the activation selects. */
+    static final int SELECTED = PACKS * ARTIFACTS_PER_PACK;
+
+    /** The artifacts the closure holds: the selected ones, the required one nobody selects and the enhancer's target. */
+    static final int ARTIFACTS = SELECTED + 2;
     static final String PATH = "/api/v1/activations/a-1/artifacts?pageSize=200";
 
-    private static final int CHAIN = 30;
+    /** The length of the chain of overrides: thirty links, from the first artifact of the first pack. */
+    static final int CHAIN = 30;
 
     final CompositionFactsCache cache;
     final MockMvc mvc;
@@ -176,12 +189,28 @@ final class EffectiveReadFixture {
 
     /** The facts of a pack: two hundred directives, and in the first a chain of overrides, each hiding the next. */
     private static PackCompositionFacts factsOf(int pack) {
-        List<String> defined = IntStream.range(0, ARTIFACTS_PER_PACK)
+        List<String> defined = new ArrayList<>(IntStream.range(0, ARTIFACTS_PER_PACK)
                 .mapToObj(artifact -> "directive:" + id(pack, artifact))
-                .toList();
+                .toList());
         List<Relationship> edges = new ArrayList<>();
         List<String> changed = new ArrayList<>();
+        List<Preset> presets = new ArrayList<>();
         if (pack == 0) {
+            defined.addAll(List.of("directive:R", "directive:G"));
+            presets.add(new Preset(
+                    "governing",
+                    "R is required.",
+                    Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("R")))));
+            PackQualifiedReference head = PackQualifiedReference.parse("directive:" + id(0, 0));
+            PackQualifiedReference target = PackQualifiedReference.parse("directive:G");
+            edges.add(new Relationship(
+                    head.asUrn().orElseThrow(),
+                    head.packName(),
+                    target.asUrn().orElseThrow(),
+                    target.packName(),
+                    RelationType.ENHANCES,
+                    Optional.empty(),
+                    Optional.empty()));
             for (int link = 0; link < CHAIN; link++) {
                 PackQualifiedReference from = PackQualifiedReference.parse("directive:" + id(0, link));
                 PackQualifiedReference to = PackQualifiedReference.parse("directive:" + id(0, link + 1));
@@ -197,7 +226,7 @@ final class EffectiveReadFixture {
             }
         }
         return new PackCompositionFacts(
-                changed, defined, List.of(), MutabilityPolicySource.empty(), List.of(), edges, Map.of());
+                changed, defined, List.of(), MutabilityPolicySource.empty(), presets, edges, Map.of());
     }
 
     private static ActivationDocument activation() {
