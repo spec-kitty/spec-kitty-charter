@@ -19,78 +19,122 @@ import org.snakeyaml.engine.v2.api.Load;
 import org.snakeyaml.engine.v2.api.LoadSettings;
 
 /**
- * The 501 pins of {@code activations.feature} and the operations the contract marks {@code x-reserved} are one to
- * one (ADR-0020 D8): every reserved operation is pinned by a scenario that calls it, and every pin calls a reserved
- * operation. A reserved operation without a pin, or a pin whose operation was built (its {@code x-reserved} removed)
- * but whose scenario was not, fails here. Only the request lines of the {@code @reserved} scenarios count: a scenario
- * of the file that is not a pin may call a built operation.
+ * The 501 pins and the operations the contract marks {@code x-reserved} are one to one, contract set by contract set
+ * (ADR-0020 D8): every reserved operation of a set is pinned by a scenario of the set's feature that calls it, and every
+ * pin calls a reserved operation of that set. A reserved operation without a pin, or a pin whose operation was built
+ * (its {@code x-reserved} removed) but whose scenario was not, fails here. The set {@code activation} is pinned by
+ * {@code activations.feature}; the set {@code pack-registration} by {@code registration/reserved-registration.feature}.
+ * A set the contract reserves that this class does not know fails too. Only the request lines of the {@code @reserved}
+ * scenarios count: a scenario of the file that is not a pin may call a built operation.
  */
 class ReservedOperationCoverageTest {
 
     private static final String OPENAPI = "contract/charter/openapi.yaml";
-    private static final String FEATURE = "scenarios/activations.feature";
+    /** The pin file of each contract set. */
+    private static final Map<String, String> FEATURES = Map.of(
+            "activation", "scenarios/activations.feature",
+            "pack-registration", "scenarios/registration/reserved-registration.feature");
+
     private static final Pattern REQUEST =
             Pattern.compile("^\\s*(?:When|And) I (?:send )?(GET|PUT|POST|DELETE|PATCH) \"([^\"?]+)(?:\\?[^\"]*)?\"");
     private static final Pattern RESERVED_TAG = Pattern.compile("\n\\s*@reserved\\s*\n");
     private static final Pattern NEXT_SCENARIO =
             Pattern.compile("^\\s*(?:@|Scenario|Rule:|Example:|Background:)", Pattern.MULTILINE);
+    /** A pin that proves the 501 comes before the request body is bound is named so. */
+    private static final Pattern BODY_PIN =
+            Pattern.compile("^Scenario: .*before .*body is bound", Pattern.CASE_INSENSITIVE);
+
     private static final List<String> METHODS = List.of("get", "put", "post", "delete", "patch");
 
     private final ContractConformance contract = new ContractConformance();
 
     @Test
+    void everyContractSetThatReservesAnOperationHasAPinFile() {
+        assertThat(allReserved().keySet()).isSubsetOf(FEATURES.keySet());
+    }
+
+    @Test
     void everyReservedOperationIsPinnedAndEveryPinCallsAReservedOperation() {
-        assertThat(pinnedOperations())
-                .as("the operations the 501 pins of %s call", FEATURE)
+        FEATURES.forEach((set, feature) -> assertThat(pinnedOperations(feature))
+                .as("the operations the 501 pins of %s call (contract set %s)", feature, set)
                 .isNotEmpty()
-                .isEqualTo(reservedOperations());
+                .isEqualTo(reservedOperations(set)));
     }
 
     @Test
     void theActivationSetReservesFourOperations() {
         // #291 built the per-artifact writes and the preset write: only the four effective reads stay reserved.
-        assertThat(reservedOperations()).hasSize(4);
+        assertThat(reservedOperations("activation")).hasSize(4);
     }
 
     @Test
-    void noReservedOperationTakesABody() {
-        // The interceptor answers a reserved operation 501 before its body is bound (ADR-0020 D8). That was pinned by
-        // a scenario sending an unbindable body to the last reserved write; with every write built, no reserved
-        // operation takes a body, so the pin went. A reserved operation that declares a requestBody needs it back.
-        assertThat(reserved().entrySet())
-                .as(
-                        "reserved operations that declare a requestBody: restore the '501 before the body is bound' pin"
-                                + " in %s for each",
-                        FEATURE)
-                .filteredOn(operation -> operation.getValue().node().containsKey("requestBody"))
-                .isEmpty();
+    void thePackRegistrationSetReservesItsSixOperations() {
+        // PUT and POST /packs, GET /packs/{packId}, GET /pack-registrations/{registrationId}, and the two DELETEs of an
+        // artifact and of a relationship. Each serving work package removes one with its pin.
+        assertThat(reservedOperations("pack-registration")).hasSize(6);
     }
 
-    private Set<String> reservedOperations() {
-        return reserved().keySet();
+    @Test
+    void everyReservedOperationThatTakesABodyIsPinnedBeforeItsBodyIsBound() {
+        // The interceptor answers a reserved operation 501 before its body is bound (ADR-0020 D8). A reserved operation
+        // that declares a requestBody needs a pin that shows it: a scenario named "... before its body is bound" that
+        // sends the operation a request whose body would be refused if it were bound.
+        Map<String, ContractConformance.DeclaredOperation> withBody = new TreeMap<>();
+        allReserved()
+                .values()
+                .forEach(operations -> operations.forEach((key, operation) -> {
+                    if (operation.node().containsKey("requestBody")) {
+                        withBody.put(key, operation);
+                    }
+                }));
+        Set<String> bodyPins = new TreeSet<>();
+        FEATURES.values().forEach(feature -> bodyPins.addAll(pinnedOperations(feature, BODY_PIN)));
+        assertThat(withBody.keySet())
+                .as("reserved operations that declare a requestBody, each pinned before its body is bound")
+                .isSubsetOf(bodyPins);
     }
 
-    /** The reserved operations, keyed {@code METHOD /template}. */
-    private Map<String, ContractConformance.DeclaredOperation> reserved() {
+    private Set<String> reservedOperations(String set) {
+        return allReserved().getOrDefault(set, Map.of()).keySet();
+    }
+
+    /** The reserved operations by contract set, each keyed {@code METHOD /template}. */
+    private Map<String, Map<String, ContractConformance.DeclaredOperation>> allReserved() {
         Map<?, ?> paths = (Map<?, ?>) load(OPENAPI).get("paths");
-        Map<String, ContractConformance.DeclaredOperation> reserved = new TreeMap<>();
+        Map<String, Map<String, ContractConformance.DeclaredOperation>> reserved = new TreeMap<>();
         for (Object template : paths.keySet()) {
             for (String method : METHODS) {
                 String concrete = String.valueOf(template).replaceAll("\\{[^}]+}", "x");
                 contract.operation(method, concrete)
                         .filter(operation -> operation.pathTemplate().equals(template))
                         .filter(ContractConformance.DeclaredOperation::reserved)
-                        .ifPresent(operation -> reserved.put(key(method, operation.pathTemplate()), operation));
+                        .ifPresent(operation -> reserved.computeIfAbsent(contractSet(operation), set -> new TreeMap<>())
+                                .put(key(method, operation.pathTemplate()), operation));
             }
         }
         return reserved;
     }
 
-    private Set<String> pinnedOperations() {
+    private static String contractSet(ContractConformance.DeclaredOperation operation) {
+        return operation.node().get("x-reserved") instanceof Map<?, ?> marker
+                        && marker.get("contractSet") instanceof String set
+                ? set
+                : "";
+    }
+
+    private Set<String> pinnedOperations(String feature) {
+        return pinnedOperations(feature, Pattern.compile(""));
+    }
+
+    /** The operations the pins of the feature call; those pins whose first line matches {@code only}. */
+    private Set<String> pinnedOperations(String feature, Pattern only) {
         Set<String> pinned = new TreeSet<>();
-        for (String scenario : reservedScenarios()) {
+        for (String scenario : reservedScenarios(feature)) {
+            if (!only.matcher(scenario.lines().findFirst().orElse("")).find()) {
+                continue;
+            }
             assertThat(scenario)
-                    .as("every reserved scenario of %s ends in the 501 step", FEATURE)
+                    .as("every reserved scenario of %s ends in the 501 step", feature)
                     .contains("Then the operation is refused as not implemented");
             scenario.lines().map(REQUEST::matcher).filter(Matcher::find).forEach(request -> pinned.add(pin(request)));
         }
@@ -101,8 +145,8 @@ class ReservedOperationCoverageTest {
      * Each scenario a {@code @reserved} tag marks: the text after the tag, from its {@code Scenario:} line up to the
      * next tag or scenario, so an untagged scenario that follows a pin is not read as part of it.
      */
-    private static List<String> reservedScenarios() {
-        List<String> blocks = RESERVED_TAG.splitAsStream(text(FEATURE)).toList();
+    private static List<String> reservedScenarios(String feature) {
+        List<String> blocks = RESERVED_TAG.splitAsStream(text(feature)).toList();
         return blocks.subList(1, blocks.size()).stream()
                 .filter(block -> block.contains("Scenario:"))
                 .map(ReservedOperationCoverageTest::firstScenario)
