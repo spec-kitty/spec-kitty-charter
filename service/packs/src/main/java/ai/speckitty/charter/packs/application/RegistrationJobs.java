@@ -34,6 +34,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 
@@ -42,6 +43,12 @@ import org.jspecify.annotations.Nullable;
  * answered {@code 202}, and the in-memory status the client polls.
  */
 public final class RegistrationJobs implements AutoCloseable {
+
+    /**
+     * The grammar of a registration id, which is also the name of the job's staging directory: a ULID. What does not
+     * match is not a job's, and the sweep of the staging root leaves it alone.
+     */
+    public static final Pattern JOB_ID = Pattern.compile("^[0-9A-HJKMNP-TV-Z]{26}$");
 
     /** Registrations that run at once. */
     public static final int RUNNING_LIMIT = 2;
