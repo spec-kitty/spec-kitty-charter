@@ -157,14 +157,14 @@ Every winner carries its `packId`, `level` and mutability level. The merge also 
 (artifact, winner, loser) per losing version, in merge order; a settled sibling loser has none, and the winner's
 provenance shows it. It carries the `applies_to_languages` of each winner, one winner per preset id, and the required
 floor as the union of the must-have items of every governing copy of a preset id, restricted to what the closure holds
-(C31, A1, [DIV-205](/conformance/divergence-register/)). The writes' floor (`ClosureView.floor()`) still reads the
-winning copies only. A winning mission type does not take the unique steps of its losers, so a built-in step survives
+(C31, A1, [DIV-205](/conformance/divergence-register/)). The writes' floor refusal and the registration
+notices read the same union (decision `01M6YKZRM7VF19A57E40D59N81`); `/offering` keeps the winning copies. A winning mission type does not take the unique steps of its losers, so a built-in step survives
 under a project mission type of the same id; PR C confirms this with the architecture owner.
 
 The write cascade walks the merged edges, so it never follows an edge a losing version declared (rule E20, DIV-230).
 A write over a closure whose merge refuses therefore answers `500` as a read does. The compose facts of each pack are
-kept between reads by `CompositionFactsCache`, which follows the invariants of #416 and still reads each pack's
-revision on every call (DIV-236).
+kept between reads by `CompositionFactsCache`, which follows the invariants of #416, keys each pack on a digest of its files that includes their paths (so an
+out-of-band rename misses, as an edit does) and still reads that digest on every call (DIV-236).
 
 ## What is in force
 
@@ -185,17 +185,18 @@ The set is solved in four strata, each a fixed point over the one below (researc
    repeats until no required artifact is unsatisfied on the final set.
 4. **Enhancers and bindings.** A least fixed point: an enhancer is in force only when its support chain reaches an
    artifact that enhances nothing and is in force, and a step contract only while its mission type is (DIV-224). A
-   required or locked artifact this removes stays out and is reported `requiredNotInForce`.
+   required or locked artifact this removes stays out and is reported once, in `requiredNotInForce`.
 
 An overrider that stratum 4 removes loses its overrides, and the strata run again without it, until no overrider is
 newly removed. If an overrider is removed while its overrides apply and is in force once they are withdrawn, the
 answer has no stable value and the read refuses `500 pack_unreadable` (rule E7, DIV-223).
 
-Each artifact then gets one state and one reason, the first row of the precedence of rule E9: a bound artifact whose
-mission type is out, then an enhancer with no target in force, then `locked`, `required` or `selected` when in force;
-`language_filtered`, `deactivated`, `not_selected`, and `overridden` for a selected artifact an override hides. An
-artifact that is not selected stays `not_selected` even when an override hides it, and a required one then carries
-`satisfiedBy`. There is no `kind_default` or `kind_not_activated` (DIV-229). The language filter applies at read only
+Each artifact then gets one state and one reason, the first row of the precedence of rule E9: `locked`, `required` or
+`selected` when in force; then a bound artifact whose mission type is out, an enhancer with no target in force,
+`language_filtered`, `deactivated` (the only reason with the state `excluded`), `overridden` for a selected artifact an
+override hides, and `not_selected`. A denied artifact that the enhancer or binding row prunes is `inactive`, not
+`excluded`. An artifact that is not selected stays `not_selected` even when an override hides it, and a required one
+then carries `satisfiedBy`. There is no `kind_default` or `kind_not_activated` (DIV-229). The language filter applies at read only
 (DIV-227).
 
 Two reads serve it, and both answer from one verified read of the closure (E19), retried up to three times on

@@ -289,8 +289,8 @@ added to or removed from `selected`, `deactivated` or `missionTypes`; `cleared` 
 after that drop, against the stored document without the stale ids, so a dropped id appears only in `dropped`, even
 when the path of an unselect or a re-activate names it;
 `skipped` is the write-time report of the cascade, never what a read leaves out (the effective reads report that).
-`warnings` lists each artifact the write applied that a read will not put in force (`enhanced_target_not_in_force`,
-`overridden`), `[]` when none; the write still succeeds (DIV-237). A write's path has no `GET`, so the answer carries no `self`: its `up` link names the
+`warnings` lists each artifact the write puts in (a select, or the additions of a preset) that a read will not put in force
+(`enhanced_target_not_in_force`, `overridden`), `[]` when none; a removal (an unselect, a deny) warns of nothing; the write still succeeds (DIV-237). A write's path has no `GET`, so the answer carries no `self`: its `up` link names the
 activation.
 
 ### Presets
@@ -436,7 +436,8 @@ paged by a keyset cursor over `(kind, id)`.
 **Buckets of the skipped report.** `staleIds` (a selected or denied id no pack holds), `denyNotApplied`,
 `languageFiltered`, `overridden` (with `overriddenBy`), `missionTypeNotInForce`, `overrideNotApplied`,
 `enhancedTargetNotInForce` (with the targets), `pinNotHeld`, `requiredNotHeld` and `requiredNotInForce`, beside
-`skippedDeactivated`. `skippedByScope`, `unreachedBehindDeactivated`, `skippedShared` and `skippedByDepth` are the
+`skippedDeactivated`. A required or locked artifact that the enhancer or binding rule prunes is listed once, in
+`requiredNotInForce`, and `summary.skipped` counts it once (decision `01M6YM02EG3X5V8G33T1HT5N0K`). `skippedByScope`, `unreachedBehindDeactivated`, `skippedShared` and `skippedByDepth` are the
 cascade's and are empty at read; at read `skippedDeactivated` has `viaRequires` false and `requiredBy` empty
 ([DIV-228](/conformance/divergence-register/)).
 
@@ -445,9 +446,12 @@ an active artifact, with the edge's `when` and its `rationale` as `reason`. No o
 `enhances` is not a hard relation (decisions `01M6Y0X5E9ANR25MC8RPFXYM72`, `01M6Y6VE6VZQ4MXD98N93JB3GJ`, DIV-235).
 
 **Refusals.** An unknown activation is `404 activation_not_found`. A closure that cannot compose or merge is `500` with
-its code (`pack_unreadable` for an override the level forbids, an override cycle or an unstable answer;
+its code (`pack_unreadable` for an override the level forbids, an override cycle, an unstable answer or an `overrides`
+edge that ends at its own source;
 `pack_sibling_conflict` for a step contest no entry settles), and the answer is never partial. `stale_input` and
-`internal_error` may be retried. `getActivation` answers the same `500`s, because it too reads the closure. A cursor
+`internal_error` may be retried. `getActivation` answers the same `500`s, because it too reads the closure, and also for a
+document that names a pack no longer configured; it serves a stale document unchanged only while the closure can be read
+([DIV-233](/conformance/divergence-register/)). A cursor
 that belongs to another set, a malformed one or a `pageSize` out of range is `400`.
 
 ### Tags
@@ -457,7 +461,8 @@ in the activation's closure and the normalized query: `kind`, `state`, the curso
 per representation, so a page, a filter or the other read never answers `304` to the tag of another. A pack outside
 the closure changes nothing, and a change to a pack of the closure changes it. A matching `If-None-Match` answers
 `304` without computing the merge. `getActivation`'s tag is built the same way, with no query. The body's
-`governanceFingerprint` is the closure digest, no longer `ServiceInfo.sourceFingerprint`, and `Charter-Source-Fingerprint`
+`governanceFingerprint` is the `charter-closure/v1` digest of the packs of the activation's closure alone, not
+`ServiceInfo.sourceFingerprint`, and `Charter-Source-Fingerprint`
 still carries the digest of the whole source. A read thus carries three digests: the revision, the closure digest and
 the source digest ([DIV-231](/conformance/divergence-register/)). The cursor binds the tag of its set, and the page
 links repeat `pageSize` only when the request named it ([DIV-232](/conformance/divergence-register/)).
@@ -475,9 +480,9 @@ doing so.
 
 ### Write-time verdicts
 
-A write reports in `warnings` what a read will not put in force, and a registration lists in
-`notices.activationsAffected` the stored activations whose in-force set it changes (an activation whose closure cannot be
-merged counts as changed). `getActivation` lists `denyNotApplied` (DIV-233, DIV-237).
+A write reports in `warnings` what it puts in that a read will not put in force (additions only), and a registration lists in
+`notices.activationsAffected` the stored activations whose in-force set it changes, a change of the version in force of an
+artifact (its pack, level or policy) included (an activation whose closure cannot be merged counts as changed). `getActivation` lists `denyNotApplied` (DIV-233, DIV-237).
 
 ## Who holds what
 

@@ -193,6 +193,9 @@ only when it is itself active. See the [amendment](#amendment-2026-11-06).
   [amendment](#amendment-2026-11-06).
   *Amended 2026-11-07 (ruleset A4 and B1):* a `PUT` drops them too, and a pack version pin no pack of the closure holds
   is dropped and reported by every write but a create; see the [amendment](#amendment-2026-11-07).
+  *Amended 2026-11-08 (DIV-233):* "served unchanged" holds only while the closure can be read. `getActivation` also
+  answers `500` for a document that names a pack that is no longer configured, for a closure whose layer merge refuses
+  and for an in-force refusal, and then serves no document; see the [amendment](#amendment-2026-11-08).
 
 ADR-0020 D6's round trip ("a `PUT` of a fetched `config` answers `200` with the same `ETag`") holds for a document
 the offering has not made stale; ADR-0020 D6 carries a note.
@@ -371,8 +374,9 @@ its PR B.** They amend D5 as stated; the rest of this record stands. The contrac
   the closure). The answer's bytes then depend on the packs as well as the stored document, so its strong `ETag` is no
   longer the quoted revision: it is the tag of the revision and the closure's `governanceFingerprint`, the digest of
   the packs of the activation's closure, as an effective read's tag is. It changes when a pack of the closure changes,
-  and not when a pack outside it does. `getActivation` can answer `500` with a composition code or `pack_unreadable`,
-  and still sends no `Charter-Source-Fingerprint`. `summary` stays out of `Activation`. The effective reads' tags
+  and not when a pack outside it does. `getActivation` can answer `500` with a composition code or `pack_unreadable`
+  (also for a document that names a pack no longer configured, which D4's "served unchanged" no longer covers), and
+  still sends no `Charter-Source-Fingerprint`. `summary` stays out of `Activation`. The effective reads' tags
   follow D5's first rule and are per representation: `kind`, `state`, the cursor and the page size are part of the
   digest's input, and the digest is the closure's, no longer `ServiceInfo.sourceFingerprint`.
 - **`If-Match` takes either tag** (decision `01M6Y3GZFRC5WEQQ7G6GT0YMW3`; [ADR-0020](/adr/0020-offering-and-activations/)

@@ -1,6 +1,6 @@
 title: EffectiveArtifactSuggestion
 description: >-
-  Why an artifact is listed as a suggestion (#408 ruling 3): it is reached only through a suggests edge, and this
+  Why an artifact is listed as a suggestion (#408 ruling 3): it is reached only through a suggests edge of an artifact in force, its reason is not_selected, and this
   carries that edge's when and reason, so the agent decides when it applies. Both members are the edge's own and either may be
   absent: an edge may state neither, and the member is then an empty object (the artifact is still a suggestion).
 type: object

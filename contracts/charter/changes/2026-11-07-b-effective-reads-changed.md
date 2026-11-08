@@ -16,6 +16,7 @@
   whole source; a change to a pack outside the closure leaves them unchanged.
 - `Activation` and `getActivation` say that `denyNotApplied` is judged against the packs of the closure and that the `ETag`
   covers the revision and the closure's fingerprint (see the Breaking entry).
-- The relaxed write rule (IC-13, operator ruling Q9) is declared by the work package that serves it; this fragment
-  adds nothing for it.
+- The relaxed write rule (IC-13, operator ruling Q9: a deny entry on a required artifact that an active override
+  satisfies is accepted) is not part of this change; it ships with PR C. The write still refuses a deny entry on a
+  required or locked artifact (409), and this fragment declares nothing for the relaxed rule.
 - `If-Match` on an activation write takes the quoted revision or the current `getActivation` tag (see the Breaking entry); `EffectiveETag` is reworded to cover the closure's packs and `getActivation`.

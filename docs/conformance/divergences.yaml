@@ -566,8 +566,11 @@
   surface: A required or locked artifact under an explicit allow list that omits it, on read
   core: Does not add it under such an allow list; doctor and list warn.
   service: >-
-    Keeps it active on read even under an allow list that omits it (ADR-0020 D7). A required one
-    that an active override of it satisfies is satisfied by that override instead (DIV-225).
+    Keeps it active on read even under an allow list that omits it (ADR-0020 D7). The exceptions
+    are those of E9: a required or locked enhancer none of whose targets is in force, and an
+    artifact bound to a mission type not in force, stay out of force (DIV-224, DIV-225). A
+    required one that an active override of it satisfies is satisfied by that override instead
+    (DIV-225).
   rationale: >-
     A required or locked floor is not opt-out: the read keeps it active so the allow list cannot
     silently drop a required artifact. Proposed with the activation resource; open since
@@ -628,13 +631,17 @@
   service: >-
     Refuses the write 409 artifact_required or artifact_locked, naming the requiring or locking
     pack in requiredBy, and stores nothing. Create and replace judge every deny entry of the
-    document; a per-artifact or preset write judges only the deny entries it adds.
+    document; a per-artifact or preset write judges only the deny entries it adds. The
+    requirement is the A1 union of the must-have items over every governing copy of a preset id
+    (DIV-205), so a deny of an artifact that a copy other than the winning one requires is
+    refused too, naming the pack of that copy.
   rationale: >-
     A deny entry that can never apply misleads the reader of the document. Refusing it at write
     keeps every stored deny entry meaningful; a stale entry left by a pack upgrade is served as
     stored, tolerated by a per-artifact write that does not add it, and refused on the next create
     or replace (ADR-0059 D4).
-  ruling: ADR-0020 D9; ADR-0059 D4
+  ruling: >-
+    ADR-0020 D9; ADR-0059 D4; decision `01M6YKZRM7VF19A57E40D59N81`
   status: open
   since: 2026-11-05
   evidence:
@@ -651,13 +658,19 @@
     Requirement is authored as a preset (ADR-0031), and only the packs an activation builds on
     govern it. The closure scope was an assumed default of the mission, and the operator ruled on
     2026-11-06 that it stands.
-  ruling: operator ruling of 2026-11-06, decision DM-01M6R0TK6F4CC0Z00CZTS21V72 of mission layer-merge-and-effective-reads-01M6R0J6 (ratified; decision DM-01M6PCWSA65497T9A7J80K6V56 of mission activation-register-and-closure-01M6NXBD had assumed it on 2026-11-05)
+  ruling: >-
+    operator ruling of 2026-11-06, decision DM-01M6R0TK6F4CC0Z00CZTS21V72 of mission
+    layer-merge-and-effective-reads-01M6R0J6 (ratified; decision DM-01M6PCWSA65497T9A7J80K6V56
+    of mission activation-register-and-closure-01M6NXBD had assumed it on 2026-11-05); decision
+    DM-01M6RA7FHRC5K8QPX7KN5FZ4S8 (A1); decision 01M6YKZRM7VF19A57E40D59N81
   status: open
   since: 2026-11-05
   note: >-
-    Ratified on 2026-11-06, and since 2026-11-08 the effective reads take the floor from the merged
-    closure: the union of the must-have items of every governing copy of a preset id (decision
-    DM-01M6RA7FHRC5K8QPX7KN5FZ4S8, A1).
+    Ratified on 2026-11-06, and since 2026-11-08 the effective reads take the floor from the
+    merged closure: the union of the must-have items of every governing copy of a preset id
+    (decision DM-01M6RA7FHRC5K8QPX7KN5FZ4S8, A1). The writes' floor refusal (DIV-204) and the
+    registration notices `floorAdded` and `floorRemoved` take the same union (decision
+    01M6YKZRM7VF19A57E40D59N81), not the winning copy of a preset.
   evidence:
     - "charter: service/activations/src/main/java/ai/speckitty/charter/activations/domain/ClosureSnapshot.java"
     - "corpus case: floor-closure-scoped"
@@ -1101,8 +1114,9 @@
     `enhanced_target_not_in_force`, in the `enhancedTargetNotInForce` bucket naming its targets.
     A step contract is bound to its mission type and is in force only while the mission type is
     (`mission_type_not_in_force`); only step contracts are bound, and the binding of a step
-    enhancer is PR C. A write that selects such an enhancer is accepted and answers a warning
-    (`warnings`, `enhanced_target_not_in_force`).
+    enhancer is PR C. A denied artifact that the rule prunes is `inactive`, not `excluded`: only
+    the reason `deactivated` is `excluded`. A write that selects such an enhancer is accepted
+    and answers a warning (`warnings`, `enhanced_target_not_in_force`).
   rationale: >-
     Enhancers do not stand on their own (operator ruling Q8), and nothing bound to a mission
     type outlives it.
@@ -1128,20 +1142,21 @@
     A required artifact is satisfied by itself in force or by an artifact in force that
     overrides it, directly or through a chain (`satisfiedBy` names it), never by an enhancement.
     Otherwise it is put in force with reason `required`, and a deny entry on it is listed in
-    `denyNotApplied`. A locked artifact is in force whatever else is said. The requirement is
-    the union of the must-have items of every governing copy of a preset id in the closure, read
-    from the merged closure (DIV-205); a must-have item no pack holds is in `requiredNotHeld`.
-    The writes still judge the floor from the winning copies of a preset only. A required or
-    locked artifact that the enhancer or binding rule prunes stays out of force and is in
-    `requiredNotInForce`. A required, unselected artifact an override hides is `not_selected`
-    with `satisfiedBy`.
+    `denyNotApplied`. A locked artifact is in force unless the enhancer or binding rule prunes
+    it (E9). The requirement is the union of the must-have items of every governing copy of a
+    preset id in the closure, read from the merged closure (DIV-205); a must-have item no pack
+    holds is in `requiredNotHeld`. The writes' floor refusal and the registration notices judge
+    the floor from the same union (DIV-204, DIV-205), not from the winning copies of a preset. A
+    required or locked artifact that the enhancer or binding rule prunes stays out of force and
+    is listed once, in `requiredNotInForce`. A required, unselected artifact an override hides
+    is `not_selected` with `satisfiedBy`.
   rationale: >-
     Requirement is authored as a preset (ADR-0031). `required` means the artifact, or an
     override of it, must be in force (operator ruling Q6).
   ruling: >-
     Operator rulings Q6 and Q8 of 2026-11-06; decisions `DM-01M6R0TK6F4CC0Z00CZTS21V72`,
-    `DM-01M6RA7FHRC5K8QPX7KN5FZ4S8` (A1), `DM-01M6R3YTNT1P2MBERBN7WV71ND`,
-    `DM-01M6RFGFW3S0YJ222QMHD2W11B`; research R11
+    `DM-01M6RA7FHRC5K8QPX7KN5FZ4S8` (A1), `01M6YKZRM7VF19A57E40D59N81`,
+    `DM-01M6R3YTNT1P2MBERBN7WV71ND`, `DM-01M6RFGFW3S0YJ222QMHD2W11B`; research R11
   status: open
   since: 2026-11-08
   evidence:
@@ -1207,19 +1222,20 @@
     typed bucket for what a read leaves out.
   service: >-
     `getActivationSkippedReport` lists each artifact that is not in force once, in the bucket of
-    the first rule that decided it. `SkippedReport` gains ten required buckets: `staleIds`,
-    `denyNotApplied`, `languageFiltered`, `overridden`, `missionTypeNotInForce`,
-    `overrideNotApplied`, `enhancedTargetNotInForce`, `pinNotHeld`, `requiredNotHeld` and
-    `requiredNotInForce`. `skippedByScope`, `unreachedBehindDeactivated` and `skippedShared`
-    stay and are always empty at read; at read `skippedDeactivated` has `viaRequires` false and
-    `requiredBy` empty. A write's `skipped` and the action context answer every new bucket as
-    `[]`.
+    the first rule that decided it. A required or locked artifact that the enhancer or binding
+    rule prunes is listed once, in `requiredNotInForce`, and `summary.skipped` counts it once.
+    `SkippedReport` gains ten required buckets: `staleIds`, `denyNotApplied`,
+    `languageFiltered`, `overridden`, `missionTypeNotInForce`, `overrideNotApplied`,
+    `enhancedTargetNotInForce`, `pinNotHeld`, `requiredNotHeld` and `requiredNotInForce`.
+    `skippedByScope`, `unreachedBehindDeactivated` and `skippedShared` stay and are always empty
+    at read; at read `skippedDeactivated` has `viaRequires` false and `requiredBy` empty. A
+    write's `skipped` and the action context answer every new bucket as `[]`.
   rationale: >-
     One typed bucket per rule makes the answer checkable, where a diagnostic list shared by the
     reads was not. The cascade's buckets describe a write, so a read leaves them empty.
   ruling: >-
-    Decisions `DM-01M6R0TNEBR7KGJMW2SQXQGJ0A`, `DM-01M6RN5MTWC98PXEVJNFQSRRJX`; ADR-0059 D4;
-    FR-017
+    Decisions `DM-01M6R0TNEBR7KGJMW2SQXQGJ0A`, `DM-01M6RN5MTWC98PXEVJNFQSRRJX`,
+    `01M6YM02EG3X5V8G33T1HT5N0K`; ADR-0059 D4; FR-017
   status: open
   since: 2026-11-08
   evidence:
@@ -1259,9 +1275,10 @@
   service: >-
     The cascade of a select or a deactivate walks the edges of the merged closure, so it never
     follows an edge a losing version declared. Where no layer override exists the answer is
-    unchanged. A write over a closure whose merge refuses (DIV-217, DIV-218, DIV-222, DIV-223)
-    answers `500 pack_unreadable` or `pack_sibling_conflict`, as a read does; before PR B no
-    write could. A write's preconditions are still judged first.
+    unchanged. A write over a closure whose layer merge refuses (DIV-217, DIV-218) answers `500
+    pack_unreadable` or `pack_sibling_conflict`, as a read does; before PR B no write could. A
+    write's preconditions are judged before the packs are read, except that an `If-Match` that
+    is a closure tag reads the closure to judge its `412` (DIV-234).
   rationale: >-
     A cascade that followed an edge of a replaced version would select what the version in force
     no longer names.
@@ -1337,8 +1354,11 @@
     revision and the closure's digest, because the answer now carries `denyNotApplied`, which is
     judged against the packs of the closure. It changes when a pack of the closure changes, and
     not when a pack outside it does. `getActivation` can also answer `500` with a composition
-    code or `pack_unreadable`. It sends no `Charter-Source-Fingerprint`, as before. A write's
-    answer keeps the revision as its `ETag` and carries no `denyNotApplied`.
+    code or `pack_unreadable`. A document that names a pack no longer configured, a closure
+    whose layer merge refuses and an in-force refusal are `500` too, so the "served unchanged"
+    of ADR-0059 D4 holds only while the closure can be read. It sends no
+    `Charter-Source-Fingerprint`, as before. A write's answer keeps the revision as its `ETag`
+    and carries no `denyNotApplied`.
   rationale: >-
     A strong `ETag` must change with the bytes. The operator chose a covering tag over dropping
     the field or accepting a stale tag.
@@ -1408,11 +1428,12 @@
     facts to cache.
   service: >-
     `CompositionFactsCache` keeps the composition facts of each pack between reads, keyed by the
-    pack's configured name and valid for one write generation and one revision together. It
-    never fills or serves from a read whose generation was odd or moved, from a holder of the
-    registry write lock, or from a failure, and by default it keeps at most 256 packs. It reads
-    the pack revision, a listing and a digest, on every call, because a change no write
-    bracketed (an out-of-band edit) must miss. PR B therefore claims no gain on #416.
+    pack's configured name and valid for one write generation and one path-inclusive digest of
+    the pack's files together. It never fills or serves from a read whose generation was odd or
+    moved, from a holder of the registry write lock, or from a failure, and by default it keeps
+    at most 256 packs. It reads the pack revision, a listing and a digest, on every call,
+    because a change no write bracketed (an out-of-band edit or rename) must miss: the digest
+    covers each file's path as well as its bytes. PR B therefore claims no gain on #416.
   rationale: >-
     The cache follows #416's invariants rather than a second mechanism, and the revision read is
     what makes an out-of-band edit visible.
@@ -1434,16 +1455,21 @@
     neither.
   service: >-
     `ActivationChange.warnings` (`[{code, artifact}]`, `[]` when none) lists each artifact the
-    write applied that a read will not put in force: `enhanced_target_not_in_force` and
-    `overridden`. A write still succeeds. `PackRegistration.notices.activationsAffected` lists,
-    bounded and sorted, the stored activations whose in-force set a registration changes; an
-    activation whose closure cannot be merged counts as changed.
+    write puts in (a select, or the additions of a preset) that a read will not put in force:
+    `enhanced_target_not_in_force` and `overridden`. A removal (an unselect, a deny) warns of
+    nothing. A write still succeeds, but the warnings come from one in-force resolution of the
+    stored document asked before anything is stored, so a closure whose resolution refuses
+    (DIV-222, DIV-223) refuses the write; a write that applies nothing asks nothing.
+    `PackRegistration.notices.activationsAffected` lists, bounded and sorted, the stored
+    activations whose in-force set a registration changes, a change of the version in force of
+    an artifact (its pack, level or policy) included; an activation whose closure cannot be
+    merged counts as changed.
   rationale: >-
     Writes stay total and reads explain (R17); a client learns at write time what the read will
     say.
   ruling: >-
-    Decisions `DM-01M6RAA2B2G9PNXN2F9SJ7B1CR` (B6, B7), `DM-01M6RA9SAKCBSKGX165JM3CAGS` (B4);
-    FR-027, FR-032
+    Decisions `DM-01M6RAA2B2G9PNXN2F9SJ7B1CR` (B6, B7), `DM-01M6RA9SAKCBSKGX165JM3CAGS` (B4),
+    `01M6YKZXGFGS340D1D9TE5T809`; FR-027, FR-032
   status: open
   since: 2026-11-08
   evidence:

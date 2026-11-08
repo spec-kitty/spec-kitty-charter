@@ -310,8 +310,9 @@ preset can only tighten it; a must-have item no pack holds is dropped from the f
 *Source:* ADR-0031 d2; DIV-205; decision `DM-01M6R0TK6F4CC0Z00CZTS21V72` (ratifies DIV-205); `ClosureQueries`
 (`RequiredFloor.of(byHolder(closurePackIds, winningPresets(composed)))`), `RequiredFloor.of`; A1, decision
 `DM-01M6RA7FHRC5K8QPX7KN5FZ4S8`; A10, decision `DM-01M6RA8MG55V8C2V9PXWDTRNQS`. **Built (PR B)** for the reads: the floor is the union over every governing copy (A1), read from the merged closure and
-restricted to held ids (A10; PR A0), and `requiredNotHeld` reports the rest. The writes' floor (`ClosureView.floor()`)
-still reads the winning copies only (DIV-225). DIV-205 is ratified.
+restricted to held ids (A10; PR A0), and `requiredNotHeld` reports the rest. The writes' floor refusal and the registration
+notices (`floorAdded`, `floorRemoved`) read the same union (decision `01M6YKZRM7VF19A57E40D59N81`, DIV-205, DIV-225); `/offering` keeps the
+winning copies (FR-023). DIV-205 is ratified.
 
 **C32 Floor at write.** `Fl(C) = Req(C) ∪ Lk(C)`.
 The writes treat a locked artifact as required too.
@@ -360,7 +361,8 @@ and `DELETE` were ruled on 2026-11-06 and are built in PR A (ADR-0065); the stat
 **G1 Writable levels.** A registration or deletion of `p` requires `lv(p) ∈ {O, R}`; `lv(p) = B` is
 `409 registration_conflict`.
 The built-in level is read-only.
-*Source:* decision `DM-01M6R1GQYFZ6Q6DFSWNDVTE9X1`; research R1. **Ruled, not built.**
+*Source:* decision `DM-01M6R1GQYFZ6Q6DFSWNDVTE9X1`; research R1. **Built (PR A)** for a registration: `PackRegistrationService`
+refuses an upload at the built-in level with `409 registration_conflict`.
 
 **G2 Full replacement.** After `PUT /packs/{cid}` with archive `Z` succeeds: `stored(cid) = Z`, so every artifact,
 edge, preset and file absent from `Z` is absent from the pack.
@@ -374,24 +376,23 @@ history of every version ever stored under `cid`, `hist(cid)(ver(z)) ∉ {⊥, r
 otherwise `z` replaces `s` and `hist(cid)(ver(z)) := rev(z)`.
 Any version may replace; one version always means one content, also after it was replaced.
 *Source:* decision `DM-01M6R0TCAGHF27RKCB20QSCN8W`; spec FR-002; research R4; B1, decision
-`DM-01M6RA9BKJY7X9BFV93QW1KM1T`. **Ruled, not built** (layer-merge PR B).
+`DM-01M6RA9BKJY7X9BFV93QW1KM1T`. **Built (PR A).**
 
 **G4 Fixed identity.** On a replace: `pid(z) = pid(s) ∧ lv(z) = lv(s)`, else `422`. On a create: `pid(z)` and
 `name(z)` are unused in `P`, else `409 registration_conflict`.
 A pack's identity and level are fixed for its configured id.
-*Source:* spec Edge Cases, FR-003; decision `DM-01M6R2X0H0VXGZZGSQC9C2SCSF`; research R1. **Ruled, not built:** the level
-`lv(z) ∈ {O, R}` and `lv(z) = lv(s)` on a replace (the decision). **Planned, not built:** the fixed `pid` and the
-create-time uniqueness.
+*Source:* spec Edge Cases, FR-003; decision `DM-01M6R2X0H0VXGZZGSQC9C2SCSF`; research R1. **Built (PR A):** a replace
+keeps the level and the `pack_id` (`PackRegistrationService`), and a create refuses a taken `pack_id` or name.
 
 **G5 Archive validity.** An archive with an unknown file, a path leaving the pack, a link or device, an invalid
 artifact, more than 32 MiB or more than 10,000 entries is refused (`413` or `422`) before any file is written.
 *Source:* spec FR-003, NFR-004, NFR-005; decisions `DM-01M6R1GKE8TAG2QBJT5PAHJQ8E`, `DM-01M6R2WY82DF6DV2FEAK9CK4S2`.
-**Ruled, not built.**
+**Built (PR A):** the bounds are `ArchiveLimits`.
 
 **G6 Preconditions.** `If-Match ≠ rev(s) ⇒ 412`; `If-None-Match: * ∧ s exists ⇒ 412`; both headers `⇒ 400`. G3's
 no-op is judged before them. Both `DELETE`s require `If-Match` (`428` when absent).
 An identical re-send is a no-op even under a stale validator; a removal is always conditional.
-*Source:* spec FR-003; research R-lock (API guarantees). **Planned, not built.**
+*Source:* spec FR-003; research R-lock (API guarantees). **Built (PR A).**
 
 **G7 Write gate on the diff.** Every artifact the replace adds, changes or removes passes C25 and C26 along
 `C({z}) ∖ {z}`, else `409 governance_policy_violation`.
@@ -419,42 +420,42 @@ A referenced artifact cannot be removed, whether the reference comes from the sa
 same request removes refers to nothing, so two artifacts that reference each other can be removed together.
 *Source:* operator ruling of 2026-11-06; decisions `DM-01M6R0TEM8YJK1J0DP0JSMSJNX`, `DM-01M6R2WSARGC382BHX89GZB64E`,
 `DM-01M6R2WVRKB4JGZM40D6QF60BQ`; research R6; A10, decision `DM-01M6RA8MG55V8C2V9PXWDTRNQS`; B3, decision
-`DM-01M6RA9MQ6YAP048KD43DNFS4F`. **Ruled, not built.**
+`DM-01M6RA9MQ6YAP048KD43DNFS4F`. **Built (PR A)** (`InboundReferences`).
 
 **G10 Artifact `DELETE`.** `holds(p, u)` else `404`; then G9, then C25/C26 (`locked` is `409
 governance_policy_violation`); then remove `u`'s file and companions, every edge whose source is `u`, its graph node,
 and every preset item of `p` naming `u`.
 `DELETE` removes one artifact with what only it declared; a preset key it empties reads as not listed.
 *Source:* operator ruling of 2026-11-06; decision `DM-01M6R0TEM8YJK1J0DP0JSMSJNX`; spec FR-005; plan IC-06.
-**Ruled, not built.**
+**Built (PR A)** (`ArtifactRemovalService`).
 A preset item of the same pack is dropped (this rule); a preset item of another pack is an inbound reference (G9, A10).
 
 **G11 Relationship `DELETE`.** Removes the one edge of the unordered pair `{from, to}` from `p`'s shard or graph
 documents; `404 relationship_not_found` when `p` holds none; an edge that is a field of an artifact's body is
 `409 registration_conflict`.
-*Source:* decision `DM-01M6R0TEM8YJK1J0DP0JSMSJNX`; ADR-0026 D1.3; spec FR-006; plan IC-06. **Ruled, not built.**
+*Source:* decision `DM-01M6R0TEM8YJK1J0DP0JSMSJNX`; ADR-0026 D1.3; spec FR-006; plan IC-06. **Built (PR A)** (`RelationshipRemovalService`).
 
 **G12 Registration by source.** `POST /packs` fetches an allowlisted HTTPS archive, a git repository and ref (system
 `git`), or a path under a configured root, then applies G1–G9 and G13.
 *Source:* decisions `DM-01M6R0TA37CQ0VEMHWSTJF2TRM`, `DM-01M6R1GNR6Q0YN39568F9DPEVF`, `DM-01M6R1T0HK0F078S0VPA6YSTXW`;
-spec FR-004. **Ruled, not built.**
+spec FR-004. **Built (PR A):** an HTTPS archive, a git repository and a filesystem path (`PackSourceKind`).
 
 **G13 Atomicity.** A registration or `DELETE` either commits the whole new tree by one directory swap, or changes no
 stored file; a concurrent read sees the old pack or the new one.
-*Source:* spec FR-007, NFR-006; research R7. **Partly built:** the per-artifact registrations commit by copy and swap
-(`PackCommitStore`); the whole-pack swap is ruled, not built.
+*Source:* spec FR-007, NFR-006; research R7. **Built (PR A):** `PackCommitStore` commits a registration, a `DELETE` and
+the per-artifact registrations by copy and one directory swap.
 
 **G14 Lock order.** Every pack write holds `RegistryWriteLock` and then `PackWriteLocks(p)`, from the precondition to
 the swap; readers take neither; downloads, extraction and staging run before the locks.
 One fair registry lock closes the cross-pack check-then-act races; the pack lock serializes one pack.
-*Source:* research R-lock; data model (Write coordination). **Partly built:** `PackWriteLocks` is built; the registry
-lock is planned, not built.
+*Source:* research R-lock; data model (Write coordination). **Built (PR A):** `RegistryWriteLock` and `PackWriteLocks`.
 
 **G15 Verified read.** A read records the write generation `g` and the source fingerprint before and after it reads;
 `g` odd, `g` changed, or the fingerprint changed `⇒ stale_input`. A closure read retries a `stale_input` up to 3 times.
 A read never answers from a mixed state of the packs.
-*Source:* decision `DM-01M6R2X563762EDCVBR02W4FK7` (operator, Q7); research R-lock; ADR-0018 D11. **Partly built:**
-the fingerprint check (`ConsistentRead`) is built; the generation and the retry are ruled, not built.
+*Source:* decision `DM-01M6R2X563762EDCVBR02W4FK7` (operator, Q7); research R-lock; ADR-0018 D11. **Built:**
+`ConsistentRead` checks the fingerprint and the write generation (`PackWriteGeneration`), and `ClosureQueries` retries a
+`stale_input` up to three times.
 
 **G16 One writer.** A deployment runs one replica; every lock of G14 and the activation store's per-id lock are
 in-process only.
@@ -464,22 +465,24 @@ in-process only.
 last-writer-wins on the whole pack.
 *Source:* ADR-0026 D5; research R-lock. **Built.**
 
-**G18 Activations unaffected.** No registration or `DELETE` reads or changes an activation document.
+**G18 Activations unaffected.** No registration or `DELETE` changes an activation document; a registration reads the
+stored activations to report `activationsAffected` (G20).
 A removed artifact a document still selects becomes a stale id (W9, E1).
-*Source:* research R-lock (The activations side); plan IC-06. **Ruled, not built** (with G2 and G10).
+*Source:* research R-lock (The activations side); plan IC-06; B4. **Built (PR A)** for the writes; the read is **built (PR B)**.
 
 **G19 Asynchronous registration.** `PUT /packs/{cid}` and `POST /packs` answer `202 Accepted` with a status URI; the
 status resource reports `pending`, then `registered` (with the G20 report) or `refused` (with the refusal G1–G13 would
 have answered). Preconditions (G6) and the body bound (G5) may still be answered synchronously.
 A client learns that a registration completed from the status URI, not from the request.
-*Source:* A5, decision `DM-01M6RA8225EXG6GAT1MM2R9T6C`. **Ruled, not built** (layer-merge PR B; the contract delta and
-G6's status codes are to be revised to it).
+*Source:* A5, decision `DM-01M6RA8225EXG6GAT1MM2R9T6C`. **Built (PR A)** (`RegistrationJobs`).
 
 **G20 Impact report.** A completed registration reports, for every closure in `Aff(z)` (G8): the artifacts that joined
 or left `Req` or `Lk`, the `Unheld` items (C31), and the stored activations whose effective set changes, by id.
 A pack upgrade that moves the floor is never silent.
 *Source:* B4, decision `DM-01M6RA9SAKCBSKGX165JM3CAGS`. **Partly built:** the notices carry the floor and lock lists
-(`floorAdded`, `floorRemoved`, `locksAdded`, `locksRemoved`; PR A) and `activationsAffected` (PR B). The `Unheld` items
+(`floorAdded`, `floorRemoved`, `locksAdded`, `locksRemoved`; PR A) and `activationsAffected` (PR B). The floor lists
+judge the A1 union over every governing copy of a preset id, as the reads do (decision `01M6YKZRM7VF19A57E40D59N81`), and
+`activationsAffected` also counts a change of the version in force of an artifact. The `Unheld` items
 are not in the notices; the effective skipped report lists them as `requiredNotHeld`.
 
 **G21 Repair writes.** A registration into `p` whose closure `C({p})` does not compose today is let through when the
@@ -543,8 +546,10 @@ A create never denies a locked or required artifact; a replace is judged only on
 `404 activation_not_found` → `412` (stale `If-Match`) → `422` (body, path kind, `cascade`) → one snapshot (W9) →
 path id (W10: `422 ambiguous_artifact`, then `404 artifact_not_found`, `mission_type_not_found` or `preset_not_found`) →
 W11 → the change → `422` or `409` (W5, W25) → compare-and-set (W30).
-Preconditions are judged before content, and no pack is read before them.
-*Source:* ADR-0020 D6, D9; RFC 9110 §13.2.2; activation mission FR-010, finding F6; `ActivationWrites`. **Built.**
+Preconditions are judged before content, and no pack is read before them, except that an `If-Match` that is a closure tag
+reads the closure to judge the `412` (DIV-234).
+*Source:* ADR-0020 D6, D9; RFC 9110 §13.2.2; activation mission FR-010, finding F6; `ActivationWrites`.
+**Built; relaxed by the either-tag If-Match (DIV-234).**
 
 **W8 Create and replace order.** `400` (both validators, or `If-None-Match` other than `*`) → `412` (`If-None-Match: *` on
 a stored id, or a stale `If-Match`) → `422` → `409`; a refused precondition takes no snapshot; without `If-Match` a
@@ -552,8 +557,9 @@ replace is last-writer-wins; `DELETE` answers `204`, then `404` on a second call
 *Source:* ADR-0020 D3, D6, D9; activation mission FR-001 to FR-004. **Built.**
 
 **W9 One snapshot.** Every write takes exactly one verified snapshot of `C`; every walk and every rule read it.
-One request never mixes two states of the packs.
-*Source:* activation mission NFR-007; `ClosureQueries.snapshot`. **Built.**
+One request never mixes two states of the packs. A closure-tag `If-Match` reads the closure once more, before the write's
+snapshot, to judge the `412` (DIV-234).
+*Source:* activation mission NFR-007; `ClosureQueries.snapshot`. **Built; relaxed by the either-tag If-Match (DIV-234).**
 
 **W10 Path id.** The path id is first resolved to a declared id (W3's spellings), against `H(C)` and, when the closure
 holds no match, against the ids of the stored `D`; two case-only matches are `422 ambiguous_artifact`; a mission type
@@ -811,7 +817,8 @@ to a mission type not in `Eff` → `inactive, mission_type_not_in_force`; enhanc
 `inactive, enhanced_target_not_in_force` (E6; these two rows come before the language, deny and selection rows, so a
 required or locked artifact they prune is out of force); language → `inactive, language_filtered`; denied →
 `excluded, deactivated`; selected, and hidden by E4 or E5 → `inactive, overridden`; otherwise `inactive, not_selected`.
-An artifact that is not selected is `not_selected` even when an override hides it, so `not_selected` precedes
+`excluded` belongs to the reason `deactivated` alone: a denied artifact that the enhancer or binding row prunes is
+`inactive` with that row's reason. An artifact that is not selected is `not_selected` even when an override hides it, so `not_selected` precedes
 `overridden` (research R11 step 3). A required artifact out of force that an override satisfies, directly or through a
 chain, keeps its row and gains `satisfiedBy` (the overrider in force): a required, unselected `T` that `F` overrides is
 `not_selected` with `satisfiedBy` `F`, and a selected one is `overridden` with `satisfiedBy` `F`.
@@ -892,7 +899,7 @@ to 3 times on `stale_input`.
 so a cascade never follows an edge a losing version declared; W26 and W33 read `Eff` over `M`.
 *Source:* research R2 (open point), open review item 3; plan IC-07, IC-13; decision `DM-01M6R4W1H9P3451V89KHP97XKM`
 (merged edges). **Built (PR B)** (DIV-230): the cascade walks the merged edges, builds the merge, and so a write over a closure that
-does not merge answers `500 pack_unreadable`.
+does not merge answers `500` with `pack_unreadable` or `pack_sibling_conflict`.
 > ⚠ **Unclear:** W23–W24 treat every `Fl(C)` item as active, while at read a required item may be hidden by an override
 > and a floor enhancer may be ungrounded (E6). Whether the keep set should use `Eff` is not ruled.
 
@@ -1008,31 +1015,31 @@ activations it affects (G20), and every stored deny entry that the floor overrid
 | C28 Override cycle | spec FR-016; A2 | Built (registration PR A, read PR B) |
 | C29 Winning preset | ADR-0053 d6 | Built |
 | C30 Governing preset | ADR-0031; ADR-0042 §2 | Built |
-| C31 Required set | ADR-0031; DIV-205; `DM-01M6R0TK6F`; A1, A10 | Built (PR B) for the reads; held-only built (PR A0); the writes' floor reads the winning copies only |
+| C31 Required set | ADR-0031; DIV-205; `DM-01M6R0TK6F`; A1, A10 | Built (PR B) for the reads, the writes' floor refusal and the registration notices (the A1 union); held-only built (PR A0); `/offering` keeps the winning copies |
 | C32 Floor at write | ADR-0012 d7 | Built |
 | C33 Offering stays a catalog | ADR-0020 D1; FR-023 | Built |
 | C34 Same-level preset conflict | operator 2026-11-06; `refusePresetContests` | Built |
 | C35 Case-only mention | operator 2026-11-06; `refuseCaseOnlyMatches` | Built |
 | C36 Edge shape | A8, A11, A12 | Built (registration PR A; the merge-time refusal PR B) |
-| G1 Writable levels | `DM-01M6R1GQYF` | Ruled, not built |
+| G1 Writable levels | `DM-01M6R1GQYF` | Built (PR A) for a registration |
 | G2 Full replacement | operator 2026-11-06; `DM-01M6R0TA37` | Built (PR A) |
 | G3 Version rule | `DM-01M6R0TCAG`; B1 | Built (PR A) |
-| G4 Fixed identity | spec FR-003; `DM-01M6R2X0H0` | Level ruled, not built; `pid` and uniqueness planned, not built |
-| G5 Archive validity | FR-003, NFR-004, NFR-005 | Ruled, not built |
-| G6 Preconditions | FR-003; research R-lock | Planned, not built |
-| G7 Write gate on the diff | ADR-0063 D3; plan IC-04; B8 | Planned, not built |
+| G4 Fixed identity | spec FR-003; `DM-01M6R2X0H0` | Built (PR A) |
+| G5 Archive validity | FR-003, NFR-004, NFR-005 | Built (PR A) |
+| G6 Preconditions | FR-003; research R-lock | Built (PR A) |
+| G7 Write gate on the diff | ADR-0063 D3; plan IC-04; B8 | Built (PR A) |
 | G8 Impact check | plan IC-04; A5 | Partly built (PR A): composition and relation rules; not C21 or a floor refusal |
-| G9 Reference check | operator 2026-11-06; `DM-01M6R0TEM8`, `DM-01M6R2WSAR`, `DM-01M6R2WVRK`; A10, B3 | Ruled, planned (PR B) |
-| G10 Artifact `DELETE` | operator 2026-11-06; FR-005 | Ruled, not built |
-| G11 Relationship `DELETE` | `DM-01M6R0TEM8`; FR-006 | Ruled, not built |
-| G12 Registration by source | `DM-01M6R1GNR6`, `DM-01M6R1T0HK`; FR-004 | Ruled, not built |
-| G13 Atomicity | FR-007; research R7 | Partly built |
-| G14 Lock order | research R-lock | Partly built |
-| G15 Verified read | `DM-01M6R2X563`; ADR-0018 D11 | Partly built |
+| G9 Reference check | operator 2026-11-06; `DM-01M6R0TEM8`, `DM-01M6R2WSAR`, `DM-01M6R2WVRK`; A10, B3 | Built (PR A) |
+| G10 Artifact `DELETE` | operator 2026-11-06; FR-005 | Built (PR A) |
+| G11 Relationship `DELETE` | `DM-01M6R0TEM8`; FR-006 | Built (PR A) |
+| G12 Registration by source | `DM-01M6R1GNR6`, `DM-01M6R1T0HK`; FR-004 | Built (PR A) |
+| G13 Atomicity | FR-007; research R7 | Built (PR A) |
+| G14 Lock order | research R-lock | Built (PR A) |
+| G15 Verified read | `DM-01M6R2X563`; ADR-0018 D11 | Built |
 | G16 One writer | ADR-0061 | Built (documented) |
 | G17 Unconditional per-artifact registration | ADR-0026 D5 | Built |
-| G18 Activations unaffected | research R-lock | Ruled, not built |
-| G19 Asynchronous registration | A5 | Ruled, planned (PR B) |
+| G18 Activations unaffected | research R-lock; B4 | Built (PR A); the read of G20 (PR B) |
+| G19 Asynchronous registration | A5 | Built (PR A) |
 | G20 Impact report | B4 | Partly built: floor and lock lists (PR A), `activationsAffected` (PR B); no `Unheld` |
 | G21 Repair writes | ADR-0063 amendment 2026-11-06; #404 | Ruled, not built |
 | W1 Closed body | ADR-0020 D4, D9 | Built |

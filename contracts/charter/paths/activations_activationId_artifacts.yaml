@@ -17,7 +17,7 @@ get:
     target in force or is bound to a mission type that is not in force.
 
     ETag identifies the representation the request names: it changes with the activation's revision, with any pack of
-    the activation's closure, and with kind, state and the cursor, and it does not change when a pack outside the
+    the activation's closure, and with kind, state, the cursor and the page size, and it does not change when a pack outside the
     closure changes. A matching If-None-Match is a 304 without a body, and a tag of another representation (another
     page, kind or state) never matches (RFC 9110 section 13.1.2).
 

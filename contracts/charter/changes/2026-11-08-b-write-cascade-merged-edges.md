@@ -7,4 +7,4 @@
   its own source) or `pack_sibling_conflict` (a step contest no `overrides` entry settles), as the effective reads
   do. No operation, schema or response changes: the sub-resource writes already declare the `500` of
   `OfferingUnreadable`, which names the composition codes (`pack_sibling_conflict` among them), `pack_unreadable`,
-  `stale_input` and `internal_error`. The preconditions of a write are still judged before the packs are read.
+  `stale_input` and `internal_error`. The preconditions of a write are judged before the packs are read, except that an `If-Match` that is a closure tag reads the closure to judge the `412`.
