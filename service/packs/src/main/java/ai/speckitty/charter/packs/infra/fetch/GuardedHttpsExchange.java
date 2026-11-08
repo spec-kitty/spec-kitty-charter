@@ -256,7 +256,7 @@ public final class GuardedHttpsExchange implements HttpsExchange {
      * a lookup ({@code 127.0.0.1}, {@code 127.1}, {@code 2130706433}, {@code 0x7f.1}). No DNS top-level label is
      * numeric.
      */
-    static boolean isIpLiteral(String normalisedHost) {
+    public static boolean isIpLiteral(String normalisedHost) {
         if (normalisedHost.startsWith("[") || normalisedHost.contains(":")) {
             return true;
         }
