@@ -17,6 +17,7 @@ import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.DirectiveRepository;
+import ai.speckitty.charter.packs.domain.MissionStepContract;
 import ai.speckitty.charter.packs.domain.MutabilityPolicyRepository;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.Pack;
@@ -393,6 +394,7 @@ public final class DomainRepositoryService
         }
         Set<String> defined = new LinkedHashSet<>();
         Map<String, List<String>> languages = new LinkedHashMap<>();
+        Map<String, String> bindings = new LinkedHashMap<>();
         for (CharterArtifact artifact : assembled.artifacts()) {
             artifact.writtenReferences().forEach(reference -> references.add(reference.toString()));
             if (artifact.urn().kind().authoredInGraphs()) {
@@ -401,6 +403,8 @@ public final class DomainRepositoryService
                 if (!declaredLanguages.isEmpty()) {
                     languages.put(artifact.urn().toString(), declaredLanguages);
                 }
+                missionTypeOf(artifact)
+                        .ifPresent(missionType -> bindings.put(artifact.urn().toString(), missionType.toString()));
             }
         }
         defined.addAll(declared);
@@ -411,7 +415,18 @@ public final class DomainRepositoryService
                 policy,
                 assembled.presets(),
                 typedEdges(graphs.documents(), assembled),
-                languages);
+                languages,
+                bindings);
+    }
+
+    /**
+     * The mission type an artifact is bound to (A7 Q1): a mission step contract is bound to the mission its
+     * {@code mission} names; every other kind is bound to none.
+     */
+    private static Optional<Urn> missionTypeOf(CharterArtifact artifact) {
+        return artifact instanceof MissionStepContract contract
+                ? Optional.of(Urn.missionType(contract.mission()))
+                : Optional.empty();
     }
 
     /**

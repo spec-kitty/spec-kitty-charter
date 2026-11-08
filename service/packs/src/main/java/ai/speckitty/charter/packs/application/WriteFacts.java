@@ -51,7 +51,8 @@ public final class WriteFacts {
                 facts.policy(),
                 facts.presets(),
                 facts.edges(),
-                facts.languages());
+                facts.languages(),
+                facts.bindings());
     }
 
     /**
@@ -98,7 +99,8 @@ public final class WriteFacts {
                         .map(preset -> withoutItems(preset, artifact))
                         .toList(),
                 edgeless.edges(),
-                languagesWithout(edgeless.languages(), artifact));
+                languagesWithout(edgeless.languages(), artifact),
+                bindingsWithout(edgeless.bindings(), artifact));
     }
 
     /**
@@ -134,6 +136,13 @@ public final class WriteFacts {
                 && item.id().equals(artifact.id());
     }
 
+    /** The bindings of the artifacts that remain: a removed artifact is bound to nothing. */
+    private static Map<String, String> bindingsWithout(Map<String, String> bindings, Urn artifact) {
+        Map<String, String> remaining = new LinkedHashMap<>(bindings);
+        remaining.remove(artifact.toString());
+        return remaining;
+    }
+
     /** The languages of the artifacts that remain: a removed artifact declares none. */
     private static Map<String, List<String>> languagesWithout(Map<String, List<String>> languages, Urn artifact) {
         Map<String, List<String>> remaining = new LinkedHashMap<>(languages);
@@ -157,7 +166,8 @@ public final class WriteFacts {
                 facts.policy(),
                 facts.presets(),
                 remaining,
-                facts.languages());
+                facts.languages(),
+                facts.bindings());
     }
 
     /** The {@code overrides} targets: those of the dropped edges go unless another edge still overrides them. */
