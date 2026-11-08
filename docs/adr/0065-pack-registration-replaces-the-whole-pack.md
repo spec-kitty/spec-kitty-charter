@@ -223,6 +223,9 @@ stands, and the clauses it names are read as follows.
   the archive bound, the archive, the extracted tree and the copy the commit makes beside the pack (96 MiB for a
   full-size archive on one volume; on two volumes, the staging volume needs the archive and the tree and the pack volume
   the copy). A zip is read where it was spooled, not copied to a second spool, which is what keeps the peak at three.
+  When the job runs the archive of an upload is on the volume already, so the run-time check asks only what is left to
+  write, the tree and the copy: two bounds on one volume, a bound on each of two. A job that has still to fetch its
+  archive (a source) is asked the whole peak. The per-job peak is the three together, the archive counted at admission.
   The refusal and its code are unchanged.
 - *Staging area (A8).* The staging directory's lifecycle (root, owner-only job directory, deletion) is the application
   port `StagingArea`, implemented in `infra.storage` and composed in the deployable.

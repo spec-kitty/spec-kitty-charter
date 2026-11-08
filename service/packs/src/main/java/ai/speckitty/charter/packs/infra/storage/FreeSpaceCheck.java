@@ -19,7 +19,9 @@ import java.util.function.Supplier;
  * before the swap. The archive and the tree are in the staging root and the copy is in the pack domain. On one volume,
  * which is the default, the room is the whole peak, {@code archive + 2 x bound}; on two, the staging volume needs
  * {@code archive + bound} and the pack volume {@code bound}. The archive is the declared length of the upload at
- * admission, the spooled file's size when the job runs, and the bound when it is not known (a chunked body, a source).
+ * admission, and the bound when it is not known (a chunked body, a source). When the job runs a spooled archive is on the
+ * volume already, so the check asks only what is left to write, the tree and the copy; the peak of a job is still the
+ * three, since the archive was counted at admission.
  */
 public final class FreeSpaceCheck implements RegistrationJobs.StorageRoom {
 
@@ -99,17 +101,32 @@ public final class FreeSpaceCheck implements RegistrationJobs.StorageRoom {
     @Override
     public void require(long archiveBytes, long openUploadBytes) {
         long archive = archiveBytes < 0 || archiveBytes > ARCHIVE_BOUND_BYTES ? ARCHIVE_BOUND_BYTES : archiveBytes;
-        FileStore pack = packVolume.get();
-        FileStore staging = oneSupplier ? pack : stagingVolume.get();
         // The uploads already open spool into the staging root: what they are declared to write is not free for this
         // one.
-        long open = Math.max(0, openUploadBytes);
+        check(archive, Math.max(0, openUploadBytes));
+    }
+
+    /**
+     * At run time a spooled archive is on the volume already, so what is left to write is the tree and the copy: two
+     * bounds on one volume, a bound on each of two. A job that has still to fetch its archive (a source) is judged as
+     * at admission, with a full-size archive to write.
+     */
+    @Override
+    public void requireForRun(long archiveBytes) {
+        check(archiveBytes < 0 ? ARCHIVE_BOUND_BYTES : 0, 0);
+    }
+
+    /** The room for {@code archive} bytes still to write, the tree and the copy, and {@code open} bytes of other uploads. */
+    private void check(long archive, long open) {
+        FileStore pack = packVolume.get();
+        FileStore staging = oneSupplier ? pack : stagingVolume.get();
+        String archiveHeld = archive > 0 ? "the archive, " : "";
         if (pack.equals(staging)) {
             requireFree(
                     pack,
                     "pack",
                     archive + 2 * ARCHIVE_BOUND_BYTES + open,
-                    "the archive, the tree it expands to and the copy"
+                    archiveHeld + "the tree it expands to and the copy"
                             + " the commit makes beside the pack, each at most the " + ARCHIVE_BOUND_BYTES / MIB
                             + " MiB bound" + openHolds(open));
         } else {
@@ -117,7 +134,7 @@ public final class FreeSpaceCheck implements RegistrationJobs.StorageRoom {
                     staging,
                     "staging",
                     archive + ARCHIVE_BOUND_BYTES + open,
-                    "the archive and the tree it expands to" + openHolds(open));
+                    (archive > 0 ? "the archive and " : "") + "the tree it expands to" + openHolds(open));
             requireFree(pack, "pack", ARCHIVE_BOUND_BYTES, "the copy the commit makes beside the pack");
         }
     }

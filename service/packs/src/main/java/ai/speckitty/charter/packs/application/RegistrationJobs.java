@@ -1054,7 +1054,7 @@ public final class RegistrationJobs implements AutoCloseable {
 
         private @Nullable Ending work() {
             try {
-                owner.dependencies.room().require(archiveBytes);
+                owner.dependencies.room().requireForRun(archiveBytes);
                 Staged staged = Objects.requireNonNull(stager).stage(directory);
                 RegistrationOutcome outcome =
                         owner.dependencies.service().register(packId, staged.pack(), preconditions, this::beginCommit);
