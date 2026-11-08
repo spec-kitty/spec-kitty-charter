@@ -176,6 +176,100 @@ Feature: The layer merge decides which version of an artifact the effective read
     And the field at "/items/0/required" is false
     And the field at "/items/0/reason" is "not_selected"
 
+  Scenario: A1 - the union floor holds in the writes: registering the org copy removes no must-have item, and a deny of the earlier copy's item is 409
+    A1, FR-014, FR-027, decision 01M6YKZRM7VF19A57E40D59N81: the built-in pack's governing preset requires D1 and the org
+    copy of the same id, once registered, requires D2. The floor is the union (D1 and D2), so the registration reports D2
+    added and D1 not removed, and a deny of D1 is refused as the effective read keeps D1 required: 409 artifact_required
+    naming the pack of the copy the org copy replaced.
+    Given registration is switched on
+    And the built-in pack "core" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: core-pack
+      pack_level: built-in
+      """
+    And the built-in pack "core" with the file "directives/D1.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: D1
+      title: D1
+      intent: D1
+      enforcement: required
+      """
+    And the built-in pack "core" with the file "directives/D2.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: D2
+      title: D2
+      intent: D2
+      enforcement: required
+      """
+    And the built-in pack "core" with the file "presets/governing.yaml":
+      """
+      schema_version: '1.0'
+      id: governing
+      description: The governing preset.
+      activated_directives:
+        - id: D1
+          must_have: true
+      """
+    And the archive "house-v1" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+      pack_version: 1.0.0
+      parent_pack: null
+      name: house-pack
+      pack_level: org
+      depends_on:
+        - pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+          range: '>=1.0'
+      """
+    And the archive "house-v2" is a copy of the archive "house-v1"
+    And the archive "house-v2" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+      pack_version: 1.1.0
+      parent_pack: null
+      name: house-pack
+      pack_level: org
+      depends_on:
+        - pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+          range: '>=1.0'
+      """
+    And the archive "house-v2" holds the file "presets/governing.yaml":
+      """
+      schema_version: '1.0'
+      id: governing
+      description: The governing preset.
+      activated_directives:
+        - id: D2
+          must_have: true
+      """
+    When I PUT "/packs/house" with the archive "house-v1"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+    When I PUT "/packs/house" with the archive "house-v2"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+    And the field at "/result/notices/floorAdded/0/artifactId" is "D2"
+    And the field at "/result/notices/floorAdded" holds exactly 1 item(s)
+    And the field at "/result/notices/floorRemoved" holds exactly 0 item(s)
+    Given the activation "a-1" holds:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "core"}, {"packId": "house"}]}
+      """
+    When I PUT "/activations/a-1/exclusions/directive/D1" with the stored ETag and the body:
+      """
+      {}
+      """
+    Then the response status is 409
+    And the problem code is "artifact_required"
+    And the field at "/requiredBy/0/packId" is "core"
+    When I GET "/activations/a-1"
+    Then the field at "/revision" is the stored revision
+
   Scenario: US6 AS1 - a distribution pack's settlement puts the named member's version in force (#357)
     US6 AS1, #357, ADR-0053 d5: the org packs a and b both define D, and the distribution pack x declares
     overrides: [{artifact: directive:D, member: <b>}]. The settlement is applied before the levels merge, so b's D

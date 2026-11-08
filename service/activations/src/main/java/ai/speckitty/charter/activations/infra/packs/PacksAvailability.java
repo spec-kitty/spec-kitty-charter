@@ -160,7 +160,7 @@ public class PacksAvailability implements AvailablePacks {
 
     private static Map<String, List<String>> requiredBy(ClosureView view, Map<String, String> configuredIdOf) {
         Map<String, List<String>> requiredBy = new LinkedHashMap<>();
-        view.floor()
+        view.mergedFloor()
                 .requiredBy()
                 .forEach((urn, packs) -> requiredBy.put(
                         urn.toString(),
