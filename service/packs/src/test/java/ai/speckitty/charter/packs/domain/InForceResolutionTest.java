@@ -897,4 +897,59 @@ class InForceResolutionTest {
         assertThat(states.requiredNotInForce()).isEmpty();
         expectBucket(states, "tactic:X", Bucket.ENHANCED_TARGET_NOT_IN_FORCE);
     }
+
+    // ---- the chains of overrides the reviews of WP23 asked to pin ----
+
+    @Test
+    void aLockedArtifactStopsTheChainForSatisfactionSoTheRequirementIsSatisfiedByItAndNeverByTheOverriderAbove() {
+        InForceStates states = new Closure()
+                .open("tactic:F", "tactic:T")
+                .locked("tactic:L")
+                .overrides("tactic:F", "tactic:L")
+                .overrides("tactic:L", "tactic:T")
+                .requires("tactic:T")
+                .select("tactic:F", "tactic:T");
+
+        expect(states, "tactic:F", State.ACTIVE, Reason.SELECTED);
+        expect(states, "tactic:L", State.ACTIVE, Reason.LOCKED);
+        expect(states, "tactic:T", State.INACTIVE, Reason.OVERRIDDEN);
+        expectSatisfiedBy(states, "tactic:T", "tactic:L");
+        assertThat(states.stateOf(u("tactic:T")).orElseThrow().overriddenBy()).contains(u("tactic:L"));
+        assertThat(states.overrideNotApplied())
+                .as("F's override of the locked L is not applied, so F reaches nothing below L")
+                .containsExactly(new OverrideNotApplied(u("tactic:L"), u("tactic:F")));
+    }
+
+    @Test
+    void aChainThroughAHiddenIntermediateThatTheEnhancerRuleWouldPruneStillHidesItsEnd() {
+        // the shape of seed 47 of the property test: A hides B, B (an enhancer of a Z out of force) overrides C
+        InForceStates states = new Closure()
+                .open("tactic:A", "tactic:B", "tactic:C", "tactic:Z")
+                .overrides("tactic:A", "tactic:B")
+                .overrides("tactic:B", "tactic:C")
+                .enhances("tactic:B", "tactic:Z")
+                .select("tactic:A", "tactic:B", "tactic:C");
+
+        expect(states, "tactic:A", State.ACTIVE, Reason.SELECTED);
+        expect(states, "tactic:B", State.INACTIVE, Reason.ENHANCED_TARGET_NOT_IN_FORCE);
+        expect(states, "tactic:C", State.INACTIVE, Reason.OVERRIDDEN);
+        assertThat(states.stateOf(u("tactic:C")).orElseThrow().overriddenBy()).contains(u("tactic:A"));
+    }
+
+    @Test
+    void aChainOfEnhancersThatOverrideEachOtherWithdrawsOneOverrideAtATimeAndTheEndOfTheChainIsInForce() {
+        // E7: A enhances Z and overrides B; B enhances Y and overrides C. Neither enhancer has its target in force, so
+        // both are pruned, their overrides are withdrawn one round after the other, and C is left in force.
+        InForceStates states = new Closure()
+                .open("tactic:A", "tactic:B", "tactic:C", "tactic:Y", "tactic:Z")
+                .overrides("tactic:A", "tactic:B")
+                .overrides("tactic:B", "tactic:C")
+                .enhances("tactic:A", "tactic:Z")
+                .enhances("tactic:B", "tactic:Y")
+                .select("tactic:A", "tactic:B", "tactic:C");
+
+        expect(states, "tactic:A", State.INACTIVE, Reason.ENHANCED_TARGET_NOT_IN_FORCE);
+        expect(states, "tactic:B", State.INACTIVE, Reason.ENHANCED_TARGET_NOT_IN_FORCE);
+        expect(states, "tactic:C", State.ACTIVE, Reason.SELECTED);
+    }
 }
