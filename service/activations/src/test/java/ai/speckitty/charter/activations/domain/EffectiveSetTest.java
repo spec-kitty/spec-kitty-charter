@@ -482,6 +482,44 @@ class EffectiveSetTest {
     }
 
     @Test
+    void onlyAnArtifactTheDocumentDoesNotSelectCarriesASuggestionWhateverOtherReasonKeepsAnArtifactOut() {
+        Scene scene = new Scene().artifact("directive:D", State.ACTIVE, Reason.SELECTED);
+        Map<String, Reason> outOfForce = Map.of(
+                "tactic:Denied", Reason.DEACTIVATED,
+                "tactic:Hidden", Reason.OVERRIDDEN,
+                "tactic:Filtered", Reason.LANGUAGE_FILTERED,
+                "tactic:Unbound", Reason.MISSION_TYPE_NOT_IN_FORCE,
+                "tactic:Ungrounded", Reason.ENHANCED_TARGET_NOT_IN_FORCE);
+        outOfForce.forEach((urn, reason) -> scene.artifact(
+                        urn, reason == Reason.DEACTIVATED ? State.EXCLUDED : State.INACTIVE, reason)
+                .suggests("directive:D", urn, "when", "why"));
+        scene.artifact("tactic:Unselected", State.INACTIVE, Reason.NOT_SELECTED)
+                .suggests("directive:D", "tactic:Unselected", "when", "why");
+
+        EffectiveSet set = scene.of();
+
+        outOfForce.forEach((urn, reason) ->
+                assertThat(only(set, urn).suggestion()).as(reason.token()).isEmpty());
+        assertThat(only(set, "tactic:Unselected").suggestion())
+                .as("not_selected")
+                .isPresent();
+    }
+
+    @Test
+    void anEnhancementPullsNothingInSoAnArtifactAnArtifactInForceEnhancesIsStillASuggestion() {
+        EffectiveSet set = new Scene()
+                .artifact("directive:D", State.ACTIVE, Reason.SELECTED)
+                .artifact("directive:E", State.ACTIVE, Reason.SELECTED)
+                .artifact("directive:S", State.INACTIVE, Reason.NOT_SELECTED)
+                .suggests("directive:D", "directive:S", "when", "why")
+                .edge("directive:E", RelationType.ENHANCES, "directive:S")
+                .of();
+
+        assertThat(only(set, "directive:S").suggestion())
+                .contains(new Suggestion(Optional.of("when"), Optional.of("why")));
+    }
+
+    @Test
     void severalSuggestersGiveTheEdgeOfTheSmallestOne() {
         EffectiveSet set = new Scene()
                 .artifact("directive:B", State.ACTIVE, Reason.SELECTED)
