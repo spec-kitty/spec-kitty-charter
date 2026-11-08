@@ -1970,6 +1970,78 @@ Feature: The effective reads answer what an activation puts in force, and why th
       directive:B
       """
 
+  Scenario: A cursor taken from state=active and replayed with state=inactive is 400
+    Plan IC-09, research R5: the cursor binds the query of the set it pages, not only the document's tag. A cursor from
+    the active list, replayed against the inactive list of the same, unchanged document, is 400. The control is the same
+    cursor on the active list it came from, which pages on and answers 200 with the last active artifact, and the inactive
+    list without a cursor, which answers 200 with the artifact that is not selected.
+    Given the org pack "main" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: main-pack
+      pack_level: org
+      """
+    And the org pack "main" with the file "directives/A.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: A
+      title: A
+      intent: A
+      enforcement: required
+      """
+    And the org pack "main" with the file "directives/B.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: B
+      title: B
+      intent: B
+      enforcement: required
+      """
+    And the org pack "main" with the file "directives/C.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: C
+      title: C
+      intent: C
+      enforcement: required
+      """
+    And the org pack "main" with the file "directives/D.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: D
+      title: D
+      intent: D
+      enforcement: required
+      """
+    And the activation "a-1" holds:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["A", "B", "C"]}}
+      """
+    When I GET "/activations/a-1/artifacts?kind=directive&state=active&pageSize=2"
+    Then the response status is 200
+    And the field at "/items" holds exactly the ids:
+      """
+      directive:A
+      directive:B
+      """
+    When I remember the field "/pageInfo/nextPageCursor" of the response body
+    And I GET "/activations/a-1/artifacts?kind=directive&state=inactive&pageSize=2" with the remembered cursor
+    Then the response status is 400
+    When I GET "/activations/a-1/artifacts?kind=directive&state=active&pageSize=2" with the remembered cursor
+    Then the response status is 200
+    And the field at "/items" holds exactly the ids:
+      """
+      directive:C
+      """
+    When I GET "/activations/a-1/artifacts?kind=directive&state=inactive&pageSize=2"
+    Then the response status is 200
+    And the field at "/items" holds exactly the ids:
+      """
+      directive:D
+      """
+
   Scenario: US3 AS7 - a matching If-None-Match is 304 with the current tag
     US3 AS7, FR-020: the list answers an ETag, and the same request with that tag as If-None-Match is 304 with no body and
     the same tag. The first answer, 200 with the artifact A, is the positive control: the 304 is not an empty store.
