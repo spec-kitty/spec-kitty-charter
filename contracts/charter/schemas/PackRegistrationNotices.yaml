@@ -11,7 +11,10 @@ properties:
     type: array
     items:
       $ref: ArtifactReference.yaml
-    description: The must-have items of the pack's governing presets that the write added to the required floor.
+    description: >-
+      The must-have items of the pack's governing presets that the write added to the required floor. The floor is the
+      union of the must-have items over every governing copy of a preset id (A1), as the reads judge it, not the
+      winning copy alone: an item a copy at another level still requires is not added.
     x-derived:
       rule: The must-have items of the staged pack's governing presets that the stored pack's did not name.
       inputs:
@@ -21,7 +24,10 @@ properties:
     type: array
     items:
       $ref: ArtifactReference.yaml
-    description: The must-have items that the write took off the required floor.
+    description: >-
+      The must-have items that the write took off the required floor. The floor is the union of the must-have items
+      over every governing copy of a preset id (A1), as the reads judge it: an item that another copy of the preset
+      still requires stays on the floor, so it is not listed.
     x-derived:
       rule: The must-have items of the stored pack's governing presets that the staged pack's do not name.
       inputs:
@@ -53,10 +59,11 @@ properties:
       $ref: ActivationId.yaml
     description: >-
       The stored activations whose in-force set the write changes: the ids of the activations whose closure holds the
-      pack and whose effective set differs before and after the write (B4, FR-027). Sorted. Empty when no activation is
-      affected.
+      pack and whose effective set differs before and after the write (B4, FR-027). The comparison covers which artifacts
+      are in force and also the version in force of each: a change of its pack, level or policy counts. Sorted. Empty
+      when no activation is affected.
     x-derived:
-      rule: The stored activations over whose closure the in-force set differs before and after the write.
+      rule: The stored activations over whose closure the in-force set, or the version in force of an artifact of it, differs before and after the write.
       inputs:
       - the stored pack before the write
       - the staged pack

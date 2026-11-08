@@ -49,7 +49,9 @@ description: >-
   document or body the service refuses, each refused part listed in violations (a document carrying a removed member, activatedKinds or missionTypes, is
   validation_failed, not activation_invalid); artifact_required and
   artifact_locked (409), a deactivation a pack requires or locks, whose refusal names every requiring pack in
-  requiredBy. Only the four effective reads of an activation stay reserved (ADR-0020 D8), and the one code they
+  requiredBy; the requirement is the A1 union of the must-have items over every governing copy of a preset id, so a
+  deny of an artifact that any copy requires is artifact_required, naming that copy's pack. Only the two effective reads
+  of an activation that remain (the graph and the action context) stay reserved (ADR-0020 D8), and the one code they
   will raise again, action_not_found, is not raised (above). A unit test of the service fails when any main class
   other than the enum and its mappings names a code the map marks not raised, outside the two classes no
   operation reaches (the whole-pack load and its findings).
