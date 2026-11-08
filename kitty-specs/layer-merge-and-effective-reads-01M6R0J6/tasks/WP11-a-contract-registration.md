@@ -65,7 +65,6 @@ owned_files:
 - contracts/charter/schemas/CharterRefusalCode.yaml
 - contracts/charter/paths/packs_packId_relationships.yaml
 - contracts/charter/paths/packs_packId_artifacts_kind_artifactId.yaml
-- contracts/charter/scenarios/registration/register-pack.feature
 - service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/RefusalCode.java
 - service/deployable/src/test/java/ai/speckitty/charter/deployable/ReservedRefusalCodesTest.java
 role: implementer
