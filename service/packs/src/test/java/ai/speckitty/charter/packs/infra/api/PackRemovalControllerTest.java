@@ -1,0 +1,199 @@
+package ai.speckitty.charter.packs.infra.api;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.transport.PreconditionException;
+import ai.speckitty.charter.packs.application.ArtifactRemovalService;
+import ai.speckitty.charter.packs.application.AuditLog;
+import ai.speckitty.charter.packs.application.ConsistentRead;
+import ai.speckitty.charter.packs.application.PackArchiveReader;
+import ai.speckitty.charter.packs.application.PackRevision;
+import ai.speckitty.charter.packs.application.PackSummaryQuery;
+import ai.speckitty.charter.packs.application.RegistrationJobs;
+import ai.speckitty.charter.packs.application.RelationshipRemovalService;
+import ai.speckitty.charter.packs.application.ServiceInfoQuery;
+import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
+import ai.speckitty.charter.web.RefusalHandler;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
+/**
+ * The HTTP contract of the two {@code DELETE}s (IC-06): {@code 204} with the new revision as the {@code ETag}, and each
+ * refusal with its status and code; every outcome is entered in the audit log once (NFR-010, IC-18), by the audit filter
+ * over the answer, whichever rule refused.
+ */
+class PackRemovalControllerTest {
+
+    private static final String ARTIFACT = "/api/v1/packs/qa/artifacts/directive/D1";
+    private static final String RELATIONSHIP = "/api/v1/packs/qa/relationships?from=directive:D1&to=directive:D2";
+    private static final PackRevision REVISION = PackRevision.computeOverBytes(List.of(new byte[] {1}));
+
+    private final ArtifactRemovalService artifacts = mock(ArtifactRemovalService.class);
+    private final RelationshipRemovalService relationships = mock(RelationshipRemovalService.class);
+    private final List<AuditLog.Entry> entries = new ArrayList<>();
+    private final MockMvc mvc = MockMvcBuilders.standaloneSetup(new PackRegistrationController(
+                    mock(RegistrationJobs.class),
+                    mock(PackSummaryQuery.class),
+                    mock(PackArchiveReader.class),
+                    mock(PackRegistrationMapper.class),
+                    PackSourceIntake.none(),
+                    new PackRemovalController(artifacts, relationships)))
+            .setControllerAdvice(new RefusalHandler())
+            .addFilters(new RegistrationAuditFilter(
+                    entries::add,
+                    new ServiceInfoQuery("worktree-1", new ConsistentRead(new FileSystemPackSources(List::of))),
+                    "/api/v1",
+                    Clock.fixed(Instant.parse("2026-11-07T10:00:00Z"), ZoneOffset.UTC)))
+            .build();
+
+    private static MockHttpServletRequestBuilder withIfMatch(MockHttpServletRequestBuilder request) {
+        return request.header("If-Match", "*");
+    }
+
+    private void artifactRemovalAnswers(Throwable failure) {
+        when(artifacts.remove(any(PackIdentifier.class), eq("directive"), eq("D1"), any()))
+                .thenThrow(failure);
+    }
+
+    private void relationshipRemovalAnswers(Throwable failure) {
+        when(relationships.remove(
+                        any(PackIdentifier.class),
+                        any(PackQualifiedReference.class),
+                        any(PackQualifiedReference.class),
+                        any()))
+                .thenThrow(failure);
+    }
+
+    @Test
+    void deletingAnArtifactAnswers204WithTheNewRevisionAsTheETag() throws Exception {
+        when(artifacts.remove(new PackIdentifier("qa"), "directive", "D1", "*")).thenReturn(REVISION);
+
+        mvc.perform(withIfMatch(delete(ARTIFACT)))
+                .andExpect(status().isNoContent())
+                .andExpect(header().string("ETag", "\"" + REVISION.token() + "\""));
+
+        assertThat(entries).singleElement().satisfies(entry -> {
+            assertThat(entry.outcome()).isEqualTo("succeeded:204");
+            assertThat(entry.operation()).isEqualTo("deletePackArtifact");
+            assertThat(entry.packId()).isEqualTo("qa");
+        });
+    }
+
+    @Test
+    void deletingARelationshipAnswers204WithTheNewRevisionAsTheETag() throws Exception {
+        when(relationships.remove(
+                        new PackIdentifier("qa"),
+                        PackQualifiedReference.parse("directive:D1"),
+                        PackQualifiedReference.parse("directive:D2"),
+                        "*"))
+                .thenReturn(REVISION);
+
+        mvc.perform(withIfMatch(delete(RELATIONSHIP)))
+                .andExpect(status().isNoContent())
+                .andExpect(header().string("ETag", "\"" + REVISION.token() + "\""));
+
+        assertThat(entries).singleElement().satisfies(entry -> {
+            assertThat(entry.outcome()).isEqualTo("succeeded:204");
+            assertThat(entry.operation()).isEqualTo("deletePackRelationship");
+        });
+    }
+
+    @Test
+    void everyRefusalOfAnArtifactDeleteHasItsStatusAndCodeAndIsAuditedOnce() throws Exception {
+        List<Object[]> outcomes = List.of(
+                new Object[] {new CharterRefusal(RefusalCode.DIRECTIVE_NOT_FOUND, "No D1."), 404, "directive_not_found"
+                },
+                new Object[] {
+                    new CharterRefusal(RefusalCode.ARTIFACT_REFERENCED, "Referred to."), 409, "artifact_referenced"
+                },
+                new Object[] {
+                    new CharterRefusal(RefusalCode.PACK_SIBLING_CONFLICT, "Broken."), 422, "pack_sibling_conflict"
+                },
+                new Object[] {new PreconditionException(PreconditionException.Kind.STALE, "Stale."), 412, null},
+                new Object[] {new PreconditionException(PreconditionException.Kind.MISSING, "Required."), 428, null});
+
+        for (Object[] outcome : outcomes) {
+            artifactRemovalAnswers((Throwable) outcome[0]);
+            int before = entries.size();
+
+            var result = mvc.perform(withIfMatch(delete(ARTIFACT))).andExpect(status().is((Integer) outcome[1]));
+            if (outcome[2] != null) {
+                result.andExpect(jsonPath("$.code").value(outcome[2]));
+            }
+
+            assertThat(entries).as("one audit entry for %s", outcome[1]).hasSize(before + 1);
+            assertThat(entries.getLast().outcome()).isEqualTo("refused:" + outcome[1]);
+            assertThat(entries.getLast().operation()).isEqualTo("deletePackArtifact");
+        }
+    }
+
+    @Test
+    void everyRefusalOfARelationshipDeleteHasItsStatusAndCodeAndIsAuditedOnce() throws Exception {
+        List<Object[]> outcomes = List.of(
+                new Object[] {
+                    new CharterRefusal(RefusalCode.RELATIONSHIP_NOT_FOUND, "None."), 404, "relationship_not_found"
+                },
+                new Object[] {
+                    new CharterRefusal(RefusalCode.RELATIONSHIP_NOT_REGISTERED, "Authored."),
+                    409,
+                    "relationship_not_registered"
+                },
+                new Object[] {
+                    new CharterRefusal(RefusalCode.OVERRIDE_NOT_PERMITTED, "Locked."), 422, "override_not_permitted"
+                },
+                new Object[] {new PreconditionException(PreconditionException.Kind.STALE, "Stale."), 412, null},
+                new Object[] {new PreconditionException(PreconditionException.Kind.MISSING, "Required."), 428, null});
+
+        for (Object[] outcome : outcomes) {
+            relationshipRemovalAnswers((Throwable) outcome[0]);
+            int before = entries.size();
+
+            var result = mvc.perform(withIfMatch(delete(RELATIONSHIP))).andExpect(status().is((Integer) outcome[1]));
+            if (outcome[2] != null) {
+                result.andExpect(jsonPath("$.code").value(outcome[2]));
+            }
+
+            assertThat(entries).as("one audit entry for %s", outcome[1]).hasSize(before + 1);
+            assertThat(entries.getLast().outcome()).isEqualTo("refused:" + outcome[1]);
+            assertThat(entries.getLast().operation()).isEqualTo("deletePackRelationship");
+        }
+    }
+
+    @Test
+    void theCompositionCodesAreA422OnBothDeletes() throws Exception {
+        artifactRemovalAnswers(new CharterRefusal(RefusalCode.PACK_DEPENDENCY_UNKNOWN, "Unknown."));
+        relationshipRemovalAnswers(new CharterRefusal(RefusalCode.PACK_DEPENDENCY_UNKNOWN, "Unknown."));
+
+        mvc.perform(withIfMatch(delete(ARTIFACT))).andExpect(status().is(422));
+        mvc.perform(withIfMatch(delete(RELATIONSHIP))).andExpect(status().is(422));
+    }
+
+    @Test
+    void aQueryParameterThatIsNoReferenceIsA400AndNothingIsRemoved() throws Exception {
+        mvc.perform(withIfMatch(delete("/api/v1/packs/qa/relationships?from=a::b::c&to=directive:D2")))
+                .andExpect(status().isBadRequest());
+
+        assertThat(entries)
+                .singleElement()
+                .satisfies(entry -> assertThat(entry.outcome()).isEqualTo("refused:400"));
+    }
+}

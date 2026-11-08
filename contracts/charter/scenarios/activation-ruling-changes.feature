@@ -8,8 +8,8 @@
 #   deny entry is IC-13's relaxed write rule, which PR B builds; the A0 scenario below reaches the same state (a deny
 #   entry on a now-required artifact in the stored document) through a pack change instead.
 # - A10's report of the unheld must-have item is a read of PR B (requiredNotHeld, WP22), and the DELETE of an artifact
-#   another pack's preset names is PR A's deletePackArtifact (WP19): each is its own @WIP scenario at the end, so the
-#   WP that builds the surface removes its own tag (WP19 the DELETE one, WP22 the report one).
+#   another pack's preset names is PR A's deletePackArtifact (WP19), which bound its scenario: the report one is still
+#   its own @WIP scenario at the end, so WP22 removes its own tag.
 
 @contract @activations
 Feature: The A0 rulings on activation writes and on the packs
@@ -462,23 +462,36 @@ Feature: The A0 rulings on activation writes and on the packs
     Then the response status is 409
     And the problem code is "governance_policy_violation"
 
-  # WP19 (PR A) builds deletePackArtifact and removes this @WIP tag.
-  @WIP
+  # WP19 (PR A) builds deletePackArtifact. The preset item is spelled as a bare id (the preset item grammar refuses
+  # main::D1), so the pack other builds on main, and the item names main's D1 as the compose resolves it.
   Scenario: A10 - an artifact another pack's preset names cannot be deleted
-    WIP: deletePackArtifact and its 409 artifact_referenced are PR A's (WP19), which binds this scenario and removes
-    the tag. The preset of the pack "other" names main's D1, so main's D1 cannot be deleted while it is named.
-    Given the org pack "other" with the file "presets/governing.yaml":
+    The preset of the pack "other" names main's D1, so main's D1 cannot be deleted while it is named.
+    Given the org pack "other" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943T
+      pack_version: 1.0.0
+      parent_pack: null
+      name: other-pack
+      pack_level: org
+      depends_on:
+        - pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+          range: '>=1.0'
+      """
+    And the org pack "other" with the file "presets/governing.yaml":
       """
       schema_version: '1.0'
       id: governing
       description: D1 of main.
       activated_directives:
-        - id: main::D1
+        - id: D1
           must_have: true
       """
     When I DELETE "/packs/main/artifacts/directive/D1" with the header "If-Match": "*"
     Then the response status is 409
     And the problem code is "artifact_referenced"
+    And the field at "/packs/0/packId" is "other"
+    When I GET "/packs/main/artifacts/directive/D1"
+    Then the response status is 200
 
   # WP22 (PR B) builds the skipped report and removes this @WIP tag.
   @WIP
