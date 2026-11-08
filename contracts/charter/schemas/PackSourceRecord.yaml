@@ -20,7 +20,8 @@ properties:
       - schemas/PackSource.yaml
   url:
     type: string
-    description: For https_archive and git, the URL as sent.
+    description: For https_archive and git, the URL as sent, without its query, its fragment and its user information, so a
+      presigned signature or a credential in the URL is never held in a status.
     x-derived:
       rule: The url of the PackSource.
       inputs:

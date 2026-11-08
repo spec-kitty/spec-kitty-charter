@@ -10,6 +10,7 @@ import ai.speckitty.charter.packs.application.PackSourceKind;
 import ai.speckitty.charter.packs.application.PackSourceRequest;
 import ai.speckitty.charter.packs.application.RegistrationJobs.Staged;
 import ai.speckitty.charter.packs.application.SourceRefusal;
+import ai.speckitty.charter.packs.application.SourceUrls;
 import ai.speckitty.charter.packs.application.SourceUpstreamException;
 import ai.speckitty.charter.packs.infra.fetch.HttpsExchange.BodyPolicy;
 import ai.speckitty.charter.packs.infra.fetch.HttpsExchange.Fetched;
@@ -51,7 +52,8 @@ import org.jspecify.annotations.Nullable;
  *   <li><b>A fixed set of reasons.</b> Every refusal is a {@link SourceRefusal}, whose detail names no part of the URL,
  *       a header or upstream text (NFR-012). An upstream that failed or did not answer in time is a
  *       {@link SourceUpstreamException}, never a refusal of the source.
- *   <li><b>The record.</b> The staged tree is answered with the source as sent: its kind and URL.
+ *   <li><b>The record.</b> The staged tree is answered with its kind and its URL without the query, the fragment and the
+ *       user information, so a presigned signature is never held in the status.
  * </ul>
  */
 public final class HttpsArchiveFetcher implements PackSourceFetcher {
@@ -98,7 +100,7 @@ public final class HttpsArchiveFetcher implements PackSourceFetcher {
         ArchiveFormat format = formatOf(fetched);
         Path archive = spool(fetched, directory, request.sha256());
         Staged staged = stage(format, archive, directory);
-        return new Staged(staged.pack(), Map.of("kind", kind().wire(), "url", url));
+        return new Staged(staged.pack(), Map.of("kind", kind().wire(), "url", SourceUrls.withoutSecrets(url)));
     }
 
     /** The URL of a request that names an https archive and no member of another kind. */
