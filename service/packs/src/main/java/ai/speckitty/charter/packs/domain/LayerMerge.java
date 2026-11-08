@@ -168,10 +168,12 @@ public final class LayerMerge {
     }
 
     /**
-     * Each preset id with the copy in force and the union of the must-have items of every copy (A1, C29, C31). The same
+     * Each preset id with the copy in force and the union of the must-have items of the copy in force at each level (A1,
+     * C29, C31). The same
      * winner function as an artifact's picks the copy: the pack last in closure order holds its level (a child after the
      * parent it extends), and the nearest project level applies. The requirement is computed beside it and only
-     * tightens: a copy that wins never drops an item a copy that loses requires.
+     * tightens across levels: a copy that wins never drops an item the copy in force at another level requires, and a
+     * copy a same-level copy replaced requires nothing.
      */
     private static Map<String, MergedClosure.MergedPreset> mergedPresets(
             List<PackUnderResolution> closure, Map<String, PackCompositionFacts> facts) {
@@ -190,12 +192,27 @@ public final class LayerMerge {
                     .preset();
             merged.put(
                     id,
-                    new MergedClosure.MergedPreset(applied, winner.descriptor().packId(), mustHaveOf(copies)));
+                    new MergedClosure.MergedPreset(
+                            applied, winner.descriptor().packId(), mustHaveOf(copiesInForceAtEachLevel(copies))));
         });
         return merged;
     }
 
-    /** The must-have items of every copy, each once, in closure order. */
+    /**
+     * The copy of a preset id in force at each level: within a level the copy of the pack last in closure order (a
+     * child after the parent it extends) replaces the others, so a replaced copy requires nothing. The same winner
+     * function as {@link #mergedPresets} and the artifacts use; the requirement is the union across these copies (A1).
+     */
+    private static List<Copy> copiesInForceAtEachLevel(List<Copy> copies) {
+        Set<String> inForce = levelWinners(copies.stream().map(Copy::pack).toList(), LayerMerge::lastHolder).stream()
+                .map(pack -> pack.descriptor().packId())
+                .collect(Collectors.toSet());
+        return copies.stream()
+                .filter(copy -> inForce.contains(copy.pack().descriptor().packId()))
+                .toList();
+    }
+
+    /** The must-have items of the copies given, each once, in closure order. */
     private static List<Urn> mustHaveOf(List<Copy> copies) {
         Set<Urn> items = new LinkedHashSet<>();
         copies.forEach(copy -> copy.preset()
@@ -205,7 +222,7 @@ public final class LayerMerge {
     }
 
     /**
-     * The floor over every copy of every preset the closure holds, restricted to the artifacts a pack of it holds (A1,
+     * The floor over the copy of every preset id in force at each level of the closure, restricted to the artifacts a pack of it holds (A1,
      * C31, A10), which {@link #merge} answers with the winners but which is judged on no override: a closure whose
      * layer override the owner's level forbids still has this floor.
      *
@@ -220,15 +237,33 @@ public final class LayerMerge {
         return floorOf(closure, factsByConfiguredId, holdersByUrn(closure).keySet());
     }
 
-    /** The floor over every copy of every preset, restricted to what the merged closure holds (C31, A10). */
+    /**
+     * The floor over the copy of every preset id in force at each level, restricted to what the merged closure holds
+     * (A1, C31, A10).
+     */
     private static RequiredFloor floorOf(
             List<PackUnderResolution> closure, Map<String, PackCompositionFacts> facts, Set<Urn> held) {
+        Map<String, List<Copy>> inForce = new LinkedHashMap<>();
+        copiesById(closure, facts).forEach((id, copies) -> inForce.put(id, copiesInForceAtEachLevel(copies)));
         return RequiredFloor.of(
                 closure.stream()
                         .map(pack -> Map.entry(
-                                pack.descriptor().packId(), factsOf(pack, facts).presets()))
+                                pack.descriptor().packId(), presetsInForce(pack, factsOf(pack, facts), inForce)))
                         .toList(),
                 held);
+    }
+
+    /** The presets of a pack that are the copy in force at its level. */
+    private static List<Preset> presetsInForce(
+            PackUnderResolution pack, PackCompositionFacts facts, Map<String, List<Copy>> inForce) {
+        return facts.presets().stream()
+                .filter(preset -> inForce.getOrDefault(preset.id(), List.of()).stream()
+                        .anyMatch(copy -> copy.pack()
+                                        .descriptor()
+                                        .packId()
+                                        .equals(pack.descriptor().packId())
+                                && copy.preset().equals(preset)))
+                .toList();
     }
 
     private static MergedClosure.Winner winnerOf(PackUnderResolution pack, Urn urn, PerPackPolicy.Level policy) {

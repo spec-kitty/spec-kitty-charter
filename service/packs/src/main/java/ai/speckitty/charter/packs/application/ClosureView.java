@@ -395,7 +395,7 @@ public record ClosureView(
     }
 
     /**
-     * The must-have items of every copy of every governing preset the closure holds, with the requiring packs (A1, rule
+     * The must-have items of the copy of every governing preset in force at each level the closure holds, with the requiring packs (A1, rule
      * C31): the floor the effective reads answer. Unlike {@link #floor()}, which follows the copy of a preset that wins,
      * it is the union across levels. It judges no layer override, so it is answered for a closure whose {@link #merged()}
      * refuses.

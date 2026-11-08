@@ -270,6 +270,81 @@ Feature: The layer merge decides which version of an artifact the effective read
     When I GET "/activations/a-1"
     Then the field at "/revision" is the stored revision
 
+  Scenario: A1 - within one level the child's copy of a preset replaces its parent's, so the parent-only item is not required
+    Decision 01M6ZCXAJ9MTTF9XJSR89F3NYG: the union is across levels, of the copy in force at each level. The org pack
+    "aaa-child" extends the org pack "zzz-parent" and both hold the preset "team"; the child's copy replaces the
+    parent's, which requires nothing. CHILD_ONLY is required and in force with no selection, and PARENT_ONLY, the
+    control in the same answer, is not required: it is inactive with not_selected.
+    Given the org pack "zzz-parent" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943T
+      pack_version: 1.0.0
+      parent_pack: null
+      name: parent-pack
+      pack_level: org
+      """
+    And the org pack "zzz-parent" with the file "directives/PARENT_ONLY.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: PARENT_ONLY
+      title: The parent's directive
+      intent: Do the parent's thing
+      enforcement: required
+      """
+    And the org pack "zzz-parent" with the file "presets/team.yaml":
+      """
+      schema_version: '1.0'
+      id: team
+      description: The parent's copy.
+      activated_directives:
+        - id: PARENT_ONLY
+          must_have: true
+      """
+    And the org pack "aaa-child" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943V
+      pack_version: 1.0.0
+      parent_pack: 01M4P01D5TWB5FKZGNNQG3943T
+      name: child-pack
+      pack_level: org
+      """
+    And the org pack "aaa-child" with the file "directives/CHILD_ONLY.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: CHILD_ONLY
+      title: The child's directive
+      intent: Do the child's thing
+      enforcement: required
+      """
+    And the org pack "aaa-child" with the file "presets/team.yaml":
+      """
+      schema_version: '1.0'
+      id: team
+      description: The child's copy.
+      activated_directives:
+        - id: CHILD_ONLY
+          must_have: true
+      """
+    And the activation "a-1" holds:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "aaa-child"}]}
+      """
+    When I GET "/activations/a-1/artifacts?kind=directive&state=active"
+    Then the response status is 200
+    And the field at "/items" holds exactly the ids:
+      """
+      directive:CHILD_ONLY
+      """
+    And the field at "/items/0/required" is true
+    When I GET "/activations/a-1/artifacts?kind=directive&state=inactive"
+    Then the response status is 200
+    And the field at "/items" holds exactly the ids:
+      """
+      directive:PARENT_ONLY
+      """
+    And the field at "/items/0/required" is false
+    And the field at "/items/0/reason" is "not_selected"
+
   Scenario: US6 AS1 - a distribution pack's settlement puts the named member's version in force (#357)
     US6 AS1, #357, ADR-0053 d5: the org packs a and b both define D, and the distribution pack x declares
     overrides: [{artifact: directive:D, member: <b>}]. The settlement is applied before the levels merge, so b's D

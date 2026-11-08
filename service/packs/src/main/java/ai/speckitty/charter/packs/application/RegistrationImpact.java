@@ -125,7 +125,7 @@ public final class RegistrationImpact {
         }
     }
 
-    /** A closure's floor, the union of every copy of every governing preset (A1), and its locks, as URN texts. */
+    /** A closure's floor, the union of the copy of every governing preset in force at each level (A1), and its locks, as URN texts. */
     private record Force(Set<String> floor, Set<String> locks) {
 
         static final Force NONE = new Force(Set.of(), Set.of());
