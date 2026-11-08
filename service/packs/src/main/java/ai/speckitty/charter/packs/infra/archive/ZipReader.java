@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
@@ -66,6 +67,19 @@ final class ZipReader {
 
     /** The bytes an entry occupies in the file, from its local header to the end of its data. */
     private record Span(long start, long end, String name) {}
+
+    /**
+     * Reads a zip that is already a file, where it lies: no second spool, so the archive is on disk once. The file is the
+     * caller's and is left as found; a file over the body limit is refused as too large without being read.
+     */
+    void readFile(Path archive, PackTree tree) throws IOException {
+        if (Files.size(archive) > limits.maxBodyBytes()) {
+            throw new ArchiveLimitException(Code.BODY_TOO_LARGE, "");
+        }
+        try (FileChannel channel = FileChannel.open(archive, StandardOpenOption.READ, LinkOption.NOFOLLOW_LINKS)) {
+            readSpooled(channel, tree);
+        }
+    }
 
     /** Reads the archive into the tree; the body is read once and not closed. */
     void read(InputStream body, PackTree tree, Path stagingRoot) throws IOException {

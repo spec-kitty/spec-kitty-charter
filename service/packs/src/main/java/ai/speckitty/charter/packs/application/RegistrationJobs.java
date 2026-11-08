@@ -340,19 +340,32 @@ public final class RegistrationJobs implements AutoCloseable {
         }
     }
 
-    /** The check that the pack volume has room, before a job writes anything. */
+    /** The check that the volumes a registration writes to have room, before it writes anything. */
     @FunctionalInterface
     public interface StorageRoom {
 
         /** A volume that always has room. */
         StorageRoom UNBOUNDED = () -> {};
 
+        /** The archive size that is not known: a chunked body, a source. It is judged as a full-size archive. */
+        long UNKNOWN_BYTES = -1;
+
         /**
-         * Checks the room.
+         * Checks the room for an archive of the largest size a registration takes.
          *
-         * @throws CharterRefusal {@code PACK_STORAGE_FULL} when less than twice the archive bound is free
+         * @throws CharterRefusal {@code PACK_STORAGE_FULL} when a volume has less than the per-job peak free
          */
         void require();
+
+        /**
+         * Checks the room for an archive of this size: at admission, the declared length of the upload.
+         *
+         * @param archiveBytes the archive's size, or {@link #UNKNOWN_BYTES}
+         * @throws CharterRefusal {@code PACK_STORAGE_FULL} when a volume has less than the per-job peak free
+         */
+        default void require(long archiveBytes) {
+            require();
+        }
     }
 
     private static final System.Logger LOG = System.getLogger(RegistrationJobs.class.getName());
@@ -386,6 +399,16 @@ public final class RegistrationJobs implements AutoCloseable {
                     thread.setDaemon(true);
                     return thread;
                 });
+    }
+
+    /**
+     * Refuses a registration the volumes have no room for, before its body is read (NFR-009, #418 A6).
+     *
+     * @param archiveBytes the declared length of the upload, or {@link StorageRoom#UNKNOWN_BYTES}
+     * @throws CharterRefusal {@code PACK_STORAGE_FULL} when a volume has less than the per-job peak free
+     */
+    public void requireRoom(long archiveBytes) {
+        dependencies.room().require(archiveBytes);
     }
 
     /**
