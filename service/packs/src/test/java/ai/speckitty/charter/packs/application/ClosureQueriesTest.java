@@ -513,11 +513,49 @@ class ClosureQueriesTest {
         alphaBetaGamma();
         AtomicInteger calls = new AtomicInteger();
 
-        assertThatThrownBy(() ->
-                        queries(() -> calls.incrementAndGet() == 1 ? D1 : D2).snapshot(roots("alpha")))
+        assertThatThrownBy(() -> queries(() -> calls.incrementAndGet() % 2 == 1 ? D1 : D2)
+                        .snapshot(roots("alpha")))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refused -> assertThat(refused.code()).isEqualTo(RefusalCode.STALE_INPUT));
+    }
+
+    @Test
+    void aStaleReadIsRetriedAndAnswersTheVersionTheRetryReads() {
+        alphaBetaGamma();
+        AtomicInteger calls = new AtomicInteger();
+
+        ClosureView view = queries(() -> calls.incrementAndGet() == 1 ? D1 : D2).snapshot(roots("alpha"));
+
+        assertThat(view.fingerprint()).as("the retry's own verified digest").isEqualTo(D2);
+        assertThat(view.closurePackIds()).containsExactly("beta", "alpha");
+    }
+
+    @Test
+    void aReadThatIsStaleOnEveryTryIsRetriedThreeTimesThenAnswersStaleInput() {
+        alphaBetaGamma();
+        AtomicInteger calls = new AtomicInteger();
+
+        assertThatThrownBy(() -> queries(() -> calls.incrementAndGet() % 2 == 1 ? D1 : D2)
+                        .snapshot(roots("alpha")))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refused -> assertThat(refused.code()).isEqualTo(RefusalCode.STALE_INPUT));
+        assertThat(digests.get())
+                .as("one try and three retries, two digests each")
+                .isEqualTo(8);
+    }
+
+    @Test
+    void aRefusalThatIsNotStaleIsNeverRetried() {
+        pack("alpha", PackLevel.ORG, descriptor("alpha", "1.0.0", new PackDependency("beta", ">=2.0")), holding());
+        pack("beta", PackLevel.ORG, descriptor("beta", "1.2.0"), holding());
+
+        assertThatThrownBy(() -> queries().snapshot(roots("alpha"))).isInstanceOf(CharterRefusal.class);
+
+        assertThat(digests.get())
+                .as("one try: the first digest, then the second after the refusal")
+                .isEqualTo(2);
     }
 
     @Test
