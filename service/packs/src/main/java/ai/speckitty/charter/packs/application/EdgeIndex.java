@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.application;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
+import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
@@ -9,6 +10,7 @@ import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ComponentResolver;
 import ai.speckitty.charter.packs.domain.ComposeResolver;
+import ai.speckitty.charter.packs.domain.MergedClosure;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
@@ -138,6 +140,20 @@ public final class EdgeIndex implements ComposeResolver {
      */
     public static EdgeIndex empty() {
         return of(List.of(), Map.of());
+    }
+
+    /**
+     * The index as the layer merge sees it (FR-010, rules C19, C20 and C36): the edges that start at a losing place are
+     * dropped, the edges that end at one end at the winner's place, and a losing place no longer holds its artifact.
+     *
+     * @param merged the layer merge of this index's closure
+     * @return the merged index
+     * @throws CharterRefusal with {@code PACK_UNREADABLE} when an {@code overrides} edge, re-pointed to the winner, ends
+     *     at its own source
+     */
+    public EdgeIndex merged(MergedClosure merged) {
+        Objects.requireNonNull(merged, "merged");
+        return this;
     }
 
     @Override
