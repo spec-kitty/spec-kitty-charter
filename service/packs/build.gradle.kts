@@ -171,6 +171,25 @@ tasks.register<Test>("wholePackRoundTrip") {
     }
 }
 
+// The real-git tests of the git source (WP18, T093, T152): bare repositories served over https by `git http-backend`
+// behind a test HTTPS server, fetched with the host git, which must be 2.50.1 or later (C-008, NFR-011). They carry the
+// `git-host` tag, which `test`, `check` and PIT leave out (unitTestExcludedTags, below). Locally, with an older git or none,
+// they are skipped and reported as skipped; the `git-source` job of .github/workflows/service.yml runs this task with
+// -PrequireGitHost=true, so there a git that is too old fails them instead of skipping them.
+val requireGitHost = providers.gradleProperty("requireGitHost").orElse("false")
+tasks.register<Test>("gitHostTest") {
+    group = "verification"
+    description = "The real-git tests of the git source (tag git-host); need git 2.50.1 or later; not part of check (WP18)."
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform { includeTags("git-host") }
+    systemProperty("charter.requireGitHost", requireGitHost.get())
+    inputs.property("requireGitHost", requireGitHost)
+    // The tests start a server and run git: never cached as a pass for another host.
+    doNotTrackState("a result measured with another git says nothing about this one (WP18)")
+    testLogging { showStandardStreams = true }
+}
+
 // The CPU-time budgets (#316): tests tagged `timing` hold a piece of work to a CPU-time budget, which only means
 // something on a quiet machine. Under verifyAll every module's tests run at once, and that load pushed the generated-tree
 // checks, then in PackFileSetExactnessTest, past their budget (13.1 s of a 10 s budget on a merge-queue runner) although
