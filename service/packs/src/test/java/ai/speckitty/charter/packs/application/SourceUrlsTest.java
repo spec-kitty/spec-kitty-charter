@@ -44,4 +44,17 @@ class SourceUrlsTest {
     void aSlashInTheUserInformationDoesNotKeepTheCredential(String sent, String kept) {
         assertThat(SourceUrls.withoutSecrets(sent)).isEqualTo(kept);
     }
+
+    @ParameterizedTest
+    @CsvSource(
+            delimiter = '|',
+            value = {
+                "https://user:secret?x@packs.example.org/p|https://packs.example.org/p",
+                "https://user:se#cret@packs.example.org/p|https://packs.example.org/p",
+                "https://user:s/e?c@packs.example.org/p|https://packs.example.org/p",
+                "https://user:s?e@packs.example.org/p?sig=x#y|https://packs.example.org/p",
+            })
+    void aQueryOrFragmentMarkInTheUserInformationDoesNotKeepTheCredential(String sent, String kept) {
+        assertThat(SourceUrls.withoutSecrets(sent)).isEqualTo(kept);
+    }
 }
