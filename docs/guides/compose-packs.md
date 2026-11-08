@@ -237,8 +237,11 @@ Rules of the request:
 
 Limits of the queue. Two registrations run and eight wait. A ninth waiter is refused `503` with `Retry-After`. The
 90 second deadline of a registration counts the time it waits in the queue, not only its run. A registration takes its
-slot before the service reads the body, so a slow upload holds a slot for its whole transfer. A few slow uploads can make
-other callers get `503`. This is a known limit, accepted for this release.
+slot only after the service has read the whole body, so a slow upload holds no slot while it arrives and cannot make other
+callers get `503`; the queue and the `If-Match` are judged again then. The service refuses before it reads the body when
+the declared length is over 32 MiB (`413`), the queue is full (`503` with `Retry-After`), the `If-Match` is stale (`412`)
+or the volumes lack room (`503 pack_storage_full`). A registration needs about three times its archive in free space: the
+archive, the tree it expands to and the copy made beside the pack, each at most 32 MiB.
 
 ## The version rule
 
