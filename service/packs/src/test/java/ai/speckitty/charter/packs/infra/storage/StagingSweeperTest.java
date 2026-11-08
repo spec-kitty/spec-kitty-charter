@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -31,12 +32,18 @@ class StagingSweeperTest {
     private static final Instant NOW = Instant.parse("2026-11-07T12:00:00Z");
     private static final Clock CLOCK = Clock.fixed(NOW, ZoneOffset.UTC);
 
+    /** Names in the grammar of a registration id, a ULID: the only entries of the staging root the sweep may remove. */
+    private static final String ORPHAN_16 = "01KA0000000000000000000016";
+
+    private static final String RUNNING_16 = "01KA0000000000000000000017";
+    private static final String ORPHAN_14 = "01KA0000000000000000000014";
+
     @Test
     void anOrphanOlderThanFifteenMinutesIsRemovedAndTheOthersAreKept(@TempDir Path host) throws IOException {
         Path staging = Files.createDirectories(host.resolve("staging"));
-        Path orphan = directoryAged(staging, "orphan-16", Duration.ofMinutes(16));
-        Path running = directoryAged(staging, "running-16", Duration.ofMinutes(16));
-        Path young = directoryAged(staging, "orphan-14", Duration.ofMinutes(14));
+        Path orphan = directoryAged(staging, ORPHAN_16, Duration.ofMinutes(16));
+        Path running = directoryAged(staging, RUNNING_16, Duration.ofMinutes(16));
+        Path young = directoryAged(staging, ORPHAN_14, Duration.ofMinutes(14));
         StagingSweeper sweeper =
                 sweeper(staging, host.resolve("packs"), Set.of(running), new RegistryWriteLock(Duration.ofSeconds(1)));
 
@@ -49,9 +56,34 @@ class StagingSweeperTest {
     }
 
     @Test
+    void onlyAJobIdNamedEntryOfTheStagingRootIsSweptWhateverItsAge(@TempDir Path host) throws IOException {
+        Path staging = Files.createDirectories(host.resolve("staging"));
+        Path job = directoryAged(staging, ORPHAN_16, Duration.ofMinutes(20));
+        Path aPack = directoryAged(staging, "acme", Duration.ofDays(2));
+        Path hidden = directoryAged(staging, ".git", Duration.ofDays(2));
+        Path packs = directoryAged(staging, "packs", Duration.ofDays(2));
+        Path lowerCase = directoryAged(staging, ORPHAN_16.toLowerCase(Locale.ROOT), Duration.ofDays(2));
+        Path tooShort = directoryAged(staging, "01KA000000000000000000001", Duration.ofDays(2));
+        Path withLetterU = directoryAged(staging, "01KA000000000000000000001U", Duration.ofDays(2));
+        Path aFile = Files.writeString(staging.resolve("01KA0000000000000000000018"), "a file named like a job");
+        Files.setLastModifiedTime(aFile, FileTime.from(NOW.minus(Duration.ofDays(2))));
+        StagingSweeper sweeper =
+                sweeper(staging, host.resolve("packs-domain"), Set.of(), new RegistryWriteLock(Duration.ofSeconds(1)));
+
+        int removed = sweeper.sweep();
+
+        assertThat(job).as("an orphaned job directory").doesNotExist();
+        assertThat(List.of(aPack, hidden, packs, lowerCase, tooShort, withLetterU))
+                .as("an entry that is no job id is not the registration's to delete")
+                .allSatisfy(entry -> assertThat(entry).isDirectory());
+        assertThat(aFile).as("a plain file is never a job directory").isRegularFile();
+        assertThat(removed).isEqualTo(1);
+    }
+
+    @Test
     void aDirectoryWithFilesInsideIsRemovedWhole(@TempDir Path host) throws IOException {
         Path staging = Files.createDirectories(host.resolve("staging"));
-        Path orphan = Files.createDirectories(staging.resolve("orphan"));
+        Path orphan = Files.createDirectories(staging.resolve(ORPHAN_16));
         Files.createDirectories(orphan.resolve("tree/directives"));
         Files.writeString(orphan.resolve("tree/directives/A.directive.yaml"), "x");
         Files.writeString(orphan.resolve("archive"), "bytes");
@@ -144,7 +176,7 @@ class StagingSweeperTest {
     @Test
     void theSweepRunsAtStartupAndEveryFiveMinutes(@TempDir Path host) throws IOException {
         Path staging = Files.createDirectories(host.resolve("staging"));
-        Path orphan = directoryAged(staging, "orphan", Duration.ofMinutes(20));
+        Path orphan = directoryAged(staging, ORPHAN_16, Duration.ofMinutes(20));
         List<long[]> scheduled = new ArrayList<>();
         try (ScheduledThreadPoolExecutor recording = new ScheduledThreadPoolExecutor(1) {
             @Override
