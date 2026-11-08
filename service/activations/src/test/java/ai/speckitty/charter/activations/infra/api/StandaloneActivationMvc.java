@@ -46,7 +46,18 @@ final class StandaloneActivationMvc {
         for (ArtifactKind kind : ArtifactKind.values()) {
             closure.held(kind, IDS);
         }
-        ActivationController controller = controller(repository, new FakeAvailablePacks(closure.build()));
+        return over(repository, new FakeAvailablePacks(closure.build()));
+    }
+
+    /**
+     * The MockMvc over a controller backed by the given register and packs.
+     *
+     * @param repository the register's store
+     * @param packs the packs, which a test answers as it needs
+     * @return the MockMvc
+     */
+    static MockMvc over(InMemoryActivationRepository repository, FakeAvailablePacks packs) {
+        ActivationController controller = controller(repository, packs);
         RefusalHandler refusals = new RefusalHandler();
         JsonMapper json = JsonMapper.builder()
                 .addModule(new ActivationJson().activationJsonModule())

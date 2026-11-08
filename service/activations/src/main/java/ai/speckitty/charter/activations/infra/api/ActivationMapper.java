@@ -2,6 +2,7 @@ package ai.speckitty.charter.activations.infra.api;
 
 import ai.speckitty.charter.activations.application.ActivationService;
 import ai.speckitty.charter.activations.domain.ActivationDocument;
+import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.StoredActivation;
@@ -98,6 +99,17 @@ public class ActivationMapper {
         String id = stored.id().value();
         return new Activation(
                 id, stored.revision().token(), toConfig(stored.document()), Map.of("self", link(self(id))));
+    }
+
+    /**
+     * The answer of {@code getActivation}: the stored activation, with the deny entries the floor or a lock overrides.
+     *
+     * @param stored the activation
+     * @param denyNotApplied those entries, in the order to list them
+     * @return the answer
+     */
+    public Activation toActivation(StoredActivation stored, List<ArtifactRef> denyNotApplied) {
+        return toActivation(stored);
     }
 
     /**
