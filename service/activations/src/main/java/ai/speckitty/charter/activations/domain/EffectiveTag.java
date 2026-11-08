@@ -2,6 +2,11 @@ package ai.speckitty.charter.activations.domain;
 
 import ai.speckitty.charter.activations.domain.EffectiveSet.State;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -21,6 +26,14 @@ import java.util.regex.Pattern;
 public record EffectiveTag(String token) {
 
     private static final Pattern TOKEN = Pattern.compile("sha256:[0-9a-f]{64}");
+
+    /**
+     * The domain tag, with the tag's version: it is bumped in any change that alters what the reads answer for the same
+     * inputs (a merge rule change, a new reason), so a strong tag never names two bodies across releases.
+     */
+    private static final String DOMAIN = "charter-effective-read\0v1\n";
+
+    private static final String NO_QUERY = "";
 
     /** The read a tag names. */
     public enum Read {
@@ -56,6 +69,14 @@ public record EffectiveTag(String token) {
             Objects.requireNonNull(kind, "kind");
             Objects.requireNonNull(cursor, "cursor");
         }
+
+        /** The query as one unambiguous line: an absent part is {@code -}, a cursor is marked {@code +}. */
+        private String normalized() {
+            return "state=" + state.map(State::token).orElse("-")
+                    + "\nkind=" + kind.map(ArtifactKind::token).orElse("-")
+                    + "\ncursor=" + cursor.map(value -> "+" + value).orElse("-")
+                    + "\npageSize=" + pageSize;
+        }
     }
 
     /**
@@ -79,7 +100,7 @@ public record EffectiveTag(String token) {
      * @return the tag
      */
     public static EffectiveTag activation(Revision revision, ClosureSnapshot closure) {
-        return new EffectiveTag("sha256:" + "0".repeat(64));
+        return of(Read.ACTIVATION, revision, closure, NO_QUERY);
     }
 
     /**
@@ -90,7 +111,7 @@ public record EffectiveTag(String token) {
      * @return the tag
      */
     public static EffectiveTag skipped(Revision revision, ClosureSnapshot closure) {
-        return new EffectiveTag("sha256:" + "0".repeat(64));
+        return of(Read.SKIPPED, revision, closure, NO_QUERY);
     }
 
     /**
@@ -102,7 +123,20 @@ public record EffectiveTag(String token) {
      * @return the tag
      */
     public static EffectiveTag artifacts(Revision revision, ClosureSnapshot closure, Query query) {
-        return new EffectiveTag("sha256:" + "0".repeat(64));
+        return of(Read.ARTIFACTS, revision, closure, query.normalized());
+    }
+
+    private static EffectiveTag of(Read read, Revision revision, ClosureSnapshot closure, String query) {
+        String preimage = DOMAIN + read.name().toLowerCase(Locale.ROOT)
+                + "\n" + revision.token()
+                + "\n" + closure.fingerprint()
+                + "\n" + query;
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256").digest(preimage.getBytes(StandardCharsets.UTF_8));
+            return new EffectiveTag("sha256:" + HexFormat.of().formatHex(digest));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("Every Java platform provides SHA-256.", e);
+        }
     }
 
     @Override
