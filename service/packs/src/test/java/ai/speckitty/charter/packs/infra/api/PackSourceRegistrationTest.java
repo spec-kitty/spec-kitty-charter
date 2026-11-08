@@ -61,6 +61,7 @@ class PackSourceRegistrationTest {
     private final RegistrationSwitch registration = new RegistrationSwitch(true);
     private final PackSourceSwitch sources = new PackSourceSwitch(Set.of(PackSourceKind.HTTPS_ARCHIVE));
     private RegistrationJobs jobs;
+    private ServiceInfoQuery info;
     private MockMvc mvc;
 
     @BeforeEach
@@ -75,12 +76,15 @@ class PackSourceRegistrationTest {
                 RegistrationJobs.JobGate.OPEN,
                 RegistrationJobs.StorageRoom.UNBOUNDED,
                 staging));
-        ServiceInfoQuery info =
-                new ServiceInfoQuery("worktree-source", new ConsistentRead(new FileSystemPackSources(List::of)));
-        PackSourceFetcher fetcher = new PackSourceFetcher() {
+        info = new ServiceInfoQuery("worktree-source", new ConsistentRead(new FileSystemPackSources(List::of)));
+        mvc = mvcWith(List.of(stub(PackSourceKind.HTTPS_ARCHIVE)), info);
+    }
+
+    private PackSourceFetcher stub(PackSourceKind kind) {
+        return new PackSourceFetcher() {
             @Override
             public PackSourceKind kind() {
-                return PackSourceKind.HTTPS_ARCHIVE;
+                return kind;
             }
 
             @Override
@@ -89,9 +93,12 @@ class PackSourceRegistrationTest {
                 throw new CharterRefusal(RefusalCode.PACK_SOURCE_REFUSED, "host_not_allowed: stub");
             }
         };
+    }
+
+    private MockMvc mvcWith(List<PackSourceFetcher> fetchers, ServiceInfoQuery info) {
         PackSourceIntake intake = new PackSourceIntake(
                 sources,
-                new PackSourceStagers(List.of(fetcher), mock(WholePackWriteStore.Loader.class)),
+                new PackSourceStagers(fetchers, mock(WholePackWriteStore.Loader.class)),
                 info::worktree);
         PackRegistrationController controller = new PackRegistrationController(
                 jobs,
@@ -99,7 +106,7 @@ class PackSourceRegistrationTest {
                 mock(PackArchiveReader.class),
                 new PackRegistrationMapper(new Hypermedia("/api/v1"), new RefusalHandler()),
                 intake);
-        mvc = MockMvcBuilders.standaloneSetup(controller)
+        return MockMvcBuilders.standaloneSetup(controller)
                 .addInterceptors(new RegistrationAdmission(registration, jobs, info))
                 .setControllerAdvice(new PackSourceBodyAdvice(), new RefusalHandler())
                 .addPlaceholderValue("charter.api.base-path", "/api/v1")
@@ -152,6 +159,69 @@ class PackSourceRegistrationTest {
             assertThat(request.kind()).isEqualTo(PackSourceKind.HTTPS_ARCHIVE);
             assertThat(request.url()).contains("token=s3cr3t");
         });
+    }
+
+    private static final String GIT_URL = "https://git.example.org/acme/packs.git";
+
+    private static String git(String ref, String commit) {
+        return "{\"kind\":\"git\",\"packId\":\"acme\",\"url\":\"" + GIT_URL + "\",\"ref\":\"" + ref + "\""
+                + (commit == null ? "" : ",\"commit\":\"" + commit + "\"") + "}";
+    }
+
+    private void gitIsBuiltAndOn() {
+        sources.set(PackSourceKind.GIT, true);
+        mvc = mvcWith(List.of(stub(PackSourceKind.HTTPS_ARCHIVE), stub(PackSourceKind.GIT)), info);
+    }
+
+    @Test
+    void aBranchRefWithoutACommitOrAPreconditionIsPreconditionRequiredAndTakesNoSlot() throws Exception {
+        gitIsBuiltAndOn();
+
+        MockHttpServletResponse response = send(git("refs/heads/main", null))
+                .andExpect(status().is(428))
+                .andReturn()
+                .getResponse();
+
+        assertThat(response.getContentAsString()).doesNotContain("\"code\"").doesNotContain("git.example.org");
+        assertThat(jobs.retained()).isZero();
+        assertThat(fetched).isEmpty();
+    }
+
+    @Test
+    void aBranchRefWithIfMatchPassesTheRuleAndMeetsTheStalenessCheckInstead() throws Exception {
+        gitIsBuiltAndOn();
+
+        send(git("refs/heads/main", null), "If-Match", "\"sha256:" + "a".repeat(64) + "\"")
+                .andExpect(status().isPreconditionFailed());
+        assertThat(jobs.retained()).isZero();
+    }
+
+    @Test
+    void aBranchRefThatCreatesTheTargetOrNamesItsCommitOrIsATagOrACommitIsAccepted() throws Exception {
+        gitIsBuiltAndOn();
+        String sha = "0123456789abcdef0123456789abcdef01234567";
+
+        send(git("refs/heads/main", null), "If-None-Match", "*").andExpect(status().isAccepted());
+        send(git("refs/heads/main", sha)).andExpect(status().isAccepted());
+        send(git("refs/tags/v1.0.0", null)).andExpect(status().isAccepted());
+        send(git(sha, null)).andExpect(status().isAccepted());
+    }
+
+    @Test
+    void theBranchRuleIsOfTheGitSourceAlone() throws Exception {
+        gitIsBuiltAndOn();
+
+        send(BODY).andExpect(status().isAccepted());
+    }
+
+    @Test
+    void aGitSourceThatIsSwitchedOffIsUnavailableBeforeThePreconditionRule() throws Exception {
+        gitIsBuiltAndOn();
+        sources.set(PackSourceKind.GIT, false);
+
+        send(git("refs/heads/main", null))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value("pack_source_unavailable"));
     }
 
     @Test
