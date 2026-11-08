@@ -2,6 +2,8 @@ package ai.speckitty.charter.packs.application;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.domain.InForceRequest;
+import ai.speckitty.charter.packs.domain.InForceStates;
 import ai.speckitty.charter.packs.domain.LayerMerge;
 import ai.speckitty.charter.packs.domain.MergedClosure;
 import ai.speckitty.charter.packs.domain.MutabilityLevel;
@@ -281,6 +283,16 @@ public record ClosureView(
      */
     public MergedView merged() {
         return mergeInputs.merged(policy, edges);
+    }
+
+    /**
+     * What is in force under a request, over the merged closure (FR-013 to FR-016).
+     *
+     * @param request what the document selects, denies and filters
+     * @return one state per winning artifact and the rules not applied
+     */
+    public InForceStates inForce(InForceRequest request) {
+        return new InForceStates(Map.of(), List.of(), List.of(), List.of(), List.of(), List.of(), Map.of());
     }
 
     /**

@@ -16,6 +16,8 @@ import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
+import ai.speckitty.charter.packs.domain.InForceRequest;
+import ai.speckitty.charter.packs.domain.InForceStates;
 import ai.speckitty.charter.packs.domain.LayerOverride;
 import ai.speckitty.charter.packs.domain.MergedClosure;
 import ai.speckitty.charter.packs.domain.MutabilityLevel;
@@ -291,5 +293,134 @@ class ClosureViewMergedTest {
                 "sha256:" + "0".repeat(64));
 
         assertThat(view.merged().closure().winners()).isEmpty();
+    }
+
+    private static ReachRequest cascadeFrom(Urn start) {
+        return new ReachRequest(Set.of(start), Set.of(RelationType.REQUIRES), urn -> false, Optional.empty());
+    }
+
+    @Test
+    void theCascadeNeverFollowsAnEdgeOfAnOverriddenArtifact() {
+        pack(
+                "org",
+                PackLevel.ORG,
+                List.of(),
+                holding(
+                        MutabilityPolicySource.empty(),
+                        Map.of(),
+                        List.of(edge("directive:D", RelationType.REQUIRES, "directive:X")),
+                        "directive:D",
+                        "directive:X"));
+        pack("project", PackLevel.PROJECT, List.of("org"), holding("directive:D"));
+
+        ClosureView view = snapshot();
+
+        assertThat(view.reach(cascadeFrom(D)).reached()).containsOnlyKeys(D);
+    }
+
+    @Test
+    void theCascadeWalksTheSameEdgesWhereNoLayerOverrideExists() {
+        pack(
+                "alpha",
+                PackLevel.ORG,
+                List.of(),
+                holding(
+                        MutabilityPolicySource.empty(),
+                        Map.of(),
+                        List.of(edge("directive:D", RelationType.REQUIRES, "directive:X")),
+                        "directive:D",
+                        "directive:X"));
+
+        ClosureView view = snapshot();
+
+        assertThat(view.reach(cascadeFrom(D)).reached()).containsOnlyKeys(D, X);
+        assertThat(view.reach(cascadeFrom(D))).isEqualTo(Reachability.reach(view.edges(), cascadeFrom(D)));
+    }
+
+    private static InForceRequest selecting(Urn... urns) {
+        return InForceRequest.selecting(Set.of(urns));
+    }
+
+    @Test
+    void whatIsInForceAppliesTheOverridesOfTheWinnersEdges() {
+        pack(
+                "alpha",
+                PackLevel.ORG,
+                List.of(),
+                holding(
+                        MutabilityPolicySource.empty(),
+                        Map.of(),
+                        List.of(edge("directive:D", RelationType.OVERRIDES, "directive:X")),
+                        "directive:D",
+                        "directive:X"));
+
+        InForceStates states = snapshot().inForce(selecting(D, X));
+
+        assertThat(states.stateOf(D))
+                .hasValueSatisfying(state -> assertThat(state.active()).isTrue());
+        assertThat(states.stateOf(X)).hasValueSatisfying(state -> {
+            assertThat(state.active()).isFalse();
+            assertThat(state.reason()).isEqualTo(InForceStates.Reason.OVERRIDDEN);
+        });
+    }
+
+    @Test
+    void whatIsInForceIgnoresTheOverridesAnOverriddenArtifactDeclared() {
+        pack(
+                "builtin",
+                PackLevel.BUILT_IN,
+                List.of(),
+                holding(
+                        MutabilityPolicySource.empty(),
+                        Map.of(),
+                        List.of(edge("directive:D", RelationType.OVERRIDES, "directive:X")),
+                        "directive:D",
+                        "directive:X"));
+        pack("project", PackLevel.PROJECT, List.of("builtin"), holding("directive:D"));
+
+        InForceStates states = snapshot().inForce(selecting(D, X));
+
+        assertThat(states.stateOf(X))
+                .hasValueSatisfying(state -> assertThat(state.active()).isTrue());
+    }
+
+    @Test
+    void whatIsInForceReportsAnOverrideOfALockedTargetAsNotApplied() {
+        pack("alpha", PackLevel.ORG, List.of(), locking(X, MutabilityLevel.LOCKED, "directive:D", "directive:X"));
+        pack(
+                "beta",
+                PackLevel.ORG,
+                List.of("alpha"),
+                holding(
+                        MutabilityPolicySource.empty(),
+                        Map.of(),
+                        List.of(edge("directive:E", RelationType.OVERRIDES, "alpha::directive:X")),
+                        "directive:E"));
+
+        InForceStates states = snapshot().inForce(selecting(new Urn(NodeKind.DIRECTIVE, "E")));
+
+        assertThat(states.overrideNotApplied())
+                .containsExactly(new InForceStates.OverrideNotApplied(X, new Urn(NodeKind.DIRECTIVE, "E")));
+    }
+
+    @Test
+    void whatIsInForcePrunesAnEnhancerWhoseTargetIsNotInForce() {
+        pack(
+                "alpha",
+                PackLevel.ORG,
+                List.of(),
+                holding(
+                        MutabilityPolicySource.empty(),
+                        Map.of(),
+                        List.of(edge("directive:D", RelationType.ENHANCES, "directive:X")),
+                        "directive:D",
+                        "directive:X"));
+
+        InForceStates states = snapshot().inForce(selecting(D));
+
+        assertThat(states.stateOf(D)).hasValueSatisfying(state -> {
+            assertThat(state.active()).isFalse();
+            assertThat(state.reason()).isEqualTo(InForceStates.Reason.ENHANCED_TARGET_NOT_IN_FORCE);
+        });
     }
 }
