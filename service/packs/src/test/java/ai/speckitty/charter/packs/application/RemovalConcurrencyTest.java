@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -30,7 +31,9 @@ import org.junit.jupiter.api.io.TempDir;
 /**
  * A {@code DELETE} of {@code a::X} against a relationship {@code PUT} of {@code b}'s {@code Y} onto it (IC-06, FR-007,
  * FR-036), a hundred runs: both take the registry lock, so one runs after the other and sees its result, and the two
- * never both succeed to leave a registered edge that points at an artifact the other removed.
+ * never both succeed to leave a registered edge that points at an artifact the other removed. Every run proves that the
+ * two writers overlapped: the swap of the writer that got the lock pauses until the other writer's thread is seen waiting
+ * for the lock, so a registry lock that let both through at once fails the run instead of passing it by luck of timing.
  */
 @Tag("stress")
 class RemovalConcurrencyTest {
@@ -44,20 +47,16 @@ class RemovalConcurrencyTest {
     void aDeleteAndARelationshipPutOntoItNeverBothSucceed(@TempDir Path host) throws Exception {
         ExecutorService pool = Executors.newFixedThreadPool(2);
         try {
-            int deletedFirst = 0;
             for (int run = 1; run <= RUNS; run++) {
-                deletedFirst += race(host.resolve("run-" + run), pool) ? 1 : 0;
+                race(host.resolve("run-" + run), pool);
             }
-            assertThat(deletedFirst)
-                    .as("both orders are legal; the test asserts only that they never both succeed")
-                    .isBetween(0, RUNS);
         } finally {
             pool.shutdownNow();
         }
     }
 
-    /** One race on fresh packs; answers whether the delete won. */
-    private static boolean race(Path host, ExecutorService pool) throws Exception {
+    /** One race on fresh packs. Either order is legal; what is asserted is the overlap and that both never succeed. */
+    private static void race(Path host, ExecutorService pool) throws Exception {
         Rig rig = new Rig(host);
         rig.register("a", rig.stage(Packs.of(A_ID, "a", "1.0.0", "org").directive("X", "X")), Preconditions.none());
         rig.register(
@@ -76,16 +75,29 @@ class RemovalConcurrencyTest {
         String revisionOfB =
                 rig.writeStore.currentRevision(new PackIdentifier("b")).token();
         CyclicBarrier start = new CyclicBarrier(2);
+        Thread[] writers = new Thread[2];
+        AtomicBoolean overlapped = new AtomicBoolean();
+        AtomicBoolean first = new AtomicBoolean(true);
+        // Inside the swap of the writer that got the lock first: wait until the other is seen blocked on it. The other
+        // writer's own swap, later, has nobody to wait for.
+        rig.midSwap = () -> {
+            if (first.getAndSet(false)) {
+                overlapped.set(awaitTheOtherWriterWaiting(writers));
+            }
+        };
 
-        Future<Boolean> delete = pool.submit(attempt(start, () -> {
+        Future<Boolean> delete = pool.submit(attempt(start, writers, 0, () -> {
             deletes.remove(new PackIdentifier("a"), "directive", "X", "*");
         }));
-        Future<Boolean> put = pool.submit(attempt(start, () -> {
+        Future<Boolean> put = pool.submit(attempt(start, writers, 1, () -> {
             puts.registerRelationship(new PackIdentifier("b"), edgeOntoX(), revisionOfB);
         }));
         boolean deleted = delete.get(60, TimeUnit.SECONDS);
         boolean registered = put.get(60, TimeUnit.SECONDS);
 
+        assertThat(overlapped)
+                .as("the writer that held the lock saw the other waiting for it: the two overlapped")
+                .isTrue();
         assertThat(deleted && registered)
                 .as("the delete and the edge onto the artifact it removes cannot both be accepted")
                 .isFalse();
@@ -97,7 +109,20 @@ class RemovalConcurrencyTest {
         assertThat(edgeHeld && !xHeld)
                 .as("no registered edge is left pointing at a removed artifact")
                 .isFalse();
-        return deleted;
+    }
+
+    /** Polls the other writer's thread until it waits on the registry lock; false when it never does. */
+    private static boolean awaitTheOtherWriterWaiting(Thread[] writers) {
+        Thread self = Thread.currentThread();
+        Thread other = self.equals(writers[0]) ? writers[1] : writers[0];
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+        while (System.nanoTime() < deadline) {
+            if (other != null && other.getState() == Thread.State.TIMED_WAITING) {
+                return true;
+            }
+            Thread.onSpinWait();
+        }
+        return false;
     }
 
     private static String dependsOnA() {
@@ -116,8 +141,9 @@ class RemovalConcurrencyTest {
     }
 
     /** Runs the write once both sides are ready; true when it was accepted, false when it was refused. */
-    private static Callable<Boolean> attempt(CyclicBarrier start, Runnable write) {
+    private static Callable<Boolean> attempt(CyclicBarrier start, Thread[] writers, int index, Runnable write) {
         return () -> {
+            writers[index] = Thread.currentThread();
             start.await(30, TimeUnit.SECONDS);
             try {
                 write.run();
