@@ -93,21 +93,37 @@ public final class FreeSpaceCheck implements RegistrationJobs.StorageRoom {
 
     @Override
     public void require(long archiveBytes) {
+        require(archiveBytes, 0);
+    }
+
+    @Override
+    public void require(long archiveBytes, long openUploadBytes) {
         long archive = archiveBytes < 0 || archiveBytes > ARCHIVE_BOUND_BYTES ? ARCHIVE_BOUND_BYTES : archiveBytes;
         FileStore pack = packVolume.get();
         FileStore staging = oneSupplier ? pack : stagingVolume.get();
+        // The uploads already open spool into the staging root: what they are declared to write is not free for this
+        // one.
+        long open = Math.max(0, openUploadBytes);
         if (pack.equals(staging)) {
             requireFree(
                     pack,
                     "pack",
-                    archive + 2 * ARCHIVE_BOUND_BYTES,
+                    archive + 2 * ARCHIVE_BOUND_BYTES + open,
                     "the archive, the tree it expands to and the copy"
                             + " the commit makes beside the pack, each at most the " + ARCHIVE_BOUND_BYTES / MIB
-                            + " MiB bound");
+                            + " MiB bound" + openHolds(open));
         } else {
-            requireFree(staging, "staging", archive + ARCHIVE_BOUND_BYTES, "the archive and the tree it expands to");
+            requireFree(
+                    staging,
+                    "staging",
+                    archive + ARCHIVE_BOUND_BYTES + open,
+                    "the archive and the tree it expands to" + openHolds(open));
             requireFree(pack, "pack", ARCHIVE_BOUND_BYTES, "the copy the commit makes beside the pack");
         }
+    }
+
+    private static String openHolds(long open) {
+        return open == 0 ? "" : ", and the " + open / MIB + " MiB the uploads already open are declared to write";
     }
 
     private static void requireFree(FileStore volume, String name, long needed, String holds) {

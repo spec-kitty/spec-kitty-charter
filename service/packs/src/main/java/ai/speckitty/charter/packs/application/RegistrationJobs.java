@@ -53,6 +53,12 @@ public final class RegistrationJobs implements AutoCloseable {
     /** Registrations that wait for a worker; the next is refused with {@code Retry-After}. */
     public static final int WAITING_LIMIT = 8;
 
+    /**
+     * Uploads open at once, counted apart from the queue: as many as the queue has slots, so that the bodies arriving
+     * are never more than the jobs that can be waiting for them (#418, F1). The next is refused with {@code Retry-After}.
+     */
+    public static final int UPLOAD_LIMIT = RUNNING_LIMIT + WAITING_LIMIT;
+
     /** The most statuses kept, ended or not (one replica, ADR-0061). */
     public static final int MAX_RETAINED = 1_000;
 
@@ -423,7 +429,9 @@ public final class RegistrationJobs implements AutoCloseable {
     private final ThreadPoolExecutor executor;
     private final Map<String, Job> jobs = new LinkedHashMap<>();
     private final AtomicInteger inFlight = new AtomicInteger();
-    private final Set<Path> uploads = java.util.concurrent.ConcurrentHashMap.newKeySet();
+    /** The uploads open, with the bytes each is declared to write; guarded by itself. */
+    private final Map<Path, Long> uploads = new LinkedHashMap<>();
+
     private final SecureRandom random = new SecureRandom();
     private volatile boolean closing;
     private @Nullable ScheduledExecutorService watchdog;
@@ -445,16 +453,6 @@ public final class RegistrationJobs implements AutoCloseable {
                     thread.setDaemon(true);
                     return thread;
                 });
-    }
-
-    /**
-     * Refuses a registration the volumes have no room for, before its body is read (NFR-009, #418 A6).
-     *
-     * @param archiveBytes the declared length of the upload, or {@link StorageRoom#UNKNOWN_BYTES}
-     * @throws CharterRefusal {@code PACK_STORAGE_FULL} when a volume has less than the per-job peak free
-     */
-    public void requireRoom(long archiveBytes) {
-        dependencies.room().require(archiveBytes);
     }
 
     /**
@@ -572,24 +570,37 @@ public final class RegistrationJobs implements AutoCloseable {
     }
 
     /**
-     * Opens the directory a body is spooled in. It holds no slot: any number of bodies may be arriving, each bounded at
-     * 32 MiB by the body guard and the free-space check, and the sweep leaves a directory that is open (#418, A4).
+     * Opens the directory a body is spooled in. It holds no slot of the queue, but a place among at most
+     * {@link #UPLOAD_LIMIT} uploads open at once, and the room it will need is asked for on top of what the open uploads
+     * are declared to write: each is bounded at 32 MiB by the body guard, and the sweep leaves a directory that is open
+     * (#418, A4, F1). The place is given back when a reservation adopts the directory or {@link Upload#discard()} runs.
      *
      * @param declaredBytes the declared length of the body, or {@link StorageRoom#UNKNOWN_BYTES}
      * @return the upload
-     * @throws RetryLaterException when the service is stopping
+     * @throws RetryLaterException when the service is stopping, or {@link #UPLOAD_LIMIT} uploads are open already
+     * @throws CharterRefusal {@code PACK_STORAGE_FULL} when the volumes have no room left for it
      */
     public Upload openUpload(long declaredBytes) {
         requireOpen();
+        long bytes = declaredBytes < 0 || declaredBytes > StorageRoom.ARCHIVE_BOUND_BYTES
+                ? StorageRoom.ARCHIVE_BOUND_BYTES
+                : declaredBytes;
         String id = Ulid.next(clock.instant(), random);
-        Path directory;
-        try {
-            directory = dependencies.staging().createJobDirectory(id);
-        } catch (IOException failure) {
-            throw new UncheckedIOException("cannot create the staging directory of an upload", failure);
+        synchronized (uploads) {
+            if (uploads.size() >= UPLOAD_LIMIT) {
+                throw uploadsFull();
+            }
+            long open = uploads.values().stream().mapToLong(Long::longValue).sum();
+            dependencies.room().require(declaredBytes, open);
+            Path directory;
+            try {
+                directory = dependencies.staging().createJobDirectory(id);
+            } catch (IOException failure) {
+                throw new UncheckedIOException("cannot create the staging directory of an upload", failure);
+            }
+            uploads.put(directory, bytes);
+            return new OpenUpload(id, directory);
         }
-        uploads.add(directory);
-        return new OpenUpload(id, directory);
     }
 
     private void requireOpen() {
@@ -602,6 +613,23 @@ public final class RegistrationJobs implements AutoCloseable {
         return new RetryLaterException(
                 "Two registrations run and " + WAITING_LIMIT + " wait; send this one again shortly.",
                 RETRY_AFTER_SECONDS);
+    }
+
+    private List<Path> openUploads() {
+        synchronized (uploads) {
+            return List.copyOf(uploads.keySet());
+        }
+    }
+
+    private boolean forget(Path directory) {
+        synchronized (uploads) {
+            return uploads.remove(directory) != null;
+        }
+    }
+
+    private static RetryLaterException uploadsFull() {
+        return new RetryLaterException(
+                UPLOAD_LIMIT + " uploads are open already; send this one again shortly.", RETRY_AFTER_SECONDS);
     }
 
     /** An upload in progress. */
@@ -627,12 +655,12 @@ public final class RegistrationJobs implements AutoCloseable {
 
         void adopt() {
             adopted.set(true);
-            uploads.remove(directory);
+            forget(directory);
         }
 
         @Override
         public void discard() {
-            if (adopted.get() || !uploads.remove(directory)) {
+            if (adopted.get() || !forget(directory)) {
                 return;
             }
             dependencies.staging().delete(directory);
@@ -715,7 +743,7 @@ public final class RegistrationJobs implements AutoCloseable {
      */
     public Set<Path> owned() {
         synchronized (jobs) {
-            Set<Path> owned = new LinkedHashSet<>(uploads);
+            Set<Path> owned = new LinkedHashSet<>(openUploads());
             jobs.values().stream().filter(job -> !job.ended()).forEach(job -> owned.add(job.directory));
             return owned;
         }
@@ -754,8 +782,8 @@ public final class RegistrationJobs implements AutoCloseable {
             snapshot = List.copyOf(jobs.values());
         }
         snapshot.forEach(Job::stop);
-        List.copyOf(uploads).forEach(directory -> {
-            if (uploads.remove(directory)) {
+        openUploads().forEach(directory -> {
+            if (forget(directory)) {
                 dependencies.staging().delete(directory);
             }
         });
