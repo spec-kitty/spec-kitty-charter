@@ -252,12 +252,13 @@ public record EffectiveSet(List<EffectiveArtifact> artifacts, EffectiveSkippedRe
         }
     }
 
-    /** The relations that reach an artifact for certain: the cascade's, but {@code suggests}. */
+    /** The relations that reach an artifact for certain: the cascade's, but {@code suggests} and {@code enhances}, which pulls nothing in. */
     private static final Set<RelationType> HARD_RELATIONS = hardRelations();
 
     private static Set<RelationType> hardRelations() {
         Set<RelationType> hard = EnumSet.copyOf(CascadeRules.CASCADE_RELATIONS);
         hard.remove(RelationType.SUGGESTS);
+        hard.remove(RelationType.ENHANCES);
         return Set.copyOf(hard);
     }
 
@@ -329,8 +330,8 @@ public record EffectiveSet(List<EffectiveArtifact> artifacts, EffectiveSkippedRe
     }
 
     /**
-     * The artifacts reached only through {@code suggests}: an artifact out of force that an artifact in force suggests,
-     * and that no artifact in force reaches through a hard relation. It reads the edges among the winners one hop at a
+     * The artifacts reached only through {@code suggests}: an artifact the document does not select ({@code not_selected})
+     * that an artifact in force suggests, and that no artifact in force reaches through a hard relation. It reads the edges among the winners one hop at a
      * time and walks nothing. Of several suggesters, the edge of the smallest wins.
      */
     private static Map<ArtifactRef, Suggestion> suggestionsOf(
@@ -345,10 +346,17 @@ public record EffectiveSet(List<EffectiveArtifact> artifacts, EffectiveSkippedRe
         fromForce.stream()
                 .filter(edge -> edge.relation() == RelationType.SUGGESTS
                         && !reachedHard.contains(edge.target())
-                        && !inForce(states, edge.target()))
+                        && notSelected(states, edge.target()))
                 .sorted(Comparator.comparing(Edge::source))
                 .forEach(edge -> suggestions.putIfAbsent(edge.target(), new Suggestion(edge.when(), edge.rationale())));
         return suggestions;
+    }
+
+    /** Whether the artifact is out of force for want of a selection: no other rule keeps it out (decision 01M6Y6VE6VZQ4MXD98N93JB3GJ). */
+    private static boolean notSelected(Map<ArtifactRef, ArtifactState> states, ArtifactRef ref) {
+        return Optional.ofNullable(states.get(ref))
+                .filter(state -> state.reason() == Reason.NOT_SELECTED)
+                .isPresent();
     }
 
     private static boolean inForce(Map<ArtifactRef, ArtifactState> states, ArtifactRef ref) {
