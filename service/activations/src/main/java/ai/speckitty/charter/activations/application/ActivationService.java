@@ -241,24 +241,6 @@ public class ActivationService {
     }
 
     /**
-     * Reads a stored document, as stored (ADR-0059 D5), under its revision as the tag.
-     *
-     * <p>No route serves this since PR B: {@code getActivation} answers through {@link EffectiveReadService#activation},
-     * under the closure tag and with its {@code denyNotApplied} (decision {@code 01M6Y11E55YP5TG1EJ1MDKCFRP}). It stays
-     * for the register's own tests of the revision comparison, and is to be removed with them.
-     *
-     * @param id the activation's id
-     * @param ifNoneMatch the {@code If-None-Match} header, verbatim; null when absent
-     * @return the activation, or {@code NotModified} when the header matches its revision
-     * @throws CharterRefusal with {@code activation_not_found} when nothing is stored under the id
-     */
-    public Read<StoredActivation> get(ActivationId id, @Nullable String ifNoneMatch) {
-        StoredActivation stored = found(id);
-        String etag = stored.revision().token();
-        return EntityTags.noneMatch(ifNoneMatch, etag) ? new Read.NotModified<>(etag) : new Read.Found<>(stored, etag);
-    }
-
-    /**
      * Deletes a stored document (ADR-0020 D6).
      *
      * @param id the activation's id

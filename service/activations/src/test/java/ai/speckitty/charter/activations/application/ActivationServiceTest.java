@@ -335,14 +335,11 @@ class ActivationServiceTest {
     }
 
     @Test
-    void a4AGetThenPutOfAStoredDenyOnANowRequiredArtifactIsAcceptedAndKeepsTheRevision() {
+    void a4APutOfAStoredDenyOnANowRequiredArtifactIsAcceptedAndKeepsTheRevision() {
         // The review's counter-example: the stored document denies D1, which a pack now requires (it was tolerated
         // since, ADR-0059 D4); the client sends back the body it read.
         StoredActivation stale = stored(denying("D1"));
 
-        assertThat(service.get(ID, null))
-                .isEqualTo(new ActivationService.Read.Found<>(
-                        stale, stale.revision().token()));
         ActivationService.Written conditional = service.put(ID, denying("D1"), quoted(stale), null);
         ActivationService.Written unconditional = service.put(ID, denying("D1"), null, null);
 
@@ -529,39 +526,6 @@ class ActivationServiceTest {
 
         assertThatThrownBy(() -> service.put(ID, selecting("D1"), null, null)).isSameAs(broken);
         assertThat(repository.find(ID)).isEmpty();
-    }
-
-    // ---- get
-
-    @Test
-    void getAnswersTheStoredDocumentWithoutReadingThePacks() {
-        StoredActivation current = stored(selecting("D1"));
-
-        assertThat(service.get(ID, null))
-                .isEqualTo(new ActivationService.Read.Found<>(
-                        current, current.revision().token()));
-        assertThat(service.get(ID, "\"sha256:other\"")).isInstanceOf(ActivationService.Read.Found.class);
-        assertThat(packs.calls()).isZero();
-    }
-
-    @Test
-    void getAnswersNotModifiedOnAStrongAWeakOrAStarTag() {
-        StoredActivation current = stored(selecting("D1"));
-        String etag = current.revision().token();
-
-        for (String tag : List.of(quoted(current), "W/" + quoted(current), "*", "\"a\", " + quoted(current))) {
-            assertThat(service.get(ID, tag)).as(tag).isEqualTo(new ActivationService.Read.NotModified<>(etag));
-        }
-        assertThat(packs.calls()).isZero();
-    }
-
-    @Test
-    void getOfAMissingActivationIsNotFound() {
-        assertThatThrownBy(() -> service.get(ID, null))
-                .isInstanceOfSatisfying(
-                        CharterRefusal.class,
-                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_NOT_FOUND));
-        assertThat(packs.calls()).isZero();
     }
 
     // ---- delete
