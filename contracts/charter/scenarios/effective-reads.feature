@@ -23,6 +23,7 @@
 # - `When I GET "<path>" with If-None-Match the remembered header "ETag"` sends the `ETag` last remembered with
 #   `When I remember the header "ETag"` as `If-None-Match`; `When I follow the link "<relation>" with If-None-Match
 #   the remembered header "ETag"` does the same for a followed link.
+# - `When I PUT "<path>" with If-Match the remembered header "ETag" and the body:` sends the remembered `ETag` as `If-Match`.
 # - `When I GET "<path>" with the remembered cursor` appends `pageCursor=<value>` (with `?` or `&`) where the value is
 #   the field last remembered with `When I remember the field "/pageInfo/nextPageCursor" of the response body`.
 # - `Then the field at "<pointer>" is "<text>"` and `... holds exactly the ids:` are the existing steps: an item of the
@@ -2309,6 +2310,251 @@ Feature: The effective reads answer what an activation puts in force, and why th
     And the field at "/config/selected/directive" holds exactly the ids:
       """
       A
+      """
+
+  @WIP
+  Scenario: B4 - a write takes the getActivation tag or the revision as If-Match, and a stale closure tag is 412
+    Decision 01M6Y3GZFRC5WEQQ7G6GT0YMW3: an activation write accepts If-Match carrying the quoted revision or the current
+    getActivation tag (the revision and the closure's fingerprint); a closure tag that no longer matches is 412. The write's
+    answer keeps the revision as its ETag and carries no denyNotApplied. A GET, then a PUT with the GET's tag, is 200; the
+    revision the PUT answered is accepted as well (the control that the revision still works). After acme, a pack of the
+    closure, is registered again, the old GET tag on a PUT is 412, and a fresh GET tag is 200 (the positive control).
+    Given registration is switched on
+    And the archive "acme-v1" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: acme
+      pack_level: org
+      """
+    And the archive "acme-v1" holds the file "directives/A.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: A
+      title: A at version 1
+      intent: A
+      enforcement: required
+      """
+    And the archive "acme-v2" is a copy of the archive "acme-v1"
+    And the archive "acme-v2" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.1.0
+      parent_pack: null
+      name: acme
+      pack_level: org
+      """
+    And the archive "acme-v2" holds the file "directives/A.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: A
+      title: A at version 2
+      intent: A
+      enforcement: required
+      """
+    And the archive "other-v1" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+      pack_version: 1.0.0
+      parent_pack: null
+      name: other
+      pack_level: org
+      """
+    And the archive "other-v1" holds the file "directives/O.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: O
+      title: O at version 1
+      intent: O
+      enforcement: required
+      """
+    And the archive "other-v2" is a copy of the archive "other-v1"
+    And the archive "other-v2" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+      pack_version: 1.1.0
+      parent_pack: null
+      name: other
+      pack_level: org
+      """
+    And the archive "other-v2" holds the file "directives/O.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: O
+      title: O at version 2
+      intent: O
+      enforcement: required
+      """
+    When I PUT "/packs/acme" with the archive "acme-v1"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+    When I PUT "/activations/a-1" with the body:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "acme"}], "selected": {"directive": ["A"]}}
+      """
+    Then the response status is 201
+    When I GET "/activations/a-1"
+    Then the response status is 200
+    And the field at "/config/selected/directive" holds exactly the ids:
+      """
+      A
+      """
+    When I remember the header "ETag"
+    And I PUT "/activations/a-1" with If-Match the remembered header "ETag" and the body:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "acme"}], "selected": {"directive": ["A"]}}
+      """
+    Then the response status is 200
+    And the response header "ETag" is the quoted field "/revision"
+    And the field at "/denyNotApplied" is absent
+    When I remember the ETag
+    And I PUT "/activations/a-1" with the remembered ETag and the body:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "acme"}], "selected": {"directive": ["A"]}}
+      """
+    Then the response status is 200
+    When I PUT "/packs/acme" with the archive "acme-v2"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+    When I PUT "/activations/a-1" with If-Match the remembered header "ETag" and the body:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "acme"}], "selected": {"directive": ["A"]}}
+      """
+    Then the response status is 412
+    When I GET "/activations/a-1"
+    Then the response status is 200
+    And the field at "/config/selected/directive" holds exactly the ids:
+      """
+      A
+      """
+    When I remember the header "ETag"
+    And I PUT "/activations/a-1" with If-Match the remembered header "ETag" and the body:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "acme"}], "selected": {"directive": ["A"]}}
+      """
+    Then the response status is 200
+
+  @WIP
+  Scenario: B4 - a registration that changes an activation's in-force set lists it in activationsAffected, and not an unrelated one
+    FR-027, B4: a-1 is rooted at acme and selects A; acme version 1.2.0 drops A and holds B, so the in-force set of a-1
+    changes and the succeeded registration lists a-1 in notices.activationsAffected. a-2, rooted at the unrelated pack
+    other, is the control: it is not listed, though it exists and is in force (the same answer lists a-1, so the list is
+    not empty by accident).
+    Given registration is switched on
+    And the archive "acme-v1" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: acme
+      pack_level: org
+      """
+    And the archive "acme-v1" holds the file "directives/A.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: A
+      title: A at version 1
+      intent: A
+      enforcement: required
+      """
+    And the archive "acme-v2" is a copy of the archive "acme-v1"
+    And the archive "acme-v2" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.1.0
+      parent_pack: null
+      name: acme
+      pack_level: org
+      """
+    And the archive "acme-v2" holds the file "directives/A.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: A
+      title: A at version 2
+      intent: A
+      enforcement: required
+      """
+    And the archive "other-v1" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+      pack_version: 1.0.0
+      parent_pack: null
+      name: other
+      pack_level: org
+      """
+    And the archive "other-v1" holds the file "directives/O.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: O
+      title: O at version 1
+      intent: O
+      enforcement: required
+      """
+    And the archive "other-v2" is a copy of the archive "other-v1"
+    And the archive "other-v2" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+      pack_version: 1.1.0
+      parent_pack: null
+      name: other
+      pack_level: org
+      """
+    And the archive "other-v2" holds the file "directives/O.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: O
+      title: O at version 2
+      intent: O
+      enforcement: required
+      """
+    And the archive "acme-v3" is a copy of the archive "acme-v1"
+    And the archive "acme-v3" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.2.0
+      parent_pack: null
+      name: acme
+      pack_level: org
+      """
+    And the archive "acme-v3" lacks the file "directives/A.directive.yaml"
+    And the archive "acme-v3" holds the file "directives/B.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: B
+      title: B at version 3
+      intent: B
+      enforcement: required
+      """
+    When I PUT "/packs/acme" with the archive "acme-v1"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+    When I PUT "/packs/other" with the archive "other-v1"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+    When I PUT "/activations/a-1" with the body:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "acme"}], "selected": {"directive": ["A"]}}
+      """
+    Then the response status is 201
+    When I PUT "/activations/a-2" with the body:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "other"}], "selected": {"directive": ["O"]}}
+      """
+    Then the response status is 201
+    When I PUT "/packs/acme" with the archive "acme-v3"
+    And I poll the registration until it ends
+    Then the response status is 200
+    And the field at "/state" is "succeeded"
+    And the field at "/result/notices/activationsAffected" holds exactly the ids:
+      """
+      a-1
+      """
+    When I GET "/activations/a-2/artifacts?state=active"
+    Then the response status is 200
+    And the field at "/items" holds exactly the ids:
+      """
+      directive:O
       """
 
   @WIP

@@ -24,7 +24,7 @@
 - `SkippedReport` item schemas: `DenyNotApplied`, `OverriddenArtifact`, `EnhancerWithoutTarget` and
   `RequiredNotInForce`. `pinNotHeld` reuses `PackPin`.
 - `ActivationWarning` (`{code, artifact}`, codes `enhanced_target_not_in_force` and `overridden`).
-- `Activation.denyNotApplied` (`[Urn]`, optional, B4, FR-027): the deny entries of the stored document that the required
+- `Activation.denyNotApplied` (`[Urn]`, optional, see Breaking; B4, FR-027): the deny entries of the stored document that the required
   floor or a lock overrides, present only when there is one.
 - `PackRegistration.notices.activationsAffected` (`[ActivationId]`, optional, B4, FR-027): the stored activations whose
   in-force set a registration changes. The other notice lists still name activatable kinds only (issue #417).

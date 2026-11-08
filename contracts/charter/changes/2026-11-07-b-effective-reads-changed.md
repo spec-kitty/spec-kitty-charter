@@ -13,6 +13,7 @@
 - `EffectiveArtifactList.governanceFingerprint` and `ActivationSkippedReport.governanceFingerprint` name the packs of
   the activation's closure that the answer was computed from.
 - `Activation` and `getActivation` say that `denyNotApplied` is judged against the packs of the closure and that the `ETag`
-  covers the revision and the closure's fingerprint (see the Breaking entry in `2026-11-07-b-activation-etag.md`).
+  covers the revision and the closure's fingerprint (see the Breaking entry).
 - The relaxed write rule (IC-13, operator ruling Q9) is declared by the work package that serves it; this fragment
   adds nothing for it.
+- `If-Match` on an activation write takes the quoted revision or the current `getActivation` tag (see the Breaking entry); `EffectiveETag` is reworded to cover the closure's packs and `getActivation`.
