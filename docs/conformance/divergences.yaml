@@ -1290,7 +1290,9 @@
     a new required job, git-source, that runs the real-git tests. Every run carries config pins that
     bound the memory git inflates and maps (a 1 MiB big-file threshold, 16 MiB of pack window and
     window memory, 64 MiB of mapped packs, a 16 MiB delta base cache, one thread), so a fetch stays
-    within tens of MiB. They do not cap address space or time beyond the one deadline.
+    within tens of MiB. They do not cap address space or time beyond the one deadline. With
+    core.bigFileThreshold=1m and transfer.fsckObjects=true git refuses a .gitmodules blob over
+    1 MiB (gitmodulesLarge).
   rationale: >-
     A host binary is the operator's ruling (no JGit); the version floor and the fixed command line
     bound what it can do.
