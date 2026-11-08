@@ -99,7 +99,12 @@ public class RegistrationAdmission implements HandlerInterceptor, WebMvcConfigur
         audit.packId(packId);
         audit.source("archive", "");
         Preconditions preconditions = preconditionsOf(request);
-        ArchiveBodyAdvice.requireDeclaredLengthWithinLimit(headersOf(request));
+        HttpHeaders headers = headersOf(request);
+        ArchiveBodyAdvice.requireDeclaredLengthWithinLimit(headers);
+        jobs.requireRoom(
+                headers.getContentLength() >= 0
+                        ? headers.getContentLength()
+                        : RegistrationJobs.StorageRoom.UNKNOWN_BYTES);
         RegistrationJobs.Origin origin =
                 new RegistrationJobs.Origin(info.worktree(), AuditContext.credentialOf(request), UPLOAD, "archive", "");
         RegistrationJobs.Reservation reservation = jobs.reserve(packId, preconditions, origin);

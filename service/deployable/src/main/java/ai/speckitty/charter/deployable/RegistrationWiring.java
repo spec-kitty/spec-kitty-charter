@@ -159,9 +159,11 @@ public class RegistrationWiring {
     }
 
     @Bean
-    RegistrationJobs.StorageRoom storageRoom(ObjectProvider<ConfigRoot> root) {
+    RegistrationJobs.StorageRoom storageRoom(ObjectProvider<ConfigRoot> root, RegistrationStagingRoot staging) {
         ConfigRoot configured = root.getIfAvailable();
-        return configured == null ? RegistrationJobs.StorageRoom.UNBOUNDED : FreeSpaceCheck.of(configured.packs());
+        return configured == null
+                ? RegistrationJobs.StorageRoom.UNBOUNDED
+                : FreeSpaceCheck.of(configured.packs(), staging.directory());
     }
 
     /** The staging area the registrations work in: owner-only directories under the staging root. */
