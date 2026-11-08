@@ -71,16 +71,23 @@ public record PackSourceProperties(
      *
      * @param enabled whether the kind is switched on; off by default
      * @param allowedHosts the hosts a repository may be fetched from; empty by default
+     * @param timeout the deadline over the whole fetch: lookup, wait for a slot and every git command (60 s)
+     * @param executable the absolute path of the git binary, or unset to look for {@code git} on the {@code PATH}; the
+     *     binary must be 2.50.1 or later, or the git source answers {@code 503 pack_source_unavailable} (NFR-011)
      */
     public record Git(
             @DefaultValue("false") boolean enabled,
-            @DefaultValue List<String> allowedHosts) {
+            @DefaultValue List<String> allowedHosts,
+            @DefaultValue("60s") Duration timeout,
+            @Nullable Path executable) {
 
         /**
          * The bound configuration.
          *
          * @param enabled whether the kind is switched on
          * @param allowedHosts the allowed hosts; copied
+         * @param timeout the deadline over the whole fetch
+         * @param executable the git binary, or null to look on the {@code PATH}
          */
         public Git {
             allowedHosts = List.copyOf(allowedHosts);

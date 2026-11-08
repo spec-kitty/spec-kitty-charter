@@ -9,6 +9,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.transport.ReservedOperation;
 import ai.speckitty.charter.packs.application.ArchiveStaging;
 import ai.speckitty.charter.packs.application.PackArchiveReader;
+import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditions;
 import ai.speckitty.charter.packs.application.PackSourceKind;
 import ai.speckitty.charter.packs.application.PackSourceRequest;
 import ai.speckitty.charter.packs.application.PackSummaryQuery;
@@ -157,6 +158,7 @@ public class PackRegistrationController implements RegistrationApi {
         audit.packId(packSource.getPackId());
         audit.source(source.kind().wire(), locator);
         RegistrationJobs.Stager stager = intake.stagerFor(source, packSource.getPackId());
+        requirePreconditionForBranch(source, RegistrationAdmission.admittedPreconditions(request));
         RegistrationJobs.Origin origin = new RegistrationJobs.Origin(
                 intake.worktree(),
                 AuditContext.credentialOf(request),
@@ -175,6 +177,20 @@ public class PackRegistrationController implements RegistrationApi {
         } catch (RuntimeException failure) {
             reservation.abandon();
             throw failure;
+        }
+    }
+
+    /**
+     * A git source that names a branch and no commit registers whatever the branch points at when it is fetched, so it
+     * must say what it replaces: {@code If-Match} on the target pack, or {@code If-None-Match: *} to create it. Without
+     * either it is {@code 428}, answered before a slot is taken (post-plan security squad 7).
+     */
+    private static void requirePreconditionForBranch(PackSourceRequest source, Preconditions preconditions) {
+        if (source.branchWithoutCommit() && preconditions.ifMatch() == null && !preconditions.ifNoneMatchAny()) {
+            throw new ResponseStatusException(
+                    HttpStatus.PRECONDITION_REQUIRED,
+                    "A git source that names a branch and no commit needs If-Match on the target pack, or"
+                            + " If-None-Match: * to create it, or a commit.");
         }
     }
 

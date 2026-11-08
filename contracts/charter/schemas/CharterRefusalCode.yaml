@@ -95,8 +95,9 @@ description: >-
   held under the id. pack_source_refused (422): a source the service refuses (a host not on the allowlist, an address
   that is not global, a bad ref, the wrong media type, a digest or commit mismatch, a descriptor whose name is not the
   target), with a reason from a fixed set: host_not_allowed, address_not_global, url_refused, redirect_refused,
-  wrong_media_type, too_large, digest_mismatch, name_mismatch, source_malformed and path_refused, the first word of the
-  problem's detail; a filesystem source refuses every path it will not read with the same path_refused, so the answer does
+  wrong_media_type, too_large, digest_mismatch, name_mismatch, source_malformed, path_refused, bad_ref and
+  commit_mismatch, the first word of the problem's
+  detail; a filesystem source refuses every path it will not read with the same path_refused, so the answer does
   not reveal what exists. pack_source_unavailable (503): registration, or the source kind, is switched
   off, or the system git is missing or older than 2.50.1. override_not_permitted, enhances_cycle, conflicting_relations,
   self_override and override_cycle (422): a relation the registration impact check refuses, naming the root pack of the

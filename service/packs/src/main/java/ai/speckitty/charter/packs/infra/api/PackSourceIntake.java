@@ -13,7 +13,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * What the inbound adapter needs to take a registration from a source (FR-004, IC-18): whether the kind's own flag is on,
  * the stager the job runs, and the worktree identity the audit record names. A kind whose flag is off, or that no fetcher
- * serves (the git source until it is built), is {@code 503 pack_source_unavailable}, and the answer names the kind and
+ * serves (the git source on a host with no git of 2.50.1 or later), is {@code 503 pack_source_unavailable}, and the answer names the kind and
  * nothing the client sent.
  */
 public final class PackSourceIntake {

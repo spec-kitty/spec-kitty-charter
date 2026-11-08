@@ -1,9 +1,9 @@
 package ai.speckitty.charter.packs.infra.api;
 
 import ai.speckitty.charter.packs.application.PackSourceRequest;
+import ai.speckitty.charter.packs.application.SourceUrls;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
-import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -15,26 +15,16 @@ import org.jspecify.annotations.Nullable;
 final class AuditLocators {
 
     private static final int MAX_BYTES = 256;
-    private static final Pattern USER_INFORMATION = Pattern.compile("^([A-Za-z][A-Za-z0-9+.-]*://)[^/]*@");
 
     private AuditLocators() {}
 
     static String of(PackSourceRequest request) {
         String url = request.url();
         if (url != null) {
-            return clean(withoutUserInformation(cutAt(cutAt(url, '?'), '#')));
+            return clean(SourceUrls.withoutSecrets(url));
         }
         String path = request.path();
         return path == null ? "" : clean(path);
-    }
-
-    private static String cutAt(String value, char mark) {
-        int at = value.indexOf(mark);
-        return at < 0 ? value : value.substring(0, at);
-    }
-
-    private static String withoutUserInformation(String url) {
-        return USER_INFORMATION.matcher(url).replaceFirst("$1");
     }
 
     private static String clean(@Nullable String raw) {

@@ -22,6 +22,8 @@ public record PackSourceRequest(
         @Nullable String sha256,
         @Nullable String path) {
 
+    private static final String BRANCHES = "refs/heads/";
+
     /**
      * Checks the kind.
      *
@@ -34,5 +36,16 @@ public record PackSourceRequest(
      */
     public PackSourceRequest {
         Objects.requireNonNull(kind, "kind");
+    }
+
+    /**
+     * Whether this is a git source whose ref is a branch and that names no commit: what it registers is whatever the
+     * branch points at when it is fetched, so the request must carry a precondition on the target pack (post-plan security
+     * squad 7).
+     *
+     * @return true for {@code refs/heads/...} with no {@code commit}
+     */
+    public boolean branchWithoutCommit() {
+        return kind == PackSourceKind.GIT && commit == null && ref != null && ref.startsWith(BRANCHES);
     }
 }

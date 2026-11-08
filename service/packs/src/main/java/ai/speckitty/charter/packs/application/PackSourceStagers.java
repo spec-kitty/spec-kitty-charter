@@ -14,7 +14,8 @@ import java.util.Optional;
  * What stages a source for the registration job (FR-004, IC-05): the fetcher of the request's kind, which writes the tree
  * into the job's staging directory, and then the one check that is the source's own, that the name the fetched
  * descriptor declares is the target {@code packId} ({@code name_mismatch}). The tree reaches the job unchanged, and the
- * flow behind it (IC-04) judges it as it judges an upload. A kind no fetcher serves is unavailable.
+ * flow behind it (IC-04) judges it as it judges an upload. A kind no fetcher serves, or whose fetcher is not available,
+ * is unavailable.
  */
 public final class PackSourceStagers {
 
@@ -42,10 +43,10 @@ public final class PackSourceStagers {
      * The fetcher of a kind.
      *
      * @param kind the kind
-     * @return the fetcher; empty when the kind is not built
+     * @return the fetcher; empty when the kind is not built, or its fetcher says it is not available (NFR-011)
      */
     public Optional<PackSourceFetcher> fetcherFor(PackSourceKind kind) {
-        return Optional.ofNullable(fetchers.get(kind));
+        return Optional.ofNullable(fetchers.get(kind)).filter(PackSourceFetcher::available);
     }
 
     /**
