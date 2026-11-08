@@ -51,6 +51,7 @@ public class ActivationService {
     private final ActivationRepository repository;
     private final AvailablePacks packs;
     private final ActivationIdMint mint;
+    private final WriteCoordination coordination;
 
     /**
      * The use cases over the register and the packs.
@@ -59,11 +60,28 @@ public class ActivationService {
      * @param packs the packs, asked once per write and per closure read
      * @param mint the id mint of {@link #create}
      */
-    @Autowired
     public ActivationService(ActivationRepository repository, AvailablePacks packs, ActivationIdMint mint) {
+        this(repository, packs, mint, WriteCoordination.NONE);
+    }
+
+    /**
+     * A service over its ports, whose writes exclude a pack registration.
+     *
+     * @param repository the activation register
+     * @param packs the packs
+     * @param mint the id source
+     * @param coordination what makes a write exclude a pack registration
+     */
+    @Autowired
+    public ActivationService(
+            ActivationRepository repository,
+            AvailablePacks packs,
+            ActivationIdMint mint,
+            WriteCoordination coordination) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.packs = Objects.requireNonNull(packs, "packs");
         this.mint = Objects.requireNonNull(mint, "mint");
+        this.coordination = Objects.requireNonNull(coordination, "coordination");
     }
 
     /**
@@ -130,11 +148,13 @@ public class ActivationService {
      *     the document breaks its closure, or with the refusal of the compose
      */
     public StoredActivation create(ActivationDocument.Built built) {
-        ActivationDocument document = checked(built);
-        ActivationId id = mint.mint();
-        return repository
-                .create(id, document)
-                .orElseThrow(() -> new IllegalStateException("The minted id " + id + " is already taken."));
+        return coordination.exclusively(() -> {
+            ActivationDocument document = checked(built);
+            ActivationId id = mint.mint();
+            return repository
+                    .create(id, document)
+                    .orElseThrow(() -> new IllegalStateException("The minted id " + id + " is already taken."));
+        });
     }
 
     /**
@@ -165,15 +185,17 @@ public class ActivationService {
      */
     public Written put(
             ActivationId id, ActivationDocument.Built built, @Nullable String ifMatch, @Nullable String ifNoneMatch) {
-        Expected expected = expectedOf(id, preconditionOf(ifMatch, ifNoneMatch));
-        ClosureSnapshot snapshot = packs.snapshot(packIdsOf(built.document()));
-        ActivationDocument.Built normalized = DocumentRules.normalize(built, snapshot);
-        return switch (expected) {
-            case Expected.Absent() -> created(id, normalized, snapshot).orElseThrow(() -> stale(id));
-            case Expected.At(StoredActivation matched) ->
-                replaced(matched, normalized, snapshot).orElseThrow(() -> stale(null));
-            case Expected.Latest() -> latest(id, normalized, snapshot);
-        };
+        return coordination.exclusively(() -> {
+            Expected expected = expectedOf(id, preconditionOf(ifMatch, ifNoneMatch));
+            ClosureSnapshot snapshot = packs.snapshot(packIdsOf(built.document()));
+            ActivationDocument.Built normalized = DocumentRules.normalize(built, snapshot);
+            return switch (expected) {
+                case Expected.Absent() -> created(id, normalized, snapshot).orElseThrow(() -> stale(id));
+                case Expected.At(StoredActivation matched) ->
+                    replaced(matched, normalized, snapshot).orElseThrow(() -> stale(null));
+                case Expected.Latest() -> latest(id, normalized, snapshot);
+            };
+        });
     }
 
     /** The write without a validator: the last writer wins, judged against the document it replaces. */
@@ -242,15 +264,18 @@ public class ActivationService {
      *     document was removed by another request after the {@code If-Match} matched it
      */
     public void delete(ActivationId id, @Nullable String ifMatch) {
-        Optional<Revision> expected = ifMatch == null ? Optional.empty() : matched(id, ifMatch);
-        DeleteResult result = repository.delete(id, expected);
-        switch (result) {
-            case DeleteResult.Deleted() -> {}
-            // With If-Match, a document another deleter removed since this request matched it is no stored revision:
-            // 412.
-            case DeleteResult.Missing() -> throw ifMatch == null ? notFound(id) : stale(id);
-            case DeleteResult.Stale _ -> throw stale(id);
-        }
+        coordination.exclusively(() -> {
+            Optional<Revision> expected = ifMatch == null ? Optional.empty() : matched(id, ifMatch);
+            DeleteResult result = repository.delete(id, expected);
+            switch (result) {
+                case DeleteResult.Deleted() -> {}
+                // With If-Match, a document another deleter removed since this request matched it is no stored
+                // revision:
+                // 412.
+                case DeleteResult.Missing() -> throw ifMatch == null ? notFound(id) : stale(id);
+                case DeleteResult.Stale _ -> throw stale(id);
+            }
+        });
     }
 
     /**

@@ -103,6 +103,11 @@ public final class StorageRootLocations implements DomainRepositoryService.Locat
     }
 
     @Override
+    public Optional<Path> writeRoot() {
+        return Optional.of(packs);
+    }
+
+    @Override
     public List<PackLocation> all() {
         Optional<Path> domain = realDomain();
         if (domain.isEmpty()) {

@@ -86,6 +86,15 @@ public class RegistrationSteps {
         assertThat(field.asString()).isEqualTo(lines + "\n");
     }
 
+    /**
+     * The {@code ETag} an earlier step remembered.
+     *
+     * @return the tag; {@code null} when none was remembered
+     */
+    public @Nullable String rememberedETag() {
+        return rememberedETag;
+    }
+
     @When("I remember the ETag")
     public void rememberETag() {
         rememberedETag = http.response().getHeader(HttpHeaders.ETAG);

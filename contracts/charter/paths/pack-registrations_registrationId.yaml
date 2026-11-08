@@ -23,13 +23,9 @@ get:
     with carry their status for getPackRegistration in the operations map of their x-refusal entry (CharterRefusalCode),
     the eleven pack composition codes as 422 in place of 500; registerPackFromArchive and registerPackFromSource declare
     only their synchronous answers. The status is read from the registration jobs, not from a pack file, so
-    the answer carries no Charter-Source-Fingerprint (decision DM-01M6TV6VDNHNCVWRHHC74WATV0). The operation is
-    reserved until the registration service is built (ADR-0020 D8).
+    the answer carries no Charter-Source-Fingerprint (decision DM-01M6TV6VDNHNCVWRHHC74WATV0).
   tags:
   - Registration
-  x-reserved:
-    contractSet: pack-registration
-    issue: '#10'
   responses:
     '200':
       description: The status of the registration, in whatever state it has reached.
@@ -76,7 +72,5 @@ get:
                 detail: No registration 01M6TQ62HXYF362GAFS2BZ3PGF is held; it ended more than an hour ago or never existed.
     '500':
       $ref: ../responses/OfferingUnreadable.yaml
-    '501':
-      $ref: ../responses/NotImplemented.yaml
     default:
       $ref: ../../_shared/responses/Problem.yaml

@@ -68,10 +68,10 @@ class ReservedOperationCoverageTest {
     }
 
     @Test
-    void thePackRegistrationSetReservesItsSixOperations() {
-        // PUT and POST /packs, GET /packs/{packId}, GET /pack-registrations/{registrationId}, and the two DELETEs of an
-        // artifact and of a relationship. Each serving work package removes one with its pin.
-        assertThat(reservedOperations("pack-registration")).hasSize(6);
+    void thePackRegistrationSetStillReservesThreeOperations() {
+        // POST /packs and the two DELETEs of an artifact and of a relationship. The PUT, the stored-pack read and the
+        // status read are built (WP16); each serving work package removes one with its pin.
+        assertThat(reservedOperations("pack-registration")).hasSize(3);
     }
 
     @Test

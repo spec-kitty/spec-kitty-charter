@@ -36,12 +36,8 @@ put:
     stale one is 412 at acceptance, before any job exists, so an identical re-send under a stale If-Match is 412 and
     not unchanged (RFC 9110 section 13.1.1); the revision is checked again under the lock. If-None-Match: * makes the
     request create-only, and an existing pack is 412. There is no 428 here: If-Match is optional on a registration.
-    The operation is reserved until the registration service is built (ADR-0020 D8).
   tags:
   - Registration
-  x-reserved:
-    contractSet: pack-registration
-    issue: '#10'
   parameters:
   - $ref: ../parameters/IfMatch.yaml
   - name: If-None-Match
@@ -123,8 +119,6 @@ put:
         application/problem+json:
           schema:
             $ref: ../../_shared/schemas/Problem.yaml
-    '501':
-      $ref: ../responses/NotImplemented.yaml
     '503':
       $ref: ../responses/PackRegistrationUnavailable.yaml
     default:
@@ -140,13 +134,9 @@ get:
     one that matches no configured pack, by name or by declared pack_id, is 404 pack_not_found. A configured pack whose
     directory is missing or that has no readable pack.yaml, or a pack holding a file the fingerprint covers that cannot
     be read, is 500 pack_unreadable. The answer is verified against the source fingerprint and carries it. The pack
-    collection, GET /packs, is not declared. The operation is reserved until the registration service is built
-    (ADR-0020 D8).
+    collection, GET /packs, is not declared.
   tags:
   - Registration
-  x-reserved:
-    contractSet: pack-registration
-    issue: '#10'
   responses:
     '200':
       description: The stored pack.
@@ -180,7 +170,5 @@ get:
       $ref: ../responses/PackNotFound.yaml
     '500':
       $ref: ../responses/OfferingUnreadable.yaml
-    '501':
-      $ref: ../responses/NotImplemented.yaml
     default:
       $ref: ../../_shared/responses/Problem.yaml

@@ -176,8 +176,11 @@ Feature: Failures outside the charter's refusals
     toolguide_not_found) and kind_not_found; the registration writes add validation_failed,
     registration_conflict and governance_policy_violation, and the whole-pack registration service adds
     pack_version_conflict and artifact_referenced, and its impact check adds override_not_permitted, enhances_cycle,
-    conflicting_relations, self_override and override_cycle (its operations stay reserved until their controller and
-    job are built, and ReservedRefusalCodesTest holds the flag to the main code that names the code). action_not_found is not raised: the
+    conflicting_relations, self_override and override_cycle (ReservedRefusalCodesTest holds the flag to the main code that
+    names the code), and the registration job and its admission add registration_not_found, pack_source_unavailable,
+    registration_timed_out and pack_storage_full. pack_source_refused is raised by the source fetchers, and
+    relationship_not_found and relationship_not_registered by the two DELETEs: those operations stay reserved until they
+    are built. action_not_found is not raised: the
     operation that answered it is gone, and the reserved activation operation that will answer it again
     (ADR-0020 D7) answers 501 until it is built. unresolved_edge_endpoint, and, with the load that
     judged a pack's graph, pack_level_mismatch and drg_schema_error, are raised by no operation (no
@@ -206,6 +209,10 @@ Feature: Failures outside the charter's refusals
       | conflicting_relations       |
       | self_override               |
       | override_cycle              |
+      | registration_not_found      |
+      | pack_source_unavailable     |
+      | registration_timed_out      |
+      | pack_storage_full           |
       | pack_dependency_cycle       |
       | pack_dependency_unknown     |
       | pack_dependency_out_of_range |

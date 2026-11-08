@@ -98,21 +98,23 @@ public class ActivationExclusionService {
             OptionalInt depth,
             List<RefusalViolation> bodyFaults,
             @Nullable String ifMatch) {
-        StoredActivation loaded = writes.loaded(id, ifMatch);
-        ActivationWrites.requireWellFormed(bodyFaults);
-        ArtifactRef written = ActivationWrites.selectable(kind, artifactId);
-        CascadeScope scope = ActivationWrites.scope(cascade);
-        PacksSession session = writes.session(loaded);
-        ClosureSnapshot snapshot = session.snapshot();
-        ArtifactRef target = ActivationWrites.declared(snapshot, written, Set.of());
-        ActivationWrites.requireHeld(snapshot, target);
-        ActivationDocument before = ActivationWrites.current(loaded, snapshot);
-        refuseFloor(before, target, snapshot);
-        Reach own = ActivationWrites.walk(session, CascadeRules.planDeactivate(before, target, scope, depth));
-        Set<ArtifactRef> floor = floorOf(snapshot);
-        Reach others = ActivationWrites.walk(session, CascadeRules.planShared(before, target, scope, own, floor));
-        ActivationChange change = CascadeRules.applyDeactivate(before, target, scope, depth, own, others, floor);
-        return writes.commit(loaded, change, snapshot);
+        return writes.exclusively(() -> {
+            StoredActivation loaded = writes.loaded(id, ifMatch);
+            ActivationWrites.requireWellFormed(bodyFaults);
+            ArtifactRef written = ActivationWrites.selectable(kind, artifactId);
+            CascadeScope scope = ActivationWrites.scope(cascade);
+            PacksSession session = writes.session(loaded);
+            ClosureSnapshot snapshot = session.snapshot();
+            ArtifactRef target = ActivationWrites.declared(snapshot, written, Set.of());
+            ActivationWrites.requireHeld(snapshot, target);
+            ActivationDocument before = ActivationWrites.current(loaded, snapshot);
+            refuseFloor(before, target, snapshot);
+            Reach own = ActivationWrites.walk(session, CascadeRules.planDeactivate(before, target, scope, depth));
+            Set<ArtifactRef> floor = floorOf(snapshot);
+            Reach others = ActivationWrites.walk(session, CascadeRules.planShared(before, target, scope, own, floor));
+            ActivationChange change = CascadeRules.applyDeactivate(before, target, scope, depth, own, others, floor);
+            return writes.commit(loaded, change, snapshot);
+        });
     }
 
     /**
@@ -129,16 +131,18 @@ public class ActivationExclusionService {
      */
     public ActivationWrites.Outcome reactivate(
             ActivationId id, String kind, String artifactId, @Nullable String ifMatch) {
-        StoredActivation loaded = writes.loaded(id, ifMatch);
-        ArtifactRef written = ActivationWrites.selectable(kind, artifactId);
-        PacksSession session = writes.session(loaded);
-        ArtifactRef target = ActivationWrites.declared(
-                session.snapshot(), written, loaded.document().deactivated(written.kind()));
-        ActivationWrites.requireHeldOrStale(
-                session.snapshot(), target, ActivationWrites.denies(loaded.document(), target));
-        ActivationDocument before = ActivationWrites.current(loaded, session.snapshot());
-        ActivationDocument after = before.withoutDeny(target.kind(), target.id());
-        return writes.commit(loaded, ActivationChange.of(before, after, SkippedReport.empty()), session.snapshot());
+        return writes.exclusively(() -> {
+            StoredActivation loaded = writes.loaded(id, ifMatch);
+            ArtifactRef written = ActivationWrites.selectable(kind, artifactId);
+            PacksSession session = writes.session(loaded);
+            ArtifactRef target = ActivationWrites.declared(
+                    session.snapshot(), written, loaded.document().deactivated(written.kind()));
+            ActivationWrites.requireHeldOrStale(
+                    session.snapshot(), target, ActivationWrites.denies(loaded.document(), target));
+            ActivationDocument before = ActivationWrites.current(loaded, session.snapshot());
+            ActivationDocument after = before.withoutDeny(target.kind(), target.id());
+            return writes.commit(loaded, ActivationChange.of(before, after, SkippedReport.empty()), session.snapshot());
+        });
     }
 
     /**

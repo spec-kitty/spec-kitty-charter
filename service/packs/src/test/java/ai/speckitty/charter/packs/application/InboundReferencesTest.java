@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Outcome;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditions;
@@ -80,6 +81,10 @@ class InboundReferencesTest {
                 .extracting(RefusalViolation::pointer)
                 .as("every referrer is named, by its pack and artifact")
                 .contains("derived/" + referrer);
+        assertThat(refused.packs())
+                .extracting(RefusalPack::packId)
+                .as("the referring packs, each once, as the contract's packs member lists them")
+                .containsExactly("derived");
         assertThat(rig.filesOf(rig.packs.resolve("base"))).as("nothing changed").containsKey(A_FILE);
 
         Packs withoutB = base("2.0.0").with("directives/B_ONE.directive.yaml", null);

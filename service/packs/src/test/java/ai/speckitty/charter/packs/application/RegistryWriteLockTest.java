@@ -34,6 +34,24 @@ class RegistryWriteLockTest {
     private static final PackIdentifier PACK = new PackIdentifier("pack-a");
     private static final Duration SHORT = Duration.ofMillis(50);
 
+    @Test
+    void aBusyRegistryIsARetryLaterAnswerWhoseRetryAfterIsTheTimeoutRoundedUp() throws InterruptedException {
+        RegistryWriteLock lock = new RegistryWriteLock(Duration.ofMillis(5_500));
+        CountDownLatch release = holdOnAnotherThread(lock);
+        try {
+            RegistryWriteLock shortWait = new RegistryWriteLock(SHORT);
+            assertThat(new RegistryBusyException("busy", 6))
+                    .as("the registry's refusal is the one retry-later answer the transport renders")
+                    .isInstanceOf(ai.speckitty.charter.kernel.transport.RetryLaterException.class);
+            assertThat(shortWait.retryAfterSeconds())
+                    .as("a 50 ms wait still tells the client to wait a second")
+                    .isEqualTo(1);
+            assertThat(lock.retryAfterSeconds()).isEqualTo(6);
+        } finally {
+            release.countDown();
+        }
+    }
+
     /** Holds {@code lock} on another thread until the returned latch is released. */
     private static CountDownLatch holdOnAnotherThread(RegistryWriteLock lock) throws InterruptedException {
         CountDownLatch holding = new CountDownLatch(1);

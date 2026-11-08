@@ -19,7 +19,12 @@ import org.springframework.test.web.servlet.MockMvc;
 @CucumberContextConfiguration
 @SpringBootTest(
         classes = {CharterServiceApplication.class, CucumberSpringConfiguration.Packs.class},
-        properties = {"charter.worktree-id=scenario-worktree", "charter.worktree-token=" + ScenarioHttp.TOKEN})
+        properties = {
+            "charter.worktree-id=scenario-worktree",
+            "charter.worktree-token=" + ScenarioHttp.TOKEN,
+            // The registration staging directory is under the temporary directory, never the user's home.
+            "charter.registration.staging-dir=${java.io.tmpdir}/charter-scenario-staging"
+        })
 @AutoConfigureMockMvc
 public class CucumberSpringConfiguration {
 
@@ -70,10 +75,25 @@ public class CucumberSpringConfiguration {
             return new StubGuideFetcher();
         }
 
+        /** The packs the steps wrote and the pack domain a whole-pack registration writes to (ScenarioLocations). */
         @Bean
         @Primary
         DomainRepositoryService.Locations scenarioPackLocations(ScenarioPacks packs) {
-            return packs::locations;
+            return new ScenarioLocations(packs);
+        }
+
+        /** Holds registration jobs where a scenario asks (the latch seam of T077); production lets every job through. */
+        @Bean
+        @Primary
+        HoldableGate scenarioJobGate() {
+            return new HoldableGate();
+        }
+
+        /** The clock of the registration jobs: real time, moved on by the step that lets the retention hour pass. */
+        @Bean
+        @Primary
+        ScenarioClock scenarioRegistrationClock() {
+            return new ScenarioClock();
         }
 
         @Bean
