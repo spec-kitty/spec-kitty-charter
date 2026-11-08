@@ -417,6 +417,18 @@ public final class RegistrationJobs implements AutoCloseable {
         default void require(long archiveBytes, long openUploadBytes) {
             require(archiveBytes);
         }
+
+        /**
+         * Checks the room for what a job still has to write when it runs, which is less than its peak when the archive is
+         * already spooled: the tree it expands to and the copy the commit makes, not the archive again.
+         *
+         * @param archiveBytes the size of the archive already spooled in staging, or {@link #UNKNOWN_BYTES} when the job
+         *     has still to fetch it (a source), which is judged as a full-size archive written at run time
+         * @throws CharterRefusal {@code PACK_STORAGE_FULL} when a volume has less than that free
+         */
+        default void requireForRun(long archiveBytes) {
+            require(archiveBytes);
+        }
     }
 
     private static final System.Logger LOG = System.getLogger(RegistrationJobs.class.getName());

@@ -125,6 +125,53 @@ class FreeSpaceCheckTest {
     }
 
     @Test
+    void atRunTimeASpooledArchiveNeedsOnlyTheTreeAndTheCopyOnOneVolume() {
+        assertThatThrownBy(() -> new FreeSpaceCheck(() -> storeWith(63 * MIB)).requireForRun(20 * MIB))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_STORAGE_FULL);
+                    assertThat(refusal.getMessage()).contains("63 MiB").contains("64 MiB");
+                });
+        assertThatCode(() -> new FreeSpaceCheck(() -> storeWith(64 * MIB)).requireForRun(20 * MIB))
+                .as("two bounds: the archive is written already, whatever its size")
+                .doesNotThrowAnyException();
+        assertThatCode(() -> new FreeSpaceCheck(() -> storeWith(64 * MIB)).requireForRun(32 * MIB))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void atRunTimeASpooledArchiveNeedsABoundOnEachVolumeWhenThereAreTwo() {
+        FileStore roomy = storeWith(1024 * MIB);
+        assertThatThrownBy(() -> new FreeSpaceCheck(() -> roomy, () -> storeWith(31 * MIB)).requireForRun(20 * MIB))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.getMessage())
+                                .contains("staging volume")
+                                .contains("31 MiB")
+                                .contains("32 MiB"));
+        assertThatThrownBy(() -> new FreeSpaceCheck(() -> storeWith(31 * MIB), () -> roomy).requireForRun(20 * MIB))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.getMessage())
+                                .contains("pack volume")
+                                .contains("32 MiB"));
+
+        assertThatCode(() -> new FreeSpaceCheck(() -> storeWith(32 * MIB), () -> storeWith(32 * MIB))
+                        .requireForRun(20 * MIB))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void atRunTimeAJobThatStillHasToFetchItsArchiveNeedsTheWholePeak() {
+        assertThatThrownBy(() -> new FreeSpaceCheck(() -> storeWith(95 * MIB)).requireForRun(-1))
+                .isInstanceOf(CharterRefusal.class);
+        assertThatCode(() -> new FreeSpaceCheck(() -> storeWith(96 * MIB)).requireForRun(-1))
+                .doesNotThrowAnyException();
+        assertThatThrownBy(() ->
+                        new FreeSpaceCheck(() -> storeWith(1024 * MIB), () -> storeWith(63 * MIB)).requireForRun(-1))
+                .isInstanceOf(CharterRefusal.class);
+    }
+
+    @Test
     void aVolumeWhoseSpaceCannotBeReadRefusesRatherThanGuesses() {
         FreeSpaceCheck check = new FreeSpaceCheck(() -> new FakeStore(-1));
         FreeSpaceCheck stagingUnreadable = new FreeSpaceCheck(() -> storeWith(1024 * MIB), () -> new FakeStore(-1));
