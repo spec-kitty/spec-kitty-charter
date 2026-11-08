@@ -10,8 +10,8 @@ post:
     The body is a JSON PackSource, guarded by the shared body limit. It takes the same If-Match and If-None-Match: * as
     the PUT, applied to the target packId: If-Match is optional (the last writer wins on the whole pack), a stale one
     is 412 at acceptance, and both validators together are 400. The one 428 of a registration is a git source whose ref
-    is a branch and that names no commit, sent without If-Match, which would otherwise register whatever the branch
-    points at. Every answer of the flow after acceptance is the problem of a refused status, as on the PUT, with these
+    is a branch (refs/heads/...) and that names no commit, sent with neither If-Match nor If-None-Match: *, which would
+    otherwise register whatever the branch points at; a tag, a commit id and a branch with a commit need neither. Every answer of the flow after acceptance is the problem of a refused status, as on the PUT, with these
     that belong to a source: a source the service refuses (a host that is not on the allowlist, an address that is not
     global, a bad ref, the wrong media type, a digest or commit mismatch, a descriptor whose name is not the target
     packId) ends refused with 422 pack_source_refused and a reason from a fixed set; an upstream failure ends refused
@@ -22,8 +22,9 @@ post:
     limit), 415 (a body that is not application/json), 428 (the git branch-ref rule only) and 503.
     The fixed reasons of a refused source (the detail of the problem names one): host_not_allowed, address_not_global,
     url_refused, redirect_refused, wrong_media_type, too_large, digest_mismatch, name_mismatch, source_malformed,
-    path_refused, bad_ref and commit_mismatch. An https_archive and a filesystem source are served; a git source answers 503 pack_source_unavailable
-    until the git source is built.
+    path_refused, bad_ref and commit_mismatch. All three kinds are served. A git source is fetched with the host's git
+    binary over https, one ref of a public repository, never as a work tree; a redirect, a link or a submodule in the
+    tree and any transport but https are refused, and the commit the ref resolved to is answered as source.commit.
   tags:
   - Registration
   parameters:

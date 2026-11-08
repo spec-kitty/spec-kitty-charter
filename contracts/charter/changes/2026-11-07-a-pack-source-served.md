@@ -11,7 +11,7 @@
   `too_large`, `digest_mismatch`, `name_mismatch`, `source_malformed`, `path_refused`), never raw upstream text; an
   upstream failure ends `refused` with a plain `502` and an upstream timeout with a plain `504`. A `filesystem` source
   refuses every path it will not read, a missing one, a link or a file with another hard link, with the same
-  `path_refused`. A `git` source answers `503 pack_source_unavailable` until the git source is built.
+  `path_refused`. A `git` source is served by the git source change of WP18 (`2026-11-08-a-git-source-served.md`).
 - `CharterRefusalCode`: `pack_source_refused` is `raised: true`. `errors.feature` lists it among the codes an operation
   raises.
 - `PackSourceRecord.url` is the URL without its query, its fragment and its user information (WP18, WP17 hand-off): the
