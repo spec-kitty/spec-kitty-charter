@@ -1580,6 +1580,29 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-08T14:42:31.648625Z",
+      "decision_id": "01M6XSRSK0N9PEVJ7EHM45475V",
+      "final_answer": "keep the CLI commit unsigned on the planning branch; PR B history is rebuilt from signed commits",
+      "input_key": "pr-b-unsigned-analysis-commit",
+      "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",
+      "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
+      "opened_by": "claude-runner",
+      "options": [
+        "re-sign (claims refuse)",
+        "keep the CLI commit unsigned on the planning branch; PR B history is rebuilt from signed commits"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "The CLI commits the analysis report unsigned (commit.gpgsign=false) and binds a receipt to that commit's SHA; implement refuses with unqualified_report_transaction once the commit is re-signed. Re-sign it (claims blocked) or keep the CLI's unsigned commit on the planning branch?",
+      "rationale": "Runner, 2026-11-08: the CLI disables signing for its own commits and its report receipt pins the commit SHA, so a re-signed commit fails the claim gate. The planning branch's commits do not land on main as they are: PR B is rebuilt as one signed commit per WP plus a signed status commit. Every commit the runner authors stays signed. Reported to the operator at the phase boundary.",
+      "resolved_at": "2026-11-08T14:42:44.420212Z",
+      "resolved_by": "claude-runner",
+      "slot_key": "pr-b-unsigned-analysis-commit",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",
