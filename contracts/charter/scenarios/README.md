@@ -302,7 +302,12 @@ vocabulary above.
   the archive "<name>"` (a stub exchange, never the network); `Given the git host "<host>" is allowed`, `Given the git
   repository "<url>" holds the archive "<name>" at the ref "<ref>"` and `Then the field at "<json-pointer>" is the commit
   of the ref "<ref>"` (a local bare repository); `Given the filesystem source root holds the directory "<path>" with the
-  archive "<name>"`.
+  archive "<name>"` (the files of the named archive, written under the scenarios' own filesystem root). Allowing an https
+  host and filling the filesystem root also switch that kind's own flag on, as an operator does, and
+  `Given the filesystem source is switched off` and `... is switched on` move it; every seam, every flag and the
+  filesystem root are put back at their defaults (off, empty) when the scenario ends. The https stub serves a URL only to
+  an allowed host and refuses any other host as `host_not_allowed`, so the archive fetcher above it (digest, media type,
+  extraction, the check that the pack's name is the target) runs for real.
 - `When I DELETE "<path>" with the remembered ETag`: a `DELETE` whose `If-Match` is the `ETag` last remembered with `When I
   remember the ETag`, from `getPack` or from a write's answer.
 
