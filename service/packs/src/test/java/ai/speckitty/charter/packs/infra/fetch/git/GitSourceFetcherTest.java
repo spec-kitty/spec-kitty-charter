@@ -514,6 +514,19 @@ class GitSourceFetcherTest {
     }
 
     @Test
+    void aBlobReadThatOutrunsTheDeadlineIsATimeoutNotAnUpstreamFailure() {
+        shim.sleep("cat-file", 30);
+        GitSourceFetcher slow = fetcher(Duration.ofMillis(2500), 1L << 30, 2);
+        long started = System.nanoTime();
+
+        assertThatThrownBy(() -> slow.fetch(request(URL, REF, null), directory))
+                .isInstanceOfSatisfying(SourceUpstreamException.class, failure -> assertThat(failure.timedOut()).isTrue());
+
+        assertThat(Duration.ofNanos(System.nanoTime() - started)).isLessThan(Duration.ofSeconds(20));
+        assertThat(leftovers()).isEmpty();
+    }
+
+    @Test
     void aFetchThatFillsTheDiskPastTheBoundIsKilledAndRefusedAsTooLarge() {
         shim.grow("fetch", 3_000_000);
         GitSourceFetcher small = fetcher(Duration.ofSeconds(60), 1_000_000, 2);
