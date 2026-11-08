@@ -474,7 +474,8 @@ public final class PackCommitStore implements WholePackWriteStore {
 
     @Override
     public PackRevision replaceWhole(PackIdentifier pack, StagedPack staged) {
-        Path liveDir = DomainRepositoryService.writableRealDirectory(locations, resolve(pack).directory, pack);
+        Resolved resolved = resolve(pack);
+        Path liveDir = DomainRepositoryService.writableRealDirectory(locations, resolved.directory, pack);
         Path parent = requireParent(liveDir);
         hideStaleAsides(liveDir); // so a stale aside copy is never restored over this pack later (#281)
         @Nullable Path copy = null;
@@ -486,7 +487,7 @@ public final class PackCommitStore implements WholePackWriteStore {
             copyTree(staged.directory(), copy);
             PackRevision revision = revisionOf(copy, pack);
             history = HistoryWrite.stage(writableRoot(), pack.value(), copy, revision, liveDir);
-            swapBracketed(pack.value(), copy, liveDir);
+            swapBracketed(resolved.name, copy, liveDir); // keyed by the configured name, as every write is
             copy = null; // swapped into place; there is nothing left to clean up
             history.publishAfterSwap();
             return revision;
@@ -712,7 +713,7 @@ public final class PackCommitStore implements WholePackWriteStore {
     // ---- id to directory -----------------------------------------------------------------------------------------
 
     /** A pack's live directory, its store and the directory-name key, resolved as {@link DomainRepositoryService} does. */
-    private record Resolved(FilesystemPackStore store, PackIdentifier key, Path directory) {}
+    private record Resolved(String name, FilesystemPackStore store, PackIdentifier key, Path directory) {}
 
     private Resolved resolve(PackIdentifier pack) {
         List<PackLocation> configured = locations.all();
@@ -738,6 +739,7 @@ public final class PackCommitStore implements WholePackWriteStore {
             throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack location has no parent directory");
         }
         return new Resolved(
+                location.name(),
                 new FilesystemPackStore(parent, strategy),
                 new PackIdentifier(directory.getFileName().toString()),
                 directory);
