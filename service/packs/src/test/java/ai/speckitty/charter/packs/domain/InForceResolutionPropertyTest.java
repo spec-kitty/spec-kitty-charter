@@ -10,6 +10,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.InForceResolution.Edges;
 import ai.speckitty.charter.packs.domain.InForceStates.ArtifactState;
+import ai.speckitty.charter.packs.domain.InForceStates.Reason;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -30,8 +31,11 @@ import org.junit.jupiter.api.Test;
  * The in-force resolution over seeded random closures (NFR-001, DIRECTIVE_051: a plain seeded {@link Random}, no
  * property-testing library). For each of {@value #CASES} closures per seed it checks, on the answer alone and with its own
  * small oracle: the FR-029 invariant (every held required id is in force, or satisfied by an artifact in force, or
- * reported), I9, I10 and I11 (conditional on the shape), that no artifact in force is hidden by another, determinism
- * under input order, termination, and the override-cycle refusal. Every assertion names the seed and the case number,
+ * reported), that every artifact reported as required but not in force is of the enhancer or binding reason and really
+ * grounded out, that an artifact the document or the floor puts forward is in force unless an artifact in force hides it
+ * or the enhancer or binding rule prunes it (liveness), I9, I10 and I11 (conditional on the shape), that no artifact in
+ * force is hidden by another, determinism under input order (the winners' order, the bindings' and the floor's included),
+ * termination, and the override-cycle refusal. Every assertion names the seed and the case number,
  * so a failure replays.
  */
 class InForceResolutionPropertyTest {
@@ -53,19 +57,35 @@ class InForceResolutionPropertyTest {
     @Test
     void everyGeneratedClosureHoldsTheInvariants() {
         Map<Outcome, Integer> seen = new EnumMap<>(Outcome.class);
+        Map<String, Integer> shapes = new TreeMap<>();
         for (long seed : SEEDS) {
             Random random = new Random(seed);
             for (int n = 0; n < CASES; n++) {
-                seen.merge(check(seed, n, generate(random)), 1, Integer::sum);
+                seen.merge(check(seed, n, generate(random), shapes), 1, Integer::sum);
             }
         }
         int checked = seen.values().stream().mapToInt(Integer::intValue).sum();
+        String tally = seen + " " + shapes;
         assertThat(checked).isEqualTo(SEEDS.size() * CASES).isGreaterThanOrEqualTo(1_000);
-        assertThat(seen.getOrDefault(Outcome.ANSWERED, 0)).as(seen.toString()).isGreaterThan(checked / 2);
-        assertThat(seen.getOrDefault(Outcome.CYCLE_REFUSED, 0))
-                .as(seen.toString())
-                .isPositive();
+        assertThat(seen.getOrDefault(Outcome.ANSWERED, 0)).as(tally).isGreaterThan(checked * 9 / 10);
+        assertThat(seen.getOrDefault(Outcome.CYCLE_REFUSED, 0)).as(tally).isPositive();
+        assertThat(shapes.getOrDefault(IN_FORCE, 0))
+                .as("a meaningful share of the answers has something in force: " + tally)
+                .isGreaterThan(seen.getOrDefault(Outcome.ANSWERED, 0) * 9 / 10);
+        assertThat(shapes.getOrDefault(NOT_IN_FORCE_REQUIRED, 0)).as(tally).isGreaterThanOrEqualTo(MIN_SHAPE);
+        assertThat(shapes.getOrDefault(PUT_IN_FORCE, 0)).as(tally).isGreaterThanOrEqualTo(MIN_SHAPE);
+        assertThat(shapes.getOrDefault(SATISFIED, 0)).as(tally).isGreaterThanOrEqualTo(MIN_SHAPE);
+        assertThat(shapes.getOrDefault(PRUNED_BY_BINDING, 0)).as(tally).isGreaterThanOrEqualTo(MIN_SHAPE);
     }
+
+    private static final String IN_FORCE = "somethingInForce";
+    private static final String NOT_IN_FORCE_REQUIRED = "requiredNotInForce";
+    private static final String PUT_IN_FORCE = "requiredPutInForce";
+    private static final String SATISFIED = "requiredSatisfiedByAnOverrider";
+    private static final String PRUNED_BY_BINDING = "prunedByAnExplicitBinding";
+
+    /** The fewest answers of each shape the generator must reach, so that no invariant above is vacuous. */
+    private static final int MIN_SHAPE = 200;
 
     /** How a generated closure was answered. */
     private enum Outcome {
@@ -74,7 +94,7 @@ class InForceResolutionPropertyTest {
         UNSTABLE_REFUSED
     }
 
-    private static Outcome check(long seed, int n, Case generated) {
+    private static Outcome check(long seed, int n, Case generated, Map<String, Integer> shapes) {
         String what = "seed " + seed + ", case " + n + ": " + generated;
         Optional<InForceStates> answer = answer(generated, what);
         if (generated.cyclic() && hasReachableCycle(generated)) {
@@ -92,13 +112,38 @@ class InForceResolutionPropertyTest {
                 .as(what)
                 .containsExactlyElementsOf(generated.closure().winners().keySet());
         invariants(generated, states, what);
+        shapesOf(generated, states).forEach(shape -> shapes.merge(shape, 1, Integer::sum));
         assertThat(InForceResolution.resolve(
-                        generated.closure(),
+                        shuffled(generated.closure(), seed + n),
                         shuffled(generated.edges(), seed + n),
                         shuffled(generated.request(), seed + n)))
                 .as(what + " (the answer does not depend on input order)")
                 .isEqualTo(states);
         return Outcome.ANSWERED;
+    }
+
+    /** What the answer shows that the invariants are about, so a generator that stops reaching it fails the test. */
+    private static Set<String> shapesOf(Case generated, InForceStates states) {
+        Set<String> shapes = new TreeSet<>();
+        if (!activeOf(states).isEmpty()) {
+            shapes.add(IN_FORCE);
+        }
+        if (!states.requiredNotInForce().isEmpty()) {
+            shapes.add(NOT_IN_FORCE_REQUIRED);
+        }
+        states.states().forEach((urn, state) -> {
+            if (state.reason() == Reason.REQUIRED) {
+                shapes.add(PUT_IN_FORCE);
+            }
+            if (state.satisfiedBy().isPresent()) {
+                shapes.add(SATISFIED);
+            }
+            if (state.reason() == Reason.MISSION_TYPE_NOT_IN_FORCE
+                    && generated.edges().bindings().containsKey(urn)) {
+                shapes.add(PRUNED_BY_BINDING);
+            }
+        });
+        return shapes;
     }
 
     private static Optional<InForceStates> answer(Case generated, String what) {
@@ -135,10 +180,74 @@ class InForceResolutionPropertyTest {
                                 .doesNotContain(hidden));
             }
         }
+        states.requiredNotInForce().forEach(entry -> groundedOut(generated, states, inForce, entry, what));
+        liveness(generated, states, inForce, reach, what);
         assertThat(states.requiredNotHeld())
                 .as(what + " requiredNotHeld")
                 .containsExactlyElementsOf(
                         new TreeSet<>(closure.floor().unheld().keySet()));
+    }
+
+    /**
+     * A required or locked artifact reported as not in force is out for the enhancer or binding reason alone, and is
+     * really grounded out: it enhances only artifacts that are not in force, or is bound to a mission type that is not.
+     */
+    private static void groundedOut(
+            Case generated,
+            InForceStates states,
+            Set<Urn> inForce,
+            InForceStates.RequiredNotInForce entry,
+            String what) {
+        Urn urn = entry.urn();
+        ArtifactState state = states.stateOf(urn).orElseThrow();
+        assertThat(entry.reason())
+                .as(what + " " + urn + " reported as required but not in force")
+                .isIn(Reason.ENHANCED_TARGET_NOT_IN_FORCE, Reason.MISSION_TYPE_NOT_IN_FORCE);
+        assertThat(state.reason()).as(what + " " + urn + " reason").isEqualTo(entry.reason());
+        assertThat(state.active()).as(what + " " + urn + " reported, so not in force").isFalse();
+        assertThat(state.required()).as(what + " " + urn + " is required or locked").isTrue();
+        if (entry.reason() == Reason.ENHANCED_TARGET_NOT_IN_FORCE) {
+            Set<Urn> targets = generated.edges().enhances().getOrDefault(urn, Set.of());
+            assertThat(targets).as(what + " " + urn + " enhances something").isNotEmpty();
+            assertThat(targets.stream().noneMatch(inForce::contains))
+                    .as(what + " " + urn + " has no target in force")
+                    .isTrue();
+        } else {
+            Urn mission = bindingOf(generated.edges(), urn).orElseThrow();
+            assertThat(inForce).as(what + " " + urn + " is bound to " + mission).doesNotContain(mission);
+        }
+    }
+
+    /**
+     * Liveness: a candidate (selected, not denied, within the language filter), a locked artifact or a required one is in
+     * force, unless an artifact in force overrides it (judged over every edge of the case, an upper bound of what any
+     * artifact in force hides), or it enhances only artifacts not in force, or is bound to a mission type not in force.
+     */
+    private static void liveness(
+            Case generated, InForceStates states, Set<Urn> inForce, Map<Urn, Set<Urn>> reach, String what) {
+        MergedClosure closure = generated.closure();
+        InForceRequest request = generated.request();
+        closure.winners().forEach((urn, winner) -> {
+            boolean candidate = request.selected().contains(urn)
+                    && !request.deactivated().contains(urn)
+                    && request.admits(closure.languages().getOrDefault(urn, Set.of()));
+            boolean put = candidate || winner.policy().level() == MutabilityLevel.LOCKED || closure.floor().isRequired(urn);
+            boolean hidden = inForce.stream().anyMatch(by -> reach.getOrDefault(by, Set.of()).contains(urn));
+            if (put && !hidden && !pruned(generated.edges(), inForce, urn)) {
+                assertThat(inForce)
+                        .as(what + " liveness: " + urn + " is put forward, hidden by nothing in force and grounded: "
+                                + states.stateOf(urn).orElseThrow())
+                        .contains(urn);
+            }
+        });
+    }
+
+    /** Whether the enhancer or binding rule removes the artifact from a set in force. */
+    private static boolean pruned(Edges edges, Set<Urn> inForce, Urn urn) {
+        Set<Urn> targets = edges.enhances().getOrDefault(urn, Set.of());
+        boolean enhancerOut = !targets.isEmpty() && targets.stream().noneMatch(inForce::contains);
+        boolean bindingOut = bindingOf(edges, urn).filter(mission -> !inForce.contains(mission)).isPresent();
+        return enhancerOut || bindingOut;
     }
 
     /**
@@ -264,8 +373,11 @@ class InForceResolutionPropertyTest {
         Map<Urn, Set<Urn>> overrides = new LinkedHashMap<>();
         Map<Urn, Set<Urn>> enhances = new LinkedHashMap<>();
         boolean cyclic = edges(random, urns, overrides, enhances);
+        Map<Urn, Urn> bindings = bindings(random, urns);
         boolean bound = overrides.keySet().stream()
-                .anyMatch(source -> source.kind() == NodeKind.ACTION || enhances.containsKey(source));
+                .anyMatch(source -> source.kind() == NodeKind.ACTION
+                        || enhances.containsKey(source)
+                        || bindings.containsKey(source));
         Map<Urn, List<String>> required = new LinkedHashMap<>();
         Map<Urn, List<String>> unheld = new LinkedHashMap<>();
         floor(random, urns, required, unheld);
@@ -273,7 +385,7 @@ class InForceResolutionPropertyTest {
         urns.forEach(urn -> languages(random, urn, languages));
         MergedClosure closure =
                 new MergedClosure(winners, List.of(), languages, Map.of(), new RequiredFloor(required, unheld));
-        return new Case(closure, new Edges(overrides, enhances, Map.of()), request(random, urns), cyclic, bound);
+        return new Case(closure, new Edges(overrides, enhances, bindings), request(random, urns), cyclic, bound);
     }
 
     private static List<Urn> urnsOf(Random random) {
@@ -291,6 +403,21 @@ class InForceResolutionPropertyTest {
             }
         }
         return urns;
+    }
+
+    /** An explicit binding to a mission type of the closure for some artifacts that are neither a mission type nor a step. */
+    private static Map<Urn, Urn> bindings(Random random, List<Urn> urns) {
+        List<Urn> missions =
+                urns.stream().filter(urn -> urn.kind() == NodeKind.MISSION_TYPE).toList();
+        Map<Urn, Urn> bindings = new LinkedHashMap<>();
+        if (missions.isEmpty()) {
+            return bindings;
+        }
+        urns.stream()
+                .filter(urn -> urn.kind() != NodeKind.MISSION_TYPE && urn.kind() != NodeKind.ACTION)
+                .filter(urn -> random.nextInt(6) == 0)
+                .forEach(urn -> bindings.put(urn, missions.get(random.nextInt(missions.size()))));
+        return bindings;
     }
 
     private static MergedClosure.Winner winner(Urn urn, Random random) {
@@ -365,7 +492,30 @@ class InForceResolutionPropertyTest {
 
     private static Edges shuffled(Edges edges, long seed) {
         Random random = new Random(seed);
-        return new Edges(shuffled(edges.overrides(), random), shuffled(edges.enhances(), random), edges.bindings());
+        List<Map.Entry<Urn, Urn>> bindings = new ArrayList<>(edges.bindings().entrySet());
+        Collections.shuffle(bindings, random);
+        Map<Urn, Urn> boundIn = new LinkedHashMap<>();
+        bindings.forEach(binding -> boundIn.put(binding.getKey(), binding.getValue()));
+        return new Edges(shuffled(edges.overrides(), random), shuffled(edges.enhances(), random), boundIn);
+    }
+
+    /** The same closure with its winners, languages and floor in another order. */
+    private static MergedClosure shuffled(MergedClosure closure, long seed) {
+        Random random = new Random(seed);
+        List<Urn> order = new ArrayList<>(closure.winners().keySet());
+        Collections.shuffle(order, random);
+        Map<Urn, MergedClosure.Winner> winners = new LinkedHashMap<>();
+        order.forEach(urn -> winners.put(urn, closure.winners().get(urn)));
+        List<Urn> required = new ArrayList<>(closure.floor().requiredBy().keySet());
+        Collections.shuffle(required, random);
+        Map<Urn, List<String>> requiredBy = new LinkedHashMap<>();
+        required.forEach(urn -> requiredBy.put(urn, closure.floor().requiredBy().get(urn)));
+        return new MergedClosure(
+                winners,
+                closure.layerOverrides(),
+                closure.languages(),
+                closure.presets(),
+                new RequiredFloor(requiredBy, closure.floor().unheld()));
     }
 
     private static Map<Urn, Set<Urn>> shuffled(Map<Urn, Set<Urn>> edges, Random random) {
