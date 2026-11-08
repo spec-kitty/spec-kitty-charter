@@ -143,7 +143,7 @@ used.
 | `mission-types` | `/api/v1/offering/mission-types` | `GET` | The offering | Proposed |
 | `context` | `/api/v1/offering/mission-types/{missionType}/actions/{action}/context{?depth}` | `GET` | An action | Proposed |
 | `activations` | `/api/v1/activations` | `POST` | Root, once activation writes are built | Proposed |
-| `edit` | The activation; a stored pack | `PUT` | An activation, once writes are built; a stored pack (`getPack`), where it points at the whole-pack `PUT` registration. The contract declares the pack's `edit` (the `getPack` description and example), but the service does not send it yet: no answer carries an `edit` link, so neither an artifact's nor a pack's registration is advertised by a link | Proposed |
+| `edit` | The activation | `PUT` | An activation, once writes are built. Not used in this minor: no answer carries an `edit` link, so neither an artifact's, a pack's nor a whole-pack registration is advertised by a link | Proposed |
 | `delete` | The activation | `DELETE` | An activation, once writes are built | Proposed |
 | `skipped` | `…/activations/{activationId}/skipped` | `GET` | An activation | Proposed |
 | `effective-context` | `…/activations/{activationId}/mission-types/{missionType}/actions/{action}/context{?depth}` | `GET` | An activation | Proposed |

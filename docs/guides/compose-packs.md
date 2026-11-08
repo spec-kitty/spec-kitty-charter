@@ -267,8 +267,13 @@ are not applied.
 - **A stored dependent that cannot be read** makes every registration of its ancestor fail `pack_unreadable`. Fix the
   dependent, or remove it.
 - **A stored pack that cannot be read** is repaired by a whole-pack registration. A per-artifact write into it, or into a
-  pack whose dependency is missing, is refused even when the write would repair it. The write gate judges the whole-pack
-  upload by what can still be read: every uploaded artifact is a replace, and nothing is a removal.
+  pack whose dependency is missing, is refused even when the write would repair it. The service salvages the
+  stored pack for the diff. It reads the pack file by file: an artifact file counts by the id it declares and by the id
+  its path names, and each readable entry of a graph file is an edge. An artifact the upload leaves out is a `REMOVE`
+  through the gate and the check of inbound references. A dropped edge is a `RELATIONSHIP` write on its source. A stored
+  artifact that does not bind counts as a `REPLACE`. When the set of stored artifacts cannot be determined at all, for
+  example when the directory cannot be listed, the registration is refused `pack_unreadable`: the pack is never taken as
+  empty.
 - **The mutability policy** applies as for any write. Removing an artifact is a `REMOVE`, and each edge the write adds or
   drops is a `RELATIONSHIP` write on its source. An edge from a locked artifact of an ancestor pack is refused `409
   governance_policy_violation`.

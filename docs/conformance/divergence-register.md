@@ -628,7 +628,7 @@ guide is [Compose packs](/guides/compose-packs/#register-a-pack); the operator's
 
 ### DIV-601: A registration replaces the stored pack
 
-- **Core:** Merges per artifact: a registration adds or updates the artifacts it carries and leaves the others.
+- **Core:** The service's understanding of core, to be confirmed against core: it merges per artifact: a registration adds or updates the artifacts it carries and leaves the others.
 - **Service:** `PUT /packs/{packId}` and `POST /packs` replace the stored pack whole. An artifact, an edge, a preset item or a file the upload does not carry is gone, and the same version with the same revision ends unchanged. The registration is asynchronous: 202 and a status to poll. Two registrations run and eight wait, a ninth waiter is 503 with `Retry-After`, and the 90 second deadline counts the time spent in the queue. A slot is taken before the body is read, so a few slow uploads can make other callers get 503 (a known limit, accepted for this release). The status is kept in memory for one hour, at most 1,000 entries.
 - **Rationale:** A registration is the whole truth about a pack, so nothing a client dropped can survive in it, and one request is one atomic swap.
 - **Ruling:** ADR-0065 D1, D8; SC-003; FR-024
@@ -639,7 +639,7 @@ guide is [Compose packs](/guides/compose-packs/#register-a-pack); the operator's
 
 ### DIV-602: The version is a label, and a version is never reused with other content
 
-- **Core:** Registers per artifact and keeps no history of the versions a pack name held.
+- **Core:** The service's understanding of core, to be confirmed against core: it registers per artifact and keeps no history of the versions a pack name held.
 - **Service:** `pack_version` is a label, not an order: a registration may go back to an older version. The service keeps every (`pack_version`, revision) a pack name was registered with, in the same swap as the pack, and a DELETE keeps the history. The same version with another revision is refused 409 `pack_version_conflict`, whether or not it is the stored version. This check runs before the `If-Match` precondition, so a re-send of an archive with the same version after a per-artifact PUT moved the revision is 409, not 412; the 412 race needs a new version. A history entry that the service restores after a repair carries the time of the repair, not of the lost registration.
 - **Rationale:** A version that names content must keep naming it, or a client that pins a version reads different packs under one label.
 - **Ruling:** FR-026; decision `DM-01M6RA9BKJY7X9BFV93QW1KM1T` (B1); IC-16
@@ -650,7 +650,7 @@ guide is [Compose packs](/guides/compose-packs/#register-a-pack); the operator's
 
 ### DIV-603: The write gate covers removal and each edge, on its source
 
-- **Core:** Judges the artifacts a write adds or changes.
+- **Core:** The service's understanding of core, to be confirmed against core: it judges the artifacts a write adds or changes.
 - **Service:** REMOVE joins the gate's operations. An edge a write adds or drops is a RELATIONSHIP write on its source, in a whole-pack registration and in the relationship PUT and DELETE alike. The relationship DELETE is refused 409 `governance_policy_violation` for an edge whose source is a locked artifact of an ancestor, as a whole-pack replace is refused for dropping it. An artifact DELETE is refused the same way for an id an ancestor locks.
 - **Rationale:** A lock must hold whichever door the write comes through; removal and edge writes are writes.
 - **Ruling:** ADR-0012; decision `DM-01M6TR1KDAJ64GMJD6AYNZKT59` (item 4)
@@ -660,10 +660,10 @@ guide is [Compose packs](/guides/compose-packs/#register-a-pack); the operator's
 
 ### DIV-604: The impact check is strict and an unreadable pack is repaired by a whole-pack replace
 
-- **Core:** Warns when a write leaves a closure that no longer composes or breaks a relation rule.
-- **Service:** A registration, a per-artifact write, the relationship write and both DELETEs are refused 422, with the composition code or one of the five relation codes naming the packs, when a closure the pack joins no longer composes or breaks a rule after the write. PR A does not apply the repair writes of #404. One stored dependent that cannot be read makes every registration of its ancestor fail `pack_unreadable`; the repair is to fix or remove the dependent. A write into a stored pack that cannot be read, or whose dependency is missing, is refused even when it would repair it. A whole-pack replace is the repair path: the gate judges what can still be read, every uploaded artifact as a replace and nothing as a removal. At start-up the service logs a WARN for each stored pack that would now be refused.
+- **Core:** The service's understanding of core, to be confirmed against core: it warns when a write leaves a closure that no longer composes or breaks a relation rule.
+- **Service:** A registration, a per-artifact write, the relationship write and both DELETEs are refused 422, with the composition code or one of the five relation codes naming the packs, when a closure the pack joins no longer composes or breaks a rule after the write. PR A does not apply the repair writes of #404. One stored dependent that cannot be read makes every registration of its ancestor fail `pack_unreadable`; the repair is to fix or remove the dependent. A write into a stored pack that cannot be read, or whose dependency is missing, is refused even when it would repair it. A whole-pack replace is the repair path, and the stored pack is salvaged for it: it is read file by file, an artifact file counts by the id it declares and by the id its path names, and each readable graph entry is an edge. An artifact the upload leaves out is a REMOVE through the gate and the inbound scan, a dropped edge is a RELATIONSHIP write on its source, and a stored artifact that does not bind counts as a REPLACE. When the set of stored artifacts cannot be determined at all (the directory cannot be listed), the registration is refused `pack_unreadable`; the pack is never taken as empty. At start-up the service logs a WARN for each stored pack that would now be refused.
 - **Rationale:** A write that leaves a broken closure would make every composed read fail; refusing it keeps the offering readable.
-- **Ruling:** Decisions `DM-01M6TQ67C9ZTNGZB9CY28JS54F`, `DM-01M6VG6GC40AKYYFRR35SV8HVW`, `DM-01M6V4WMF8CD8NBN7A065E9ZQ5`, `DM-01M6RA8225EXG6GAT1MM2R9T6C` (A5); FR-025
+- **Ruling:** Decisions `DM-01M6TQ67C9ZTNGZB9CY28JS54F`, `DM-01M6VG6GC40AKYYFRR35SV8HVW`, `DM-01M6V4WMF8CD8NBN7A065E9ZQ5`, `DM-01M6V6N74ER28H8S6TSVZ8ZEY2`, `DM-01M6RA8225EXG6GAT1MM2R9T6C` (A5); FR-025
 - **Status:** open, since 2026-11-08
 - **Evidence:**
   - Charter: `contracts/charter/scenarios/registration/whole-pack-registration.feature` (A registration that leaves a closure unable to compose is refused naming the packs); `contracts/charter/scenarios/pack-removal.feature` (A removal that leaves a closure of a stored activation broken is refused 422)
@@ -671,7 +671,7 @@ guide is [Compose packs](/guides/compose-packs/#register-a-pack); the operator's
 
 ### DIV-605: Registration notices name activatable kinds only
 
-- **Core:** Has no registration notices.
+- **Core:** The service's understanding of core, to be confirmed against core: it has no registration notices.
 - **Service:** The notices list the must-have items added to or removed from the required floor and the artifacts put under or released from a lock. They name activatable kinds only. An entry of another kind (a template, an asset, a guard, a lifecycle) is left out and logged at WARN with its URN. Issue #417 tracks widening the kinds.
 - **Rationale:** The contract's artifact reference names activatable kinds, and a notice must be a reference a client can follow.
 - **Ruling:** Operator ruling 2026-11-07, decision `01M6VXMCDQJWBJXGRQNMF5G6SV`; #417
@@ -681,7 +681,7 @@ guide is [Compose packs](/guides/compose-packs/#register-a-pack); the operator's
 
 ### DIV-606: Removing one artifact from a pack
 
-- **Core:** Has no operation that removes one artifact from a pack; an author deletes its files.
+- **Core:** The service's understanding of core, to be confirmed against core: it has no operation that removes one artifact from a pack; an author deletes its files.
 - **Service:** `DELETE /packs/{packId}/artifacts/{kind}/{artifactId}` removes the artifact, its companion files, its registered edges and the preset items of the pack that name it, and deletes a preset key whose last item goes. It needs `If-Match` (428 without, 412 stale; * is accepted) and answers 204 with the new revision. It is refused 409 `artifact_referenced` while another artifact or pack refers to it (another pack's preset item and a descriptor overrides entry count), 409 `governance_policy_violation` for an id an ancestor locks, and 409 `registration_conflict` when an author-written graph document names the artifact. It never rewrites an author graph file. It does re-serialize a preset file when it removes a preset item, so comments and formatting are lost. A removal that leaves a closure broken is 422.
 - **Rationale:** A client can remove what it registered without sending the whole pack, and a refused removal changes nothing.
 - **Ruling:** ADR-0065 D4; FR-005, FR-007; decision `DM-01M6TQ62HXYF362GAFS2BZ3PGF`
@@ -691,7 +691,7 @@ guide is [Compose packs](/guides/compose-packs/#register-a-pack); the operator's
 
 ### DIV-607: Removing one registered relationship
 
-- **Core:** Has no operation that removes one edge; an author edits a graph document.
+- **Core:** The service's understanding of core, to be confirmed against core: it has no operation that removes one edge; an author edits a graph document.
 - **Service:** `DELETE /packs/{packId}/relationships` removes an edge only from `registered.graph.yaml`. It is 409 `relationship_not_registered` for a pair an author wrote, a derived one, or one held both in the registered file and in an author-written document, and 404 `relationship_not_found` when no graph document holds the pair. `If-Match` is required (428, 412). A reference that names a pack matches only an edge end that names the same pack, so with the edges A to `base::X` and A to `other::X` a DELETE naming `base::X` removes one; a reference that names no pack matches by its URN, as the kernel compares. The removed edge is gated as a RELATIONSHIP write on its source (DIV-603). A removal that leaves a closure broken is 422 (strict; #404 is out of scope).
 - **Rationale:** Only the edge the client named may go, and a 204 must never leave the edge in force.
 - **Ruling:** ADR-0065 D4; FR-006; decisions `DM-01M6TQ62HXYF362GAFS2BZ3PGF`, `DM-01M6TR1KDAJ64GMJD6AYNZKT59`
@@ -701,7 +701,7 @@ guide is [Compose packs](/guides/compose-packs/#register-a-pack); the operator's
 
 ### DIV-608: Known gaps of the per-artifact writes
 
-- **Core:** Has no per-artifact write; the manifest is derived when the pack is written.
+- **Core:** The service's understanding of core, to be confirmed against core: it has no per-artifact write; the manifest is derived when the pack is written.
 - **Service:** A per-artifact write or DELETE does not update `pack-manifest.yaml`, so its hashes go stale and after a DELETE it still lists the removed file. Reads do not verify the manifest; a round trip and validate mode report it. A per-artifact PUT with `If-Match: *` satisfies the 428 requirement. A DELETE is judged on the facts overlay; the edited tree is not read again. A per-artifact PUT or POST and the relationship write can answer 422 with composition and relation codes (DIV-604).
 - **Rationale:** Recorded as known limits of PR A so a consumer does not rely on the manifest after a per-artifact write.
 - **Ruling:** ADR-0042; plan IC-06; WP19 review
@@ -711,7 +711,7 @@ guide is [Compose packs](/guides/compose-packs/#register-a-pack); the operator's
 
 ### DIV-609: Pack-source configuration
 
-- **Core:** Has no service-side source configuration.
+- **Core:** The service's understanding of core, to be confirmed against core: it has no service-side source configuration.
 - **Service:** Each source kind is off by default and its flag is read at every request. https: enabled, allowed-hosts (empty), timeout 60s, max-size 32MB, max-redirects 3. `git`: enabled, allowed-hosts (empty), executable, timeout 60s. filesystem: enabled and root. Registration itself is off (`charter.registration.enabled`) and spools under `charter.registration.staging-dir`. A filesystem root must not lie under /proc, /sys or /dev or overlap `charter.config-root`. The resolver guard covers the union of the guide, archive and `git` hosts. A filesystem kind switched on with no root stops the start.
 - **Rationale:** A service that was never configured for a source must refuse it, and an outbound fetch is reachable only to hosts an operator named.
 - **Ruling:** ADR-0065 D10; FR-037; NFR-010; plan IC-18
@@ -721,7 +721,7 @@ guide is [Compose packs](/guides/compose-packs/#register-a-pack); the operator's
 
 ### DIV-610: Refusals of a source
 
-- **Core:** Has no source refusals.
+- **Core:** The service's understanding of core, to be confirmed against core: it has no source refusals.
 - **Service:** A source the service refuses ends the registration 422 `pack_source_refused`. The detail is <token>: <fixed sentence>, with no URL, path or upstream text. The tokens are `host_not_allowed`, `address_not_global`, `url_refused`, `redirect_refused`, `wrong_media_type`, `too_large`, `digest_mismatch`, `name_mismatch`, `source_malformed`, `path_refused`, `bad_ref` and `commit_mismatch`. An upstream failure is a plain 502 and a timeout a plain 504. Every local-path refusal is one `path_refused`; its reason is in the operator log only. `PackSource.url` matches ^https://\S+$. For POST the descriptor name must equal the target pack id; for PUT it need not.
 - **Rationale:** A refusal must not echo an address or a path, and must not tell a client which host or path exists.
 - **Ruling:** ADR-0065 D10; IC-05; decisions of WP17 and its review
@@ -731,7 +731,7 @@ guide is [Compose packs](/guides/compose-packs/#register-a-pack); the operator's
 
 ### DIV-611: The recorded source of a registration
 
-- **Core:** Has no registration status.
+- **Core:** The service's understanding of core, to be confirmed against core: it has no registration status.
 - **Service:** The status of a succeeded registration records its source. `source.url` keeps no query, no fragment and no user information. For a `git` source, `source.commit` is the commit the ref resolved to.
 - **Rationale:** A query or user information can carry a credential and must not be stored or echoed.
 - **Ruling:** ADR-0065 D10; WP18 and its review
@@ -741,7 +741,7 @@ guide is [Compose packs](/guides/compose-packs/#register-a-pack); the operator's
 
 ### DIV-612: The race of the local source
 
-- **Core:** Has no local source.
+- **Core:** The service's understanding of core, to be confirmed against core: it has no local source.
 - **Service:** The file-key and link-count checks look a file up by name, not on the open handle, because the JDK has no `fstat` on a channel. A race between the check and the open needs write access under the root.
 - **Rationale:** A known limit: closing it needs a call the JDK does not offer, and the threat needs the attacker to write under the operator's root.
 - **Ruling:** ADR-0065 D10; WP17 review
@@ -751,7 +751,7 @@ guide is [Compose packs](/guides/compose-packs/#register-a-pack); the operator's
 
 ### DIV-613: The git source
 
-- **Core:** Has no `git` source.
+- **Core:** The service's understanding of core, to be confirmed against core: it has no `git` source.
 - **Service:** The service runs the system `git`, 2.50.1 or later, on the PATH or at `charter.pack-sources.git.executable`, into a bare work repository; there is no JGit and no work tree. It checks the version at every start. An old or missing `git` makes the `git` kind answer 503 `pack_source_unavailable` while the other kinds work. It accepts https only, follows no redirect, and refuses links and submodules in the tree (422 `validation_failed`, violation `entry_type`, as for an archive). A branch ref without a commit is 428 unless `If-Match` or `If-None-Match: *` is sent. The reasons `bad_ref` and `commit_mismatch` are new. sha256 repositories are untested. CI has a new required job, `git`-source, that runs the real-`git` tests.
 - **Rationale:** A host binary is the operator's ruling (no JGit); the version floor and the fixed command line bound what it can do.
 - **Ruling:** C-008; NFR-011; ADR-0065 D10; WP18 and its review

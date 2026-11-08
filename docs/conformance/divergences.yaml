@@ -1020,8 +1020,8 @@
 - id: DIV-601
   surface: What a pack registration does to the pack the service holds, and how it answers
   core: >-
-    Merges per artifact: a registration adds or updates the artifacts it carries and leaves the
-    others.
+    The service's understanding of core, to be confirmed against core: it merges per artifact: a
+    registration adds or updates the artifacts it carries and leaves the others.
   service: >-
     PUT /packs/{packId} and POST /packs replace the stored pack whole. An artifact, an edge, a
     preset item or a file the upload does not carry is gone, and the same version with the same
@@ -1041,7 +1041,9 @@
     - "charter: PackRegistrationServiceTest; RegistrationAcceptanceTimingTest; RegistrationJobsTest"
 - id: DIV-602
   surface: The pack_version of a registration
-  core: Registers per artifact and keeps no history of the versions a pack name held.
+  core: >-
+    The service's understanding of core, to be confirmed against core: it registers per artifact and
+    keeps no history of the versions a pack name held.
   service: >-
     pack_version is a label, not an order: a registration may go back to an older version. The
     service keeps every (pack_version, revision) a pack name was registered with, in the same swap
@@ -1061,7 +1063,9 @@
     - "charter: PackVersionHistoryTest; PackRegistrationServiceTest"
 - id: DIV-603
   surface: The mutability gate over a write that removes something
-  core: Judges the artifacts a write adds or changes.
+  core: >-
+    The service's understanding of core, to be confirmed against core: it judges the artifacts a
+    write adds or changes.
   service: >-
     REMOVE joins the gate's operations. An edge a write adds or drops is a RELATIONSHIP write on its
     source, in a whole-pack registration and in the relationship PUT and DELETE alike. The
@@ -1077,7 +1081,9 @@
     - "charter: PackRegistrationServiceTest (anEdgeRemovedFromALockedArtifactIsGatedAndOneFromAnOpenArtifactIsNot); RelationshipRemovalServiceTest (anEdgeWhoseSourceIsALockedArtifactOfAnAncestorIsNotRemovedAndOneFromAnOpenArtifactIs); ArtifactRemovalServiceTest"
 - id: DIV-604
   surface: What a write is refused for when it breaks a closure
-  core: Warns when a write leaves a closure that no longer composes or breaks a relation rule.
+  core: >-
+    The service's understanding of core, to be confirmed against core: it warns when a write leaves
+    a closure that no longer composes or breaks a relation rule.
   service: >-
     A registration, a per-artifact write, the relationship write and both DELETEs are refused 422,
     with the composition code or one of the five relation codes naming the packs, when a closure the
@@ -1085,15 +1091,21 @@
     writes of #404. One stored dependent that cannot be read makes every registration of its
     ancestor fail pack_unreadable; the repair is to fix or remove the dependent. A write into a
     stored pack that cannot be read, or whose dependency is missing, is refused even when it would
-    repair it. A whole-pack replace is the repair path: the gate judges what can still be read,
-    every uploaded artifact as a replace and nothing as a removal. At start-up the service logs a
-    WARN for each stored pack that would now be refused.
+    repair it. A whole-pack replace is the repair path, and the stored pack is salvaged for it: it
+    is read file by file, an artifact file counts by the id it declares and by the id its path
+    names, and each readable graph entry is an edge. An artifact the upload leaves out is a REMOVE
+    through the gate and the inbound scan, a dropped edge is a RELATIONSHIP write on its source, and
+    a stored artifact that does not bind counts as a REPLACE. When the set of stored artifacts
+    cannot be determined at all (the directory cannot be listed), the registration is refused
+    pack_unreadable; the pack is never taken as empty. At start-up the service logs a WARN for each
+    stored pack that would now be refused.
   rationale: >-
     A write that leaves a broken closure would make every composed read fail; refusing it keeps the
     offering readable.
   ruling: >-
     Decisions DM-01M6TQ67C9ZTNGZB9CY28JS54F, DM-01M6VG6GC40AKYYFRR35SV8HVW,
-    DM-01M6V4WMF8CD8NBN7A065E9ZQ5, DM-01M6RA8225EXG6GAT1MM2R9T6C (A5); FR-025
+    DM-01M6V4WMF8CD8NBN7A065E9ZQ5, DM-01M6V6N74ER28H8S6TSVZ8ZEY2, DM-01M6RA8225EXG6GAT1MM2R9T6C
+    (A5); FR-025
   status: open
   since: 2026-11-08
   evidence:
@@ -1101,7 +1113,9 @@
     - "charter: RegistrationImpactTest; PerArtifactImpactTest; PackRegistrationServiceTest (aStoredPackThatCannotBeReadIsReplacedByAFixedUpload)"
 - id: DIV-605
   surface: The notices of a succeeded registration
-  core: Has no registration notices.
+  core: >-
+    The service's understanding of core, to be confirmed against core: it has no registration
+    notices.
   service: >-
     The notices list the must-have items added to or removed from the required floor and the
     artifacts put under or released from a lock. They name activatable kinds only. An entry of
@@ -1119,7 +1133,9 @@
 - id: DIV-606
   surface: >-
     deletePackArtifact: what a removal does and refuses
-  core: Has no operation that removes one artifact from a pack; an author deletes its files.
+  core: >-
+    The service's understanding of core, to be confirmed against core: it has no operation that
+    removes one artifact from a pack; an author deletes its files.
   service: >-
     DELETE /packs/{packId}/artifacts/{kind}/{artifactId} removes the artifact, its companion files,
     its registered edges and the preset items of the pack that name it, and deletes a preset key
@@ -1141,7 +1157,9 @@
 - id: DIV-607
   surface: >-
     deletePackRelationship: which edge it removes
-  core: Has no operation that removes one edge; an author edits a graph document.
+  core: >-
+    The service's understanding of core, to be confirmed against core: it has no operation that
+    removes one edge; an author edits a graph document.
   service: >-
     DELETE /packs/{packId}/relationships removes an edge only from registered.graph.yaml. It is 409
     relationship_not_registered for a pair an author wrote, a derived one, or one held both in the
@@ -1160,7 +1178,9 @@
     - "charter: contracts/charter/scenarios/pack-removal.feature (A registered relationship is removed, whichever end the request names first; An edge the author wrote into a source shard is refused); RelationshipRemovalServiceTest"
 - id: DIV-608
   surface: pack-manifest.yaml, If-Match and what a DELETE is judged on
-  core: Has no per-artifact write; the manifest is derived when the pack is written.
+  core: >-
+    The service's understanding of core, to be confirmed against core: it has no per-artifact write;
+    the manifest is derived when the pack is written.
   service: >-
     A per-artifact write or DELETE does not update pack-manifest.yaml, so its hashes go stale and
     after a DELETE it still lists the removed file. Reads do not verify the manifest; a round trip
@@ -1177,7 +1197,9 @@
     - "charter: ArtifactRemovalServiceTest; RelationshipRemovalServiceTest"
 - id: DIV-609
   surface: The charter.registration and charter.pack-sources settings
-  core: Has no service-side source configuration.
+  core: >-
+    The service's understanding of core, to be confirmed against core: it has no service-side source
+    configuration.
   service: >-
     Each source kind is off by default and its flag is read at every request. https: enabled,
     allowed-hosts (empty), timeout 60s, max-size 32MB, max-redirects 3. git: enabled, allowed-hosts
@@ -1196,7 +1218,8 @@
     - "charter: docs/guides/service-build.md (Registering packs); PackSourceRegistrationTest; SourceUrlsTest"
 - id: DIV-610
   surface: pack_source_refused, 502, 504 and the local-path refusal
-  core: Has no source refusals.
+  core: >-
+    The service's understanding of core, to be confirmed against core: it has no source refusals.
   service: >-
     A source the service refuses ends the registration 422 pack_source_refused. The detail is
     <token>: <fixed sentence>, with no URL, path or upstream text. The tokens are host_not_allowed,
@@ -1215,7 +1238,9 @@
     - "charter: SourceRefusalContractTest; PackSourceStagersTest; contracts/charter/scenarios/registration/whole-pack-registration.feature (A source the service refuses ends the registration refused with pack_source_refused)"
 - id: DIV-611
   surface: source in the status of a registration
-  core: Has no registration status.
+  core: >-
+    The service's understanding of core, to be confirmed against core: it has no registration
+    status.
   service: >-
     The status of a succeeded registration records its source. source.url keeps no query, no
     fragment and no user information. For a git source, source.commit is the commit the ref resolved
@@ -1228,7 +1253,8 @@
     - "charter: PackRegistrationMapperSourceTest; PackSourceRegistrationTest"
 - id: DIV-612
   surface: The filesystem source's file checks
-  core: Has no local source.
+  core: >-
+    The service's understanding of core, to be confirmed against core: it has no local source.
   service: >-
     The file-key and link-count checks look a file up by name, not on the open handle, because the
     JDK has no fstat on a channel. A race between the check and the open needs write access under
@@ -1243,7 +1269,8 @@
     - "charter: LocalSourceReader; PackSourceStagersTest"
 - id: DIV-613
   surface: POST /packs with a git source
-  core: Has no git source.
+  core: >-
+    The service's understanding of core, to be confirmed against core: it has no git source.
   service: >-
     The service runs the system git, 2.50.1 or later, on the PATH or at charter.pack-
     sources.git.executable, into a bare work repository; there is no JGit and no work tree. It
