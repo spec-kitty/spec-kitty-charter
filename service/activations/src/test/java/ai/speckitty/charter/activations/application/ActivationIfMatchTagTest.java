@@ -78,7 +78,9 @@ class ActivationIfMatchTagTest {
     /** The write's answer, asserted not to be a refusal, so a refused write fails the test on an assertion. */
     private static <T> T accepted(Supplier<T> write) {
         AtomicReference<T> answer = new AtomicReference<>();
-        assertThatCode(() -> answer.set(write.get())).as("the write is accepted").doesNotThrowAnyException();
+        assertThatCode(() -> answer.set(write.get()))
+                .as("the write is accepted")
+                .doesNotThrowAnyException();
         return answer.get();
     }
 
@@ -107,7 +109,11 @@ class ActivationIfMatchTagTest {
 
     @Test
     void aPutTakesTheRevisionAsIfMatchWithoutReadingThePacksForTheTag() {
-        service.put(ID, ActivationDocument.builder().packs(List.of(PackRef.of("alpha"))).build(), quoted(stored), null);
+        service.put(
+                ID,
+                ActivationDocument.builder().packs(List.of(PackRef.of("alpha"))).build(),
+                quoted(stored),
+                null);
 
         assertThat(packs.calls()).as("the write's own snapshot only").isEqualTo(1);
     }
@@ -118,7 +124,12 @@ class ActivationIfMatchTagTest {
         packs.answer(closure(SECOND));
 
         assertThatThrownBy(() -> service.put(
-                        ID, ActivationDocument.builder().packs(List.of(PackRef.of("alpha"))).build(), stale, null))
+                        ID,
+                        ActivationDocument.builder()
+                                .packs(List.of(PackRef.of("alpha")))
+                                .build(),
+                        stale,
+                        null))
                 .isInstanceOfSatisfying(
                         PreconditionException.class,
                         refused -> assertThat(refused.kind()).isEqualTo(PreconditionException.Kind.STALE));
@@ -128,11 +139,16 @@ class ActivationIfMatchTagTest {
     @Test
     void aClosureTagOfAnotherRevisionIsRefusedEvenOverTheCurrentClosure() {
         String anotherDocument = EntityTags.quote(EffectiveTag.activation(
-                                ActivationDocument.builder().build().document().revision(), closure(FIRST))
-                        .token());
+                        ActivationDocument.builder().build().document().revision(), closure(FIRST))
+                .token());
 
         assertThatThrownBy(() -> service.put(
-                        ID, ActivationDocument.builder().packs(List.of(PackRef.of("alpha"))).build(), anotherDocument, null))
+                        ID,
+                        ActivationDocument.builder()
+                                .packs(List.of(PackRef.of("alpha")))
+                                .build(),
+                        anotherDocument,
+                        null))
                 .isInstanceOfSatisfying(
                         PreconditionException.class,
                         refused -> assertThat(refused.kind()).isEqualTo(PreconditionException.Kind.STALE));
@@ -162,8 +178,8 @@ class ActivationIfMatchTagTest {
     void aSubResourceWriteTakesTheCurrentClosureTagAndRefusesAStaleOne() {
         String tag = closureTag(FIRST);
 
-        ActivationWrites.Outcome outcome = accepted(
-                () -> selections.select(ID, "directive", "D2", Optional.empty(), false, List.of(), tag));
+        ActivationWrites.Outcome outcome =
+                accepted(() -> selections.select(ID, "directive", "D2", Optional.empty(), false, List.of(), tag));
 
         assertThat(outcome.change().applied()).hasSize(1);
         packs.answer(closure(SECOND));
@@ -182,8 +198,8 @@ class ActivationIfMatchTagTest {
 
         assertThat(denied.change().applied()).hasSize(1);
         StoredActivation after = denied.stored();
-        String next = EntityTags.quote(EffectiveTag.activation(after.revision(), closure(FIRST))
-                .token());
+        String next = EntityTags.quote(
+                EffectiveTag.activation(after.revision(), closure(FIRST)).token());
         assertThat(accepted(() -> exclusions.reactivate(ID, "directive", "D2", next))
                         .change()
                         .cleared())

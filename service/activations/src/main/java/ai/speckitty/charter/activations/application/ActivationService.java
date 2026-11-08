@@ -381,7 +381,7 @@ public class ActivationService {
 
     private StoredActivation matchedActivation(ActivationId id, String ifMatch) {
         StoredActivation current = repository.find(id).orElseThrow(() -> stale(id));
-        if (!EntityTags.matches(ifMatch, current.revision().token())) {
+        if (!IfMatchTags.names(ifMatch, current, packs)) {
             throw stale(id);
         }
         return current;

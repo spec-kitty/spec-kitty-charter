@@ -179,7 +179,9 @@ class ActivationPresetServiceTest {
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_NOT_FOUND));
-        assertThat(packs.calls()).isZero();
+        assertThat(packs.calls())
+                .as("only the stale tag-shaped header read the closure, to see whether it is the closure tag")
+                .isEqualTo(1);
     }
 
     @Test

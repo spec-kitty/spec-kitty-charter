@@ -19,7 +19,6 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
-import ai.speckitty.charter.kernel.transport.EntityTags;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
 import java.util.List;
 import java.util.Objects;
@@ -35,7 +34,7 @@ import org.springframework.stereotype.Component;
  * <ol>
  *   <li>the preconditions, before anything else is judged and before the packs are read: no {@code If-Match} is
  *       {@code 428}, an activation that is not stored {@code 404 activation_not_found}, and an {@code If-Match} that
- *       does not name the stored revision {@code 412};
+ *       names neither the stored revision nor the current {@code getActivation} tag ({@link IfMatchTags}) {@code 412};
  *   <li>the body's faults the inbound adapter recorded ({@code 422 activation_invalid}, at their pointers), the path's
  *       kind ({@code 422}, a violation at {@code /kind}) and the body's cascade ({@code 422}, at {@code /cascade}), still
  *       before the packs are read;
@@ -151,7 +150,7 @@ public class ActivationWrites {
                 .find(id)
                 .orElseThrow(() -> new CharterRefusal(
                         RefusalCode.ACTIVATION_NOT_FOUND, "No activation is stored as '" + id + "'."));
-        if (!EntityTags.matches(ifMatch, stored.revision().token())) {
+        if (!IfMatchTags.names(ifMatch, stored, packs)) {
             throw stale(id);
         }
         return stored;
