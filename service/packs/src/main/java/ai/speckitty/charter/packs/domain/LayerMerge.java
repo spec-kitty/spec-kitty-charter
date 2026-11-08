@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -70,7 +71,8 @@ public final class LayerMerge {
                 overrides.add(overrideOf(urn, winner, loser));
             }
         });
-        return new MergedClosure(winners, overrides, Map.of(), new RequiredFloor(Map.of()));
+        Map<String, MergedClosure.MergedPreset> presets = mergedPresets(closure, factsByConfiguredId);
+        return new MergedClosure(winners, overrides, presets, floorOf(closure, factsByConfiguredId, winners.keySet()));
     }
 
     /**
@@ -111,6 +113,73 @@ public final class LayerMerge {
                 pack.descriptor().packId(),
                 pack.configured().id().value(),
                 pack.descriptor().name());
+    }
+
+    /** One preset id's copies: the pack that holds each, in closure order. */
+    private record Copy(PackUnderResolution pack, Preset preset) {}
+
+    /** Every copy of every preset id, in closure order; the ids in the order the closure first holds them. */
+    private static Map<String, List<Copy>> copiesById(
+            List<PackUnderResolution> closure, Map<String, PackCompositionFacts> facts) {
+        Map<String, List<Copy>> copies = new LinkedHashMap<>();
+        for (PackUnderResolution pack : closure) {
+            for (Preset preset : factsOf(pack, facts).presets()) {
+                copies.computeIfAbsent(preset.id(), ignored -> new ArrayList<>())
+                        .add(new Copy(pack, preset));
+            }
+        }
+        return copies;
+    }
+
+    private static PackCompositionFacts factsOf(PackUnderResolution pack, Map<String, PackCompositionFacts> facts) {
+        return facts.getOrDefault(pack.configured().id().value(), PackCompositionFacts.NONE);
+    }
+
+    /**
+     * Each preset id with the copy in force and the union of the must-have items of every copy (A1, C29, C31). The same
+     * winner function as an artifact's picks the copy: the pack last in closure order holds its level (a child after the
+     * parent it extends), and the nearest project level applies. The requirement is computed beside it and only
+     * tightens: a copy that wins never drops an item a copy that loses requires.
+     */
+    private static Map<String, MergedClosure.MergedPreset> mergedPresets(
+            List<PackUnderResolution> closure, Map<String, PackCompositionFacts> facts) {
+        Map<String, MergedClosure.MergedPreset> merged = new LinkedHashMap<>();
+        copiesById(closure, facts).forEach((id, copies) -> {
+            List<PackUnderResolution> holders = copies.stream().map(Copy::pack).toList();
+            PackUnderResolution winner = levelWinners(holders, Set.of()).getLast();
+            Preset applied = copies.stream()
+                    .filter(copy -> copy.pack()
+                            .descriptor()
+                            .packId()
+                            .equals(winner.descriptor().packId()))
+                    .findFirst()
+                    .orElseThrow()
+                    .preset();
+            merged.put(
+                    id,
+                    new MergedClosure.MergedPreset(applied, winner.descriptor().packId(), mustHaveOf(copies)));
+        });
+        return merged;
+    }
+
+    /** The must-have items of every copy, each once, in closure order. */
+    private static List<Urn> mustHaveOf(List<Copy> copies) {
+        Set<Urn> items = new LinkedHashSet<>();
+        copies.forEach(copy -> copy.preset()
+                .required()
+                .forEach((kind, ids) -> ids.forEach(id -> items.add(new Urn(NodeKind.of(kind), id)))));
+        return List.copyOf(items);
+    }
+
+    /** The floor over every copy of every preset, restricted to what the merged closure holds (C31, A10). */
+    private static RequiredFloor floorOf(
+            List<PackUnderResolution> closure, Map<String, PackCompositionFacts> facts, Set<Urn> held) {
+        return RequiredFloor.of(
+                closure.stream()
+                        .map(pack -> Map.entry(
+                                pack.descriptor().packId(), factsOf(pack, facts).presets()))
+                        .toList(),
+                held);
     }
 
     private static MergedClosure.Winner winnerOf(PackUnderResolution pack, Urn urn, PerPackPolicy.Level policy) {
