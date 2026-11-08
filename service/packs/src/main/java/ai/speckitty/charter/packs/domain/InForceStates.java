@@ -97,11 +97,19 @@ public record InForceStates(
      * @param required whether a governing preset requires it or a pack locks it; it no longer implies {@code ACTIVE}
      * @param satisfiedBy the artifact in force that overrides it, directly or through a chain, for a required artifact
      *     that is out of force; the smallest URN when several do. Never an enhancer
+     * @param overriddenBy the artifact in force that hides it, directly or through a chain (the smallest URN when several
+     *     do), present exactly when {@code reason} is {@link Reason#OVERRIDDEN}
      * @param bucket the skipped-report bucket, present only for an artifact the request selects or denies that is not in
      *     force
      */
     public record ArtifactState(
-            Urn urn, State state, Reason reason, boolean required, Optional<Urn> satisfiedBy, Optional<Bucket> bucket) {
+            Urn urn,
+            State state,
+            Reason reason,
+            boolean required,
+            Optional<Urn> satisfiedBy,
+            Optional<Urn> overriddenBy,
+            Optional<Bucket> bucket) {
 
         /**
          * Checks the fields.
@@ -111,6 +119,7 @@ public record InForceStates(
          * @param reason the reason
          * @param required whether it is on the floor or locked
          * @param satisfiedBy the artifact in force that satisfies its requirement
+         * @param overriddenBy the artifact in force that hides it
          * @param bucket its skipped-report bucket
          */
         public ArtifactState {
@@ -118,6 +127,7 @@ public record InForceStates(
             Objects.requireNonNull(state, "state");
             Objects.requireNonNull(reason, "reason");
             Objects.requireNonNull(satisfiedBy, "satisfiedBy");
+            Objects.requireNonNull(overriddenBy, "overriddenBy");
             Objects.requireNonNull(bucket, "bucket");
         }
 
