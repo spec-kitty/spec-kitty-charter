@@ -1105,6 +1105,88 @@ Feature: The effective reads answer what an activation puts in force, and why th
       """
     And the field at "/report/requiredNotInForce/0/reason" is "enhanced_target_not_in_force"
 
+  Scenario: A denied enhancer whose target is out of force is inactive with enhanced_target_not_in_force, and is not excluded
+    E9, decision 01M6YM02EG3X5V8G33T1HT5N0K: the enhancer row comes before the deny row, so the document's deny entry on E
+    does not make E excluded. E enhances T, which is not selected, so E is inactive with enhanced_target_not_in_force; it
+    is in enhancedTargetNotInForce with its target, it is not in skippedDeactivated, and summary.excluded does not count
+    it. E2 enhances T2, which is selected: the control, in force in the same answer.
+    Given the org pack "main" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: main-pack
+      pack_level: org
+      """
+    And the org pack "main" with the file "directives/T.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: T
+      title: T
+      intent: T
+      enforcement: required
+      """
+    And the org pack "main" with the file "directives/T2.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: T2
+      title: T2
+      intent: T2
+      enforcement: required
+      """
+    And the org pack "main" with the file "tactics/e.tactic.yaml":
+      """
+      schema_version: '1.0'
+      id: e
+      name: E
+      steps:
+        - title: Only step
+      """
+    And the org pack "main" with the file "tactics/e2.tactic.yaml":
+      """
+      schema_version: '1.0'
+      id: e2
+      name: E2
+      steps:
+        - title: Only step
+      """
+    And the org pack "main" with the file "enhance.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: tactic:e
+        target: directive:T
+        relation: enhances
+      - source: tactic:e2
+        target: directive:T2
+        relation: enhances
+      """
+    And the activation "a-1" holds:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"tactic": ["e2"], "directive": ["T2"]}, "deactivated": {"tactic": ["e"]}}
+      """
+    When I GET "/activations/a-1/artifacts?kind=tactic"
+    Then the response status is 200
+    And the field at "/items" holds exactly the ids:
+      """
+      tactic:e
+      tactic:e2
+      """
+    And the field at "/items/0/state" is "inactive"
+    And the field at "/items/0/reason" is "enhanced_target_not_in_force"
+    And the field at "/items/1/state" is "active"
+    And the field at "/summary/excluded" is 0
+    And the field at "/summary/skipped" is 1
+    When I GET "/activations/a-1/skipped"
+    Then the response status is 200
+    And the field at "/report/enhancedTargetNotInForce" holds exactly the ids:
+      """
+      tactic:e
+      """
+    And the field at "/report/skippedDeactivated" holds exactly 0 items
+
   Scenario: B1 - a version pin no pack holds is in pinNotHeld, and a held pin of the same document is not
     B1, FR-026: the document pins main at 9.9.9, which main does not hold, and other at 1.0.0, which it does. A read
     reports the unheld pin (a write would drop it): pinNotHeld holds main's pin alone. The directive OD of other is the
