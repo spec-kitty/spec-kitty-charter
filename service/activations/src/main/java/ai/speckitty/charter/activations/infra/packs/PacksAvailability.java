@@ -3,6 +3,9 @@ package ai.speckitty.charter.activations.infra.packs;
 import ai.speckitty.charter.activations.application.AvailablePacks;
 import ai.speckitty.charter.activations.application.PacksSession;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
+import ai.speckitty.charter.activations.domain.MergedSnapshot;
+import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
+import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
 import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
@@ -96,6 +99,16 @@ public class PacksAvailability implements AvailablePacks {
         @Override
         public Reach reach(ReachPlan plan) {
             return Reach.empty();
+        }
+
+        @Override
+        public MergedSnapshot merged() {
+            return MergedSnapshot.empty();
+        }
+
+        @Override
+        public InForceAnswer inForce(InForceQuery query) {
+            return InForceAnswer.empty();
         }
     }
 

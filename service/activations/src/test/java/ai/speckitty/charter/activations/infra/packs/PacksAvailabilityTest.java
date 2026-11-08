@@ -9,36 +9,54 @@ import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.CascadeRules;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.activations.domain.DocumentRules;
+import ai.speckitty.charter.activations.domain.EffectiveSet;
+import ai.speckitty.charter.activations.domain.EffectiveSkippedReport;
+import ai.speckitty.charter.activations.domain.MergedSnapshot;
+import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
+import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
 import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.PackDependency;
+import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.application.ClosureView;
+import ai.speckitty.charter.packs.application.EdgeIndex;
 import ai.speckitty.charter.packs.application.OfferingReadService.OfferingEntry;
 import ai.speckitty.charter.packs.application.ReachRequest;
 import ai.speckitty.charter.packs.application.ReachResult;
 import ai.speckitty.charter.packs.application.UnknownRootException;
+import ai.speckitty.charter.packs.domain.ConfiguredPack;
+import ai.speckitty.charter.packs.domain.InForceStates;
 import ai.speckitty.charter.packs.domain.MutabilityLevel;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
+import ai.speckitty.charter.packs.domain.PackCompositionFacts;
+import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.PresetItem;
 import ai.speckitty.charter.packs.domain.RequiredFloor;
 import ai.speckitty.charter.packs.domain.ResolvedEdge;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -313,5 +331,289 @@ class PacksAvailabilityTest {
         assertThat(reach.stopped().get(qRef)).containsExactly(new Reach.Via(pRef, RelationType.SPECIALIZES_FROM));
         assertThat(reach.behindStopped()).containsExactly(rRef);
         assertThat(reach.ancestorsPassed()).containsExactly(qRef);
+    }
+
+    // ---- the merged closure and the in-force states, as values (T120) ----
+
+    /** A closure of hand-built packs, merged for real: the facts each pack holds, in merge order. */
+    private static final class Merging {
+
+        private final List<PackUnderResolution> packs = new ArrayList<>();
+        private final Map<String, PackCompositionFacts> facts = new LinkedHashMap<>();
+        private final Map<String, MutabilityPolicySource> policies = new LinkedHashMap<>();
+
+        /** A pack at a level, holding bare URNs, depending on the named packs and writing the edges. */
+        Merging pack(
+                String name,
+                PackLevel level,
+                List<String> dependsOn,
+                List<String> held,
+                Map<String, List<String>> languages,
+                List<Preset> presets,
+                MutabilityPolicySource policy,
+                Relationship... edges) {
+            PackDescriptor descriptor = new PackDescriptor(
+                    descriptorId(name),
+                    "1.0.0",
+                    Optional.empty(),
+                    name,
+                    Optional.empty(),
+                    Optional.empty(),
+                    PackPaths.none(),
+                    dependsOn.stream()
+                            .map(other -> new PackDependency(descriptorId(other), ">=0"))
+                            .toList());
+            packs.add(new PackUnderResolution(
+                    new ConfiguredPack(new PackIdentifier(name), level), descriptor, List.of(), held));
+            facts.put(
+                    name,
+                    new PackCompositionFacts(
+                            List.of(), held, List.of(), policy, presets, Arrays.asList(edges), languages));
+            policies.put(descriptorId(name), policy);
+            return this;
+        }
+
+        ClosureView view() {
+            PerPackPolicy policy = new PerPackPolicy(policies);
+            return new ClosureView(
+                    List.of(),
+                    Map.of(),
+                    Map.of(),
+                    new RequiredFloor(Map.of()),
+                    policy,
+                    packs.stream().map(pack -> pack.descriptor().packId()).toList(),
+                    List.of(),
+                    Map.of(),
+                    "sha256:merged",
+                    EdgeIndex.of(packs, facts),
+                    new ClosureView.MergeInputs(packs, facts));
+        }
+
+        static String descriptorId(String name) {
+            return "id-" + name;
+        }
+    }
+
+    private static Urn urn(String text) {
+        return Urn.parse(text).orElseThrow();
+    }
+
+    private static ArtifactRef ref(String text) {
+        return ArtifactRef.of(urn(text)).orElseThrow();
+    }
+
+    private static Relationship edge(String from, RelationType type, String to, String when, String rationale) {
+        return new Relationship(
+                urn(from), urn(to), type, Optional.ofNullable(when), Optional.ofNullable(rationale));
+    }
+
+    /**
+     * beta (built-in) holds D1, T, L and a template; alpha (org) holds D1 again and a step of a mission type, and writes
+     * D1 suggests T. T declares two languages.
+     */
+    private static Merging layered() {
+        return new Merging()
+                .pack(
+                        "beta",
+                        PackLevel.BUILT_IN,
+                        List.of(),
+                        List.of("directive:D1", "tactic:T", "tactic:L", "template:tpl"),
+                        Map.of("tactic:T", List.of("python", "java")),
+                        List.of(),
+                        MutabilityPolicySource.builder()
+                                .entry(urn("tactic:L"), MutabilityLevel.LOCKED)
+                                .build())
+                .pack(
+                        "alpha",
+                        PackLevel.ORG,
+                        List.of("beta"),
+                        List.of("directive:D1", "mission_type:M", "action:M/step"),
+                        Map.of(),
+                        List.of(),
+                        MutabilityPolicySource.empty(),
+                        edge("directive:D1", RelationType.SUGGESTS, "tactic:T", "the change is large", "T checks it"));
+    }
+
+    @Test
+    void aSessionMapsTheMergedClosureIntoValues() {
+        closures.answers(Optional.empty(), layered().view());
+
+        MergedSnapshot merged = adapter.session(Optional.empty()).merged();
+
+        assertThat(merged.winners().keySet())
+                .as("artifacts of an activatable kind only: no template, no step")
+                .containsExactlyInAnyOrder(
+                        ref("directive:D1"), ref("tactic:T"), ref("tactic:L"), ref("mission_type:M"));
+        assertThat(merged.winners().get(ref("directive:D1")))
+                .isEqualTo(new MergedSnapshot.Winner("alpha", PackLevel.ORG, EffectiveSet.Policy.OPEN));
+        assertThat(merged.winners().get(ref("tactic:T")))
+                .isEqualTo(new MergedSnapshot.Winner("beta", PackLevel.BUILT_IN, EffectiveSet.Policy.OPEN));
+        assertThat(merged.winners().get(ref("tactic:L")).policy()).isEqualTo(EffectiveSet.Policy.LOCKED);
+        assertThat(merged.languages()).containsOnlyKeys(ref("tactic:T"));
+        assertThat(merged.languages().get(ref("tactic:T")))
+                .as("in declared order")
+                .containsExactly("python", "java");
+        assertThat(merged.layerOverrides())
+                .containsExactly(new MergedSnapshot.LayerOverride(
+                        ref("directive:D1"),
+                        new MergedSnapshot.LayerOverride.Side("alpha", PackLevel.ORG),
+                        new MergedSnapshot.LayerOverride.Side("beta", PackLevel.BUILT_IN)));
+        assertThat(merged.edges())
+                .containsExactly(new MergedSnapshot.Edge(
+                        ref("directive:D1"),
+                        ref("tactic:T"),
+                        RelationType.SUGGESTS,
+                        Optional.of("the change is large"),
+                        Optional.of("T checks it")));
+    }
+
+    @Test
+    void aSessionMapsTheInForceStatesIntoValues() {
+        closures.answers(Optional.empty(), layered().view());
+        InForceQuery query = new InForceQuery(
+                Set.of(ref("directive:D1"), ref("tactic:ghost")),
+                Set.of(ref("tactic:T"), ref("tactic:L")),
+                Optional.of(Set.of("java")),
+                Map.of());
+
+        InForceAnswer answered = adapter.session(Optional.empty()).inForce(query);
+
+        assertThat(answered.states().keySet())
+                .containsExactlyInAnyOrder(
+                        ref("directive:D1"), ref("tactic:T"), ref("tactic:L"), ref("mission_type:M"));
+        assertThat(answered.states().get(ref("directive:D1")))
+                .isEqualTo(new MergedSnapshot.ArtifactState(
+                        ref("directive:D1"),
+                        EffectiveSet.State.ACTIVE,
+                        EffectiveSet.Reason.SELECTED,
+                        false,
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty()));
+        assertThat(answered.states().get(ref("tactic:T")))
+                .as("denied, and T declares java")
+                .isEqualTo(new MergedSnapshot.ArtifactState(
+                        ref("tactic:T"),
+                        EffectiveSet.State.EXCLUDED,
+                        EffectiveSet.Reason.DEACTIVATED,
+                        false,
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.of(EffectiveSet.Bucket.DEACTIVATED)));
+        assertThat(answered.states().get(ref("tactic:L")).reason())
+                .as("a lock holds against the deny entry")
+                .isEqualTo(EffectiveSet.Reason.LOCKED);
+        assertThat(answered.staleIds()).containsExactly(ref("tactic:ghost"));
+        assertThat(answered.denyNotApplied())
+                .containsExactly(new EffectiveSkippedReport.DenyNotApplied(
+                        ref("tactic:L"), EffectiveSkippedReport.DenyReason.LOCKED));
+    }
+
+    @Test
+    void anOverriddenArtifactNamesItsOverriderAndAFloorItemNobodyHoldsIsReported() {
+        Preset governing = new Preset(
+                "governing",
+                "T and a ghost are required.",
+                Map.of(ArtifactKind.TACTIC, List.of(PresetItem.mustHave("T")), ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("ghost"))));
+        Merging closure = new Merging()
+                .pack(
+                        "alpha",
+                        PackLevel.ORG,
+                        List.of(),
+                        List.of("tactic:E", "tactic:T", "tactic:U"),
+                        Map.of(),
+                        List.of(governing),
+                        MutabilityPolicySource.empty(),
+                        edge("tactic:E", RelationType.OVERRIDES, "tactic:U", null, null));
+        closures.answers(Optional.empty(), closure.view());
+        InForceQuery query = new InForceQuery(
+                Set.of(ref("tactic:E"), ref("tactic:U")), Set.of(), Optional.empty(), Map.of());
+
+        InForceAnswer answered = adapter.session(Optional.empty()).inForce(query);
+
+        assertThat(answered.states().get(ref("tactic:U")).overriddenBy()).contains(ref("tactic:E"));
+        assertThat(answered.states().get(ref("tactic:U")).bucket()).contains(EffectiveSet.Bucket.OVERRIDDEN);
+        assertThat(answered.states().get(ref("tactic:T")))
+                .as("required, so in force although the document does not select it")
+                .satisfies(state -> {
+                    assertThat(state.reason()).isEqualTo(EffectiveSet.Reason.REQUIRED);
+                    assertThat(state.required()).isTrue();
+                });
+        assertThat(answered.requiredNotHeld()).containsExactly(ref("directive:ghost"));
+    }
+
+    @Test
+    void theMergedClosureAndTheInForceStatesAnswerFromTheOneReadOfTheSession() {
+        closures.answers(Optional.empty(), layered().view());
+        InForceQuery query = new InForceQuery(Set.of(ref("directive:D1")), Set.of(), Optional.empty(), Map.of());
+
+        PacksSession session = adapter.session(Optional.empty());
+        session.snapshot();
+        session.merged();
+        session.inForce(query);
+        session.inForce(query);
+        session.merged();
+
+        assertThat(closures.calls)
+                .as("NFR-007: one verified read for the snapshot, the merge and every in-force question")
+                .isEqualTo(1);
+    }
+
+    @Test
+    void aMergeRefusalReachesTheCallerUnchanged() {
+        Merging closure = new Merging()
+                .pack(
+                        "beta",
+                        PackLevel.BUILT_IN,
+                        List.of(),
+                        List.of("directive:D1"),
+                        Map.of(),
+                        List.of(),
+                        MutabilityPolicySource.builder()
+                                .entry(urn("directive:D1"), MutabilityLevel.LOCKED)
+                                .build())
+                .pack(
+                        "alpha",
+                        PackLevel.ORG,
+                        List.of("beta"),
+                        List.of("directive:D1"),
+                        Map.of(),
+                        List.of(),
+                        MutabilityPolicySource.empty());
+        closures.answers(Optional.empty(), closure.view());
+        PacksSession session = adapter.session(Optional.empty());
+
+        assertThatThrownBy(session::merged)
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> assertThat(refusal.code())
+                        .isEqualTo(RefusalCode.PACK_UNREADABLE));
+        assertThatThrownBy(() -> session.inForce(new InForceQuery(Set.of(), Set.of(), Optional.empty(), Map.of())))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> assertThat(refusal.code())
+                        .isEqualTo(RefusalCode.PACK_UNREADABLE));
+    }
+
+    @Test
+    void anUnresolvedSessionHoldsNoMergedClosureAndNoStates() {
+        closures.throwsOn(
+                Optional.of(List.of(new PackIdentifier("ghost"))), new UnknownRootException(List.of("ghost")));
+
+        PacksSession session = adapter.session(Optional.of(List.of("ghost")));
+
+        assertThat(session.merged()).isEqualTo(MergedSnapshot.empty());
+        assertThat(session.inForce(new InForceQuery(Set.of(), Set.of(), Optional.empty(), Map.of())))
+                .isEqualTo(InForceAnswer.empty());
+    }
+
+    @Test
+    void everyStateReasonAndBucketOfThePacksSliceHasItsCounterpartInTheDomain() {
+        assertThat(names(InForceStates.State.values())).isSubsetOf(names(EffectiveSet.State.values()));
+        assertThat(names(InForceStates.Reason.values())).isSubsetOf(names(EffectiveSet.Reason.values()));
+        assertThat(names(InForceStates.Bucket.values())).isSubsetOf(names(EffectiveSet.Bucket.values()));
+        assertThat(names(InForceStates.DenyReason.values()))
+                .isSubsetOf(names(EffectiveSkippedReport.DenyReason.values()));
+        assertThat(names(MutabilityLevel.values())).isSubsetOf(names(EffectiveSet.Policy.values()));
+    }
+
+    private static Set<String> names(Enum<?>[] constants) {
+        return new LinkedHashSet<>(Stream.of(constants).map(Enum::name).toList());
     }
 }
