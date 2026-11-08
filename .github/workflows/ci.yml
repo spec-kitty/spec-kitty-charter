@@ -94,7 +94,7 @@ jobs:
           # trip (epic #186) for what :packs reads: every contract, the service and the build.
           service_re='^(contracts/|service/|build-logic/|config/|gradle/|deploy/|scripts/ci/fixtures/|\.gitignore$|(.*/)?\.env|[^/]+\.gradle\.kts$|gradle\.properties$|gradlew$|scripts/release/|scripts/packs/|packs/open-packs\.lock\.yaml$|\.github/workflows/(service|ci|sonar|contract-release|service-release)\.yml$|client-java/|docs/guides/generate-a-client\.md$)'
           wholepack_re='^(contracts/|service/|build-logic/|gradle/|[^/]+\.gradle\.kts$|gradle\.properties$|gradlew$|\.github/workflows/(whole-pack|ci)\.yml$)'
-          docs_re='^(docs/|site/|scripts/docs/|scripts/ci/|\.markdownlint-cli2\.jsonc$|cspell\.json$|lychee\.toml$|\.github/workflows/(docs-cleanliness|ci|mutation-nightly)\.yml$)'
+          docs_re='^(docs/|site/|scripts/docs/|scripts/ci/|\.markdownlint-cli2\.jsonc$|cspell\.json$|\.github/workflows/(docs-cleanliness|ci|mutation-nightly)\.yml$)'
           if printf '%s\n' "$changed" | grep -Eq "$service_re"; then echo "service=true"; else echo "service=false"; fi >> "$GITHUB_OUTPUT"
           if printf '%s\n' "$changed" | grep -Eq "$docs_re"; then echo "docs=true"; else echo "docs=false"; fi >> "$GITHUB_OUTPUT"
           if printf '%s\n' "$changed" | grep -Eq "$wholepack_re"; then echo "wholepack=true"; else echo "wholepack=false"; fi >> "$GITHUB_OUTPUT"

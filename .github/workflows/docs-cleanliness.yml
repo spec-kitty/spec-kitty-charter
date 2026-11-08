@@ -1,7 +1,8 @@
 name: Docs cleanliness
 
 # The gates that keep docs/ from drifting: lint, spelling, terminology, frontmatter,
-# freshness, link and anchor integrity, ADR/changelog indexes, orphans and diagram freshness.
+# freshness, link and anchor integrity, ADR/changelog indexes, orphans and diagram freshness. The external link check
+# asks remote sites, so it runs nightly in docs-nightly.yml, not on pull requests.
 # Each check is its own job or step so a failure names itself. It also runs the unit tests of scripts/ci
 # (the mutation nightly's summary script), which no other pull-request workflow runs. The docsite build and its
 # deploy live in docs-site.yml. Rule -> check table: docs/_meta/doc-rules.yaml.
@@ -20,11 +21,10 @@ on:
       - 'scripts/ci/**'
       - '.markdownlint-cli2.jsonc'
       - 'cspell.json'
-      - 'lychee.toml'
       - '.github/workflows/docs-cleanliness.yml'
       - '.github/workflows/mutation-nightly.yml'
   schedule:
-    # Weekly, so a link that rots on its own is noticed without a docs change.
+    # Weekly, so a page that goes stale on its own is noticed without a docs change.
     - cron: '17 5 * * 1'
   workflow_dispatch:
 
@@ -39,8 +39,6 @@ env:
   # Tool pins. Bump deliberately; the versions are what the committed config was tuned to.
   MARKDOWNLINT_CLI2_VERSION: 0.18.1
   CSPELL_VERSION: 9.2.0
-  LYCHEE_VERSION: 0.21.0
-  LYCHEE_SHA256: a06547250f10021dcafc6ed5bb20fca75835b65711745b63cfdda34c29ff6a73
 
 jobs:
   docs-checks:
@@ -196,20 +194,3 @@ jobs:
           path: ${{ runner.temp }}/rendered-diagrams
           if-no-files-found: ignore
 
-  external-links:
-    name: External links (non-gating)
-    runs-on: ubuntu-24.04
-    # Remote sites flake. Reported, never required: a red here does not block a pull request.
-    continue-on-error: true
-    steps:
-      - name: Checkout
-        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
-      - name: Install lychee
-        run: |
-          curl -fsSL -o lychee.tgz "https://github.com/lycheeverse/lychee/releases/download/lychee-v${LYCHEE_VERSION}/lychee-x86_64-unknown-linux-gnu.tar.gz"
-          echo "${LYCHEE_SHA256}  lychee.tgz" | sha256sum -c -
-          tar xzf lychee.tgz lychee
-      - name: lychee
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./lychee --config lychee.toml 'docs/**/*.md'
