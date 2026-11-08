@@ -115,72 +115,72 @@ public enum RefusalCode {
 
     /**
      * A registration of the same {@code pack_version} with another revision than the one the version history holds
-     * (ADR-0065 D2, D9). Answered as 409. Reserved: the whole-pack registration that raises it is not built yet.
+     * (ADR-0065 D2, D9). Answered as 409.
      */
     PACK_VERSION_CONFLICT("pack_version_conflict"),
     /**
      * Another artifact or pack still refers to the artifact a {@code DELETE} or a whole-pack replace removes; the
-     * refusal names the referring packs and artifacts (ADR-0065 D4, FR-036). Answered as 409. Reserved.
+     * refusal names the referring packs and artifacts (ADR-0065 D4, FR-036). Answered as 409.
      */
     ARTIFACT_REFERENCED("artifact_referenced"),
     /**
      * No graph document of the pack holds an edge on the pair a relationship {@code DELETE} names, and no derived
-     * relation joins it (ADR-0065 D4). Answered as 404. Reserved.
+     * relation joins it (ADR-0065 D4). Answered as 404.
      */
     RELATIONSHIP_NOT_FOUND("relationship_not_found"),
     /**
      * The pair a relationship {@code DELETE} names is held outside {@code registered.graph.yaml}, authored in a source
      * shard or {@code drg/fragment.yaml} or derived, or in both kinds of document: a {@code DELETE} removes only a
      * registered edge and never rewrites an author file (ADR-0065 D4, decision DM-01M6TQ62HXYF362GAFS2BZ3PGF). Answered
-     * as 409. Reserved.
+     * as 409.
      */
     RELATIONSHIP_NOT_REGISTERED("relationship_not_registered"),
-    /** No registration is held under the id of a status read (ADR-0065 D8). Answered as 404. Reserved. */
+    /** No registration is held under the id of a status read (ADR-0065 D8). Answered as 404. */
     REGISTRATION_NOT_FOUND("registration_not_found"),
     /**
      * A source the service refuses: a host off the allowlist, an address that is not global, a bad ref, the wrong media
      * type, a digest or commit mismatch, or a descriptor whose name is not the target (ADR-0065 D10). Answered as 422,
-     * in a refused registration status. Reserved.
+     * in a refused registration status.
      */
     PACK_SOURCE_REFUSED("pack_source_refused"),
     /**
      * Registration or the source kind is switched off, or the system git is missing or older than 2.50.1 (ADR-0065
-     * D10, NFR-011). Answered as 503. Reserved.
+     * D10, NFR-011). Answered as 503.
      */
     PACK_SOURCE_UNAVAILABLE("pack_source_unavailable"),
     /**
      * A registration or {@code DELETE} would leave an {@code overrides} edge onto a target that is not open (IC-15).
-     * Answered as 422, naming the packs. Reserved.
+     * Answered as 422, naming the packs.
      */
     OVERRIDE_NOT_PERMITTED("override_not_permitted"),
     /**
      * A registration or {@code DELETE} would leave an {@code enhances} cycle, or an enhancer with no route to a
-     * non-enhancer (IC-15). Answered as 422, naming the packs. Reserved.
+     * non-enhancer (IC-15). Answered as 422, naming the packs.
      */
     ENHANCES_CYCLE("enhances_cycle"),
     /**
      * A registration or {@code DELETE} would leave an artifact that both enhances and overrides one target (IC-15).
-     * Answered as 422, naming the packs. Reserved.
+     * Answered as 422, naming the packs.
      */
     CONFLICTING_RELATIONS("conflicting_relations"),
     /**
      * A registration or {@code DELETE} would leave an {@code overrides} edge that resolves to its own source (IC-15).
-     * Answered as 422, naming the packs. Reserved.
+     * Answered as 422, naming the packs.
      */
     SELF_OVERRIDE("self_override"),
     /**
      * A registration or {@code DELETE} would leave a cycle of {@code overrides} edges (IC-15). Answered as 422, naming
-     * the packs. Reserved.
+     * the packs.
      */
     OVERRIDE_CYCLE("override_cycle"),
     /**
      * A registration job ended at the source deadline plus 30 seconds (ADR-0065 D8, NFR-008). Answered as 504, in a
-     * refused registration status. Reserved.
+     * refused registration status.
      */
     REGISTRATION_TIMED_OUT("registration_timed_out"),
     /**
      * Less than twice the archive bound is free where a registration stages its pack (NFR-009). Answered as 503, in a
-     * refused registration status. Reserved.
+     * refused registration status.
      */
     PACK_STORAGE_FULL("pack_storage_full");
 

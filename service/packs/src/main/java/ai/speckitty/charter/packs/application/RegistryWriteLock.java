@@ -17,8 +17,10 @@ import java.util.function.Supplier;
  * registration job ends {@code refused} with {@code 503} and the caller retries. Readers take no lock.
  *
  * <p><strong>One replica only.</strong> The lock is in-JVM (ADR-0061): a second replica, or a second process writing the
- * pack domain, is not serialized by it. Revisit with ADR-0061's cross-process lock item. The activations store never
- * takes it, nor the per-pack locks, so the two cannot deadlock.
+ * pack domain, is not serialized by it. Revisit with ADR-0061's cross-process lock item. The activation writes take it too
+ * (ADR-0065 D12, through the activations slice's {@code RegistryWriteCoordination}), so a document is never judged
+ * against a pack set a registration is replacing; they take no per-pack lock, and every writer takes this lock first, so
+ * the two cannot deadlock.
  */
 public final class RegistryWriteLock {
 
