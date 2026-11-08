@@ -1,8 +1,9 @@
 title: SelectedArtifacts
 description: >-
   The allow lists: per activatable kind, the artifacts the activation selects. A kind that is absent selects none of
-  the kind, skill included (ADR-0053 d10); what a pack requires or locks is in force whatever the lists hold. One
-  property per ActivatableKind, so a kind outside that vocabulary is refused (422 activation_invalid).
+  the kind, skill and mission_type included (ADR-0053 d10); what a pack requires or locks is in force whatever the
+  lists hold. One property per ActivatableKind, so a kind outside that vocabulary is refused (422
+  activation_invalid).
 type: object
 additionalProperties: false
 properties:
@@ -84,6 +85,16 @@ properties:
     x-source:
       path: contracts/offering/schemas/ActivationConfig.schema.json
       symbol: '#/$defs/SelectedArtifacts/properties/anti_pattern'
+  mission_type:
+    allOf:
+    - $ref: ArtifactIdList.yaml
+    description: >-
+      The mission_type ids: the mission types the activation selects. Selecting a mission type cascades to the steps
+      it
+      holds (Q1). Absent means none of the kind; [] means none; a list means exactly those.
+    x-source:
+      path: contracts/offering/schemas/ActivationConfig.schema.json
+      symbol: '#/$defs/SelectedArtifacts/properties/mission_type'
 x-source:
   path: contracts/offering/schemas/ActivationConfig.schema.json
   symbol: '#/$defs/SelectedArtifacts'

@@ -111,7 +111,79 @@ public enum RefusalCode {
     /** A pack-qualified reference names a pack outside the referring pack's {@code depends_on} closure. */
     PACK_REFERENCE_PACK_MISSING("pack_reference_pack_missing"),
     /** A pack-qualified reference names a pack of the closure that does not hold the artifact. */
-    PACK_REFERENCE_ARTIFACT_MISSING("pack_reference_artifact_missing");
+    PACK_REFERENCE_ARTIFACT_MISSING("pack_reference_artifact_missing"),
+
+    /**
+     * A registration of the same {@code pack_version} with another revision than the one the version history holds
+     * (ADR-0065 D2, D9). Answered as 409.
+     */
+    PACK_VERSION_CONFLICT("pack_version_conflict"),
+    /**
+     * Another artifact or pack still refers to the artifact a {@code DELETE} or a whole-pack replace removes; the
+     * refusal names the referring packs and artifacts (ADR-0065 D4, FR-036). Answered as 409.
+     */
+    ARTIFACT_REFERENCED("artifact_referenced"),
+    /**
+     * No graph document of the pack holds an edge on the pair a relationship {@code DELETE} names, and no derived
+     * relation joins it (ADR-0065 D4). Answered as 404.
+     */
+    RELATIONSHIP_NOT_FOUND("relationship_not_found"),
+    /**
+     * The pair a relationship {@code DELETE} names is held outside {@code registered.graph.yaml}, authored in a source
+     * shard or {@code drg/fragment.yaml} or derived, or in both kinds of document: a {@code DELETE} removes only a
+     * registered edge and never rewrites an author file (ADR-0065 D4, decision DM-01M6TQ62HXYF362GAFS2BZ3PGF). Answered
+     * as 409.
+     */
+    RELATIONSHIP_NOT_REGISTERED("relationship_not_registered"),
+    /** No registration is held under the id of a status read (ADR-0065 D8). Answered as 404. */
+    REGISTRATION_NOT_FOUND("registration_not_found"),
+    /**
+     * A source the service refuses: a host off the allowlist, an address that is not global, a bad ref, the wrong media
+     * type, a digest or commit mismatch, or a descriptor whose name is not the target (ADR-0065 D10). Answered as 422,
+     * in a refused registration status.
+     */
+    PACK_SOURCE_REFUSED("pack_source_refused"),
+    /**
+     * Registration or the source kind is switched off, or the system git is missing or older than 2.50.1 (ADR-0065
+     * D10, NFR-011). Answered as 503.
+     */
+    PACK_SOURCE_UNAVAILABLE("pack_source_unavailable"),
+    /**
+     * A registration or {@code DELETE} would leave an {@code overrides} edge onto a target that is not open (IC-15).
+     * Answered as 422, naming the packs.
+     */
+    OVERRIDE_NOT_PERMITTED("override_not_permitted"),
+    /**
+     * A registration or {@code DELETE} would leave an {@code enhances} cycle, or an enhancer with no route to a
+     * non-enhancer (IC-15). Answered as 422, naming the packs.
+     */
+    ENHANCES_CYCLE("enhances_cycle"),
+    /**
+     * A registration or {@code DELETE} would leave an artifact that both enhances and overrides one target (IC-15).
+     * Answered as 422, naming the packs.
+     */
+    CONFLICTING_RELATIONS("conflicting_relations"),
+    /**
+     * A registration or {@code DELETE} would leave an {@code overrides} edge that resolves to its own source (IC-15).
+     * Answered as 422, naming the packs.
+     */
+    SELF_OVERRIDE("self_override"),
+    /**
+     * A registration or {@code DELETE} would leave a cycle of {@code overrides} edges (IC-15). Answered as 422, naming
+     * the packs.
+     */
+    OVERRIDE_CYCLE("override_cycle"),
+    /**
+     * A registration job ended at the source deadline plus 30 seconds (ADR-0065 D8, NFR-008). Answered as 504, in a
+     * refused registration status.
+     */
+    REGISTRATION_TIMED_OUT("registration_timed_out"),
+    /**
+     * Less than the per-job peak, about three times the archive bound, is free where a registration stages and stores its
+     * pack (NFR-009). Answered as 503: synchronously for an upload whose declared length the volumes cannot hold, else in a
+     * refused registration status.
+     */
+    PACK_STORAGE_FULL("pack_storage_full");
 
     private final String token;
 
@@ -134,7 +206,8 @@ public enum RefusalCode {
      * @return {@code true} for {@link #MISSION_TYPE_NOT_FOUND}, {@link #ACTION_NOT_FOUND}, {@link #PACK_NOT_FOUND},
      *     {@link #TACTIC_NOT_FOUND}, {@link #DIRECTIVE_NOT_FOUND}, {@link #STYLEGUIDE_NOT_FOUND},
      *     {@link #PARADIGM_NOT_FOUND}, {@link #TOOLGUIDE_NOT_FOUND}, {@link #KIND_NOT_FOUND},
-     *     {@link #ACTIVATION_NOT_FOUND}, {@link #ARTIFACT_NOT_FOUND} and {@link #PRESET_NOT_FOUND}
+     *     {@link #ACTIVATION_NOT_FOUND}, {@link #ARTIFACT_NOT_FOUND}, {@link #PRESET_NOT_FOUND},
+     *     {@link #RELATIONSHIP_NOT_FOUND} and {@link #REGISTRATION_NOT_FOUND}
      */
     public boolean notFound() {
         return this == MISSION_TYPE_NOT_FOUND
@@ -148,6 +221,8 @@ public enum RefusalCode {
                 || this == KIND_NOT_FOUND
                 || this == ACTIVATION_NOT_FOUND
                 || this == ARTIFACT_NOT_FOUND
-                || this == PRESET_NOT_FOUND;
+                || this == PRESET_NOT_FOUND
+                || this == RELATIONSHIP_NOT_FOUND
+                || this == REGISTRATION_NOT_FOUND;
     }
 }

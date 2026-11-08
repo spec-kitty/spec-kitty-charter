@@ -11,11 +11,15 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.application.StagedPack;
+import ai.speckitty.charter.packs.application.WholePackWriteStore;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.Skill;
 import ai.speckitty.charter.packs.domain.Template;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Proxy;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -23,6 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -707,6 +712,168 @@ class WholePackStoreTest {
                 .hasMessage("path templates/x.tactic.yaml is a pack file of kind tactic, not a template");
         assertThat(host.resolve("out")).doesNotExist();
         assertThat(stagingLeftovers(host)).isEmpty();
+    }
+
+    // ---- the staged load of a registration (IC-04 step 2) -----------------------------------------------------------
+
+    @Test
+    @DisplayName(
+            "loadStaged digests each artifact as it would be written, so a changed artifact is told from a kept one")
+    void loadStagedDigestsEachArtifactAsItWouldBeWritten(@TempDir Path host) throws IOException {
+        Path pack = richPack(host);
+        Urn alpha = new Urn(NodeKind.TACTIC, "alpha-tactic");
+        Urn gamma = new Urn(NodeKind.TACTIC, "gamma-tactic");
+        WholePackWriteStore.Contents before = store.loadStaged(new StagedPack(pack));
+        write(
+                pack,
+                PackFixtures.ALPHA_FILE,
+                Files.readString(pack.resolve(PackFixtures.ALPHA_FILE), UTF_8)
+                        .replace("Alpha tactic", "Alpha, changed"));
+
+        WholePackWriteStore.Contents after = store.loadStaged(new StagedPack(pack));
+
+        assertThat(before.digests()).containsKeys(alpha, gamma);
+        assertThat(after.digests().get(alpha)).isNotEqualTo(before.digests().get(alpha));
+        assertThat(after.digests().get(gamma)).isEqualTo(before.digests().get(gamma));
+    }
+
+    @Test
+    @DisplayName("loadStaged hands the compose what the pack holds and the typed edges it writes")
+    void loadStagedHandsOverTheFactsOfThePack(@TempDir Path host) throws IOException {
+        Path pack = richPack(host);
+
+        WholePackWriteStore.Contents contents = store.loadStaged(new StagedPack(pack));
+
+        assertThat(contents.facts().defined())
+                .contains("tactic:alpha-tactic", "tactic:gamma-tactic", "directive:DIRECTIVE_043");
+        assertThat(contents.pack().descriptor().packId()).isEqualTo("01M5DEH8R0VNDTR1PF1XTVRE0A");
+    }
+
+    @Test
+    @DisplayName("loadStaged refuses with validation_failed and one violation per fault, never a pack_unreadable")
+    void loadStagedRefusesWithOneViolationPerFault(@TempDir Path host) throws IOException {
+        Path pack = richPack(host);
+        write(pack, "notes/readme.txt", "stray");
+        write(pack, BROKEN_FILE, "id: [unclosed");
+
+        assertThatThrownBy(() -> store.loadStaged(new StagedPack(pack)))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
+                    assertThat(refusal.violations())
+                            .extracting(violation -> violation.pointer())
+                            .contains("notes/readme.txt", BROKEN_FILE);
+                });
+        assertThatThrownBy(() -> store.loadStored(pack))
+                .as("a stored pack that cannot be read is refused as the reads refuse it, not as an upload")
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+    }
+
+    @Test
+    @DisplayName(
+            "salvageStored keeps what can be read of a pack that does not read whole: ids by path, edges that parse")
+    void salvageStoredCountsAnUnparsableFileByItsPathAndKeepsTheEdgesThatParse(@TempDir Path host) throws IOException {
+        Path pack = richPack(host);
+        write(pack, BROKEN_FILE, "id: [unclosed");
+        write(pack, "good.graph.yaml", """
+                schema_version: '1.0'
+                generated_at: STATIC
+                nodes: []
+                edges:
+                - source: tactic:alpha-tactic
+                  target: tactic:gamma-tactic
+                  relation: requires
+                """);
+        write(pack, "bad.graph.yaml", "edges: [unclosed");
+
+        WholePackWriteStore.Remains remains = store.salvageStored(pack);
+
+        assertThat(remains.defined())
+                .contains("tactic:alpha-tactic", "tactic:broken-tactic", "directive:DIRECTIVE_043");
+        assertThat(remains.digests()).containsKey(new Urn(NodeKind.TACTIC, "alpha-tactic"));
+        assertThat(remains.edges()).extracting(edge -> edge.from().toString()).contains("tactic:alpha-tactic");
+        assertThatThrownBy(() -> store.salvageStored(host.resolve("nowhere")))
+                .as("a pack whose artifacts cannot be told is refused, never taken as empty")
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+    }
+
+    /** A strategy that counts how many artifact files it is asked to read. */
+    private static SerializationStrategy counting(SerializationStrategy delegate, AtomicInteger reads) {
+        return (SerializationStrategy) Proxy.newProxyInstance(
+                SerializationStrategy.class.getClassLoader(),
+                new Class<?>[] {SerializationStrategy.class},
+                (proxy, method, args) -> {
+                    if (method.getName().equals("read") && args != null && args.length == 3) {
+                        reads.incrementAndGet();
+                    }
+                    try {
+                        return method.invoke(delegate, args);
+                    } catch (InvocationTargetException failure) {
+                        throw failure.getCause();
+                    }
+                });
+    }
+
+    private static int readsToSalvage(Path host, int files) throws IOException {
+        Path pack = host.resolve("big-" + files);
+        write(
+                pack,
+                "pack.yaml",
+                "pack_id: 01M6R0WP14QQQQQQQQQQQQQQQQ\npack_version: 1.0.0\nname: big\npack_level: org\n");
+        for (int i = 0; i < files; i++) {
+            write(
+                    pack,
+                    "directives/D" + i + ".directive.yaml",
+                    "schema_version: \"1.0\"\nid: D" + i + "\ntitle: T\nintent: I\nenforcement: required\n");
+        }
+        AtomicInteger reads = new AtomicInteger();
+        long lookupsBefore = FilesystemPackStore.lookupParses();
+        WholePackWriteStore.Remains remains =
+                new WholePackStore(counting(new YamlSerializationStrategy(), reads)).salvageStored(pack);
+        assertThat(remains.defined()).hasSize(files);
+        return reads.get() + (int) (FilesystemPackStore.lookupParses() - lookupsBefore);
+    }
+
+    @Test
+    @DisplayName(
+            "salvageStored parses each file a bounded number of times, by strategy read or by lookup: its cost grows linearly")
+    void salvageStoredReadsEachFileABoundedNumberOfTimes(@TempDir Path host) throws IOException {
+        int small = readsToSalvage(host, 200);
+        int large = readsToSalvage(host, 400);
+
+        assertThat(small).as("reads for 200 files").isLessThanOrEqualTo(2 * 200);
+        assertThat(large).as("reads for 400 files").isLessThanOrEqualTo(2 * small + 10);
+    }
+
+    @Test
+    @DisplayName("salvageStored reads the file it listed, so two files declaring one id cannot stand in for each other")
+    void salvageStoredReadsEachListedFileEvenWhenTwoDeclareOneId(@TempDir Path host) throws IOException {
+        Urn urn = new Urn(NodeKind.DIRECTIVE, "TWIN");
+        String descriptor = "pack_id: 01M6R0WP14QQQQQQQQQQQQQQQQ\npack_version: 1.0.0\nname: twins\npack_level: org\n";
+        String one = "schema_version: \"1.0\"\nid: TWIN\ntitle: One\nintent: I\nenforcement: required\n";
+        String two = one.replace("One", "Two");
+        Path onlyOne = host.resolve("one");
+        write(onlyOne, "pack.yaml", descriptor);
+        write(onlyOne, "directives/A.directive.yaml", one);
+        Path onlyTwo = host.resolve("two");
+        write(onlyTwo, "pack.yaml", descriptor);
+        write(onlyTwo, "directives/B.directive.yaml", two);
+        Path both = host.resolve("both");
+        write(both, "pack.yaml", descriptor);
+        write(both, "directives/A.directive.yaml", one);
+        write(both, "directives/B.directive.yaml", two);
+
+        String digestOne = store.salvageStored(onlyOne).digests().get(urn);
+        String digestTwo = store.salvageStored(onlyTwo).digests().get(urn);
+        String digestBoth = store.salvageStored(both).digests().get(urn);
+
+        assertThat(digestOne).isNotEqualTo(digestTwo);
+        assertThat(digestBoth)
+                .as("the id is declared twice, with two contents: neither copy's digest stands for it")
+                .isNotIn(digestOne, digestTwo);
     }
 
     private static WholePackStore.LoadedPack with(WholePackStore.LoadedPack loaded, Template template) {

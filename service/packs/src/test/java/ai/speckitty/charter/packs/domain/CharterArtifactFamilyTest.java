@@ -1,15 +1,10 @@
 package ai.speckitty.charter.packs.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
-import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
-import ai.speckitty.charter.kernel.domain.RelationType;
-import ai.speckitty.charter.kernel.domain.Relationship;
-import ai.speckitty.charter.kernel.domain.Urn;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -33,8 +28,6 @@ class CharterArtifactFamilyTest {
             .title("Directive title")
             .intent("Directive intent")
             .enforcement(Enforcement.REQUIRED)
-            .procedure("release")
-            .reference(new DirectiveReference("tactic", "tdd", Optional.of("always"), Optional.of("why")))
             .build();
 
     private static final Styleguide STYLEGUIDE = Styleguide.builder()
@@ -44,7 +37,6 @@ class CharterArtifactFamilyTest {
             .title("Styleguide title")
             .scope(StyleguideScope.CODE)
             .principle("be small")
-            .reference("cited-elsewhere")
             .build();
 
     private static final Paradigm PARADIGM = Paradigm.builder()
@@ -53,8 +45,6 @@ class CharterArtifactFamilyTest {
             .schemaVersion("1.0")
             .name("Paradigm name")
             .summary("Paradigm summary")
-            .directiveRef("DIRECTIVE_700")
-            .reference(new ParadigmReference("tactic", "tdd"))
             .build();
 
     private static final Tactic TACTIC = Tactic.builder()
@@ -63,8 +53,7 @@ class CharterArtifactFamilyTest {
             .schemaVersion("1.0")
             .name("Tactic name")
             .purpose("Tactic purpose")
-            .step(new TacticStep("Only step", Optional.empty(), List.of(), List.of()))
-            .reference(new TacticReference("ref", "directive", "DIRECTIVE_700", "when ready"))
+            .step(new TacticStep("Only step", Optional.empty(), List.of()))
             .build();
 
     private static final List<CharterArtifact> FAMILY = List.of(DIRECTIVE, STYLEGUIDE, PARADIGM, TACTIC);
@@ -130,30 +119,16 @@ class CharterArtifactFamilyTest {
     }
 
     @Test
-    @DisplayName(
-            "relationships follow the contract: the styleguide mints none, the others a suggests per typed ref and a requires per bare ref")
-    void relationshipsFollowTheContract() {
-        assertThat(STYLEGUIDE.relationships()).isEmpty();
-
-        assertThat(DIRECTIVE.relationships())
-                .extracting(Relationship::from, Relationship::to, Relationship::type)
-                .containsExactly(
-                        tuple(DIRECTIVE.urn(), new Urn(NodeKind.TACTIC, "tdd"), RelationType.SUGGESTS),
-                        tuple(DIRECTIVE.urn(), new Urn(NodeKind.PROCEDURE, "release"), RelationType.REQUIRES));
-        assertThat(DIRECTIVE.relationships().get(0).when()).contains("always");
-        assertThat(DIRECTIVE.relationships().get(0).rationale()).contains("why");
-
-        assertThat(PARADIGM.relationships())
-                .extracting(Relationship::from, Relationship::to, Relationship::type)
-                .containsExactly(
-                        tuple(PARADIGM.urn(), new Urn(NodeKind.TACTIC, "tdd"), RelationType.SUGGESTS),
-                        tuple(PARADIGM.urn(), new Urn(NodeKind.DIRECTIVE, "DIRECTIVE_700"), RelationType.REQUIRES));
-
-        assertThat(TACTIC.relationships())
-                .extracting(Relationship::from, Relationship::to, Relationship::type)
-                .containsExactly(
-                        tuple(TACTIC.urn(), new Urn(NodeKind.DIRECTIVE, "DIRECTIVE_700"), RelationType.SUGGESTS));
-        assertThat(TACTIC.relationships().get(0).when()).contains("when ready");
+    @DisplayName("no member of the family derives a relationship: relationships are graph edges (ADR-0064)")
+    void noMemberDerivesARelationship() {
+        assertThat(FAMILY)
+                .allSatisfy(artifact -> assertThat(artifact.derivedRelationships())
+                        .as(artifact.urn().toString())
+                        .isEmpty());
+        assertThat(FAMILY)
+                .allSatisfy(artifact -> assertThat(artifact.writtenReferences())
+                        .as(artifact.urn().toString())
+                        .isEmpty());
     }
 
     @Test
@@ -167,7 +142,8 @@ class CharterArtifactFamilyTest {
         assertThat(PAYLOAD_KINDS).extracting(CharterArtifact::schemaVersion).containsOnly(Optional.empty());
         assertThat(PAYLOAD_KINDS).extracting(CharterArtifact::description).containsOnly(Optional.empty());
         assertThat(PAYLOAD_KINDS)
-                .allSatisfy(artifact -> assertThat(artifact.relationships()).isEmpty());
+                .allSatisfy(
+                        artifact -> assertThat(artifact.derivedRelationships()).isEmpty());
         assertThat(PAYLOAD_KINDS)
                 .extracting(CharterArtifact::label)
                 .containsExactly("Asset title", "family-template.md");

@@ -386,10 +386,11 @@ Feature: The compose resolves the configured packs' dependency graph
     And the field at "/packs/0/name" is "orphan-pack"
     And the response has no "Charter-Source-Fingerprint" header
 
-  Scenario: A parent_pack a configured pack declares resolves
+  Scenario: A parent_pack a configured pack declares resolves, the parent first
     The negative control of the unresolved-parent refusal: the same child with its parent
-    configured. The parent imposes no order of its own; the stable order — the configured
-    order — serves, and child is configured before root.
+    configured. The parent is an ordering edge, as a dependency is (the operator ruling of
+    2026-11-06): the pack it extends merges before it, whatever the configured order, so child is
+    served after root although it is configured before it.
     Given the org pack "root" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943R
@@ -408,8 +409,48 @@ Feature: The compose resolves the configured packs' dependency graph
       """
     When I GET "/offering"
     Then the response status is 200
-    And the field at "/packs/0/packId" is "child"
-    And the field at "/packs/1/packId" is "root"
+    And the field at "/packs/0/packId" is "root"
+    And the field at "/packs/1/packId" is "child"
+
+  Scenario: Two packs naming each other as parent_pack refuse the compose as a cycle
+    The parent_pack is a cycle edge as a dependency is (the operator ruling of 2026-11-06).
+    Given the org pack "alpha" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: 01M4P01D5TWB5FKZGNNQG3943S
+      name: alpha-pack
+      pack_level: org
+      """
+    And the org pack "beta" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+      pack_version: 1.0.0
+      parent_pack: 01M4P01D5TWB5FKZGNNQG3943R
+      name: beta-pack
+      pack_level: org
+      """
+    When I GET "/offering"
+    Then the response status is 500
+    And the problem code is "pack_dependency_cycle"
+    And the field "detail" of the response body is "pack `alpha-pack` (01M4P01D5TWB5FKZGNNQG3943R) is on a dependency cycle: `alpha-pack` -> `beta-pack` -> `alpha-pack`"
+    And the field at "/packs/0/packId" is "alpha"
+    And the response has no "Charter-Source-Fingerprint" header
+
+  Scenario: A pack naming itself as its parent_pack refuses the compose as a cycle
+    Given the org pack "alpha" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: 01M4P01D5TWB5FKZGNNQG3943R
+      name: alpha-pack
+      pack_level: org
+      """
+    When I GET "/offering"
+    Then the response status is 500
+    And the problem code is "pack_dependency_cycle"
+    And the field "detail" of the response body is "pack `alpha-pack` (01M4P01D5TWB5FKZGNNQG3943R) names itself as its parent_pack"
+    And the field at "/packs/0/packId" is "alpha"
 
   Scenario: An org pack depending on a project pack refuses the compose
     A pack may take a dependency or a parent only at its own level or one nearer built-in (ADR-0048
@@ -595,8 +636,8 @@ Feature: The compose resolves the configured packs' dependency graph
     And the field at "/packs/1/packId" is "two"
 
   Scenario: Two siblings changing one artifact, unsettled, refuse the compose
-    WP01's contest (FR-012): left and right, both at org, each declare an enhances edge on the same
-    directive in their graphs, and no pack of the compose declares an overrides edge settling it. A
+    WP01's contest (FR-012): left and right, both at org, each declare an overrides edge on the same
+    directive in their graphs (an enhances edge is additive and contests nothing, A14), and no pack of the compose declares an overrides edge settling it. A
     conflict must be a decision, not load order, so the compose is refused (500, like every composition refusal) naming both packs
     and the artifact.
     Given the org pack "left" with the file "pack.yaml":
@@ -621,7 +662,7 @@ Feature: The compose resolves the configured packs' dependency graph
       edges:
       - source: action:software-dev/implement
         target: directive:software-dev/test-first
-        relation: enhances
+        relation: overrides
       """
     And the org pack "right" with the file "pack.yaml":
       """
@@ -645,7 +686,7 @@ Feature: The compose resolves the configured packs' dependency graph
       edges:
       - source: action:software-dev/implement
         target: directive:software-dev/test-first
-        relation: enhances
+        relation: overrides
       """
     When I GET "/offering"
     Then the response status is 500
@@ -685,7 +726,7 @@ Feature: The compose resolves the configured packs' dependency graph
       edges:
       - source: action:software-dev/implement
         target: directive:software-dev/test-first
-        relation: enhances
+        relation: overrides
       """
     And the org pack "right" with the file "pack.yaml":
       """
@@ -709,7 +750,7 @@ Feature: The compose resolves the configured packs' dependency graph
       edges:
       - source: action:software-dev/implement
         target: directive:software-dev/test-first
-        relation: enhances
+        relation: overrides
       """
     And the org pack "settler" with the file "pack.yaml":
       """
@@ -810,6 +851,184 @@ Feature: The compose resolves the configured packs' dependency graph
       title: Share the load
       intent: Share it
       enforcement: required
+      """
+    When I GET "/offering"
+    Then the response status is 200
+    And the field at "/packs/0/packId" is "house"
+    And the field at "/packs/1/packId" is "team"
+
+  Scenario: Two siblings holding one preset id refuse the compose
+    Two org packs related by no parent_pack both hold the preset "team": neither would win by anything but
+    load order, so the compose is refused (the operator ruling of 2026-11-06), as two siblings that define
+    one artifact are. The pack named first is the second contestant in the stable order.
+    Given the org pack "left" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: left-pack
+      pack_level: org
+      """
+    And the org pack "left" with the file "directives/LEFT_ONLY.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: LEFT_ONLY
+      title: Share the load
+      intent: Share it
+      enforcement: required
+      """
+    And the org pack "left" with the file "presets/team.yaml":
+      """
+      schema_version: '1.0'
+      id: team
+      description: The left copy of the team preset.
+      activated_directives:
+        - id: LEFT_ONLY
+          must_have: true
+      """
+    And the org pack "right" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+      pack_version: 1.0.0
+      parent_pack: null
+      name: right-pack
+      pack_level: org
+      """
+    And the org pack "right" with the file "directives/RIGHT_ONLY.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: RIGHT_ONLY
+      title: Share the load
+      intent: Share it
+      enforcement: required
+      """
+    And the org pack "right" with the file "presets/team.yaml":
+      """
+      schema_version: '1.0'
+      id: team
+      description: The right copy of the team preset.
+      activated_directives:
+        - id: RIGHT_ONLY
+          must_have: true
+      """
+    When I GET "/offering"
+    Then the response status is 500
+    And the problem code is "pack_sibling_conflict"
+    And the field "detail" of the response body is "packs `left-pack` (01M4P01D5TWB5FKZGNNQG3943R) and `right-pack` (01M4P01D5TWB5FKZGNNQG3943S) at org both hold the preset `team`, and neither extends the other by parent_pack"
+    And the field at "/packs/0/packId" is "right"
+    And the field at "/packs/1/packId" is "left"
+    And the response has no "Charter-Source-Fingerprint" header
+
+  Scenario: A child pack and the parent_pack it extends may hold one preset id
+    The negative control of the preset contest: the child extends the parent, so it merges after it and its copy
+    takes the place of the parent's. Both packs are served, the parent first.
+    Given the org pack "parent" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: parent-pack
+      pack_level: org
+      """
+    And the org pack "parent" with the file "directives/PARENT_ONLY.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: PARENT_ONLY
+      title: Share the load
+      intent: Share it
+      enforcement: required
+      """
+    And the org pack "parent" with the file "presets/team.yaml":
+      """
+      schema_version: '1.0'
+      id: team
+      description: The parent copy of the team preset.
+      activated_directives:
+        - id: PARENT_ONLY
+          must_have: true
+      """
+    And the org pack "child" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+      pack_version: 1.0.0
+      parent_pack: 01M4P01D5TWB5FKZGNNQG3943R
+      name: child-pack
+      pack_level: org
+      """
+    And the org pack "child" with the file "directives/CHILD_ONLY.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: CHILD_ONLY
+      title: Share the load
+      intent: Share it
+      enforcement: required
+      """
+    And the org pack "child" with the file "presets/team.yaml":
+      """
+      schema_version: '1.0'
+      id: team
+      description: The child copy of the team preset.
+      activated_directives:
+        - id: CHILD_ONLY
+          must_have: true
+      """
+    When I GET "/offering"
+    Then the response status is 200
+    And the field at "/packs/0/packId" is "parent"
+    And the field at "/packs/1/packId" is "child"
+
+  Scenario: An org pack and a project pack holding one preset id compose as a layer override
+    The cross-level negative control: a preset id held at two levels is the layer override of ADR-0053 decision 6
+    and ADR-0059 D3, not a contest. Both packs are served, the org pack first.
+    Given the org pack "house" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.0.0
+      parent_pack: null
+      name: house-pack
+      pack_level: org
+      """
+    And the org pack "house" with the file "directives/HOUSE_ONLY.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: HOUSE_ONLY
+      title: Share the load
+      intent: Share it
+      enforcement: required
+      """
+    And the org pack "house" with the file "presets/team.yaml":
+      """
+      schema_version: '1.0'
+      id: team
+      description: The house copy of the team preset.
+      activated_directives:
+        - id: HOUSE_ONLY
+          must_have: true
+      """
+    And the project pack "team" with the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+      pack_version: 1.0.0
+      parent_pack: null
+      name: team-pack
+      pack_level: project
+      """
+    And the project pack "team" with the file "directives/TEAM_ONLY.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: TEAM_ONLY
+      title: Share the load
+      intent: Share it
+      enforcement: required
+      """
+    And the project pack "team" with the file "presets/team.yaml":
+      """
+      schema_version: '1.0'
+      id: team
+      description: The team copy of the team preset.
+      activated_directives:
+        - id: TEAM_ONLY
+          must_have: true
       """
     When I GET "/offering"
     Then the response status is 200
@@ -1138,9 +1357,9 @@ Feature: The compose resolves the configured packs' dependency graph
       | pack_reference_artifact_missing | beta-pack::directive:NOPE | beta   | 01M4P01D5TWB5FKZGNNQG3943S |
 
   Scenario: The references of an artifact are read across packs, each resolved through the compose
-    A composed read (operator ruling of 2026-11-03). Alpha depends on beta, and alpha's directive USE writes
-    beta-pack::SHARE as a typed reference: the read answers it as written, under the relation the artifact mints for
-    it, held by beta, resolved to the bare URN, and its artifact link reads beta's directive. The artifact the
+    A composed read (operator ruling of 2026-11-03). Alpha depends on beta, and alpha's graph document relates its
+    directive USE to beta-pack::SHARE (ADR-0064): the read answers the edge's target as written, under the edge's
+    relation, held by beta, resolved to the bare URN, and its artifact link reads beta's directive. The artifact the
     read is asked for must exist, exactly as for the pack-scoped read.
     Given the org pack "alpha" with the file "pack.yaml":
       """
@@ -1168,9 +1387,16 @@ Feature: The compose resolves the configured packs' dependency graph
       title: Use the shared load
       intent: Use it
       enforcement: required
-      references:
-      - type: directive
-        id: beta-pack::SHARE
+      """
+    And the org pack "alpha" with the file "directive.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: directive:USE
+        target: beta-pack::directive:SHARE
+        relation: suggests
       """
     And the org pack "beta" with the file "directives/SHARE.directive.yaml":
       """
@@ -1195,10 +1421,10 @@ Feature: The compose resolves the configured packs' dependency graph
     And the problem code is "directive_not_found"
 
   Scenario: A bare reference is held by the pack that writes it, which shadows another pack's artifact of that id
-    FR-014: alpha (project) and beta (org) both hold directive SHARE, and alpha's USE writes it bare. The read
-    answers alpha as the holding pack, with no refusal, and its artifact link reads alpha's directive. alpha's own
-    SHARE writes beta-pack::SHARE, a qualified reference to another pack's artifact of the same id: legal (R2), not
-    a self-loop, and it resolves to beta.
+    FR-014: alpha (project) and beta (org) both hold directive SHARE, and alpha's graph document relates USE to it
+    bare. The read answers alpha as the holding pack, with no refusal, and its artifact link reads alpha's directive.
+    alpha's own SHARE is related to beta-pack::SHARE, a qualified reference to another pack's artifact of the same
+    id: legal (R2), not a self-loop, and it resolves to beta.
     Given the org pack "beta" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943S
@@ -1233,9 +1459,6 @@ Feature: The compose resolves the configured packs' dependency graph
       title: Alpha's share
       intent: Share it
       enforcement: required
-      references:
-      - type: directive
-        id: beta-pack::SHARE
       """
     And the project pack "alpha" with the file "directives/USE.directive.yaml":
       """
@@ -1244,9 +1467,19 @@ Feature: The compose resolves the configured packs' dependency graph
       title: Use the shared load
       intent: Use it
       enforcement: required
-      references:
-      - type: directive
-        id: SHARE
+      """
+    And the project pack "alpha" with the file "directive.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: directive:SHARE
+        target: beta-pack::directive:SHARE
+        relation: suggests
+      - source: directive:USE
+        target: directive:SHARE
+        relation: suggests
       """
     When I GET "/packs/alpha/artifacts/directive/USE/references"
     Then the response status is 200
@@ -1280,9 +1513,16 @@ Feature: The compose resolves the configured packs' dependency graph
       title: Use the shared load
       intent: Use it
       enforcement: required
-      references:
-      - type: directive
-        id: ghost-pack::SHARE
+      """
+    And the org pack "alpha" with the file "directive.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: directive:USE
+        target: ghost-pack::directive:SHARE
+        relation: suggests
       """
     When I GET "/packs/alpha/artifacts/directive/USE/references"
     Then the response status is 500
@@ -1293,9 +1533,9 @@ Feature: The compose resolves the configured packs' dependency graph
     When I GET "/packs/alpha/artifacts/directive/USE"
     Then the response status is 200
 
-  Scenario: A bare cross-pack reference in a tactic's typed references is refused naming the holding pack
-    The same refusal as above (FR-015), through the other carrier of a reference: alpha's tactic
-    references directive SHARE bare, and only beta holds it. One check path serves both carriers.
+  Scenario: A bare cross-pack edge from a tactic is refused naming the holding pack
+    The same refusal as above (FR-015), from a tactic: alpha's graph document relates its tactic to directive
+    SHARE bare, and only beta holds it. A graph edge is the one carrier of a reference (ADR-0064).
     Given the org pack "alpha" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943R
@@ -1327,11 +1567,16 @@ Feature: The compose resolves the configured packs' dependency graph
       name: Uses share
       steps:
         - title: Only step
-      references:
-        - name: Share
-          type: directive
-          id: SHARE
-          when: always
+      """
+    And the org pack "alpha" with the file "tactic.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: tactic:uses-share
+        target: directive:SHARE
+        relation: suggests
       """
     When I GET "/offering"
     Then the response status is 500
@@ -1344,8 +1589,8 @@ Feature: The compose resolves the configured packs' dependency graph
     And the field at "/packs/1/packId" is "beta"
     And the field at "/packs/1/name" is "beta-pack"
 
-  Scenario: A pack-qualified typed reference inside the closure resolves
-    The control of the typed carrier (FR-013, FR-017): the same tactic writes the reference
+  Scenario: A pack-qualified edge from a tactic inside the closure resolves
+    The control of the scenario above (FR-013, FR-017): the same tactic is related to the directive
     pack-qualified, and alpha declares depends_on beta, so the compose is served, beta before alpha.
     Given the org pack "alpha" with the file "pack.yaml":
       """
@@ -1381,11 +1626,16 @@ Feature: The compose resolves the configured packs' dependency graph
       name: Uses share
       steps:
         - title: Only step
-      references:
-        - name: Share
-          type: directive
-          id: beta-pack::SHARE
-          when: always
+      """
+    And the org pack "alpha" with the file "tactic.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: tactic:uses-share
+        target: beta-pack::directive:SHARE
+        relation: suggests
       """
     When I GET "/offering"
     Then the response status is 200

@@ -4,7 +4,8 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
   …/selections/{kind}/{artifactId} select and unselect one artifact (or, with kind mission_type, one mission
   type), and PUT and DELETE on …/exclusions/{kind}/{artifactId} deactivate and re-activate one. Each requires
   If-Match and answers an ActivationChange with the new revision as its ETag: applied lists every id the write
-  added to or removed from selected, deactivated or missionTypes, and cleared the deny entries it removed. A
+  added to or removed from selected or deactivated (mission types included, under mission_type: one kind model,
+  IC-20), and cleared the deny entries it removed. A
   write that changes nothing answers 200 with the same revision and stores nothing.
 
   A cascading select walks requires, suggests, refines, scope, instantiates and enhances from the target, each in
@@ -260,7 +261,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     enhances runs from e to t (ADR-0059 D2, as amended on 2026-11-06), so e is neither selected nor applied.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "deactivated": {"tactic": ["x"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "deactivated": {"tactic": ["x"]}}
       """
     When I PUT "/activations/a-1/selections/directive/D" with the stored ETag and the body:
       """
@@ -310,7 +311,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     US3 AS2.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "deactivated": {"tactic": ["x"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "deactivated": {"tactic": ["x"]}}
       """
     When I PUT "/activations/a-1/selections/directive/D" with the stored ETag and the body:
       """
@@ -341,7 +342,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     enhances pull at write time: e stays denied.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "activatedKinds": ["directive", "tactic"], "deactivated": {"tactic": ["e", "x"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "deactivated": {"tactic": ["e", "x"]}}
       """
     When I PUT "/activations/a-1/selections/directive/D" with the stored ETag and the body:
       """
@@ -382,7 +383,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     at x as it would without includeDeactivated: x keeps its deny entry and is reported in skippedDeactivated.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "deactivated": {"tactic": ["x"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "deactivated": {"tactic": ["x"]}}
       """
     When I PUT "/activations/a-1/selections/directive/D" with the stored ETag and the body:
       """
@@ -417,7 +418,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     the lineage stops at q as it would without includeDeactivated; q keeps its deny entry and R lies behind it.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "deactivated": {"agent_profile": ["q"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "deactivated": {"agent_profile": ["q"]}}
       """
     When I PUT "/activations/a-1/selections/agent_profile/p" with the stored ETag and the body:
       """
@@ -438,32 +439,38 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       directive:R
       """
 
-  Scenario: includeDeactivated clears a denied ancestor inside the scope and passes through it
-    FR-013, FR-014, ADR-0059 (operator ruling of 2026-11-06): with every kind in scope, the lineage passes through
-    the denied q and clears its deny entry without selecting q; R is selected through it.
+  Scenario: includeDeactivated passes through a denied ancestor inside the scope and keeps its deny entry
+    FR-013, FR-014, B5 (decision DM-01M6RA9XQSH3E07C7VCPCVD6R4): includeDeactivated clears the deny entries of the
+    artifacts the walk reaches and selects only. With every kind in scope the lineage passes through the denied q,
+    which it does not select, so q keeps its deny entry; R is selected through it (the positive control in the same
+    answer). Before B5 the walk cleared q's deny entry as it passed.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "deactivated": {"agent_profile": ["q"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "deactivated": {"agent_profile": ["q"]}}
       """
     When I PUT "/activations/a-1/selections/agent_profile/p" with the stored ETag and the body:
       """
       {"cascade": ["all"], "includeDeactivated": true}
       """
     Then the response status is 200
-    And the field at "/cleared" holds exactly the ids:
-      """
-      agent_profile:q
-      """
+    And the field at "/cleared" holds exactly 0 items
     And the field at "/applied" holds exactly the ids:
       """
       agent_profile:p
-      agent_profile:q
       directive:R
       """
     When I GET "/activations/a-1"
     Then the field at "/config/selected/agent_profile" holds exactly the ids:
       """
       p
+      """
+    And the field at "/config/selected/directive" holds exactly the ids:
+      """
+      R
+      """
+    And the field at "/config/deactivated/agent_profile" holds exactly the ids:
+      """
+      q
       """
 
   Scenario: A stop reached through a template is required by what instantiates it
@@ -488,7 +495,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       """
     And the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "deactivated": {"tactic": ["x"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "deactivated": {"tactic": ["x"]}}
       """
     When I PUT "/activations/a-1/selections/directive/D2" with the stored ETag and the body:
       """
@@ -509,7 +516,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     selected; q is an ancestor, never in force, and S is reached only over suggests from it.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}]}
       """
     When I PUT "/activations/a-1/selections/agent_profile/p" with the stored ETag and the body:
       """
@@ -528,7 +535,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     US3 AS4, second half: q is denied, so R is not reached.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "deactivated": {"agent_profile": ["q"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "deactivated": {"agent_profile": ["q"]}}
       """
     When I PUT "/activations/a-1/selections/agent_profile/p" with the stored ETag and the body:
       """
@@ -552,7 +559,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     US3 AS5.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "selected": {"directive": ["D", "D2"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["D", "D2"]}}
       """
     When I DELETE "/activations/a-1/selections/directive/D" with the stored ETag
     Then the response status is 200
@@ -573,7 +580,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     US3 AS5, the no-op: 200 with the same revision, empty applied and cleared.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "selected": {"directive": ["D2"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["D2"]}}
       """
     When I DELETE "/activations/a-1/selections/directive/D" with the stored ETag
     Then the response status is 200
@@ -585,7 +592,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     US3 AS6: absent means none, so the select adds a list holding exactly the artifact.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}]}
       """
     When I PUT "/activations/a-1/selections/directive/D2" with the stored ETag and the body:
       """
@@ -602,11 +609,11 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       D2
       """
 
-  Scenario: Selecting a mission type adds it to missionTypes
-    US3 AS7.
+  Scenario: Selecting a mission type adds it to selected.mission_type
+    US3 AS7, one kind model (IC-20): a mission type is selected like any kind.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}]}
       """
     When I PUT "/activations/a-1/selections/mission_type/research" with the stored ETag and the body:
       """
@@ -618,16 +625,17 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       mission_type:research
       """
     When I GET "/activations/a-1"
-    Then the field at "/config/missionTypes" holds exactly the ids:
+    Then the field at "/config/selected/mission_type" holds exactly the ids:
       """
       research
       """
+    And the response body has no field at "/config/missionTypes"
 
   Scenario: Selecting a mission type the closure does not hold is 404 mission_type_not_found
     US3 AS7, FR-010.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}]}
       """
     When I PUT "/activations/a-1/selections/mission_type/no-such-type" with the stored ETag and the body:
       """
@@ -636,13 +644,102 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     Then the response status is 404
     And the problem code is "mission_type_not_found"
 
+  Scenario: A mission type path id names it in any known spelling and stores the declared id, as any kind's does
+    Rewritten for the one kind model (IC-20): a mission type is a kind of selected like any other, so its path id is
+    normalized as every kind's is (ADR-0020 D4): another case or its full URN names the declared mission type. It
+    was matched exactly while missionTypes was a member of its own. A spelling of no mission type is still 404.
+    Given the activation "a-1" holds:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "main"}]}
+      """
+    When I PUT "/activations/a-1/selections/mission_type/RESEARCH" with the stored ETag and the body:
+      """
+      {}
+      """
+    Then the response status is 200
+    And the field at "/applied" holds exactly the ids:
+      """
+      mission_type:research
+      """
+    When I remember the ETag
+    And I PUT "/activations/a-1/selections/mission_type/mission_type:research" with the remembered ETag and the body:
+      """
+      {}
+      """
+    Then the response status is 200
+    And the field at "/applied" holds exactly 0 items
+    When I PUT "/activations/a-1/selections/mission_type/mission_type:no-such-type" with the remembered ETag and the body:
+      """
+      {}
+      """
+    Then the response status is 404
+    And the problem code is "mission_type_not_found"
+    When I GET "/activations/a-1"
+    Then the field at "/config/selected/mission_type" holds exactly the ids:
+      """
+      research
+      """
+
   Scenario: Selecting an artifact the closure does not hold is 404 artifact_not_found
     US3 AS8, FR-010.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}]}
       """
     When I PUT "/activations/a-1/selections/directive/NO_SUCH" with the stored ETag and the body:
+      """
+      {}
+      """
+    Then the response status is 404
+    And the problem code is "artifact_not_found"
+
+  Scenario: A select names its artifact in any known spelling and stores the declared id
+    ADR-0020 D4 (operator ruling of 2026-11-06): the path id is read as a document's id is, so the full URN of the
+    path's kind and another case select the declared D2.
+    Given the activation "a-1" holds:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "main"}]}
+      """
+    When I PUT "/activations/a-1/selections/directive/directive:d2" with the stored ETag and the body:
+      """
+      {}
+      """
+    Then the response status is 200
+    And the field at "/applied" holds exactly the ids:
+      """
+      directive:D2
+      """
+    When I GET "/activations/a-1"
+    Then the field at "/config/selected/directive" holds exactly the ids:
+      """
+      D2
+      """
+
+  Scenario: An unselect in another case removes the declared id
+    ADR-0020 D4 (operator ruling of 2026-11-06).
+    Given the activation "a-1" holds:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["D", "D2"]}}
+      """
+    When I DELETE "/activations/a-1/selections/directive/d" with the stored ETag
+    Then the response status is 200
+    And the field at "/applied" holds exactly the ids:
+      """
+      directive:D
+      """
+    When I GET "/activations/a-1"
+    Then the field at "/config/selected/directive" holds exactly the ids:
+      """
+      D2
+      """
+
+  Scenario: A path id spelled as a URN of another kind is 404 artifact_not_found
+    ADR-0020 D4: a URN of another kind than the path's names no artifact of that kind.
+    Given the activation "a-1" holds:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "main"}]}
+      """
+    When I PUT "/activations/a-1/selections/directive/tactic:D" with the stored ETag and the body:
       """
       {}
       """
@@ -655,7 +752,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     US3 AS8.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}]}
       """
     When I PUT "/activations/a-1/selections/directive/D" with the stored ETag and the body:
       """
@@ -670,7 +767,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     FR-012 (R7): D requires shared::xt, which the shared pack holds, so the cascade selects xt.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "deactivated": {"tactic": ["x"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "deactivated": {"tactic": ["x"]}}
       """
     When I PUT "/activations/a-1/selections/directive/D" with the stored ETag and the body:
       """
@@ -686,7 +783,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     A requires B and B requires A.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}]}
       """
     When I PUT "/activations/a-1/selections/directive/A" with the stored ETag and the body:
       """
@@ -709,7 +806,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     The no-op: 200 with the same revision, empty applied and cleared, and nothing is stored.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "selected": {"directive": ["D2"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["D2"]}}
       """
     When I PUT "/activations/a-1/selections/directive/D2" with the stored ETag and the body:
       """
@@ -725,7 +822,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     declared direction, from e to t.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}]}
       """
     When I PUT "/activations/a-1/selections/tactic/e" with the stored ETag and the body:
       """
@@ -742,7 +839,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     ADR-0059 D2 (operator ruling of 2026-11-06): e enhances t runs from e to t, so a walk from t never reaches e.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}]}
       """
     When I PUT "/activations/a-1/selections/tactic/t" with the stored ETag and the body:
       """
@@ -758,7 +855,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     ADR-0059 D2 (operator ruling of 2026-11-06): the deactivate walks enhances from e to t, and nothing else keeps t.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "selected": {"tactic": ["e", "t"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"tactic": ["e", "t"]}}
       """
     When I PUT "/activations/a-1/exclusions/tactic/e" with the stored ETag and the body:
       """
@@ -771,13 +868,13 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       tactic:t
       """
     When I GET "/activations/a-1"
-    Then the field at "/config/selected/tactic" holds exactly 0 items
+    Then the response body has no field at "/config/selected/tactic"
 
   Scenario: A cascading deactivate of an enhancer keeps the artifact it enhances when another needs it
     ADR-0059 D2 (operator ruling of 2026-11-06): D is selected and requires t, so t is shared and stays, naming D.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "selected": {"directive": ["D"], "tactic": ["e", "t"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["D"], "tactic": ["e", "t"]}}
       """
     When I PUT "/activations/a-1/exclusions/tactic/e" with the stored ETag and the body:
       """
@@ -800,7 +897,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
   Scenario: A select without If-Match is 428
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}]}
       """
     When I PUT "/activations/a-1/selections/directive/D" with the body:
       """
@@ -811,7 +908,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
   Scenario: An unselect without If-Match is 428
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "selected": {"directive": ["D"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["D"]}}
       """
     When I send DELETE "/activations/a-1/selections/directive/D"
     Then the response status is 428
@@ -819,7 +916,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
   Scenario: A select with a stale If-Match is 412, before the path id is judged
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}]}
       """
     When I PUT "/activations/a-1/selections/directive/NO_SUCH" with If-Match "\"sha256:1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f\"" and the body:
       """
@@ -855,7 +952,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
   Scenario: A malformed body is 422 once the preconditions hold, a cascade token at its index
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}]}
       """
     When I PUT "/activations/a-1/selections/directive/D" with the stored ETag and the body:
       """
@@ -870,7 +967,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     J10: an If-Match that is neither * nor one quoted revision breaks its pattern.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}]}
       """
     When I PUT "/activations/a-1/selections/directive/D" with If-Match "not-a-revision" and the body:
       """
@@ -882,7 +979,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     FR-010: template is never activated.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}]}
       """
     When I PUT "/activations/a-1/selections/template/D" with the stored ETag and the body:
       """
@@ -898,7 +995,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     US4 AS1: t2 is also reached from D2, which stays selected; only D gets a deny entry.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "selected": {"directive": ["D", "D2"], "tactic": ["t", "t2"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["D", "D2"], "tactic": ["t", "t2"]}}
       """
     When I PUT "/activations/a-1/exclusions/directive/D" with the stored ETag and the body:
       """
@@ -939,7 +1036,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     so t3 stays, naming e2.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "selected": {"directive": ["D"], "tactic": ["e2", "t3"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["D"], "tactic": ["e2", "t3"]}}
       """
     When I PUT "/activations/a-1/exclusions/directive/D" with the stored ETag and the body:
       """
@@ -1033,7 +1130,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       """
     And the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "selected": {"directive": ["K"], "tactic": ["c", "c3", "c4", "c5", "e2"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["K"], "tactic": ["c", "c3", "c4", "c5", "e2"]}}
       """
     When I PUT "/activations/a-1/exclusions/directive/K" with the stored ETag and the body:
       """
@@ -1068,7 +1165,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     q; deactivating p with a cascade walks the same lineage, so R leaves selected again and only p is denied.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}]}
       """
     When I PUT "/activations/a-1/selections/agent_profile/p" with the stored ETag and the body:
       """
@@ -1093,8 +1190,8 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       """
     And the field at "/skipped/skippedShared" holds exactly 0 items
     When I GET "/activations/a-1"
-    Then the field at "/config/selected/agent_profile" holds exactly 0 items
-    And the field at "/config/selected/directive" holds exactly 0 items
+    Then the response body has no field at "/config/selected/agent_profile"
+    And the response body has no field at "/config/selected/directive"
     And the field at "/config/deactivated/agent_profile" holds exactly the ids:
       """
       p
@@ -1105,7 +1202,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     with a cascade keeps R and names q in skippedShared.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "selected": {"agent_profile": ["q"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"agent_profile": ["q"]}}
       """
     When I PUT "/activations/a-1/selections/agent_profile/p" with the stored ETag and the body:
       """
@@ -1141,7 +1238,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
   Scenario: Deactivating without a cascade denies and unselects the target alone
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "selected": {"directive": ["D"], "tactic": ["t"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["D"], "tactic": ["t"]}}
       """
     When I PUT "/activations/a-1/exclusions/directive/D" with the stored ETag and the body:
       """
@@ -1157,13 +1254,13 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       """
       t
       """
-    And the field at "/config/selected/directive" holds exactly 0 items
+    And the response body has no field at "/config/selected/directive"
 
   Scenario: Deactivating a locked artifact is 409 artifact_locked and stores nothing
     US4 AS3, FR-007.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}]}
       """
     When I PUT "/activations/a-1/exclusions/directive/LK" with the stored ETag and the body:
       """
@@ -1179,7 +1276,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     US4 AS3, FR-007: main's governing preset requires RQ.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}]}
       """
     When I PUT "/activations/a-1/exclusions/directive/RQ" with the stored ETag and the body:
       """
@@ -1197,7 +1294,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     answers 200 and the stored entry stays as it is.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "deactivated": {"directive": ["D2"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "deactivated": {"directive": ["D2"]}}
       """
     And the org pack "main" with the file "presets/governing.yaml":
       """
@@ -1226,11 +1323,11 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       D2
       """
 
-  # Stale ids are dropped on write (ADR-0059 amendment R5, operator ruling of 2026-11-06).
+  # Stale ids are dropped on write (ADR-0059 amendment A5, operator ruling of 2026-11-06).
 
   Scenario: A write drops the ids the closure no longer declares and reports them in dropped
-    ADR-0059 amendment R5: a pack upgrade removed directive OLD, tactic old and mission type research, which the
-    stored document still names. Selecting D2 first drops them from selected, deactivated and missionTypes, then
+    ADR-0059 amendment A5: a pack upgrade removed directive OLD, tactic old and mission type research, which the
+    stored document still names. Selecting D2 first drops them from selected and deactivated, then
     selects D2; dropped names them, and applied and cleared report only the select.
     Given the org pack "main" with the file "directives/OLD.directive.yaml":
       """
@@ -1250,7 +1347,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       """
     And the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "missionTypes": ["research"], "selected": {"directive": ["OLD"]}, "deactivated": {"tactic": ["old"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["OLD"], "mission_type": ["research"]}, "deactivated": {"tactic": ["old"]}}
       """
     And the file "directives/OLD.directive.yaml" of the pack "main" is deleted
     And the file "tactics/old.tactic.yaml" of the pack "main" is deleted
@@ -1277,11 +1374,11 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       """
       D2
       """
-    And the field at "/config/missionTypes" holds exactly 0 items
+    And the response body has no field at "/config/selected/mission_type"
     And the response body has no field at "/config/deactivated"
 
   Scenario: A write that only drops stale ids is not a no-op and stores a new revision
-    ADR-0059 amendment R5: D2 is already selected, so the select changes nothing but the drop of OLD; the dropped id
+    ADR-0059 amendment A5: D2 is already selected, so the select changes nothing but the drop of OLD; the dropped id
     counts as a change.
     Given the org pack "main" with the file "directives/OLD.directive.yaml":
       """
@@ -1293,7 +1390,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       """
     And the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "selected": {"directive": ["D2", "OLD"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["D2", "OLD"]}}
       """
     And the file "directives/OLD.directive.yaml" of the pack "main" is deleted
     When I PUT "/activations/a-1/selections/directive/D2" with the stored ETag and the body:
@@ -1310,7 +1407,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       """
 
   Scenario: An unselect that names a stale id drops it and stores a new revision
-    FR-010, ADR-0059 amendment R5: the closure no longer holds OLD, but the stored document still selects it, so the
+    FR-010, ADR-0059 amendment A5: the closure no longer holds OLD, but the stored document still selects it, so the
     unselect proceeds; OLD is dropped with every other stale id and reported in dropped only.
     Given the org pack "main" with the file "directives/OLD.directive.yaml":
       """
@@ -1322,7 +1419,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       """
     And the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "selected": {"directive": ["D2", "OLD"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["D2", "OLD"]}}
       """
     And the file "directives/OLD.directive.yaml" of the pack "main" is deleted
     When I DELETE "/activations/a-1/selections/directive/OLD" with the stored ETag
@@ -1342,7 +1439,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       """
 
   Scenario: A re-activate that names a stale id drops its deny entry and stores a new revision
-    FR-010, ADR-0059 amendment R5: the closure no longer holds the tactic old, but the stored document still denies it,
+    FR-010, ADR-0059 amendment A5: the closure no longer holds the tactic old, but the stored document still denies it,
     so the re-activate proceeds; old is dropped, reported in dropped only, and not in cleared.
     Given the org pack "main" with the file "tactics/old.tactic.yaml":
       """
@@ -1354,7 +1451,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       """
     And the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "deactivated": {"tactic": ["old"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "deactivated": {"tactic": ["old"]}}
       """
     And the file "tactics/old.tactic.yaml" of the pack "main" is deleted
     When I DELETE "/activations/a-1/exclusions/tactic/old" with the stored ETag
@@ -1382,7 +1479,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
       """
     And the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "selected": {"directive": ["OLD"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["OLD"]}}
       """
     And the file "directives/OLD.directive.yaml" of the pack "main" is deleted
     When I DELETE "/activations/a-1/selections/directive/GONE" with the stored ETag
@@ -1398,7 +1495,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     US4 AS4.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "deactivated": {"tactic": ["x"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "deactivated": {"tactic": ["x"]}}
       """
     When I DELETE "/activations/a-1/exclusions/tactic/x" with the stored ETag
     Then the response status is 200
@@ -1418,7 +1515,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
     US4 AS4, the no-op.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}]}
       """
     When I DELETE "/activations/a-1/exclusions/tactic/x" with the stored ETag
     Then the response status is 200
@@ -1429,7 +1526,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
   Scenario: Deactivating what is already denied and not selected changes nothing
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "deactivated": {"tactic": ["x"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "deactivated": {"tactic": ["x"]}}
       """
     When I PUT "/activations/a-1/exclusions/tactic/x" with the stored ETag and the body:
       """
@@ -1442,7 +1539,7 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
   Scenario: A deactivate without If-Match is 428
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}]}
       """
     When I PUT "/activations/a-1/exclusions/directive/D" with the body:
       """
@@ -1453,30 +1550,40 @@ Feature: Selecting, unselecting, deactivating and re-activating one artifact of 
   Scenario: A re-activate with a stale If-Match is 412
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}], "deactivated": {"tactic": ["x"]}}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "deactivated": {"tactic": ["x"]}}
       """
     When I DELETE "/activations/a-1/exclusions/tactic/x" with the header "If-Match": "\"sha256:1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f1f\""
     Then the response status is 412
 
-  Scenario: Deactivating a mission type is 422 with a violation at the path
-    FR-010: missionTypes holds mission types, so the exclusions path takes no mission_type kind.
+  Scenario: Deactivating a mission type denies it, and one the closure does not hold is 404 mission_type_not_found
+    Rewritten for the one kind model (IC-20, Q2): the exclusions path takes kind mission_type, and a mission type
+    neither required nor locked is denied like any kind. It was 422 at the path while missionTypes held mission
+    types apart.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}]}
       """
+    When I PUT "/activations/a-1/exclusions/mission_type/no-such-type" with the stored ETag and the body:
+      """
+      {}
+      """
+    Then the response status is 404
+    And the problem code is "mission_type_not_found"
     When I PUT "/activations/a-1/exclusions/mission_type/research" with the stored ETag and the body:
       """
       {}
       """
-    Then the response status is 422
-    And the problem code is "activation_invalid"
-    And the field at "/violations/0/pointer" is "/kind"
+    Then the response status is 200
+    And the field at "/applied" holds exactly the ids:
+      """
+      mission_type:research
+      """
 
   Scenario: Deactivating an artifact the closure does not hold is 404 artifact_not_found
     FR-010.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "packs": [{"packId": "main"}]}
+      {"schemaVersion": 2, "packs": [{"packId": "main"}]}
       """
     When I PUT "/activations/a-1/exclusions/tactic/NO_SUCH" with the stored ETag and the body:
       """

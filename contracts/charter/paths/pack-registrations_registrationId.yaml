@@ -1,0 +1,76 @@
+parameters:
+- name: registrationId
+  in: path
+  required: true
+  description: >-
+    The id of a registration, the last segment of the Location a registration answered (a ULID). A value outside the
+    grammar breaks the parameter's schema and is a 400 Problem without a code.
+  schema:
+    type: string
+    pattern: '^[0-9A-HJKMNP-TV-Z]{26}$'
+get:
+  operationId: getPackRegistration
+  summary: Read the status of one pack registration.
+  description: >-
+    The status resource of a registration (ADR-0065 D8, FR-024): pending, running, succeeded (result holds the
+    PackRegistration, with its outcome created, replaced or unchanged, and the notices of FR-027) or refused (problem
+    holds the refusal the synchronous API would have answered). A refused registration answers 200 here: the refusal is
+    in the body, not in the status of this read. The status is kept in memory for one hour after the job ends, at most
+    1,000 entries, and a restart forgets it: an id the service does not hold, or has forgotten, is 404
+    registration_not_found, and the client re-sends the pack, which the version rule makes idempotent. The client polls;
+    the service opens no connection to a client-chosen address. Where the refusal codes of a registration are declared:
+    the problem of a refused status is returned in the 200 body of this operation, so the codes a registration can end
+    with carry their status for getPackRegistration in the operations map of their x-refusal entry (CharterRefusalCode),
+    the eleven pack composition codes as 422 in place of 500; registerPackFromArchive and registerPackFromSource declare
+    only their synchronous answers. The status is read from the registration jobs, not from a pack file, so
+    the answer carries no Charter-Source-Fingerprint (decision DM-01M6TV6VDNHNCVWRHHC74WATV0).
+  tags:
+  - Registration
+  responses:
+    '200':
+      description: The status of the registration, in whatever state it has reached.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/PackRegistrationStatus.yaml
+          examples:
+            succeeded:
+              $ref: ../examples/PackRegistrationStatus.succeeded.yaml
+            version-conflict:
+              $ref: ../examples/PackRegistrationStatus.version-conflict.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      description: >-
+        No registration is held under the id: 404 registration_not_found. The id was never issued, the registration
+        ended more than an hour ago, the service evicted it (at most 1,000 are kept), or the service restarted.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+          examples:
+            registration-not-found:
+              summary: No registration is held under the id.
+              value:
+                title: Registration not found
+                status: 404
+                code: registration_not_found
+                detail: No registration 01M6TQ62HXYF362GAFS2BZ3PGF is held; it ended more than an hour ago or never existed.
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

@@ -1,0 +1,36 @@
+title: EnhancerWithoutTarget
+description: >-
+  A selected enhancer none of whose targets is in force, so it is not in force either (operator ruling Q8): an
+  enhancer does not stand on its own.
+type: object
+additionalProperties: false
+required:
+- kind
+- artifactId
+- targets
+properties:
+  kind:
+    allOf:
+    - $ref: ActivatableKind.yaml
+    description: The kind of the enhancer.
+    x-derived:
+      rule: The kind of the enhancer.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  artifactId:
+    allOf:
+    - $ref: ArtifactId.yaml
+    description: The declared id of the enhancer.
+    x-derived:
+      rule: The id of the enhancer.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  targets:
+    type: array
+    items:
+      $ref: ArtifactReference.yaml
+    description: The artifacts the enhancer enhances, none of which is in force.
+    x-derived:
+      rule: The targets of the enhancer's enhances edges, sorted.
+      inputs:
+      - schemas/ActivationConfig.yaml

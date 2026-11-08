@@ -33,6 +33,11 @@ tags:
     description: >-
       The toolguide registrations of a Charter Pack: register and replace a toolguide, which is read
       through Artifacts.
+  - name: Registration
+    description: >-
+      The whole Charter Pack: register it from an archive or from a source and poll the registration's status,
+      read the stored pack, and remove one artifact or one registered relationship from it (ADR-0065). Declared in
+      full: an operation not built yet carries x-reserved and answers 501 until it is (ADR-0020 D8).
   - name: Relationships
     description: The relationships registered between a Charter Pack's components.
   - name: Artifacts
@@ -53,6 +58,12 @@ paths:
     $ref: paths/openapi.yaml
   /offering:
     $ref: paths/offering.yaml
+  /packs:
+    $ref: paths/packs.yaml
+  /packs/{packId}:
+    $ref: paths/packs_packId.yaml
+  /pack-registrations/{registrationId}:
+    $ref: paths/pack-registrations_registrationId.yaml
   /packs/{packId}/relationships:
     $ref: paths/packs_packId_relationships.yaml
   /packs/{packId}/artifacts:
@@ -108,9 +119,12 @@ components:
         environment and to its one client in the Authorization header as Bearer <token>; the scheme
         name is matched without regard to case. It is never put in a URL, a command line or a log. Every operation requires it, the
         info operation included. A request without it, or with a malformed or wrong one, is a 401.
-        A request a browser makes is a 403 whatever it carries: an Origin, Sec-Fetch-Site or
-        Sec-Fetch-Mode header, or a Host whose name is not localhost, 127.0.0.1 or [::1] (the port is
-        not judged), which is how DNS rebinding reaches a loopback service. The token proves the
+        A request a browser made, or one that names a host the service does not accept, is a 403 whatever
+        it carries: it has an Origin, Sec-Fetch-Site or Sec-Fetch-Mode header, or a Host whose name is not
+        localhost, 127.0.0.1 or [::1] (the port is not judged), which is how DNS rebinding reaches a loopback
+        service. A containerized deployment compares the Host name with its configured list of host names
+        instead, and refuses an HTTP/1.0 request without a Host header (the servlet container answers an
+        HTTP/1.1 request without one with a 400). The token proves the
         client to the service, not the service to the client: no answer, the info operation's
         included, is an identity proof of the server. Both refusals are answered before the request is
         routed, so an unknown path is a 401 and not a 404, and before any pack file is read. The

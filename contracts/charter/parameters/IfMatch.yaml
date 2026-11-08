@@ -2,11 +2,20 @@ name: If-Match
 in: header
 required: false
 description: >-
-  The revision the client holds, as the quoted ETag of an Activation answer, or * for any current revision. On a
-  sub-resource write it is required: a write without it is answered 428; with a revision that is not current, 412,
-  and the client fetches the activation again before it retries. On PUT and DELETE of the document it is optional:
-  without it the write is last-writer-wins (ADR-0020 D6). If-Match: * passes the 428 requirement and only asserts
-  that the activation exists; it gives no lost-update protection, by design.
+  The revision the client holds. On an activation write (PUT, DELETE and the sub-resource writes) it is the quoted
+  revision (the ETag a write answers) or the activation's current getActivation tag (the quoted strong tag over the
+  revision and the closure's governanceFingerprint), so a client may send what it read; a closure tag that no longer
+  matches the current one is 412 (operator decision 01M6Y3GZFRC5WEQQ7G6GT0YMW3). A write's answer keeps the revision as
+  its ETag and carries no denyNotApplied. For a pack it is the quoted strong ETag of a pack
+  revision (the revision of a pack write or of getPack, "sha256:" and 64 hex digits in double quotes), or * for any
+  current revision. On a sub-resource write it is required: a write without it is answered 428; with a revision that is
+  not current, 412, and the client fetches the activation or the pack again before it retries. On PUT and DELETE of an
+  activation document it is optional: without it the write is last-writer-wins (ADR-0020 D6). On a whole-pack
+  registration (PUT /packs/{packId}, POST /packs) it is optional as well: without it the registration is
+  last-writer-wins on the whole pack, and a stale revision is a 412 at acceptance, checked again under the lock. The two
+  DELETEs of a pack, an artifact and a relationship, require it, as every sub-resource write does: each states its 428
+  in its description. If-Match: * passes the 428 requirement and only asserts that the activation or the pack exists; it
+  gives no lost-update protection, by design.
 schema:
   type: string
   pattern: ^(\*|"sha256:[0-9a-f]{64}")$

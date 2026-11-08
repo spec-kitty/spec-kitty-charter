@@ -7,6 +7,7 @@ import ai.speckitty.charter.packs.domain.PackSources;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -33,6 +34,15 @@ public final class FileSystemPackSources implements PackSources {
     @Override
     public String fingerprint() {
         return digestNamed(locations.get(), PackFileSet::digested);
+    }
+
+    @Override
+    public String fingerprintOf(Collection<String> packNames) {
+        return digestNamed(
+                locations.get().stream()
+                        .filter(location -> packNames.contains(location.name()))
+                        .toList(),
+                PackFileSet::digested);
     }
 
     /**

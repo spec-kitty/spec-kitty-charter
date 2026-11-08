@@ -19,7 +19,6 @@ import java.util.Optional;
  * @param commands the {@code commands}, in authored order
  * @param appliesToLanguages the {@code applies_to_languages}, in authored order
  * @param lastUpdated the {@code last_updated}, when stated
- * @param references the {@code references}, in authored order with duplicates kept
  * @param guide the guide file {@code guide_path} names, once the store has read it
  */
 record ToolguideDso(
@@ -32,7 +31,6 @@ record ToolguideDso(
         List<String> commands,
         List<String> appliesToLanguages,
         Optional<String> lastUpdated,
-        List<String> references,
         Optional<MarkdownDocument> guide) {
 
     /**
@@ -47,7 +45,6 @@ record ToolguideDso(
      * @param commands the commands
      * @param appliesToLanguages the applies-to languages
      * @param lastUpdated the last-updated text
-     * @param references the references
      * @param guide the guide, possibly empty
      */
     ToolguideDso {
@@ -61,7 +58,6 @@ record ToolguideDso(
         Objects.requireNonNull(guide, "guide");
         commands = List.copyOf(commands);
         appliesToLanguages = List.copyOf(appliesToLanguages);
-        references = List.copyOf(references);
     }
 
     /**
@@ -81,7 +77,6 @@ record ToolguideDso(
                 commands,
                 appliesToLanguages,
                 lastUpdated,
-                references,
                 document);
     }
 }
