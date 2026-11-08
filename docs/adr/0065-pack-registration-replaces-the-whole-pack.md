@@ -198,19 +198,27 @@ stands, and the clauses it names are read as follows.
 - *The body is streamed.* The archive is copied from the request stream, behind the 32 MiB counter, into an owner-only
   spool file in the job's directory. It is never held in the heap (A3).
 - *A slow upload holds no slot (A4).* Two designs were open: (a) take the slot only after the body is spooled, or (b)
-  count uploads in progress separately (two reading, `503` beyond) with a body read deadline. (a) is chosen. (b) needs a
+  count uploads in progress separately (two reading, `503` beyond) with a body read deadline. (a) is chosen, with a plain
+  cap on the uploads open at once (see the cost below) instead of (b)'s body read deadline. That deadline needs a
   deadline on a blocking socket read, which the application cannot enforce between bytes, and an answer for an upload
   that outran it, and the contract declares no `408` or `504` for `registerPackFromArchive`; (a) answers only with
   statuses the contract already declares. Admission still refuses, before the body is read, a declared length over 32
   MiB (`413`), a full queue (`503` with `Retry-After`), a stale `If-Match` or an `If-None-Match: *` over a stored pack
   (`412`), and a full volume (`503 pack_storage_full`); the queue and the preconditions are judged again when the body is
   spooled, because both move during a transfer. The slot, and the 90 second deadline, start then, so the deadline no
-  longer counts the transfer. The cost: the number of bodies arriving at once is bounded by the server's connections, not
-  by the queue. Each is bounded at 32 MiB, the free-space check runs per request, an abandoned spool is a job-id-named
+  longer counts the transfer. The cost, and its bound: bodies arriving hold no slot, so they would be limited only by
+  the server's connections (8192 with virtual threads), each writing up to 32 MiB that the others' free-space checks
+  never saw. They are therefore counted apart from the queue: at most `RUNNING_LIMIT + WAITING_LIMIT` = 10 uploads are
+  open at once, the eleventh is refused at admission with the `503` and `Retry-After` of a full queue (the same
+  declared answer, no new code), and an upload gives its place back when its body is spooled and a reservation adopts
+  it, or when it is discarded (a refused or abandoned transfer). An open upload still holds no queue slot. The
+  free-space check at admission is cumulative: it asks for its own room on top of the declared length (32 MiB when none
+  is declared) of every upload already open. Each body is bounded at 32 MiB, an abandoned spool is a job-id-named
   directory the sweep removes after 15 minutes (never one whose transfer is open), and the endpoint needs the worktree
   token and the flag. A job the deadline ends while it is reserved, before the controller starts it, is answered by its
   own end: `202` with the refused status `registration_timed_out`, the outcome the audit records, not a `500`.
-- *Free space (A6).* The check runs at admission, from the declared length (a body with none is judged as full-size), and
+- *Free space (A6).* The check runs at admission, from the declared length (a body with none is judged as full-size) plus the declared
+  bytes of the uploads already open, and
   when the job runs, on the staging volume as well as the pack volume. The margin is the per-job peak: about three times
   the archive bound, the archive, the extracted tree and the copy the commit makes beside the pack (96 MiB for a
   full-size archive on one volume; on two volumes, the staging volume needs the archive and the tree and the pack volume
