@@ -779,6 +779,9 @@
       "last_event_id": "01M6Y1DHR6AHTNT4WKC84252TQ",
       "last_transition_at": "2026-11-08T16:56:11.783027+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Contract B declared (effective list, skipped report, IC-17 write members, EffectiveArtifact.suggestion, getActivation ETag over revision plus closure fingerprint), two reads unreserved (ReservedOperationCoverageTest 4 to 2), fragments, 37 @WIP scenarios. :contracts:check green; targeted deployable tests green. Whole :deployable:test stays red ONLY on OperationCoverage R-20 (GET artifacts 200 and skipped 200) until WP25 binds the two reads; accepted per the plan split, not re-reserved."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 8255,
