@@ -82,7 +82,7 @@ rules:
   - id: external-links
     rule: External links respond. Remote sites flake, so this reports but never blocks.
     check: lychee (lychee.toml)
-    ci: External links (non-gating)
+    ci: Docs nightly / External links (report-only)
     severity: warning
   - id: markdown-lint
     rule: Markdown follows the markdownlint rules in .markdownlint-cli2.jsonc.

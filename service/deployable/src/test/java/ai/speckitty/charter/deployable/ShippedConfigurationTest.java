@@ -233,11 +233,13 @@ class ShippedConfigurationTest {
     void theContainerProfileFileHoldsOnlyItsDefaultsAndTheRequiredImport() {
         Map<String, String> container = flattenedYaml(read(RESOURCES.resolve("application-container.yaml")));
         assertThat(container.keySet())
-                .containsExactlyInAnyOrder("spring.config.import", "server.address", "server.port");
+                .containsExactlyInAnyOrder(
+                        "spring.config.import", "server.address", "server.port", "server.forward-headers-strategy");
         assertThat(container)
                 .containsEntry("spring.config.import", "configtree:${charter.container.secrets-dir:/run/secrets}/")
                 .containsEntry("server.address", "0.0.0.0")
-                .containsEntry("server.port", "8080");
+                .containsEntry("server.port", "8080")
+                .containsEntry("server.forward-headers-strategy", "none");
         assertThat(container.get("spring.config.import")).doesNotStartWith("optional:");
     }
 

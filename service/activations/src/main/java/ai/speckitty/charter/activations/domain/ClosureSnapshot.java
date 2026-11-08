@@ -16,8 +16,7 @@ import java.util.stream.Collectors;
  * collection is a defensive, unmodifiable copy.
  *
  * @param packs the closure's packs, in dependency order
- * @param held the declared ids the closure holds, per kind
- * @param missionTypes the mission type ids the closure holds
+ * @param held the declared ids the closure holds, per kind, mission types included (one kind model, IC-20)
  * @param requiredBy the required floor: URN text (for example {@code directive:D1}) to the configured ids of the packs
  *     that require it, as a {@code 409}'s {@code requiredBy} names them
  * @param lockedBy URN text to the configured id of the pack that locks it
@@ -30,7 +29,6 @@ import java.util.stream.Collectors;
 public record ClosureSnapshot(
         List<PackEntry> packs,
         Map<ArtifactKind, Set<String>> held,
-        Set<String> missionTypes,
         Map<String, List<String>> requiredBy,
         Map<String, String> lockedBy,
         Map<String, PresetView> presets,
@@ -42,7 +40,6 @@ public record ClosureSnapshot(
      *
      * @param packs the packs
      * @param held the held ids per kind
-     * @param missionTypes the mission types
      * @param requiredBy the required floor
      * @param lockedBy the locks
      * @param presets the presets
@@ -52,7 +49,6 @@ public record ClosureSnapshot(
     public ClosureSnapshot {
         packs = List.copyOf(packs);
         held = copyOfSets(held);
-        missionTypes = Set.copyOf(missionTypes);
         requiredBy = requiredBy.entrySet().stream()
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> List.copyOf(e.getValue())));
         lockedBy = Map.copyOf(lockedBy);
@@ -66,7 +62,6 @@ public record ClosureSnapshot(
      *
      * @param packs the packs
      * @param held the held ids per kind
-     * @param missionTypes the mission types
      * @param requiredBy the required floor
      * @param lockedBy the locks
      * @param presets the presets
@@ -75,12 +70,11 @@ public record ClosureSnapshot(
     public ClosureSnapshot(
             List<PackEntry> packs,
             Map<ArtifactKind, Set<String>> held,
-            Set<String> missionTypes,
             Map<String, List<String>> requiredBy,
             Map<String, String> lockedBy,
             Map<String, PresetView> presets,
             String fingerprint) {
-        this(packs, held, missionTypes, requiredBy, lockedBy, presets, fingerprint, Set.of());
+        this(packs, held, requiredBy, lockedBy, presets, fingerprint, Set.of());
     }
 
     /**
@@ -94,7 +88,7 @@ public record ClosureSnapshot(
         if (unknownPacks.isEmpty()) {
             throw new IllegalArgumentException("An unresolved closure names at least one unknown pack.");
         }
-        return new ClosureSnapshot(List.of(), Map.of(), Set.of(), Map.of(), Map.of(), Map.of(), "", unknownPacks);
+        return new ClosureSnapshot(List.of(), Map.of(), Map.of(), Map.of(), Map.of(), "", unknownPacks);
     }
 
     /**
@@ -150,7 +144,8 @@ public record ClosureSnapshot(
      * The extends chain from a pack the activation names up its {@code parent_pack} line to a requiring pack, as a
      * {@code 409}'s {@code RequiringPack.via} names it: the named pack first, then each parent up to, and without, the
      * requiring pack (the contract's example: an activation of {@code team}, which extends {@code internal}, has
-     * {@code via: [team]} for {@code internal}).
+     * {@code via: [team]} for {@code internal}). The walk needs no bound: the compose refuses a {@code parent_pack}
+     * cycle, a pack that names itself included, as {@code pack_dependency_cycle}, so a snapshot's line always ends.
      *
      * @param rootPackId the configured id of the pack the activation names
      * @param requiringPackId the configured id of the requiring or locking pack
@@ -161,7 +156,7 @@ public record ClosureSnapshot(
     public Optional<List<String>> extendsChain(String rootPackId, String requiringPackId) {
         List<String> chain = new ArrayList<>();
         Optional<String> at = Optional.of(rootPackId);
-        while (at.isPresent() && chain.size() <= packs.size()) {
+        while (at.isPresent()) {
             String current = at.orElseThrow();
             if (current.equals(requiringPackId)) {
                 return Optional.of(List.copyOf(chain));
@@ -268,29 +263,19 @@ public record ClosureSnapshot(
      * here: the closure's {@code requiredBy} already holds the floor every governing preset sets.
      *
      * @param id the preset's id
-     * @param activatedKinds the kinds the preset activates; empty when it gates none
-     * @param members the declared ids it selects, per kind, must-have items included
-     * @param missionTypes the mission types it selects, must-have ones included
+     * @param members the declared ids it selects, per kind, mission types and must-have items included
      */
-    public record PresetView(
-            String id,
-            Set<ArtifactKind> activatedKinds,
-            Map<ArtifactKind, Set<String>> members,
-            Set<String> missionTypes) {
+    public record PresetView(String id, Map<ArtifactKind, Set<String>> members) {
 
         /**
-         * Copies every collection.
+         * Copies the members.
          *
          * @param id the id
-         * @param activatedKinds the kind gate
          * @param members the members per kind
-         * @param missionTypes the mission types
          */
         public PresetView {
             Objects.requireNonNull(id, "id");
-            activatedKinds = Set.copyOf(activatedKinds);
             members = copyOfSets(members);
-            missionTypes = Set.copyOf(missionTypes);
         }
     }
 }

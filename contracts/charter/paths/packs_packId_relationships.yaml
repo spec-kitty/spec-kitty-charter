@@ -97,6 +97,12 @@ put:
         body limit (1 MiB; refused validation_failed before it is read), or its to cannot resolve in the compose of
         the pack (pack_reference_pack_missing, pack_reference_unqualified or pack_reference_artifact_missing, each with
         a packs member).
+        The write is also judged over every closure the pack joins, as the pack will be after it, under the registry
+        lock (the registration impact check, IC-15; operator ruling DM-01M6VG6GC40AKYYFRR35SV8HVW, FR-025): a closure
+        that would no longer compose is refused with its composition code (pack_sibling_conflict, two packs of one level
+        defining one id, among them), and one that would break a relation rule with override_not_permitted,
+        enhances_cycle, conflicting_relations, self_override or override_cycle. The packs member names the closure's
+        root pack and the packs involved, and nothing is written.
       headers:
         Charter-Contract-Version:
           $ref: ../headers/CharterContractVersion.yaml
@@ -110,5 +116,154 @@ put:
       $ref: ../../_shared/responses/Problem.yaml
     '500':
       $ref: ../responses/OfferingUnreadable.yaml
+    '503':
+      $ref: ../responses/RegistryBusy.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml
+delete:
+  operationId: deletePackRelationship
+  summary: Remove one registered relationship edge from a Charter Pack.
+  description: >-
+    Removes the edge of the unordered {from, to} pair, only from registered.graph.yaml, the shard putPackRelationship
+    writes, and answers 204 with an ETag, the pack's new revision (ADR-0065 D4, FR-006; decision
+    DM-01M6TQ62HXYF362GAFS2BZ3PGF). A DELETE never rewrites a file the author wrote. The removed edge is gated as a
+    RELATIONSHIP write on its from (409 governance_policy_violation), as a whole-pack replace that drops it is. from and
+    to are required query parameters, each a PackQualifiedReference, in either orientation: a URN may hold a slash
+    (action:<type>/<step>), so the pair is not a path segment. It is synchronous and requires If-Match on the pack revision, as every
+    sub-resource write does: absent is 428, a stale revision is 412, checked under the registry lock. The order of the
+    checks is: the pack first (an identifier that matches no configured pack is 404 pack_not_found), then If-Match (428,
+    412), and only then the pair, so a pair on which no graph document of the pack holds an edge and no derived relation
+    joins the two is 404 relationship_not_found for a request whose If-Match passed, and a stale or absent If-Match on
+    such a pair is 412 or 428; deletePackArtifact judges the path (kind, then artifact) before If-Match. 409
+    relationship_not_registered answers a pair the pack holds only outside registered.graph.yaml (the author wrote the
+    edge in a source shard or drg/fragment.yaml), or a derived relation (a guard's implemented_by, ADR-0064 D7), and a
+    pair held both in registered.graph.yaml and in an author-written document: the author wrote it, and a 204 that left
+    the edge in force would mislead. The fixed reason says to register the whole pack; nothing is written. PR A is
+    strict: when a closure that contains the pack, after the removal, no longer composes or breaks a rule, the answer
+    is 422 with the composition code or one of override_not_permitted, enhances_cycle, conflicting_relations,
+    self_override and override_cycle, naming the packs, and nothing is written. The version history is kept.
+    While charter.registration.enabled is off (the default) the answer is 503 pack_source_unavailable before the pack, the
+    path or If-Match is judged (ADR-0065 D13).
+  tags:
+  - Registration
+  parameters:
+  - $ref: ../parameters/PackId.yaml
+  - name: from
+    in: query
+    required: true
+    description: >-
+      One end of the pair: a URN <kind>:<id> or a pack-qualified <pack-name>::<kind>:<id>. The pair is unordered, so the
+      edge is found whichever end the registration wrote as its from.
+      A reference that names a pack matches only an edge end that names the same pack, so with the edges A to base::X
+      and A to other::X a DELETE naming base::X removes one edge; a reference that names no pack matches by its URN,
+      whatever pack the edge end names.
+    schema:
+      $ref: ../schemas/PackQualifiedReference.yaml
+  - name: to
+    in: query
+    required: true
+    description: The other end of the pair, spelled as from.
+    schema:
+      $ref: ../schemas/PackQualifiedReference.yaml
+  - $ref: ../parameters/IfMatch.yaml
+  responses:
+    '204':
+      description: The registered edge was removed; no body. The ETag is the pack's new revision.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        ETag:
+          description: The pack revision after the removal, quoted.
+          required: true
+          schema:
+            type: string
+            pattern: ^"sha256:[0-9a-f]{64}"$
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      description: >-
+        The pack, or the edge, the request names is not there: 404 pack_not_found, or relationship_not_found when no
+        graph document of the pack holds an edge on the pair and no derived relation joins it.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+          examples:
+            pack-not-found:
+              summary: No configured pack matches the identifier.
+              value:
+                title: Pack not found
+                status: 404
+                code: pack_not_found
+                detail: Pack nope was not found.
+            relationship-not-found:
+              summary: The pack holds no edge on the pair.
+              value:
+                title: Relationship not found
+                status: 404
+                code: relationship_not_found
+                detail: Pack qa holds no relationship between directive:GUARD and procedure:review.
+    '409':
+      description: >-
+        relationship_not_registered: the pack holds an edge on the pair that is not in registered.graph.yaml (authored in
+        a source shard or drg/fragment.yaml, or derived), or holds the pair both there and in an author-written document.
+        Register the whole pack to change it; nothing is written.
+        governance_policy_violation: the removed edge is a RELATIONSHIP write on its from, and the mutability level of the
+        pack that owns that artifact does not permit it, as for a whole-pack replace that drops the edge (ADR-0012);
+        nothing is written.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+          examples:
+            relationship-not-registered:
+              summary: The edge is authored in the pack's own graph documents.
+              value:
+                title: Relationship not registered
+                status: 409
+                code: relationship_not_registered
+                detail: >-
+                  The relationship between directive:GUARD and procedure:review is not in registered.graph.yaml: register
+                  the whole pack to change it.
+    '412':
+      $ref: ../responses/PackPreconditionFailed.yaml
+    '422':
+      description: >-
+        PR A is strict: a closure that contains the pack, after the removal, fails to compose or breaks a rule, so the
+        removal is refused and nothing is written. The code is one of the eleven pack composition codes or of
+        override_not_permitted, enhances_cycle, conflicting_relations, self_override and override_cycle, with the packs
+        member naming the root pack of the closure and the packs involved; validation_failed when the pack that would
+        result does not revalidate. The composition codes answer 422 here, in place of 500.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+    '428':
+      $ref: ../responses/PreconditionRequired.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    '503':
+      $ref: ../responses/PackRemovalUnavailable.yaml
     default:
       $ref: ../../_shared/responses/Problem.yaml

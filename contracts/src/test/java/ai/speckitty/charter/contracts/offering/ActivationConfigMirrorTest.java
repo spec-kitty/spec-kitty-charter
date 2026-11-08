@@ -60,7 +60,7 @@ class ActivationConfigMirrorTest {
     @Test
     void theStrippedTreesStillHoldTheClosingAndConstrainingKeywords() {
         String flat = String.valueOf(canonical());
-        assertThat(flat).contains("additionalProperties=false", "minItems=1", "required=[schemaVersion]", "maximum=1");
+        assertThat(flat).contains("additionalProperties=false", "minItems=1", "required=[schemaVersion]", "maximum=2");
     }
 
     private static Object canonical() {

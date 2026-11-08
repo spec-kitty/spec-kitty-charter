@@ -49,18 +49,18 @@ Feature: The guards of the activation register
     judged first, and the stored revision is kept.
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "selected": {"directive": ["DIRECTIVE_001"]}}
+      {"schemaVersion": 2, "selected": {"directive": ["DIRECTIVE_001"]}}
       """
     And I remember the ETag
     When I PUT "/activations/a-1" with the body:
       """
-      {"schemaVersion": 1, "selected": {"directive": []}}
+      {"schemaVersion": 2, "selected": {"directive": []}}
       """
     Then the response status is 200
     When I remember the header "ETag"
     And I PUT "/activations/a-1" with the remembered ETag and the body:
       """
-      {"schemaVersion": 1, "selected": {"directive": ["NO_SUCH_DIRECTIVE"]}}
+      {"schemaVersion": 2, "selected": {"directive": ["NO_SUCH_DIRECTIVE"]}}
       """
     Then the response status is 412
     And the problem has no code
@@ -71,11 +71,11 @@ Feature: The guards of the activation register
   Scenario: If-None-Match * on a stored id is refused before the body is judged
     Given the activation "a-1" holds:
       """
-      {"schemaVersion": 1, "selected": {"directive": ["DIRECTIVE_001"]}}
+      {"schemaVersion": 2, "selected": {"directive": ["DIRECTIVE_001"]}}
       """
     When I PUT "/activations/a-1" with the header "If-None-Match": "*" and the body:
       """
-      {"schemaVersion": 1, "selected": {"directive": ["NO_SUCH_DIRECTIVE"]}}
+      {"schemaVersion": 2, "selected": {"directive": ["NO_SUCH_DIRECTIVE"]}}
       """
     Then the response status is 412
     And the problem has no code
@@ -86,7 +86,7 @@ Feature: The guards of the activation register
   Scenario: A PUT with If-Match on an id nothing is stored under is a 412, not a 404
     When I PUT "/activations/a-9" with the header "If-Match": '"sha256:0000000000000000000000000000000000000000000000000000000000000000"' and the body:
       """
-      {"schemaVersion": 1, "selected": {"directive": ["DIRECTIVE_001"]}}
+      {"schemaVersion": 2, "selected": {"directive": ["DIRECTIVE_001"]}}
       """
     Then the response status is 412
     And the problem has no code
@@ -101,3 +101,32 @@ Feature: The guards of the activation register
     When I send DELETE "/activations/a-9"
     Then the response status is 404
     And the problem code is "activation_not_found"
+
+  Scenario: An If-Match that is not a quoted revision or * is a 400 on a write, and nothing is stored
+    The header breaks the pattern the contract declares for If-Match, so it is the request that is wrong (400),
+    not a revision that is stale (412).
+    Given the activation "a-1" holds:
+      """
+      {"schemaVersion": 2, "selected": {"directive": ["DIRECTIVE_001"]}}
+      """
+    When I PUT "/activations/a-1" with the header "If-Match": "sha256:not-quoted" and the body:
+      """
+      {"schemaVersion": 2, "selected": {"directive": ["DIRECTIVE_002"]}}
+      """
+    Then the response status is 400
+    And the problem has no code
+    When I DELETE "/activations/a-1" with the header "If-Match": "sha256:not-quoted"
+    Then the response status is 400
+    And the problem has no code
+    When I GET "/activations/a-1"
+    Then the response status is 200
+    And the field at "/config/selected/directive/0" is "DIRECTIVE_001"
+
+  Scenario: An activation id outside the declared pattern is a 400 on the document and the closure read
+    ADR-0020 D2: the id is opaque, but it is bounded to letters, digits and hyphens.
+    When I GET "/activations/-leading-hyphen"
+    Then the response status is 400
+    And the problem has no code
+    When I GET "/activations/-leading-hyphen/packs"
+    Then the response status is 400
+    And the problem has no code

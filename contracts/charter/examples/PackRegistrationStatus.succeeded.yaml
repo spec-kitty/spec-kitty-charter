@@ -1,0 +1,33 @@
+summary: A registration that replaced the stored pack, with the floor and lock changes of the write.
+value:
+  registrationId: 01M6TQ62HXYF362GAFS2BZ3PGF
+  state: succeeded
+  packId: acme-review-pack
+  acceptedAt: '2026-11-07T10:00:00Z'
+  finishedAt: '2026-11-07T10:00:02Z'
+  result:
+    packId: acme-review-pack
+    descriptorPackId: 01M4P01D5TWB5FKZGNNQG3943R
+    name: acme-review-pack
+    version: 1.1.0
+    level: org
+    revision: 'sha256:0000000000000000000000000000000000000000000000000000000000000000'
+    outcome: replaced
+    notices:
+      floorAdded: []
+      floorRemoved:
+        - kind: directive
+          artifactId: B
+      locksAdded: []
+      locksRemoved: []
+    _links:
+      self:
+        href: /api/v1/packs/acme-review-pack
+      artifacts:
+        href: /api/v1/packs/acme-review-pack/artifacts{?kind}
+        templated: true
+  _links:
+    self:
+      href: /api/v1/pack-registrations/01M6TQ62HXYF362GAFS2BZ3PGF
+    pack:
+      href: /api/v1/packs/acme-review-pack

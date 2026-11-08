@@ -3,7 +3,8 @@ description: >-
   One stored activation document (ADR-0020 D4). The ETag is the quoted revision; the answer's bytes depend only on the
   stored document (ADR-0059 D5), so nothing derived from the offering is in it: the counts are on the effective
   artifact list (EffectiveArtifactList.summary) and the packs the document builds on are on its closure read
-  (listActivationPacks).
+  (listActivationPacks). dropped and droppedPins are on a replaceActivation answer only, and only when that write
+  dropped something (A4, B1): a read never carries them, so a read's bytes still depend on the stored document alone.
 type: object
 additionalProperties: false
 required:
@@ -32,5 +33,32 @@ properties:
       - schemas/ActivationConfig.yaml
   config:
     $ref: ActivationConfig.yaml
+  dropped:
+    type: array
+    minItems: 1
+    items:
+      $ref: ArtifactReference.yaml
+    description: >-
+      On a replaceActivation answer only: the ids of the body the activation's closure no longer holds that the
+      replaced document named, dropped from the document stored instead of refused (A4, decision
+      DM-01M6RA7XC5HC8915GZT2R3H83W), sorted. Present only when the write dropped one; config is the stored document
+      without them.
+    x-derived:
+      rule: The ids of the body's selected and deactivated the closure does not hold and the replaced document named.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  droppedPins:
+    type: array
+    minItems: 1
+    items:
+      $ref: PackPin.yaml
+    description: >-
+      On a replaceActivation answer only: the version pins of the body no pack of the closure holds, dropped from
+      packs instead of refused (B1, decision DM-01M6RN5Y406SB4KA13QYMQ2P8J), each as the body wrote it, in its pack
+      order. Present only when the write dropped one; createActivation refuses such a pin (422 version_not_held).
+    x-derived:
+      rule: The body's packs entries whose version no pack of the activation's closure holds.
+      inputs:
+      - schemas/ActivationConfig.yaml
   _links:
     $ref: Links.yaml
