@@ -919,6 +919,9 @@
       "last_event_id": "01M6YGM53EPNN0AS11281ZC7GS",
       "last_transition_at": "2026-11-08T21:21:56.846904+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "WP26 done: T131 architecture pages (resolution-model.md, offering-and-activation.md), T132 divergences DIV-216..237 (DIV-209..215 taken by PR A0; DIV-205 ratified; DIV-201/202 opened), T133 ADR-0053 d5 note, ADR-0059 D5 amendment and ticks, ADR-0020 D6 amendment, rules page (E7 to R13, E20, C28, E5, E9), trace PR B rows, changelog docs/changelog/2026-11-07-b-effective-reads.md. check_docs all, markdownlint and cspell clean."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 10917,
