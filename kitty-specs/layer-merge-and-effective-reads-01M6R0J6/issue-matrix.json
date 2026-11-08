@@ -263,6 +263,18 @@
       "title": null,
       "verdict": "verified-already-fixed",
       "wp": "WP21"
+    },
+    "#419": {
+      "evidence_ref": "PR A of this mission (WP10-WP20), merged to main; referenced by the hand-over and the PR B closeout notes",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "in-mission",
+      "wp": null
     }
   },
   "schema_version": 1
