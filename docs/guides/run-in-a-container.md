@@ -134,8 +134,10 @@ properties like any other setting (`CHARTER_REGISTRATION_ENABLED`, and so on). T
   and the copy made beside the pack. On one volume the whole of it must be free there; on two, 64 MiB on the staging
   volume and 32 MiB on the volume of the packs. Less is `503 pack_storage_full`, answered before the body is read.
 - Two registrations run and eight wait. A registration takes its slot after the service has read the body, so a slow
-  upload holds no slot, but it does hold a connection and up to 32 MiB of staging while it arrives. Put a proxy with an
-  upload timeout in front if clients are slow, and size the staging volume for the uploads you expect at once.
+  upload holds no slot, but it does hold a connection, up to 32 MiB of staging and one of ten places while it arrives:
+  at most ten uploads are open at once, and the eleventh is `503` with `Retry-After`. The free-space check counts the
+  declared bytes of the open uploads, so ten full-size uploads need about 320 MiB of staging free on top of a
+  registration's own room. Put a proxy with an upload timeout in front if clients are slow.
 
 ## Health check
 

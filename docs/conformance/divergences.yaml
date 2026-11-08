@@ -1028,10 +1028,12 @@
     revision ends unchanged. The registration is asynchronous: 202 and a status to poll. Two
     registrations run and eight wait, a ninth waiter is 503 with Retry-After, and the 90 second
     deadline counts the time spent in the queue. A slot is taken after the body is spooled, so a
-    slow upload holds none while it arrives (what it holds is a connection and up to 32 MiB of
-    staging); the queue and If-Match are checked before the body is read and again then. The
-    free-space check (503 pack_storage_full) runs at admission and when the job runs, on the
-    staging and the pack volume, against the per-job peak of about three times the archive bound.
+    slow upload holds none while it arrives (what it holds is a connection, up to 32 MiB of
+    staging and one of ten places for uploads open at once; the eleventh is 503 with Retry-After);
+    the queue and If-Match are checked before the body is read and again then. The free-space
+    check (503 pack_storage_full) runs at admission, on top of the declared bytes of the uploads
+    already open, and when the job runs, on the staging and the pack volume, against the per-job
+    peak of about three times the archive bound.
     The status is kept in memory for one hour, at most 1,000 entries.
   rationale: >-
     A registration is the whole truth about a pack, so nothing a client dropped can survive in it,

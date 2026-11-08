@@ -25,9 +25,10 @@ owner-only spool file, so ten uploads at once no longer put ten 32 MiB archives,
 **A slow upload holds no slot.** The slot of the queue (two running, eight waiting) is taken when the body has been
 spooled, so a few slow uploads can no longer make other callers get `503`. A full queue, a stale `If-Match` and a
 declared length over 32 MiB are still answered before the body is read, and the first two are judged again when the body
-is spooled. The 90 second deadline starts then. What a slow upload does hold is a connection and up to 32 MiB of staging
-while it arrives: put a proxy with an upload timeout in front, and size the staging volume for the uploads you expect at
-once.
+is spooled. The 90 second deadline starts then. What a slow upload does hold is a connection, up to 32 MiB of staging
+and one of ten places: at most ten uploads are open at once, the eleventh is refused `503` with `Retry-After` before its
+body is read, and the free-space check counts the declared bytes of the uploads already open. Put a proxy with an upload
+timeout in front.
 
 **The free-space check runs at admission and covers both volumes.** A registration needs about three times its archive
 free, the archive, the tree it expands to and the copy made beside the pack: 96 MiB for a full-size archive on one volume
