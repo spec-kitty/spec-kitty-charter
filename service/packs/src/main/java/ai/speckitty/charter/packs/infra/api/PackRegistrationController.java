@@ -206,7 +206,10 @@ public class PackRegistrationController implements RegistrationApi {
             audit.revisionBefore(reservation.revisionBefore());
             // The status the 202 answers is read before the job can start: a worker may be running it at once.
             RegistrationJobs.Status accepted = reservation.status();
-            reservation.start(stager);
+            if (!reservation.start(stager)) {
+                // The deadline ended it first: the client gets the end the audit records, not a failure.
+                accepted = reservation.status();
+            }
             audit.handedToJob();
             return accepted(reservation.id(), accepted);
         } catch (RuntimeException failure) {
