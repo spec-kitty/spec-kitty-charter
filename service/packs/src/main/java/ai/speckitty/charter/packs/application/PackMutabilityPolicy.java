@@ -110,8 +110,15 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
      */
     @FunctionalInterface
     private interface JudgingPolicies {
-        Map<String, MutabilityPolicySource> of(Pack pack);
+        Judging of(Pack pack);
     }
+
+    /**
+     * What judges a write into a pack: the scoped policies of the packs below it, and what those packs hold. An id a
+     * pack below holds is already someone's artifact, so a write of it into the pack is a replace of that artifact (C21,
+     * decision 01M6VEDYX8TQ4AKCP7C19WAP75), never a registration.
+     */
+    private record Judging(Map<String, MutabilityPolicySource> policies, Set<Urn> held) {}
 
     /** One closure pack as the lock scope reads it. */
     private record Scope(String packId, List<String> buildsOn, Set<Urn> held, MutabilityPolicySource policy) {}
@@ -170,7 +177,7 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
      * @param source the levels this gate enforces
      */
     public PackMutabilityPolicy(MutabilityPolicySource source) {
-        this(pack -> Map.of(BUILT_ON, Objects.requireNonNull(source, "source")));
+        this(pack -> new Judging(Map.of(BUILT_ON, Objects.requireNonNull(source, "source")), Set.of()));
     }
 
     /** A gate with no policy anywhere: every target is open, as before any pack shipped a policy file. */
@@ -211,14 +218,16 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
         if (writes.isEmpty()) {
             return;
         }
-        Map<String, MutabilityPolicySource> byPack = stagedJudgingPolicies.of(staged);
+        Judging judging = stagedJudgingPolicies.of(staged);
         for (Write write : writes) {
-            require(staged, byPack, write.operation(), write.target());
+            require(staged, judging, write.operation(), write.target());
         }
     }
 
-    private static void require(
-            Pack pack, Map<String, MutabilityPolicySource> byPack, Operation operation, Urn target) {
+    private static void require(Pack pack, Judging judging, Operation written, Urn target) {
+        Map<String, MutabilityPolicySource> byPack = judging.policies();
+        Operation operation =
+                written == Operation.REGISTER && judging.held().contains(target) ? Operation.REPLACE : written;
         PerPackPolicy.Level level = new PerPackPolicy(byPack).levelIn(List.copyOf(byPack.keySet()), target);
         if (!level.level().permits(operation)) {
             throw new CharterRefusal(
@@ -251,14 +260,17 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
     }
 
     /** The policies judging a write into {@code root}: the closure's scoped policies, the root's own left out (B8). */
-    private static Map<String, MutabilityPolicySource> judgingOf(
-            OfferingReadService.ComposedClosure composed, PackIdentifier root) {
+    private static Judging judgingOf(OfferingReadService.ComposedClosure composed, PackIdentifier root) {
         Map<String, MutabilityPolicySource> judging = scopedPolicies(
                 composed.packs(), member -> composed.factsOf(member).policy());
         composed.packs().stream()
                 .filter(member -> member.configured().id().equals(root))
                 .forEach(member -> judging.remove(member.descriptor().packId()));
-        return judging;
+        Set<Urn> held = new HashSet<>();
+        composed.packs().stream()
+                .filter(member -> !member.configured().id().equals(root))
+                .forEach(member -> held.addAll(held(member)));
+        return new Judging(judging, held);
     }
 
     /** The policies judging a write into a stored pack: its live closure, composed in one verified read. */
@@ -290,7 +302,7 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
      * {@link #scopedPolicies} scopes it. The staged pack is not in it, so its own policy cannot bind it. A pack it names
      * that is not stored has nothing to judge here: the impact check refuses the closure that cannot be composed.
      */
-    private static Map<String, MutabilityPolicySource> ancestorsJudging(
+    private static Judging ancestorsJudging(
             OfferingReadService offerings,
             PackCatalogRepository catalog,
             PackDescriptorRepository descriptors,
@@ -303,11 +315,15 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
                 .filter(candidate -> named.stream().anyMatch(packId -> declares(descriptors, candidate, packId)))
                 .toList();
         if (roots.isEmpty()) {
-            return new LinkedHashMap<>();
+            return new Judging(new LinkedHashMap<>(), Set.of());
         }
         OfferingReadService.ComposedClosure composed = offerings.composedWithFacts(roots);
-        return scopedPolicies(
-                composed.packs(), member -> composed.factsOf(member).policy());
+        Set<Urn> held = new HashSet<>();
+        composed.packs().forEach(member -> held.addAll(held(member)));
+        return new Judging(
+                scopedPolicies(
+                        composed.packs(), member -> composed.factsOf(member).policy()),
+                held);
     }
 
     /** The test seam's policies: each member's policy read through the port, scoped, the written pack's left out. */
@@ -324,7 +340,11 @@ public final class PackMutabilityPolicy implements WritePolicyGate {
             members.stream()
                     .filter(member -> member.configured().equals(pack.id()))
                     .forEach(member -> judging.remove(member.descriptorPackId()));
-            return judging;
+            Set<Urn> held = new HashSet<>();
+            members.stream()
+                    .filter(member -> !member.configured().equals(pack.id()))
+                    .forEach(member -> held.addAll(member.held()));
+            return new Judging(judging, held);
         };
     }
 

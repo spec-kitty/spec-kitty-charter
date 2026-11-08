@@ -123,6 +123,15 @@ public interface WholePackWriteStore {
     PackRevision revisionOf(StagedPack staged);
 
     /**
+     * The versions a pack name has been registered at, oldest first (IC-16): kept when the pack is deleted.
+     *
+     * @param packId the name the pack is stored under
+     * @return the history; empty when the name was never registered
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal {@code PACK_UNREADABLE} when the history cannot be read
+     */
+    List<PackVersionHistory.Entry> versionHistory(String packId);
+
+    /**
      * The directory a stored pack lives in.
      *
      * @param pack the stored pack

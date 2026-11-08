@@ -103,7 +103,7 @@ public final class PackRegistrationService {
      * @param descriptor the stored pack's descriptor
      * @param level the level the pack is stored at
      * @param revision the revision of the stored state, the {@code ETag}
-     * @param notices the floor and lock notices of FR-027; empty until the impact check is built
+     * @param notices the floor and lock notices of FR-027
      */
     public record RegistrationOutcome(
             Outcome outcome,
@@ -111,7 +111,7 @@ public final class PackRegistrationService {
             PackDescriptor descriptor,
             PackLevel level,
             PackRevision revision,
-            List<String> notices) {
+            RegistrationImpact.Notices notices) {
 
         /**
          * Checks the fields and copies the list.
@@ -129,7 +129,7 @@ public final class PackRegistrationService {
             Objects.requireNonNull(descriptor, "descriptor");
             Objects.requireNonNull(level, "level");
             Objects.requireNonNull(revision, "revision");
-            notices = List.copyOf(notices);
+            Objects.requireNonNull(notices, "notices");
         }
     }
 
@@ -140,6 +140,7 @@ public final class PackRegistrationService {
     private final PackDescriptorRepository descriptors;
     private final WritePolicyGate gate;
     private final InboundReferences inbound;
+    private final RegistrationImpact impact;
 
     /**
      * A service over its ports.
@@ -151,6 +152,7 @@ public final class PackRegistrationService {
      * @param descriptors their descriptors
      * @param gate the mutability gate
      * @param inbound the inbound scan
+     * @param impact the impact check of step 9
      */
     @Autowired
     public PackRegistrationService(
@@ -160,7 +162,8 @@ public final class PackRegistrationService {
             PackCatalogRepository catalog,
             PackDescriptorRepository descriptors,
             WritePolicyGate gate,
-            InboundReferences inbound) {
+            InboundReferences inbound,
+            RegistrationImpact impact) {
         this.loader = Objects.requireNonNull(loader, "loader");
         this.store = Objects.requireNonNull(store, "store");
         this.revisions = Objects.requireNonNull(revisions, "revisions");
@@ -168,6 +171,7 @@ public final class PackRegistrationService {
         this.descriptors = Objects.requireNonNull(descriptors, "descriptors");
         this.gate = Objects.requireNonNull(gate, "gate");
         this.inbound = Objects.requireNonNull(inbound, "inbound");
+        this.impact = Objects.requireNonNull(impact, "impact");
     }
 
     /** The grammar of the name a pack is stored under: also the grammar of a directory under the pack domain. */
@@ -229,7 +233,8 @@ public final class PackRegistrationService {
         Before before = beforeOf(stored);
         gate.authorizeStaged(upload.contents().pack(), writesOf(upload.contents(), before));
         requireNoInboundReference(upload, stored, before);
-        return commit(upload, stored);
+        RegistrationImpact.Notices notices = impact.check(replacementOf(upload, stored));
+        return commit(upload, stored, notices);
     }
 
     private static void requireValidPackId(String packId) {
@@ -345,22 +350,29 @@ public final class PackRegistrationService {
 
     /**
      * The same revision is a no-op, whatever the precondition says; the same version with another revision is a
-     * conflict; any other version goes on.
+     * conflict, and so is a version the name was registered at before with another revision, stored or not (IC-16);
+     * any other version goes on.
      */
     private Optional<RegistrationOutcome> applyVersionRule(Upload upload, Optional<Stored> stored) {
-        if (stored.isEmpty()) {
-            return Optional.empty();
-        }
-        if (stored.get().revision().equals(upload.revision())) {
+        if (stored.isPresent() && stored.get().revision().equals(upload.revision())) {
             return Optional.of(outcome(Outcome.UNCHANGED, upload, upload.revision()));
         }
-        if (stored.get().descriptor().packVersion().equals(upload.descriptor().packVersion())) {
+        if (stored.isPresent()
+                && stored.get()
+                        .descriptor()
+                        .packVersion()
+                        .equals(upload.descriptor().packVersion())) {
             throw new CharterRefusal(
                     RefusalCode.PACK_VERSION_CONFLICT,
                     "The pack " + upload.packId() + " is stored at pack_version "
                             + upload.descriptor().packVersion()
                             + " with another revision; send a new pack_version, or the content that is stored.");
         }
+        PackVersionHistory.requireNotReused(
+                upload.packId(),
+                store.versionHistory(upload.packId()),
+                upload.descriptor().packVersion(),
+                upload.revision());
         return Optional.empty();
     }
 
@@ -537,18 +549,33 @@ public final class PackRegistrationService {
                 violations);
     }
 
+    // ---- step 9: the impact check ---------------------------------------------------------------------------------
+
+    /** The pack as it will be once stored: the upload's descriptor and facts, under the name the pack is stored by. */
+    private static RegistrationImpact.Replacement replacementOf(Upload upload, Optional<Stored> stored) {
+        ConfiguredPack configured = stored.map(Stored::configured)
+                .orElseGet(() -> new ConfiguredPack(new PackIdentifier(upload.packId()), upload.level()));
+        return new RegistrationImpact.Replacement(
+                configured, upload.descriptor(), upload.contents().facts());
+    }
+
     // ---- step 10: the commit -------------------------------------------------------------------------------------
 
-    private RegistrationOutcome commit(Upload upload, Optional<Stored> stored) {
-        if (stored.isPresent()) {
-            PackRevision revision = store.replaceWhole(stored.get().configured().id(), upload.staged());
-            return outcome(Outcome.REPLACED, upload, revision);
-        }
-        return outcome(Outcome.CREATED, upload, store.create(upload.packId(), upload.staged()));
+    private RegistrationOutcome commit(Upload upload, Optional<Stored> stored, RegistrationImpact.Notices notices) {
+        PackRevision revision = stored.isPresent()
+                ? store.replaceWhole(stored.get().configured().id(), upload.staged())
+                : store.create(upload.packId(), upload.staged());
+        impact.committed(upload.packId(), notices);
+        return outcome(stored.isPresent() ? Outcome.REPLACED : Outcome.CREATED, upload, revision, notices);
     }
 
     private static RegistrationOutcome outcome(Outcome outcome, Upload upload, PackRevision revision) {
+        return outcome(outcome, upload, revision, RegistrationImpact.Notices.NONE);
+    }
+
+    private static RegistrationOutcome outcome(
+            Outcome outcome, Upload upload, PackRevision revision, RegistrationImpact.Notices notices) {
         return new RegistrationOutcome(
-                outcome, new PackIdentifier(upload.packId()), upload.descriptor(), upload.level(), revision, List.of());
+                outcome, new PackIdentifier(upload.packId()), upload.descriptor(), upload.level(), revision, notices);
     }
 }
