@@ -145,27 +145,61 @@ class CascadeRulesSelectTest {
     }
 
     @Test
-    void selectingAMissionTypeAddsItToMissionTypes() {
+    void selectingAMissionTypeAddsItToItsAllowList() {
         ArtifactRef software = new ArtifactRef(MISSION_TYPE, "software-dev");
 
         ActivationChange change =
                 CascadeRules.applySelect(X_DENIED, software, CascadeScope.none(), false, Reach.empty());
 
-        assertThat(change.after().missionTypes().orElseThrow()).containsExactly("software-dev");
-        assertThat(change.after().selected()).isEmpty();
+        assertThat(change.after().selected(MISSION_TYPE).orElseThrow()).containsExactly("software-dev");
+        assertThat(change.after().selected()).containsOnlyKeys(MISSION_TYPE);
         assertThat(change.applied()).containsExactly(software);
     }
 
     @Test
-    void aReachedMissionTypeIsOutsideEveryCascadeScope() {
+    void aReachedMissionTypeInScopeIsSelected() {
+        // Rule W21 (A7): mission_type is a kind like any other; W32 is withdrawn.
         Reach reach = reach().start("directive:D")
                 .reached("mission_type:m", "directive:D", REQUIRES)
                 .build();
 
         ActivationChange change = select(X_DENIED, CascadeScope.all(), reach);
 
-        assertThat(change.after().missionTypes()).isEmpty();
+        assertThat(change.after().selected(MISSION_TYPE).orElseThrow()).containsExactly("m");
+        assertThat(change.applied()).contains(new ArtifactRef(MISSION_TYPE, "m"));
+        assertThat(change.skipped().skippedByScope()).isEmpty();
+    }
+
+    @Test
+    void aReachedMissionTypeOutsideANamedScopeIsSkippedByScope() {
+        Reach reach = reach().start("directive:D")
+                .reached("mission_type:m", "directive:D", REQUIRES)
+                .build();
+        CascadeScope directives =
+                CascadeScope.parse(Optional.of(List.of("directive"))).scope();
+
+        ActivationChange change = select(X_DENIED, directives, reach);
+
+        assertThat(change.after().selected(MISSION_TYPE)).isEmpty();
         assertThat(change.skipped().skippedByScope()).containsExactly(new ArtifactRef(MISSION_TYPE, "m"));
+    }
+
+    @Test
+    void aCascadingSelectOfAMissionTypeSelectsWhatItsStepsReach() {
+        // A7 Q1, rule W20: the packs walk crosses from m to its steps like requires; a step is an action, which no
+        // reference names, so the activation sees what the steps reach.
+        ArtifactRef m = new ArtifactRef(MISSION_TYPE, "m");
+        Reach reach = reach().start("mission_type:m")
+                .reached("directive:S", "mission_type:m", REQUIRES)
+                .build();
+
+        ReachPlan plan = CascadeRules.planSelect(X_DENIED, m, CascadeScope.all(), false);
+        ActivationChange change = CascadeRules.applySelect(X_DENIED, m, CascadeScope.all(), false, reach);
+
+        assertThat(plan.walks()).isTrue();
+        assertThat(plan.starts()).containsExactly(m);
+        assertThat(change.applied()).containsExactly(ref("directive:S"), m);
+        assertThat(change.after().selected(DIRECTIVE).orElseThrow()).containsExactly("S");
     }
 
     @Test
@@ -239,7 +273,7 @@ class CascadeRulesSelectTest {
     @Test
     void aMissionTypeChangeIsApplied() {
         ActivationDocument after = ActivationDocument.builder()
-                .missionTypes(List.of("software-dev"))
+                .selected(MISSION_TYPE, List.of("software-dev"))
                 .build()
                 .document();
 

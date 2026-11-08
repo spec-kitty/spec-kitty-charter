@@ -132,18 +132,12 @@ class MissionTypeSchemaTest {
                         + " | pattern /steps/0/expected_output_artifacts/0/path_pattern -",
                 "template outside         | 'templates/research-spec-template.md' >> 'templates/../x.md'"
                         + " | not /steps/0/expected_output_artifacts/0/template_path -",
-                "profile reference        | 'type: tactic' >> 'type: agent_profile'"
-                        + " | enum /steps/0/references/0/type -",
                 "empty on-demand list     | 'on_demand_steps:\\n- id: retrospect\\n  title: Retrospective\\n  role: facilitator\\n'"
                         + " >> 'on_demand_steps: []\\n' | minItems /on_demand_steps -",
                 "empty path conventions   | '  workspace: research/\\n  data: data/\\n' >> '  {}\\n'"
                         + " | minProperties /path_conventions -",
                 "guidelines in another place | 'steps/scoping.guidelines.md' >> 'scoping/guidelines.md'"
                         + " | pattern /steps/0/guidelines_path -",
-                "unknown key on a reference | '  reason: the spec is the contract' >> '  remarks: the spec is the contract'"
-                        + " | additionalProperties /references/0 remarks",
-                "empty step references    | '  references:\\n  - type: tactic\\n    id: requirements-validation-workflow\\n'"
-                        + " >> '  references: []\\n' | minItems /steps/0/references -",
                 "step id with a slash     | '- id: methodology' >> '- id: methodology/x'" + " | pattern /steps/1/id -",
                 "type id with a digit     | 'id: research\\n' >> 'id: 9research\\n'" + " | pattern /id -",
                 "step description too long | 'description: Define the research question.'"

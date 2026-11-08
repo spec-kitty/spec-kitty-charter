@@ -15,12 +15,17 @@
 #   - GET /api/v1/packs/smoke/artifacts?kind=tactic serves the pack's tactic (the pack is read and validated);
 #   - a directive body missing its required members is a 400 problem, and a complete one without an id is a 422
 #     validation_failed (binding, Bean Validation and the domain's refusal);
+#   - registration is switched on (charter.registration.enabled, off by default): a tar.gz and a zip upload of a pack
+#     (PUT /api/v1/packs/{packId}) are each answered 202 with a status URI, and polling it ends `succeeded` with the
+#     outcome `created` (the archive extractor, the registration job, the status read and the registration DTOs, which
+#     in a native executable need their reflection hints), and the stored pack is read back with GET /packs/{packId};
 #   - the allowlist makes the start require the DNS-rebinding guard of the guide fetch: without it the service
 #     refuses to start.
 # Start 2, under the container profile with every rule met but charter.container.allowed-hosts: the service must
 # refuse to start, naming that property (the profile is read at run time, not when the image was built).
 # Start 3, under the container profile with every setting it requires: the service starts and answers (the settings
-# are bound and validated, which in a native executable needs the validator's reflection hints).
+# are bound and validated, which in a native executable needs the validator's reflection hints), and its health check
+# answers {"status":"UP"} without the token.
 #
 # Portable bash and curl only, for Linux, macOS and Git Bash on Windows. Exits non-zero, printing the service's own
 # output, on the first failed check.
@@ -139,7 +144,7 @@ root="$(native_path "$work/root")"
 
 echo "== Start 1: $artifact on port $port"
 start "$work/start-1.log" "--server.port=$port" --configRootLocation "$root" \
-  --charter.guide-fetch.allowed-hosts=example.org
+  --charter.guide-fetch.allowed-hosts=example.org --charter.registration.enabled=true
 began="$(now_ms)"
 status="000"
 # Each poll is timed from when it was sent: on Windows a refused loopback connect takes about 2 s, so a poll sent
@@ -194,6 +199,49 @@ status="$(http "$work/refused.json" -X POST -H "$auth" -H 'Content-Type: applica
 [[ "$status" == "422" && "$(cat "$work/refused.json")" == *'"code":"validation_failed"'* ]] \
   || fail "a directive without an id answered $status: $(cat "$work/refused.json")"
 echo "ok: a complete body without an id is a 422 validation_failed"
+# A whole-pack registration is asynchronous: the PUT answers 202 and a status URI, which is polled to its end.
+register_pack() { # register_pack <pack-id> <name> <media type> <archive file>
+  local id="$1" name="$2" type="$3" archive="$4" location state=""
+  status="$(http "$work/accepted.json" -D "$work/accepted.headers" -X PUT -H "$auth" -H "Content-Type: $type" \
+    --data-binary "@$(native_path "$archive")" "$base/packs/$name")"
+  [[ "$status" == "202" ]] || fail "PUT /packs/$name ($type) answered $status: $(cat "$work/accepted.json")"
+  location="$(tr -d '\r' < "$work/accepted.headers" | sed -n 's/^[Ll]ocation: *//p' | head -n 1)"
+  [[ "$location" == */api/v1/pack-registrations/* ]] || fail "the 202 of PUT /packs/$name has no status Location: $location"
+  for _ in $(seq 1 200); do
+    status="$(http "$work/registration.json" -H "$auth" "http://127.0.0.1:$port${location#http://127.0.0.1:$port}")"
+    [[ "$status" == "200" ]] || fail "GET $location answered $status: $(cat "$work/registration.json")"
+    case "$(cat "$work/registration.json")" in
+      *'"state":"succeeded"'*) state="succeeded"; break ;;
+      *'"state":"refused"'*) fail "the registration of $name was refused: $(cat "$work/registration.json")" ;;
+    esac
+    sleep 0.1
+  done
+  [[ "$state" == "succeeded" ]] || fail "the registration of $name did not end: $(cat "$work/registration.json")"
+  [[ "$(cat "$work/registration.json")" == *'"outcome":"created"'* ]] \
+    || fail "the registration of $name did not create the pack: $(cat "$work/registration.json")"
+  status="$(http "$work/stored.json" -H "$auth" "$base/packs/$name")"
+  [[ "$status" == "200" && "$(cat "$work/stored.json")" == *"\"descriptorPackId\":\"$id\""* ]] \
+    || fail "GET /packs/$name answered $status: $(cat "$work/stored.json")"
+}
+
+mkdir -p "$work/upload"
+for kind in gz zip; do
+  if [[ "$kind" == "gz" ]]; then id="01ARWG13C0000000000000GZPK"; name="smoke-upload-gz"; else id="01ARWG13C0000000000000ZPPK"; name="smoke-upload-zip"; fi
+  mkdir -p "$work/upload/$name/directives"
+  printf 'pack_id: %s\npack_version: 1.0.0\nparent_pack: null\nname: %s\npack_level: org\n' "$id" "$name" > "$work/upload/$name/pack.yaml"
+  printf 'schema_version: "1.0"\nid: UPLOADED\ntitle: Uploaded\nintent: Uploaded by the smoke check\nenforcement: required\n' \
+    > "$work/upload/$name/directives/UPLOADED.directive.yaml"
+done
+(cd "$work/upload/smoke-upload-gz" && tar -czf "$work/upload/smoke-upload-gz.tar.gz" pack.yaml directives)
+register_pack 01ARWG13C0000000000000GZPK smoke-upload-gz application/gzip "$work/upload/smoke-upload-gz.tar.gz"
+echo "ok: a tar.gz upload is accepted (202), registered and read back"
+if command -v zip > /dev/null 2>&1; then
+  (cd "$work/upload/smoke-upload-zip" && zip -qr "$work/upload/smoke-upload-zip.zip" pack.yaml directives)
+else
+  (cd "$work/upload/smoke-upload-zip" && jar --create --no-manifest --file "$(native_path "$work/upload/smoke-upload-zip.zip")" pack.yaml directives)
+fi
+register_pack 01ARWG13C0000000000000ZPPK smoke-upload-zip application/zip "$work/upload/smoke-upload-zip.zip"
+echo "ok: a zip upload is accepted (202), registered and read back"
 echo "ok: the service started with a guide-fetch allowlist, so the DNS-rebinding guard is installed"
 stop
 
@@ -235,6 +283,17 @@ done
 [[ "$(cat "$work/container-info.json")" == *"\"serviceVersion\":\"$service_version\""* ]] \
   || fail "GET /info under the container profile: $(cat "$work/container-info.json")"
 echo "ok: under the container profile with its settings the service starts and answers"
+# The health check answers up or down without the token, and nothing more (ADR-0041 decision 7).
+status="$(http "$work/container-health.json" "http://127.0.0.1:$port/actuator/health")"
+[[ "$status" == "200" && "$(cat "$work/container-health.json")" == '{"status":"UP"}' ]] \
+  || fail "GET /actuator/health without a token under the container profile: $status $(cat "$work/container-health.json")"
+echo "ok: under the container profile the health check answers {\"status\":\"UP\"} without the token"
+# The exemption is that one request: the info operation still needs the token, and no other endpoint answers.
+status="$(http /dev/null "$base/info")"
+[[ "$status" == "401" ]] || fail "GET /info without a token under the container profile: $status, not 401"
+status="$(http /dev/null -H "$auth" "http://127.0.0.1:$port/actuator/env")"
+[[ "$status" == "404" ]] || fail "GET /actuator/env with the token under the container profile: $status, not 404"
+echo "ok: under the container profile only the health check skips the token, and /actuator/env is not exposed"
 stop
 log=""
 

@@ -1,0 +1,141 @@
+schema_version: 1
+mission_id: 01M6P99AFK62B7JKDBYNJQMKCD
+mission_slug: container-guard-and-actuator-01M6P99A
+mission_number: 17
+friendly_name: Container guard, actuator and single-replica ruling
+mission_type: software-dev
+target_branch: feat/container-guard-and-actuator
+created_at: '2026-11-05T17:57:15.961367+00:00'
+created_by:
+  kind: runtime
+  id: spec-kitty-generator
+  display: Spec Kitty Generator
+provenance:
+  kind: runtime_post_completion
+  invoked_at: '2026-11-05T17:57:15.961367+00:00'
+  policy_resolved_from:
+    enabled: <default>
+    timing: <default>
+    failure_policy: <default>
+    write_record: <default>
+    generate_proposals: <default>
+    apply_proposals: <default>
+    permissions.write_record: <default>
+    permissions.inspect_mission_artifacts: <default>
+    permissions.propose_glossary_changes: <default>
+    permissions.propose_drg_changes: <default>
+    permissions.propose_doctrine_changes: <default>
+    permissions.apply_low_risk_changes: <default>
+    permissions.apply_structural_changes: <default>
+    precedence: <default>
+    generator: <default>
+policy_source:
+  enabled: <default>
+  timing: <default>
+  failure_policy: <default>
+  write_record: <default>
+  generate_proposals: <default>
+  apply_proposals: <default>
+  permissions.write_record: <default>
+  permissions.inspect_mission_artifacts: <default>
+  permissions.propose_glossary_changes: <default>
+  permissions.propose_drg_changes: <default>
+  permissions.propose_doctrine_changes: <default>
+  permissions.apply_low_risk_changes: <default>
+  permissions.apply_structural_changes: <default>
+  precedence: <default>
+  generator: <default>
+findings_status: has_findings
+helped:
+- id: h-001
+  category: implementation
+  summary: WP01 completed without rejection cycles
+  evidence_refs:
+  - e-012
+- id: h-002
+  category: implementation
+  summary: WP02 completed without rejection cycles
+  evidence_refs:
+  - e-012
+- id: h-003
+  category: implementation
+  summary: WP03 completed without rejection cycles
+  evidence_refs:
+  - e-012
+- id: h-004
+  category: implementation
+  summary: WP05 completed without rejection cycles
+  evidence_refs:
+  - e-012
+- id: h-005
+  category: implementation
+  summary: WP06 completed without rejection cycles
+  evidence_refs:
+  - e-012
+- id: h-006
+  category: implementation
+  summary: WP07 completed without rejection cycles
+  evidence_refs:
+  - e-012
+not_helpful:
+- id: n-002
+  category: doc
+  summary: analysis-report.md records 6 finding(s)
+  evidence_refs:
+  - e-014
+  details: The analysis-report.md artifact for this mission records 6 finding(s) in its structured frontmatter. Review
+    them to understand documented issues and decisions.
+- id: n-001
+  category: review_loop
+  summary: WP04 required 1 rejection cycle(s) before approval
+  evidence_refs:
+  - e-013
+  details: WP WP04 was sent back to an earlier lane with documented review feedback 1 time(s).
+gaps: []
+proposals: []
+evidence_refs:
+- id: e-001
+  kind: file
+  path: kitty-specs/container-guard-and-actuator-01M6P99A/meta.json
+- id: e-002
+  kind: file
+  path: kitty-specs/container-guard-and-actuator-01M6P99A/spec.md
+- id: e-003
+  kind: file
+  path: kitty-specs/container-guard-and-actuator-01M6P99A/plan.md
+- id: e-004
+  kind: file
+  path: kitty-specs/container-guard-and-actuator-01M6P99A/tasks.md
+- id: e-005
+  kind: file
+  path: kitty-specs/container-guard-and-actuator-01M6P99A/tasks/WP01-one-replica-adr.md
+- id: e-006
+  kind: file
+  path: kitty-specs/container-guard-and-actuator-01M6P99A/tasks/WP02-guard-policy.md
+- id: e-007
+  kind: file
+  path: kitty-specs/container-guard-and-actuator-01M6P99A/tasks/WP03-container-composition.md
+- id: e-008
+  kind: file
+  path: kitty-specs/container-guard-and-actuator-01M6P99A/tasks/WP04-exposure-startup-check.md
+- id: e-009
+  kind: file
+  path: kitty-specs/container-guard-and-actuator-01M6P99A/tasks/WP05-actuator-health.md
+- id: e-010
+  kind: file
+  path: kitty-specs/container-guard-and-actuator-01M6P99A/tasks/WP06-shared-validation-400.md
+- id: e-011
+  kind: file
+  path: kitty-specs/container-guard-and-actuator-01M6P99A/tasks/WP07-guide-and-compose.md
+- id: e-012
+  kind: file
+  path: kitty-specs/container-guard-and-actuator-01M6P99A/status.events.jsonl
+- id: e-013
+  kind: event_range
+  path: kitty-specs/container-guard-and-actuator-01M6P99A/status.events.jsonl
+  range: 01M6PBEBYPW7STBRR6H34Q2M2T
+- id: e-014
+  kind: file
+  path: kitty-specs/container-guard-and-actuator-01M6P99A/analysis-report.md
+generator_version: '1.0'
+provenance_history: []

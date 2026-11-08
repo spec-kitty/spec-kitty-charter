@@ -43,7 +43,7 @@ class ActivationWriteOrderTest {
     void storeTheActivation() throws Exception {
         MockHttpServletResponse created = mvc.perform(put("/api/v1/activations/a-1")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"schemaVersion\": 1}"))
+                        .content("{\"schemaVersion\": 2}"))
                 .andReturn()
                 .getResponse();
         assertThat(created.getStatus()).isEqualTo(201);
@@ -165,10 +165,10 @@ class ActivationWriteOrderTest {
 
         assertThat(putBody(SELECT, twice).getStatus()).isEqualTo(428);
         assertThat(putBody(SELECT, twice, STALE).getStatus()).isEqualTo(412);
-        assertThat(violations(putBody(SELECT, twice, etag))).containsExactly("/cascade", "unreadable_body");
-        assertThat(violations(putBody(DEACTIVATE, twice, etag))).containsExactly("/cascade", "unreadable_body");
+        assertThat(violations(putBody(SELECT, twice, etag))).containsExactly("/cascade", "duplicate_member");
+        assertThat(violations(putBody(DEACTIVATE, twice, etag))).containsExactly("/cascade", "duplicate_member");
         assertThat(violations(putBody(PRESET, "{\"force\": true, \"force\": false}", etag)))
-                .containsExactly("/force", "unreadable_body");
+                .containsExactly("/force", "duplicate_member");
         assertThat(send(get("/api/v1/activations/a-1")).getHeader("ETag")).isEqualTo(etag);
     }
 
@@ -176,7 +176,8 @@ class ActivationWriteOrderTest {
     void aCascadeTokenOutsideTheKindsIsTheServicesUnknownKindAtItsIndex() throws Exception {
         assertThat(violations(putBody(SELECT, "{\"cascade\": [\"directive\", \"bogus\"]}", etag)))
                 .containsExactly("/cascade/1", "unknown_kind");
-        assertThat(violations(putBody(DEACTIVATE, "{\"cascade\": [\"mission_type\"]}", etag)))
+        // Rule W21 (A7): mission_type is a cascade kind now; a kind that is not activatable is still unknown.
+        assertThat(violations(putBody(DEACTIVATE, "{\"cascade\": [\"template\"]}", etag)))
                 .containsExactly("/cascade/0", "unknown_kind");
     }
 

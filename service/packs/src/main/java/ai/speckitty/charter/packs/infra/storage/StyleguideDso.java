@@ -24,7 +24,6 @@ import java.util.Optional;
  * @param qualityTest the {@code quality_test}, when stated
  * @param structuralLintConfig the {@code structural_lint_config} tree, when stated
  * @param appliesToLanguages the {@code applies_to_languages}, in authored order
- * @param references the {@code references}, in authored order with duplicates kept
  */
 record StyleguideDso(
         String id,
@@ -37,8 +36,7 @@ record StyleguideDso(
         Optional<Map<String, String>> tooling,
         Optional<String> qualityTest,
         Optional<ConfigValue> structuralLintConfig,
-        List<String> appliesToLanguages,
-        List<String> references) {
+        List<String> appliesToLanguages) {
 
     /** Checks that the required fields are present and copies the collections. */
     StyleguideDso {
@@ -53,7 +51,6 @@ record StyleguideDso(
         antiPatterns = List.copyOf(antiPatterns);
         tooling = tooling.map(map -> Collections.unmodifiableMap(new LinkedHashMap<>(map)));
         appliesToLanguages = List.copyOf(appliesToLanguages);
-        references = List.copyOf(references);
     }
 
     /**

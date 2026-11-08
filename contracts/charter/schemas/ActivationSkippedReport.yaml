@@ -1,5 +1,8 @@
 title: ActivationSkippedReport
-description: The skipped report of an activation's effective set (ADR-0020 D7).
+description: >-
+  The skipped report of an activation's effective set (ADR-0020 D7): each artifact of the merged closure that is not in
+  force, once, in the bucket of the rule that decided it. It is answered with the revision and the fingerprint it was
+  computed from and covered by the same ETag as the effective list.
 type: object
 additionalProperties: false
 required:
@@ -31,8 +34,8 @@ properties:
     allOf:
     - $ref: Sha256Digest.yaml
     description: >-
-      The digest of the offering this answer was computed from, as ServiceInfo.sourceFingerprint; with revision,
-      it ties the answer to both the document and the packs.
+      The source fingerprint, as ServiceInfo.sourceFingerprint, of the packs of the activation's closure that this
+      answer was computed from; with revision, it ties the answer to both the document and the packs.
     x-derived:
       rule: The source fingerprint of the packs the answer was computed from.
       inputs:

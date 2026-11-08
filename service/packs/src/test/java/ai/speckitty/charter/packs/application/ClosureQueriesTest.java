@@ -177,7 +177,7 @@ class ClosureQueriesTest {
                 .isFalse();
         assertThat(view.holds(ArtifactKind.DIRECTIVE, "B1")).isTrue();
         assertThat(view.holderOf()).containsEntry(new Urn(NodeKind.DIRECTIVE, "B1"), "beta");
-        assertThat(view.missionTypes()).containsExactly("software-dev");
+        assertThat(view.heldIds().get(ArtifactKind.MISSION_TYPE)).containsExactly("software-dev");
         assertThat(view.closurePackIds()).containsExactly("beta", "alpha");
         assertThat(view.fingerprint()).isEqualTo(D1);
     }
@@ -233,16 +233,11 @@ class ClosureQueriesTest {
         Preset governing = new Preset(
                 "shared",
                 "governs",
-                List.of(),
-                Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("D1"), PresetItem.of("D2"))),
-                List.of());
-        Preset convenience = new Preset(
-                "shared",
-                "conveniences",
-                List.of(),
-                Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.of("D3"))),
-                List.of());
-        Preset only = new Preset("builtin-only", "conveniences", List.of(), Map.of(), List.of(PresetItem.of("x")));
+                Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("D1"), PresetItem.of("D2"))));
+        Preset convenience =
+                new Preset("shared", "conveniences", Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.of("D3"))));
+        Preset only = new Preset(
+                "builtin-only", "conveniences", Map.of(ArtifactKind.MISSION_TYPE, List.of(PresetItem.of("x"))));
         pack(
                 "builtin",
                 PackLevel.BUILT_IN,
@@ -252,7 +247,7 @@ class ClosureQueriesTest {
                 "org",
                 PackLevel.ORG,
                 descriptor("org", "1.0.0"),
-                holding(List.of(), MutabilityPolicySource.empty(), governing));
+                holding(List.of("directive:D1"), MutabilityPolicySource.empty(), governing));
 
         ClosureView view = queries().allConfigured();
 
@@ -268,18 +263,9 @@ class ClosureQueriesTest {
 
     @Test
     void aPresetTwoPacksHoldPutsOnlyTheWinningCopysMustHaveItemsOnTheFloor() {
-        Preset earlier = new Preset(
-                "team",
-                "earlier",
-                List.of(),
-                Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("A"))),
-                List.of());
-        Preset later = new Preset(
-                "team",
-                "later",
-                List.of(),
-                Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("B"))),
-                List.of());
+        Preset earlier =
+                new Preset("team", "earlier", Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("A"))));
+        Preset later = new Preset("team", "later", Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("B"))));
         pack(
                 "builtin",
                 PackLevel.BUILT_IN,
@@ -289,7 +275,7 @@ class ClosureQueriesTest {
                 "org",
                 PackLevel.ORG,
                 descriptor("org", "1.0.0"),
-                holding(List.of(), MutabilityPolicySource.empty(), later));
+                holding(List.of("directive:B"), MutabilityPolicySource.empty(), later));
 
         ClosureView view = queries().allConfigured();
 
@@ -302,6 +288,191 @@ class ClosureQueriesTest {
                 .as("the losing copy requires nothing")
                 .isFalse();
         assertThat(view.heldPresets()).as("each preset once").containsExactly(new ClosureView.HeldPreset(later, "org"));
+    }
+
+    @Test
+    void aPresetItemThatNamesAHeldIdOnlyByCaseRefusesTheClosure() {
+        Preset preset = new Preset(
+                "governing", "governs", Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("directive_001"))));
+        pack(
+                "org",
+                PackLevel.ORG,
+                descriptor("org", "1.0.0"),
+                holding(List.of("directive:DIRECTIVE_001"), MutabilityPolicySource.empty(), preset));
+
+        assertThatThrownBy(() -> queries().allConfigured()).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+            assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING);
+            assertThat(refusal.getMessage()).contains("directive:directive_001", "directive:DIRECTIVE_001");
+        });
+    }
+
+    @Test
+    void aPolicyLockThatNamesAHeldIdOnlyByCaseRefusesTheClosureButOneOnAnUnheldIdChangesNothing() {
+        MutabilityPolicySource caseOnly = MutabilityPolicySource.builder()
+                .entry(new Urn(NodeKind.DIRECTIVE, "directive_001"), MutabilityLevel.LOCKED)
+                .build();
+        pack("org", PackLevel.ORG, descriptor("org", "1.0.0"), holding(List.of("directive:DIRECTIVE_001"), caseOnly));
+
+        assertThatThrownBy(() -> queries().allConfigured())
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING));
+    }
+
+    @Test
+    void aPolicyLockOnAnIdTheClosureDoesNotHoldIsServedAndLocksNothing() {
+        MutabilityPolicySource unheld = MutabilityPolicySource.builder()
+                .entry(new Urn(NodeKind.DIRECTIVE, "GONE"), MutabilityLevel.LOCKED)
+                .build();
+        pack("org", PackLevel.ORG, descriptor("org", "1.0.0"), holding(List.of("directive:DIRECTIVE_001"), unheld));
+
+        ClosureView view = queries().allConfigured();
+
+        assertThat(view.isLocked(new Urn(NodeKind.DIRECTIVE, "DIRECTIVE_001"))).isFalse();
+    }
+
+    // ---- A15 (FR-033, DM-01M6RA97220XBR7RR447FE2JXD, rule C22): a pack's lock reaches what it builds on only -------
+
+    @Test
+    void a15AProjectPacksKindDefaultLockDoesNotLockTheDirectivesOfAnUnrelatedOrgPackInTheSameClosure() {
+        MutabilityPolicySource locksDirectives = MutabilityPolicySource.builder()
+                .kindDefault(NodeKind.DIRECTIVE, MutabilityLevel.LOCKED)
+                .build();
+        pack("p", PackLevel.PROJECT, descriptor("p", "1.0.0"), holding(List.of("directive:P1"), locksDirectives));
+        pack("q", PackLevel.ORG, descriptor("q", "1.0.0"), holding("directive:Q1"));
+
+        ClosureView view = queries().allConfigured();
+
+        assertThat(view.isLocked(new Urn(NodeKind.DIRECTIVE, "P1")))
+                .as("p locks what p holds")
+                .isTrue();
+        assertThat(view.isLocked(new Urn(NodeKind.DIRECTIVE, "Q1")))
+                .as("q is unrelated to p: p's lock does not reach q's directive")
+                .isFalse();
+        assertThat(view.lockOf(new Urn(NodeKind.DIRECTIVE, "Q1"))).isEqualTo(PerPackPolicy.Level.OPEN);
+        assertThat(view.isRequired(new Urn(NodeKind.DIRECTIVE, "Q1"))).isFalse();
+    }
+
+    @Test
+    void a15APackLocksTheDirectiveOfThePackItDependsOnAsAnEnterprisePackEnforcesABuiltInPractice() {
+        MutabilityPolicySource locksDirectives = MutabilityPolicySource.builder()
+                .kindDefault(NodeKind.DIRECTIVE, MutabilityLevel.LOCKED)
+                .build();
+        pack("b", PackLevel.BUILT_IN, descriptor("b", "1.0.0"), holding("directive:B1"));
+        pack(
+                "e",
+                PackLevel.ORG,
+                descriptor("e", "1.0.0", new PackDependency("b", ">=1.0")),
+                holding(List.of("directive:E1"), locksDirectives));
+
+        ClosureView view = queries().snapshot(roots("e"));
+
+        assertThat(view.lockOf(new Urn(NodeKind.DIRECTIVE, "B1")))
+                .isEqualTo(new PerPackPolicy.Level(MutabilityLevel.LOCKED, Optional.of("e")));
+        assertThat(view.isLocked(new Urn(NodeKind.DIRECTIVE, "E1"))).isTrue();
+        assertThat(view.isLocked(new Urn(NodeKind.DIRECTIVE, "UNHELD")))
+                .as("an id no pack of e's closure holds is not locked by a kind default")
+                .isFalse();
+    }
+
+    // ---- A10 (FR-028, DM-01M6RA8MG55V8C2V9PXWDTRNQS, rule C31): the floor holds held ids only, unheld is reported ---
+
+    @Test
+    void a10APresetMustHaveItemNoPackHoldsIsNotOnTheFloorAndIsReportedUnheld() {
+        Urn z = new Urn(NodeKind.DIRECTIVE, "Z");
+        Preset governing = new Preset(
+                "governing",
+                "governs",
+                Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("Z"), PresetItem.mustHave("D1"))));
+        pack(
+                "org",
+                PackLevel.ORG,
+                descriptor("org", "1.0.0"),
+                holding(List.of("directive:D1"), MutabilityPolicySource.empty(), governing));
+
+        ClosureView view = queries().allConfigured();
+
+        assertThat(view.floor().isRequired(z))
+                .as("no pack of the closure holds directive:Z")
+                .isFalse();
+        assertThat(view.isRequired(z)).isFalse();
+        assertThat(view.floor().unheld()).containsOnlyKeys(z).containsEntry(z, List.of("org"));
+        assertThat(view.floor().requiringPacks(DIRECTIVE_D1))
+                .as("same fixture: the held must-have item stays on the floor")
+                .containsExactly("org");
+    }
+
+    @Test
+    void absentRootsOfAServiceWithNoConfiguredPackGiveAnEmptyClosure() {
+        ClosureView view = queries().allConfigured();
+
+        assertThat(view.closurePackIds()).isEmpty();
+        assertThat(view.packs()).isEmpty();
+    }
+
+    @Test
+    void aChildPackWhoseIdSortsBeforeItsParentMergesAfterItSoItsPresetWinsAndItsMustHaveStaysOnTheFloor() {
+        Preset inherited = new Preset(
+                "team",
+                "the parent's copy",
+                Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("FROM-PARENT"))));
+        Preset overriding = new Preset(
+                "team", "the child's copy", Map.of(ArtifactKind.DIRECTIVE, List.of(PresetItem.mustHave("FROM-CHILD"))));
+        // "a-child" sorts before "z-parent": without the parent_pack edge the parent would merge last and win.
+        pack(
+                "a-child",
+                PackLevel.ORG,
+                extending("a-child", "z-parent"),
+                holding(List.of("directive:FROM-CHILD"), MutabilityPolicySource.empty(), overriding));
+        pack(
+                "z-parent",
+                PackLevel.ORG,
+                descriptor("z-parent", "1.0.0"),
+                holding(List.of(), MutabilityPolicySource.empty(), inherited));
+
+        ClosureView view = queries().snapshot(roots("a-child"));
+
+        assertThat(view.closurePackIds()).containsExactly("z-parent", "a-child");
+        assertThat(view.presets().get("team"))
+                .as("the child merges after the pack it extends, so its copy wins")
+                .isEqualTo(new ClosureView.HeldPreset(overriding, "a-child"));
+        assertThat(view.floor().requiringPacks(new Urn(NodeKind.DIRECTIVE, "FROM-CHILD")))
+                .containsExactly("a-child");
+        assertThat(view.isRequired(new Urn(NodeKind.DIRECTIVE, "FROM-PARENT")))
+                .as("the losing parent copy requires nothing")
+                .isFalse();
+    }
+
+    @Test
+    void twoUnrelatedPacksOfOneLevelHoldingOnePresetIdRefuseTheClosure() {
+        Preset left = new Preset("team", "left", Map.of());
+        Preset right = new Preset("team", "right", Map.of());
+        pack(
+                "left",
+                PackLevel.ORG,
+                descriptor("left", "1.0.0"),
+                holding(List.of(), MutabilityPolicySource.empty(), left));
+        pack(
+                "right",
+                PackLevel.ORG,
+                descriptor("right", "1.0.0"),
+                holding(List.of(), MutabilityPolicySource.empty(), right));
+
+        assertThatThrownBy(() -> queries().allConfigured()).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+            assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT);
+            assertThat(refusal.getMessage()).contains("the preset `team`");
+        });
+    }
+
+    @Test
+    void aParentCycleRefusesTheClosureAsADependencyCycle() {
+        pack("a", PackLevel.ORG, extending("a", "b"), holding());
+        pack("b", PackLevel.ORG, extending("b", "a"), holding());
+
+        assertThatThrownBy(() -> queries().snapshot(roots("a")))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_DEPENDENCY_CYCLE));
     }
 
     @Test
@@ -342,11 +513,49 @@ class ClosureQueriesTest {
         alphaBetaGamma();
         AtomicInteger calls = new AtomicInteger();
 
-        assertThatThrownBy(() ->
-                        queries(() -> calls.incrementAndGet() == 1 ? D1 : D2).snapshot(roots("alpha")))
+        assertThatThrownBy(() -> queries(() -> calls.incrementAndGet() % 2 == 1 ? D1 : D2)
+                        .snapshot(roots("alpha")))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refused -> assertThat(refused.code()).isEqualTo(RefusalCode.STALE_INPUT));
+    }
+
+    @Test
+    void aStaleReadIsRetriedAndAnswersTheVersionTheRetryReads() {
+        alphaBetaGamma();
+        AtomicInteger calls = new AtomicInteger();
+
+        ClosureView view = queries(() -> calls.incrementAndGet() == 1 ? D1 : D2).snapshot(roots("alpha"));
+
+        assertThat(view.fingerprint()).as("the retry's own verified digest").isEqualTo(D2);
+        assertThat(view.closurePackIds()).containsExactly("beta", "alpha");
+    }
+
+    @Test
+    void aReadThatIsStaleOnEveryTryIsRetriedThreeTimesThenAnswersStaleInput() {
+        alphaBetaGamma();
+        AtomicInteger calls = new AtomicInteger();
+
+        assertThatThrownBy(() -> queries(() -> calls.incrementAndGet() % 2 == 1 ? D1 : D2)
+                        .snapshot(roots("alpha")))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refused -> assertThat(refused.code()).isEqualTo(RefusalCode.STALE_INPUT));
+        assertThat(digests.get())
+                .as("one try and three retries, two digests each")
+                .isEqualTo(8);
+    }
+
+    @Test
+    void aRefusalThatIsNotStaleIsNeverRetried() {
+        pack("alpha", PackLevel.ORG, descriptor("alpha", "1.0.0", new PackDependency("beta", ">=2.0")), holding());
+        pack("beta", PackLevel.ORG, descriptor("beta", "1.2.0"), holding());
+
+        assertThatThrownBy(() -> queries().snapshot(roots("alpha"))).isInstanceOf(CharterRefusal.class);
+
+        assertThat(digests.get())
+                .as("one try: the first digest, then the second after the refusal")
+                .isEqualTo(2);
     }
 
     @Test

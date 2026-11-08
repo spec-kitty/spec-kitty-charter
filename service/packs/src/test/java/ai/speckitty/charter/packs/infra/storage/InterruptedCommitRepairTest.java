@@ -8,6 +8,8 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.application.PackRevision;
+import ai.speckitty.charter.packs.application.PackWriteGeneration;
+import ai.speckitty.charter.packs.application.RegistryWriteLock;
 import ai.speckitty.charter.packs.domain.Guide;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.Toolguide;
@@ -184,8 +186,20 @@ class InterruptedCommitRepairTest {
         PackFixtures.copyOf("pack-descriptor-only", packs);
         Path live = PackFixtures.copyOf("pack-a", packs);
         StorageRootLocations locations = new StorageRootLocations(packs);
-        CommitStorePackWriteStore writeStore =
-                new CommitStorePackWriteStore(locations, strategy, new PackCommitStore(locations, strategy));
+        // The registry lock serializes writers, so two writers can no longer overlap on one store. Each side gets a
+        // registry lock of its own here, to keep pinning the property under test: a listing never waits on a pack lock.
+        CommitStorePackWriteStore writeStore = new CommitStorePackWriteStore(
+                locations,
+                strategy,
+                new PackCommitStore(locations, strategy),
+                new RegistryWriteLock(Duration.ofSeconds(5)),
+                new PackWriteGeneration());
+        CommitStorePackWriteStore listingStore = new CommitStorePackWriteStore(
+                locations,
+                strategy,
+                new PackCommitStore(locations, strategy),
+                new RegistryWriteLock(Duration.ofSeconds(5)),
+                new PackWriteGeneration());
         CountDownLatch start = new CountDownLatch(1);
         CountDownLatch halfSwapped = new CountDownLatch(1);
         CountDownLatch release = new CountDownLatch(1);
@@ -209,7 +223,7 @@ class InterruptedCommitRepairTest {
         try {
             listed = assertTimeoutPreemptively(
                     HANG_CAP,
-                    () -> writeStore.exclusively(new PackIdentifier("pack-descriptor-only"), () -> {
+                    () -> listingStore.exclusively(new PackIdentifier("pack-descriptor-only"), () -> {
                         start.countDown();
                         await(halfSwapped);
                         return locations.all().stream().map(PackLocation::name).toList();

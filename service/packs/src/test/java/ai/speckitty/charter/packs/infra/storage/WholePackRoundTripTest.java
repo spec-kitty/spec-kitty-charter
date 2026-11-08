@@ -48,8 +48,8 @@ import org.junit.jupiter.api.io.TempDir;
  * must equal the checked-in expectation exactly, both ways (see {@link WholePackExpectation}). The report lands in
  * {@code build/reports/whole-pack/report.md}.
  *
- * <p>Runs under {@code :packs:wholePackRoundTrip} (tag {@code whole-pack}), outside {@code check}: it is not a required
- * gate until it is green.
+ * <p>Runs under {@code :packs:wholePackRoundTrip} (tag {@code whole-pack}), outside {@code check}. CI requires it: the
+ * {@code CI gate / gate} check calls {@code whole-pack.yml} for the {@code wholepack} group (epic #186).
  */
 @Tag("whole-pack")
 class WholePackRoundTripTest {

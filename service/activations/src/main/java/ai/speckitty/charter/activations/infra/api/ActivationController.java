@@ -26,6 +26,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -105,7 +106,7 @@ public class ActivationController implements ActivationApi {
     @Override
     public ResponseEntity<Activation> createActivation(ActivationConfig activationConfig) {
         StoredActivation stored = activations.create(mapper.toDocument(activationConfig));
-        return created(stored);
+        return created(stored, mapper.toActivation(stored));
     }
 
     @Override
@@ -118,7 +119,13 @@ public class ActivationController implements ActivationApi {
         Optional<List<String>> cascade =
                 Optional.ofNullable(exclusionRequest.getCascade()).map(List::copyOf);
         return changed(exclusions.deactivate(
-                new ActivationId(activationId), kind, artifactId, cascade, DeferredBody.recorded(), ifMatch));
+                new ActivationId(activationId),
+                kind,
+                artifactId,
+                cascade,
+                depthOf(exclusionRequest.getDepth()),
+                DeferredBody.recorded(),
+                ifMatch));
     }
 
     @Override
@@ -185,11 +192,11 @@ public class ActivationController implements ActivationApi {
         ActivationService.Written written = activations.put(
                 new ActivationId(activationId), mapper.toDocument(activationConfig), ifMatch, ifNoneMatch);
         if (written.created()) {
-            return created(written.stored());
+            return created(written.stored(), mapper.toReplaced(written));
         }
         return ResponseEntity.ok()
                 .eTag(EntityTags.quote(written.stored().revision().token()))
-                .body(mapper.toActivation(written.stored()));
+                .body(mapper.toReplaced(written));
     }
 
     @Override
@@ -208,6 +215,7 @@ public class ActivationController implements ActivationApi {
                 artifactId,
                 cascade,
                 includeDeactivated,
+                depthOf(selectionRequest.getDepth()),
                 DeferredBody.recorded(),
                 ifMatch));
     }
@@ -218,6 +226,11 @@ public class ActivationController implements ActivationApi {
         return changed(selections.unselect(new ActivationId(activationId), kind, artifactId, ifMatch));
     }
 
+    /** The body's {@code depth}, which its guard has judged: empty when the body did not send one. */
+    private static OptionalInt depthOf(@Nullable Integer depth) {
+        return depth == null ? OptionalInt.empty() : OptionalInt.of(depth);
+    }
+
     /** A per-artifact write's answer: {@code 200} with the stored revision as the {@code ETag}, a no-op's unchanged. */
     private ResponseEntity<ActivationChange> changed(ActivationWrites.Outcome outcome) {
         return ResponseEntity.ok()
@@ -225,10 +238,10 @@ public class ActivationController implements ActivationApi {
                 .body(changes.toChange(outcome));
     }
 
-    private ResponseEntity<Activation> created(StoredActivation stored) {
+    private ResponseEntity<Activation> created(StoredActivation stored, Activation body) {
         return ResponseEntity.created(URI.create(mapper.self(stored.id().value())))
                 .eTag(EntityTags.quote(stored.revision().token()))
-                .body(mapper.toActivation(stored));
+                .body(body);
     }
 
     /** A read's answer: {@code 304} with the {@code ETag} and no body, or {@code 200} with both. */

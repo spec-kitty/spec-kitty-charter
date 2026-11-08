@@ -2,7 +2,8 @@ title: ActivationChange
 description: >-
   The answer of one sub-resource write: the new revision and what the write changed (ADR-0020 D6). skipped reports
   what the write-time cascade walk left out; what a read leaves out is reported by the effective reads
-  (getActivationSkippedReport), not here.
+  (getActivationSkippedReport), not here; its read buckets are answered as []. warnings predicts what the read will not
+  put in force.
 type: object
 additionalProperties: false
 required:
@@ -10,6 +11,8 @@ required:
 - applied
 - cleared
 - skipped
+- droppedPins
+- warnings
 - _links
 properties:
   revision:
@@ -25,12 +28,13 @@ properties:
     items:
       $ref: ArtifactReference.yaml
     description: >-
-      The artifacts and mission types whose state the write changed. Measured after the stale ids are dropped, against
+      The artifacts, mission types included, whose state the write changed. Measured after the stale ids are dropped,
+      against
       the stored document without them, so a dropped id appears only in dropped, never here.
     x-derived:
       rule: >-
-        The ids the write added to or removed from selected, deactivated or missionTypes, measured against the stored
-        document less the ids in dropped.
+        The ids the write added to or removed from selected or deactivated, measured against the stored document less
+        the ids in dropped.
       inputs:
       - schemas/ActivationConfig.yaml
   cleared:
@@ -53,12 +57,40 @@ properties:
       $ref: ArtifactReference.yaml
     description: >-
       The ids the write dropped from the stored document before it applied anything, because the activation's closure
-      no longer declares them (a pack upgrade removed them): from selected, deactivated and missionTypes (ADR-0059
+      no longer declares them (a pack upgrade removed them): from selected and deactivated, mission types included
+      (ADR-0059
       amendment of 2026-11-06). Present only when the write dropped one; such a write is never a no-op. applied and
       cleared are measured after the drop, so a dropped id is never in them, even when the path of an unselect or a
       re-activate names it.
     x-derived:
-      rule: The ids of the stored selected, deactivated and missionTypes the activation's closure does not hold.
+      rule: The ids of the stored selected and deactivated the activation's closure does not hold.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  droppedPins:
+    type: array
+    items:
+      $ref: PackPin.yaml
+    description: >-
+      The version pins the write dropped from packs before it applied anything, because no pack of the activation's
+      closure holds the pinned version any more (B1, decision DM-01M6RN5Y406SB4KA13QYMQ2P8J): each as it was stored,
+      packId and version. Always present; [] when the write dropped no pin. A write that drops a pin is never a
+      no-op. createActivation drops no pin: a pin in its own body that no pack holds is 422 activation_invalid
+      (version_not_held).
+    x-derived:
+      rule: The stored packs entries whose version no pack of the activation's closure holds.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  warnings:
+    type: array
+    items:
+      $ref: ActivationWarning.yaml
+    description: >-
+      The artifacts the write applied that a read of the document as stored will not put in force (FR-032, B6/B7): an
+      enhancer none of whose targets is in force (enhanced_target_not_in_force), or an artifact an active override hides
+      (overridden). The write is accepted either way, so a client learns what the read will show. Always present; []
+      when there is none.
+    x-derived:
+      rule: The applied artifacts that the in-force resolution of the stored document leaves out for those two reasons.
       inputs:
       - schemas/ActivationConfig.yaml
   _links:
