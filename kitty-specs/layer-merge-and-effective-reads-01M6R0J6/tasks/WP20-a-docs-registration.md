@@ -156,8 +156,13 @@ Divergence-register entries (core merges per artifact; PR A replaces the whole p
 - A registration replaces the stored pack rather than merging into it; the same revision answers `unchanged`.
 - The same version with another revision is `409 pack_version_conflict`.
 - `REMOVE` joins the write gate, and edges are gated as `RELATIONSHIP` writes on their source.
-- A stored pack that cannot be read is repaired by a whole-pack replace (the diff treats every uploaded artifact as a
-  replace and removes nothing).
+- A stored pack that cannot be read is repaired by a whole-pack replace. Corrected 2026-11-08: the "every uploaded
+  artifact is a replace and nothing is removed" rule was the fail-open behaviour WP14's review removed
+  (DM-01M6V4WMF8CD8NBN7A065E9ZQ5, 01M6V6N74ER28H8S6TSVZ8ZEY2). Document `salvageStored` as built: the stored pack is
+  read file by file (an artifact counts by its declared id and by its file stem; graph files entry by entry); an
+  artifact the upload leaves out is a `REMOVE` through the gate and the inbound scan; a dropped edge is gated as
+  `RELATIONSHIP` on its source; a stored artifact that does not bind counts as a `REPLACE`; and if the stored artifact
+  set cannot be determined at all, the registration is refused `pack_unreadable`.
 - From WP15: the version history (IC-16: a downgrade is refused, the history is written inside the swap) and the strict
   impact check (a registration whose resulting closures fail to compose or break a relation rule is refused; core
   warns) are divergences to register. The start-up census WARNs for stored packs that would now be refused.
@@ -226,3 +231,22 @@ Document, and add divergence-register entries for:
 - `source.commit` records the commit the git ref resolved to.
 - The git source accepts https only, follows no redirect (not even to the same host), and refuses links and submodules in the tree.
 - sha256 repositories are untested (the work repository is created sha1); say so as a known limit.
+
+## Review cycle 1 (2026-11-08): what cycle 2 must do
+
+The blocker (see `review-cycle-1.md`), and three items the runner folds in now rather than at closeout:
+
+1. **Blocker.** Rewrite the fail-open repair text in `docs/guides/compose-packs.md` (about lines 269-271),
+   `docs/conformance/divergence-register.md` (DIV-604, about line 664) and `docs/conformance/divergences.yaml` (DIV-604,
+   about line 1089) to the salvage rule as built (the corrected WP14 hand-off bullet above), and cite
+   DM-01M6V4WMF8CD8NBN7A065E9ZQ5 and 01M6V6N74ER28H8S6TSVZ8ZEY2 in DIV-604's ruling line.
+2. **Core claims.** Nothing in the repository shows what core does for registration. Reword every `core:` line of
+   DIV-601 to DIV-613 that states core behaviour as fact (DIV-601 "core merges per artifact", DIV-604 "core warns",
+   and the "core has no such operation / keeps no history" lines) as the service's understanding of core, to be
+   confirmed against core, unless you find evidence in the repository.
+3. **`edit` link.** The service sends no `edit` link on a stored pack (WP16's "no edit relation" decision). Drop `edit`
+   from the `getPack` description and example in `contracts/charter/paths/packs_packId.yaml` (about line 132) and from
+   `contracts/charter/examples/PackRegistration.stored.yaml`, with a `### Changed` fragment line, and make the docs say
+   the link is absent. Run the contract checks.
+4. **`registration_timed_out`.** In the `504` row, write the deadline as "90 s (the 60 s source deadline plus 30 s,
+   NFR-008)" so it reads the same as the `x-refusal` text.
