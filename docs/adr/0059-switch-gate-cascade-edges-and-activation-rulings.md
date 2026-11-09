@@ -395,8 +395,8 @@ its PR B.** They amend D5 as stated; the rest of this record stands. The contrac
 layer-merge mission (`layer-merge-and-effective-reads-01M6R0J6`).** The labels `R6`, `R11` and `R12` are that mission's
 research items (`research.md`), not the A-numbers of the amendments above; `R11` carries the operator rulings Q6 and Q8
 of 2026-11-06 and `R12` carries Q9. The contract change is
-`contracts/charter/changes/2026-11-07-c-deny-satisfied-by-override.md` (`### Changed`: #399's shipped write behavior
-changes), the divergence is DIV-204 (updated) with DIV-239 to DIV-244, and the rules are W26, E5 to E6 and E12 to E16 of
+`contracts/charter/changes/2026-11-07-c-deny-satisfied-by-override.md` (`### Breaking`, decision `01M70NGH42RWKBMZ6MN2D6QHNY`: #399's
+shipped write answers change), the divergence is DIV-204 (updated) with DIV-239 to DIV-244, and the rules are W26, E5 to E6 and E12 to E16 of
 [Composition and activation rules](/architecture/composition-and-activation-rules/). ADR-0065 is about pack
 registration and is not the place.
 

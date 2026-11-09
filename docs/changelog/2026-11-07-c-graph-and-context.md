@@ -1,7 +1,7 @@
 ---
 okf_version: "0.2"
 title: The effective graph and action context answer, and a deny entry can be satisfied by an override
-description: The last two effective reads are served, no operation is reserved, and a deny entry on a required artifact is accepted when an active override satisfies it.
+description: The last two effective reads are served, and a deny entry on a required artifact is accepted when an active override satisfies it (breaking for clients of the 409).
 doc_status: active
 updated: 2026-11-09T00:00:00Z
 type: Changelog
@@ -28,11 +28,14 @@ contract changes are the `2026-11-07-c-*` and `2026-11-09-c-*` fragments under `
   context is ADR-0018's walk from the held step, with suggestions, `enhancements` and the skipped report. An unknown
   mission type or action is `404`, before a `304`
   ([Offering and activation](/architecture/offering-and-activation/#the-graph-and-the-action-context)).
-- **A deny entry can be satisfied by an override.** A deny entry on a required, not locked artifact is accepted when an
-  active override of it satisfies the requirement in the document as it will be stored, where #399 refused every one with
-  `409 artifact_required`. An enhancer alone does not, and a locked artifact is still refused. A closure whose layer merge
-  is refused now reaches such a write, as `500 pack_unreadable`
-  ([DIV-204](/conformance/divergence-register/), rule W26).
+- **A deny entry can be satisfied by an override (breaking).** Where #399 refused every deny entry on a required artifact,
+  `createActivation`, `replaceActivation` and `deactivateActivationArtifact` answer `200` or `201` when an active
+  override satisfies the requirement, and the declared `500 pack_unreadable` when the layer merge refuses, where both were
+  `409 artifact_required`. An enhancer alone does not satisfy; a locked artifact is still refused
+  ([DIV-204](/conformance/divergence-register/), rule W26). Core still refuses it.
+- **The effective-read tags change.** The tags move to domain `v2`: a client holding a PR B tag gets a `200` with the
+  new body, not a `304`.
+- **The write cascade follows held steps only** (OD-9, [DIV-242](/conformance/divergence-register/)).
 - **Regenerate for the breaking changes.** The two reads gain required members, and `EnhancerWithoutTarget.targets` becomes
   a list of `NodeReference {kind, id}`.
 - **Rulings of 2026-11-09.** A step enhancer is in force exactly when the mission type of its step is (OD-6); one predicate

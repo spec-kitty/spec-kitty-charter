@@ -1,4 +1,4 @@
-### Changed
+### Breaking
 
 - A deny entry on an artifact a pack requires is accepted when an active override of it satisfies the requirement, so
   the write behaviour #399 shipped changes in two answers. First, `createActivation`, `replaceActivation` and
@@ -18,6 +18,8 @@
   and judge none (DIV-204). A later write that removes the override (an unselect of it) is not refused: the stored
   deny entry is then read as not applied, and `getActivationSkippedReport` lists it in `denyNotApplied` with the
   reason `required`. The `ArtifactPolicyRefused` response, the `artifact_required` text of `CharterRefusalCode` and
-  the descriptions of the three writes say so. A documented `409 artifact_required` therefore now succeeds (`200` or
-  `201`) when an active override satisfies the requirement, and a documented `409` becomes the declared `500
-  pack_unreadable` when the layer merge refuses. Core's in-process backend still refuses it (DIV-204).
+  the descriptions of the three writes say so. A client that relied on the documented `409
+  artifact_required` of `createActivation`, `replaceActivation` or `deactivateActivationArtifact` now gets `200` (or
+  `201`) when an active override satisfies the requirement, and the declared `500 pack_unreadable` (the `500` of
+  `OfferingUnreadable`) when the closure's layer merge refuses; it must treat both as outcomes of those writes. Core's
+  in-process backend still refuses the deny entry (DIV-204).
