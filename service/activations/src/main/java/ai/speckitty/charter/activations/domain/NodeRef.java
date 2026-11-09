@@ -14,7 +14,8 @@ import java.util.Optional;
  * the authored ones: a guard and a lifecycle cannot be named. Ordered by kind token, then id, both by code point, so every
  * list of them is sorted the same way on every run.
  *
- * <p>The step-enhancements mission reuses this value and never defines a second copy.
+ * <p>The activations slice's reads (the effective graph and the action context) use this value and define no second
+ * copy of it. The {@code packs} slice may not import it (the ArchUnit gate), so it names a node by {@link Urn}.
  *
  * @param kind the node's kind
  * @param id the node's id, the tail of its URN
