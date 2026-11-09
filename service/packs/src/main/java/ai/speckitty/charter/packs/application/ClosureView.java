@@ -2,7 +2,11 @@ package ai.speckitty.charter.packs.application;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
+import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
@@ -87,17 +91,35 @@ public record ClosureView(
 
         private final List<PackUnderResolution> packs;
         private final Map<String, PackCompositionFacts> facts;
+        private final WinnerSource winners;
         private @Nullable MergedView built;
+
+        /**
+         * The inputs of a closure's merge, with no way to read the entity of a winner.
+         *
+         * @param packs the composed closure, in closure order
+         * @param facts the facts each pack was read with, by configured identifier
+         */
+        public MergeInputs(List<PackUnderResolution> packs, Map<String, PackCompositionFacts> facts) {
+            this(packs, facts, WinnerSource.none());
+        }
 
         /**
          * The inputs of a closure's merge.
          *
          * @param packs the composed closure, in closure order
          * @param facts the facts each pack was read with, by configured identifier
+         * @param winners where the entity of a winner is read from, when {@link #effectiveArtifact} asks
          */
-        public MergeInputs(List<PackUnderResolution> packs, Map<String, PackCompositionFacts> facts) {
+        public MergeInputs(
+                List<PackUnderResolution> packs, Map<String, PackCompositionFacts> facts, WinnerSource winners) {
             this.packs = List.copyOf(Objects.requireNonNull(packs, "packs"));
             this.facts = Map.copyOf(Objects.requireNonNull(facts, "facts"));
+            this.winners = Objects.requireNonNull(winners, "winners");
+        }
+
+        WinnerSource winners() {
+            return winners;
         }
 
         /**
@@ -135,6 +157,80 @@ public record ClosureView(
                             .flatMap(Urn::parse)
                             .ifPresent(missionType -> bindings.put(urn, missionType)));
             return bindings;
+        }
+    }
+
+    /**
+     * Where the entity of a winning artifact is read from: the one read the merge does not hold, because the facts it
+     * is built from name the artifacts and never carry them. The view that {@link ClosureQueries} builds checks every
+     * read against the closure digest it was verified at and refuses {@code stale_input} when the packs moved.
+     */
+    @FunctionalInterface
+    public interface WinnerSource {
+
+        /**
+         * Reads one artifact of a pack.
+         *
+         * @param pack the configured pack that holds the version in force
+         * @param kind the artifact's kind
+         * @param id the artifact's id
+         * @return the entity; empty when the pack holds no readable artifact of that kind and id
+         */
+        Optional<CharterArtifact> read(PackIdentifier pack, ArtifactKind kind, String id);
+
+        /**
+         * A source that reads nothing, for a view built without the closure's packs.
+         *
+         * @return the empty source
+         */
+        static WinnerSource none() {
+            return (pack, kind, id) -> Optional.empty();
+        }
+    }
+
+    /**
+     * The pack that holds an artifact, as the reads name it.
+     *
+     * @param packId the configured identifier of the pack
+     * @param level the level the pack is configured at
+     */
+    public record Holder(PackIdentifier packId, PackLevel level) {
+
+        /**
+         * Checks the fields.
+         *
+         * @param packId the holding pack's configured identifier
+         * @param level the holding pack's level
+         */
+        public Holder {
+            Objects.requireNonNull(packId, "packId");
+            Objects.requireNonNull(level, "level");
+        }
+    }
+
+    /**
+     * An artifact as the winning copy of an activation's closure: the entity, the pack that holds it and, for an agent
+     * profile, its governance.
+     *
+     * @param artifact the winning entity, as the winner's pack stores it (a kernel {@link CharterArtifact}: a caller
+     *     narrows it to its kind)
+     * @param holder the pack that holds the version in force: its configured identifier and level
+     * @param governance the profile's governance under the activation; empty for every kind but {@code agent_profile}
+     */
+    public record EffectiveArtifactView(
+            CharterArtifact artifact, Holder holder, Optional<ProfileGovernance.Governance> governance) {
+
+        /**
+         * Checks the fields.
+         *
+         * @param artifact the winning entity
+         * @param holder the holding pack
+         * @param governance the profile's governance
+         */
+        public EffectiveArtifactView {
+            Objects.requireNonNull(artifact, "artifact");
+            Objects.requireNonNull(holder, "holder");
+            Objects.requireNonNull(governance, "governance");
         }
     }
 
@@ -497,6 +593,98 @@ public record ClosureView(
      */
     public void requireAction(String missionType, String action) {
         new ActionContextWalk(merged().edges()).requireKnown(missionType, action);
+    }
+
+    /**
+     * A profile's governance over the merged closure (FR-003, operator rulings on the walker rules): the profile walk
+     * ({@link GovernanceWalk}) over the merged edges with the effective set as the predicate, as {@link #actionContext}
+     * walks an action. The profile is the start and is exempt from the predicate. Each entry names the winner.
+     *
+     * @param profile the profile, {@code agent_profile:<id>}
+     * @param depth the number of {@code suggests} hops, at least 0
+     * @param states what {@link #inForce} answered for the request
+     * @return the governance; no entry for a profile the merged closure does not hold
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal as {@link #merged()} does
+     * @throws IllegalArgumentException when {@code depth} is negative
+     */
+    public ProfileGovernance.Governance governance(Urn profile, int depth, InForceStates states) {
+        MergedView view = merged();
+        GovernanceWalk.Result walked = GovernanceWalk.over(view.edges()).walk(profile, depth, effective(states));
+        return ProfileGovernance.Governance.of(
+                walked, urn -> view.closure().winnerOf(urn).map(winner -> new Holder(winner.packId(), winner.level())));
+    }
+
+    /**
+     * A profile's governance over this closure, taken as one pack's composed {@code depends_on} closure (fold W5): the
+     * profile walk over the merged edges with every node in force, plus the edges written to a target no pack holds,
+     * which are listed with {@code held} false and never expanded. Each held entry names the first holder in closure
+     * order ({@link #holderOf()}). {@link ProfileGovernance#ofPack} builds the view and calls this inside the caller's
+     * verified read.
+     *
+     * @param profile the profile, {@code agent_profile:<id>}
+     * @param depth the number of {@code suggests} hops, at least 0
+     * @return the governance
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal as {@link #merged()} does
+     * @throws IllegalArgumentException when {@code depth} is negative
+     */
+    public ProfileGovernance.Governance packGovernance(Urn profile, int depth) {
+        MergedView view = merged();
+        GovernanceWalk.Result walked = GovernanceWalk.overWritten(view.edges()).walk(profile, depth, urn -> true);
+        return ProfileGovernance.Governance.of(
+                walked, urn -> Optional.ofNullable(holderOf.get(urn)).flatMap(this::holderOfDescriptor));
+    }
+
+    private Optional<Holder> holderOfDescriptor(String descriptorPackId) {
+        return packs.stream()
+                .filter(entry -> entry.descriptorPackId().equals(descriptorPackId))
+                .findFirst()
+                .map(entry -> new Holder(entry.id(), entry.level()));
+    }
+
+    /**
+     * The winning copy of an artifact under an activation: the entity of the version in force across levels, the pack
+     * that holds it and, for an agent profile, its governance ({@link #governance}). The entity is read from the
+     * winner's pack, against the closure digest this view was verified at; the merge, the holder and the governance read
+     * nothing.
+     *
+     * @param kind the artifact's kind
+     * @param id the artifact's id
+     * @param depth the number of {@code suggests} hops of a profile's governance, at least 0
+     * @param states what {@link #inForce} answered for the request
+     * @return the winner; empty when no pack of the closure holds the artifact
+     * @throws CharterRefusal as {@link #merged()} does, with {@code PACK_UNREADABLE} when the winner's pack holds the
+     *     artifact and cannot read it, and with {@code STALE_INPUT} when the packs changed since this view was verified
+     */
+    public Optional<EffectiveArtifactView> effectiveArtifact(
+            ArtifactKind kind, String id, int depth, InForceStates states) {
+        Objects.requireNonNull(kind, "kind");
+        Objects.requireNonNull(id, "id");
+        Objects.requireNonNull(states, "states");
+        Optional<Urn> urn = urnOf(kind, id);
+        MergedView view = merged();
+        Optional<MergedClosure.Winner> winner = urn.flatMap(view.closure()::winnerOf);
+        if (winner.isEmpty()) {
+            return Optional.empty();
+        }
+        MergedClosure.Winner won = winner.get();
+        CharterArtifact artifact = mergeInputs
+                .winners()
+                .read(won.packId(), kind, id)
+                .orElseThrow(() -> new CharterRefusal(
+                        RefusalCode.PACK_UNREADABLE,
+                        "pack `" + won.packId().value() + "` holds " + won.urn() + " and cannot read it"));
+        Optional<ProfileGovernance.Governance> governance = kind == ArtifactKind.AGENT_PROFILE
+                ? Optional.of(governance(won.urn(), depth, states))
+                : Optional.empty();
+        return Optional.of(new EffectiveArtifactView(artifact, new Holder(won.packId(), won.level()), governance));
+    }
+
+    private static Optional<Urn> urnOf(ArtifactKind kind, String id) {
+        try {
+            return Optional.of(new Urn(NodeKind.of(kind), id));
+        } catch (IllegalArgumentException invalid) {
+            return Optional.empty();
+        }
     }
 
     /**
