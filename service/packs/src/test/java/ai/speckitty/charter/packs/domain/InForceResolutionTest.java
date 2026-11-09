@@ -665,8 +665,8 @@ class InForceResolutionTest {
         expect(states, "tactic:X", State.INACTIVE, Reason.ENHANCED_TARGET_NOT_IN_FORCE);
         assertThat(states.stateOf(u("tactic:X")).orElseThrow().required()).isTrue();
         assertThat(states.requiredNotInForce())
-                .containsExactly(
-                        new InForceStates.RequiredNotInForce(u("tactic:X"), Reason.ENHANCED_TARGET_NOT_IN_FORCE));
+                .containsExactly(new InForceStates.RequiredNotInForce(
+                        u("tactic:X"), InForceStates.PruningReason.ENHANCED_TARGET_NOT_IN_FORCE));
     }
 
     @Test
@@ -679,8 +679,8 @@ class InForceResolutionTest {
 
         expect(states, "tactic:X", State.INACTIVE, Reason.ENHANCED_TARGET_NOT_IN_FORCE);
         assertThat(states.requiredNotInForce())
-                .containsExactly(
-                        new InForceStates.RequiredNotInForce(u("tactic:X"), Reason.ENHANCED_TARGET_NOT_IN_FORCE));
+                .containsExactly(new InForceStates.RequiredNotInForce(
+                        u("tactic:X"), InForceStates.PruningReason.ENHANCED_TARGET_NOT_IN_FORCE));
     }
 
     @Test
@@ -718,8 +718,8 @@ class InForceResolutionTest {
 
         expect(states, "action:m/s", State.INACTIVE, Reason.MISSION_TYPE_NOT_IN_FORCE);
         assertThat(states.requiredNotInForce())
-                .containsExactly(
-                        new InForceStates.RequiredNotInForce(u("action:m/s"), Reason.MISSION_TYPE_NOT_IN_FORCE));
+                .containsExactly(new InForceStates.RequiredNotInForce(
+                        u("action:m/s"), InForceStates.PruningReason.MISSION_TYPE_NOT_IN_FORCE));
     }
 
     @Test
@@ -855,8 +855,8 @@ class InForceResolutionTest {
 
         expect(states, "tactic:X", State.INACTIVE, Reason.ENHANCED_TARGET_NOT_IN_FORCE);
         assertThat(states.requiredNotInForce())
-                .containsExactly(
-                        new InForceStates.RequiredNotInForce(u("tactic:X"), Reason.ENHANCED_TARGET_NOT_IN_FORCE));
+                .containsExactly(new InForceStates.RequiredNotInForce(
+                        u("tactic:X"), InForceStates.PruningReason.ENHANCED_TARGET_NOT_IN_FORCE));
         assertThat(states.stateOf(u("tactic:X")).orElseThrow().bucket())
                 .as("listed once: in requiredNotInForce, not in the enhanced-target bucket as well")
                 .isEmpty();
@@ -871,8 +871,8 @@ class InForceResolutionTest {
                 .select("tactic:X");
 
         assertThat(states.requiredNotInForce())
-                .containsExactly(
-                        new InForceStates.RequiredNotInForce(u("tactic:X"), Reason.ENHANCED_TARGET_NOT_IN_FORCE));
+                .containsExactly(new InForceStates.RequiredNotInForce(
+                        u("tactic:X"), InForceStates.PruningReason.ENHANCED_TARGET_NOT_IN_FORCE));
         assertThat(states.stateOf(u("tactic:X")).orElseThrow().bucket()).isEmpty();
     }
 
@@ -884,8 +884,8 @@ class InForceResolutionTest {
                 .select("action:m/s");
 
         assertThat(states.requiredNotInForce())
-                .containsExactly(
-                        new InForceStates.RequiredNotInForce(u("action:m/s"), Reason.MISSION_TYPE_NOT_IN_FORCE));
+                .containsExactly(new InForceStates.RequiredNotInForce(
+                        u("action:m/s"), InForceStates.PruningReason.MISSION_TYPE_NOT_IN_FORCE));
         assertThat(states.stateOf(u("action:m/s")).orElseThrow().bucket()).isEmpty();
     }
 
