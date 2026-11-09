@@ -1,7 +1,7 @@
 {
-  "event_count": 313,
-  "last_event_id": "01M70JMPMGMPRV3950WFMM8YW0",
-  "materialized_at": "2026-11-09T16:35:40.807328+00:00",
+  "event_count": 315,
+  "last_event_id": "01M70KNW6TSSS68MX0YZXHNQXF",
+  "materialized_at": "2026-11-09T16:53:47.866779+00:00",
   "mission_number": "",
   "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
   "mission_type": "software-dev",
@@ -13,8 +13,8 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 1,
-    "in_review": 0,
+    "in_progress": 0,
+    "in_review": 1,
     "planned": 0
   },
   "work_packages": {
@@ -1017,17 +1017,18 @@
     },
     "WP29": {
       "actor": "claude",
-      "agent": null,
-      "agent_profile": "__resolved_profile_absent__",
-      "agent_profile_version": "__resolved_profile_version_absent__",
+      "agent": "claude:opus:reviewer-renata",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
       "force_count": 1,
       "implementer_of_record": "claude:sonnet:java-jenny",
-      "lane": "in_progress",
-      "last_event_id": "01M70JMPMGMPRV3950WFMM8YW0",
-      "last_transition_at": "2026-11-09T16:35:40.807328+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M70KNW6TSSS68MX0YZXHNQXF",
+      "last_transition_at": "2026-11-09T16:53:47.866779+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "WP29 implemented: T143-T146, T165; lane-{ head 2ecda553 (planning commit ff0cadbd merged)"
+        "WP29 implemented: T143-T146, T165; lane-{ head 2ecda553 (planning commit ff0cadbd merged)",
+        "Fix cycle 1: MAJOR-1 fixed red-first, MINOR-1..4 and NIT rewrap"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
@@ -1037,15 +1038,15 @@
         "reviewer": "claude:opus:reviewer-renata",
         "verdict": "changes_requested"
       },
-      "role": "implementer",
-      "shell_pid": null,
-      "shell_pid_created_at": null,
+      "role": "reviewer",
+      "shell_pid": 18037,
+      "shell_pid_created_at": "1794243224.06",
       "subtasks": {
-        "T143": "planned",
-        "T144": "planned",
-        "T145": "planned",
-        "T146": "planned",
-        "T165": "planned"
+        "T143": "done",
+        "T144": "done",
+        "T145": "done",
+        "T146": "done",
+        "T165": "done"
       }
     },
     "WP30": {
