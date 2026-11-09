@@ -183,10 +183,12 @@ Feature: Failures outside the charter's refusals
     artifact_referenced, the code of the removal of an artifact another pack refers to). action_not_found is raised by
     the effective action context (ADR-0020 D7, PR C), which answers it with 404 when the merged closure holds no such
     action of the mission type. unresolved_edge_endpoint and pack_level_mismatch are raised by no
-    operation. drg_schema_error and prompt_fragment_invalid are violation codes of a refused registration (422
-    validation_failed, each at the pack-relative file of the fault), which the amended definition of raised
-    counts: the whole-pack load that the registration runs refuses a graph that breaks its schema as
-    drg_schema_error and a step enhancement or fragment that breaks a rule as prompt_fragment_invalid. The activation
+    operation. drg_schema_error, prompt_fragment_invalid, prompt_slot_malformed and prompt_slot_not_empty are
+    violation codes of a refused registration (422 validation_failed, each at the pack-relative file of the fault),
+    which the amended definition of raised counts: the whole-pack load that the registration runs refuses a graph that
+    breaks its schema as drg_schema_error, a step enhancement or fragment that breaks a rule as
+    prompt_fragment_invalid, and a step prompt whose slot declaration is malformed, or whose slot holds text under
+    schema_version 1.0, as prompt_slot_malformed and prompt_slot_not_empty. The activation
     register adds activation_not_found, activation_invalid, artifact_required and artifact_locked, its
     per-artifact writes add artifact_not_found and mission_type_not_found, and the preset application adds
     preset_not_found.
@@ -239,3 +241,5 @@ Feature: Failures outside the charter's refusals
       | preset_not_found            |
       | drg_schema_error            |
       | prompt_fragment_invalid     |
+      | prompt_slot_malformed       |
+      | prompt_slot_not_empty       |

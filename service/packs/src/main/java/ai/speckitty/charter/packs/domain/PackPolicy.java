@@ -14,6 +14,7 @@ import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Tension;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.kernel.markdown.PromptSlots;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.RawEdge;
 import ai.speckitty.charter.packs.domain.PackContents.RawGraph;
@@ -62,6 +63,12 @@ public final class PackPolicy {
             "exclusiveMinimum");
 
     private static final String STEP_ENHANCEMENT = "step_enhancement";
+
+    /** The descriptor {@code schema_version} that makes a slot that holds text a refusal (ADR-0066 version gate). */
+    private static final String VERSIONED_SCHEMA = "1.0";
+
+    private static final String UNVERSIONED_WARNING =
+            "; the descriptor declares no schema_version, so this is a warning";
 
     private static final String NODES = "nodes";
     private static final String EDGES = "edges";
@@ -282,9 +289,92 @@ public final class PackPolicy {
     public static String violationKind(PackFindingCode code) {
         return switch (code) {
             case PROMPT_FRAGMENT_INVALID -> RefusalCode.PROMPT_FRAGMENT_INVALID.token();
+            case PROMPT_SLOT_MALFORMED -> RefusalCode.PROMPT_SLOT_MALFORMED.token();
+            case PROMPT_SLOT_NOT_EMPTY -> RefusalCode.PROMPT_SLOT_NOT_EMPTY.token();
             default ->
                 throw new IllegalArgumentException(code.name() + " is not recorded as a violation of a load fault");
         };
+    }
+
+    // ---- step prompt slots ------------------------------------------------------------------------
+
+    /**
+     * What {@link PackPolicy} concludes about one fault of a step prompt's slots: the finding code the descriptor's
+     * version picks, and the reason without the file.
+     *
+     * @param code the finding code
+     * @param reason what is wrong, naming the line of the marker; it does not name the file
+     */
+    public record PromptSlotFault(PackFindingCode code, String reason) {
+        /**
+         * Checks the fields.
+         *
+         * @param code the finding code
+         * @param reason the reason
+         */
+        public PromptSlotFault {
+            Objects.requireNonNull(code, "code");
+            Objects.requireNonNull(reason, "reason");
+        }
+    }
+
+    /**
+     * Judges the slots of one step prompt (FR-007): the faults of its {@link PromptSlots.Parse}, each as the finding
+     * code the descriptor's version picks. A malformed marker is blocking whatever the version; a slot that holds text
+     * is blocking when the descriptor declares {@code schema_version} {@code "1.0"} and a warning when it declares
+     * none.
+     *
+     * @param parse the parse of the prompt's canonical text
+     * @param schemaVersion the descriptor's {@code schema_version}; empty for an unversioned descriptor
+     * @return one fault per fault of the parse, in the order found
+     */
+    public static List<PromptSlotFault> promptSlotFaults(PromptSlots.Parse parse, Optional<String> schemaVersion) {
+        boolean versioned = schemaVersion.filter(VERSIONED_SCHEMA::equals).isPresent();
+        List<PromptSlotFault> faults = new ArrayList<>();
+        for (PromptSlots.Fault fault : parse.faults()) {
+            String where = "line " + fault.line() + ": ";
+            faults.add(
+                    switch (fault.kind()) {
+                        case MALFORMED ->
+                            new PromptSlotFault(PackFindingCode.PROMPT_SLOT_MALFORMED, where + fault.reason());
+                        case NOT_EMPTY -> {
+                            String slot = fault.slot()
+                                    .map(id -> "slot " + id + " holds text")
+                                    .orElse(fault.reason());
+                            yield versioned
+                                    ? new PromptSlotFault(PackFindingCode.PROMPT_SLOT_NOT_EMPTY, where + slot)
+                                    : new PromptSlotFault(
+                                            PackFindingCode.PROMPT_SLOT_NOT_EMPTY_UNVERSIONED,
+                                            where + slot + UNVERSIONED_WARNING);
+                        }
+                    });
+        }
+        return faults;
+    }
+
+    /**
+     * The finding of one slot fault, at the prompt file. A warning is listed apart from the violations: it never
+     * refuses a load.
+     *
+     * @param file the prompt's pack-relative path
+     * @param fault the fault
+     * @return the finding, with an empty place
+     */
+    public static PackFinding findingOf(String file, PromptSlotFault fault) {
+        return new PackFinding(fault.code(), file, List.of(), file + ": " + fault.reason());
+    }
+
+    /**
+     * The load violation of one blocking slot fault: a violation of the pack at the prompt file, of the wire token of
+     * its code. Nothing is thrown for it.
+     *
+     * @param file the prompt's pack-relative path
+     * @param fault the fault
+     * @return the violation
+     * @throws IllegalArgumentException for the warning of an unversioned descriptor
+     */
+    public static PackElementViolation violationOf(String file, PromptSlotFault fault) {
+        return new PackElementViolation(file, violationKind(fault.code()), fault.reason());
     }
 
     // ---- single-pack rules a schema cannot express ---------------------------------------------
