@@ -279,3 +279,190 @@ docs/api/service-contract.md, docs/changelog/CHANGELOG.md
   - Registering real packs is refused over README/PROVENANCE files (#451). The script copies `built-in` into
     `<config-root>/packs/`, as the run did, and registers the others with documented workarounds. The workarounds
     are listed, not hidden.
+
+## Fold of the plan-point squad (2026-11-09)
+
+Three lenses reviewed the plan: architecture (architect-alphonso), contract (reviewer-renata), and walk, corpus
+and testing (java-jenny). The squad raised four blockers, all folded. The operator ruled on one of them (decision
+`01M7115WE6WQ7Q41HSS9ZHD1F3`). Each finding's disposition is in `research.md` § Squad dispositions. These rules
+supersede the IC text above where they differ.
+
+### Walk (IC-03)
+
+- **W1 — lineage under an activation (operator, as confirmed).**
+  - `LINEAGE` follows `specializes_from` through the in-force predicate, as every other step does. Under an
+    activation, an ancestor that is not in force is not listed and seeds nothing.
+  - Ancestors in force seed `REQUIRES` and `SUGGESTS`.
+  - This diverges from the cascade's pass-through rule (`CascadeRules`, `ReachRequest.Lineage`). The divergence is
+    recorded in `research.md` D4, in the contract description and in `docs/api/service-contract.md`.
+- **W2 — `held=false`.**
+  - `EdgeIndex` gains `writtenLinks()`. These are the written edges of the closure's packs, dangling targets
+    included.
+  - Only the pack-scoped walk uses them. It lists an unheld target with `held: false` and never expands it.
+  - Red test: a fixture profile whose `specializes_from` parent no pack of the closure holds.
+- **W3 — the profile's own vocabulary.** `VOCABULARY` is seeded from `{start} ∪ listed` when the start is a profile.
+  The action walk is unchanged.
+- **W4 — the start node.**
+  - The start is exempt from the predicate, as the action's start is. A profile read under an activation answers
+    its governance whatever its own state, and the state is reported on the read.
+  - Entries carry no `enhancedBy` or `enhances`. Profiles take no step enhancements, and this is stated in the
+    schema description.
+- **W5 — one read, one closure.**
+  - Pack-scoped: the body and the walk are computed in one `ConsistentRead.read` supplier, with no inner retry.
+  - The closure is the pack's composed `depends_on` closure, and its merged view is walked.
+  - A closure whose merge or compose is refused refuses the profile read with the same code the references read
+    gives. A test pins it.
+- **W6 — no wire leak.** `Step` reaches no existing wire: `ClosureViewSession.contextOf` drops step, via and hops.
+  The governance wire has its own step enum.
+
+### Contract (IC-04)
+
+- **C1 — two entry schemas, no overloaded field.**
+  - **`PackGovernanceEntry`** (pack-scoped) has:
+    - `kind` (`NodeKind`), `artifactId`, `urn`;
+    - `step`, `relation`, `via`, `hops`;
+    - `suggestion{when, reason}` (only on a `suggests` entry);
+    - `packId` (nullable), `held`, `_links`.
+  - **`EffectiveGovernanceEntry`** (activation-scoped) is `allOf` `EffectiveArtifact` plus `step`, `relation`, `via`
+    and `hops`. A suggestion sits inline (`suggestion`) as in the action context. There is no `suggestions[]`.
+- **C2 — `excluding` on the wire.**
+  - It is a closed object, `{ wholeFields: string[] | null, fieldValues: [{ field, values: string[] }] | null }`.
+    At most one of the two is set, and an absent `excluding` is `null`.
+  - It keeps the authored order, empty value lists included.
+  - A round-trip test covers both forms.
+- **C3 — kinds and tokens.**
+  - Entry kinds use `NodeKind`, not `ArtifactKindToken`.
+  - `ArtifactKindToken` gains `agent_profile`, appended last, so it stays equal to `SERVED`.
+  - New `WireTokenParityTest` pairs cover the entry `kind`, `relation` and `step` enums. The line about "aligning"
+    `ActivatableKind` is struck.
+- **C4 — headers on the activation routes.** Both activation routes declare:
+  - `Charter-Source-Fingerprint` (required);
+  - `ETag`, a `304` on `If-None-Match`, and a `400` for `depth`, as the other effective reads do.
+  - New `EffectiveTag.Read.ARTIFACT` and `PROFILE` constants, whose query covers kind, id and depth.
+- **C5 — fragments and ETag.**
+  - Two fragments: `…-agent-profile-reads.md` (`### Added`) and `…-agent-profile-reads-changes.md`
+    (`### Changed`). The second covers:
+    - the served-kinds wording;
+    - `artifact_not_found` on the pack path;
+    - the profile's `ETag`.
+  - The pack-scoped profile read carries `ETag` = the pack revision, as a directive does, because DELETE needs
+    `If-Match`. NFR-002 reads "one fragment per `###` block".
+- **C6 — overlapping operations.**
+  - Separate response schemas: `EffectiveAgentProfileRead` is `allOf` `EffectiveArtifactRead` plus `agentProfile`
+    and `governance`. The generic read never carries a body.
+  - Tags: the generic activation route is tagged `Activation`. A new top-level tag, `AgentProfiles`, holds
+    `getPackAgentProfile` and `getEffectiveAgentProfile`.
+  - The generic descriptions say that `agent_profile` is answered by the literal operation.
+  - Operation coverage gets a 2xx scenario for each new operation, including the generic effective read on a
+    directive.
+- **C7 — refusals.**
+  - Rule: kinds served from now on use `artifact_not_found`, so `ABSENT` gains `AGENT_PROFILE →
+    ARTIFACT_NOT_FOUND`.
+  - The only `CharterRefusalCode.yaml` edits are two description sentences: the served list of `kind_not_found`,
+    and the scope of `artifact_not_found`.
+  - The per-kind lists in the path descriptions are updated.
+  - `errors.feature`, `ContractDescriptionsTest` and `ReservedRefusalCodesTest` are not touched.
+  - The orchestrator is told about the two `CharterRefusalCode.yaml` sentences, which is #437's hot file.
+- **C8 — relations.**
+  - `effective-artifact` gets a table row and a ruleset enum entry in the same commit (`RelationTableParityTest`).
+    The `On` column of `artifact` is widened.
+  - The root's `activations` link carries `method: POST`, and its table row becomes "In the contract".
+  - US3 and the script read "POST to `activations`, then follow `self`".
+  - `root.feature` is updated.
+- **C9 — citations.**
+  - `AgentProfile` properties cite `service/profiles/.../AgentProfile.java` accessors (`x-source`).
+  - Governance properties use `x-derived`.
+  - The descriptions that list five served kinds are reworded: `ArtifactKindToken`, `ArtifactKind`, `Artifact`
+    (both places), `ArtifactSummary` and `Depth`.
+- **C10 — the mapping oracle.** The oracle is `contracts/packs/schemas/agent-profile.schema.json`, in camelCase. An
+  exhaustive test walks the schema's properties.
+- **C11 — scenarios.**
+  - The new file is `scenarios/agent-profile-reads.feature`. `profiles.feature` (#380, `@WIP`) is left alone.
+  - The activation read answers the stored winner and never resolves `enhances`, so it is not #380's effective
+    profile.
+  - Steps live in `service/deployable/src/test/java/.../deployable/bdd/` (a new `ProfileSteps`), with the
+    vocabulary in `scenarios/README.md`.
+
+### Architecture and build (IC-02, IC-05, IC-06)
+
+- **A1 — registration lists for `:profiles-edge`.**
+  - `settings.gradle.kts`.
+  - `DeployableConfiguration`'s `@ComponentScan`: the `profiles.application.config` package and the
+    `profiles.infra.{api,packs,activations}.config` packages.
+  - `charter-reports` `serviceModules`: module → a list of packages, so `profiles-edge` owns
+    `profiles.application` and `profiles.infra`.
+  - `sonar.yml` and `scripts/ci/mutation_summary.py`.
+  - Plugins: `charter.spring-conventions`, `charter.hand-written`, `charter.mutation-conventions`, plus
+    `mutationFloors`.
+  - Explicit `implementation(project(":packs"))`, and `:deployable` → `implementation(project(":profiles-edge"))`.
+- **A2 — ArchUnit, each rule with a bite fixture.** `applicationIsEdge("profiles")` already holds the application
+  ring. New rules:
+  - (a) `profiles..` outside `profiles.infra.packs` names no `packs..`.
+  - (b) `profiles.infra.packs` names only `packs.application` and `packs.domain`.
+  - (c) `profiles..` outside `profiles.infra.activations` names no `activations..`.
+  - (d) `profiles.infra.activations` names only `activations.application` and `activations.domain`.
+  - (e) No `packs..` or `activations..` class names `profiles.application..` or `profiles.infra..`.
+  - Every new package has a `@NullMarked` `package-info`.
+  - The profile controller builds its own links and its fingerprint header, as `ActivationController` does. It
+    never names `packs.infra.api` (no `Hypermedia` and no `ArtifactDtos`, per the operator's steer to the
+    mission-types session).
+  - The `Charter-Source-Fingerprint` header name moves to `kernel.transport`, and the existing users switch to it.
+- **A3 — one session for the activation profile read.**
+  - `EffectiveReadService.artifact(activationId, kind, artifactId, depth, ifNoneMatch)` opens one `PacksSession`.
+    From it, it returns the winner's `CharterArtifact`, the winner's pack and level, the state, and (for a
+    profile) the governance.
+  - This is backed by `ClosureView.effectiveArtifact(kind, id, depth, states)`.
+  - The body is never read a second time through `ProfileSource`.
+  - New `activations.domain` value types carry the governance entries, with their own step enum.
+- **A4 — widening `SERVED`.**
+  - The `ABSENT` entry is added, so DELETE cannot answer 500.
+  - `agent_profile` goes last in `SERVED`. `ArtifactPosition` follows, and `ArtifactReadServiceTest` and
+    `WireTokenParityTest` are updated.
+  - The generic `ArtifactDtos` path throws `IllegalStateException` for `Item.Foreign`. It cannot be reached, and a
+    full-context routing test proves that.
+- **A5 — routing.**
+  - Same base-path prefix.
+  - A `:deployable` full-context test pins that:
+    - a GET on the literal paths reaches the profile controller;
+    - a DELETE and `/references` reach the generic handler;
+    - a PUT on `agent_profile` answers `405`.
+- **A6 — smaller items.**
+  - A problem-mapping parity test for the profile's activation route against `ActivationProblems`.
+  - `NullOmissionTest` covers the new schemas.
+  - A parity check for `effective-artifact` built outside packs.
+  - The amendment covers ADR-0006 ("one module per slice") as well as ADR-0037.
+  - Runtime hints for the new DTOs, as `ActivationRuntimeHints` provides for its own.
+
+### Pin bump (IC-01) and corpus
+
+- **P1 — the tests to move.**
+  - `WholePackOpenPacksRoundTripTest`: the counts, the 315 constituents, and "26 built-in + 5 qa".
+  - `PackManifestParityTest` (315/317), `MissionTypeCorpusTest`, `MissionStepContractCorpusTest` (28),
+    `CompanionDigestTest` (10).
+  - `whole-pack/expected-red.yaml`.
+  - Every count change is traced to an upstream commit in the WP's notes.
+- **P2 — divergences.** `.kittify/missions/software-dev/actions/implement/index.yaml:33-35` and
+  `.kittify/missions/built_in_step_contracts/implement.step-contract.yaml:15-17` name paradigms the bump deletes.
+  These are recorded as divergences in the WP. They are core's project files, and `charter.yaml` selects none of
+  them.
+- **P3 — `verifyAll` does not run the whole-pack round trip.** The pin-bump WP's definition of done runs
+  `./gradlew :packs:wholePackRoundTrip -PopenPacksDir=…` explicitly, and CI runs it through `CI gate / gate`.
+  `syncPacks` re-vendors `internal` and `qa` only. `spdd` is not vendored, which corrects the purpose line.
+- **P4 — the corpus test covers every profile.** That is 31 (26 built-in plus 5 qa), not only built-in. The spec
+  states that body references (`directive-references` and others) are body fields, not walked edges.
+- **P5 — data-model types.**
+  - `writingStyle` and `complexityPreference` are arrays.
+  - A null and an empty `selfReviewProtocol` and `specializationContext` are kept apart where the domain keeps them
+    apart. Where it collapses them, that is recorded and asserted.
+
+### Usability script (IC-07)
+
+- **U1 — the note at a commit.** The engineering note is cited at `c1c2ab56` (branch
+  `docs/service-usability-run-2026-11-09`).
+- **U2 — packs as pinned.**
+  - The script registers packs as pinned, unmodified.
+  - It checks the copied `built-in` tree against its git tree digest.
+  - When a registration is refused (#451, #452), it prints the refusal and the workaround it applies by name. The
+    summary lists every workaround, so the proof is never silent about them.
+  - The profile proof needs only `built-in` (and `qa`) plus the project pack.
+- **U3 — the red baseline.** The SC-002 baseline is recorded with the `main` commit and the pin it ran at.

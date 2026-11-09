@@ -70,7 +70,7 @@ A client creates an activation from this repository's `charter.yaml` with `agent
 
 ### User Story 3 - Follow links from the API root (Priority: P1)
 
-A client knows only `GET /api/v1/`. It follows links to the activations collection, then to the activation, its effective artifacts, the profile item, the profile, and each governance entry. It does the same pack-scoped, from the root's `artifacts` link.
+A client knows only `GET /api/v1/`. It POSTs the activation document to the root's `activations` link and follows the answer's `self`, then the activation's effective artifacts, the profile item, the profile, and each governance entry. It does the same pack-scoped, from the root's `artifacts` link.
 
 **Why this priority**: The brief's acceptance is link-following from the root, proved by the usability script.
 
@@ -78,7 +78,7 @@ A client knows only `GET /api/v1/`. It follows links to the activations collecti
 
 **Acceptance Scenarios**:
 
-1. **Given** the API root, **When** it is read, **Then** it links to the activations collection.
+1. **Given** the API root, **When** it is read, **Then** it links `activations` (method `POST`) to create an activation.
 2. **Given** the usability script, **When** it is run against the service and open-packs at the bumped pin, **Then** it reaches `java-jenny`'s body and governance on both the pack-scoped and the activation-scoped path, and exits `0`.
 
 ---
@@ -127,7 +127,7 @@ A pack maintainer deletes an agent profile from a registered pack, under the sam
 | ID | Title | Requirement | Category | Priority | Status |
 |----|-------|-------------|----------|----------|--------|
 | NFR-001 | Round-trip fidelity | Every profile in the open-packs corpus at the pin is answered with its meaning intact (ADR-0036). This is checked for 100% of the corpus's profiles by an automated test. | Correctness | High | Open |
-| NFR-002 | Contract discipline | Every contract change carries exactly one change fragment (ADR-0047), `@contract` scenarios and an example with `_links`. `./gradlew verifyAll` passes on Java 25 with no new suppression. | Governance | High | Open |
+| NFR-002 | Contract discipline | Every contract change is recorded in change fragments, one per `###` block (ADR-0047), `@contract` scenarios and an example with `_links`. `./gradlew verifyAll` passes on Java 25 with no new suppression. | Governance | High | Open |
 | NFR-003 | Read latency | A profile read, pack-scoped or under an activation, of the open-packs corpus answers in under 500 ms at p95 on a warm service on the CI runner, measured by the usability script over 20 reads. | Performance | Medium | Open |
 | NFR-004 | Bounded walk | The governance walk visits each node at most once per step and terminates on a `specializes_from` cycle. A cycle fixture finishes in under 1 s. | Reliability | High | Open |
 
@@ -171,4 +171,5 @@ A pack maintainer deletes an agent profile from a registered pack, under the sam
 - **Walker rules:** "the same walker rules as the other kinds" means the action-context walk. The profile node's own outgoing edges stand in for the action's `scope` step. `specializes_from` is followed transitively first, and each ancestor's own edges join the first step.
 - **Pack-scoped walk:** it is resolved over the pack's composed `depends_on` closure, as the references read is today.
 - **Activation-scoped walk:** it is resolved over the activation's merged closure, with its in-force predicate.
+- A profile's body references (`directive-references` and the others) are body fields. They are not walked; only graph edges are.
 - Only kinds already served are linked from effective items. Mission-type kinds will be linked by the parallel mission.

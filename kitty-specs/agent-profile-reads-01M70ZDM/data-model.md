@@ -9,10 +9,12 @@ the wire.
 - `specialization{primaryFocus, secondaryAwareness, avoidanceBoundary, successDefinition}`.
 - `collaboration{handoffTo[], handoffFrom[], worksWith[], outputArtifacts[], operatingProcedures[], canonicalVerbs[]}`.
 - `modeDefaults[{mode, description, useCase}]`, `initializationDeclaration`.
-- `specializationContext{languages[], frameworks[], filePatterns[], domainKeywords[], writingStyle, complexityPreference}`.
+- `specializationContext{languages[], frameworks[], filePatterns[], domainKeywords[], writingStyle[], complexityPreference[]}`.
 - `appliesToLanguages[]`, `directiveReferences[{code, name, rationale}]`.
 - `tacticReferences` / `styleguideReferences` / `toolguideReferences[{id, rationale}]`.
-- `selfReviewProtocol{steps[{name, command?, gate}]}`, `excluding`.
+- `selfReviewProtocol{steps[{name, command?, gate}]}`, `excluding{wholeFields[] | null, fieldValues[{field, values[]}] | null}`.
+
+The oracle is `contracts/packs/schemas/agent-profile.schema.json`, in camelCase (plan fold C2, C10).
 
 The exact set is whatever the domain type `profiles.domain.AgentProfile` holds. A test fails if a field of the
 domain type is not mapped.
@@ -63,3 +65,12 @@ The engine is `ActionContextWalk.Run`, generalised to a start node and a first s
   4. `REQUIRES_OF_SUGGESTED`;
   5. `VOCABULARY` (one hop).
 - **Action:** unchanged.
+
+## Superseded by the plan fold
+
+The governance entry table above is superseded by plan.md fold C1:
+- `PackGovernanceEntry` is the pack-scoped entry.
+- `EffectiveGovernanceEntry` is the activation-scoped entry: `allOf` `EffectiveArtifact` plus `step`, `relation`,
+  `via` and `hops`, with the suggestion inline.
+
+There is no `suggestions[]`. Entry kinds use `NodeKind`.
