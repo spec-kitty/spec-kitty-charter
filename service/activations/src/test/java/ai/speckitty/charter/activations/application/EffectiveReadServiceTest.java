@@ -619,4 +619,31 @@ class EffectiveReadServiceTest {
                         CharterRefusal.class,
                         refused -> assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
     }
+
+    @Test
+    void anUnknownNameIsRefusedBeforeTheTagIsComparedWhateverIfNoneMatchSays() {
+        EffectiveTag.ContextQuery unknown = new EffectiveTag.ContextQuery("software-dev", "missing", 0);
+        String tag = EffectiveTag.context(stored.revision(), closure(CLOSURE), unknown)
+                .token();
+        packs.contexts(ask -> {
+            if (ask.action().equals("missing")) {
+                throw new CharterRefusal(RefusalCode.ACTION_NOT_FOUND, "no such action");
+            }
+            return walked();
+        });
+
+        assertThatThrownBy(() -> service.actionContext(ID, unknown, EntityTags.quote(tag)))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refused -> assertThat(refused.code()).isEqualTo(RefusalCode.ACTION_NOT_FOUND));
+        assertThat(packs.contextAsks())
+                .as("the names alone were judged, nothing was walked")
+                .isEmpty();
+        assertThat(packs.merges()).isZero();
+        String known = EffectiveTag.context(stored.revision(), closure(CLOSURE), IMPLEMENT)
+                .token();
+        assertThat(service.actionContext(ID, IMPLEMENT, EntityTags.quote(known)))
+                .as("a known name keeps its 304")
+                .isEqualTo(new Read.NotModified<ContextRead>(known));
+    }
 }

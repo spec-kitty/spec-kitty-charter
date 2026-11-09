@@ -83,4 +83,17 @@ public interface PacksSession {
      *     mission type is in force, or as {@link #inForce} does
      */
     ActionContext actionContext(String missionType, String action, int depth, InForceQuery query);
+
+    /**
+     * Judges the names of an action context against the merged closure, and nothing else: no in-force resolution and no
+     * walk. A read that answers {@code 304} calls it first, so an unknown name is a {@code 404} whatever
+     * {@code If-None-Match} says.
+     *
+     * @param missionType the mission type of the action
+     * @param action the action
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with {@code mission_type_not_found} or
+     *     {@code action_not_found} when the merged closure holds no such mission type or action, or as {@link #merged}
+     *     does
+     */
+    void requireAction(String missionType, String action);
 }

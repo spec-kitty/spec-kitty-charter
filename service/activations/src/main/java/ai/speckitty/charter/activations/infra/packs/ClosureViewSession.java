@@ -99,8 +99,13 @@ final class ClosureViewSession implements PacksSession {
         return contextOf(view.actionContext(missionType, action, depth, statesOf(query)));
     }
 
+    @Override
+    public void requireAction(String missionType, String action) {
+        // stub: the green commit judges the names
+    }
+
     /** What is in force under the query: resolved on the first ask and kept for a request that asks again. */
-    private InForceStates statesOf(InForceQuery query) {
+    InForceStates statesOf(InForceQuery query) {
         InForceRequest request = requestOf(query);
         InForceStates states = resolved;
         if (states == null || !request.equals(resolvedFor)) {

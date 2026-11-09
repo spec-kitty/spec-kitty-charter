@@ -1,6 +1,8 @@
 package ai.speckitty.charter.activations.infra.packs;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.activations.application.PacksSession;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
@@ -11,12 +13,14 @@ import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
 import ai.speckitty.charter.activations.domain.NodeRef;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackPaths;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
@@ -419,6 +423,52 @@ class ClosureViewSessionStepRefsTest {
                 .as("the step goes with its mission type; the artifact in force stays")
                 .contains(new NodeRef(NodeKind.DIRECTIVE, "D"))
                 .doesNotContain(new NodeRef(NodeKind.ACTION, "M/s"));
+    }
+
+    // ---- one resolution per request (NFR-003): the adapter's own cache, not a fake's count ----
+
+    @Test
+    void theInForceStatesOfOneRequestAreResolvedOnceForTheSetTheGraphAndTheWalk() {
+        ClosureViewSession session = (ClosureViewSession) steps().session();
+        InForceStates first = session.statesOf(selecting("mission_type:M", "directive:D"));
+
+        session.inForce(selecting("mission_type:M", "directive:D"));
+        session.graph(selecting("directive:D", "mission_type:M"));
+        session.actionContext("M", "s", 0, selecting("mission_type:M", "directive:D"));
+
+        assertThat(session.statesOf(selecting("mission_type:M", "directive:D")))
+                .as("an equal request is answered by the states resolved first, not by a second resolution")
+                .isSameAs(first);
+    }
+
+    @Test
+    void aDifferentRequestOfTheSameSessionResolvesAgain() {
+        ClosureViewSession session = (ClosureViewSession) steps().session();
+        InForceStates first = session.statesOf(selecting("mission_type:M", "directive:D"));
+
+        InForceStates other = session.statesOf(selecting("directive:D"));
+
+        assertThat(other).as("the control: the cache is keyed by the request").isNotSameAs(first);
+        assertThat(session.statesOf(selecting("directive:D"))).isSameAs(other);
+    }
+
+    // ---- the names of an action context, judged alone ----
+
+    @Test
+    void theNamesOfAnActionAreJudgedAgainstTheMergedClosureAndNothingElse() {
+        PacksSession session = steps().session();
+
+        assertThatThrownBy(() -> session.requireAction("missing", "s"))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refused -> assertThat(refused.code()).isEqualTo(RefusalCode.MISSION_TYPE_NOT_FOUND));
+        assertThatThrownBy(() -> session.requireAction("M", "missing"))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refused -> assertThat(refused.code()).isEqualTo(RefusalCode.ACTION_NOT_FOUND));
+        assertThatCode(() -> session.requireAction("M", "s"))
+                .as("the control: a held step of a held mission type, in force or not")
+                .doesNotThrowAnyException();
     }
 
     // ---- the fixture: hand-built packs, merged for real ----

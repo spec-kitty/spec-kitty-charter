@@ -104,6 +104,11 @@ public class ActivationTestWiring {
                 public ActionContext actionContext(String missionType, String action, int depth, InForceQuery query) {
                     return ActionContext.notInForce();
                 }
+
+                @Override
+                public void requireAction(String missionType, String action) {
+                    // the fixture holds no mission type
+                }
             };
         }
 

@@ -621,6 +621,34 @@ class EffectiveSetTest {
                 .isEmpty();
     }
 
+    @Test
+    void anArtifactAnotherArtifactInForceRequiresOutsideTheContextIsNoSuggestionOfTheContextAndOneNobodyRequiresIs() {
+        // Decision 01M70CTZP7P2EHSCK2G0RET74B: a context suggestion is an artifact the listing gives a suggestion and
+        // that a
+        // listed entry reaches through suggests. X is in force, outside the context, and requires S: the listing gives
+        // S none.
+        EffectiveSet set = new Scene()
+                .artifact("directive:D", State.ACTIVE, Reason.SELECTED)
+                .artifact("directive:X", State.ACTIVE, Reason.SELECTED)
+                .artifact("directive:S", State.INACTIVE, Reason.NOT_SELECTED)
+                .artifact("directive:S2", State.INACTIVE, Reason.NOT_SELECTED)
+                .suggests("directive:D", "directive:S", "w", "r")
+                .suggests("directive:D", "directive:S2", "w2", "r2")
+                .edge("directive:X", RelationType.REQUIRES, "directive:S")
+                .of();
+
+        assertThat(only(set, "directive:S").suggestion())
+                .as("the listing's own answer")
+                .isEmpty();
+        assertThat(set.suggested(ref("directive:S"), Optional.of("w"), Optional.of("r")))
+                .as("hard-reached by an artifact in force outside the context")
+                .isEmpty();
+        assertThat(set.suggested(ref("directive:S2"), Optional.of("w2"), Optional.of("r2")))
+                .as("the control, in the same set: suggested only")
+                .hasValueSatisfying(artifact -> assertThat(artifact.suggestion())
+                        .contains(new Suggestion(Optional.of("w2"), Optional.of("r2"))));
+    }
+
     // ---- the report of a write's shape, and the request ----
 
     @Test

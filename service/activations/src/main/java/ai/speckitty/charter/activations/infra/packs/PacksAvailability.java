@@ -126,6 +126,11 @@ public class PacksAvailability implements AvailablePacks {
         public ActionContext actionContext(String missionType, String action, int depth, InForceQuery query) {
             return ActionContext.notInForce();
         }
+
+        @Override
+        public void requireAction(String missionType, String action) {
+            // a session that holds no closure refuses before any name is judged
+        }
     }
 
     /**

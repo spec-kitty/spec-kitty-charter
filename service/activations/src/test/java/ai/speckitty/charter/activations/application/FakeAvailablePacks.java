@@ -11,7 +11,9 @@ import ai.speckitty.charter.activations.domain.ReachPlan;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 
@@ -37,6 +39,7 @@ public final class FakeAvailablePacks implements AvailablePacks {
     private Function<ContextAsk, ActionContext> contextAnswer = ask -> ActionContext.notInForce();
     private final List<ContextAsk> contextAsks = new ArrayList<>();
     private int graphReads;
+    private final List<String> nameChecks = new ArrayList<>();
 
     /**
      * What a session was asked of the action context.
@@ -129,6 +132,15 @@ public final class FakeAvailablePacks implements AvailablePacks {
      */
     public List<ContextAsk> contextAsks() {
         return List.copyOf(contextAsks);
+    }
+
+    /**
+     * The action names the sessions were asked to judge on their own, as {@code <missionType>/<action>}, in order.
+     *
+     * @return the names
+     */
+    public List<String> nameChecks() {
+        return List.copyOf(nameChecks);
     }
 
     /**
@@ -230,6 +242,13 @@ public final class FakeAvailablePacks implements AvailablePacks {
         public GraphSnapshot graph(InForceQuery query) {
             graphReads++;
             return graphAnswer.apply(query);
+        }
+
+        @Override
+        public void requireAction(String missionType, String action) {
+            nameChecks.add(missionType + "/" + action);
+            java.util.Objects.requireNonNull(contextAnswer.apply(new ContextAsk(
+                    missionType, action, 0, new InForceQuery(Set.of(), Set.of(), Optional.empty(), Map.of()))));
         }
 
         @Override
