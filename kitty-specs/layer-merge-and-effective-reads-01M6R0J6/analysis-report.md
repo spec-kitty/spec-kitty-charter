@@ -4,7 +4,7 @@ artifact_type: spec-kitty.analysis-report
 command: /spec-kitty.analyze
 mission_slug: layer-merge-and-effective-reads-01M6R0J6
 mission_id: 01M6R0J642MF7F33XVMMPSBSAT
-generated_at: '2026-11-09T11:52:08.929610+00:00'
+generated_at: '2026-11-09T12:07:17.784246+00:00'
 analyzer_agent: claude:opus:orchestrator
 input_artifacts:
   spec.md:
@@ -12,7 +12,7 @@ input_artifacts:
     sha256: 167c725dd0160a673f03d12b50684714cc75b97b250be9350e017a1c6323d975
   plan.md:
     path: kitty-specs/layer-merge-and-effective-reads-01M6R0J6/plan.md
-    sha256: a5e78f9a71e507fe04a0785162c9c8f7cd9fb34a2728e7a87a3feb1c7094f0c9
+    sha256: 2554ffa92313e0c95ade66ad3584a73fa96f495c00576241e7c7716b5a1a2301
   tasks.md:
     path: kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks.md
     sha256: 6350eeed13c1816dd05db5dca72b2a679d3c1e388ed92c70c84efdc8f924fe46
@@ -1329,7 +1329,7 @@ input_artifacts:
     sha256: d5564462e43d8209c565a18ac183d1480172ffe0a0998a4e469264153e4d93e8
   material:kitty-specs/layer-merge-and-effective-reads-01M6R0J6/plan.md:
     path: kitty-specs/layer-merge-and-effective-reads-01M6R0J6/plan.md
-    sha256: a5e78f9a71e507fe04a0785162c9c8f7cd9fb34a2728e7a87a3feb1c7094f0c9
+    sha256: 2554ffa92313e0c95ade66ad3584a73fa96f495c00576241e7c7716b5a1a2301
   material:kitty-specs/layer-merge-and-effective-reads-01M6R0J6/spec.md:
     path: kitty-specs/layer-merge-and-effective-reads-01M6R0J6/spec.md
     sha256: 167c725dd0160a673f03d12b50684714cc75b97b250be9350e017a1c6323d975
@@ -1422,13 +1422,13 @@ input_artifacts:
     sha256: e87c41d752f0669add6122748281bab2940a721482098058057c2a3dc80005df
   material:kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP27-c-graph-and-action-walk.md:
     path: kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP27-c-graph-and-action-walk.md
-    sha256: 3f3f8d453a4addd056c6ddacfa80b1aa5a7420fb8bc0a417e6c7c25369c2f133
+    sha256: 99f1e2f891a53daf0df533a4cb0293f2bcaec7714f75b255912654161146c627
   material:kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP28-c-contract-graph-context.md:
     path: kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP28-c-contract-graph-context.md
-    sha256: ed670157ea28eedcfe67e5550c0839a07b2059ae1fb25dc9bd224448b93325f8
+    sha256: ab96c8c5efe2c0ed79886473a6a4e5602566fbfbeabccd6af936a61f1665d4c2
   material:kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP29-c-deny-satisfied-by-override.md:
     path: kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP29-c-deny-satisfied-by-override.md
-    sha256: 23309cdf211768d593e97225019487b0d7231648586eeb7df10be04d54571bb3
+    sha256: d8ad3cfc941c95899b65683bb1b98750ff45cc1d02c25ac155d6c415007ca06e
   material:kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP30-a0-cascade-depth.md:
     path: kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP30-a0-cascade-depth.md
     sha256: 5fc1fdda5e075917a89c94b3158f6b6ec519fdb8efe1fee617d49cc389a74bb8
@@ -1458,13 +1458,13 @@ input_artifacts:
     sha256: 07390d53c23192499411fb221a2773c80872038812d62368de0a3b19b876f97a
 verdict: unknown
 issue_counts:
-  medium:
-  critical:
   info:
-  low:
+  medium:
   high:
+  low:
+  critical:
 findings: []
-report_transaction: cf9ed0f5db3d4a5a9526b9bff8bf5889
+report_transaction: 9d91d31aa0684d3093a49ea24c56f264
 material_manifest_version: 1
 ---
 
@@ -1477,7 +1477,7 @@ mission_id: 01M6R0J642MF7F33XVMMPSBSAT
 verdict: ready
 issue_counts:
   critical: 0
-  high: 1
+  high: 2
   medium: 3
   low: 3
   info: 0
@@ -1502,6 +1502,10 @@ findings:
   severity: low
   category: inconsistency
   summary: 'RequiredNotInForce.reason typed as the ten-value Reason against the contract two values (D4b). Fixed: WP27 T161, WP28 T164.'
+- id: S1
+  severity: high
+  category: inconsistency
+  summary: 'Plan-point squad (35 findings, one blocker): OD-9 contradicted EdgeIndexTest; OD-6 scope and binding source; node predicate scope; D4b boundary; #429 tests falsifiable. Fixed in c957a2de; decisions 01M7037V93Y077H8M4W9V8Y6B3, 01M7037ZNKJ6JTRKGD7G695ZV1; deferred #439.'
 - id: I9
   severity: low
   category: inconsistency
@@ -1512,7 +1516,7 @@ findings:
   summary: NFR-001, C-004 and C-005 are cited in WP bodies but mapped to no WP's requirement_refs (carried).
 ---
 
-## Specification Analysis Report (re-run, 2026-11-09, before phase C)
+## Specification Analysis Report (re-run, 2026-11-09, before phase C, after the plan-point squad)
 
 Re-run before WP27 starts. PR B (#427) and #430/#436 are on `main`; the planning branch was rebased onto `main` at
 `5458e1fa` (only the 2026-11-09 hand-over and its matrix rows remained to replay). The inputs changed in one commit
@@ -1533,13 +1537,15 @@ Re-run before WP27 starts. PR B (#427) and #430/#436 are on `main`; the planning
 The step-enhancements mission's C-004 boundary is respected: it edits no PR C file; the symbols it consumes are named
 in the plan section and stay stable once reviewed.
 
+| S1 | Inconsistency | HIGH | WP27-WP29, plan section | The plan-point squad's 35 findings (`research/plan-point-squad-pr-c/`). | Fixed in `c957a2de`; decisions `01M7037V93Y077H8M4W9V8Y6B3`, `01M7037ZNKJ6JTRKGD7G695ZV1`; #439 and the `override_unstable` shape deferred with rationale. |
+
 ### Coverage summary (phase C)
 
 | Requirement | WPs |
 |---|---|
 | FR-015, FR-019 | WP27, WP28 |
 | FR-018 | WP27, WP28 |
-| FR-017 | WP28 (#429) |
+| FR-017 | WP27 (D4b), WP28 (#429) |
 | FR-020, FR-021, NFR-002, SC-001, SC-002 | WP28 |
 | NFR-007 | WP27 |
 | FR-013, FR-014, FR-016, C-002, C-007 | WP29 |
@@ -1548,4 +1554,4 @@ FR coverage: 43/43 mapped. Critical: 0. The one HIGH is fixed by a recorded deci
 
 ### Next actions
 
-Phase C may proceed after the plan-point squad: WP27, then WP28, then WP29.
+Phase C may proceed: WP27, then WP28, then WP29. `lanes.json` write scopes predate the new files; the lanes carry them as out-of-map edits with rationale.

@@ -1929,6 +1929,52 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-09T12:42:03.985070Z",
+      "decision_id": "01M7058YAH0EP1JGNW5Q9TCXGX",
+      "final_answer": "no: the context lists in-force artifacts only (E16); an in-force entry reached only through suggests is conditional, from the walk edge when/reason",
+      "input_key": "pr-c-context-conditional-entries",
+      "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",
+      "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
+      "opened_by": "claude-runner",
+      "options": [
+        "no: the context lists in-force artifacts only (E16); an in-force entry reached only through suggests is conditional, from the walk edge when/reason",
+        "yes: list unselected suggestions as conditional entries"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "FR-019 lists an artifact the action reaches only through suggests as conditional (when, reason). E16 restricts the context to Eff. Does the context list an unselected suggested artifact?",
+      "rationale": "Runner after WP27 (implementer's open question): E16 restricts the walk to Eff and FR-019 says the context answers in-force artifacts; #408 ruling 3 marks how an entry is reached, not whether an unselected one is listed. The listing's suggestion carrier (01M6Y6VE6VZQ4MXD98N93JB3GJ) applies to not_selected artifacts in the effective listing, not to context entries; WP28 maps conditional from the walk's per-entry when/reason.",
+      "resolved_at": "2026-11-09T12:42:05.926107Z",
+      "resolved_by": "claude-runner",
+      "slot_key": "pr-c-context-conditional-entries",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-09T12:42:32.467094Z",
+      "decision_id": "01M7059T4K64TAVKXN3T1FKWYG",
+      "final_answer": "in-force walk entries plus each not_selected artifact reached only through a suggests edge of a listed in-force artifact, listed with its state and suggestion (EffectiveSet carrier) and not walked through",
+      "input_key": "pr-c-context-suggestions",
+      "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",
+      "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
+      "opened_by": "claude-runner",
+      "options": [
+        "in-force walk entries plus each not_selected artifact reached only through a suggests edge of a listed in-force artifact, listed with its state and suggestion (EffectiveSet carrier) and not walked through",
+        "in-force entries only"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Supersedes 01M7058YAH0EP1JGNW5Q9TCXGX, which contradicted 01M6Y6VE6VZQ4MXD98N93JB3GJ. Which suggested artifacts does the action context list?",
+      "rationale": "Runner: decision 01M6Y6VE6VZQ4MXD98N93JB3GJ ruled one suggestion definition for the listing and, in PR C, the action context; EffectiveArtifact.suggestion is present only for a not_selected artifact reached only through suggests from an artifact in force (#408 ruling 3). 01M7058YAH0EP1JGNW5Q9TCXGX misread FR-019 and is superseded. The walk reports such suggests targets with the edge's when/reason; activations decides the suggestion through the existing EffectiveSet carrier (no copy). They are not walked through (E16 walks Eff), so step 4 does not expand them.",
+      "resolved_at": "2026-11-09T12:42:34.460806Z",
+      "resolved_by": "claude-runner",
+      "slot_key": "pr-c-context-suggestions",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",
