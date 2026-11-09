@@ -125,11 +125,11 @@ class ClosureViewSessionStepRefsTest {
     }
 
     @Test
-    void aTemplateThatOverridesARequiredDirectiveIsNoSatisfierAndTheWriteAndTheReadAgree() {
+    void aTemplateThatOverridesARequiredDirectiveIsNoSatisfierOnTheWriteWhileTheReadShowsItOverridden() {
         // R-4: a pack can author `overrides` from a template (the edge endpoints are bare URNs), and a locked template
         // is in force inside the packs, so the resolution reports the required directive T as overridden by it. D16
         // drops a node that is no artifact: the read names no overrider, and the write (IC-13) finds no satisfier, so
-        // a deactivate of T is 409 artifact_required while the read shows T out of force. Pinned, not changed.
+        // a deactivate of T is 409 artifact_required while the read shows T out of force. Pinned, not changed (#447).
         Urn template = urn("template:tpl");
         Urn required = urn("directive:T");
         InForceStates hidden = states(byUrn(new ArtifactState(
