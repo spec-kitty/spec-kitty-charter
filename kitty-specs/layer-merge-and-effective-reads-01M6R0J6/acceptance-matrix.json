@@ -326,13 +326,13 @@
     },
     {
       "criterion_id": "FR-033",
-      "description": "Verify FR-033 is satisfied",
+      "description": "A pack's policy locks and enforces only artifacts of the pack and of the packs it builds on (depends_on and lineage), never an unrelated pack's, and never binds the pack's own writes.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "contracts/charter/scenarios/activation-ruling-changes.feature: \"A15 - a project pack's kind default locks its own and its ancestors' directives, not an unrelated pack's\"; contracts/charter/scenarios/activation-ruling-changes.feature: \"B8 - a pack's own lock does not refuse its own per-artifact PUT, and binds the pack built on it\"; service/packs/src/test/java/ai/speckitty/charter/packs/application/PackMutabilityPolicyClosureTest.java#a15APacksLockReachesWhatItAndThePacksItBuildsOnHoldAcrossAThreeLevelClosureAndNothingElse",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:46:58.055655+00:00",
+      "notes": "PR A0 (#414); IC-19, DM-01M6RA97220XBR7RR447FE2JXD, DM-01M6RAA6Y7NVVGKVKQV05GZYES."
     },
     {
       "criterion_id": "FR-034",
