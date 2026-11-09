@@ -13,6 +13,8 @@ import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.markdown.PromptSlots;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
+import ai.speckitty.charter.missions.domain.MissionStep;
+import ai.speckitty.charter.missions.domain.MissionType;
 import ai.speckitty.charter.missions.domain.UnresolvedTemplate;
 import ai.speckitty.charter.packs.domain.AssetFile;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
@@ -20,6 +22,7 @@ import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.DirectiveRepository;
 import ai.speckitty.charter.packs.domain.MissionStepContract;
+import ai.speckitty.charter.packs.domain.MissionTypeSteps;
 import ai.speckitty.charter.packs.domain.MutabilityPolicyRepository;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.Pack;
@@ -73,8 +76,8 @@ import org.springframework.stereotype.Service;
 
 /**
  * The edge concretization of the pack persistence ports: one service that realizes {@link TacticRepository},
- * {@link PackDescriptorRepository}, {@link PackCatalogRepository}, {@link PackRepository} and
- * {@link MutabilityPolicyRepository} over the filesystem.
+ * {@link PackDescriptorRepository}, {@link PackCatalogRepository}, {@link PackRepository},
+ * {@link MutabilityPolicyRepository} and {@link MissionTypeSteps} over the filesystem.
  * The Spring stereotype lives only here; the ports in the domain stay plain interfaces, and a database-backed
  * sibling would carry its own stereotype.
  *
@@ -102,7 +105,8 @@ public final class DomainRepositoryService
                 PackArtifactRepository,
                 PackEdgeRepository,
                 PackRepository,
-                MutabilityPolicyRepository {
+                MutabilityPolicyRepository,
+                MissionTypeSteps {
 
     /** The seam that supplies the configured pack locations, read on every call so a reconfiguration is seen. */
     @FunctionalInterface
@@ -361,6 +365,26 @@ public final class DomainRepositoryService
         return locations.all().stream()
                 .map(location -> new ConfiguredPack(new PackIdentifier(location.name()), location.level()))
                 .toList();
+    }
+
+    // ---- MissionTypeSteps ------------------------------------------------------------------------------------
+
+    /**
+     * The step ids a mission type declares: the packs rings hold a mission type as a {@link CharterArtifact}, and this
+     * store, which binds the missions domain, reads them off the {@link MissionType} it loaded.
+     *
+     * @param missionType an artifact of kind {@code mission_type}, as the pack aggregate holds it
+     * @return the ids of its steps and its on-demand steps; empty for any other artifact
+     */
+    @Override
+    public Set<String> stepIds(CharterArtifact missionType) {
+        if (!(missionType instanceof MissionType type)) {
+            return Set.of();
+        }
+        Set<String> ids = new LinkedHashSet<>();
+        type.steps().stream().map(MissionStep::id).forEach(ids::add);
+        type.onDemandSteps().stream().map(MissionStep::id).forEach(ids::add);
+        return Set.copyOf(ids);
     }
 
     // ---- PackArtifactRepository -------------------------------------------------------------------------------

@@ -247,6 +247,69 @@ class ArtifactRemovalServiceTest {
                 .containsKeys("toolguides/other-guide.toolguide.yaml", "toolguides/other-guide.guide.md");
     }
 
+    private static final String MISSION_TYPE = """
+            schema_version: '1.0'
+            id: software-dev
+            title: Software Development
+            description: Build software
+            steps:
+            - id: specify
+              title: Specification
+            """;
+    private static final String STEP_CONTRACT = """
+            schema_version: '1.0'
+            id: specify
+            action: specify
+            mission: software-dev
+            steps:
+              - id: bootstrap
+                description: Load charter context for this action
+            """;
+
+    /** The org pack {@code qa} with a mission type and a step contract bound to its step. */
+    private static Packs qaWithMissionKinds() {
+        return qa().file("missions/software-dev/software-dev.mission-type.yaml", MISSION_TYPE)
+                .file("mission_step_contracts/specify.step-contract.yaml", STEP_CONTRACT);
+    }
+
+    @Test
+    void aStepContractIsRemovedLikeTheOtherListedKindsAndItsMissionTypeStays(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("qa", rig.stage(qaWithMissionKinds()), Preconditions.none());
+        Removals removals = new Removals(rig);
+
+        removals.remove("qa", "mission_step_contract", "specify");
+
+        assertThat(removals.filesOf("qa"))
+                .doesNotContainKey("mission_step_contracts/specify.step-contract.yaml")
+                .as("the control: the mission type stays")
+                .containsKey("missions/software-dev/software-dev.mission-type.yaml");
+        assertThat(rig.repository.load(QA).artifacts(ArtifactKind.MISSION_STEP_CONTRACT))
+                .isEmpty();
+        assertThat(refusal(() -> removals.remove("qa", "mission_step_contract", "specify"))
+                        .code())
+                .as("gone, so the next delete is its kind's not-found")
+                .isEqualTo(RefusalCode.MISSION_STEP_CONTRACT_NOT_FOUND);
+    }
+
+    /**
+     * A mission type's removal cascades its skeletons (D10), which is not built yet: until it is, the DELETE of a
+     * mission type is kind_not_found and changes nothing, rather than leaving its skeletons behind.
+     */
+    @Test
+    void aMissionTypeIsNotRemovedUntilItsCascadeIsBuilt(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.register("qa", rig.stage(qaWithMissionKinds()), Preconditions.none());
+        Removals removals = new Removals(rig);
+        Map<String, String> before = removals.filesOf("qa");
+
+        assertThat(refusal(() -> removals.remove("qa", "mission_type", "software-dev"))
+                        .code())
+                .isEqualTo(RefusalCode.KIND_NOT_FOUND);
+        assertThat(removals.filesOf("qa")).as("nothing changed").isEqualTo(before);
+        assertThat(ArtifactRemovalService.NOT_YET_REMOVABLE).containsExactly(ArtifactKind.MISSION_TYPE);
+    }
+
     private static String resource(String path) throws IOException {
         try (var stream =
                 ArtifactRemovalServiceTest.class.getResourceAsStream("/roundtrip-fixtures/toolguide/" + path)) {
