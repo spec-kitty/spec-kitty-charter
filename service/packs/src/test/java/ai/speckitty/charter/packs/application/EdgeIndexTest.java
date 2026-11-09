@@ -434,8 +434,46 @@ class EdgeIndexTest {
                                 urn("agent_profile:P"), RelationType.REQUIRES, urn("directive:D")),
                         org.assertj.core.api.Assertions.tuple(
                                 urn("agent_profile:P"), RelationType.SPECIALIZES_FROM, urn("agent_profile:Gone")));
-        assertThat(index.holdsUrn(urn("directive:D"))).isTrue();
-        assertThat(index.holdsUrn(urn("agent_profile:Gone"))).isFalse();
+        assertThat(index.writtenLinks())
+                .extracting(EdgeIndex.Link::target, EdgeIndex.Link::held)
+                .containsExactlyInAnyOrder(
+                        org.assertj.core.api.Assertions.tuple(urn("directive:D"), true),
+                        org.assertj.core.api.Assertions.tuple(urn("agent_profile:Gone"), false));
+    }
+
+    @Test
+    void writtenLinksResolveABareTargetInTheSourcesPackSoATargetOnlyAnotherPackHoldsIsNotHeld() {
+        EdgeIndex index = new Closure()
+                .pack("builtin", List.of(), List.of("directive:D"))
+                .pack(
+                        "qa",
+                        List.of("builtin"),
+                        List.of("agent_profile:P"),
+                        edge("agent_profile:P", RelationType.REQUIRES, "directive:D"))
+                .index();
+
+        assertThat(index.links()).isEmpty();
+        assertThat(index.writtenLinks())
+                .extracting(EdgeIndex.Link::target, EdgeIndex.Link::held)
+                .containsExactly(org.assertj.core.api.Assertions.tuple(urn("directive:D"), false));
+    }
+
+    @Test
+    void writtenLinksResolveAQualifiedTargetInTheNamedPackAndHoldItThere() {
+        EdgeIndex index = new Closure()
+                .pack("builtin", List.of(), List.of("directive:D"))
+                .pack("extra", List.of(), List.of("directive:D"))
+                .pack(
+                        "qa",
+                        List.of("builtin", "extra"),
+                        List.of("agent_profile:P"),
+                        edge("agent_profile:P", RelationType.REQUIRES, "builtin::directive:D"))
+                .index();
+
+        assertThat(index.links()).extracting(EdgeIndex.Link::target).containsExactly(urn("directive:D"));
+        assertThat(index.writtenLinks())
+                .extracting(EdgeIndex.Link::target, EdgeIndex.Link::held)
+                .containsExactly(org.assertj.core.api.Assertions.tuple(urn("directive:D"), true));
     }
 
     @Test

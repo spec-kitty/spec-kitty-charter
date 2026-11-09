@@ -224,11 +224,12 @@ public final class ActionContextWalk {
 
     /** What a walk lists before the caller adds what is its own (the enhancers of an action entry, the holder of a profile's). */
     record Listed<S extends WalkStep>(
-            Urn urn, S step, Urn via, int hops, Optional<String> when, Optional<String> reason) {}
+            Urn urn, S step, Urn via, int hops, Optional<String> when, Optional<String> reason, boolean held) {}
 
     private static final Comparator<Link> EDGE_TIE_ORDER = Comparator.comparing(
                     (Link link) -> link.when().orElse(""))
-            .thenComparing(link -> link.reason().orElse(""));
+            .thenComparing(link -> link.reason().orElse(""))
+            .thenComparing(link -> !link.held());
 
     /** The relations that reach an artifact for certain: the cascade's, but {@code suggests} and {@code enhances}. */
     private static final Set<RelationType> HARD_RELATIONS =
@@ -287,7 +288,7 @@ public final class ActionContextWalk {
         if (!inForce.test(type)) {
             return new Context(start, false, List.of(), List.of(), List.of(), List.of());
         }
-        Engine<Step> run = new Engine<>(start, inForce, outgoing, held -> true);
+        Engine<Step> run = new Engine<>(start, inForce, outgoing);
         List<Urn> scoped = run.expand(List.of(start), Step.SCOPE, 1);
         run.expand(scoped, Step.REQUIRES, Integer.MAX_VALUE);
         List<Urn> suggested = run.expand(scoped, Step.SUGGESTS, depth);
@@ -379,7 +380,6 @@ public final class ActionContextWalk {
         private final Urn start;
         private final Predicate<Urn> inForce;
         private final Map<Urn, List<Link>> outgoing;
-        private final Predicate<Urn> expandable;
         private final Map<Urn, Listed<S>> listed = new LinkedHashMap<>();
         private final Map<Urn, Integer> hops = new HashMap<>();
         private final Map<Urn, Link> refused = new TreeMap<>();
@@ -390,14 +390,11 @@ public final class ActionContextWalk {
          * @param start the start node; the walk never lists it, whatever the predicate says of it
          * @param inForce the predicate: a node it refuses is neither listed nor walked through
          * @param outgoing the links by source
-         * @param expandable whether a node a step lists is walked through by the later steps: false for a node the
-         *     links carry no edge from because the closure does not hold it, which is listed and never expanded
          */
-        Engine(Urn start, Predicate<Urn> inForce, Map<Urn, List<Link>> outgoing, Predicate<Urn> expandable) {
+        Engine(Urn start, Predicate<Urn> inForce, Map<Urn, List<Link>> outgoing) {
             this.start = start;
             this.inForce = inForce;
             this.outgoing = outgoing;
-            this.expandable = expandable;
             hops.put(start, 0);
         }
 
@@ -436,7 +433,10 @@ public final class ActionContextWalk {
                     }
                 }
                 visited.addAll(parents.keySet());
-                frontier = parents.keySet().stream().filter(expandable).toList();
+                frontier = parents.entrySet().stream()
+                        .filter(reached -> reached.getValue().held())
+                        .map(Map.Entry::getKey)
+                        .toList();
             }
             return fresh;
         }
@@ -519,7 +519,8 @@ public final class ActionContextWalk {
                             parent.source(),
                             reached,
                             suggested ? parent.when() : Optional.empty(),
-                            suggested ? parent.reason() : Optional.empty()));
+                            suggested ? parent.reason() : Optional.empty(),
+                            parent.held()));
         }
     }
 }

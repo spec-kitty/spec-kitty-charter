@@ -293,8 +293,22 @@ public final class EdgeIndex implements ComposeResolver {
      * @param target the target artifact, at the place the edge leads to
      * @param when the authored condition of the edge
      * @param reason the authored reason of the edge
+     * @param held whether the place the edge leads to holds its artifact: always true in {@link #links()}, false only for
+     *     a link of {@link #writtenLinks()} to a dangling target
      */
-    record Link(Urn source, RelationType relation, Urn target, Optional<String> when, Optional<String> reason) {}
+    record Link(
+            Urn source,
+            RelationType relation,
+            Urn target,
+            Optional<String> when,
+            Optional<String> reason,
+            boolean held) {
+
+        /** A link between two held places. */
+        Link(Urn source, RelationType relation, Urn target, Optional<String> when, Optional<String> reason) {
+            this(source, relation, target, when, reason, true);
+        }
+    }
 
     /**
      * Every edge between two held places, one per written edge, in no promised order: the callers sort. An edge from a
@@ -315,25 +329,31 @@ public final class EdgeIndex implements ComposeResolver {
     }
 
     /**
-     * Every edge a held artifact writes, one per written edge, whether or not a pack of the closure holds its target
-     * (fold W2): {@link #links()} without its drop of a target nobody holds. A walk that lists an unheld target and goes no
-     * further asks for these ({@link GovernanceWalk}); the target of a link is the URN the edge names, whichever pack it
-     * names it in. In a merged index the edges of a version a later level replaced are not among them.
+     * Every edge a held artifact writes, one per written edge, whether or not the place it leads to holds its target
+     * (fold W2): {@link #links()} plus the dangling targets. The target of each edge is resolved as {@link #links()}
+     * resolves it ({@link #neighbour}: a bare target in the source's pack, a qualified one in the pack it names), so the
+     * two lists agree on every edge; a link is {@link Link#held() held} exactly when {@link #links()} holds the same edge,
+     * and an edge whose resolved place holds nothing, or whose named pack the compose does not give, is a link with
+     * {@code held} false to the URN the edge names. A walk that lists an unheld target and goes no further asks for these
+     * ({@link GovernanceWalk}). In a merged index the edges of a version a later level replaced are not among them.
      */
     List<Link> writtenLinks() {
         List<Link> links = new ArrayList<>();
         outgoing.forEach((place, edges) -> {
             if (holds(place)) {
-                edges.forEach(edge ->
-                        links.add(new Link(place.urn(), edge.type(), edge.to(), edge.when(), edge.rationale())));
+                edges.forEach(edge -> {
+                    Optional<Place> target = neighbour(edge);
+                    links.add(new Link(
+                            place.urn(),
+                            edge.type(),
+                            edge.to(),
+                            edge.when(),
+                            edge.rationale(),
+                            target.filter(this::holds).isPresent()));
+                });
             }
         });
         return links;
-    }
-
-    /** Whether a pack of the closure holds the URN (the version in force, in a merged index). */
-    boolean holdsUrn(Urn urn) {
-        return !placesOf(urn).isEmpty();
     }
 
     /** Whether the place's pack holds its URN and, in a merged index, holds the version in force. */
