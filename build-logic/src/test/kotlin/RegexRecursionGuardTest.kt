@@ -19,42 +19,75 @@ import org.junit.jupiter.api.Test
  * the outer group, not proven safe by an inner possessive), lookarounds as bounds, or ambiguity between alternatives:
  * those judgements are the allow-list's reasons. The allow-list also covers patterns compiled by a linear-time engine
  * (re2j). SonarCloud rule S5998 (regex stack overflow) is the backstop for what this scan cannot see.
+ *
+ * Entry points it does not scan at all: `String.matches`, `Pattern.matches`, the regex argument of `replaceAll`,
+ * `replaceFirst` and `split`, a statically imported `compile(…)`, and text blocks anywhere but a `Pattern.compile`
+ * argument (where they are reported as "cannot judge").
+ *
+ * The scanned tree is every `.java` file under `<service>/<module>/src/main/java`, with `<service>` passed by
+ * `build.gradle.kts` as the `regexGuard.serviceDir` system property; that file declares the same tree as the task's
+ * input. Allow-list keys are paths under `<service>`, with `/` separators on every platform.
  */
 class RegexRecursionGuardTest {
 
-    private val root: File = generateSequence(File("").absoluteFile) { it.parentFile }
-        .first { File(it, ".github/workflows/ci.yml").isFile }
+    private val serviceDir: File = File(
+        requireNotNull(System.getProperty("regexGuard.serviceDir")) { "build.gradle.kts sets regexGuard.serviceDir" },
+    )
 
-    /** `<file name>:<label>` to the reason the pattern is safe; the label is the constant or variable named. */
+    /** An accepted finding: the [detail] it was judged on, and the [reason] that judgement holds. */
+    private data class Allowed(val detail: String, val reason: String)
+
+    /**
+     * `<path under service/>:<label>` to the accepted finding; the label is the constant or variable named. A finding
+     * whose detail no longer equals the entry's fails as out of date, so a changed pattern is judged again.
+     */
     private val allowList = mapOf(
-        "GitSourceRules.java:HOST_NAME" to
+        "packs/src/main/java/ai/speckitty/charter/packs/infra/fetch/git/GitSourceRules.java:HOST_NAME" to Allowed(
+            "repeated group `(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*` is not possessive in"
+                + " `(?=.{1,253}\$)[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*`",
             "bounded: the (?=.{1,253}\$) lookahead caps the input, and each repeat starts with a literal '.' the"
-            + " repeated body cannot match, so iterations cannot overlap",
-        "GuideAllowlist.java:HOST_NAME" to
+                + " repeated body cannot match, so iterations cannot overlap",
+        ),
+        "packs/src/main/java/ai/speckitty/charter/packs/infra/fetch/GuideAllowlist.java:HOST_NAME" to Allowed(
+            "repeated group `(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*` is not possessive in"
+                + " `(?=.{1,253}\$)[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*`",
             "bounded: the same host grammar as GitSourceRules HOST_NAME, capped by its (?=.{1,253}\$) lookahead",
-        "Re2jRegularExpressionFactory.java:regex" to
-            "re2j: com.google.re2j.Pattern matches in linear time and has no backtracking",
-        "PackFileKind.java:regex.toString()" to
+        ),
+        "packs/src/main/java/ai/speckitty/charter/packs/infra/storage/Re2jRegularExpressionFactory.java:regex" to
+            Allowed(
+                "cannot judge `regex`",
+                "re2j: com.google.re2j.Pattern matches in linear time and has no backtracking",
+            ),
+        "packs/src/main/java/ai/speckitty/charter/packs/infra/storage/PackFileKind.java:regex.toString()" to Allowed(
+            "cannot judge `regex.toString()`",
             "built from a glob: the only group glob() emits is (?:.+/)? (optional, never repeated), the rest is"
-            + " [^/]* and Pattern.quote(...)",
+                + " [^/]* and Pattern.quote(...)",
+        ),
     )
 
     @Test
     fun mainCodeCompilesNoRecursivePatternOutsideTheAllowList() {
-        val sources = File(root, "service").listFiles().orEmpty()
-            .map { File(it, "src/main/java") }
-            .filter { it.isDirectory }
-            .flatMap { dir -> dir.walk().filter { it.isFile && it.name.endsWith(".java") }.toList() }
-        assertThat(sources).`as`("main sources found under %s", root).isNotEmpty()
+        val sources = mainSources()
+        assertThat(sources).`as`("main sources found under %s", serviceDir).isNotEmpty()
 
-        val findings = sources.flatMap { Guard.scan(it.relativeTo(root).path, it.readText()) }
+        val findings = sources.flatMap { Guard.scan(it.relativeTo(serviceDir).invariantSeparatorsPath, it.readText()) }
         val unexplained = findings.filter { it.key !in allowList }
         assertThat(unexplained)
             .`as`("make the quantifier possessive (`)*+`, `)++`) or add an allow-list entry with a reason")
             .isEmpty()
+        val stale = findings.filter { allowList[it.key]?.detail?.let { detail -> detail != it.detail } == true }
+        assertThat(stale.map { "${it.key}: ${it.detail}" })
+            .`as`("allow-list entry is out of date: the pattern changed, so judge it again and update the detail")
+            .isEmpty()
         val used = findings.map { it.key }.toSet()
         assertThat(allowList.keys - used).`as`("allow-list entries that no longer match a finding").isEmpty()
     }
+
+    /** Every `.java` file under `<service>/<module>/src/main/java`: the tree build.gradle.kts declares as input. */
+    private fun mainSources(): List<File> = serviceDir.listFiles().orEmpty()
+        .map { File(it, "src/main/java") }
+        .filter { it.isDirectory }
+        .flatMap { dir -> dir.walk().filter { it.isFile && it.name.endsWith(".java") }.toList() }
 
     @Test
     fun aBacktrackingRepeatedGroupIsFlagged() {
@@ -62,6 +95,8 @@ class RegexRecursionGuardTest {
         assertThat(findings).hasSize(1)
         assertThat(findings.single().kind).isEqualTo(Kind.RECURSIVE)
         assertThat(findings.single().toString()).contains("A.java:3", "ID")
+        val nested = Guard.scan("m/src/main/java/a/A.java", source("""Pattern.compile("(a)*")"""))
+        assertThat(nested.single().key).isEqualTo("m/src/main/java/a/A.java:ID")
         for (shape in listOf("(?:-[a-z]+)+", "(a)*?", "(a){2,}", "(?:[^)]+)*")) {
             assertThat(Guard.scan("A.java", source("Pattern.compile(\"$shape\")"))).`as`(shape).hasSize(1)
         }
@@ -126,7 +161,7 @@ class RegexRecursionGuardTest {
     enum class Kind { RECURSIVE, UNJUDGED }
 
     data class Finding(val file: String, val line: Int, val label: String, val kind: Kind, val detail: String) {
-        val key get() = "${File(file).name}:$label"
+        val key get() = "$file:$label"
         override fun toString() = "$file:$line $label $kind: $detail"
     }
 
