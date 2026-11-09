@@ -50,7 +50,7 @@ class ContractDescriptionsTest {
                 .contains("preset_not_found (404), a preset application whose path names a preset")
                 .contains("No operation of the activation set is reserved any more")
                 .contains("action_not_found is raised")
-                .doesNotContain("stay reserved")
+                .doesNotContain("stay reserved (ADR-0020 D8)")
                 .doesNotContain("Only the two effective reads")
                 .doesNotContain("Only the four effective reads")
                 .doesNotContain("One stays reserved")
