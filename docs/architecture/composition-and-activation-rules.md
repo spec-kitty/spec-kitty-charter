@@ -60,7 +60,7 @@ read and carries a **⚠ Unclear** note. The prose pages remain the design: [Log
 > `research/ruleset-review-2026-11-06.md`, items A1–A15 and B1–B8) are folded into the rules and cite their decision ids (`DM-01M6RA…`, under the layer-merge mission's `decisions/`).
 >
 > **Rulings of 2026-11-09.** The operator's rulings at the PR C plan point (OD-6, OD-9, D3, D4(a), D15, D16 and the
-> node predicate) are folded into E6, E14, C31, E15 and E16 and cite their decision ids (`01M702A…`, `01M7037…`,
+> node predicate) are folded into W20, E6, E12, E14, C31, E15 and E16 and cite their decision ids (`01M702A…`, `01M7037…`,
 > `01M7059…`, `01M70C4…`, `01M70CT…`). Each amended rule names the test that pins it, so a rule cannot pass on its
 > wording alone.
 >
@@ -849,7 +849,7 @@ force only while `M` is. A step enhancer is grounded exactly when the mission ty
 in force: while `mission_type:M ∉ X` it is pruned with the reason `mission_type_not_in_force`, in the bucket
 `missionTypeNotInForce` (decision `01M702A8XYB588PSGTXRKQ4NKK`: the existing reason, no new refusal code in PR C); when
 no pack holds the target step (the unheld-target case) it keeps its edge and is pruned with the reason
-`enhanced_target_not_in_force`, so I11 holds. Every other shape keeps the rule as written: a step enhancement with two
+`enhanced_target_not_in_force`, so I11 holds for it too. Every other shape keeps the rule as written: a step enhancement with two
 targets, with a target of another kind or with an action and an artifact, and an enhancer of another kind whose target
 is an action. A required or locked artifact pruned by either condition is not in force either; it is reported
 required-but-ungrounded (E14). An enhancer is never in force on its own, and nothing bound to a mission type outlives it.
@@ -1064,16 +1064,20 @@ create or replace whose body named it. (W31)
 **I8 No new floor denial.** No write adds a deny entry on `Lk(C)`; no write adds one on `Req(C)` except under W26.
 (W6, W25, W26)
 
-**I9 Locked is in force.** `Lk(C) ∖ Ung ⊆ Eff(D, M)` for every `D`, where `Ung` is the floor enhancers with no
-grounded target in force (E6); no override hides a non-`open` artifact. (E3, E4, E6, C27)
+**I9 Locked is in force.** `Lk(C) ∖ Ung ⊆ Eff(D, M)` for every `D`, where `Ung` is the ungrounded floor enhancers: no target in force or, for a step enhancer, its mission type not in
+force (E6); no override hides a non-`open` artifact. (E3, E4, E6, C27)
 
 **I10 Requirement holds.** Every `T ∈ Req(C)` is in force or overridden, directly or through a chain, by an artifact
-in force, unless it is an enhancer without a grounded target in force, which is reported required-but-ungrounded.
+in force, unless it is an ungrounded enhancer (no target in force or, for a step enhancer, its mission type not in force),
+which is reported required-but-ungrounded.
 (E5, E6, E13)
 
-**I11 No enhancer stands alone; nothing outlives its mission type.** `E ∈ Eff ∧ ∃T. enhances(E, T) ⇒ ∃T ∈ Eff.
-enhances(E, T)`, and every `enhances` chain from `E` inside `Eff` ends at an artifact that enhances nothing;
-`u ∈ Eff ∧ bnd(u) ≠ ⊥ ⇒ bnd(u) ∈ Eff`. Floor membership is no exception to either (decision `DM-01M6RFGFW3S0YJ222QMHD2W11B`). (E6, C36)
+**I11 No enhancer stands alone; nothing outlives its mission type.** An enhancer in force is grounded. For an enhancer
+of artifacts, `E ∈ Eff ∧ ∃T. enhances(E, T) ⇒ ∃T ∈ Eff. enhances(E, T)`, and every `enhances` chain from `E` inside
+`Eff` ends at an artifact that enhances nothing. A step enhancer's single target is a step, which is never in `Eff`, so
+it is grounded by its mission type instead: the step is held, `held(C, M, s)`, and `bnd(E) = mission_type:M ∈ Eff`
+(OD-6); an enhancer of an unheld step is pruned. Also `u ∈ Eff ∧ bnd(u) ≠ ⊥ ⇒ bnd(u) ∈ Eff`. Floor
+membership is no exception to either (decision `DM-01M6RFGFW3S0YJ222QMHD2W11B`). (E6, C36, OD-6, DIV-241)
 
 **I12 No ancestor in force by lineage.** A cascade never adds a `specializes_from` ancestor it passed through to
 `Sel(D')`, and (once B5 is built) never clears its deny entry. (W20, W22)
