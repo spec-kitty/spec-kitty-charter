@@ -14,6 +14,7 @@ import ai.speckitty.charter.kernel.transport.PreconditionException;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Outcome;
 import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditions;
 import ai.speckitty.charter.packs.application.PackRegistrationService.RegistrationOutcome;
+import ai.speckitty.charter.packs.domain.Diagnostic;
 import ai.speckitty.charter.packs.domain.MutabilityLevel;
 import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import ai.speckitty.charter.packs.domain.WritePolicyGate.Operation;
@@ -200,6 +201,101 @@ class PackRegistrationServiceTest {
 
         assertThat(unchanged.outcome()).isEqualTo(Outcome.UNCHANGED);
         assertThat(calls).as("nothing was about to be written").hasValue(0);
+    }
+
+    // ---- the load warnings reach the outcome (OD-7, FR-011) --------------------------------------------------------
+
+    private static final String PLAN_PROMPT = "missions/software-dev/steps/plan.prompt.md";
+
+    /** A pack with a software-dev mission type whose step plan has a prompt of the given text. */
+    private static Packs withPlanPrompt(String descriptorExtra, String prompt) {
+        return Packs.of(ORG_PACK, "pack-x", "1.0.0", "org", descriptorExtra)
+                .file("missions/software-dev/software-dev.mission-type.yaml", """
+                        schema_version: "1.0"
+                        id: software-dev
+                        title: Software development
+                        description: Build software
+                        steps:
+                          - id: plan
+                            title: Plan
+                            prompt_path: steps/plan.prompt.md
+                        """)
+                .file(PLAN_PROMPT, prompt);
+    }
+
+    private static final String LEGACY_PROMPT =
+            "# Plan\n\n<!-- spdd:reasons-block:start -->legacy<!-- spdd:reasons-block:end -->\n";
+    private static final String EMPTY_PROMPT =
+            "# Plan\n\n<!-- spdd:reasons-block:start --><!-- spdd:reasons-block:end -->\n";
+
+    @Test
+    void theWarningsOfTheStagedLoadReachTheOutcomeAsDiagnostics(@TempDir Path host) {
+        Rig rig = new Rig(host);
+
+        RegistrationOutcome outcome =
+                rig.register("pack-x", rig.stage(withPlanPrompt("", LEGACY_PROMPT)), Preconditions.none());
+
+        assertThat(outcome.outcome()).isEqualTo(Outcome.CREATED);
+        assertThat(outcome.diagnostics()).singleElement().satisfies(diagnostic -> {
+            assertThat(diagnostic.code()).isEqualTo(Diagnostic.Code.PROMPT_SLOT_NOT_EMPTY);
+            assertThat(diagnostic.detail()).startsWith(PLAN_PROMPT + ": ").contains("spdd:reasons-block");
+        });
+    }
+
+    @Test
+    void aLoadWithNothingToWarnOfLeavesTheDiagnosticsEmpty(@TempDir Path host) {
+        Rig rig = new Rig(host);
+
+        RegistrationOutcome outcome =
+                rig.register("pack-x", rig.stage(withPlanPrompt("", EMPTY_PROMPT)), Preconditions.none());
+
+        assertThat(outcome.diagnostics()).isEmpty();
+    }
+
+    @Test
+    void aVersionedPackWithTheSameTextIsRefusedAndItsTwinWarnsOnly(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        StagedPack versioned = rig.stage(withPlanPrompt("schema_version: \"1.0\"\n", LEGACY_PROMPT));
+
+        CharterRefusal refused = refusal(() -> rig.register("pack-x", versioned, Preconditions.none()));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
+        assertThat(refused.violations()).singleElement().satisfies(violation -> {
+            assertThat(violation.pointer()).isEqualTo(PLAN_PROMPT);
+            assertThat(violation.code()).isEqualTo("prompt_slot_not_empty");
+        });
+        assertThat(rig.register("pack-x", rig.stage(withPlanPrompt("", LEGACY_PROMPT)), Preconditions.none())
+                        .diagnostics())
+                .hasSize(1);
+    }
+
+    @Test
+    void anUnchangedReSendStillListsTheWarnings(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        Packs pack = withPlanPrompt("", LEGACY_PROMPT);
+        rig.register("pack-x", rig.stage(pack), Preconditions.none());
+
+        RegistrationOutcome again = rig.register("pack-x", rig.stage(pack), Preconditions.none());
+
+        assertThat(again.outcome()).isEqualTo(Outcome.UNCHANGED);
+        assertThat(again.diagnostics()).hasSize(1);
+    }
+
+    @Test
+    void theOutcomeBuiltWithoutDiagnosticsHasNone(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        RegistrationOutcome created =
+                rig.register("pack-x", rig.stage(Packs.of(ORG_PACK, "pack-x", "1.0.0", "org")), Preconditions.none());
+
+        RegistrationOutcome rebuilt = new RegistrationOutcome(
+                created.outcome(),
+                created.pack(),
+                created.descriptor(),
+                created.level(),
+                created.revision(),
+                created.notices());
+
+        assertThat(rebuilt.diagnostics()).isEmpty();
     }
 
     // ---- the version rule (steps 4 to 6) -------------------------------------------------------------------------

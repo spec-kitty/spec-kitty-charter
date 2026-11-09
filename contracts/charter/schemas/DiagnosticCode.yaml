@@ -9,8 +9,9 @@ description: >-
   warning; the schema is closed now (ADR-0036 decision 3), so such a pack is refused as
   pack_unreadable. The value stays in the enum so a client built against an earlier draft still
   reads it. prompt_slot_not_empty: an unversioned pack descriptor keeps legacy text between paired prompt-slot
-  markers; descriptor schema_version "1.0" makes the same finding a refusal (ADR-0066). The warning is reserved for
-  #424, as the refusal is.
+  markers; descriptor schema_version "1.0" makes the same finding a refusal (ADR-0066). The warning is listed in the
+  diagnostics of the result of a succeeded registration; the effective-prompt read's diagnostics arrive with the
+  phase-2 mission (#438).
 type: string
 enum:
   - pack_level_missing
