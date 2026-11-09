@@ -2,14 +2,11 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.missions.domain.MissionStep;
 import ai.speckitty.charter.missions.domain.MissionType;
-import ai.speckitty.charter.packs.domain.PackFinding;
-import ai.speckitty.charter.packs.domain.PackFindingCode;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -18,7 +15,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
-import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -152,7 +148,12 @@ class MissionTypeCorpusTest {
         }
     }
 
-    /** The five software-dev prompts that still hold legacy text between their slot markers at the pin (open-packs#175). */
+    /**
+     * The five software-dev prompts that declare the {@code spdd:reasons-block} slot. At the pin (open-packs a2a9379)
+     * the slots are empty: open-packs 170dbc3 moved their legacy REASONS text into the opt-in {@code spdd} pack as
+     * prompt fragments (open-packs#175, ADR-0066 amendment) and gave the built-in descriptor {@code schema_version}
+     * {@code "1.0"}, under which a non-empty slot would be the blocking {@code prompt_slot_not_empty}.
+     */
     private static final List<String> SLOT_PROMPTS = List.of(
             "missions/software-dev/steps/implement.prompt.md",
             "missions/software-dev/steps/plan.prompt.md",
@@ -161,30 +162,32 @@ class MissionTypeCorpusTest {
             "missions/software-dev/steps/tasks.prompt.md");
 
     @Test
-    @DisplayName("the built-in pack loads with exactly 5 prompt_slot_not_empty warnings, one per software-dev prompt")
-    void theBuiltInPackWarnsOncePerLegacySlotPrompt() {
+    @DisplayName("the built-in pack loads with 0 prompt-slot findings: its 5 software-dev slots are present and empty"
+            + " since open-packs 170dbc3 moved the REASONS text into the spdd pack")
+    void theBuiltInPackHoldsItsSlotsEmpty() throws IOException {
         OpenPacksCorpus.assertPinned();
+        Path builtIn = OpenPacksCorpus.packsDirectory().resolve("built-in");
 
-        WholePackStore.LoadedPack loaded = new WholePackStore(new YamlSerializationStrategy())
-                .load(OpenPacksCorpus.packsDirectory().resolve("built-in"));
+        for (String prompt : SLOT_PROMPTS) {
+            String text = Files.readString(builtIn.resolve(prompt), StandardCharsets.UTF_8);
+            assertThat(text)
+                    .as("%s declares an empty spdd:reasons-block", prompt)
+                    .contains("<!-- spdd:reasons-block:start -->\n<!-- spdd:reasons-block:end -->");
+        }
+
+        WholePackStore.LoadedPack loaded = new WholePackStore(new YamlSerializationStrategy()).load(builtIn);
 
         assertThat(loaded.warnings())
-                .extracting(PackFinding::code, PackFinding::file)
-                .containsExactlyInAnyOrder(SLOT_PROMPTS.stream()
-                        .map(file -> tuple(PackFindingCode.PROMPT_SLOT_NOT_EMPTY_UNVERSIONED, file))
-                        .toArray(Tuple[]::new));
-        assertThat(loaded.warnings())
-                .allSatisfy(warning -> assertThat(warning.detail())
-                        .startsWith(warning.file() + ": ")
-                        .contains("spdd:reasons-block"));
+                .as("no prompt_slot_not_empty warning, nor any other: no legacy slot text is left")
+                .isEmpty();
         assertThat(loaded.pack().violations())
-                .as("a warning is never a violation (A4)")
+                .as("no prompt_slot_not_empty or prompt_slot_malformed refusal under the 1.0 descriptor")
                 .isEmpty();
     }
 
     @Test
-    @DisplayName("the built-in pack composes at the pin: the warnings refuse nothing, no pack_unreadable (NFR-002)")
-    void theBuiltInPackComposesDespiteItsWarnings() {
+    @DisplayName("the built-in pack composes at the pin: no pack_unreadable (NFR-002)")
+    void theBuiltInPackComposesAtThePin() {
         OpenPacksCorpus.assertPinned();
         Path builtIn = OpenPacksCorpus.packsDirectory().resolve("built-in");
         DomainRepositoryService service = new DomainRepositoryService(

@@ -9,6 +9,3 @@ exclusions:
   - match: "**/.gitkeep"
     reason: >-
       Placeholder that keeps an empty directory in git; carries no content.
-  - match: "**/__init__.py"
-    reason: >-
-      Python package markers for runtime helpers shipped beside the pack (core imports them); not pack content.

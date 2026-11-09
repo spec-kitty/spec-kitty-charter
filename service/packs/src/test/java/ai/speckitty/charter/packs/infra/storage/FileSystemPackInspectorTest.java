@@ -725,40 +725,28 @@ class FileSystemPackInspectorTest {
         PackVerdict verdict = PackPolicy.judge(INSPECTOR.inspect(root, Scope.FULL));
 
         // OP-1, OP-2 and open-packs#75 landed: the presets, the manifest and the six sidecars are all in the shapes the
-        // store reads (ADR-0042, ADR-0040 decision 6), so main at 90de8f9's "no findings" is back, but for the five
-        // software-dev step prompts whose slot still holds legacy text under an unversioned descriptor: five warnings
-        // (ADR-0066 version gate). The slots return to empty when open-packs#175 empties them (#435).
-        assertThat(verdict.findings())
-                .extracting(PackFinding::code, PackFinding::severity, PackFinding::file)
-                .containsExactlyInAnyOrder(
-                        tuple(
-                                PackFindingCode.PROMPT_SLOT_NOT_EMPTY_UNVERSIONED,
-                                PackFindingCode.Severity.WARNING,
-                                "missions/software-dev/steps/implement.prompt.md"),
-                        tuple(
-                                PackFindingCode.PROMPT_SLOT_NOT_EMPTY_UNVERSIONED,
-                                PackFindingCode.Severity.WARNING,
-                                "missions/software-dev/steps/plan.prompt.md"),
-                        tuple(
-                                PackFindingCode.PROMPT_SLOT_NOT_EMPTY_UNVERSIONED,
-                                PackFindingCode.Severity.WARNING,
-                                "missions/software-dev/steps/review.prompt.md"),
-                        tuple(
-                                PackFindingCode.PROMPT_SLOT_NOT_EMPTY_UNVERSIONED,
-                                PackFindingCode.Severity.WARNING,
-                                "missions/software-dev/steps/specify.prompt.md"),
-                        tuple(
-                                PackFindingCode.PROMPT_SLOT_NOT_EMPTY_UNVERSIONED,
-                                PackFindingCode.Severity.WARNING,
-                                "missions/software-dev/steps/tasks.prompt.md"));
+        // store reads (ADR-0042, ADR-0040 decision 6), and at the pin a2a9379 open-packs 170dbc3 (open-packs#175, #435)
+        // emptied the five software-dev spdd:reasons-block slots, moving their text into the spdd pack's prompt
+        // fragments, and versioned the descriptor (schema_version "1.0"). So main at 90de8f9's "no findings" is back in
+        // full: no PROMPT_SLOT_NOT_EMPTY_UNVERSIONED warning is left, and none of the five prompts raises any slot
+        // finding, though each still declares its (empty) slot.
+        assertThat(verdict.findings()).isEmpty();
+        for (String step : List.of("implement", "plan", "review", "specify", "tasks")) {
+            assertThat(builtIn.resolve("missions/software-dev/steps/" + step + ".prompt.md"))
+                    .content(StandardCharsets.UTF_8)
+                    .contains("<!-- spdd:reasons-block:start -->\n<!-- spdd:reasons-block:end -->");
+        }
 
         // 386 at 5df92a5d, less the 74 YAML files the mission-type migration (#194,
         // open-packs#95) retired, plus its 4 mission-type files, plus the payloads and templates #251 lists whatever
         // their extension (the 7 asset payloads and 27 templates the whole-pack census counts, less the YAML payload
         // this walk listed already). The pin f85cf23 adds four mission step prompts (open-packs 7963b62), all under
         // missions/<type>/steps/, which this walk does not list: no step prompt or guideline file is classified. The
-        // #240 migration adds the 43 built-in procedures its directives' steps became.
-        assertThat(verdict.files()).hasSize(386 - 74 + 4 + (7 + 27 - 1) + 43);
+        // #240 migration adds the 43 built-in procedures its directives' steps became. The pin a2a9379 removes nine
+        // listed files (directive 038, five paradigms, the reasons-canvas styleguide and its two tactics) and adds six
+        // (the git-flow procedure, three conventions styleguides, the lane-recovery tactic and the execution-lanes
+        // toolguide); its guide and the two deleted __init__.py files are not listed by this walk.
+        assertThat(verdict.files()).hasSize(386 - 74 + 4 + (7 + 27 - 1) + 43 - 9 + 6);
         assertThat(verdict.files())
                 .filteredOn(f -> f.file().equals("assets/docs_structural_lint.config.yaml"))
                 .containsExactly(classified("assets/docs_structural_lint.config.yaml", "asset-payload"));
