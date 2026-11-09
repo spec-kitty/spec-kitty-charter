@@ -16,13 +16,13 @@
     },
     {
       "criterion_id": "FR-002",
-      "description": "Verify FR-002 is satisfied",
+      "description": "Any new pack_version replaces the stored one, an identical re-send ends succeeded with outcome unchanged and the same revision, and the same version with different content ends refused 409 pack_version_conflict leaving the stored pack unchanged.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "contracts/charter/scenarios/registration/whole-pack-registration.feature: \"The same version with other content is refused, and a new version is accepted\"; contracts/charter/scenarios/registration/whole-pack-registration.feature: \"Sending the identical archive again changes nothing\"",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:45:23.415018+00:00",
+      "notes": "PR A (#419). The identical re-send is an async no-op (202, then succeeded/unchanged) rather than a synchronous 200, per FR-024/A5 (DM-01M6RA8225EXG6GAT1MM2R9T6C)."
     },
     {
       "criterion_id": "FR-003",
