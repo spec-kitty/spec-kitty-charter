@@ -24,13 +24,13 @@ class JcsTest {
     @Test
     void sortsMemberNamesByUtf16CodeUnitsNotByCodePoints() {
         Map<String, Object> members = new LinkedHashMap<>();
-        members.put("�", 2);
+        members.put("\uFFFD", 2);
         members.put("😀", 1);
         members.put("b", 4);
         members.put("a", 3);
 
         // U+1F600 is the pair D83D DE00; 0xD83D < 0xFFFD, so it sorts first, though its code point is the larger.
-        assertThat(text(members)).isEqualTo("{\"a\":3,\"b\":4,\"😀\":1,\"�\":2}");
+        assertThat(text(members)).isEqualTo("{\"a\":3,\"b\":4,\"😀\":1,\"\uFFFD\":2}");
     }
 
     @Test

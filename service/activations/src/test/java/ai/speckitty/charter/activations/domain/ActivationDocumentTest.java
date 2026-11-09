@@ -47,9 +47,9 @@ class ActivationDocumentTest {
 
     @Test
     void listsSortByCodePoint() {
-        ActivationDocument document = build(b -> b.languages(List.of("😀", "�", "a")));
+        ActivationDocument document = build(b -> b.languages(List.of("😀", "\uFFFD", "a")));
 
-        assertThat(document.languages()).hasValueSatisfying(l -> assertThat(l).containsExactly("a", "�", "😀"));
+        assertThat(document.languages()).hasValueSatisfying(l -> assertThat(l).containsExactly("a", "\uFFFD", "😀"));
     }
 
     @Test

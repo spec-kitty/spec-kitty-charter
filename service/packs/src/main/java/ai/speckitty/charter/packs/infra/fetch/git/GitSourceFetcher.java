@@ -402,7 +402,7 @@ public final class GitSourceFetcher implements PackSourceFetcher {
         boolean file = (mode.equals("100644") || mode.equals("100755")) && type.equals("blob");
         if ((!directory && !file) || !COMMIT_ID.matcher(oid).matches()) {
             violations.add(new ArchiveViolation(Code.ENTRY_TYPE, path));
-        } else if (path.indexOf('�') >= 0) {
+        } else if (path.indexOf('\uFFFD') >= 0) {
             violations.add(new ArchiveViolation(Code.PATH_CHARACTER, path));
         } else {
             entries.add(new Entry(path, oid, directory));

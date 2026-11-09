@@ -140,6 +140,8 @@ jobs:
       # contract's own checker, not the service; the coverage aggregation leaves both out as well. The generated
       # charter-api classes are a library only: packs and deployable import them, so the analyzer must resolve
       # them, but they are neither sources nor binaries to analyze.
+      # The tests' classpath (sonar.java.test.libraries) is the same jars plus every module's main classes, since a
+      # module's tests import its own and other modules' main code; without it the analysis reports unresolved types.
       # The project key spec-kitty_spec-kitty-charter is an assumption the operator confirms when creating the project.
       - name: SonarCloud scan
         id: scan
@@ -156,6 +158,7 @@ jobs:
             -Dsonar.java.binaries=service/kernel/build/classes/java/main,service/packs/build/classes/java/main,service/profiles/build/classes/java/main,service/missions/build/classes/java/main,service/activations/build/classes/java/main,service/web-transport/build/classes/java/main,service/deployable/build/classes/java/main
             -Dsonar.java.test.binaries=service/kernel/build/classes/java/test,service/packs/build/classes/java/test,service/profiles/build/classes/java/test,service/missions/build/classes/java/test,service/activations/build/classes/java/test,service/web-transport/build/classes/java/test,service/deployable/build/classes/java/test
             -Dsonar.java.libraries=${{ steps.coverage.outputs.libraries }},service/charter-api/build/classes/java/main
+            -Dsonar.java.test.libraries=${{ steps.coverage.outputs.libraries }},service/charter-api/build/classes/java/main,service/kernel/build/classes/java/main,service/packs/build/classes/java/main,service/profiles/build/classes/java/main,service/missions/build/classes/java/main,service/activations/build/classes/java/main,service/web-transport/build/classes/java/main,service/deployable/build/classes/java/main
             -Dsonar.coverage.jacoco.xmlReportPaths=service/charter-reports/build/reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml
             -Dsonar.java.source=25
             -Dsonar.scm.revision=${{ github.sha }}
