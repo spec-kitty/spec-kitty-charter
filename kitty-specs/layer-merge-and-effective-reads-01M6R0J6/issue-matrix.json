@@ -299,6 +299,18 @@
       "title": null,
       "verdict": "deferred-with-followup",
       "wp": null
+    },
+    "#427": {
+      "evidence_ref": "PR B of this mission (WP21-WP26), draft; named by the PR C hand-over",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "in-mission",
+      "wp": null
     }
   },
   "schema_version": 1
