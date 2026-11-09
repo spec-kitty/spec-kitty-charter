@@ -146,7 +146,7 @@ public final class ActionContextWalk {
      * @param when the {@code when} of that edge; empty when it states none
      * @param reason the {@code reason} of that edge; empty when it states none
      */
-    public record Suggested(Urn urn, Urn via, int hops, Optional<String> when, Optional<String> reason) {
+    public record SuggestionCandidate(Urn urn, Urn via, int hops, Optional<String> when, Optional<String> reason) {
 
         /**
          * Checks the fields.
@@ -157,7 +157,7 @@ public final class ActionContextWalk {
          * @param when the edge's condition
          * @param reason the edge's reason
          */
-        public Suggested {
+        public SuggestionCandidate {
             Objects.requireNonNull(urn, "urn");
             Objects.requireNonNull(via, "via");
             Objects.requireNonNull(when, "when");
@@ -171,10 +171,14 @@ public final class ActionContextWalk {
      * @param action the action node
      * @param missionTypeInForce whether the mission type is in force; when it is not, there is no entry
      * @param entries the entries, in step order then URN order
-     * @param suggested the out-of-force candidates step 3 reached, in URN order; see
+     * @param suggestionCandidates the out-of-force candidates step 3 reached, in URN order; see
      *     {@link ActionContextWalk#walk}
      */
-    public record Context(Urn action, boolean missionTypeInForce, List<Entry> entries, List<Suggested> suggested) {
+    public record Context(
+            Urn action,
+            boolean missionTypeInForce,
+            List<Entry> entries,
+            List<SuggestionCandidate> suggestionCandidates) {
 
         /**
          * Checks and copies the fields.
@@ -182,19 +186,19 @@ public final class ActionContextWalk {
          * @param action the action node
          * @param missionTypeInForce whether the mission type is in force
          * @param entries the entries
-         * @param suggested the out-of-force suggestions
+         * @param suggestionCandidates the out-of-force suggestions
          */
         public Context {
             Objects.requireNonNull(action, "action");
             entries = List.copyOf(Objects.requireNonNull(entries, "entries"));
-            suggested = List.copyOf(Objects.requireNonNull(suggested, "suggested"));
+            suggestionCandidates = List.copyOf(Objects.requireNonNull(suggestionCandidates, "suggestionCandidates"));
         }
     }
 
     /** An entry before its enhancers are known. */
     private record Listed(Urn urn, Step step, Urn via, int hops, Optional<String> when, Optional<String> reason) {}
 
-    private static final Comparator<Link> BEST_PARENT_LAST = Comparator.comparing(
+    private static final Comparator<Link> EDGE_TIE_ORDER = Comparator.comparing(
                     (Link link) -> link.when().orElse(""))
             .thenComparing(link -> link.reason().orElse(""));
 
@@ -231,7 +235,7 @@ public final class ActionContextWalk {
      * @param action the action
      * @param depth the number of {@code suggests} hops, at least 0
      * @param inForce whether an artifact is in force: the effective set, which holds no step
-     * @return what the action reaches. Beside the entries, {@link Context#suggested()} holds each target of a
+     * @return what the action reaches. Beside the entries, {@link Context#suggestionCandidates()} holds each target of a
      *     {@code suggests} edge of step 3 (from a scoped or suggested artifact in force, within {@code depth}) that the
      *     closure holds and the predicate refuses, unless a listed artifact also reaches it through a hard relation
      *     ({@code requires}, {@code refines}, {@code scope}, {@code instantiates}). They are candidates only: never
@@ -344,7 +348,7 @@ public final class ActionContextWalk {
         private Map<Urn, Link> parentsOf(List<Urn> frontier, RelationType relation, Set<Urn> visited) {
             Comparator<Link> byParent = Comparator.comparingInt((Link link) -> hopsOf(link.source()))
                     .thenComparing(Link::source)
-                    .thenComparing(BEST_PARENT_LAST);
+                    .thenComparing(EDGE_TIE_ORDER);
             Map<Urn, Link> parents = new TreeMap<>();
             for (Urn parent : frontier) {
                 for (Link link : outgoing.getOrDefault(parent, List.of())) {
@@ -371,7 +375,7 @@ public final class ActionContextWalk {
         }
 
         /** The out-of-force suggestion candidates no listed artifact reaches through a hard relation, in URN order. */
-        List<Suggested> suggestions() {
+        List<SuggestionCandidate> suggestions() {
             Set<Urn> hard = new HashSet<>();
             for (Urn source : listed.keySet()) {
                 outgoing.getOrDefault(source, List.of()).stream()
@@ -380,7 +384,7 @@ public final class ActionContextWalk {
             }
             return refused.entrySet().stream()
                     .filter(candidate -> !hard.contains(candidate.getKey()))
-                    .map(candidate -> new Suggested(
+                    .map(candidate -> new SuggestionCandidate(
                             candidate.getKey(),
                             candidate.getValue().source(),
                             hopsOf(candidate.getValue().source()) + 1,

@@ -474,13 +474,13 @@ class ActionContextWalkTest {
 
         Context context = walk(suggestingOutOfForce(), 1, withoutS);
 
-        assertThat(context.suggested())
+        assertThat(context.suggestionCandidates())
                 .extracting(
-                        ActionContextWalk.Suggested::urn,
-                        ActionContextWalk.Suggested::via,
-                        ActionContextWalk.Suggested::hops,
-                        ActionContextWalk.Suggested::when,
-                        ActionContextWalk.Suggested::reason)
+                        ActionContextWalk.SuggestionCandidate::urn,
+                        ActionContextWalk.SuggestionCandidate::via,
+                        ActionContextWalk.SuggestionCandidate::hops,
+                        ActionContextWalk.SuggestionCandidate::when,
+                        ActionContextWalk.SuggestionCandidate::reason)
                 .containsExactly(tuple(
                         urn("tactic:S"),
                         urn("tactic:T1"),
@@ -498,7 +498,7 @@ class ActionContextWalkTest {
 
         Context context = walk(suggestingOutOfForce(), 1, withS);
 
-        assertThat(context.suggested()).isEmpty();
+        assertThat(context.suggestionCandidates()).isEmpty();
         assertThat(listed(context)).containsExactly("tactic:T1", "tactic:S", "directive:R", "glossary_pack:G");
     }
 
@@ -513,14 +513,15 @@ class ActionContextWalkTest {
 
         Context context = walk(closure, 1, inForce("mission_type:M", "tactic:T1", "tactic:T2"));
 
-        assertThat(context.suggested()).isEmpty();
+        assertThat(context.suggestionCandidates()).isEmpty();
     }
 
     @Test
     void depthZeroReportsNoSuggestion() {
         Predicate<Urn> withoutS = inForce("mission_type:M", "tactic:T1", "directive:R", "glossary_pack:G");
 
-        assertThat(walk(suggestingOutOfForce(), 0, withoutS).suggested()).isEmpty();
+        assertThat(walk(suggestingOutOfForce(), 0, withoutS).suggestionCandidates())
+                .isEmpty();
     }
 
     @Test
@@ -536,8 +537,8 @@ class ActionContextWalkTest {
 
         Context context = walk(closure, 1, inForce("mission_type:M", "tactic:A", "tactic:B"));
 
-        assertThat(context.suggested())
-                .extracting(ActionContextWalk.Suggested::urn, ActionContextWalk.Suggested::via)
+        assertThat(context.suggestionCandidates())
+                .extracting(ActionContextWalk.SuggestionCandidate::urn, ActionContextWalk.SuggestionCandidate::via)
                 .containsExactly(tuple(urn("tactic:S1"), urn("tactic:B")), tuple(urn("tactic:S2"), urn("tactic:A")));
     }
 }
