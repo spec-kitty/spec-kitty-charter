@@ -2,7 +2,7 @@
 title: Composition and activation rules
 description: Every composition, registration, activation-write and effective-read rule as sets, relations, closures and invariants, each with its source and build status.
 doc_status: draft
-updated: 2026-11-08T00:00:00Z
+updated: 2026-11-09T00:00:00Z
 type: Architecture
 kind: Reference
 related:
@@ -51,10 +51,23 @@ read and carries a **⚠ Unclear** note. The prose pages remain the design: [Log
 > part, and the note says which part. **Ruled, planned** names where a ruling is to be built: a layer-merge pull
 > request (PR A, B or C of the plan) or a #399 follow-up. **Built (PR A0)** marks a rule the layer-merge mission's
 > first pull request built on 2026-11-07, stacked on #399. **Built (PR B)** marks a rule its PR B built on 2026-11-08:
-> the layer merge and two effective reads, the artifact list and the skipped report.
+> the layer merge and two effective reads, the artifact list and the skipped report. **Built (PR C)** marks a rule its
+> PR C built on 2026-11-09: the effective graph and the action context, the relaxed write rule, and the operator
+> rulings of that date (the step enhancer's binding, the one step predicate, the node predicate, the floor of
+> activatable kinds).
 >
 > **Rulings of 2026-11-06.** The operator's answers to the ruleset consistency review (layer-merge mission,
 > `research/ruleset-review-2026-11-06.md`, items A1–A15 and B1–B8) are folded into the rules and cite their decision ids (`DM-01M6RA…`, under the layer-merge mission's `decisions/`).
+>
+> **Rulings of 2026-11-09.** The operator's rulings at the PR C plan point (OD-6, OD-9, D3, D4(a), D15, D16 and the
+> node predicate) are folded into E6, E14, C31, E15 and E16 and cite their decision ids (`01M702A…`, `01M7037…`,
+> `01M7059…`, `01M70C4…`, `01M70CT…`). Each amended rule names the test that pins it, so a rule cannot pass on its
+> wording alone.
+>
+> **Explicit rulings, never accidental order.** Every sentence of this page that describes a contest, a winner or a
+> tie cites the ruling that settles it or the refusal that stops it. Where a tie is broken by a rule no ruling
+> covers, the page says so and names the issue that tracks it (the smallest-URN tie of `satisfiedBy` and
+> `overriddenBy`, E5 and E9, is #439).
 
 ## 1. Notation
 
@@ -78,9 +91,10 @@ from its starting set. Both always exist here, because every universe is finite.
 
 ### Artifacts, kinds and edges
 
-- `K`: the artifact kinds. `Kₐ = K ∖ {template, asset}`: the activatable kinds, each with a `selected` and a
+- `K`: the artifact kinds. `Kₐ = K ∖ {template, asset, guard, lifecycle}`: the activatable kinds, each with a `selected` and a
   `deactivated` list; `mission_type` is one of them like any other (A7, decision `DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY`; one kind registry, decision
-  `DM-01M6RCY40CQQTHC130RWF43W0D`).
+  `DM-01M6RCY40CQQTHC130RWF43W0D`). A step `action:M/s` is a graph node of no kind in `Kₐ`: it has no `selected`
+  or `deactivated` list and no state of its own, only the state of its mission type (E6, E15).
 - `U`: URNs `<kind>:<id>`, with `kind: U → K`. A reference is a bare URN `u` or a qualified `n::u`.
 - `holds ⊆ P × U`. A **place** is a pair `(p, u)` with `holds(p, u)`. Two packs holding one URN are two places.
 - `Rel`: the relations, among them `requires`, `suggests`, `refines`, `scope`, `instantiates`, `enhances`,
@@ -92,8 +106,14 @@ from its starting set. Both always exist here, because every universe is finite.
 - `Lin = (specializes_from, {requires, scope})`: the lineage pass-through: the ancestry relation and the relations
   crossed from each ancestor.
 - `bnd(u)`: the mission type `u` is bound to, or `⊥`. A step `action:M/s` is bound to `mission_type:M`; an artifact
-  that declares a mission-type binding is bound to that mission type. `steps(M) = {u ∈ H(C) | bnd(u) = M, kind(u) =
-  action}`.
+  that declares a mission-type binding is bound to that mission type. A `step_enhancement` `u` with exactly one
+  distinct `enhances` target, an action `a = action:M/s`, is bound to `mission_type:M` too (OD-6, decision
+  `01M702A8XYB588PSGTXRKQ4NKK`; E6); every other shape is bound only as it declares.
+- `hold(p, M, s) ⇔ holds(p, mission_type:M) ∧ holds(p, action:M/s)`: pack `p` **holds** the step `action:M/s` (OD-9,
+  the per-pack form, the operator's wording). `held(C, M, s) ⇔ ∃p ∈ C. hold(p, M, s)`: the closure holds the step
+  (the closure form, decision `01M7037V93Y077H8M4W9V8Y6B3`). The place of a held step is the merged winner (C17), so a
+  layer override of a held step counts, and a step declared where no pack defines its mission type is held by none.
+  `steps(M) = {action:M/s | held(C, M, s)}`.
 - `defines(p, u) ⇔ holds(p, u)`; `changes(p, u) ⇔ ∃x. holds(p, x) ∧ overrides(x, u)`. An enhancement is additive and
   changes nothing (A14).
 - `fold(u)`: `u` with its id in lower case (`Locale.ROOT`); two URNs with one `fold` and different spellings differ
@@ -155,7 +175,7 @@ An unrelated broken pack does not refuse an activation's closure.
 *Source:* activation mission research R2, US2 AS2; `PackCompositionResolver.resolveRooted`. **Built.**
 
 **C5 Order.** `C` is listed in a topological order of `succ` (dependencies first, a `parent_pack` before its child),
-ties broken by `lv` in merge order, then by `cid` in code points.
+ties broken by `lv` in merge order, then by `cid` in code points (a total order, so I1 holds; ADR-0048 d9).
 Each level stays contiguous, and the order never depends on how the packs were listed.
 *Source:* ADR-0048 d9; logical model (Composition); `PackCompositionResolver.topologicalOrder`, `dependenciesOf`,
 `STABLE_ORDER` (`service/packs/.../domain/PackCompositionResolver.java`). **Built.**
@@ -210,7 +230,7 @@ at level `ℓ`. No entry, an entry naming a non-contestant only, or entries nami
 refused.
 The compose names exactly one winning sibling; there is no "last loaded wins".
 *Source:* ADR-0048 d9; ADR-0053 d5; spec FR-012 of the layer-merge mission;
-`PackCompositionResolver.refuseContests`. **Built (PR B):** settlement by exactly one winner clears the refusal, and the merge puts `m`'s version in force (#357, DIV-218). A step contest no entry settles passes the compose and is refused at read as `pack_sibling_conflict`. Until #358 any pack of `C` may settle, with no level check (DIV-219).
+`PackCompositionResolver.refuseContests`. **Built (PR B):** settlement by exactly one winner clears the refusal, and the merge puts `m`'s version in force (#357, DIV-218). A step contest no entry settles passes the compose and is refused at read as `pack_sibling_conflict`. Until #358 any pack of `C` may settle, with no level check (DIV-219). At the #427 landing a contest whose entries name two different siblings, which closure order had settled, was made a refusal (`pack_sibling_conflict`): no tie among contestants is broken by order.
 > ⚠ **Unclear:** ADR-0053 d5 says the conflict is settled by "the distribution pack's own `overrides` edge". The
 > built resolver and the layer-merge spec use a descriptor `overrides` entry `{artifact, member}` in `pack.yaml`, from
 > any pack of the compose. The two are not the same mechanism.
@@ -221,8 +241,10 @@ An artifact id is unique within a level; across levels the same id is a layer ov
 
 **C17 Layer winner.** `win(u) = the place (p, u)` whose `lv(p)` is the level that applies among
 `{lv(q) | holds(q, u), q ∈ C}`, after C15.
-Levels merge built-in, then org, then project; the level that applies wins.
-*Source:* ADR-0053 d6; ADR-0059 D3; spec FR-009. **Built (PR B).**
+Levels merge built-in, then org, then project; the level that applies wins. The level that applies has one place:
+two definers at one level are refused by C14 and settled by C15, so no tie reaches the winner.
+*Source:* ADR-0053 d6; ADR-0059 D3 (decision 3, across levels the level that applies takes the place whole); spec FR-009.
+**Built (PR B).**
 
 **C18 Whole replacement.** `content(u) = content(win(u))`; no field of a losing place is read.
 A layer override takes the place of the whole artifact; nothing is inherited.
@@ -248,7 +270,7 @@ Only an `open` artifact may be replaced by a later level; `extendable` and `lock
 
 **C22 Mutability along the closure.** `μ_C(u) = max_{p ∈ C} μ_p(u)`; `setBy(u)` is the first `p` in closure order with
 `μ_p(u) = μ_C(u) > open`.
-A target's level is the strictest any pack of the closure declares, whatever the order. A pack's declaration counts
+The level itself is the maximum, so closure order never changes it; `setBy` only names the pack a refusal cites (ADR-0048 d9 order, C5). A target's level is the strictest any pack of the closure declares, whatever the order. A pack's declaration counts
 only for what it or a pack it builds on holds (notation, A15): a pack may lock the artifacts of the packs it builds on
 (an enterprise pack enforcing a built-in practice), not those of an unrelated pack that shares the closure.
 *Source:* ADR-0063 D3; ADR-0012 d3; `PerPackPolicy.levelIn`; A15, decision `DM-01M6RA97220XBR7RR447FE2JXD`.
@@ -296,7 +318,9 @@ always ends.
 
 **C29 Winning preset.** For a preset id `i` held by several packs of `C`, the copy held by the last of them in closure
 order (merge order) wins as the preset applied (W17); the other copies' members are ignored, but their must-have
-items still count (C31). Two copies at one level are refused (C34).
+items still count (C31). Two copies at one level are refused (C34), except a child's copy of its parent's, which wins
+(operator decision `01M6ZCXAJ9MTTF9XJSR89F3NYG`, A1: within a level the replacing copy wins and the replaced copy
+requires nothing).
 *Source:* ADR-0053 d6 (applied to presets); activation mission Assumptions; `ClosureQueries.winningPresets`. **Built.**
 
 **C30 Governing preset.** `gov(π) ⇔ must(π) ≠ ∅`.
@@ -315,6 +339,12 @@ requirement; a must-have item no pack holds is dropped from the floor and report
 restricted to held ids (A10; PR A0), and `requiredNotHeld` reports the rest. The writes' floor refusal and the registration
 notices (`floorAdded`, `floorRemoved`) follow the same rule (decision `01M6YKZRM7VF19A57E40D59N81`; ruling `01M6ZCXAJ9MTTF9XJSR89F3NYG`; DIV-205, DIV-225); `/offering` keeps the
 winning copies (FR-023). DIV-205 is ratified.
+The floor holds activatable kinds only (D16, plan "PR C scope added by operator rulings (2026-11-09)"): the policy and
+preset schemas cannot name a step (`action:`), so `Req₀(C) ⊆ Kₐ` and `requiredNotInForce` (E14) never names a step
+([DIV-239](/conformance/divergence-register/)). **Built (PR C)** for that sentence, pinned by `ClosureViewSessionStepRefsTest`
+(`aRequiredStepThatIsNotInForceIsDroppedAndARequiredArtifactIsKept`,
+`thePolicyAndPresetSchemasCannotNameAStepSoTheFloorHoldsNone`). The within-level rule, that a replacing copy wins and a
+replaced copy requires nothing, is operator decision `01M6ZCXAJ9MTTF9XJSR89F3NYG`; the union across levels is A1.
 
 **C32 Floor at write.** `Fl(C) = Req(C) ∪ Lk(C)`.
 The writes treat a locked artifact as required too.
@@ -538,9 +568,11 @@ replace. `New ∩ Lk(C) ≠ ∅ ⇒ 409 artifact_locked`; otherwise `New ∩ Req
 names each pack with its `parent_pack` chain. A replace first drops from its body the ids of `stale(D, C)` (W11) and
 reports them in `dropped`; any other id the closure does not hold is still `422` (W5).
 A create never denies a locked or required artifact; a replace is judged only on the deny entries it adds, so a
-`GET` → `PUT` of the stored document is never refused for the floor or a stale id. Locked is judged first.
+`GET` → `PUT` of the stored document is never refused for the floor or a stale id. Locked is judged first (ADR-0012 d7:
+locked implies required, so a document that denies both is refused as locked).
 *Source:* ADR-0012 d7; ADR-0013 d5; ADR-0020 D7, D9, D10; DIV-204; `DocumentRules.floorRefusal`; A4, decision
-`DM-01M6RA7XC5HC8915GZT2R3H83W`. **Built (PR A0):** the whole-document refusal, judging only the added entries and the replace's stale drop. Relaxed by W26.
+`DM-01M6RA7XC5HC8915GZT2R3H83W`. **Built (PR A0):** the whole-document refusal, judging only the added entries and the replace's stale drop. Relaxed by W26, built in PR C: the `artifact_required` half then asks the in-force
+resolution of the document as it will be stored.
 
 ### Preconditions and order
 
@@ -640,6 +672,14 @@ The cascade is the closure of the targets over the six relations, the lineage pa
 steps (crossed like `requires`), stopping at the stops.
 *Source:* ADR-0059 D2.1, D2.3, D2.4; activation mission FR-012, FR-014; `Reachability.reach`, `ReachRequest.Lineage`;
 A7 Q1, decision `DM-01M6RCXTS0SMDNTWZ8G7GJ2P5S`. **Built (PR A0)**, the step term included.
+Since PR C `steps(M)` is the held form (OD-9, notation): the cascade follows only held steps, so an action declared
+where no pack of the closure defines its mission type is no longer followed, and a step declared by a pack beside a
+mission type another pack defines is not held either ([DIV-242](/conformance/divergence-register/); decision
+`01M7037V93Y077H8M4W9V8Y6B3`). A winning mission type keeps the unique steps of the versions it replaced (A7, C17: a
+step is a URN of its own; the architect's C17/C18 dissent, recorded in the PR C plan-point dispositions, stands).
+**Built (PR C)**, pinned by `ReachabilityTest.theCascadeFollowsOnlyHeldStepsSoAStepDeclaredWhereNoClosurePackDefinesItsMissionTypeIsNotEntered`,
+`EdgeIndexTest` (`anActionDeclaredWithoutItsMissionTypeInAnyPackIsNotAStepOfThatMissionType`,
+`aWinningMissionTypeKeepsTheUniqueStepsOfTheVersionItReplaced`) and `StepHoldingTest`.
 
 **W21 Stops and scope.** Select: `Σ = Den(D₀) ∖ {t}`. Deactivate, own walk: `Σ = ∅` (A2). Deactivate, shared walk:
 `Σ = Den(D₀) ∪ {t}`. `Scope ⊆ Kₐ` or `all = Kₐ`, `mission_type` included; no `cascade` means `Reach = {t}`.
@@ -673,19 +713,30 @@ A candidate another active artifact still reaches, directly or through another k
 deactivate of `t ∈ Lk(C)` is `409 artifact_locked`, of `t ∈ Req(C)` is `409 artifact_required`, before any walk. A
 stored deny entry on the floor is tolerated and kept.
 *Source:* ADR-0059 D4; DIV-204; activation mission finding F1; `DocumentRules.checkWrite`,
-`ActivationExclusionService`. **Built.** Relaxed by W26.
+`ActivationExclusionService`. **Built.** Relaxed by W26 (built, PR C). The deactivate refuses before the walk and the
+document it computes, cascade included, is judged again before it is stored (`ActivationWrites.commit`).
 > ⚠ **Unclear:** ADR-0012 d1's table forbids deactivating an `extendable` artifact, and `MutabilityLevel`'s javadoc
 > repeats it, but the activation writes refuse only `locked` (and required) targets. ADR-0030 and the logical model
 > treat deactivation as a project's choice, not a mutability operation.
 
 **W26 Relaxed required rule.** A new deny entry on `T ∈ Req(C) ∖ Lk(C)` is accepted iff
-`∃E ∈ Eff(D', M): overrides(E, T)` (E4–E8, over the document as stored after the write); `T ∈ Lk(C)` always refuses.
-A required artifact may be denied while an active override of it is in force, unless it is locked.
-*Source:* decision `DM-01M6R3YX23H46PXGNEFC31E6CT` (operator, Q9); research R12; plan IC-13. **Ruled, not built.**
+`∃E ∈ Eff(D', M): ov⁺(E, T)` (E4–E8, over the document `D'` as it will be stored after the write); `T ∈ Lk(C)` always
+refuses. The judgement is the in-force resolution's own: `T` is satisfied exactly when the resolution of `D'` reports
+`satisfiedBy` for it (E5, E9), never a second copy of the rule, so an enhancement never satisfies.
+A required artifact may be denied while an active override of it is in force in the document being stored, unless it
+is locked. A create judges every deny entry of the body; a replace, a deactivate, a preset applied with `force` and a
+select with `includeDeactivated` judge only the deny entries they add (W6, W25, DIV-204). A replace that adds the
+override and the deny entry together is accepted. The resolution is asked once, and only when a write adds a deny
+entry on a required, not locked artifact, so a closure whose merge refuses (C21, C28, E7) reaches only that write, as
+`500 pack_unreadable`. A later write that removes the override (an unselect) is not refused: no write judges a stored
+deny entry (W25), and the read lists it in `denyNotApplied` and puts `T` back in force (E5, E21).
+*Source:* decision `DM-01M6R3YX23H46PXGNEFC31E6CT` (operator, Q9); research R12; plan IC-13; ADR-0059 amendment R6.
+**Built (PR C).** Pinned by `DocumentRulesOverrideTest` (one case per scope: create, replace, deactivate, force preset,
+select with `includeDeactivated`; the enhancer, the lock, the stored entry and the merge refusal) and by
+`activation-deny-satisfied.feature`.
 > ⚠ **Unclear:** ADR-0013 d2 and ADR-0020 D7 say a required artifact "is never subtracted" and is "active whatever
-> the document says". The 2026-11-06 rulings let an active override hide a required artifact and let it be denied.
-> Research R12 plans an ADR-0059 amendment (A6, after the relabelled A2–A5) to record it; until then the ADR texts and
-> the ruling disagree.
+> the document says". The 2026-11-06 rulings let an active override hide a required artifact and let it be denied;
+> ADR-0059 amendment R6 records the write rule, and those two texts still read as before.
 
 ### Report, no-op and storage
 
@@ -736,8 +787,8 @@ Each stored document's `ETag` changes once.
 ## 5. Read rules
 
 Two of the four effective reads, `listEffectiveArtifacts` and `getActivationSkippedReport`, answer since PR B
-(2026-11-08); `getEffectiveGraph` and `getEffectiveActionContext` answer `501` until PR C. Every rule in this section
-is **Built (PR B)** or **Ruled, not built** as it says. `M` is the merged closure of `C(D)` (C17–C21, C15), `W` its winning URNs of a kind
+(2026-11-08); `getEffectiveGraph` and `getEffectiveActionContext` answer since PR C (2026-11-09), so no operation is
+reserved. Every rule in this section is **Built (PR B)** or **Built (PR C)** as it says. `M` is the merged closure of `C(D)` (C17–C21, C15), `W` its winning URNs of a kind
 in `Kₐ`, `Lk = Lk(C)` and `Req = Req(C)`.
 
 **E1 Stale ids.** `staleIds = (Sel(D) ∪ Den(D)) ∖ W`; a stale id has no state.
@@ -784,19 +835,38 @@ decisions `DM-01M6R2X2SW8KVAJCDX23PGJBMT`, `DM-01M6R3YTNT1P2MBERBN7WV71ND`; rese
 > force, because US3 AS4 stated it only for the kind gate, which A7 withdrew. The service puts it in force (DIV-226),
 > pinned by a unit test of the in-force resolution; no contract scenario states it.
 
-**E6 Enhancer and binding pruning.** `Eff₀ = lfp X. {u ∈ A₂ | (¬∃T. enhances(u, T) ∨ ∃T ∈ X. enhances(u, T)) ∧
-(bnd(u) = ⊥ ∨ bnd(u) ∈ X)}`.
+**E6 Enhancer and binding pruning.** `Eff₀ = lfp X. {u ∈ A₂ | G(u, X) ∧ (bnd(u) = ⊥ ∨ bnd(u) ∈ X)}`, with
+`G(u, X) = ¬∃T. enhances(u, T) ∨ ∃T ∈ X. enhances(u, T)`, except for a **step enhancer** `u` (OD-6): a
+`step_enhancement` with exactly one distinct `enhances` target, an action `a = action:M/s`. For it `bnd(u) =
+mission_type:M` and `G(u, X) = held(C, M, s)`; a step is never in `Eff`, so the action cannot ground `u` by
+membership, and the mission type does.
 An enhancer is in force only when it is grounded: one of its targets is in force, and that target is an artifact
 that enhances nothing or is itself grounded. An artifact bound to mission type `M`, a step of `M` included, is in
-force only while `M` is. A required or locked artifact pruned by either condition is not in force either; it is
-reported required-but-ungrounded (E14). An enhancer is never in force on its own, and nothing bound to a mission type
-outlives it.
+force only while `M` is. A step enhancer is grounded exactly when the mission type of its single `enhances` target is
+in force: while `mission_type:M ∉ X` it is pruned with the reason `mission_type_not_in_force`, in the bucket
+`missionTypeNotInForce` (decision `01M702A8XYB588PSGTXRKQ4NKK`: the existing reason, no new refusal code in PR C); when
+no pack holds the target step (the unheld-target case) it keeps its edge and is pruned with the reason
+`enhanced_target_not_in_force`, so I11 holds. Every other shape keeps the rule as written: a step enhancement with two
+targets, with a target of another kind or with an action and an artifact, and an enhancer of another kind whose target
+is an action. A required or locked artifact pruned by either condition is not in force either; it is reported
+required-but-ungrounded (E14). An enhancer is never in force on its own, and nothing bound to a mission type outlives it.
 *Source:* operator ruling of 2026-11-06 ("an enhancer needs its target T active to work"); decision
 `DM-01M6R3YTNT1P2MBERBN7WV71ND`; research R11 step 4; data model rule 8; A8, decision `DM-01M6RA8G0RGRWSFW4DERH8W319`
 (least fixed point); decision `DM-01M6R4W3ZMSESETMQ0ZQTCZCFJ` (the enhancer rule wins over the floor); A7 Q1, decision
-`DM-01M6RCXTS0SMDNTWZ8G7GJ2P5S` (the binding; it replaces the former `stepEnh` exemption). **Built (PR B)**
-(DIV-224); only step contracts are bound, and the binding of a step enhancer is PR C. C36 refuses `enhances` cycles at registration, so the least and greatest fixed points agree on every
-registered closure.
+`DM-01M6RCXTS0SMDNTWZ8G7GJ2P5S` (the binding; it replaces the former `stepEnh` exemption); OD-6 (decisions
+`01M702A8XYB588PSGTXRKQ4NKK` and, for the held target, `01M7037V93Y077H8M4W9V8Y6B3`; fragment
+`2026-11-09-c-step-enhancer-binding.md`). **Built (PR B)** for the binding of step contracts (DIV-224), **Built (PR C)**
+for the step enhancer's binding and the unheld target ([DIV-241](/conformance/divergence-register/)). C36 refuses
+`enhances` cycles at registration, so the least and greatest fixed points agree on every registered closure.
+*Pinned by:* `InForceResolutionTest` (`aStepEnhancerBoundToItsMissionTypeWithNoEnhancesEdgeIsInForceOnlyWhileTheMissionTypeIs`,
+`aStepEnhancerWhoseKeptEnhancesEdgeEndsAtNoWinnerIsPrunedForItsTarget`, `anEnhancerOfAStepFollowsTheStepsMissionType`),
+`ClosureViewTest` (`aStepEnhancerIsActiveWhenItAndTheMissionTypeOfItsStepAreSelectedAndNoActionIs`,
+`aStepEnhancerWhoseMissionTypeIsNotSelectedIsPrunedForTheMissionType`,
+`aStepEnhancerOfAStepNoPackHoldsKeepsItsEdgeAndIsPrunedForItsTarget`,
+`aStepEnhancerOfAnActionDeclaredWithoutItsMissionTypeIsPrunedForItsTarget`, and the four cases of the shapes that keep the
+enhancer rule: two targets, an action and an artifact, one artifact, another kind), and `EffectiveSetTest`
+(`aSelectedStepEnhancerIsInForceWhileTheMissionTypeOfItsStepIsAndNeitherListsNorWarnsAboutIt`,
+`aSelectedStepEnhancerWhoseMissionTypeIsNotSelectedIsListedUnderTheMissionTypeBucket`).
 
 **E7 Withdrawn overrides.** Let `Pr` be the artifacts that declare `overrides` and that E6 removed. E5 and E6 run again without the overrides of
 every artifact of `Pr`, and `Pr` grows until no such artifact is newly removed. If an artifact of `Pr` is in force on the
@@ -811,8 +881,8 @@ refuses the one registered shape (an artifact that both enhances and overrides o
 **E8 The effective set.** In closed form, `Eff(D, M)` is the fixed point of `Prune(Require(Hide(Cand(D) ∪ Lk)))` over the
 withdrawn overrides of E7, with `Hide`, `Require` and `Prune` as E4, E5 and E6.
 What is in force is computed from the document and the merged closure alone, by one function (`InForceResolution`) the
-reads share. W26, the relaxed write rule, is not built.
-*Source:* research R2, R11, R12, R13; plan IC-09, IC-13. **Built (PR B)** for the reads.
+reads share, and W26, the relaxed write rule, asks it through the port for the document a write will store.
+*Source:* research R2, R11, R12, R13; plan IC-09, IC-13. **Built (PR B)** for the reads, **Built (PR C)** for W26.
 
 **E9 State and reason.** For `u ∈ W`, `(state, reason)` is the first row that holds: in force → `active, locked`,
 `active, required` (a required artifact, whether selected or put in force by E5) or `active, selected`; otherwise bound
@@ -825,6 +895,9 @@ required or locked artifact they prune is out of force); language → `inactive,
 `overridden` (research R11 step 3). A required artifact out of force that an override satisfies, directly or through a
 chain, keeps its row and gains `satisfiedBy` (the overrider in force): a required, unselected `T` that `F` overrides is
 `not_selected` with `satisfiedBy` `F`, and a selected one is `overridden` with `satisfiedBy` `F`.
+When several artifacts in force satisfy or hide one artifact, `satisfiedBy` and `overriddenBy` name the smallest URN
+(`InForceResolution.overriderOf`). No ruling settles that choice: it is PR B's behavior as found, deterministic and not
+changed by PR C, and an operator ruling is tracked in #439.
 There is no `kind_not_activated` and no `kind_default` reason (A7).
 *Source:* ADR-0020 D7; data model (EffectiveArtifact, Precedence); decision `DM-01M6R0TNEBR7KGJMW2SQXQGJ0A`
 (`kind_default` dropped); A7, decision `DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY` (`kind_not_activated` dropped). **Built (PR B)** (DIV-229).
@@ -841,12 +914,19 @@ There is no `kind_not_activated` and no `kind_default` reason (A7).
 > ⚠ **Unclear:** the ruling says "every closure artifact"; the data model lists only winning ids of an activatable
 > kind, so templates, assets and the losing versions of a layer override are not listed.
 
-**E12 Enhancement, both ways.** For `T ∈ Eff`: `enhancedBy(T) = {E ∈ Eff | enhances(E, T)}`; `E ∉ Eff ⇒ E` is never
-returned for `T`, and no read adds `E` or `T` to `Eff`.
-An enhancement is returned only when it is itself active, and is read from either end; nothing is pulled in.
-*Source:* operator ruling A4 (ADR-0059 amendment of 2026-11-06); spec FR-015, US3 AS5; DIV-207 note.
-**Partly built (PR B):** the list and the report pull nothing in and return an enhancer only in force (DIV-224); the
-reading from either end belongs to the effective graph and action context, **Ruled, not built** (PR C).
+**E12 Enhancement, both ways.** For a node `n ∈ Nd` (E15): `enhancedBy(n) = {E ∈ Eff | enhances(E, n)}`; `E ∉ Eff ⇒ E` is never
+returned for `n`, and no read adds `E` or `n` to `Eff`.
+An enhancement is returned only when it is itself active, and is read from either end; nothing is pulled in. From the
+enhancer's end it is an edge of the graph (E15) and the action context's `enhancements` member (E16) names, for the start
+step and for each artifact it lists, the enhancers in force of that node; a step enhancer enhances the step, which no
+artifact entry names (decision `01M70C42KC78KB9H6KB7TK9224`).
+*Source:* operator ruling A4 (ADR-0059 amendment of 2026-11-06); spec FR-015, US3 AS5, US5 AS3; DIV-207 note.
+**Built (PR B)** for the list and the report, which pull nothing in and return an enhancer only in force (DIV-224);
+**Built (PR C)** for the reading from either end ([DIV-244](/conformance/divergence-register/)). *Pinned by:*
+`ActionContextWalkTest.eachEntryBringsTheEnhancersInForceThatEnhanceItAndTheOnesItEnhancesAndPullsNoneIn`,
+`ActionContextWalkTest.theContextCarriesTheEnhancersInForceOfTheStartStepAndTheArtifactsInForceItEnhancesInUrnOrder`, and the
+scenarios `US5 AS3 - an enhancer in force is an edge of the graph, read from T's side, and one out of force is not` and
+`US5 AS4 - the context holds the artifacts in force the action reaches, with the suggestion only through suggests`.
 
 **E13 Floor satisfaction.** For every `T ∈ Fl` that is not an ungrounded enhancer (E6): `T ∈ Req ⇒ T ∈ Eff ∨ ∃E ∈ Eff.
 ov⁺(E, T)`, and `T ∈ Lk ⇒ T ∈ Eff`; an enhancer never satisfies `T`. An ungrounded floor enhancer is reported
@@ -859,32 +939,70 @@ deciding row: `staleIds`, `missionTypeNotInForce`, `enhancedTargetNotInForce`, `
 `skippedDeactivated` (`viaRequires = false`, `requiredBy = []` at read), `overridden` (`{artifact, overriddenBy}`).
 There is no kind bucket at read (A7).
 `denyNotApplied` (`{u, reason: required or locked}`) and `overrideNotApplied` (`{T, overriddenBy}`) list rules not
-applied; `requiredNotInForce` lists the required or locked artifacts E6 pruned; `requiredNotHeld` lists `Unheld` (C31);
+applied; `requiredNotInForce` lists the required or locked artifacts E6 pruned, and only artifacts: the floor holds
+activatable kinds (C31, D16), so it never names a step; `requiredNotHeld` lists `Unheld` (C31);
 `pinNotHeld` lists the pins E1 reports; `skippedByScope`, `unreachedBehindDeactivated` and `skippedShared` are empty at
 read.
 *Source:* decision `DM-01M6R0TNEBR7KGJMW2SQXQGJ0A`; ADR-0059 D4 and follow-ups; spec FR-017, US4 AS1; data model.
-**Built (PR B)** (DIV-228). The earlier design names `requiredUngrounded`, `unheldRequired` and `deadPins` are the
-contract's `requiredNotInForce`, `requiredNotHeld` and `pinNotHeld`.
+**Built (PR B)** (DIV-228); **Built (PR C)** for D16 and the step references (#429): the targets of `enhancedTargetNotInForce`
+are `NodeReference`s, so a step enhancer's target step is named ([DIV-239](/conformance/divergence-register/)). The earlier
+design names `requiredUngrounded`, `unheldRequired` and `deadPins` are the contract's `requiredNotInForce`,
+`requiredNotHeld` and `pinNotHeld`. *Pinned by:* `ClosureViewSessionStepRefsTest`
+(`aRequiredStepThatIsNotInForceIsDroppedAndARequiredArtifactIsKept`, `thePolicyAndPresetSchemasCannotNameAStepSoTheFloorHoldsNone`,
+`theTargetsOfAnEnhancerNameTheStepsItEnhancesAndTheArtifactsAlike`,
+`aStepEnhancementOfAStepNoPackHoldsNamesThatStepInTheReportOfTheRealResolution`) and the scenario `#429 - a target of an enhancer
+without a target in force is a NodeReference, on the report and on the context`.
 
-**E15 Graph projection.** `nodes = Eff`; `edges = {(x, r, y) ∈ E_M | x, y ∈ Eff}`; `layerOverrides = {(u, winner,
-loser) | u ∈ Eff}`, one record per losing version.
-The graph holds only the edges among artifacts in force, after C19–C20, and lists the layer overrides applied.
-*Source:* decision `DM-01M6R0TNEBR7KGJMW2SQXQGJ0A`; spec FR-018, US5 AS1–AS3; research R3. **Ruled, not built.**
+**E15 Graph projection.** `Nd(D, M) = Eff ∪ {action:M'/s | held(C, M', s) ∧ mission_type:M' ∈ Eff}`: the nodes are the
+artifacts in force and the held steps of the mission types in force (the node predicate). `nodes = Nd`; `edges = {(x, r, y) ∈ E_M | x, y ∈ Nd}`;
+`layerOverrides = {(u, winner, loser) | u ∈ Nd}`, one record per losing version.
+The graph holds only the edges among nodes in force, after C19–C20, and lists the layer overrides applied. `Eff` never
+holds a step (a step is no activatable artifact), so a step is a node exactly while its mission type is in force, and an edge
+may start at one (a step `scope`s its artifacts). A template, an asset, a guard and a lifecycle have no activation state:
+they are never nodes, and their layer overrides are not listed, even when a lock puts one in force inside `packs`
+([DIV-240](/conformance/divergence-register/)). Nodes, edges and layer overrides are sorted (by URN; by source, relation and target;
+by artifact, then the loser's level and pack), so the answer is byte-stable. The predicate is built in `packs` from the
+in-force states, never handed in.
+*Source:* decision `DM-01M6R0TNEBR7KGJMW2SQXQGJ0A`; spec FR-018, US5 AS1–AS3; research R3; decisions `01M702A71YF7WNDTG2AA89K8ZA`
+(the node predicate) and `01M7037ZNKJ6JTRKGD7G695ZV1` (it amends the first: only the start node and the graph take the held
+steps), `01M7037V93Y077H8M4W9V8Y6B3` (the step predicate, OD-9). **Built (PR C).** *Pinned by:* `GraphProjectionTest`,
+`ClosureViewTest` (`theGraphHoldsTheArtifactsInForceAndTheHeldStepsOfAMissionTypeInForceAndNothingElse`,
+`theGraphHoldsNoStepWhileTheMissionTypeIsOutOfForce`,
+`aKindWithNoActivationStateIsAbsentFromTheGraphAndTheWalkEvenWhenALockPutsItInForceInsidePacks`,
+`theLayerOverridesFollowTheNodesOfTheGraph`), `StepHoldingTest` (the per-pack and the closure form),
+`ClosureViewSessionStepRefsTest` (`theGraphListsTheOverrideOfAHeldStepAndOfAnArtifactInForce`,
+`theGraphListsNoOverrideOfATemplateAnAssetAGuardALifecycleOrAnArtifactOutOfForce`) and the scenarios `US5 AS1`, `US5 AS2` (two).
 
-**E16 Action context.** `getEffectiveActionContext(mt, a)` is ADR-0018's five-step walk from `action:mt/a` over
-`E_M` restricted to `Eff`, each listed artifact with `enhancedBy` (E12); `mission_type:mt ∉ Eff ⇒ artifacts = []` and
-`missionTypeNotInForce = {mt}`; an unknown `mt` or `a` is `404 mission_type_not_found` or `action_not_found`.
+**E16 Action context.** `getEffectiveActionContext(mt, a)` is ADR-0018's five-step walk from the held step `action:mt/a`,
+started only when `mission_type:mt ∈ Eff`, over `E_M` restricted to `Eff`: the walk lists and walks `Eff` only, and the start
+node is its one step (E15). Each listed artifact brings its `enhancedBy` (E12); the start step's own enhancers are in
+`enhancements`, one `{target, enhancedBy}` per node with an enhancer in force. A **suggestion** is an artifact the listing
+gives a suggestion (E11: `not_selected`, reached through no hard relation by any artifact in force) that a listed entry reaches
+through a `suggests` edge; it carries the nearest edge's `when` and `reason`, is not walked through, and so the context's
+suggestions are a subset of the listing's. Entries are sorted by full URN string (ADR-0018 D3). `mission_type:mt ∉ Eff ⇒
+artifacts = [], enhancements = []` and `missionTypeNotInForce = {mt}`; an unknown `mt`, or an `a` no pack holds as a step
+of `mt` (OD-9: `held(C, mt, a)`), is `404 mission_type_not_found` or `action_not_found`, judged on the merged closure
+whether or not `mt` is in force and before a `304`.
 Whether a mission type is in force is read from the effective set, the one predicate E6 and E9 use; the walk stays on
 the packs side.
-*Source:* ADR-0018 D1, D2, D5; spec FR-019, US5 AS4–AS5; research open review item 4; A7, decision `DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY`. **Planned,
-not built.**
+*Source:* ADR-0018 D1, D2, D3, D5; spec FR-019, US5 AS4–AS5; research open review item 4; A7, decision
+`DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY`; decisions `01M7059T4K64TAVKXN3T1FKWYG` (suggestions), `01M70CTZP7P2EHSCK2G0RET74B` (the
+listing's scope), `01M70C42KC78KB9H6KB7TK9224` (`enhancements`), `01M6Y6VE6VZQ4MXD98N93JB3GJ` (one suggestion definition).
+**Built (PR C)** ([DIV-243](/conformance/divergence-register/), [DIV-244](/conformance/divergence-register/)). *Pinned by:*
+`ActionContextWalkTest` (the five steps, `theEntriesAreSortedByFullUrnStringWhateverStepListedThem`,
+`theWalkStartsAtAHeldStepWhoseWinnerIsAPackThatDoesNotDefineTheMissionType`, `anActionDeclaredWhereNoPackDefinesItsMissionTypeIsActionNotFound`,
+`aMissionTypeNotInForceAnswersNoEntry`), `StepHoldingTest`, `ClosureViewTest.theWalkStartsAtTheHeldStepOfAMissionTypeInForceAndListsOnlyArtifactsInForce`,
+`EffectiveSetTest.anArtifactAnotherArtifactInForceRequiresOutsideTheContextIsNoSuggestionOfTheContextAndOneNobodyRequiresIs`,
+`EffectiveContextTest`, `EffectiveReadServiceTest.anUnknownNameIsRefusedBeforeTheTagIsComparedWhateverIfNoneMatchSays` and
+`ClosureViewSessionStepRefsTest.theNamesOfAnActionAreJudgedAgainstTheMergedClosureAndNothingElse`; the scenarios `US5 AS4` and `US5 AS5` (two).
 > ⚠ **Unclear:** FR-019 says the context is what "the step contract names"; the plan reads it as the ADR-0018 walk.
 > The data model allows `depth` 0 or 1, while ADR-0018 D4 allows 0 to 2.
 
 **E17 Validators.** `ETag = sha256("charter-effective-read\0v1\n", read, rev(D), closureFingerprint(C), query)`; a weak match
 on `If-None-Match` answers `304` with no body.
 An effective answer changes with the document or the packs of its closure, and nothing else. `query` is the normalized
-`kind`, `state`, cursor and page size, so each representation has its own tag. `getActivation`'s tag has the same
+`kind`, `state`, cursor and page size, so each representation has its own tag; the graph's `read` has no query, and the context's is
+`(mt, a, depth)`. `getActivation`'s tag has the same
 recipe with no query; an activation write's `If-Match` takes `*`, `rev(D)` or that tag, and a closure tag that no
 longer matches is `412`.
 *Source:* ADR-0059 D5 and its amendment of 2026-11-08; research R5; decisions `01M6Y11E55YP5TG1EJ1MDKCFRP`,
@@ -892,7 +1010,8 @@ longer matches is `412`.
 
 **E18 Read refusals.** `404 activation_not_found` for an unknown activation; `500` with the composition code, or
 `pack_unreadable` for C21, C28 or E7, when `C` cannot compose or merge.
-*Source:* spec FR-021. **Built (PR B).** `getActivation` answers the same `500`s.
+*Source:* spec FR-021. **Built (PR B).** `getActivation` answers the same `500`s. **Built (PR C)** for the graph and the context
+(the context adds the `404`s of E16).
 
 **E19 One verified read.** Each effective read composes and merges `C` once, from one verified read (G15), retried up
 to 3 times on `stale_input`.
@@ -1018,7 +1137,7 @@ activations it affects (G20), and every stored deny entry that the floor overrid
 | C28 Override cycle | spec FR-016; A2 | Built (registration PR A, read PR B) |
 | C29 Winning preset | ADR-0053 d6 | Built |
 | C30 Governing preset | ADR-0031; ADR-0042 §2 | Built |
-| C31 Required set | ADR-0031; DIV-205; `DM-01M6R0TK6F`; A1, A10 | Built (PR B) for the reads, the writes' floor refusal and the registration notices (the A1 union); held-only built (PR A0); `/offering` keeps the winning copies |
+| C31 Required set | ADR-0031; DIV-205; `DM-01M6R0TK6F`; A1, A10; D16; `01M6ZCXAJ9` | Built (PR B) for the reads, the writes' floor refusal and the registration notices (the A1 union); held-only built (PR A0); activatable kinds only built (PR C, D16); `/offering` keeps the winning copies |
 | C32 Floor at write | ADR-0012 d7 | Built |
 | C33 Offering stays a catalog | ADR-0020 D1; FR-023 | Built |
 | C34 Same-level preset conflict | operator 2026-11-06; `refusePresetContests` | Built |
@@ -1050,7 +1169,7 @@ activations it affects (G20), and every stored deny entry that the floor overrid
 | W3 Canonical form | ADR-0020 D4; operator 2026-11-06; `ArtifactSpellings` | Built (spellings normalized; DIV-208 withdrawn) |
 | W4 No empty deny list | ADR-0020 D4 | Built |
 | W5 Ids in the closure | ADR-0020 D9; `DocumentRules.check` | Built; `unknown_artifact` for a mission type (PR A0) |
-| W6 Floor refusal, whole document | ADR-0012 d7; ADR-0013 d5; ADR-0020 D9; DIV-204; A4 | Built (PR A0); relaxed by W26 |
+| W6 Floor refusal, whole document | ADR-0012 d7; ADR-0013 d5; ADR-0020 D9; DIV-204; A4 | Built (PR A0); relaxed by W26 (PR C) |
 | W7 Precondition order | ADR-0020 D6, D9 | Built |
 | W8 Create and replace order | ADR-0020 D3, D6, D9 | Built |
 | W9 One snapshot | activation mission NFR-007 | Built |
@@ -1064,13 +1183,13 @@ activations it affects (G20), and every stored deny entry that the floor overrid
 | W17 Apply a preset | ADR-0059 D6; ADR-0020 D6; A7 | Built (PR A0) |
 | W18 A preset walks nothing | ADR-0013 d2 | Built |
 | W19 Cascade relations | ADR-0059 D2, A4; DIV-207 | Built |
-| W20 Reach as a least fixed point | ADR-0059 D2.1, D2.3, D2.4; DIV-206; A7 Q1 | Built; the step term built (PR A0) |
+| W20 Reach as a least fixed point | ADR-0059 D2.1, D2.3, D2.4; DIV-206; A7 Q1; OD-9 `01M7037V93` | Built; the step term built (PR A0); held steps only (PR C, DIV-242) |
 | W21 Stops and scope | ADR-0013 d4; ADR-0059 A2; A7 | Built; `mission_type` in scope built (PR A0) |
 | W22 `includeDeactivated` | operator ruling A3; B5 | Built; B5 narrowing built (PR A0) |
 | W23 Deactivate candidates | ADR-0059 A2; finding F2 | Built |
 | W24 The shared-walk keep set | ADR-0059 A2, A4 | Built |
-| W25 Floor refusal on a write | ADR-0059 D4; DIV-204 | Built; relaxed by W26 |
-| W26 Relaxed required rule | `DM-01M6R3YX23`; research R12 | Ruled, not built |
+| W25 Floor refusal on a write | ADR-0059 D4; DIV-204 | Built; relaxed by W26 (PR C) |
+| W26 Relaxed required rule | `DM-01M6R3YX23`; research R12; ADR-0059 R6 | Built (PR C) |
 | W27 Change report | FR-011 to FR-017; A5 | Built |
 | W28 Skipped report of a write | ADR-0013 d4; ADR-0020 D6 | Built |
 | W29 No-op | FR-011; A5 | Built |
@@ -1084,19 +1203,19 @@ activations it affects (G20), and every stored deny entry that the floor overrid
 | E3 Base set | ADR-0012 d7; ADR-0020 D7; Q6 | Built (PR B) |
 | E4 Override hiding | `DM-01M6R0TGX3`, `DM-01M6R2X2SW`; A3, A6 | Built (PR B) |
 | E5 Requirement | operator 2026-11-06; `DM-01M6R3YTNT`; A2, A3 | Built (PR B) |
-| E6 Enhancer and binding pruning | operator 2026-11-06; `DM-01M6R3YTNT`, `DM-01M6R4W3ZM`; A8; A7 Q1 | Built (PR B) |
+| E6 Enhancer and binding pruning | operator 2026-11-06; `DM-01M6R3YTNT`, `DM-01M6R4W3ZM`; A8; A7 Q1; OD-6 `01M702A8XY` | Built (PR B); the step enhancer's binding and the unheld target built (PR C) |
 | E7 Withdrawn overrides | research R13; A2, A8, A11 | Built (PR B) |
-| E8 The effective set | research R2, R11, R12, R13 | Built (PR B) |
+| E8 The effective set | research R2, R11, R12, R13 | Built (PR B); asked by W26 (PR C) |
 | E9 State and reason | ADR-0020 D7; data model; A7; research R11 | Built (PR B) |
 | E10 In force | `DM-01M6R2WPZM` | Built (PR B) |
 | E11 The listing | `DM-01M6R2WPZM`, `DM-01M6R0TNEB`; ADR-0059 D5 | Built (PR B) |
-| E12 Enhancement, both ways | operator ruling A4; FR-015 | Partly built (PR B): no pull; the two-ended read is PR C |
+| E12 Enhancement, both ways | operator ruling A4; FR-015; `01M70C42KC` | Built (PR B) for the list and the report (no pull); built (PR C) for the two-ended read |
 | E13 Floor satisfaction | operator 2026-11-06 (Q6, Q8); `DM-01M6R4W3ZM` (A9) | Built (PR B) |
-| E14 Skipped buckets | `DM-01M6R0TNEB`; FR-017 | Built (PR B) |
-| E15 Graph projection | `DM-01M6R0TNEB`; FR-018 | Ruled, not built |
-| E16 Action context | ADR-0018 D1, D2; FR-019; A7 | Planned, not built |
-| E17 Validators | ADR-0059 D5 and its amendment of 2026-11-08; FR-020 | Built (PR B) |
-| E18 Read refusals | FR-021 | Built (PR B) |
+| E14 Skipped buckets | `DM-01M6R0TNEB`; FR-017; D16 | Built (PR B); activatable kinds only and step targets built (PR C) |
+| E15 Graph projection | `DM-01M6R0TNEB`; FR-018; `01M702A71Y`, `01M7037ZNK` | Built (PR C) |
+| E16 Action context | ADR-0018 D1, D2, D3; FR-019; A7; `01M7059T4K`, `01M70CTZP7`, `01M7037V93` | Built (PR C) |
+| E17 Validators | ADR-0059 D5 and its amendment of 2026-11-08; FR-020 | Built (PR B); the graph and the context built (PR C) |
+| E18 Read refusals | FR-021 | Built (PR B); the graph and the context built (PR C) |
 | E19 One verified read | NFR-007; `DM-01M6R2X563` | Built (PR B) |
 | E20 Writes walk merged edges | research R2; `DM-01M6R4W1H9` | Built (PR B) |
 | E21 Deny entries not applied | B4 | Built (PR B) |
@@ -1119,19 +1238,21 @@ Decision ids are shortened to their first twelve characters in the table; the fu
   [ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/),
   [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) with its
   [amendment of 2026-11-06](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/#amendment-2026-11-06) (A2 to
-  A5), [ADR-0061](/adr/0061-one-replica-per-deployment/), [ADR-0063](/adr/0063-pack-mutability-policy-file/).
+  A5) and its [amendment R6 of 2026-11-09](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/#amendment-2026-11-09-r6)
+  (the write rule of W26 and the read rules of research R11 for D2 and D3), [ADR-0061](/adr/0061-one-replica-per-deployment/),
+  [ADR-0063](/adr/0063-pack-mutability-policy-file/).
 - Design: [Logical model](/architecture/logical-model/), [Resolution model](/architecture/resolution-model/),
   [Offering and activation](/architecture/offering-and-activation/).
-- Divergences: [Divergence register](/conformance/divergence-register/) (DIV-201 to DIV-215).
+- Divergences: [Divergence register](/conformance/divergence-register/) (DIV-201 to DIV-244).
 - Missions: `kitty-specs/activation-register-and-closure-01M6NXBD/` (spec, research) and
   `kitty-specs/layer-merge-and-effective-reads-01M6R0J6/` (spec, the resolved decisions under `decisions/`, plan,
   research, data model).
 - Code, `service/packs`: `PackCompositionResolver`, `ComposeResolver`, `ClosureQueries`, `ClosureView`,
   `RequiredFloor`, `PerPackPolicy`, `Reachability`, `ReachRequest`, `PackMutabilityPolicy`, `MutabilityLevel`.
-  `service/activations`: `DocumentRules`, `CascadeRules`, `StaleIds`, `PresetRules`, `ActivationWrites`,
-  `ActivationExclusionService`.
-- Operator rulings of 2026-11-06 not yet in an ADR: registration is a full replacement (planned ADR-0065), the floor
-  and override rules Q6, Q8 and Q9 (planned ADR-0059 amendment A6), and the answers to the ruleset consistency review
+  `service/activations`: `DocumentRules`, `InForceFacts`, `CascadeRules`, `StaleIds`, `PresetRules`, `ActivationWrites`,
+  `ActivationExclusionService`, `EffectiveSet`, `EffectiveContext`. PR C adds, in `service/packs`: `StepHolding`, `GraphProjection`,
+  `ActionContextWalk`, `InForceResolution`'s step enhancer binding.
+- Operator rulings of 2026-11-06 not yet in an ADR: registration is a full replacement (planned ADR-0065), and the answers to the ruleset consistency review
   (`research/ruleset-review-2026-11-06.md` of the layer-merge mission; decisions `DM-01M6RA7FHR…` to `DM-01M6RAA6Y7…`).
 - Code read for the fidelity corrections: `PackCompositionResolver` (`refuseContests`, `refusePresetContests`,
   `refuseCaseOnlyMatches`, `dependenciesOf`, `dependsOnClosure`), `ClosureQueries.winningPresets`, `RequiredFloor.of`,

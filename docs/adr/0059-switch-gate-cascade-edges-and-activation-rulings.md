@@ -2,7 +2,7 @@
 title: "ADR-0059: The switch gate, the cascade edges, the layer-override grain and the activation write rulings"
 description: "Operator rulings of 2026-11-04 to 2026-11-07: BDD scenarios and contract tests gate each core switch; cascade edges; whole-artifact layer overrides; ADR-0020 questions 4 to 7."
 doc_status: active
-updated: 2026-11-08T00:00:00Z
+updated: 2026-11-09T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-11-04'
 type: ADR
@@ -39,7 +39,9 @@ On 2026-11-07 the layer-merge mission's PR A0 built the rulings that change what
 B5), the one kind model (A7) and a `depth` on the cascade (#408); the [amendment of 2026-11-07](#amendment-2026-11-07)
 records them, and D2, D4 and D6 carry a note where it changes them. On 2026-11-08 the mission's PR B built the layer
 merge and two effective reads; the [amendment of 2026-11-08](#amendment-2026-11-08) records the two operator decisions
-that change D5 and ticks the follow-ups PR B closes.
+that change D5 and ticks the follow-ups PR B closes. On 2026-11-09 its PR C built the effective graph and action context
+and the relaxed write rule; the [amendment R6](#amendment-2026-11-09-r6) records the write rule and the read rules of
+research R11 that amend D2 and D3.
 
 This record answers [ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/) open question 1 and
 [ADR-0020](/adr/0020-offering-and-activations/) open questions 4 to 7. It also settles two points that
@@ -196,6 +198,9 @@ only when it is itself active. See the [amendment](#amendment-2026-11-06).
   *Amended 2026-11-08 (DIV-233):* "served unchanged" holds only while the closure can be read. `getActivation` also
   answers `500` for a document that names a pack that is no longer configured, for a closure whose layer merge refuses
   and for an in-force refusal, and then serves no document; see the [amendment](#amendment-2026-11-08).
+  *Amended 2026-11-09 (R6, operator ruling Q9):* a deny entry on a required, not locked artifact is accepted when an
+  active override of it satisfies the requirement in the document as it will be stored; see the
+  [amendment R6](#amendment-2026-11-09-r6).
 
 ADR-0020 D6's round trip ("a `PUT` of a fetched `config` answers `200` with the same `ETag`") holds for a document
 the offering has not made stale; ADR-0020 D6 carries a note.
@@ -384,6 +389,60 @@ its PR B.** They amend D5 as stated; the rest of this record stands. The contrac
   tag, and a closure tag that no longer matches is `412`. A write's answer keeps the revision as its `ETag` and carries
   no `denyNotApplied`.
 
+## Amendment 2026-11-09 (R6)
+
+**The write rule of operator ruling Q9, and the read rules of research R11 that amend D2 and D3, built by PR C of the
+layer-merge mission (`layer-merge-and-effective-reads-01M6R0J6`).** The labels `R6`, `R11` and `R12` are that mission's
+research items (`research.md`), not the A-numbers of the amendments above; `R11` carries the operator rulings Q6 and Q8
+of 2026-11-06 and `R12` carries Q9. The contract change is
+`contracts/charter/changes/2026-11-07-c-deny-satisfied-by-override.md` (`### Changed`: #399's shipped write behavior
+changes), the divergence is DIV-204 (updated) with DIV-239 to DIV-244, and the rules are W26, E5 to E6 and E12 to E16 of
+[Composition and activation rules](/architecture/composition-and-activation-rules/). ADR-0065 is about pack
+registration and is not the place.
+
+- **D4. A deny entry a lock refuses and a requirement an override satisfies** (decision `DM-01M6R3YX23H46PXGNEFC31E6CT`,
+  operator, Q9: relax it, for an override only, and assuming `T` is not locked, since overrides are not permitted on locked artifacts). D4's
+  "one that denies a required or locked artifact `409`" holds for a locked artifact, and for a required one unless an
+  active override of it satisfies the requirement.
+  - The test is the in-force resolution's, over the document as it will be stored after the write: the required `T` is
+    satisfied when an artifact in force overrides it, directly or through a chain, and "in force" is the read's
+    (selected or required, within the language filter, bound to a mission type in force, not denied, not hidden by an
+    override). An enhancement never satisfies. A locked `T` is refused `409 artifact_locked` whatever overrides it.
+  - The write and the read cannot disagree: the write asks the same `InForceResolution` the reads share, through the
+    `PacksSession` of its request, and a deny entry it accepts is one the next read applies.
+  - Scope, as DIV-204: a create judges every deny entry of its body; a replace, a deactivate, a preset applied with
+    `force` and a select with `includeDeactivated` judge only the deny entries they add (A4 of the amendment of
+    2026-11-07). A replace that adds the override and the deny entry together is accepted.
+  - Removing the override later is not refused. The stored deny entry is then not applied: the read puts `T` back in
+    force and lists the entry in `denyNotApplied` with the reason `required`, and a write judges only what it adds.
+  - The resolution is asked only when a write adds a deny entry on a required, not locked artifact, so a closure whose
+    layer merge refuses (D3, `500 pack_unreadable`) reaches that write and no other. `CascadeRules` is unchanged: a
+    floor artifact is never a cascading-deactivate candidate.
+  - ADR-0013 D2 and ADR-0020 D7 say a required artifact is "never subtracted" and "active whatever the document says".
+    The rulings of 2026-11-06 let an active override hide a required artifact, so those texts read as this amendment
+    qualifies them: a required artifact is out of force exactly while an artifact in force overrides it.
+- **D2 and D3 at read: what R11 rules** (operator rulings Q6 and Q8, decision `DM-01M6R3YTNT1P2MBERBN7WV71ND`).
+  - **Required is a requirement.** A governing preset's must-have item is satisfied by itself in force or by an artifact
+    in force that overrides it (D3: an `overrides` edge of the merged closure hides its target at read, as a layer
+    override replaces it whole); otherwise it is put in force. A locked artifact is always in force and no override is
+    applied to it; a deny entry on it is not applied.
+  - **An enhancer needs its target** (D2.2, superseded by A4 for the pull; the read side stays): an artifact that
+    `enhances` is in force only while a target of its enhancement is; a ring holds nothing up. A step enhancer's target is
+    a step, which is never in force, so it is grounded by its mission type: exactly when the mission type of its single
+    `enhances` target is in force (OD-6, decision `01M702A8XYB588PSGTXRKQ4NKK`), and pruned otherwise, an unheld target
+    step included.
+  - **The effective graph and the action context** (D3 and ADR-0018): the graph is the merged edges among the nodes in
+    force, resolved through the layer overrides, with the overrides applied; its nodes are the artifacts in force and the
+    held steps of the mission types in force (decisions `01M702A71YF7WNDTG2AA89K8ZA`, `01M7037ZNKJ6JTRKGD7G695ZV1`). The
+    context is ADR-0018's walk from the held step over the artifacts in force, with the enhancers in force of each node
+    read from the node's side (`enhancements`, decision `01M70C42KC78KB9H6KB7TK9224`) and the suggestions the listing
+    gives (decisions `01M6Y6VE6VZQ4MXD98N93JB3GJ`, `01M7059T4K64TAVKXN3T1FKWYG`, `01M70CTZP7P2EHSCK2G0RET74B`). The context's
+    `depth` counts `suggests` hops as D4 of ADR-0018 says; the contract allows 0 and 1.
+  - A step is held by a pack that defines its mission type and declares it, and by the closure when some pack holds it
+    (decision `01M7037V93Y077H8M4W9V8Y6B3`), so the cascade of D2.1 follows only held steps.
+- **Floor of activatable kinds** (D16 of the PR C plan): the policy and preset schemas cannot name a step, so the
+  required floor holds activatable kinds only and `requiredNotInForce` never names a step.
+
 ## Consequences
 
 ### Positive
@@ -450,8 +509,10 @@ its PR B.** They amend D5 as stated; the rest of this record stands. The contrac
 - Amendment of 2026-11-07: PR A0 builds B5, A4, B1, A7 and `depth`; the reads' halves (`pinNotHeld`, the language filter
   at read, the conditional `suggests` entries) are for PRs B and C; the ruleset page's floor and override rules Q6, Q8
   and Q9 remain the planned amendment A6. *PR B (2026-11-08) built `pinNotHeld`, the language filter at read, the
-  suggestion on the effective list, and Q6 and Q8. The action context's suggestion and Q9 (a deny entry an override
-  satisfies, the relaxed write rule) are not built.*
+  suggestion on the effective list, and Q6 and Q8. PR C (2026-11-09) built the action context's suggestion and Q9 (a deny
+  entry an override satisfies, the relaxed write rule); the [amendment R6](#amendment-2026-11-09-r6) records them.*
+- Amendment R6 of 2026-11-09: the write rule of Q9 and the read rules of R11 for D2 and D3 (done here); PR C built the effective
+  graph and the action context (D3 and ADR-0018).
 - Amendment of 2026-11-08: amend D5 for the closure tag and ADR-0020 D6 for the either-tag `If-Match` (done here).
 
 ## References
