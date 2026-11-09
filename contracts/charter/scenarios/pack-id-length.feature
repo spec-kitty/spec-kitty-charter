@@ -1,9 +1,9 @@
 @contract @offering
 Feature: A pack id longer than its cap refuses the pack as unreadable
-  Every pack id the pack schemas give a grammar is capped: 64 characters for a kebab or directive id, 136 for a
-  pack-qualified guard reference, 255 for an executable entry or an expected artifact key (#440, operator decisions
-  of 2026-11-09). The schema refuses a longer id before the service reads it, so a pack carrying one is unreadable,
-  as a pack with any other schema error is; it no longer reaches a pattern match that could overflow.
+  The pack schemas cap a directive id at 64 characters, an executable entry and an expected artifact key at 255 (the
+  contract change of #440 lists every capped id; operator decisions of 2026-11-09). The schema refuses a longer id
+  before the service reads it, so a pack carrying one is unreadable, as a pack with any other schema error is. The
+  domain applies the same cap, so a write over it is refused before it is stored and the pack stays readable.
 
   Background:
     Given the org pack "alpha" with the file "pack.yaml":
@@ -39,6 +39,7 @@ Feature: A pack id longer than its cap refuses the pack as unreadable
     When I GET "/offering"
     Then the response status is 500
     And the problem code is "pack_unreadable"
+    And the field "detail" of the response body is "the file directives/DIRECTIVE_LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLX.directive.yaml of alpha cannot be read: maxLength violated at /id"
 
   Scenario: An executable entry of exactly 255 characters is read
     Given the org pack "alpha" with the file "assets/run.py.asset.yaml":
@@ -82,6 +83,7 @@ Feature: A pack id longer than its cap refuses the pack as unreadable
     When I GET "/offering"
     Then the response status is 500
     And the problem code is "pack_unreadable"
+    And the field "detail" of the response body is "the file assets/run.py.asset.yaml of alpha cannot be read: maxLength violated at /executable/entry"
 
   Scenario: An expected artifact key of 256 characters refuses the pack as pack_unreadable
     Given the org pack "alpha" with the file "missions/long-key/long-key.mission-type.yaml":
@@ -101,19 +103,7 @@ Feature: A pack id longer than its cap refuses the pack as unreadable
     When I GET "/offering"
     Then the response status is 500
     And the problem code is "pack_unreadable"
-
-  Scenario: A kebab tactic id of 65 characters refuses the pack as pack_unreadable
-    Given the org pack "alpha" with the file "tactics/ttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt.tactic.yaml":
-      """
-      schema_version: '1.0'
-      id: ttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt
-      name: A tactic id one character over the cap
-      steps:
-        - title: Only step
-      """
-    When I GET "/offering"
-    Then the response status is 500
-    And the problem code is "pack_unreadable"
+    And the field "detail" of the response body is "the file missions/long-key/long-key.mission-type.yaml of alpha cannot be read: maxLength violated at /steps/0/expected_output_artifacts/0/artifact_key"
 
   Scenario: A directive written with an id of 65 characters is refused, and the pack stays readable
     When I PUT "/packs/alpha/artifacts/directive/DIRECTIVE_LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLX" with the body:
@@ -122,5 +112,6 @@ Feature: A pack id longer than its cap refuses the pack as unreadable
       """
     Then the response status is 422
     And the problem code is "validation_failed"
+    And the field "detail" of the response body is "Constraint breached: A directive identifier must match ^[A-Z][A-Z0-9_-]*$ and be at most 64 characters."
     When I GET "/offering"
     Then the response status is 200

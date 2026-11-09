@@ -295,13 +295,15 @@ class GuardLifecycleSchemaTest {
                 "a b",
                 "a//b",
                 "a/",
-                "")) {
+                "",
+                "bin/" + "t".repeat(251),
+                "bin/" + "t".repeat(252))) {
             boolean schema = facts("asset", twin(ASSET, "  entry: carrier_lint.py", "  entry: '" + entry + "'"))
                     .isEmpty();
             boolean domain =
                     accepted(() -> new Executable(ExecutableRuntime.PYTHON, Optional.empty(), entry, List.of()));
             assertThat(domain)
-                    .as("entry '%s': the domain agrees with the schema (%s)", entry, schema)
+                    .as("entry '%s': the domain agrees with the schema (%s)", abbreviate(entry), schema)
                     .isEqualTo(schema);
         }
         for (String version : List.of("3", "3.11", "3.11.2", "3.11.2.1", "3.x", "v3", "3.", "")) {
@@ -313,6 +315,10 @@ class GuardLifecycleSchemaTest {
                     .as("min_version '%s': the domain agrees with the schema (%s)", version, schema)
                     .isEqualTo(schema);
         }
+    }
+
+    private static String abbreviate(String text) {
+        return text.length() > 40 ? text.substring(0, 20) + "... (" + text.length() + " characters)" : text;
     }
 
     /** The pointer of a fact, {@code <keyword> <pointer> <property>}. */

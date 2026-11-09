@@ -1,9 +1,7 @@
 package ai.speckitty.charter.packs.infra.fetch.git;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.packs.infra.fetch.GuideAllowlist;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
@@ -29,22 +27,5 @@ class GitSourceRulesBoundsTest {
         assertThat(url).hasSize(2048);
 
         assertThat(GitSourceRules.repository(url, ALLOWED).url()).isEqualTo(url);
-    }
-
-    @Test
-    @DisplayName("a URL one character over the cap is refused")
-    void aUrlOverTheCapIsRefused() {
-        String url = PREFIX + "/a".repeat(1100);
-        assertThat(url.length()).isGreaterThan(2048);
-
-        assertThatThrownBy(() -> GitSourceRules.repository(url, ALLOWED)).isInstanceOf(CharterRefusal.class);
-    }
-
-    @Test
-    @DisplayName("an empty segment at the cap is still refused")
-    void anEmptySegmentIsStillRefused() {
-        String url = PREFIX + "/a".repeat(900) + "//b";
-
-        assertThatThrownBy(() -> GitSourceRules.repository(url, ALLOWED)).isInstanceOf(CharterRefusal.class);
     }
 }

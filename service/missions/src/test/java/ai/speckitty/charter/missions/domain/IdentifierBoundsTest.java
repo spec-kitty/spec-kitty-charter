@@ -16,17 +16,13 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * Mission identifiers of any length are judged, never overflow the stack, and are capped (#440).
- *
- * <p>The repeated group in each grammar made the regex engine recurse once per repetition, so an id of about 10 000
- * characters threw {@link StackOverflowError}. Each type now matches possessively and checks a cap first: 64 for kebab
- * ids (each part of a guard reference), 255 for an expected artifact's dotted key.
+ * Mission identifiers are capped before they are matched (#440): 64 for kebab ids (each part of a guard reference),
+ * 255 for an expected artifact's dotted key. That they match possessively, so no length overflows the stack, is pinned
+ * by {@code RegexRecursionGuardTest} in build-logic.
  */
-@DisplayName("Mission identifiers are bounded: no overflow on long input, capped at 64 (255 for an artifact key)")
+@DisplayName("Mission identifiers are capped at 64 (255 for an artifact key)")
 class IdentifierBoundsTest {
 
-    private static final int SEGMENTS = 10_000;
-    private static final String LONG_KEBAB = "a" + "-a".repeat(SEGMENTS);
     private static final String AT_64 = "a" + "b".repeat(63);
 
     static Stream<Arguments> kebabTypes() {
@@ -50,13 +46,6 @@ class IdentifierBoundsTest {
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("kebabTypes")
-    @DisplayName("a 20 001-character kebab id is refused as a constraint breach, not a StackOverflowError")
-    void aVeryLongKebabIdIsRefused(String type, Consumer<String> construct) {
-        assertThatThrownBy(() -> construct.accept(LONG_KEBAB)).isInstanceOf(ConstraintBreachException.class);
-    }
-
-    @ParameterizedTest(name = "{0}")
-    @MethodSource("kebabTypes")
     @DisplayName("a kebab id of exactly 64 characters is accepted and one of 65 is refused")
     void aKebabIdIsCappedAt64(String type, Consumer<String> construct) {
         assertThatCode(() -> construct.accept(AT_64)).doesNotThrowAnyException();
@@ -64,38 +53,21 @@ class IdentifierBoundsTest {
     }
 
     @Test
-    @DisplayName("a guard reference with a 20 001-character id or pack part is refused, not a StackOverflowError")
-    void aVeryLongGuardReferenceIsRefused() {
-        assertThatThrownBy(() -> GuardReference.parse(LONG_KEBAB)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> GuardReference.parse(LONG_KEBAB + "::guard:review"))
-                .isInstanceOf(IllegalArgumentException.class);
-    }
-
-    @Test
-    @DisplayName("each part of a guard reference is capped at 64 and still captured whole at the cap")
-    void eachGuardReferencePartIsCappedAt64() {
-        assertThat(GuardReference.parse(AT_64 + "::guard:" + AT_64))
-                .isEqualTo(new GuardReference(Optional.of(AT_64), AT_64));
+    @DisplayName("a guard reference is captured whole at the caps; a part over 64, or a total over 136, is refused")
+    void aGuardReferenceIsCappedAtItsPartsAndItsTotal() {
+        String atLimit = AT_64 + "::guard:" + AT_64;
+        assertThat(atLimit).hasSize(136);
+        assertThat(GuardReference.parse(atLimit)).isEqualTo(new GuardReference(Optional.of(AT_64), AT_64));
         assertThat(GuardReference.parse(AT_64)).isEqualTo(new GuardReference(Optional.empty(), AT_64));
         assertThatThrownBy(() -> GuardReference.parse(AT_64 + "c")).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> GuardReference.parse(AT_64 + "c::guard:review"))
                 .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> GuardReference.parse(atLimit + "c")).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
-    @DisplayName("a guard reference longer than two parts and the separator is refused before matching")
-    void anOverlongGuardReferenceIsRefusedBeforeMatching() {
-        String atLimit = AT_64 + "::guard:" + AT_64;
-        assertThat(GuardReference.parse(atLimit)).isEqualTo(new GuardReference(Optional.of(AT_64), AT_64));
-        assertThatThrownBy(() -> GuardReference.parse(atLimit + "c"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("longer than");
-    }
-
-    @Test
-    @DisplayName("a 20 001-character dotted key is not dotted, not a StackOverflowError; the cap is 255")
-    void anArtifactKeyIsBoundedAndCappedAt255() {
-        assertThat(ExpectedArtifact.isDottedKey("a" + ".a".repeat(SEGMENTS))).isFalse();
+    @DisplayName("a dotted key of exactly 255 characters is dotted and one of 256 is not")
+    void anArtifactKeyIsCappedAt255() {
         String atCap = "spec." + "m".repeat(250);
         assertThat(atCap).hasSize(255);
         assertThat(ExpectedArtifact.isDottedKey(atCap)).isTrue();
