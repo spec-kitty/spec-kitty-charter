@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -225,9 +224,9 @@ class PackFileKindTest {
         assertThat(KINDS.classify("x.graph.yaml")).isInstanceOf(PackFileKind.Mapped.class);
         assertThat(KINDS.classify("a/b/c/d.graph.yaml")).isInstanceOf(PackFileKind.Mapped.class);
         assertThat(KINDS.classify("a/xdirective.yaml")).isEqualTo(PackFileKind.Unclassified.INSTANCE);
-        // The only group a glob emits is the optional directory prefix, which is never repeated; the build-logic
-        // RegexRecursionGuardTest allow-lists PackFileKind on that, so the emitted regex is pinned exactly.
-        assertThat(PackFileKind.glob("**/*.md").pattern()).isEqualTo("(?:.+/)?[^/]*" + Pattern.quote(".md"));
+        // The build-logic RegexRecursionGuardTest allow-lists PackFileKind on this: a very deep path neither
+        // overflows the stack nor goes unmapped.
+        assertThat(KINDS.classify("a/".repeat(20_000) + "d.graph.yaml")).isInstanceOf(PackFileKind.Mapped.class);
     }
 
     @Test

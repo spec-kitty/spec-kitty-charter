@@ -354,8 +354,7 @@ final class PackFileKind {
         return new Retired(rule.match(), rule.reason());
     }
 
-    /** A rule's glob as a regex: {@code **}{@code /} an optional directory prefix, {@code *} one segment's text. */
-    static Pattern glob(String match) {
+    private static Pattern glob(String match) {
         StringBuilder regex = new StringBuilder();
         int i = 0;
         while (i < match.length()) {

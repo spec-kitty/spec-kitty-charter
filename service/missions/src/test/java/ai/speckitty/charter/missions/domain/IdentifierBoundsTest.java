@@ -62,7 +62,9 @@ class IdentifierBoundsTest {
         assertThatThrownBy(() -> GuardReference.parse(AT_64 + "c")).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> GuardReference.parse(AT_64 + "c::guard:review"))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> GuardReference.parse(atLimit + "c")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> GuardReference.parse(atLimit + "c"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("not longer than 136");
     }
 
     @Test

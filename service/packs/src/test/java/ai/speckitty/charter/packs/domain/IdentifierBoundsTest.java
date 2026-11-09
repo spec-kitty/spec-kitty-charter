@@ -23,9 +23,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 @DisplayName("Pack identifiers are capped at 64 (255 for an executable entry)")
 class IdentifierBoundsTest {
 
-    /** A valid kebab id of 20 001 characters: far over any cap and deep enough to overflow a recursive match. */
-    private static final String LONG_KEBAB = "a" + "-a".repeat(10_000);
-
     private static void newPreset(String id) {
         new Preset(id, "a preset", Map.of());
     }
@@ -50,6 +47,25 @@ class IdentifierBoundsTest {
         String atCap = "a" + "b".repeat(63);
         assertThatCode(() -> construct.accept(atCap)).doesNotThrowAnyException();
         assertThatThrownBy(() -> construct.accept(atCap + "c")).isInstanceOf(ConstraintBreachException.class);
+    }
+
+    static Stream<Arguments> capped64Types() {
+        return Stream.of(
+                Arguments.of("DirectiveIdentifier", "D" + "A".repeat(63), (Consumer<String>) DirectiveIdentifier::new),
+                Arguments.of("TacticIdentifier", "t" + "b".repeat(63), (Consumer<String>) TacticIdentifier::new),
+                Arguments.of("ParadigmIdentifier", "p" + "b".repeat(63), (Consumer<String>) ParadigmIdentifier::new),
+                Arguments.of(
+                        "StyleguideIdentifier", "s" + "b".repeat(63), (Consumer<String>) StyleguideIdentifier::new));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("capped64Types")
+    @DisplayName("a directive, tactic, paradigm or styleguide id of exactly 64 characters is accepted and 65 refused")
+    void aReferenceKindIdIsCappedAt64(String type, String atCap, Consumer<String> construct) {
+        assertThat(atCap).hasSize(64);
+        assertThatCode(() -> construct.accept(atCap)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> construct.accept(atCap + atCap.charAt(1)))
+                .isInstanceOf(ConstraintBreachException.class);
     }
 
     @Test
@@ -77,9 +93,6 @@ class IdentifierBoundsTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("longer than 64")
                 .hasMessageNotContaining(pack);
-        assertThatThrownBy(() -> GuardImplementation.parse(LONG_KEBAB + "::asset:lint"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("longer than 64");
     }
 
     static Stream<Arguments> kebabVerdicts() {

@@ -105,6 +105,20 @@ Feature: A pack id longer than its cap refuses the pack as unreadable
     And the problem code is "pack_unreadable"
     And the field "detail" of the response body is "the file missions/long-key/long-key.mission-type.yaml of alpha cannot be read: maxLength violated at /steps/0/expected_output_artifacts/0/artifact_key"
 
+  Scenario: A kebab tactic id of 65 characters refuses the pack as pack_unreadable
+    Given the org pack "alpha" with the file "tactics/ttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt.tactic.yaml":
+      """
+      schema_version: '1.0'
+      id: ttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt
+      name: A tactic id one character over the cap
+      steps:
+        - title: Only step
+      """
+    When I GET "/offering"
+    Then the response status is 500
+    And the problem code is "pack_unreadable"
+    And the field "detail" of the response body is "the file tactics/ttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt.tactic.yaml of alpha cannot be read: maxLength violated at /id"
+
   Scenario: A directive written with an id of 65 characters is refused, and the pack stays readable
     When I PUT "/packs/alpha/artifacts/directive/DIRECTIVE_LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLX" with the body:
       """
