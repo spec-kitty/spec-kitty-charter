@@ -408,6 +408,18 @@
       "verdict": "not-applicable",
       "wp": null
     },
+    "#424": {
+      "evidence_ref": "The step-enhancements mission's phase (#437); context only",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": "WP29"
+    },
     "#425": {
       "evidence_ref": "ADR-0066 contracts and step_enhancement kind, landed before #427; outside this mission",
       "fr": null,
