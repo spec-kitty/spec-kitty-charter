@@ -96,13 +96,13 @@
     },
     {
       "criterion_id": "FR-010",
-      "description": "Verify FR-010 is satisfied",
+      "description": "Under a layer override, edges starting at the overridden version are dropped and edges ending at the overridden artifact resolve to the winning version.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "contracts/charter/scenarios/effective-graph-and-context.feature: \"US5 AS2 - the edge from an overridden version is gone, the edge to it ends at the winner, and the override is listed\"; service/packs/src/test/java/ai/speckitty/charter/packs/application/ClosureViewMergedTest.java#aReachOverTheMergedEdgesNeverFollowsAnEdgeOfAnOverriddenArtifact",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:45:48.066653+00:00",
+      "notes": "PR B (#427, WP21) merge; read surface PR C (#448, WP27/WP28)."
     },
     {
       "criterion_id": "FR-011",
