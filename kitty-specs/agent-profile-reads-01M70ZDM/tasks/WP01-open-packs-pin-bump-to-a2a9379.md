@@ -25,8 +25,6 @@ execution_mode: code_change
 model: ''
 owned_files:
 - gradle.properties
-- packs/internal/**
-- packs/qa/**
 - packs/open-packs.lock.yaml
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackOpenPacksRoundTripTest.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackManifestParityTest.java
@@ -76,8 +74,9 @@ and the qa profiles qualify their references to `built-in::`.
 2. Run `./gradlew --max-workers=1 syncPacks -PupdatePacksLock=true -PopenPacksDir=/home/user/spec-kitty-open-packs`.
    - It runs `git archive` on the local clone, so it needs no network.
    - It rewrites `packs/internal`, `packs/qa` and `packs/open-packs.lock.yaml` (the commit and the two tree digests).
-3. Check the diff:
-   - Only upstream changes appear under `packs/internal` and `packs/qa`.
+3. `packs/internal` and `packs/qa` are gitignored (`.gitignore` lines 58-62): only `packs/open-packs.lock.yaml`
+   changes in git.
+   - Check that the synced trees match the lock with `./gradlew syncPacks -PcheckPacks=true`.
    - `spdd` is not vendored, and that is expected.
 4. Commit this as the first commit of the PR: `build(packs): pin open-packs at a2a9379 (#435, #405)`.
    - If the tests below go red at this commit, fold T002 and T003 into the same commit, so no commit is red.
