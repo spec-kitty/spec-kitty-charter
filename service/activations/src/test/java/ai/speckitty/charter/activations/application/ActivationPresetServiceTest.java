@@ -38,11 +38,13 @@ class ActivationPresetServiceTest {
     void setUp() {
         packs = new FakeAvailablePacks(ClosureSnapshots.snapshot()
                 .pack("main", "1.0.0")
-                .held(ArtifactKind.DIRECTIVE, "A", "B", "C", "M")
+                .held(ArtifactKind.DIRECTIVE, "A", "B", "C", "M", "F", "T")
+                .requiredBy("directive:T", "main")
                 .held(ArtifactKind.SKILL, "pr-review")
                 .held(ArtifactKind.GLOSSARY_PACK, "core-terms")
                 .held(ArtifactKind.MISSION_TYPE, "software-dev")
                 .preset(new PresetView("team", Map.of(ArtifactKind.DIRECTIVE, Set.of("B", "C"))))
+                .preset(new PresetView("keep-f", Map.of(ArtifactKind.DIRECTIVE, Set.of("F"))))
                 .preset(new PresetView("stale", Map.of(ArtifactKind.DIRECTIVE, Set.of("GONE"))))
                 .preset(new PresetView(
                         "every-kind",
@@ -114,6 +116,22 @@ class ActivationPresetServiceTest {
 
         assertThat(outcome.change().cleared()).containsExactly(new ArtifactRef(ArtifactKind.DIRECTIVE, "B"));
         assertThat(repository.find(ID).orElseThrow().document().deactivated()).isEmpty();
+    }
+
+    @Test
+    void forceKeepsTheDenyEntryOfARequiredArtifactAnOverrideInTheClosureSatisfiesAndStoresIt() {
+        // IC-13: T is required and F, a member of the preset, overrides it; the entry on T, accepted for F's sake, is
+        // not a member's, so force keeps it, and a preset never adds a deny entry, so the write is not refused.
+        StoredActivation before = stored(ActivationDocument.builder()
+                .selected(ArtifactKind.DIRECTIVE, List.of("F"))
+                .deactivated(ArtifactKind.DIRECTIVE, List.of("T")));
+
+        service.apply(ID, "keep-f", true, List.of(), quoted(before));
+
+        ActivationDocument stored = repository.find(ID).orElseThrow().document();
+        assertThat(stored.selected(ArtifactKind.DIRECTIVE).orElseThrow()).containsExactly("F");
+        assertThat(stored.deactivated(ArtifactKind.DIRECTIVE)).containsExactly("T");
+        assertThat(repository.replaces()).isEqualTo(1);
     }
 
     @Test
