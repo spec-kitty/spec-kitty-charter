@@ -34,6 +34,12 @@ import org.junit.jupiter.api.Test;
  * that the render does change. A mutant canonicaliser that drops a comment makes the property fail, so it is not
  * vacuous.
  *
+ * <p>At the pin (open-packs a2a9379) the five software-dev {@code spdd:reasons-block} slots are empty: open-packs
+ * 170dbc3 moved their REASONS text into the opt-in {@code spdd} pack as prompt fragments (ADR-0066 amendment), one
+ * {@code spdd-<step>.prompt-fragment.md} per step under {@code missions/software-dev/enhancements/}. The positive
+ * control therefore splices each pinned fragment, below its H1 title, into its slot, so the parser is still shown to
+ * find real, non-empty pinned content, in the raw and in the canonical text.
+ *
  * <p>Runs under {@code :packs:openPacksRoundTrip} (tag {@code open-packs}), which supplies the checkout and never
  * skips.
  */
@@ -47,6 +53,15 @@ class PromptSlotsCanonicalCorpusTest {
     /** The step prompts that carry the slot at the pin. */
     private static final List<String> SLOT_PROMPTS = List.of(
             "implement.prompt.md", "plan.prompt.md", "review.prompt.md", "specify.prompt.md", "tasks.prompt.md");
+
+    /** The software-dev step prompts of the built-in pack. */
+    private static final String SOFTWARE_DEV_STEPS = "packs/built-in/missions/software-dev/steps/";
+
+    /** Where the spdd pack holds the step enhancements and prompt fragments that fill the slot (open-packs 170dbc3). */
+    private static final String SPDD_ENHANCEMENTS = "packs/spdd/missions/software-dev/enhancements/";
+
+    private static final String REASONS_START = "<!-- spdd:reasons-block:start -->";
+    private static final String REASONS_END = "<!-- spdd:reasons-block:end -->";
 
     /** A column-0 H2 inside a comment is split across sections by the codec, which also adds blank lines (A5). */
     private static final String HEADING_IN_COMMENT = """
@@ -198,8 +213,8 @@ class PromptSlotsCanonicalCorpusTest {
     }
 
     @Test
-    @DisplayName(
-            "positive control: the pinned built-in prompts hold 10 markers over 5 prompts, all non-empty spdd:reasons-block")
+    @DisplayName("the pinned built-in prompts hold 10 markers over 5 prompts, all empty spdd:reasons-block (the REASONS"
+            + " text moved into the spdd pack at open-packs 170dbc3)")
     void pinnedCorpusFacts() throws IOException {
         Map<String, String> withSlots = new LinkedHashMap<>();
         List<Slot> slots = new ArrayList<>();
@@ -208,8 +223,7 @@ class PromptSlotsCanonicalCorpusTest {
         for (Map.Entry<String, String> prompt : prompts().entrySet()) {
             String canonical = canonicalOf(prompt.getValue());
             Parse parse = PromptSlots.parse(canonical);
-            markers += count(canonical, "<!-- spdd:reasons-block:start -->")
-                    + count(canonical, "<!-- spdd:reasons-block:end -->");
+            markers += count(canonical, REASONS_START) + count(canonical, REASONS_END);
             if (!parse.slots().isEmpty()) {
                 withSlots.put(prompt.getKey(), canonical);
             }
@@ -224,10 +238,64 @@ class PromptSlotsCanonicalCorpusTest {
                 .allSatisfy(name -> assertThat(SLOT_PROMPTS).anyMatch(name::endsWith));
         assertThat(slots).hasSize(5).allSatisfy(slot -> {
             assertThat(slot.id()).isEqualTo(REASONS);
+            assertThat(slot.empty()).as("slot %s is empty", slot).isTrue();
+        });
+        assertThat(faults)
+                .as("empty, well-formed slots raise no fault (a non-empty one would be prompt_slot_not_empty)")
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName("positive control: each pinned spdd prompt fragment, spliced into its built-in slot, reads as a"
+            + " non-empty spdd:reasons-block in the raw and the canonical text")
+    void pinnedFragmentsFillTheSlots() throws IOException {
+        Path root = OpenPacksCorpus.root();
+        List<Slot> slots = new ArrayList<>();
+        List<Fault> faults = new ArrayList<>();
+        for (String prompt : SLOT_PROMPTS) {
+            String step = prompt.substring(0, prompt.indexOf('.'));
+            String fragmentFile = "spdd-" + step + ".prompt-fragment.md";
+            String descriptor = Files.readString(
+                    root.resolve(SPDD_ENHANCEMENTS + "spdd-" + step + ".step-enhancement.yaml"),
+                    StandardCharsets.UTF_8);
+            assertThat(descriptor)
+                    .as("the spdd-%s step enhancement fills spdd:reasons-block with %s", step, fragmentFile)
+                    .contains("slot: " + REASONS.value())
+                    .contains("path: " + fragmentFile);
+            String fragment = Files.readString(root.resolve(SPDD_ENHANCEMENTS + fragmentFile), StandardCharsets.UTF_8);
+            // A fragment is a Markdown document whose H1 is its title (# REASONS Guidance); a prompt holds one H1, so
+            // the codec refuses a second one. The splice takes the fragment's text below its title.
+            assertThat(fragment).as("%s opens with its H1 title", fragmentFile).startsWith("# ");
+            String body = fragment.substring(fragment.indexOf('\n') + 1);
+            String heading = body.lines()
+                    .filter(line -> line.startsWith("### "))
+                    .findFirst()
+                    .orElseThrow(() -> new AssertionError(fragmentFile + " holds no ### heading"));
+
+            String raw = Files.readString(root.resolve(SOFTWARE_DEV_STEPS + prompt), StandardCharsets.UTF_8);
+            String filled = raw.replace(REASONS_START + "\n" + REASONS_END, REASONS_START + "\n" + body + REASONS_END);
+            assertThat(filled)
+                    .as("%s with %s spliced into its slot", prompt, fragmentFile)
+                    .isNotEqualTo(raw);
+
+            assertAgrees(filled, MarkdownCodec::write);
+            String canonical = canonicalOf(filled);
+            String inSlot = canonical.substring(
+                    canonical.indexOf(REASONS_START) + REASONS_START.length(), canonical.indexOf(REASONS_END));
+            assertThat(inSlot)
+                    .as("the slot of %s in the canonical text", prompt)
+                    .contains(heading);
+            Parse parse = PromptSlots.parse(canonical);
+            slots.addAll(parse.slots());
+            faults.addAll(parse.faults());
+        }
+
+        assertThat(slots).hasSize(5).allSatisfy(slot -> {
+            assertThat(slot.id()).isEqualTo(REASONS);
             assertThat(slot.empty()).as("slot %s is empty", slot).isFalse();
         });
         assertThat(faults)
-                .as("the only faults are the non-empty slots, which become warnings by descriptor version")
+                .as("the only faults are the non-empty slots, which become warnings or refusals by descriptor version")
                 .hasSize(5)
                 .allSatisfy(fault -> assertThat(fault.kind()).isEqualTo(Kind.NOT_EMPTY));
     }
