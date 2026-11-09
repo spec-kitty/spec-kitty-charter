@@ -487,6 +487,19 @@ public record ClosureView(
     }
 
     /**
+     * Judges the names of an action context on the merged closure and walks nothing: the same refusals as
+     * {@link #actionContext}, without an in-force resolution.
+     *
+     * @param missionType the mission type
+     * @param action the action
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with {@code MISSION_TYPE_NOT_FOUND} or
+     *     {@code ACTION_NOT_FOUND}, judged on the merged closure, or as {@link #merged()} does
+     */
+    public void requireAction(String missionType, String action) {
+        new ActionContextWalk(merged().edges()).requireKnown(missionType, action);
+    }
+
+    /**
      * The effective set as a predicate over URNs: the artifacts of an activatable kind in force. A step is none, and
      * neither is a template, an asset, a guard or a lifecycle, even when a lock puts it in force inside packs: the
      * effective reads never list them (decision {@code 01M702A71YF7WNDTG2AA89K8ZA}).

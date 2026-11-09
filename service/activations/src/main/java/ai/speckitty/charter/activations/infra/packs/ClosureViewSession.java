@@ -26,6 +26,7 @@ import ai.speckitty.charter.packs.domain.InForceRequest;
 import ai.speckitty.charter.packs.domain.InForceStates;
 import ai.speckitty.charter.packs.domain.LayerOverride;
 import ai.speckitty.charter.packs.domain.MergedClosure;
+import ai.speckitty.charter.packs.domain.StepHolding;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -101,17 +102,16 @@ final class ClosureViewSession implements PacksSession {
 
     @Override
     public void requireAction(String missionType, String action) {
-        // The packs slice judges the names first, whether or not the mission type is in force; with nothing in force
-        // the
-        // walk stops there, so no in-force resolution and no walk is paid for.
-        view.actionContext(
-                missionType,
-                action,
-                0,
-                new InForceStates(Map.of(), List.of(), List.of(), List.of(), List.of(), List.of(), Map.of()));
+        // The packs slice judges the names, whether or not the mission type is in force, so no in-force resolution and
+        // no walk is paid for.
+        view.requireAction(missionType, action);
     }
 
-    /** What is in force under the query: resolved on the first ask and kept for a request that asks again. */
+    /**
+     * What is in force under the query: resolved on the first ask and kept for a read request that asks again. The cache
+     * holds one query: a write that asks for another document (a deactivate judges the early floor, then the committed
+     * document) resolves again.
+     */
     InForceStates statesOf(InForceQuery query) {
         InForceRequest request = requestOf(query);
         InForceStates states = resolved;
@@ -407,13 +407,7 @@ final class ClosureViewSession implements PacksSession {
      * no artifact) writes the relation for its mission type, so the via is kept as {@code mission_type:<M>}.
      */
     private static Optional<Urn> writer(Urn predecessor) {
-        if (predecessor.kind() != NodeKind.ACTION) {
-            return Optional.of(predecessor);
-        }
-        int slash = predecessor.id().indexOf('/');
-        return slash <= 0
-                ? Optional.empty()
-                : Optional.of(Urn.missionType(predecessor.id().substring(0, slash)));
+        return predecessor.kind() != NodeKind.ACTION ? Optional.of(predecessor) : StepHolding.missionTypeOf(predecessor);
     }
 
     private static Set<Urn> urns(Set<ArtifactRef> refs) {
