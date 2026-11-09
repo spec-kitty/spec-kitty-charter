@@ -12,6 +12,7 @@ import ai.speckitty.charter.activations.domain.EffectiveSkippedReport;
 import ai.speckitty.charter.api.model.ActivationWarning;
 import ai.speckitty.charter.api.model.DenyNotApplied;
 import ai.speckitty.charter.api.model.EffectiveArtifact;
+import ai.speckitty.charter.api.model.RequiredNotInForce;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -34,8 +35,11 @@ import org.snakeyaml.engine.v2.api.LoadSettings;
  * domain lacks. The mappers read each enum by {@code fromValue}, so a constant added on one side only would be a
  * runtime 500, not a compile error (#430).
  *
- * <p>{@code RequiredNotInForce.reason} has no row: its domain type is {@link EffectiveSet.Reason}, which has nine
- * values against the contract's two, and narrowing it is a change of the domain records and their readers.
+ * <p>{@code RequiredNotInForce.reason} is filled from {@link EffectiveSet.Reason}, which has ten values against the
+ * contract's two. Only the pruning reasons reach that bucket: in-force resolution lists a required or locked artifact
+ * there only when the enhancer or binding rule prunes it ({@code InForceResolution.listedAsRequiredNotInForce}). So its
+ * row pins the contract against those two constants ({@link #PRUNING_REASONS}). Narrowing the domain type instead would
+ * change the records of both layers and {@code ClosureViewSession}, which PR C owns; that is left to the operator.
  */
 class ActivationWireTokenParityTest {
 
@@ -56,6 +60,10 @@ class ActivationWireTokenParityTest {
                             .map(ArtifactKind::token),
                     Stream.of(CascadeScope.ALL))
             .toList();
+
+    /** The reasons for which pruning removes a required or locked artifact: the only ones in {@code requiredNotInForce}. */
+    private static final List<EffectiveSet.Reason> PRUNING_REASONS =
+            List.of(EffectiveSet.Reason.MISSION_TYPE_NOT_IN_FORCE, EffectiveSet.Reason.ENHANCED_TARGET_NOT_IN_FORCE);
 
     private static List<Pair> pairs() {
         return List.of(
@@ -81,6 +89,11 @@ class ActivationWireTokenParityTest {
                         tokens(EffectiveSkippedReport.DenyReason.values(), EffectiveSkippedReport.DenyReason::token),
                         values(DenyNotApplied.ReasonEnum.values(), DenyNotApplied.ReasonEnum::getValue),
                         DenyNotApplied.ReasonEnum::fromValue),
+                new Pair(
+                        "RequiredNotInForce.reason",
+                        PRUNING_REASONS.stream().map(EffectiveSet.Reason::token).toList(),
+                        values(RequiredNotInForce.ReasonEnum.values(), RequiredNotInForce.ReasonEnum::getValue),
+                        RequiredNotInForce.ReasonEnum::fromValue),
                 new Pair(
                         "ActivationWarning.code",
                         tokens(ActivationChange.Code.values(), ActivationChange.Code::token),
