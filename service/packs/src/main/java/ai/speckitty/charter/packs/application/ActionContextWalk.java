@@ -34,20 +34,22 @@ import java.util.function.Supplier;
  *   <li>vocabulary: one hop from every artifact steps 1 to 4 list.
  * </ol>
  *
- * <p>An artifact an earlier step listed is never listed again and still seeds the later steps. Each entry names the step
- * that listed it, its parent ({@code via}: the action node for scope, otherwise another entry of the answer) and its
- * {@code hops}, the length of the path from the action. A node takes as its parent the one of the minimum-step frontier
- * with the fewest hops, then the smallest URN.
+ * <p>An artifact an earlier step listed is never listed again and still seeds the later steps. Each entry names the
+ * step that listed it, its parent ({@code via}: the action node for scope, otherwise another entry of the answer) and
+ * its {@code hops}, the length of the path from the action. A node takes as its parent the one of the minimum-step
+ * frontier with the fewest hops, then the smallest URN.
  *
  * <p>The predicate is the effective set: a node it refuses is neither listed nor walked through, so a step (no artifact
- * of an activatable kind) is never an entry and never changes a hop count. The one exception is the start node, the held
- * step the action names: the walk starts there when the mission type is in force, and the context carries its own enhancers
- * in force and what it enhances ({@link Context#actionEnhancedBy()}, {@link Context#actionEnhances()}). Each entry brings the enhancers in
- * force that enhance it and the artifacts in force it enhances, and pulls none of them into the answer (rule E12). An
- * entry the {@code suggests} step lists carries the {@code when} and the {@code reason} of the edge that reached it.
+ * of an activatable kind) is never an entry and never changes a hop count. The one exception is the start node, the
+ * held step the action names: the walk starts there when the mission type is in force, and the context carries its own
+ * enhancers in force and what it enhances ({@link Context#actionEnhancedBy()}, {@link Context#actionEnhances()}). Each
+ * entry brings the enhancers in force that enhance it and the artifacts in force it enhances, and pulls none of them
+ * into the answer (rule E12). An entry the {@code suggests} step lists carries the {@code when} and the {@code reason}
+ * of the edge that reached it.
  *
- * <p>The walk reads the merged index it was built over and nothing else (NFR-007). Entries are sorted by full URN string (ADR-0018 D3), whatever
- * step listed them, and no answer depends on the order of the closure, the iteration or the writing of an edge.
+ * <p>The walk reads the merged index it was built over and nothing else (NFR-007). Entries are sorted by full URN
+ * string (ADR-0018 D3), whatever step listed them, and no answer depends on the order of the closure, the iteration or
+ * the writing of an edge.
  */
 public final class ActionContextWalk {
 
@@ -245,16 +247,16 @@ public final class ActionContextWalk {
      * @param action the action
      * @param depth the number of {@code suggests} hops, at least 0
      * @param inForce whether an artifact is in force: the effective set, which holds no step
-     * @return what the action reaches. Beside the entries, {@link Context#suggestionCandidates()} holds each target of a
-     *     {@code suggests} edge of step 3 (from a scoped or suggested artifact in force, within {@code depth}) that the
-     *     closure holds and the predicate refuses, unless the start step or a listed artifact also reaches it through a hard relation
-     *     ({@code requires}, {@code refines}, {@code scope}, {@code instantiates}). They are candidates only: never
-     *     listed, expanded or given vocabulary; whether one is {@code not_selected} is the activations slice's to judge.
-     *     Where several {@code suggests} edges reach one target, the parent is the one of the frontier with the fewest
-     *     hops, then the smallest source URN, then the smallest edge ({@code when}, then {@code reason}); the
-     *     candidates come in URN order
-     * @throws CharterRefusal with {@code MISSION_TYPE_NOT_FOUND} when no pack of the closure holds the mission type, and
-     *     with {@code ACTION_NOT_FOUND} when the closure holds no such step ({@link
+     * @return what the action reaches. Beside the entries, {@link Context#suggestionCandidates()} holds each target of
+     *     a {@code suggests} edge of step 3 (from a scoped or suggested artifact in force, within {@code depth}) that
+     *     the closure holds and the predicate refuses, unless the start step or a listed artifact also reaches it
+     *     through a hard relation ({@code requires}, {@code refines}, {@code scope}, {@code instantiates}). They are
+     *     candidates only: never listed, expanded or given vocabulary; whether one is {@code not_selected} is the
+     *     activations slice's to judge. Where several {@code suggests} edges reach one target, the parent is the one of
+     *     the frontier with the fewest hops, then the smallest source URN, then the smallest edge ({@code when}, then
+     *     {@code reason}); the candidates come in URN order
+     * @throws CharterRefusal with {@code MISSION_TYPE_NOT_FOUND} when no pack of the closure holds the mission type,
+     *     and with {@code ACTION_NOT_FOUND} when the closure holds no such step ({@link
      *     ai.speckitty.charter.packs.domain.StepHolding}); both are judged on the merged closure, whether or not the
      *     mission type is in force
      * @throws IllegalArgumentException when {@code depth} is negative
@@ -264,7 +266,7 @@ public final class ActionContextWalk {
         if (depth < 0) {
             throw new IllegalArgumentException("depth counts suggests hops and is at least 0: " + depth);
         }
-        Urn type = known(missionType, action);
+        Urn type = requireKnown(missionType, action);
         Urn start = Urn.action(missionType, action);
         if (!inForce.test(type)) {
             return new Context(start, false, List.of(), List.of(), List.of(), List.of());
@@ -279,8 +281,17 @@ public final class ActionContextWalk {
                 start, true, run.entries(), run.suggestions(), run.enhancersOf(start), run.enhancedTargetsOf(start));
     }
 
-    /** The mission type's URN, once the names are judged on the merged closure (OD-9, closure form). */
-    private Urn known(String missionType, String action) {
+    /**
+     * Judges the names alone, on the merged closure (OD-9, closure form), and walks nothing: the mission type is judged
+     * first, whether or not it is in force, then the step.
+     *
+     * @param missionType the mission type
+     * @param action the action
+     * @return the mission type's URN
+     * @throws CharterRefusal with {@code MISSION_TYPE_NOT_FOUND} when no pack of the closure holds the mission type,
+     *     and with {@code ACTION_NOT_FOUND} when the closure holds no such step
+     */
+    public Urn requireKnown(String missionType, String action) {
         Optional<Urn> type = urnOf(() -> Urn.missionType(missionType));
         if (type.isEmpty() || merged.placesOf(type.get()).isEmpty()) {
             throw new CharterRefusal(
@@ -387,8 +398,8 @@ public final class ActionContextWalk {
         }
 
         /**
-         * The out-of-force suggestion candidates that neither the start step nor a listed artifact reaches through a hard
-         * relation (the start step's own {@code scope} edges count), in URN order.
+         * The out-of-force suggestion candidates that neither the start step nor a listed artifact reaches through a
+         * hard relation (the start step's own {@code scope} edges count), in URN order.
          */
         List<SuggestionCandidate> suggestions() {
             Set<Urn> hard = new HashSet<>();
