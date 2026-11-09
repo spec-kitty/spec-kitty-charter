@@ -186,13 +186,13 @@
     },
     {
       "criterion_id": "FR-019",
-      "description": "Verify FR-019 is satisfied",
+      "description": "getEffectiveActionContext answers the in-force artifacts an action's step contract names with active enhancements, lists artifacts reached only through suggests as conditional with when and reason, answers an empty context with a skipped reason for a mission type not in force, and 404 mission_type_not_found / action_not_found otherwise.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "contracts/charter/scenarios/effective-graph-and-context.feature: \"US5 AS4 - the context holds the artifacts in force the action reaches, with the suggestion only through suggests\"; contracts/charter/scenarios/effective-graph-and-context.feature: \"US5 AS5 - an unknown mission type or action is 404, whether or not the mission type is in force, and a depth of 2 is 400\"",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:46:15.442856+00:00",
+      "notes": "PR C (#448, WP28); #408 ruling 3; DM-01M7059T4K64TAVKXN3T1FKWYG. Empty context: 'US5 AS5 - the context of a mission type not in force is empty and the skipped report says why'."
     },
     {
       "criterion_id": "FR-020",
