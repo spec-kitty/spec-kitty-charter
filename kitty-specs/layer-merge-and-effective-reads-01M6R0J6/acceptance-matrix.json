@@ -346,13 +346,13 @@
     },
     {
       "criterion_id": "FR-035",
-      "description": "Verify FR-035 is satisfied",
+      "description": "Two sibling packs that enhance one artifact compose without a sibling conflict, and a settlement must name exactly one winner (a descriptor naming two winners still answers the sibling-conflict refusal).",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "contracts/charter/scenarios/activation-ruling-changes.feature: \"A14 - two org packs that enhance one artifact compose\"; service/packs/src/test/java/ai/speckitty/charter/packs/domain/PackCompositionResolverTest.java#a14ASettlementNamingTwoWinnersAnswersTheSiblingConflictRefusalAndExactlyOneWinnerSettlesIt",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:47:04.070350+00:00",
+      "notes": "PR A0 (#414); IC-19, DM-01M6RA92BS6GGCYTRCFQDYYY5S. PR B landing also refuses step contests naming different siblings (LayerMergeTest C15 rows)."
     },
     {
       "criterion_id": "FR-036",
