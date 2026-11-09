@@ -1,7 +1,12 @@
 title: EffectiveActionContext
 description: >-
-  What governs one action of one mission type under an activation (ADR-0020 D7): filtered, with exclusions and the
-  skipped report. Never the offering's walk, which answers what the offering says.
+  What governs one action of one mission type under an activation (ADR-0020 D7, FR-019): ADR-0018's walk from the
+  action's step over the artifacts in force of the merged closure, each with the enhancers in force that enhance it, and
+  the skipped report. Never the offering's walk, which answers what the offering says. The walk follows the artifacts in
+  force only. An artifact the action reaches only through a suggests edge of an artifact listed, that the activation does
+  not select, is listed as a suggestion (state inactive, reason not_selected, with the edge's when and reason) and the walk
+  goes no further through it. A mission type that the activation does not put in force answers no artifacts and no
+  enhancements, and the skipped report lists the mission type in missionTypeNotInForce.
 type: object
 additionalProperties: false
 required:
@@ -11,6 +16,7 @@ required:
 - missionType
 - action
 - artifacts
+- enhancements
 - skipped
 - _links
 properties:
@@ -62,9 +68,24 @@ properties:
     type: array
     items:
       $ref: EffectiveArtifact.yaml
-    description: The artifacts in force for the action.
+    description: >-
+      The artifacts the action's walk lists, sorted by URN: those in force, and the suggestions (state inactive, with a
+      suggestion). Empty for a mission type that is not in force. An artifact the action reaches through requires is never
+      a suggestion, even when it is also suggested.
     x-derived:
-      rule: The effective set restricted to the action's context.
+      rule: ADR-0018's walk from the action's step over the effective set, with the suggestions the walk reached.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  enhancements:
+    type: array
+    items:
+      $ref: ActionEnhancement.yaml
+    description: >-
+      The enhancers in force of the action's own step and of each artifact the context lists in force, read from the
+      enhanced node's side (rule E12), sorted by node. A step enhancer enhances the step, which is no artifact, so it is
+      carried here and nowhere else. An enhancer is returned only when it is itself in force; nothing is pulled in.
+    x-derived:
+      rule: The artifacts in force with an enhances edge to the action's step or to a listed artifact.
       inputs:
       - schemas/ActivationConfig.yaml
   skipped:

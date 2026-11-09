@@ -1,0 +1,28 @@
+title: ActionEnhancement
+description: >-
+  A node of an action's context and the enhancers in force that enhance it, read from the node's side (rule E12): the
+  action's own step (kind action, id <missionType>/<step>) or an artifact the context lists. Only a node with at least
+  one enhancer in force is listed. An enhancer is never pulled into the context by it: it is listed in the context's
+  artifacts only when the walk reaches it.
+type: object
+additionalProperties: false
+required:
+- target
+- enhancedBy
+properties:
+  target:
+    $ref: NodeReference.yaml
+  enhancedBy:
+    type: array
+    minItems: 1
+    items:
+      $ref: ArtifactReference.yaml
+    description: The enhancers in force that enhance the target, sorted by kind and id.
+    x-derived:
+      rule: The artifacts in force with an enhances edge to the target.
+      inputs:
+      - schemas/ActivationConfig.yaml
+x-derived:
+  rule: The enhancers in force of one node of the context.
+  inputs:
+  - schemas/ActivationConfig.yaml
