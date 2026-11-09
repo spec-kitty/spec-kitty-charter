@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.infra.storage;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
@@ -29,6 +30,7 @@ import ai.speckitty.charter.packs.domain.PackDocument;
 import ai.speckitty.charter.packs.domain.PackEdge;
 import ai.speckitty.charter.packs.domain.PackEdgeRepository;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
+import ai.speckitty.charter.packs.domain.PackFindingCode;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Paradigm;
@@ -36,6 +38,8 @@ import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
 import ai.speckitty.charter.packs.domain.ParadigmRepository;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.Procedure;
+import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
+import ai.speckitty.charter.packs.domain.StepEnhancementFault;
 import ai.speckitty.charter.packs.domain.Styleguide;
 import ai.speckitty.charter.packs.domain.StyleguideIdentifier;
 import ai.speckitty.charter.packs.domain.StyleguideRepository;
@@ -51,6 +55,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -711,7 +716,11 @@ public final class DomainRepositoryService
 
     private Pack assemble(PackIdentifier pack) {
         Resolved resolved = resolve(pack);
-        return assembly(pack, resolved.store.read(resolved.key), new HashMap<>())
+        return assembly(
+                        pack,
+                        resolved.store.read(resolved.key),
+                        new HashMap<>(),
+                        resolved.store.readGraphs(resolved.key))
                 .build();
     }
 
@@ -770,6 +779,123 @@ public final class DomainRepositoryService
             }
         });
         return builder;
+    }
+
+    /**
+     * The assembly of {@link #assembly(PackIdentifier, FilesystemPackStore.PackRead, Map)} given the pack's graph
+     * documents too: the one seat of the step enhancement and fragment faults (FR-004 to FR-006), reached by the
+     * whole-pack load, and through it the registration, and by every composing read ({@code assemble}, so {@code readable}).
+     * Nothing is thrown for such a fault. Before the existing assembly it
+     *
+     * <ol>
+     *   <li>judges the facts of the read's step enhancements, their companions and the graph edges (no orphan set: the
+     *       read lists no unnamed file; the edge rules are not judged over a graph read that has a violation, which is
+     *       refused on its own);
+     *   <li>hands the existing assembly a judged copy of the read: each {@code companion} violation of a
+     *       step enhancement file kept under the kind {@code prompt_fragment_invalid}, the store hard-coding the
+     *       generic kind, and each file whose id repeats (the second in path order) left out of the held enhancements,
+     *       so that {@code Pack.guardKind}'s same-id rule never breaches at {@code build()} (operator ruling A2);
+     * </ol>
+     *
+     * and last appends each rule fault as a violation at its file, after the violations of the store, of every bound
+     * kind, the templates, the presets and the pack document: the order of {@code readable}'s first violation.
+     *
+     * @param pack the pack the artifacts belong to
+     * @param read what the store read
+     * @param places receives each added artifact's pack-relative file
+     * @param graphs what the store read of the pack's graph documents
+     * @return the builder, ready to build
+     */
+    static Pack.Builder assembly(
+            PackIdentifier pack,
+            FilesystemPackStore.PackRead read,
+            Map<Urn, String> places,
+            FilesystemPackStore.GraphRead graphs) {
+        List<StepEnhancementFault.Finding> faults = PackPolicy.stepEnhancementFaults(
+                stepEnhancementFacts(read, graphs), graphs.violations().isEmpty());
+        Pack.Builder builder = assembly(pack, judged(read, faults), places);
+        faults.stream().map(PackPolicy::violationOf).forEach(builder::violation);
+        return builder;
+    }
+
+    /** The store hard-codes this kind for a companion it refuses ({@code FilesystemPackStore#withCompanions}). */
+    private static final String COMPANION_KIND = "companion";
+
+    private static String enhancementSuffix() {
+        return "." + StepEnhancementBinding.INSTANCE.fileToken() + ".yaml";
+    }
+
+    /** The facts of the held step enhancements, their companions' canonical texts and the pack's edges. */
+    private static StepEnhancementFacts stepEnhancementFacts(
+            FilesystemPackStore.PackRead read, FilesystemPackStore.GraphRead graphs) {
+        List<StepEnhancementFacts.Enhancement> enhancements = new ArrayList<>();
+        List<StepEnhancementFacts.Companion> companions = new ArrayList<>();
+        for (FilesystemPackStore.Stored<StepEnhancementDso> stored : read.elements(StepEnhancementBinding.INSTANCE)) {
+            List<StepEnhancementFacts.Entry> entries = stored.dso().promptFragments().stream()
+                    .map(entry -> new StepEnhancementFacts.Entry(entry.slot(), entry.path()))
+                    .toList();
+            StepEnhancementFacts.Enhancement enhancement = new StepEnhancementFacts.Enhancement(
+                    stored.file(),
+                    FileSystemPackInspector.typeDirectory(stored.file()),
+                    stored.dso().id(),
+                    entries);
+            enhancements.add(enhancement);
+            for (int i = 0; i < entries.size(); i++) {
+                String companion = enhancement.companionPath(entries.get(i));
+                stored.dso()
+                        .promptFragments()
+                        .get(i)
+                        .body()
+                        .ifPresent(body -> companions.add(FileSystemPackInspector.companionFact(companion, body)));
+            }
+        }
+        Set<String> refused = new LinkedHashSet<>();
+        for (PackElementViolation violation : read.violations()) {
+            if (violation.file().endsWith(enhancementSuffix())) {
+                refused.add(violation.file());
+            }
+        }
+        List<StepEnhancementFacts.Edge> edges = new ArrayList<>();
+        for (GraphDocument document : graphs.documents()) {
+            for (GraphDocument.Edge edge : document.edges()) {
+                FileSystemPackInspector.stepEnhancementEdge(edge.relation(), edge.source(), edge.target())
+                        .ifPresent(edges::add);
+            }
+        }
+        return new StepEnhancementFacts(enhancements, companions, Set.of(), refused, edges);
+    }
+
+    /** The read the existing assembly gets: the remapped companion violations, the repeated ids left out. */
+    private static FilesystemPackStore.PackRead judged(
+            FilesystemPackStore.PackRead read, List<StepEnhancementFault.Finding> faults) {
+        Set<String> withheld = new LinkedHashSet<>();
+        for (StepEnhancementFault.Finding fault : faults) {
+            if (fault.rule() == StepEnhancementFault.STEM_REPEATED) {
+                withheld.add(fault.path());
+            }
+        }
+        String kind = PackPolicy.violationKind(PackFindingCode.PROMPT_FRAGMENT_INVALID);
+        List<PackElementViolation> violations = read.violations().stream()
+                .map(violation -> COMPANION_KIND.equals(violation.kind())
+                                && violation.file().endsWith(enhancementSuffix())
+                        ? new PackElementViolation(violation.file(), kind, violation.reason())
+                        : violation)
+                .toList();
+        Map<ArtifactKind, List<FilesystemPackStore.Stored<?>>> elements = new EnumMap<>(ArtifactKind.class);
+        elements.putAll(read.elements());
+        elements.computeIfPresent(
+                ArtifactKind.STEP_ENHANCEMENT,
+                (key, held) -> held.stream()
+                        .filter(stored -> !withheld.contains(stored.file()))
+                        .toList());
+        return new FilesystemPackStore.PackRead(
+                read.descriptor(),
+                elements,
+                violations,
+                read.assetFiles(),
+                read.templates(),
+                read.presets(),
+                read.document());
     }
 
     /**

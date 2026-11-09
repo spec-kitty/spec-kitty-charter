@@ -20,7 +20,9 @@ import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
+import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.Preset;
+import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
 import ai.speckitty.charter.packs.domain.Template;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -36,6 +38,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -142,6 +145,10 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         }
     }
 
+    private static final Pattern FRAGMENT_FILE =
+            Pattern.compile("^missions/[^/]+/enhancements/[^/]+\\.prompt-fragment\\.md$");
+    private static final String ENHANCEMENT_SUFFIX = ".step-enhancement.yaml";
+
     private final SerializationStrategy strategy;
     private final List<KindBinding<?, ?>> bindings;
     private final Companions.Rules companionRules;
@@ -191,8 +198,8 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         FilesystemPackStore.PackRead read = store.read(key, bindings);
         PackIdentifier id = new PackIdentifier(read.descriptor().packId());
         Map<Urn, String> places = new HashMap<>();
-        Pack.Builder builder = DomainRepositoryService.assembly(id, read, places);
         FilesystemPackStore.GraphRead graphs = store.readGraphs(key);
+        Pack.Builder builder = DomainRepositoryService.assembly(id, read, places, graphs);
         if (!graphs.violations().isEmpty()) {
             PackElementViolation first = graphs.violations().getFirst();
             throw new CharterRefusal(
@@ -241,11 +248,17 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
                 .violations()
                 .forEach(violation ->
                         violations.add(violationOf(violation.file(), violation.kind(), violation.reason())));
-        loaded.unmodelled()
-                .forEach(file -> violations.add(violationOf(
-                        file,
-                        "unmodelled",
-                        "no pack file kind models this file; a registration holds only modelled files")));
+        Map<String, PackElementViolation> orphans = orphanFragments(loaded.unmodelled());
+        loaded.unmodelled().forEach(file -> {
+            PackElementViolation orphan = orphans.get(file);
+            violations.add(
+                    orphan != null
+                            ? violationOf(file, orphan.kind(), orphan.reason())
+                            : violationOf(
+                                    file,
+                                    "unmodelled",
+                                    "no pack file kind models this file; a registration holds only modelled files"));
+        });
         reservedShard(directory).ifPresent(violations::add);
         if (!violations.isEmpty()) {
             throw CharterRefusal.withViolations(
@@ -255,6 +268,31 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
                     violations);
         }
         return stagedContentsOf(directory, loaded);
+    }
+
+    /**
+     * The unmodelled prompt fragments that are orphans (D11): named by no held enhancement, so refused here under
+     * {@code prompt_fragment_invalid} at the fragment, and in validate mode. A fragment in a directory holding an
+     * enhancement that is not held (refused by the store, or withheld as a repeated id) stays an {@code unmodelled}
+     * entry, as every file of a refused artifact does: its companions fell out of the held ones with it (A4). An
+     * enhancement that only has a rule fault is held and excuses nothing (fifth analysis A5). The rule and its text are
+     * the step enhancement rules'.
+     */
+    private static Map<String, PackElementViolation> orphanFragments(List<String> unmodelled) {
+        Set<String> fragments = new HashSet<>();
+        Set<String> notHeld = new HashSet<>();
+        for (String file : unmodelled) {
+            if (FRAGMENT_FILE.matcher(file).matches()) {
+                fragments.add(file);
+            } else if (file.endsWith(ENHANCEMENT_SUFFIX)) {
+                notHeld.add(file);
+            }
+        }
+        Map<String, PackElementViolation> orphans = new HashMap<>();
+        PackPolicy.stepEnhancementViolations(
+                        new StepEnhancementFacts(List.of(), List.of(), fragments, notHeld, List.of()))
+                .forEach(violation -> orphans.put(violation.file(), violation));
+        return orphans;
     }
 
     /** The facts of a staged tree; a file the reading of them cannot take is a fault of the upload, a 422, not a 500. */
