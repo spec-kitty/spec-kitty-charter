@@ -9,7 +9,10 @@ required:
 properties:
   pointer:
     type: string
-    description: An RFC 6901 JSON Pointer into the request body, for example /deactivated/tactic/0; empty for the whole body.
+    description: >-
+      An RFC 6901 JSON Pointer into the request body, for example /deactivated/tactic/0; empty for the whole body. On a
+      violation of a registration it is the pack-relative path of the file at fault, for example
+      missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml.
     x-derived:
       rule: The JSON Pointer of the refused part of the request body.
       inputs:

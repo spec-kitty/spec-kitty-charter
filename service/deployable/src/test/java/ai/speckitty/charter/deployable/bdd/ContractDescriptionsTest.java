@@ -61,6 +61,19 @@ class ContractDescriptionsTest {
     }
 
     @Test
+    void theRefusalCodeSaysPromptFragmentInvalidIsRaisedAsAViolationAndPromptSlotMissingStaysReserved()
+            throws IOException {
+        assertThat(description("contract/charter/schemas/CharterRefusalCode.yaml"))
+                .contains("prompt_fragment_invalid is raised as a violation code of a refused registration")
+                .contains("is listed at its file inside 422 validation_failed")
+                .contains("a composing read answers 500 pack_unreadable naming the file")
+                .contains("prompt_slot_missing stays reserved")
+                .contains("keep their existing meanings for references between packs; no ADR-0066 refusal is"
+                        + " artifact_locked")
+                .doesNotContain("keep their existing meanings for the other ADR-0066 refusals");
+    }
+
+    @Test
     void theRefusedResponseCoversStaleInput() throws IOException {
         assertThat(description("contract/charter/responses/OfferingUnreadable.yaml"))
                 .contains("the packs changed while the read was answered")
