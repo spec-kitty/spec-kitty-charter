@@ -119,9 +119,10 @@ class ActivationPresetServiceTest {
     }
 
     @Test
-    void forceKeepsTheDenyEntryOfARequiredArtifactAnOverrideInTheClosureSatisfiesAndStoresIt() {
-        // IC-13: T is required and F, a member of the preset, overrides it; the entry on T, accepted for F's sake, is
-        // not a member's, so force keeps it, and a preset never adds a deny entry, so the write is not refused.
+    void forceKeepsAStoredDenyEntryOfARequiredArtifactAndAddsNone() {
+        // A tolerance regression (W25, ADR-0059 D4), not IC-13 evidence: T is required and the stored entry on T is not
+        // a member of the preset, so force keeps it; a preset never adds a deny entry, so the write judges none. The
+        // fixture has no overrides edge, so the in-force facts never report a satisfier.
         StoredActivation before = stored(ActivationDocument.builder()
                 .selected(ArtifactKind.DIRECTIVE, List.of("A"))
                 .deactivated(ArtifactKind.DIRECTIVE, List.of("T")));
