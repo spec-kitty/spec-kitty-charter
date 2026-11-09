@@ -11,6 +11,7 @@ import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.Template;
 import ai.speckitty.charter.packs.domain.Toolguide;
+import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -103,6 +104,24 @@ class WholePackOpenPacksRoundTripTest {
         out.put("document", loaded.pack().document());
         out.put("graphs", loaded.graphs());
         out.put("layout", loaded.layout().paths());
+        out.put("fragments", fragments(loaded));
+        return out;
+    }
+
+    /**
+     * The canonical render of every step-enhancement fragment body, through {@code binding.dsoOf(artifact)} (ADR-0036,
+     * T-03): a dropped or altered fragment changes the meaning even when the entry that names it does not.
+     */
+    private static Map<String, String> fragments(WholePackStore.LoadedPack loaded) {
+        Map<String, String> out = new LinkedHashMap<>();
+        for (CharterArtifact artifact : loaded.pack().artifacts(ArtifactKind.STEP_ENHANCEMENT)) {
+            for (StepEnhancementDso.Entry entry :
+                    StepEnhancementBinding.INSTANCE.dsoOf(artifact).promptFragments()) {
+                out.put(
+                        artifact.localId() + " " + entry.slot() + " " + entry.path(),
+                        entry.body().map(MarkdownCodec::write).orElse("<absent>"));
+            }
+        }
         return out;
     }
 

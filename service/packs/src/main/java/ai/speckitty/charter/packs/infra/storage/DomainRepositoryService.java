@@ -231,6 +231,52 @@ public final class DomainRepositoryService
     }
 
     /**
+     * Saves one artifact of a kind that is not placed by its id at a given place: a known id replaces its file where it
+     * sits, an unknown id is created at {@code place}. The whole-pack gate's adapter writes a step enhancement through
+     * it, at the place its file was read from (ADR-0066, A12).
+     *
+     * @param pack the pack to write into
+     * @param artifact the artifact
+     * @param place the pack-relative path of a new artifact's file
+     * @throws IllegalArgumentException when the artifact is a {@link Template}, is of a kind placed by its id, or is of a
+     *     kind this store does not persist
+     * @throws CharterRefusal when the pack is not configured or is read-only, the place leaves the pack, is taken or
+     *     does not name the artifact's file, or the write fails
+     */
+    void saveArtifact(PackIdentifier pack, CharterArtifact artifact, String place) {
+        if (artifact instanceof Template) {
+            throw new IllegalArgumentException("a template is placed by its id, not at a given place");
+        }
+        KindBinding<?, ?> kind = KindBindings.of(artifact.kind())
+                .orElseThrow(() -> new IllegalArgumentException("cannot persist a " + artifact.kind() + " artefact"));
+        if (placedById(kind)) {
+            throw new IllegalArgumentException(
+                    "a " + artifact.kind().token() + " is placed by its id, not at a given place");
+        }
+        Resolved resolved = writable(pack);
+        writeAt(resolved.store, resolved.key, kind, artifact, place);
+    }
+
+    /** Whether the binding can name the file of an id: a kind whose {@code fileName} refuses is not placed by id. */
+    private static boolean placedById(KindBinding<?, ?> kind) {
+        try {
+            kind.fileName("probe");
+            return true;
+        } catch (IllegalArgumentException refuses) {
+            return false;
+        }
+    }
+
+    private static <D> void writeAt(
+            FilesystemPackStore store,
+            PackIdentifier key,
+            KindBinding<D, ?> kind,
+            CharterArtifact artifact,
+            String place) {
+        store.writeAt(key, kind, kind.dsoOf(artifact), place);
+    }
+
+    /**
      * Writes one asset file of a configured pack, byte for byte, at {@code assets/<path>}.
      *
      * @param pack the pack to write into

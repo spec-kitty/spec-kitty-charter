@@ -17,6 +17,7 @@ import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.Skill;
 import ai.speckitty.charter.packs.domain.Template;
+import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Proxy;
@@ -129,6 +130,7 @@ class WholePackStoreTest {
             out.put(kind.kind().token(), dsos);
         }
         out.put("graphs", loaded.graphs());
+        out.put("fragments", fragments(loaded));
         out.put("assetFiles", loaded.pack().assetFiles());
         out.put(
                 "templates",
@@ -136,6 +138,23 @@ class WholePackStoreTest {
                         .map(template ->
                                 template.id().value() + "=" + template.content().sha256())
                         .toList());
+        return out;
+    }
+
+    /**
+     * The body of every step-enhancement fragment, as the canonical render of what the binding's shape holds (ADR-0036,
+     * T-03): a dropped or altered fragment changes the meaning even if the entry that names it is unchanged.
+     */
+    private static Map<String, String> fragments(WholePackStore.LoadedPack loaded) {
+        Map<String, String> out = new LinkedHashMap<>();
+        for (CharterArtifact artifact : loaded.pack().artifacts(ArtifactKind.STEP_ENHANCEMENT)) {
+            for (StepEnhancementDso.Entry entry :
+                    StepEnhancementBinding.INSTANCE.dsoOf(artifact).promptFragments()) {
+                out.put(
+                        artifact.localId() + " " + entry.slot() + " " + entry.path(),
+                        entry.body().map(MarkdownCodec::write).orElse("<absent>"));
+            }
+        }
         return out;
     }
 
@@ -874,6 +893,107 @@ class WholePackStoreTest {
         assertThat(digestBoth)
                 .as("the id is declared twice, with two contents: neither copy's digest stands for it")
                 .isNotIn(digestOne, digestTwo);
+    }
+
+    // ---- step enhancements and their fragments (ADR-0066, #428) --------------------------------------------------
+
+    private static final String ENHANCEMENT_FILE = "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml";
+    private static final String FRAGMENT_REASONS = "missions/software-dev/enhancements/spdd-plan.prompt-fragment.md";
+    private static final String FRAGMENT_CANVAS = "missions/software-dev/enhancements/spdd-canvas.prompt-fragment.md";
+
+    /** pack-a without its broken file, plus one enhancement that fills two slots with two companions, and its edge. */
+    private static Path enhancingPack(Path host) throws IOException {
+        Path pack = PackFixtures.copyOf("pack-a", host);
+        Files.delete(pack.resolve(BROKEN_FILE));
+        write(pack, ENHANCEMENT_FILE, """
+                schema_version: '1.0'
+                id: spdd-plan
+                prompt_fragments:
+                  - slot: spdd:reasons-block
+                    path: spdd-plan.prompt-fragment.md
+                  - slot: spdd:canvas
+                    path: spdd-canvas.prompt-fragment.md
+                """);
+        write(pack, FRAGMENT_REASONS, "Fill or update the REASONS canvas while composing the plan.\n");
+        write(
+                pack,
+                FRAGMENT_CANVAS,
+                "# Canvas\n\nKeep the canvas beside the plan.\n\n## Approach\n\nName the strategy.\n");
+        write(pack, "enhancements.graph.yaml", """
+                schema_version: '1.0'
+                generated_at: STATIC
+                nodes: []
+                edges:
+                - source: step_enhancement:spdd-plan
+                  target: action:software-dev/plan
+                  relation: enhances
+                """);
+        return pack;
+    }
+
+    @Test
+    @DisplayName(
+            "an enhancement with two companions loads at its place and writes back at the same paths, same meaning")
+    void aStepEnhancementAndItsCompanionsLoadAndWriteBackAtTheSamePaths(@TempDir Path host) throws IOException {
+        Path source = enhancingPack(host.resolve("source"));
+
+        WholePackStore.LoadedPack loaded = store.load(source);
+
+        assertThat(loaded.pack().violations()).isEmpty();
+        assertThat(loaded.pack().artifacts(ArtifactKind.STEP_ENHANCEMENT)).hasSize(1);
+        assertThat(loaded.layout().paths())
+                .containsEntry(new Urn(NodeKind.STEP_ENHANCEMENT, "spdd-plan"), ENHANCEMENT_FILE);
+        assertThat(loaded.unmodelled())
+                .as("each fragment is named by exactly one entry, so the enhancement holds both")
+                .doesNotContain(FRAGMENT_REASONS, FRAGMENT_CANVAS);
+        assertThat(fragments(loaded)).hasSize(2);
+        Path target = host.resolve("out").resolve(source.getFileName().toString());
+
+        store.write(loaded, target);
+        WholePackStore.LoadedPack reloaded = store.load(target);
+
+        assertThat(filesUnder(target)).contains(ENHANCEMENT_FILE, FRAGMENT_REASONS, FRAGMENT_CANVAS);
+        assertThat(meaning(reloaded)).isEqualTo(meaning(loaded));
+        assertThat(reloaded.layout().paths()).isEqualTo(loaded.layout().paths());
+        assertThat(reloaded.unmodelled()).isEqualTo(loaded.unmodelled());
+    }
+
+    @Test
+    @DisplayName("mutant: a written fragment that is altered, or dropped, changes the meaning the round trip compares")
+    void anAlteredOrDroppedFragmentChangesTheMeaning(@TempDir Path host) throws IOException {
+        Path source = enhancingPack(host.resolve("source"));
+        WholePackStore.LoadedPack loaded = store.load(source);
+        Path altered = host.resolve("altered").resolve(source.getFileName().toString());
+        Path dropped = host.resolve("dropped").resolve(source.getFileName().toString());
+        store.write(loaded, altered);
+        store.write(loaded, dropped);
+        Files.writeString(altered.resolve(FRAGMENT_REASONS), "Fill nothing while composing the plan.\n");
+        Files.delete(dropped.resolve(FRAGMENT_CANVAS));
+
+        WholePackStore.LoadedPack reloadedAltered = store.load(altered);
+        WholePackStore.LoadedPack reloadedDropped = store.load(dropped);
+
+        assertThat(meaning(reloadedAltered))
+                .as("an altered fragment is a different meaning")
+                .isNotEqualTo(meaning(loaded));
+        assertThat(meaning(reloadedDropped))
+                .as("a dropped fragment is a different meaning")
+                .isNotEqualTo(meaning(loaded));
+        assertThat(meaning(store.load(source)))
+                .as("the control: nothing mutated")
+                .isEqualTo(meaning(loaded));
+    }
+
+    @Test
+    @DisplayName("a fragment no entry names is not held: it stays listed as an unmodelled file (IC-02 reclassifies it)")
+    void aFragmentNoEntryNamesStaysUnmodelled(@TempDir Path host) throws IOException {
+        Path source = enhancingPack(host.resolve("source"));
+        write(source, "missions/software-dev/enhancements/stray.prompt-fragment.md", "Nobody names this.\n");
+
+        WholePackStore.LoadedPack loaded = store.load(source);
+
+        assertThat(loaded.unmodelled()).contains("missions/software-dev/enhancements/stray.prompt-fragment.md");
+        assertThat(loaded.unmodelled()).doesNotContain(FRAGMENT_REASONS, FRAGMENT_CANVAS, ENHANCEMENT_FILE);
     }
 
     private static WholePackStore.LoadedPack with(WholePackStore.LoadedPack loaded, Template template) {

@@ -191,6 +191,69 @@ class DomainRoundTripTest {
         assertThat(outcomes.get("tactic.graph.yaml")).isEqualTo(new Written("tactic.graph.yaml"));
     }
 
+    private static final String ENHANCEMENT_FILE = "missions/software-dev/enhancements/spdd-plan.step-enhancement.yaml";
+    private static final String FRAGMENT_REASONS = "missions/software-dev/enhancements/spdd-plan.prompt-fragment.md";
+    private static final String FRAGMENT_CANVAS = "missions/software-dev/enhancements/spdd-canvas.prompt-fragment.md";
+
+    /** The enhancing pack of the spdd shape: one enhancement filling two slots, its two fragments and its edge. */
+    private void putAnEnhancement() throws IOException {
+        put(ENHANCEMENT_FILE, "step-enhancement", """
+                schema_version: '1.0'
+                id: spdd-plan
+                prompt_fragments:
+                  - slot: spdd:reasons-block
+                    path: spdd-plan.prompt-fragment.md
+                  - slot: spdd:canvas
+                    path: spdd-canvas.prompt-fragment.md
+                """);
+        put(FRAGMENT_REASONS, "prompt-fragment", "Fill or update the REASONS canvas while composing the plan.\n");
+        put(FRAGMENT_CANVAS, "prompt-fragment", "# Canvas\n\nKeep the canvas beside the plan.\n");
+        put("enhancements.graph.yaml", "graph-shard", """
+                schema_version: '1.0'
+                generated_at: STATIC
+                nodes: []
+                edges:
+                - source: step_enhancement:spdd-plan
+                  target: action:software-dev/plan
+                  relation: enhances
+                """);
+    }
+
+    @Test
+    void aStepEnhancementIsWrittenWhereItWasReadWithItsFragmentsBesideIt() throws IOException {
+        putAnEnhancement();
+
+        Map<String, Outcome> outcomes = roundTrip(new YamlSerializationStrategy());
+
+        assertThat(outcomes)
+                .as("the refused fileName is not the write path of a kind that is not placed by id (A12)")
+                .containsEntry(ENHANCEMENT_FILE, new Written(ENHANCEMENT_FILE))
+                .containsEntry(FRAGMENT_REASONS, new Written(FRAGMENT_REASONS))
+                .containsEntry(FRAGMENT_CANVAS, new Written(FRAGMENT_CANVAS));
+        assertThat(outcomes.values()).allSatisfy(outcome -> assertThat(outcome).isInstanceOf(Written.class));
+        assertThat(temp.resolve("out/built-in").resolve(ENHANCEMENT_FILE)).isRegularFile();
+        assertThat(temp.resolve("out/built-in").resolve("spdd-plan.step-enhancement.yaml"))
+                .as("not at the pack root")
+                .doesNotExist();
+    }
+
+    @Test
+    void aMissingFragmentIsNotWrittenBackAsRead() throws IOException {
+        putAnEnhancement();
+        Files.delete(source.resolve(FRAGMENT_CANVAS));
+
+        Map<String, Outcome> outcomes = roundTrip(new YamlSerializationStrategy());
+
+        assertThat(outcomes.get(ENHANCEMENT_FILE))
+                .as("the control: with a fragment gone the enhancement is not written back as read")
+                .isNotEqualTo(new Written(ENHANCEMENT_FILE));
+    }
+
+    @Test
+    void theKindsNotPlacedByIdAreTheOnesKindBindingsTestSkips() {
+        assertThat(DomainRoundTrip.NOT_PLACED_BY_ID).isEqualTo(KindBindingsTest.NOT_PLACED_BY_ID);
+    }
+
     @Test
     void aStepContractIsModelledThroughItsBindingAndWrittenUnderItsFileToken() throws IOException {
         put("missions/built_in_step_contracts/review.step-contract.yaml", "mission-step-contract", """

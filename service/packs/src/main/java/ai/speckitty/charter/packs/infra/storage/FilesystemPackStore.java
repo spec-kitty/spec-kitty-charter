@@ -882,10 +882,34 @@ final class FilesystemPackStore {
      *     ({@code VALIDATION_FAILED}, ADR-0044)
      */
     <D> void write(PackIdentifier id, KindBinding<D, ?> kind, D dso) {
+        write(id, kind, dso, Optional.empty());
+    }
+
+    /**
+     * {@link #write} with the place of a new element given: a create lands at {@code place}, a pack-relative path, in
+     * place of {@code kind.fileName(id)}, for a kind whose place cannot be derived from its id (a step enhancement,
+     * which sits at {@code missions/<type>/enhancements/}, ADR-0066). The checks and the companion plan are
+     * {@code write}'s. An element of that id that already exists is replaced in place, wherever it sits, as {@code write}
+     * does; the place applies only to a create.
+     *
+     * @param id the pack
+     * @param kind the kind's binding
+     * @param dso what to write
+     * @param place the pack-relative path of a new element's file, with forward slashes
+     * @param <D> the kind's persistence shape
+     * @throws CharterRefusal as {@link #write} does, and with {@code PACK_UNREADABLE} when the place leaves the pack, is
+     *     already taken, or does not name {@code <id>.<fileToken>.yaml} as its file
+     */
+    <D> void writeAt(PackIdentifier id, KindBinding<D, ?> kind, D dso, String place) {
+        write(id, kind, dso, Optional.of(place));
+    }
+
+    private <D> void write(PackIdentifier id, KindBinding<D, ?> kind, D dso, Optional<String> place) {
         Path directory = existingDirectory(id);
         String elementId = kind.idOf(dso);
         Optional<Path> existing = locate(directory, kind, elementId);
-        Path target = existing.orElseGet(() -> newFile(directory, kind, elementId));
+        Path target = existing.orElseGet(() -> place.map(at -> placedFile(directory, kind, elementId, at))
+                .orElseGet(() -> newFile(directory, kind, elementId)));
         String file = relative(directory, target);
         List<Companions.Inside> owned =
                 existing.isPresent() ? companionsOf(directory, file, kind) : List.<Companions.Inside>of();
@@ -1140,6 +1164,40 @@ final class FilesystemPackStore {
             throw new CharterRefusal(
                     RefusalCode.PACK_UNREADABLE,
                     "cannot create " + token + " '" + elementId + "': its file name is taken");
+        }
+        return target;
+    }
+
+    /**
+     * The file a new element is created at when the caller names its place ({@link #writeAt}): {@code place} below the
+     * pack directory. It is refused when it leaves the pack (a climb, an absolute path, a backslash), when the name is
+     * already taken, links included, and when its file name is not {@code <id>.<fileToken>.yaml}, the name the stem rule
+     * ({@link FileStems#mismatch}) holds the file to on read.
+     */
+    private static Path placedFile(Path directory, KindBinding<?, ?> kind, String elementId, String place) {
+        String token = kind.kind().token();
+        Path target = directory.resolve(place).normalize();
+        boolean inPack = !place.isBlank()
+                && !place.contains("\\")
+                && !place.startsWith("/")
+                && target.startsWith(directory)
+                && !target.equals(directory);
+        if (!inPack) {
+            throw new CharterRefusal(
+                    RefusalCode.PACK_UNREADABLE,
+                    token + " '" + elementId + "' cannot be placed at '" + place + "': it is not a path in the pack");
+        }
+        String expected = elementId + "." + kind.fileToken() + ".yaml";
+        if (!expected.equals(String.valueOf(target.getFileName()))) {
+            throw new CharterRefusal(
+                    RefusalCode.PACK_UNREADABLE,
+                    token + " '" + elementId + "' cannot be placed at '" + place + "': its file name must be "
+                            + expected);
+        }
+        if (Files.exists(target, LinkOption.NOFOLLOW_LINKS)) {
+            throw new CharterRefusal(
+                    RefusalCode.PACK_UNREADABLE,
+                    "cannot create " + token + " '" + elementId + "' at '" + place + "': its file name is taken");
         }
         return target;
     }
