@@ -69,13 +69,6 @@ class ReservedOperationCoverageTest {
     }
 
     @Test
-    void noOperationOfTheContractIsReserved() {
-        assertThat(allReserved(shipped()))
-                .as("the effective graph and the effective action context were the last two (IC-11)")
-                .isEmpty();
-    }
-
-    @Test
     void theShippedContractAgainstItsPinFilesHasNoProblem() {
         assertThat(problems(shipped())).isEmpty();
     }

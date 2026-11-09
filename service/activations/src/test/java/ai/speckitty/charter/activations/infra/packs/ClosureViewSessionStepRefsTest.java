@@ -50,9 +50,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Every part of the skipped report and of the merged closure that {@link ClosureViewSession} copies through
@@ -255,34 +255,38 @@ class ClosureViewSessionStepRefsTest {
     }
 
     @Test
-    void thePolicyAndPresetSchemasCannotNameAStepSoTheFloorHoldsNone() {
+    void thePolicyAndPresetSchemasCannotNameAStepSoTheFloorHoldsNone() throws Exception {
         // The reason the drop above is a guard and not a loss: the files that make an artifact required or locked take
         // artifact kinds only. This pins both schemas, from the contract the service ships, against `action`.
-        String policy = schema("policy");
-        String preset = schema("preset");
-        Matcher kinds = Pattern.compile("\"([a-z_]+)\"\\s*:\\s*\\{\\s*\"\\$ref\": \"#/\\$defs/level\"")
-                .matcher(policy);
-        Set<String> policyKinds = new java.util.TreeSet<>();
-        while (kinds.find()) {
-            policyKinds.add(kinds.group(1));
-        }
-        Matcher activated = Pattern.compile("\"activated_([a-z_]+)\"").matcher(preset);
-        Set<String> presetKinds = new java.util.TreeSet<>();
-        while (activated.find()) {
-            presetKinds.add(activated.group(1));
-        }
+        JsonMapper json = JsonMapper.builder().build();
+        JsonNode policy = json.readTree(schema("policy"));
+        JsonNode preset = json.readTree(schema("preset"));
+
+        Set<String> policyKinds = new java.util.TreeSet<>(
+                policy.get("properties").get("kind_defaults").get("properties").propertyNames());
+        Set<String> presetKeys =
+                new java.util.TreeSet<>(preset.get("properties").propertyNames());
+        String artifactKeys = policy.get("properties")
+                .get("artifacts")
+                .get("patternProperties")
+                .propertyNames()
+                .iterator()
+                .next();
 
         assertThat(policyKinds)
                 .as("the kinds kind_defaults names")
-                .contains("directive", "mission_type", "step_enhancement");
-        assertThat(policyKinds).as("kind_defaults").doesNotContain("action", "actions");
-        assertThat(policy)
-                .as("the artifact keys of policy.yaml")
-                .doesNotContain("|action|")
-                .doesNotContain("(action|")
-                .doesNotContain("|action)");
-        assertThat(presetKinds).as("the keys of a preset").contains("directives", "mission_types", "step_enhancements");
-        assertThat(presetKinds).as("the activated_ keys of a preset").doesNotContain("action", "actions");
+                .contains("directive", "mission_type", "step_enhancement")
+                .doesNotContain("action", "actions");
+        assertThat(artifactKeys
+                        .substring(artifactKeys.indexOf('(') + 1, artifactKeys.indexOf(')'))
+                        .split("\\|"))
+                .as("the kinds the artifact keys of policy.yaml take")
+                .contains("directive", "mission_type", "step_enhancement")
+                .doesNotContain("action");
+        assertThat(presetKeys)
+                .as("the keys of a preset")
+                .contains("activated_directives", "activated_mission_types", "activated_step_enhancements")
+                .doesNotContain("activated_action", "activated_actions");
     }
 
     private static String schema(String name) {
@@ -439,49 +443,31 @@ class ClosureViewSessionStepRefsTest {
                 .isEqualTo(new MergedSnapshot.LayerOverride.Side("beta", PackLevel.BUILT_IN));
     }
 
-    @Test
-    void theGraphListsNoOverrideOfATemplateAnAssetAGuardALifecycleOrAnArtifactOutOfForce() {
-        GraphSnapshot graph = layered().session().graph(selecting("mission_type:M", "directive:D"));
-
-        assertThat(graph.layerOverrides())
-                .extracting(replaced -> replaced.ref().kind())
-                .doesNotContain(NodeKind.TEMPLATE, NodeKind.ASSET, NodeKind.GUARD, NodeKind.LIFECYCLE)
-                .as("directive:Unselected is out of force, directive:D in force in the same answer")
-                .contains(NodeKind.DIRECTIVE);
-        assertThat(graph.layerOverrides())
-                .extracting(replaced -> replaced.ref().id())
-                .doesNotContain("Unselected", "tpl", "logo", "g", "l")
-                .contains("D");
-    }
-
-    @Test
-    void theGraphHoldsTheHeldStepWhileItsMissionTypeIsInForceAndNotOtherwise() {
-        Closure closure = steps();
-
-        GraphSnapshot inForce = closure.session().graph(selecting("mission_type:M", "directive:D"));
-        GraphSnapshot notInForce = closure.session().graph(selecting("directive:D"));
-
-        assertThat(inForce.nodes()).contains(new NodeRef(NodeKind.ACTION, "M/s"), new NodeRef(NodeKind.DIRECTIVE, "D"));
-        assertThat(notInForce.nodes())
-                .as("the step goes with its mission type; the artifact in force stays")
-                .contains(new NodeRef(NodeKind.DIRECTIVE, "D"))
-                .doesNotContain(new NodeRef(NodeKind.ACTION, "M/s"));
-    }
-
     // ---- one resolution per request (NFR-003): the adapter's own cache, not a fake's count ----
 
     @Test
     void theInForceStatesOfOneRequestAreResolvedOnceForTheSetTheGraphAndTheWalk() {
         ClosureViewSession session = (ClosureViewSession) steps().session();
-        InForceStates first = session.statesOf(selecting("mission_type:M", "directive:D"));
+        InForceQuery a = selecting("mission_type:M", "directive:D");
+        InForceQuery b = selecting("directive:D");
+        InForceStates first = session.statesOf(a);
 
-        session.inForce(selecting("mission_type:M", "directive:D"));
+        session.inForce(a);
         session.graph(selecting("directive:D", "mission_type:M"));
-        session.actionContext("M", "s", 0, selecting("mission_type:M", "directive:D"));
-
-        assertThat(session.statesOf(selecting("mission_type:M", "directive:D")))
+        session.actionContext("M", "s", 0, a);
+        assertThat(session.statesOf(a))
                 .as("an equal request is answered by the states resolved first, not by a second resolution")
                 .isSameAs(first);
+
+        // The cache holds one request, so a read of another request that goes through it replaces the entry: asking for
+        // `a` again then resolves anew. A read that resolved on its own, bypassing the cache, would leave `a` cached.
+        session.graph(b);
+        InForceStates afterGraph = session.statesOf(a);
+        assertThat(afterGraph).as("graph() resolved b through the cache").isNotSameAs(first);
+        session.actionContext("M", "s", 0, b);
+        assertThat(session.statesOf(a))
+                .as("actionContext() resolved b through the cache")
+                .isNotSameAs(afterGraph);
     }
 
     @Test

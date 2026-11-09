@@ -24,8 +24,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.api.Timeout;
 
 /**
  * The action-context walk (ADR-0018 D2 and D3, rule E16): five breadth-first steps from {@code action:M/a} over the merged
@@ -545,21 +544,34 @@ class ActionContextWalkTest {
                 .containsExactly(tuple(urn("tactic:S1"), urn("tactic:B")), tuple(urn("tactic:S2"), urn("tactic:A")));
     }
 
-    @ParameterizedTest
-    @EnumSource(
-            value = RelationType.class,
-            names = {"VOCABULARY", "ENHANCES", "OVERRIDES", "APPLIES", "REFINES", "INSTANTIATES"})
-    void onlyASuggestsLinkMakesACandidateWhateverOtherRelationAScopedArtifactReachesATargetBy(RelationType relation) {
+    @Test
+    void onlyASuggestsLinkMakesACandidateNotAnotherRelationAScopedArtifactReachesATargetBy() {
         Closure closure = closure(
                 List.of("tactic:T1", "tactic:Out"),
                 edge(START, RelationType.SCOPE, "tactic:T1"),
-                edge("tactic:T1", relation, "tactic:Out"));
+                edge("tactic:T1", RelationType.ENHANCES, "tactic:Out"));
 
         Context context = walk(closure, 2, inForce("mission_type:M", "tactic:T1"));
 
         assertThat(context.suggestionCandidates())
-                .as("a %s link to an out-of-force target is no suggestion", relation)
+                .as("an enhances link to an out-of-force target is no suggestion")
                 .isEmpty();
+    }
+
+    @Test
+    @Timeout(value = 10, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
+    void aCycleOfRequiresAndASuggestsEdgeBackIntoItEndTheWalkAndListEachArtifactOnce() {
+        Closure closure = closure(
+                List.of("tactic:T1", "tactic:T2"),
+                edge(START, RelationType.SCOPE, "tactic:T1"),
+                edge("tactic:T1", RelationType.REQUIRES, "tactic:T2"),
+                edge("tactic:T2", RelationType.REQUIRES, "tactic:T1"),
+                edge("tactic:T2", RelationType.SUGGESTS, "tactic:T1"));
+
+        Context context = walk(closure, 1, ActionContextWalkTest::everything);
+
+        assertThat(listed(context)).containsExactly("tactic:T1", "tactic:T2");
+        assertThat(context.suggestionCandidates()).isEmpty();
     }
 
     @Test

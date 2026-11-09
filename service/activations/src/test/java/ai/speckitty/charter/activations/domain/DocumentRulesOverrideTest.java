@@ -14,12 +14,17 @@ import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RequiringPack;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * IC-13 (operator ruling Q9, research R12): a deny entry on a required artifact is accepted when an active override of
@@ -58,17 +63,20 @@ class DocumentRulesOverrideTest {
         private final List<InForceQuery> asked = new ArrayList<>();
         private CharterRefusal refusal;
 
-        /** The requirement of {@code target} is satisfied by {@code overrider}: out of force, overridden. */
+        /**
+         * The requirement of {@code target} is satisfied by {@code overrider}: the target is required and unselected, so
+         * out of force as not selected, and the resolution names the satisfier in {@code satisfiedBy} only (DIV-225).
+         */
         Facts satisfied(ArtifactRef target, ArtifactRef overrider) {
             states.put(
                     target,
                     new ArtifactState(
                             target,
                             State.INACTIVE,
-                            Reason.OVERRIDDEN,
+                            Reason.NOT_SELECTED,
                             true,
                             Optional.of(overrider),
-                            Optional.of(overrider),
+                            Optional.empty(),
                             Optional.empty()));
             return this;
         }
@@ -142,8 +150,8 @@ class DocumentRulesOverrideTest {
 
         CharterRefusal refusal = refused(DocumentRules.check(document, CLOSURE, facts), RefusalCode.ARTIFACT_REQUIRED);
 
-        assertThat(refusal.getMessage()).contains("directive:T2").doesNotContain("directive:T,");
-        assertThat(refusal.requiredBy()).hasSize(1);
+        assertThat(refusal.getMessage()).isEqualTo("A pack requires directive:T2, so the activation cannot deny it.");
+        assertThat(refusal.requiredBy()).containsExactly(new RequiringPack("PID-main", List.of()));
     }
 
     @Test
@@ -173,22 +181,8 @@ class DocumentRulesOverrideTest {
     }
 
     @Test
-    void aLockedArtifactIsRefusedWhateverOverridesItAndTheFactsAreNotAsked() {
-        Facts facts = new Facts().satisfied(LK, F);
-        ActivationDocument document = document()
-                .selected(DIRECTIVE, List.of("F"))
-                .deactivated(DIRECTIVE, List.of("LK"))
-                .build()
-                .document();
-
-        refused(DocumentRules.check(document, CLOSURE, facts), RefusalCode.ARTIFACT_LOCKED);
-
-        assertThat(facts.asked()).isEmpty();
-    }
-
-    @Test
-    void aLockedDenyEntryBesideASatisfiedRequiredOneIsStillRefusedAsLocked() {
-        Facts facts = new Facts().satisfied(T, F);
+    void aLockedDenyEntryIsRefusedWhateverOverridesItAndBesideASatisfiedRequiredOneWithoutAskingTheFacts() {
+        Facts facts = new Facts().satisfied(T, F).satisfied(LK, F);
         ActivationDocument document = document()
                 .selected(DIRECTIVE, List.of("F"))
                 .deactivated(DIRECTIVE, List.of("T", "LK"))
@@ -197,7 +191,12 @@ class DocumentRulesOverrideTest {
 
         CharterRefusal refusal = refused(DocumentRules.check(document, CLOSURE, facts), RefusalCode.ARTIFACT_LOCKED);
 
-        assertThat(refusal.getMessage()).contains("directive:LK").doesNotContain("directive:T,");
+        assertThat(refusal.getMessage())
+                .as("only the locked entry is named, whatever overrides it")
+                .isEqualTo("A pack locks directive:LK, so the activation cannot deny it.");
+        assertThat(facts.asked())
+                .as("a locked entry is refused without asking the resolution")
+                .isEmpty();
     }
 
     @Test
@@ -257,55 +256,49 @@ class DocumentRulesOverrideTest {
                 RefusalCode.ARTIFACT_REQUIRED);
     }
 
-    @Test
-    void aPresetAppliedWithForceJudgesOnlyTheDenyEntriesItAddsAndNamesNothingItKept() {
-        Facts facts = new Facts().satisfied(T, F).unsatisfied(T2);
-        ActivationDocument before = document()
-                .selected(DIRECTIVE, List.of("F"))
-                .deactivated(DIRECTIVE, List.of("T2"))
-                .build()
-                .document();
-        ActivationDocument after = before.withDeny(DIRECTIVE, "T");
+    /** A write that adds no deny entry on a required artifact, run against the facts it must not ask. */
+    private record Write(String name, Function<Facts, Optional<CharterRefusal>> run) {
 
-        assertThat(DocumentRules.checkWrite(before, after, CLOSURE, facts)).isEmpty();
-        assertThat(facts.asked()).containsExactly(EffectiveSet.queryOf(after));
+        @Override
+        public String toString() {
+            return name;
+        }
     }
 
-    @Test
-    void aSelectWithIncludeDeactivatedAddsNoDenyEntryAndNeverAsksTheFacts() {
-        Facts facts = new Facts().unsatisfied(T2);
-        ActivationDocument before =
+    static Stream<Write> writesThatAddNoDenyEntryOnARequiredArtifact() {
+        ActivationDocument denied =
                 document().deactivated(DIRECTIVE, List.of("T2", "X")).build().document();
-        ActivationDocument after = before.withoutDeny(DIRECTIVE, "X");
-
-        assertThat(DocumentRules.checkWrite(before, after, CLOSURE, facts)).isEmpty();
-        assertThat(facts.asked()).isEmpty();
-    }
-
-    @Test
-    void removingTheOverrideLaterIsNotRefusedWhileItsDenyEntryStaysStored() {
-        Facts facts = new Facts().unsatisfied(T);
-        ActivationDocument before = document()
+        ActivationDocument overridden = document()
                 .selected(DIRECTIVE, List.of("F"))
                 .deactivated(DIRECTIVE, List.of("T"))
                 .build()
                 .document();
-        ActivationDocument after = before.withoutSelected(DIRECTIVE, "F");
-
-        assertThat(DocumentRules.checkWrite(before, after, CLOSURE, facts)).isEmpty();
-        assertThat(facts.asked()).isEmpty();
-    }
-
-    @Test
-    void theFactsAreAskedOnlyForADenyEntryOnARequiredArtifact() {
-        Facts facts = new Facts().unsatisfied(T);
         ActivationDocument free =
                 document().deactivated(DIRECTIVE, List.of("X")).build().document();
+        return Stream.of(
+                new Write(
+                        "a select with includeDeactivated removes a deny entry",
+                        facts -> DocumentRules.checkWrite(denied, denied.withoutDeny(DIRECTIVE, "X"), CLOSURE, facts)),
+                new Write(
+                        "the override is removed later and its deny entry stays stored",
+                        facts -> DocumentRules.checkWrite(
+                                overridden, overridden.withoutSelected(DIRECTIVE, "F"), CLOSURE, facts)),
+                new Write(
+                        "a create denies an artifact nothing requires",
+                        facts -> DocumentRules.check(free, CLOSURE, facts)),
+                new Write("a create denies nothing", facts -> DocumentRules.check(EMPTY, CLOSURE, facts)),
+                new Write(
+                        "a replace denies an artifact nothing requires",
+                        facts -> DocumentRules.checkReplace(
+                                new ActivationDocument.Built(free, List.of()), EMPTY, CLOSURE, facts)));
+    }
 
-        assertThat(DocumentRules.check(free, CLOSURE, facts)).isEmpty();
-        assertThat(DocumentRules.check(EMPTY, CLOSURE, facts)).isEmpty();
-        assertThat(DocumentRules.checkReplace(new ActivationDocument.Built(free, List.of()), EMPTY, CLOSURE, facts))
-                .isEmpty();
+    @ParameterizedTest
+    @MethodSource("writesThatAddNoDenyEntryOnARequiredArtifact")
+    void theFactsAreAskedOnlyForADenyEntryTheWriteAddsOnARequiredArtifact(Write write) {
+        Facts facts = new Facts().unsatisfied(T).unsatisfied(T2);
+
+        assertThat(write.run().apply(facts)).isEmpty();
         assertThat(facts.asked()).isEmpty();
     }
 
