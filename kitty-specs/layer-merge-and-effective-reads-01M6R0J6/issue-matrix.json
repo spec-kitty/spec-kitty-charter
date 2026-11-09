@@ -48,6 +48,18 @@
       "verdict": "not-applicable",
       "wp": "WP29"
     },
+    "#186": {
+      "evidence_ref": "Epic context citation only",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": "WP29"
+    },
     "#234": {
       "evidence_ref": "Context: publishing a container image (and putting git in it) is #234's scope; this mission documents the requirement only",
       "fr": null,
