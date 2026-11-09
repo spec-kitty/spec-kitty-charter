@@ -559,7 +559,7 @@ What ADR-0018's walk reaches from a held step over the artifacts in force of an 
 
 ## Overrides edge
 
-An `overrides: [{artifact, member}]` entry on a pack descriptor that settles a sibling conflict on `artifact` by naming `member`, the descriptor pack id of a contesting pack (ADR-0053 decision 5). Until #358 any pack of the compose may declare it; until #357 settling only clears the refusal and the member's version is not yet put in force. Not to be confused with the CRG relation [Overlay Override](#overlay-override-overrides-crg-relation), which replaces a built-in artifact's content, or with a layer override, the same id at the level that applies taking the place of the one nearer built-in, whole, which needs no edge (ADR-0059 decision 3).
+An `overrides: [{artifact, member}]` entry on a pack descriptor that settles a sibling conflict on `artifact` by naming `member`, the descriptor pack id of a contesting pack (ADR-0053 decision 5). Until #358 any pack of the compose may declare it. Settling puts the named member's version in force (#357). Not to be confused with the CRG relation [Overlay Override](#overlay-override-overrides-crg-relation), which replaces a built-in artifact's content, or with a layer override, the same id at the level that applies taking the place of the one nearer built-in, whole, which needs no edge (ADR-0059 decision 3).
 
 **Meta:**
 

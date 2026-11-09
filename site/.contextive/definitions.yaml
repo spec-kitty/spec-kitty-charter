@@ -212,7 +212,7 @@ contexts:
         meta:
           status: "canonical"
       - name: "Overrides edge"
-        definition: "An `overrides: [{artifact, member}]` entry on a pack descriptor that settles a sibling conflict on `artifact` by naming `member`, the descriptor pack id of a contesting pack (ADR-0053 decision 5). Until #358 any pack of the compose may declare it; until #357 settling only clears the refusal and the member's version is not yet put in force."
+        definition: "An `overrides: [{artifact, member}]` entry on a pack descriptor that settles a sibling conflict on `artifact` by naming `member`, the descriptor pack id of a contesting pack (ADR-0053 decision 5). Until #358 any pack of the compose may declare it. Settling puts the named member's version in force (#357)."
         meta:
           status: "canonical"
       - name: "Pack id (descriptor)"
