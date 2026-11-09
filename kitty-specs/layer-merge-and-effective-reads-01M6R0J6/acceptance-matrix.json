@@ -106,13 +106,13 @@
     },
     {
       "criterion_id": "FR-011",
-      "description": "Verify FR-011 is satisfied",
+      "description": "A layer override that the overridden artifact's mutability level forbids (locked or extendable) refuses the compose, and the read answers 500 pack_unreadable naming the artifact, both packs and the policy, while an override of an open artifact is served.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "contracts/charter/scenarios/layer-merge.feature: \"A layer override the overridden artifact's level forbids is 500 pack_unreadable, and one of an open artifact is served\"; service/packs/src/test/java/ai/speckitty/charter/packs/domain/LayerMergeTest.java#everyRuleTheMergeDecidesHasItsRow",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:45:51.206098+00:00",
+      "notes": "PR B (#427, WP21); ADR-0063 D3 (rule C21 rows in LayerMergeTest)."
     },
     {
       "criterion_id": "FR-012",
