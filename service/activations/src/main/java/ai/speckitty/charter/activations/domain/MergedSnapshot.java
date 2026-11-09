@@ -234,7 +234,7 @@ public record MergedSnapshot(
             List<OverrideNotApplied> overrideNotApplied,
             List<ArtifactRef> requiredNotHeld,
             List<RequiredNotInForce> requiredNotInForce,
-            Map<ArtifactRef, List<ArtifactRef>> enhancedTargets) {
+            Map<ArtifactRef, List<NodeRef>> enhancedTargets) {
 
         private static final InForceAnswer EMPTY =
                 new InForceAnswer(Map.of(), List.of(), List.of(), List.of(), List.of(), List.of(), Map.of());
@@ -257,7 +257,7 @@ public record MergedSnapshot(
             overrideNotApplied = List.copyOf(Objects.requireNonNull(overrideNotApplied, "overrideNotApplied"));
             requiredNotHeld = List.copyOf(Objects.requireNonNull(requiredNotHeld, "requiredNotHeld"));
             requiredNotInForce = List.copyOf(Objects.requireNonNull(requiredNotInForce, "requiredNotInForce"));
-            Map<ArtifactRef, List<ArtifactRef>> targets = new LinkedHashMap<>();
+            Map<ArtifactRef, List<NodeRef>> targets = new LinkedHashMap<>();
             Objects.requireNonNull(enhancedTargets, "enhancedTargets")
                     .forEach((ref, list) -> targets.put(ref, List.copyOf(list)));
             enhancedTargets = Collections.unmodifiableMap(targets);

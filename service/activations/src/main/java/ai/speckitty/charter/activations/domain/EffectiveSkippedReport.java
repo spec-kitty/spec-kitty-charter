@@ -89,9 +89,9 @@ public record EffectiveSkippedReport(
      * An enhancer none of whose targets is in force.
      *
      * @param ref the enhancer
-     * @param targets the artifacts it enhances, sorted
+     * @param targets the nodes it enhances, sorted; a step of a mission type is a node, which no artifact is
      */
-    public record EnhancerWithoutTarget(ArtifactRef ref, List<ArtifactRef> targets) {
+    public record EnhancerWithoutTarget(ArtifactRef ref, List<NodeRef> targets) {
 
         /**
          * Checks the fields and sorts the targets.

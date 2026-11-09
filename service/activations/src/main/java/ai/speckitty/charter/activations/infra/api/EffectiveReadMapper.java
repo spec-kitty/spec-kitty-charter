@@ -8,6 +8,7 @@ import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.EffectiveSet;
 import ai.speckitty.charter.activations.domain.EffectiveSet.EffectiveArtifact;
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport;
+import ai.speckitty.charter.activations.domain.NodeRef;
 import ai.speckitty.charter.api.model.ActivationSkippedReport;
 import ai.speckitty.charter.api.model.ActivationSummary;
 import ai.speckitty.charter.api.model.DenyNotApplied;
@@ -185,7 +186,7 @@ public class EffectiveReadMapper {
     }
 
     /** A node of the enhancer's targets as the wire spells it: a kind of NodeKind and an id. */
-    private static NodeReference node(ArtifactRef ref) {
+    private static NodeReference node(NodeRef ref) {
         return new NodeReference(NodeReference.KindEnum.fromValue(ref.kind().token()), ref.id());
     }
 

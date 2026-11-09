@@ -24,6 +24,7 @@ import ai.speckitty.charter.activations.domain.EffectiveSkippedReport.Overridden
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport.OverrideNotApplied;
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport.PinNotHeld;
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport.RequiredNotInForce;
+import ai.speckitty.charter.activations.domain.NodeRef;
 import ai.speckitty.charter.activations.domain.SkippedReport.SkippedDeactivated;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.api.model.Activation;
@@ -257,7 +258,7 @@ class EffectiveReadMapperTest {
         EffectiveSkippedReport skipped = new EffectiveSkippedReport(
                 List.of(A),
                 List.of(new DenyNotApplied(B, DenyReason.LOCKED)),
-                List.of(new EnhancerWithoutTarget(T, List.of(B, A))),
+                List.of(new EnhancerWithoutTarget(T, List.of(NodeRef.of(B), NodeRef.of(A)))),
                 List.of(new OverrideNotApplied(A, B)),
                 List.of(new ArtifactRef(ArtifactKind.DIRECTIVE, "GONE")),
                 List.of(new RequiredNotInForce(T, Reason.ENHANCED_TARGET_NOT_IN_FORCE)),

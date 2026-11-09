@@ -8,6 +8,7 @@ import ai.speckitty.charter.activations.domain.EffectiveSkippedReport;
 import ai.speckitty.charter.activations.domain.MergedSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
+import ai.speckitty.charter.activations.domain.NodeRef;
 import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
 import ai.speckitty.charter.kernel.domain.NodeKind;
@@ -169,9 +170,9 @@ final class ClosureViewSession implements PacksSession {
     static InForceAnswer inForceOf(InForceStates states) {
         Map<ArtifactRef, MergedSnapshot.ArtifactState> byRef = new LinkedHashMap<>();
         states.states().forEach((urn, state) -> activatable(urn).ifPresent(ref -> byRef.put(ref, stateOf(ref, state))));
-        Map<ArtifactRef, List<ArtifactRef>> targets = new LinkedHashMap<>();
+        Map<ArtifactRef, List<NodeRef>> targets = new LinkedHashMap<>();
         states.enhancedTargets()
-                .forEach((urn, list) -> activatable(urn).ifPresent(ref -> targets.put(ref, listOf(list))));
+                .forEach((urn, list) -> activatable(urn).ifPresent(ref -> targets.put(ref, activatableNodes(list))));
         return new InForceAnswer(
                 byRef,
                 listOf(states.staleIds()),
@@ -228,6 +229,11 @@ final class ClosureViewSession implements PacksSession {
     /** The artifact a URN names, when it is one of an activatable kind: an action, a template or an asset is none. */
     private static Optional<ArtifactRef> activatable(Urn urn) {
         return ArtifactRef.of(urn).filter(ref -> ref.kind().activatable());
+    }
+
+    /** The nodes of the artifacts among the URNs; a step is still dropped here, as every other part of the report does. */
+    private static List<NodeRef> activatableNodes(Collection<Urn> urns) {
+        return listOf(urns).stream().map(NodeRef::of).toList();
     }
 
     private static List<ArtifactRef> listOf(Collection<Urn> urns) {

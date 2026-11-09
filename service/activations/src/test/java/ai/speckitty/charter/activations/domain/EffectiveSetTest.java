@@ -56,6 +56,10 @@ import org.junit.jupiter.api.Test;
  */
 class EffectiveSetTest {
 
+    private static NodeRef node(String urn) {
+        return NodeRef.of(ref(urn));
+    }
+
     private static ArtifactRef ref(String urn) {
         return ArtifactRef.of(Urn.parse(urn).orElseThrow()).orElseThrow();
     }
@@ -71,7 +75,7 @@ class EffectiveSetTest {
         private final List<DenyNotApplied> denies = new ArrayList<>();
         private final List<OverrideNotApplied> overrides = new ArrayList<>();
         private final List<RequiredNotInForce> notInForce = new ArrayList<>();
-        private final Map<ArtifactRef, List<ArtifactRef>> targets = new LinkedHashMap<>();
+        private final Map<ArtifactRef, List<NodeRef>> targets = new LinkedHashMap<>();
 
         /** An artifact of the pack {@code alpha} at {@code org}, open, in the given state and for the given reason. */
         Scene artifact(String urn, State state, Reason reason) {
@@ -283,13 +287,13 @@ class EffectiveSetTest {
         Scene scene = new Scene()
                 .artifact("skill:E", State.INACTIVE, Reason.ENHANCED_TARGET_NOT_IN_FORCE)
                 .bucket("skill:E", Bucket.ENHANCED_TARGET_NOT_IN_FORCE);
-        scene.targets.put(ref("skill:E"), List.of(ref("skill:Z"), ref("skill:A")));
+        scene.targets.put(ref("skill:E"), List.of(node("skill:Z"), node("skill:A")));
 
         EffectiveSet set = scene.of();
 
         assertThat(only(set, "skill:E").reason()).isEqualTo(Reason.ENHANCED_TARGET_NOT_IN_FORCE);
         assertThat(set.skipped().enhancedTargetNotInForce())
-                .containsExactly(new EnhancerWithoutTarget(ref("skill:E"), List.of(ref("skill:A"), ref("skill:Z"))));
+                .containsExactly(new EnhancerWithoutTarget(ref("skill:E"), List.of(node("skill:A"), node("skill:Z"))));
     }
 
     // ---- the requirement, judged after the table ----
