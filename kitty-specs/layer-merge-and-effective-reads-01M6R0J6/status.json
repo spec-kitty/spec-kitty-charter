@@ -1017,7 +1017,7 @@
     },
     "WP29": {
       "actor": "claude",
-      "agent": "claude:opus:reviewer-renata",
+      "agent": null,
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 1,
@@ -1030,6 +1030,7 @@
         "WP29 implemented: T143-T146, T165; lane-{ head 2ecda553 (planning commit ff0cadbd merged)"
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/layer-merge-and-effective-reads-01M6R0J6-coord/kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP29-c-deny-satisfied-by-override/review-cycle-1.md",
         "reference": "review-cycle://layer-merge-and-effective-reads-01M6R0J6/WP29-c-deny-satisfied-by-override/review-cycle-1.md",
@@ -1037,14 +1038,14 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 2204,
-      "shell_pid_created_at": "1794240477.57",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T143": "done",
-        "T144": "done",
-        "T145": "done",
-        "T146": "done",
-        "T165": "done"
+        "T143": "planned",
+        "T144": "planned",
+        "T145": "planned",
+        "T146": "planned",
+        "T165": "planned"
       }
     },
     "WP30": {
