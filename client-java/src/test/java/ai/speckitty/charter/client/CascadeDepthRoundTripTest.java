@@ -46,8 +46,11 @@ class CascadeDepthRoundTripTest {
         return """
                 {"revision": "%s", "applied": [{"kind": "agent_profile", "artifactId": "lead"}], "cleared": [],
                  "skipped": {"skippedByScope": [], "skippedDeactivated": [], "unreachedBehindDeactivated": [],
-                             "skippedShared": []%s},
-                 "droppedPins": [], "_links": {"up": {"href": "/api/v1/activations/r-1"}}}""".formatted(REVISION, extra);
+                             "skippedShared": [], "staleIds": [], "denyNotApplied": [], "languageFiltered": [],
+                             "overridden": [], "missionTypeNotInForce": [], "overrideNotApplied": [],
+                             "enhancedTargetNotInForce": [], "pinNotHeld": [], "requiredNotHeld": [],
+                             "requiredNotInForce": []%s},
+                 "droppedPins": [], "warnings": [], "_links": {"up": {"href": "/api/v1/activations/r-1"}}}""".formatted(REVISION, extra);
     }
 
     @BeforeEach
