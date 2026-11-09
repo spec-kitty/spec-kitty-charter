@@ -186,7 +186,11 @@ files:
     content_form: markdown
   # Step enhancements (ADR-0053 decision 22, ADR-0066): additions held beside the mission type they augment. The
   # target is authored only by an enhances edge in this pack's graph documents. Each prompt_fragments entry names a
-  # Markdown companion beside the enhancement, with its own structure schema and no frontmatter.
+  # Markdown companion beside the enhancement (one companion per entry, any stem matching the pattern, each named by
+  # exactly one entry), with its own structure schema and no frontmatter. An id that differs from the file stem is a
+  # schema violation, as the slot pattern and prompt_fragments: [] are; a repeated slot, a missing, shared or orphan
+  # companion, the edge rules, the directory, a repeated id and an absent prompt_fragments key are
+  # prompt_fragment_invalid.
   - match: "*/missions/*/enhancements/*.step-enhancement.yaml"
     schema: step-enhancement
   - match: "*/missions/*/enhancements/*.prompt-fragment.md"

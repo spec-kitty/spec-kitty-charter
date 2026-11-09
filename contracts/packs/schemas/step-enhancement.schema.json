@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://schemas.spec-kitty.ai/charter/packs/step-enhancement.schema.json",
   "title": "Mission step enhancement",
-  "description": "The additions a step enhancement contributes (missions/<type>/enhancements/<id>.step-enhancement.yaml). Its target is not a field: the enhancing pack's graph documents carry the only enhances edge, to action:<type>/<step> (ADR-0053 decision 22; ADR-0064). prompt_fragments names one Markdown companion per slot of that step's prompt (ADR-0066). A semantic check beside this schema requires the id to equal the file stem, each slot to occur at most once, and each named companion to exist beside the enhancement; violations are prompt_fragment_invalid. The guard and emit additions of ADR-0053 decision 22 are not in this shape yet (#428).",
+  "description": "The additions a step enhancement contributes (missions/<type>/enhancements/<id>.step-enhancement.yaml). Its target is not a field: the enhancing pack's graph documents carry the only enhances edge, to action:<type>/<step> (ADR-0053 decision 22; ADR-0064). prompt_fragments names one Markdown companion per slot of that step's prompt (ADR-0066): one companion per entry, any stem matching the pattern, each named by exactly one entry. This schema refuses an id that breaks its pattern, a slot that breaks <namespace>:<name> and prompt_fragments: [] (minItems), and the store's stem rule refuses an id that differs from its file stem as a schema violation too. Semantic checks beside the schema refuse with prompt_fragment_invalid, naming the file: a slot that occurs twice, a companion that is missing, shared by two entries or named by none (an orphan), a fragment that is blank, has frontmatter or holds a slot marker, an enhancement without exactly one enhances edge to an action:<type>/<step>, with an overrides edge (an enhancement only adds), whose <type> directory differs from that edge's type, whose id repeats across type directories (the second file is refused and withheld from the pack) or with an absent prompt_fragments key. The guard and emit additions of ADR-0053 decision 22 are fields, add_guards, add_lifecycle_guards and emits, built under #434; they are not edges and not in this shape yet.",
   "type": "object",
   "required": [
     "schema_version",
@@ -24,7 +24,7 @@
       "type": "string"
     },
     "prompt_fragments": {
-      "description": "Markdown companions to insert into named slots of the enhanced step's prompt. Absent when the enhancement contributes none; never empty. Each slot id occurs at most once. No target, range, anchor, position or priority field exists (ADR-0066 decisions 3, 5 and 7).",
+      "description": "Markdown companions to insert into named slots of the enhanced step's prompt, one companion per entry. An empty list is refused by this schema (minItems); an absent key is refused by a semantic check as prompt_fragment_invalid, since an enhancement adds nothing without an entry. Each slot id occurs at most once. No target, range, anchor, position or priority field exists (ADR-0066 decisions 3, 5 and 7).",
       "type": "array",
       "minItems": 1,
       "items": {
@@ -42,7 +42,7 @@
             "type": "string"
           },
           "path": {
-            "description": "The <id>.prompt-fragment.md companion beside this enhancement file; no subdirectory or other file form.",
+            "description": "The Markdown companion beside this enhancement file: one companion per entry, any stem matching the pattern, each named by exactly one entry; no subdirectory or other file form.",
             "pattern": "^[a-z][a-z0-9-]*\\.prompt-fragment\\.md$",
             "title": "Path",
             "type": "string"
