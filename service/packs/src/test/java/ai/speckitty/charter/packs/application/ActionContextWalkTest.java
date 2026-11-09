@@ -231,7 +231,7 @@ class ActionContextWalkTest {
     // ---- the rules the steps share ---------------------------------------------------------------------------------
 
     @Test
-    void theEntriesComeInStepOrderThenUrnOrder() {
+    void theEntriesAreSortedByFullUrnStringWhateverStepListedThem() {
         Closure closure = closure(
                 List.of("tactic:B", "tactic:A", "directive:R", "tactic:S", "glossary_pack:G"),
                 edge(START, RelationType.SCOPE, "tactic:B"),
@@ -241,7 +241,8 @@ class ActionContextWalkTest {
                 edge("tactic:B", RelationType.VOCABULARY, "glossary_pack:G"));
 
         assertThat(listed(walk(closure, 1, ActionContextWalkTest::everything)))
-                .containsExactly("tactic:A", "tactic:B", "directive:R", "tactic:S", "glossary_pack:G");
+                .as("ADR-0018 D3: sorted by full URN string, not by step")
+                .containsExactly("directive:R", "glossary_pack:G", "tactic:A", "tactic:B", "tactic:S");
     }
 
     @Test
