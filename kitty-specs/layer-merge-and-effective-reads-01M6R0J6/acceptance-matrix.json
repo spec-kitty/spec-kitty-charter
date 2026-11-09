@@ -406,13 +406,13 @@
     },
     {
       "criterion_id": "FR-041",
-      "description": "Verify FR-041 is satisfied",
+      "description": "activatedKinds and missionTypes on any activation write are refused 422 validation_failed, and a stored v1 document is read as its schemaVersion 2 upgrade with the same in-force set, presets free to name any kind.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "contracts/charter/scenarios/activation-kind-model.feature: \"A replace that sends both remnant members is 422 with one violation per member and stores nothing\"; contracts/charter/scenarios/activation-kind-model.feature: \"A stored version 1 document reads back as its version 2 upgrade\"; service/activations/src/test/java/ai/speckitty/charter/activations/infra/storage/ActivationDocumentUpgradeTest.java#aVersionOneDocumentReadsAsItsVersionTwoUpgrade",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:47:21.856920+00:00",
+      "notes": "PR A0 (#414, WP04/WP05); IC-20, DM-01M6RCY40CQQTHC130RWF43W0D, DM-01M6RCY8MYNGNPJ247M2Y4880N. Presets naming any kind: 'A preset naming a skill applies it'."
     },
     {
       "criterion_id": "FR-042",
