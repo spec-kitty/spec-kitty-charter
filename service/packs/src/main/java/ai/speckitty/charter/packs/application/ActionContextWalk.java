@@ -198,6 +198,10 @@ public final class ActionContextWalk {
                     (Link link) -> link.when().orElse(""))
             .thenComparing(link -> link.reason().orElse(""));
 
+    /** The relations that reach an artifact for certain: the cascade's, but {@code suggests} and {@code enhances}. */
+    private static final Set<RelationType> HARD_RELATIONS =
+            Set.of(RelationType.REQUIRES, RelationType.REFINES, RelationType.SCOPE, RelationType.INSTANTIATES);
+
     private final EdgeIndex merged;
     private final Map<Urn, List<Link>> outgoing = new HashMap<>();
     private final Map<Urn, List<Link>> enhancing = new HashMap<>();
@@ -227,7 +231,14 @@ public final class ActionContextWalk {
      * @param action the action
      * @param depth the number of {@code suggests} hops, at least 0
      * @param inForce whether an artifact is in force: the effective set, which holds no step
-     * @return what the action reaches
+     * @return what the action reaches. Beside the entries, {@link Context#suggested()} holds each target of a
+     *     {@code suggests} edge of step 3 (from a scoped or suggested artifact in force, within {@code depth}) that the
+     *     closure holds and the predicate refuses, unless a listed artifact also reaches it through a hard relation
+     *     ({@code requires}, {@code refines}, {@code scope}, {@code instantiates}). They are candidates only: never
+     *     listed, expanded or given vocabulary; whether one is {@code not_selected} is the activations slice's to judge.
+     *     Where several {@code suggests} edges reach one target, the parent is the one of the frontier with the fewest
+     *     hops, then the smallest source URN, then the smallest edge ({@code when}, then {@code reason}); the
+     *     candidates come in URN order
      * @throws CharterRefusal with {@code MISSION_TYPE_NOT_FOUND} when no pack of the closure holds the mission type, and
      *     with {@code ACTION_NOT_FOUND} when the closure holds no such step ({@link
      *     ai.speckitty.charter.packs.domain.StepHolding}); both are judged on the merged closure, whether or not the
@@ -250,7 +261,7 @@ public final class ActionContextWalk {
         List<Urn> suggested = run.expand(scoped, Step.SUGGESTS, depth);
         run.expand(suggested, Step.REQUIRES_OF_SUGGESTED, Integer.MAX_VALUE);
         run.expand(run.listedUrns(), Step.VOCABULARY, 1);
-        return new Context(start, true, run.entries(), List.of());
+        return new Context(start, true, run.entries(), run.suggestions());
     }
 
     /** The mission type's URN, once the names are judged on the merged closure (OD-9, closure form). */
@@ -285,6 +296,7 @@ public final class ActionContextWalk {
         private final Predicate<Urn> inForce;
         private final Map<Urn, Listed> listed = new LinkedHashMap<>();
         private final Map<Urn, Integer> hops = new HashMap<>();
+        private final Map<Urn, Link> refused = new TreeMap<>();
 
         Run(Urn start, Predicate<Urn> inForce) {
             this.start = start;
@@ -336,6 +348,15 @@ public final class ActionContextWalk {
             Map<Urn, Link> parents = new TreeMap<>();
             for (Urn parent : frontier) {
                 for (Link link : outgoing.getOrDefault(parent, List.of())) {
+                    if (relation == RelationType.SUGGESTS
+                            && !link.target().equals(start)
+                            && !visited.contains(link.target())
+                            && !inForce.test(link.target())) {
+                        refused.merge(
+                                link.target(),
+                                link,
+                                (first, second) -> byParent.compare(first, second) <= 0 ? first : second);
+                    }
                     if (link.relation() == relation
                             && !visited.contains(link.target())
                             && inForce.test(link.target())) {
@@ -347,6 +368,25 @@ public final class ActionContextWalk {
                 }
             }
             return parents;
+        }
+
+        /** The out-of-force suggestion candidates no listed artifact reaches through a hard relation, in URN order. */
+        List<Suggested> suggestions() {
+            Set<Urn> hard = new HashSet<>();
+            for (Urn source : listed.keySet()) {
+                outgoing.getOrDefault(source, List.of()).stream()
+                        .filter(link -> HARD_RELATIONS.contains(link.relation()))
+                        .forEach(link -> hard.add(link.target()));
+            }
+            return refused.entrySet().stream()
+                    .filter(candidate -> !hard.contains(candidate.getKey()))
+                    .map(candidate -> new Suggested(
+                            candidate.getKey(),
+                            candidate.getValue().source(),
+                            hopsOf(candidate.getValue().source()) + 1,
+                            candidate.getValue().when(),
+                            candidate.getValue().reason()))
+                    .toList();
         }
 
         private void list(Urn urn, Step step, Link parent) {
