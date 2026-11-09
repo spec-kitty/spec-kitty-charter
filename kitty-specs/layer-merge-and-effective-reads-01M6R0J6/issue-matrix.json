@@ -240,6 +240,18 @@
       "verdict": "in-mission",
       "wp": "WP30"
     },
+    "#409": {
+      "evidence_ref": "Out of scope for this mission by the operator's rulings (handover: do not take on #406, #407, #409, #411, #97, #99)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": "WP29"
+    },
     "#410": {
       "evidence_ref": "FR-040 / A7 Q1: activation-kind-model.feature 'Selecting a mission type with a cascade selects what its steps reach'; closed by PR A0 after a probe over the pinned built-in pack",
       "fr": null,
