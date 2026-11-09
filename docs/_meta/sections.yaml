@@ -6,30 +6,35 @@ version: 1
 sections:
   - id: context
     label: Context
+    icon: fa-circle-info
     order: 10
     type: Context
     purpose: Why the charter service exists, the vocabulary it uses, and the systems around it.
 
   - id: glossary
     label: Glossary
+    icon: fa-book
     order: 15
     type: Glossary
     purpose: The charter vocabulary, authored in site/.contextive/definitions.yaml (ADR-0029). Generated; do not edit the pages.
 
   - id: architecture
     label: Architecture
+    icon: fa-diagram-project
     order: 20
     type: Architecture
     purpose: The logical model and descriptors of the charter components, and the target design of the Java charter service and its contract.
 
   - id: adr
     label: Decision Records
+    icon: fa-file-signature
     order: 30
     type: ADR
     purpose: The immutable log of decisions taken in this repository.
 
   - id: plans
     label: Plans
+    icon: fa-map
     order: 40
     type: Plan
     purpose: The bootstrap roadmap, the questions still open and dated engineering notes that feed decisions.
@@ -37,30 +42,35 @@ sections:
 
   - id: api
     label: API
+    icon: fa-plug
     order: 50
     type: API
     purpose: The public API of the extracted charter — the service contract with its two built reads, the Javadoc, and the designed Python package surface.
 
   - id: conformance
     label: Conformance
+    icon: fa-circle-check
     order: 55
     type: API
     purpose: Where the charter service answers differently from core on purpose, in one divergence register.
 
   - id: development
     label: Development
+    icon: fa-code
     order: 85
     type: Guide
     purpose: The conventions contributors follow when they change the API and the service.
 
   - id: guides
     label: Guides
+    icon: fa-compass
     order: 90
     type: Guide
     purpose: Task-oriented how-tos for contributors and consumers.
 
   - id: changelog
     label: Changelog
+    icon: fa-clock-rotate-left
     order: 120
     type: Changelog
     purpose: What changed and when, newest first.

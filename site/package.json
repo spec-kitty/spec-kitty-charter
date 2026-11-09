@@ -23,7 +23,7 @@
     "@astrojs/markdown-satteri": "0.4.4",
     "@astrojs/sitemap": "^3.2.0",
     "@astrojs/starlight": "^0.42.6",
-    "@spec-kitty/doc-toolkit": "0.6.0",
+    "@spec-kitty/doc-toolkit": "0.7.0",
     "astro": "^7.4.0",
     "sharp": "^0.34.5",
     "starlight-openapi": "0.27.0"
