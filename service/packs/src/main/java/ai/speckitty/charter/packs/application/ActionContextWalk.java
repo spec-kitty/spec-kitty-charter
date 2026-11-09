@@ -135,13 +135,46 @@ public final class ActionContextWalk {
     }
 
     /**
+     * An artifact a listed artifact suggests that is held in the merged closure but not in force: a candidate for a
+     * conditional suggestion (decision {@code 01M7059T4K64TAVKXN3T1FKWYG}). The walk reports it and goes no further:
+     * step 4 does not expand it and step 5 does not take its vocabulary. Whether it is {@code not_selected} is the
+     * activations slice's to judge.
+     *
+     * @param urn the suggested artifact
+     * @param via the listed artifact whose {@code suggests} edge reaches it
+     * @param hops {@code hops(via) + 1}
+     * @param when the {@code when} of that edge; empty when it states none
+     * @param reason the {@code reason} of that edge; empty when it states none
+     */
+    public record Suggested(Urn urn, Urn via, int hops, Optional<String> when, Optional<String> reason) {
+
+        /**
+         * Checks the fields.
+         *
+         * @param urn the suggested artifact
+         * @param via the suggesting artifact
+         * @param hops the path length
+         * @param when the edge's condition
+         * @param reason the edge's reason
+         */
+        public Suggested {
+            Objects.requireNonNull(urn, "urn");
+            Objects.requireNonNull(via, "via");
+            Objects.requireNonNull(when, "when");
+            Objects.requireNonNull(reason, "reason");
+        }
+    }
+
+    /**
      * What the walk answers.
      *
      * @param action the action node
      * @param missionTypeInForce whether the mission type is in force; when it is not, there is no entry
      * @param entries the entries, in step order then URN order
+     * @param suggested the out-of-force candidates step 3 reached, in URN order; see
+     *     {@link ActionContextWalk#walk}
      */
-    public record Context(Urn action, boolean missionTypeInForce, List<Entry> entries) {
+    public record Context(Urn action, boolean missionTypeInForce, List<Entry> entries, List<Suggested> suggested) {
 
         /**
          * Checks and copies the fields.
@@ -149,10 +182,12 @@ public final class ActionContextWalk {
          * @param action the action node
          * @param missionTypeInForce whether the mission type is in force
          * @param entries the entries
+         * @param suggested the out-of-force suggestions
          */
         public Context {
             Objects.requireNonNull(action, "action");
             entries = List.copyOf(Objects.requireNonNull(entries, "entries"));
+            suggested = List.copyOf(Objects.requireNonNull(suggested, "suggested"));
         }
     }
 
@@ -207,7 +242,7 @@ public final class ActionContextWalk {
         Urn type = known(missionType, action);
         Urn start = Urn.action(missionType, action);
         if (!inForce.test(type)) {
-            return new Context(start, false, List.of());
+            return new Context(start, false, List.of(), List.of());
         }
         Run run = new Run(start, inForce);
         List<Urn> scoped = run.expand(List.of(start), Step.SCOPE, 1);
@@ -215,7 +250,7 @@ public final class ActionContextWalk {
         List<Urn> suggested = run.expand(scoped, Step.SUGGESTS, depth);
         run.expand(suggested, Step.REQUIRES_OF_SUGGESTED, Integer.MAX_VALUE);
         run.expand(run.listedUrns(), Step.VOCABULARY, 1);
-        return new Context(start, true, run.entries());
+        return new Context(start, true, run.entries(), List.of());
     }
 
     /** The mission type's URN, once the names are judged on the merged closure (OD-9, closure form). */

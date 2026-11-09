@@ -451,4 +451,93 @@ class ActionContextWalkTest {
         assertThatThrownBy(() -> walk(closure, -1, ActionContextWalkTest::everything))
                 .isInstanceOf(IllegalArgumentException.class);
     }
+
+    // ---- suggestions out of force (decision 01M7059T4K64TAVKXN3T1FKWYG) -------------------------------------------
+
+    private static Closure suggestingOutOfForce() {
+        return closure(
+                List.of("tactic:T1", "tactic:S", "directive:R", "glossary_pack:G"),
+                edge(START, RelationType.SCOPE, "tactic:T1"),
+                new Relationship(
+                        urn("tactic:T1"),
+                        urn("tactic:S"),
+                        RelationType.SUGGESTS,
+                        Optional.of("the change is large"),
+                        Optional.of("S checks it")),
+                edge("tactic:S", RelationType.REQUIRES, "directive:R"),
+                edge("tactic:S", RelationType.VOCABULARY, "glossary_pack:G"));
+    }
+
+    @Test
+    void aSuggestsTargetOutOfForceIsReportedWithItsEdgeDataAndNotExpanded() {
+        Predicate<Urn> withoutS = inForce("mission_type:M", "tactic:T1", "directive:R", "glossary_pack:G");
+
+        Context context = walk(suggestingOutOfForce(), 1, withoutS);
+
+        assertThat(context.suggested())
+                .extracting(
+                        ActionContextWalk.Suggested::urn,
+                        ActionContextWalk.Suggested::via,
+                        ActionContextWalk.Suggested::hops,
+                        ActionContextWalk.Suggested::when,
+                        ActionContextWalk.Suggested::reason)
+                .containsExactly(tuple(
+                        urn("tactic:S"),
+                        urn("tactic:T1"),
+                        2,
+                        Optional.of("the change is large"),
+                        Optional.of("S checks it")));
+        assertThat(listed(context))
+                .as("S is no entry, its requires target R and its vocabulary G are not reached through it")
+                .containsExactly("tactic:T1");
+    }
+
+    @Test
+    void theSameSuggestsTargetInForceIsAnEntryAndIsExpanded() {
+        Predicate<Urn> withS = inForce("mission_type:M", "tactic:T1", "tactic:S", "directive:R", "glossary_pack:G");
+
+        Context context = walk(suggestingOutOfForce(), 1, withS);
+
+        assertThat(context.suggested()).isEmpty();
+        assertThat(listed(context)).containsExactly("tactic:T1", "tactic:S", "directive:R", "glossary_pack:G");
+    }
+
+    @Test
+    void aTargetAListedArtifactAlsoReachesThroughARequiresIsNotReportedAsASuggestion() {
+        Closure closure = closure(
+                List.of("tactic:T1", "tactic:T2", "tactic:S"),
+                edge(START, RelationType.SCOPE, "tactic:T1"),
+                edge(START, RelationType.SCOPE, "tactic:T2"),
+                edge("tactic:T1", RelationType.SUGGESTS, "tactic:S"),
+                edge("tactic:T2", RelationType.REQUIRES, "tactic:S"));
+
+        Context context = walk(closure, 1, inForce("mission_type:M", "tactic:T1", "tactic:T2"));
+
+        assertThat(context.suggested()).isEmpty();
+    }
+
+    @Test
+    void depthZeroReportsNoSuggestion() {
+        Predicate<Urn> withoutS = inForce("mission_type:M", "tactic:T1", "directive:R", "glossary_pack:G");
+
+        assertThat(walk(suggestingOutOfForce(), 0, withoutS).suggested()).isEmpty();
+    }
+
+    @Test
+    void
+            severalSuggestsEdgesToOneTargetTakeTheParentWithTheFewestHopsThenTheSmallestSourceAndTheCandidatesAreInUrnOrder() {
+        Closure closure = closure(
+                List.of("tactic:B", "tactic:A", "tactic:S2", "tactic:S1"),
+                edge(START, RelationType.SCOPE, "tactic:B"),
+                edge(START, RelationType.SCOPE, "tactic:A"),
+                edge("tactic:B", RelationType.SUGGESTS, "tactic:S2"),
+                edge("tactic:A", RelationType.SUGGESTS, "tactic:S2"),
+                edge("tactic:B", RelationType.SUGGESTS, "tactic:S1"));
+
+        Context context = walk(closure, 1, inForce("mission_type:M", "tactic:A", "tactic:B"));
+
+        assertThat(context.suggested())
+                .extracting(ActionContextWalk.Suggested::urn, ActionContextWalk.Suggested::via)
+                .containsExactly(tuple(urn("tactic:S1"), urn("tactic:B")), tuple(urn("tactic:S2"), urn("tactic:A")));
+    }
 }
