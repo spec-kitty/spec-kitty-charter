@@ -2,15 +2,18 @@
 
 Kept so another runner or session can take over. The live state is on the branches; these are the notes behind it.
 
-## State at this snapshot
+## State at this snapshot (updated)
 
 - **WP27** approved (two review cycles), lane `kitty/mission-layer-merge-and-effective-reads-01M6R0J6-lane-y`.
-- **WP28** in fix cycle 1 on lane `…-lane-z`. The reviewer approved with minors; the runner folds MINOR-1, -2 and -4 and the NITs
-  before approval (see `wp28-review-cycle-1.md`, "Runner dispositions"). The implementer's uncommitted work in the
-  lane worktree is not pushed: a new runner restarts the fix cycle from that review file if it is lost.
-- **WP29** planned; `lane-{` is not built yet. Rebuild it on `lane-z` once WP28 is approved, as `lane-y` and `lane-z` were
-  (one signed merge commit: the dependency lane's code tree, the current planning commit's planning files, the lane's
-  status files; parents: the lane, its dependency lanes, the planning commit), then `agent action implement WP29`.
+- **WP28** approved (two review cycles), lane `…-lane-z` (built on `lane-y`).
+- **WP29** in progress on lane `…-lane-{` (built on `lane-z`), implementer `claude:sonnet:java-jenny`. Pushed commits
+  `66481b02..0fa69ecc` (contract, red tests, the IC-13 rule, rules page and ADR-0059 R6, DIV-239 to DIV-244, the
+  graph/context docs). Anything the implementer has not committed yet is not on the branch. Before review: re-pin
+  the planning commit, merge it into `lane-{`, `move-task WP29 --to for_review` (add `--allow-sparse-checkout` on
+  this lane: decision `01M70E6PK2HSWEFDVS9KGRGE71`, the CLI's lane-id pattern rejects `{`).
+- Two NITs per approved WP (Javadoc/comment reflow, long description lines) are folded at closeout.
+- The coordination worktree carries ~380 untracked files (copies of main-era files); nothing tracked is modified and
+  nothing of it is committed. Ignore them, or `git clean` that worktree only after checking.
 
 ## Files
 
