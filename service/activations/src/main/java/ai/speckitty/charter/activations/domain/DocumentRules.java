@@ -81,6 +81,19 @@ public final class DocumentRules {
     }
 
     /**
+     * Stub: ignores the facts.
+     *
+     * @param document the document
+     * @param snapshot the closure the document names
+     * @param facts the in-force facts
+     * @return the refusal; empty when the document may be stored
+     */
+    public static Optional<CharterRefusal> check(
+            ActivationDocument document, ClosureSnapshot snapshot, InForceFacts facts) {
+        return check(document, snapshot);
+    }
+
+    /**
      * Checks a document just built, together with its shape violations.
      *
      * @param built the document and its shape violations
@@ -124,6 +137,34 @@ public final class DocumentRules {
             return refusal;
         }
         return floorRefusal(addedDenies(before, after, snapshot), snapshot);
+    }
+
+    /**
+     * Stub: ignores the facts.
+     *
+     * @param before the document as stored
+     * @param after the document the write computed
+     * @param snapshot the closure the document names
+     * @param facts the in-force facts
+     * @return the refusal; empty when the document may be stored
+     */
+    public static Optional<CharterRefusal> checkWrite(
+            ActivationDocument before, ActivationDocument after, ClosureSnapshot snapshot, InForceFacts facts) {
+        return checkWrite(before, after, snapshot);
+    }
+
+    /**
+     * Stub: ignores the facts.
+     *
+     * @param built the body as the request built it
+     * @param stored the document the replace replaces
+     * @param snapshot the closure the body names
+     * @param facts the in-force facts
+     * @return the refusal; empty when the body may be stored
+     */
+    public static Optional<CharterRefusal> checkReplace(
+            ActivationDocument.Built built, ActivationDocument stored, ClosureSnapshot snapshot, InForceFacts facts) {
+        return checkReplace(built, stored, snapshot);
     }
 
     /**
