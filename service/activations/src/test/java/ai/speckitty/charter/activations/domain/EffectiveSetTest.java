@@ -14,6 +14,7 @@ import ai.speckitty.charter.activations.domain.EffectiveSkippedReport.EnhancerWi
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport.Overridden;
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport.OverrideNotApplied;
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport.PinNotHeld;
+import ai.speckitty.charter.activations.domain.EffectiveSkippedReport.PruningReason;
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport.RequiredNotInForce;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.ArtifactState;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.Edge;
@@ -331,14 +332,14 @@ class EffectiveSetTest {
         Scene scene = new Scene()
                 .artifact("skill:E", State.INACTIVE, Reason.ENHANCED_TARGET_NOT_IN_FORCE)
                 .required("skill:E");
-        scene.notInForce.add(new RequiredNotInForce(ref("skill:E"), Reason.ENHANCED_TARGET_NOT_IN_FORCE));
+        scene.notInForce.add(new RequiredNotInForce(ref("skill:E"), PruningReason.ENHANCED_TARGET_NOT_IN_FORCE));
 
         EffectiveSet set = scene.of();
 
         assertThat(only(set, "skill:E").state()).isEqualTo(State.INACTIVE);
         assertThat(only(set, "skill:E").required()).isTrue();
         assertThat(set.skipped().requiredNotInForce())
-                .containsExactly(new RequiredNotInForce(ref("skill:E"), Reason.ENHANCED_TARGET_NOT_IN_FORCE));
+                .containsExactly(new RequiredNotInForce(ref("skill:E"), PruningReason.ENHANCED_TARGET_NOT_IN_FORCE));
     }
 
     // ---- the buckets of the rules not applied, and of the ids and pins the closure no longer has ----
@@ -424,7 +425,7 @@ class EffectiveSetTest {
                 .bucket("tactic:T", Bucket.OVERRIDDEN)
                 .artifact("skill:E", State.INACTIVE, Reason.ENHANCED_TARGET_NOT_IN_FORCE)
                 .required("skill:E");
-        scene.notInForce.add(new RequiredNotInForce(ref("skill:E"), Reason.ENHANCED_TARGET_NOT_IN_FORCE));
+        scene.notInForce.add(new RequiredNotInForce(ref("skill:E"), PruningReason.ENHANCED_TARGET_NOT_IN_FORCE));
         scene.stale.add(ref("tactic:gone"));
         scene.denies.add(new DenyNotApplied(ref("directive:L"), DenyReason.LOCKED));
 

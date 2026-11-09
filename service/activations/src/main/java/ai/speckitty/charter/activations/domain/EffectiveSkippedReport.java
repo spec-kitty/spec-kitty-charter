@@ -1,6 +1,5 @@
 package ai.speckitty.charter.activations.domain;
 
-import ai.speckitty.charter.activations.domain.EffectiveSet.Reason;
 import ai.speckitty.charter.activations.domain.SkippedReport.SkippedDeactivated;
 import java.util.Comparator;
 import java.util.List;
@@ -126,12 +125,35 @@ public record EffectiveSkippedReport(
     }
 
     /**
-     * A required artifact that cannot stand in force.
+     * Why the pruning removed a required or locked artifact from force (rule E6): the two reasons it gives, no other. The
+     * contract's {@code RequiredNotInForce.reason} has exactly these two values; this is the activations slice's own type
+     * for them, never the packs slice's, and {@code ActivationWireTokenParityTest} pins it against the contract.
+     */
+    public enum PruningReason {
+        /** The artifact is bound to a mission type that is not in force. */
+        MISSION_TYPE_NOT_IN_FORCE,
+        /** The artifact is an enhancer none of whose targets is in force. */
+        ENHANCED_TARGET_NOT_IN_FORCE;
+
+        /**
+         * The contract's spelling.
+         *
+         * @return the lower-case token
+         */
+        public String token() {
+            return name().toLowerCase(Locale.ROOT);
+        }
+    }
+
+    /**
+     * A required artifact that cannot stand in force. Only an artifact an activation can select is listed: no preset or
+     * pack lock can name a step (the policy and preset schemas exclude {@code action}), so the required floor holds
+     * activatable kinds only and this bucket never names a step (decision D16).
      *
      * @param ref the artifact
-     * @param reason {@link Reason#ENHANCED_TARGET_NOT_IN_FORCE} or {@link Reason#MISSION_TYPE_NOT_IN_FORCE}
+     * @param reason why it cannot stand in force
      */
-    public record RequiredNotInForce(ArtifactRef ref, Reason reason) {
+    public record RequiredNotInForce(ArtifactRef ref, PruningReason reason) {
 
         /**
          * Checks the fields.

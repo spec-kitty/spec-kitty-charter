@@ -23,6 +23,7 @@ import ai.speckitty.charter.activations.domain.EffectiveSkippedReport.EnhancerWi
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport.Overridden;
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport.OverrideNotApplied;
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport.PinNotHeld;
+import ai.speckitty.charter.activations.domain.EffectiveSkippedReport.PruningReason;
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport.RequiredNotInForce;
 import ai.speckitty.charter.activations.domain.NodeRef;
 import ai.speckitty.charter.activations.domain.SkippedReport.SkippedDeactivated;
@@ -261,7 +262,7 @@ class EffectiveReadMapperTest {
                 List.of(new EnhancerWithoutTarget(T, List.of(NodeRef.of(B), NodeRef.of(A)))),
                 List.of(new OverrideNotApplied(A, B)),
                 List.of(new ArtifactRef(ArtifactKind.DIRECTIVE, "GONE")),
-                List.of(new RequiredNotInForce(T, Reason.ENHANCED_TARGET_NOT_IN_FORCE)),
+                List.of(new RequiredNotInForce(T, PruningReason.ENHANCED_TARGET_NOT_IN_FORCE)),
                 List.of(new PinNotHeld("main", "9.9.9")),
                 List.of(B),
                 List.of(new ArtifactRef(ArtifactKind.TACTIC, "step")),

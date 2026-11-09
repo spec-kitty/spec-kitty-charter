@@ -220,10 +220,18 @@ final class ClosureViewSession implements PacksSession {
         List<EffectiveSkippedReport.RequiredNotInForce> dropped = new ArrayList<>();
         for (InForceStates.RequiredNotInForce entry : states.requiredNotInForce()) {
             activatable(entry.urn())
-                    .ifPresent(ref -> dropped.add(new EffectiveSkippedReport.RequiredNotInForce(
-                            ref, EffectiveSet.Reason.valueOf(entry.reason().name()))));
+                    .ifPresent(ref -> dropped.add(
+                            new EffectiveSkippedReport.RequiredNotInForce(ref, pruningReason(entry.reason()))));
         }
         return dropped;
+    }
+
+    /** The activations slice's pruning reason for the packs slice's, by an exhaustive switch and never by name. */
+    static EffectiveSkippedReport.PruningReason pruningReason(InForceStates.PruningReason reason) {
+        return switch (reason) {
+            case MISSION_TYPE_NOT_IN_FORCE -> EffectiveSkippedReport.PruningReason.MISSION_TYPE_NOT_IN_FORCE;
+            case ENHANCED_TARGET_NOT_IN_FORCE -> EffectiveSkippedReport.PruningReason.ENHANCED_TARGET_NOT_IN_FORCE;
+        };
     }
 
     /** The artifact a URN names, when it is one of an activatable kind: an action, a template or an asset is none. */
