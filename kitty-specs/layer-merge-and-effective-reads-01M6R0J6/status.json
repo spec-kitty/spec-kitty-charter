@@ -1041,11 +1041,11 @@
       "shell_pid": null,
       "shell_pid_created_at": null,
       "subtasks": {
-        "T143": "planned",
-        "T144": "planned",
-        "T145": "planned",
-        "T146": "planned",
-        "T165": "planned"
+        "T143": "done",
+        "T144": "done",
+        "T145": "done",
+        "T146": "done",
+        "T165": "done"
       }
     },
     "WP30": {
