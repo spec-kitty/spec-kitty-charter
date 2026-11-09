@@ -396,13 +396,13 @@
     },
     {
       "criterion_id": "FR-040",
-      "description": "Verify FR-040 is satisfied",
+      "description": "Mission types are selected and denied like any kind (except when required or locked), selecting one with a cascade selects what its steps reach, and its steps and bound artifacts are in force only while it is.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "contracts/charter/scenarios/activation-kind-model.feature: \"Selecting a mission type with a cascade selects what its steps reach\"; contracts/charter/scenarios/effective-reads.feature: \"US3 AS4 - the steps of a mission type are in force only while the mission type is\"",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:47:18.959946+00:00",
+      "notes": "PR A0 (#414, WP05) and PR B (#427) read side; IC-20, DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY, DM-01M6RCXTS0SMDNTWZ8G7GJ2P5S, DM-01M6RCXZ9HSHT4K3443YYZ8ZFC. Closes #410. Deny: 'A deny entry on a required mission type is 409 artifact_required and stores nothing'."
     },
     {
       "criterion_id": "FR-041",
