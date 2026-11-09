@@ -415,4 +415,45 @@ class EdgeIndexTest {
                         new EdgeIndex.Place(pack("org"), urn("action:M/two")),
                         new EdgeIndex.Place(pack("project"), urn("action:M/one")));
     }
+
+    @Test
+    void writtenLinksKeepAnEdgeToATargetNoPackHoldsWhereLinksDropsIt() {
+        EdgeIndex index = new Closure()
+                .pack(
+                        "alpha",
+                        List.of("agent_profile:P", "directive:D"),
+                        edge("agent_profile:P", RelationType.REQUIRES, "directive:D"),
+                        edge("agent_profile:P", RelationType.SPECIALIZES_FROM, "agent_profile:Gone"))
+                .index();
+
+        assertThat(index.links()).extracting(EdgeIndex.Link::target).containsExactly(urn("directive:D"));
+        assertThat(index.writtenLinks())
+                .extracting(EdgeIndex.Link::source, EdgeIndex.Link::relation, EdgeIndex.Link::target)
+                .containsExactlyInAnyOrder(
+                        org.assertj.core.api.Assertions.tuple(
+                                urn("agent_profile:P"), RelationType.REQUIRES, urn("directive:D")),
+                        org.assertj.core.api.Assertions.tuple(
+                                urn("agent_profile:P"), RelationType.SPECIALIZES_FROM, urn("agent_profile:Gone")));
+        assertThat(index.holdsUrn(urn("directive:D"))).isTrue();
+        assertThat(index.holdsUrn(urn("agent_profile:Gone"))).isFalse();
+    }
+
+    @Test
+    void writtenLinksOfAMergedIndexLeaveOutTheEdgesOfAVersionALaterLevelReplaced() {
+        Closure closure = new Closure()
+                .pack(
+                        "org",
+                        PackLevel.ORG,
+                        List.of("agent_profile:P", "directive:Old"),
+                        edge("agent_profile:P", RelationType.REQUIRES, "directive:Old"))
+                .pack(
+                        "project",
+                        PackLevel.PROJECT,
+                        List.of("agent_profile:P", "directive:New"),
+                        edge("agent_profile:P", RelationType.REQUIRES, "directive:New"));
+
+        assertThat(closure.merged().writtenLinks())
+                .extracting(EdgeIndex.Link::target)
+                .containsExactly(urn("directive:New"));
+    }
 }
