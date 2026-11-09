@@ -27,6 +27,7 @@ history:
 agent_profile: curator-carla
 authoritative_surface: docs/
 create_intent:
+- docs/changelog/CHANGELOG.md
 - kitty-specs/agent-profile-reads-01M70ZDM/research/usability-baseline.md
 - kitty-specs/agent-profile-reads-01M70ZDM/research/usability-green.md
 execution_mode: planning_artifact

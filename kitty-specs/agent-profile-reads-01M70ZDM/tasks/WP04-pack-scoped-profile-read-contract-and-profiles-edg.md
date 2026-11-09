@@ -33,18 +33,25 @@ history:
 agent_profile: java-jenny
 authoritative_surface: service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/
 create_intent:
-- service/packs/src/main/java/ai/speckitty/charter/packs/application/ForeignArtifactRead.java
-- service/packs/src/test/java/ai/speckitty/charter/packs/application/ForeignArtifactReadTest.java
+- contracts/charter/changes/2026-11-09-agent-profile-read.md
+- contracts/charter/examples/Artifact.agent_profile.yaml
+- contracts/charter/paths/packs_packId_artifacts_agent_profile_artifactId.yaml
+- contracts/charter/scenarios/agent-profile-reads.feature
 - contracts/charter/schemas/AgentProfile.yaml
 - contracts/charter/schemas/AgentProfileExcluding.yaml
-- contracts/charter/schemas/PackGovernanceEntry.yaml
 - contracts/charter/schemas/GovernanceStep.yaml
-- contracts/charter/paths/packs_packId_artifacts_agent_profile_artifactId.yaml
-- contracts/charter/examples/Artifact.agent_profile.yaml
-- contracts/charter/changes/2026-11-09-agent-profile-read.md
-- contracts/charter/scenarios/agent-profile-reads.feature
-- service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/ProfileSteps.java
+- contracts/charter/schemas/PackGovernanceEntry.yaml
 - service/deployable/src/test/java/ai/speckitty/charter/deployable/ProfileRoutingTest.java
+- service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/ProfileSteps.java
+- service/packs/src/main/java/ai/speckitty/charter/packs/application/ForeignArtifactRead.java
+- service/packs/src/test/java/ai/speckitty/charter/packs/application/ForeignArtifactReadTest.java
+- service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/application/GovernanceEntry.java
+- service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/application/ProfileRead.java
+- service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/application/ProfileReadService.java
+- service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/application/ProfileSource.java
+- service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/api/AgentProfilesController.java
+- service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/api/ProfileDtos.java
+- service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/packs/PacksProfileSource.java
 execution_mode: code_change
 model: ''
 owned_files:

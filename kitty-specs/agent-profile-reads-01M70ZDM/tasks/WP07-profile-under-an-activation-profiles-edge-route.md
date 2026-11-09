@@ -25,19 +25,19 @@ history:
 agent_profile: java-jenny
 authoritative_surface: service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/activations/
 create_intent:
-- service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/api/EffectiveAgentProfilesController.java
-- service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/activations/ActivationsEffectiveProfiles.java
-- service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/application/EffectiveProfiles.java
-- service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/application/EffectiveProfileRead.java
-- service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/api/EffectiveProfileDtos.java
-- service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/api/ProfileRuntimeHints.java
+- contracts/charter/changes/2026-11-09-effective-agent-profile-read.md
+- contracts/charter/examples/EffectiveAgentProfileRead.java-jenny.yaml
 - contracts/charter/paths/activations_activationId_artifacts_agent_profile_artifactId.yaml
+- contracts/charter/scenarios/effective-agent-profile.feature
 - contracts/charter/schemas/EffectiveAgentProfileRead.yaml
 - contracts/charter/schemas/EffectiveGovernanceEntry.yaml
-- contracts/charter/examples/EffectiveAgentProfileRead.java-jenny.yaml
-- contracts/charter/changes/2026-11-09-effective-agent-profile-read.md
-- contracts/charter/scenarios/effective-agent-profile.feature
 - service/deployable/src/test/java/ai/speckitty/charter/deployable/ProfileProblemParityTest.java
+- service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/application/EffectiveProfileRead.java
+- service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/application/EffectiveProfiles.java
+- service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/activations/ActivationsEffectiveProfiles.java
+- service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/api/EffectiveAgentProfilesController.java
+- service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/api/EffectiveProfileDtos.java
+- service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/api/ProfileRuntimeHints.java
 execution_mode: code_change
 model: ''
 owned_files:

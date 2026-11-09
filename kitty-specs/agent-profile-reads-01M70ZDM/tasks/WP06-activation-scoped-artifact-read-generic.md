@@ -26,17 +26,17 @@ history:
 agent_profile: java-jenny
 authoritative_surface: service/activations/src/main/java/ai/speckitty/charter/activations/
 create_intent:
+- contracts/charter/changes/2026-11-09-effective-artifact-read.md
+- contracts/charter/examples/EffectiveArtifactRead.directive.yaml
+- contracts/charter/paths/activations_activationId_artifacts_kind_artifactId.yaml
+- contracts/charter/scenarios/effective-artifact.feature
+- contracts/charter/schemas/EffectiveArtifactRead.yaml
 - service/activations/src/main/java/ai/speckitty/charter/activations/application/EffectiveArtifactAnswer.java
 - service/activations/src/main/java/ai/speckitty/charter/activations/domain/EffectiveArtifactRead.java
 - service/activations/src/main/java/ai/speckitty/charter/activations/domain/GovernanceFacts.java
 - service/activations/src/main/java/ai/speckitty/charter/activations/infra/api/EffectiveArtifactMapper.java
 - service/activations/src/test/java/ai/speckitty/charter/activations/application/EffectiveReadServiceArtifactTest.java
 - service/activations/src/test/java/ai/speckitty/charter/activations/infra/packs/ClosureViewSessionArtifactTest.java
-- contracts/charter/paths/activations_activationId_artifacts_kind_artifactId.yaml
-- contracts/charter/schemas/EffectiveArtifactRead.yaml
-- contracts/charter/examples/EffectiveArtifactRead.directive.yaml
-- contracts/charter/changes/2026-11-09-effective-artifact-read.md
-- contracts/charter/scenarios/effective-artifact.feature
 execution_mode: code_change
 model: ''
 owned_files:

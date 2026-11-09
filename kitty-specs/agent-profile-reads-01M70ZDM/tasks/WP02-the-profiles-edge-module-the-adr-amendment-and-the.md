@@ -24,6 +24,10 @@ agent_profile: architect-alphonso
 authoritative_surface: service/profiles-edge/
 create_intent:
 - service/profiles-edge/build.gradle.kts
+- service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/application/package-info.java
+- service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/activations/package-info.java
+- service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/api/package-info.java
+- service/profiles-edge/src/main/java/ai/speckitty/charter/profiles/infra/packs/package-info.java
 execution_mode: code_change
 model: ''
 owned_files:

@@ -23,9 +23,9 @@ history:
 agent_profile: java-jenny
 authoritative_surface: scripts/usability/
 create_intent:
-- scripts/usability/service-usability-run.sh
 - scripts/usability/README.md
 - scripts/usability/charter-to-activation.py
+- scripts/usability/service-usability-run.sh
 execution_mode: code_change
 model: ''
 owned_files:

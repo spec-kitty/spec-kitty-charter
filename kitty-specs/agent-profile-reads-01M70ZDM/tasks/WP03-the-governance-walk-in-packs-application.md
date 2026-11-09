@@ -26,8 +26,9 @@ agent_profile: java-jenny
 authoritative_surface: service/packs/src/main/java/ai/speckitty/charter/packs/application/
 create_intent:
 - service/packs/src/main/java/ai/speckitty/charter/packs/application/GovernanceWalk.java
-- service/packs/src/test/java/ai/speckitty/charter/packs/application/GovernanceWalkTest.java
+- service/packs/src/main/java/ai/speckitty/charter/packs/application/ProfileGovernance.java
 - service/packs/src/test/java/ai/speckitty/charter/packs/application/ClosureViewGovernanceTest.java
+- service/packs/src/test/java/ai/speckitty/charter/packs/application/GovernanceWalkTest.java
 execution_mode: code_change
 model: ''
 owned_files:
