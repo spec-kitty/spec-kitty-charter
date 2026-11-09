@@ -318,13 +318,22 @@ public final class LayerMerge {
     /**
      * The sibling a descriptor {@code overrides} entry names, as a one-element list (C15). A contest no entry settles is
      * refused, never decided by load order: the compose leaves a step ({@code action:<M>/<step>}) out of the sibling
-     * contest, so two packs that both declare one can reach this point.
+     * contest, so two packs that both declare one can reach this point. Entries naming two different siblings refuse
+     * too, as in the compose.
      */
     private static UnaryOperator<List<PackUnderResolution>> settledBy(Urn urn, Set<String> settled) {
-        return siblings -> List.of(siblings.stream()
-                .filter(pack -> settled.contains(pack.descriptor().packId()))
-                .findFirst()
-                .orElseThrow(() -> unsettled(urn, siblings)));
+        return siblings -> {
+            List<PackUnderResolution> named = siblings.stream()
+                    .filter(pack -> settled.contains(pack.descriptor().packId()))
+                    .toList();
+            if (named.isEmpty()) {
+                throw unsettled(urn, siblings);
+            }
+            if (named.size() > 1) {
+                throw namedDifferently(urn, siblings, named);
+            }
+            return named;
+        };
     }
 
     /** The preset copy of the sibling last in closure order: a child merges after the parent it extends (C29, C34). */
@@ -332,15 +341,28 @@ public final class LayerMerge {
         return List.of(siblings.getLast());
     }
 
+    /** Entries naming two siblings leave the contest to closure order, so it is refused, as the compose does (C15). */
+    private static CharterRefusal namedDifferently(
+            Urn urn, List<PackUnderResolution> siblings, List<PackUnderResolution> named) {
+        return new CharterRefusal(
+                RefusalCode.PACK_SIBLING_CONFLICT,
+                "packs " + describe(siblings) + " at "
+                        + siblings.getFirst().configured().level().token() + " both hold `" + urn
+                        + "`, and overrides entries settling it name different winners, " + describe(named),
+                siblings.stream().map(LayerMerge::refusalPack).toList());
+    }
+
+    private static String describe(List<PackUnderResolution> packs) {
+        return packs.stream()
+                .map(pack -> "`" + pack.descriptor().name() + "` ("
+                        + pack.descriptor().packId() + ")")
+                .collect(Collectors.joining(" and "));
+    }
+
     private static CharterRefusal unsettled(Urn urn, List<PackUnderResolution> siblings) {
         return new CharterRefusal(
                 RefusalCode.PACK_SIBLING_CONFLICT,
-                "packs "
-                        + siblings.stream()
-                                .map(pack -> "`" + pack.descriptor().name() + "` ("
-                                        + pack.descriptor().packId() + ")")
-                                .collect(Collectors.joining(" and "))
-                        + " at "
+                "packs " + describe(siblings) + " at "
                         + siblings.getFirst().configured().level().token() + " both hold `" + urn
                         + "`, and no overrides entry names the one whose version is in force",
                 siblings.stream().map(LayerMerge::refusalPack).toList());
