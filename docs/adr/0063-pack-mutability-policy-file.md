@@ -2,7 +2,7 @@
 title: "ADR-0063: A pack declares its mutability levels in policy.yaml"
 description: "The pack mutability policy file: the mutability_policy key, the closed policy schema, the highest level along the closure, and fail-closed reads."
 doc_status: active
-updated: 2026-11-07T00:00:00Z
+updated: 2026-11-09T00:00:00Z
 decision_status: Accepted, with Amendment 2026-11-07 (REMOVE and the staged closure, ADR-0065)
 decision_date: '2026-11-05'
 type: ADR
@@ -83,7 +83,9 @@ pack, a target's level is its `artifacts` entry, else its kind's default, else `
 A target's level is judged along a composition closure, not in one pack: each pack of the closure contributes its own
 file, and the answer is the highest level any of them declares (`open` < `extendable` < `locked`), whatever the
 closure's order. A later pack therefore raises a level and never lowers it (ADR-0012 decision 3). The answer names the
-first pack, in closure order, that declared that level, so a refusal can name it.
+first pack, in closure order, that declared that level, so a refusal can name it. That choice is order only and decides
+nothing: the level is the maximum whatever the order, so no ruling is needed for it, and the closure order is
+ADR-0048 decision 9 (rules C5 and C22).
 
 One function answers this (`PerPackPolicy.levelIn`), and two callers share it: the registration write gate, which
 judges a write into pack P along P's closure, and the activation lock query, which judges a deactivation along the

@@ -263,6 +263,26 @@ class ActivationExclusionServiceTest {
     }
 
     @Test
+    void aTargetOnTheFloorWhoseDenyEntryIsAlreadyStoredIsRefusedAgainAndNothingIsStored() {
+        // The named target is judged whether or not its entry is stored (WP29 fix cycle 1): the entry of LK stays
+        // locked, and the entry of RQ has no override to satisfy it.
+        StoredActivation before =
+                stored(ActivationDocument.builder().deactivated(ArtifactKind.DIRECTIVE, List.of("LK", "RQ")));
+
+        assertThatThrownBy(() -> service.deactivate(ID, "directive", "LK", Optional.empty(), List.of(), quoted(before)))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_LOCKED));
+        assertThatThrownBy(() -> service.deactivate(ID, "directive", "RQ", Optional.empty(), List.of(), quoted(before)))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_REQUIRED));
+        assertThat(packs.walked()).isEmpty();
+        assertThat(repository.replaces()).isZero();
+        assertThat(repository.find(ID).orElseThrow().revision()).isEqualTo(before.revision());
+    }
+
+    @Test
     void aStoredDenyEntryOnTheFloorIsToleratedByADeactivateAndAReactivateOfAnotherId() {
         // Stored before an upgrade made RQ required: the entry is tolerated, only a deny the write adds is judged.
         StoredActivation before =

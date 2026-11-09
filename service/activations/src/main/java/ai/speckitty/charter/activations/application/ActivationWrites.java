@@ -384,7 +384,7 @@ public class ActivationWrites {
                 && change.droppedPins().isEmpty()) {
             return new Outcome(loaded, change);
         }
-        DocumentRules.checkWrite(loaded.document(), after, snapshot)
+        DocumentRules.checkWrite(loaded.document(), after, snapshot, session::inForce)
                 .map(ActivationWrites::wholeRequest)
                 .ifPresent(refusal -> {
                     throw refusal;

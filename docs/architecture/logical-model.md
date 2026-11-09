@@ -2,7 +2,7 @@
 title: Logical model
 description: How each concept of the conceptual model is represented — packs, levels, artifact kinds, the CRG, activation, mission types, profiles and deployment.
 doc_status: draft
-updated: 2026-11-05T00:00:00Z
+updated: 2026-11-09T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -142,7 +142,8 @@ preset files still write `name`, bare strings and `mission_type_activations`.
   activation ledger file `.kittify/charter/activation.yaml` (older projects: `.kittify/config.yaml`
   or `charter.yaml` until migrated). Target ([ADR-0033](/adr/0033-local-active-charter-is-source-of-truth/)):
   that local file is the source of truth and a write-through cache of the service-side copy, it
-  names the offering packs by id and version, and on a cold-start divergence local wins, visibly.
+  names the offering packs by id and version, and on a cold-start divergence local wins, visibly (ADR-0033 decision 3, the
+  ruling that settles the contest between the local file and the service copy).
 
 The charter has two sides that match core's package split (core ADR [`2026-10-06-2`](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-06-2-charter-offering-active-charter-and-activation-presets.md)):
 `charter.offering` (what is offered) and `charter.activation` (what is chosen, and the
@@ -182,13 +183,15 @@ naming the pack, rather than serving part of it.
   nearer built-in. `parent_pack` is an ordering and a cycle edge, as `depends_on` is (operator ruling of 2026-11-06): the
   pack a child extends merges before it, and a `parent_pack` cycle is refused as `pack_dependency_cycle`.
 - **Identity.** A pack id and a pack name are unique across a compose without exception. An artifact id is unique
-  within a level, except where an `overrides` edge settles it. Across levels the same id is a layer override.
+  within a level, except where an `overrides` edge settles it (ADR-0053 d6; rules C14 and C15). Across levels the same id is a
+  layer override, and the level that applies wins whole (ADR-0059 decision 3; rules C17 and C18).
 - **Sibling conflict.** Two packs at one level that both change or both define the same artifact id, of any kind, are a
   [sibling conflict](/glossary/charter/#sibling-conflict), refused unless an
   [`overrides` edge](/glossary/charter/#overrides-edge) naming a contesting member settles it. A pack that defines an
-  artifact and a sibling that enhances it do not conflict. There is no "last loaded wins". Until #358 any pack of
-  the compose may declare the edge; until #357 settling only clears the refusal and the member's version is not yet
-  put in force.
+  artifact and a sibling that enhances it do not conflict (ADR-0048 d9, A14). There is no "last loaded wins": the refusal
+  is `pack_sibling_conflict`, and exactly one `overrides` entry settles it (rule C15; an entry naming two different
+  siblings leaves it refused). Since PR B the merge puts the named member's version in force (#357, DIV-218); until #358
+  any pack of the compose may declare the edge (DIV-219).
 - **Qualified reference.** A reference to an artifact of another pack is written `<pack-name>::<urn>`
   ([qualified reference](/glossary/charter/#qualified-reference)). The pack is provenance, not identity: the
   artifact's URN stays bare, and the qualifier is provenance on the edge. A reference is an edge end in a graph
@@ -387,7 +390,7 @@ service it is the node of the `mission_type` artifact kind (DIV-501):
 | `rejects` | Directional, from a good artifact to an `anti_pattern` node. |
 | `implemented_by` | Directional, from a guard to the executable asset that implements it ([ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/) decision 3). Derived from the guard's `implemented_by` field (`Guard.derivedRelationships()`), never authored, and read by nothing until the contract set lands (work breakdown item 13): a graph shard or a relationship registration that names it is refused. A built-in guard derives no edge. |
 
-The activation cascade follows `requires`, `suggests`, `refines`, `scope` and `instantiates` forward, `enhances` both ways (a target in force brings its enhancers, and an enhancer in force brings its target; the pull runs at read, within `activatedKinds`, and is never written to `selected`), and qualified `<pack>::` targets; it passes through `specializes_from` without putting the parent in force, and follows no other relation ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) decision 2).
+The activation cascade follows `requires`, `suggests`, `refines`, `scope`, `instantiates` and `enhances` forward, each in its declared direction (an enhancer to what it enhances), and qualified `<pack>::` targets; it passes through `specializes_from` without putting the parent in force, and follows no other relation ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) decision 2 and its amendment of 2026-11-06, A4: there is no read-time pull). At read, an enhancer is in force only while a target of its enhancement is, and a step enhancer only while the mission type of its step is (rule E6; [Composition and activation rules](/architecture/composition-and-activation-rules/)). The cascade follows only held steps: a step is held by a pack that defines its mission type and declares it, and by the closure when some pack holds it (rule W20, DIV-242, DIV-243).
 
 An edge endpoint is a URN `<kind>:<id>`, in shards and in fragments alike; a local reference
 is written as a URN too. A value that is not a URN is refused as `drg_schema_error` by the
@@ -475,10 +478,18 @@ removal ([ADR-0030](/adr/0030-removal-is-distinct-from-deactivation/)).
   `packs` means every configured pack. The `depends_on` and `parent_pack` closure of `packs` holds the only packs
   the document can name: an id outside it is refused. The required floor is the must-have items
   of every governing preset in that closure. A create or replace whose deny list names a required
-  or locked artifact is refused `409`; a per-artifact or preset write tolerates such an entry
-  already stored and refuses `409` only a deny entry it adds
+  or locked artifact is refused `409`, unless an active override of a required, not locked artifact satisfies the
+  requirement in the document as it will be stored (an enhancement never does; rule W26); a per-artifact or preset
+  write tolerates such an entry already stored and refuses `409` only a deny entry it adds
   ([DIV-204](/conformance/divergence-register/), [DIV-205](/conformance/divergence-register/)).
-  The effective reads are not built yet.
+  Since PR B and PR C the service answers four effective reads: the artifact list and the skipped report, the effective
+  graph and the effective action context. The graph holds the nodes in force (the artifacts in force, and the held
+  steps of the mission types in force), the merged edges among them and the layer overrides of those nodes. The context is
+  ADR-0018's walk from a held step over the artifacts in force, with the suggestions the listing gives, an `enhancements`
+  member that reads each node's enhancers from its own side, and the skipped report; an unknown mission type or action is
+  `404`, before a `304` ([Offering and activation](/architecture/offering-and-activation/#the-graph-and-the-action-context)).
+  A template, an asset, a guard and a lifecycle have no activation state, so they are absent from both reads
+  ([DIV-240](/conformance/divergence-register/)).
 - **Plan, then commit.** `plan_activation()` validates without writing; `commit_plan()`
   writes only after a successful plan. A failed plan never mutates configuration.
 - **Cascade.** Activating with `--cascade` follows `requires` and `suggests` edges, skips
@@ -505,7 +516,8 @@ record decides it, and no contract path is introduced here.
   context) and receives what applies to that step: directives, profile, prompts. Open: one large
   payload, or references with hypermedia links to the contents. Relates to the action-context read
   ([ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/)) and the effective
-  activation (ADR-0020, R9, #103).
+  activation (ADR-0020, R9, #103). The effective action context of one activation, the part of resolve that the
+  activation decides, is built since PR C (`getEffectiveActionContext`).
 - **Outdated notice.** Where the notice that a newer pack version exists appears in an answer is
   left to a later record (ADR-0033 decision 9).
 
@@ -529,7 +541,8 @@ and toolguides.
   specialization (`specializes_from` lineage plus the specificity level, which is
   `routing-priority`), then the pack-declared fallback profile marked as a fallback, then a
   not-found refusal. A derived pack may pin the profile for a role in its pack-root policy file;
-  profiles that specialize the pinned one still fit. Tie handling is an open question. Current
+  profiles that specialize the pinned one still fit. Tie handling is an open question (ADR-0032 rules none; no
+  service code breaks a tie yet). Current
   state: core selects by weighted score, with role as one signal, and accepts a profile id as a
   role ([conceptual model, appendix A](/context/conceptual-model/#appendix-a-research-findings)).
 - **Roles** (Operator ruling (concept session 2026-10-26), not yet ADR-backed): a role is an `ExecutorRole` value object wrapping the role

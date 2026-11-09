@@ -187,24 +187,24 @@ public class ActivationService {
             ActivationId id, ActivationDocument.Built built, @Nullable String ifMatch, @Nullable String ifNoneMatch) {
         return coordination.exclusively(() -> {
             Expected expected = expectedOf(id, preconditionOf(ifMatch, ifNoneMatch));
-            ClosureSnapshot snapshot = packs.snapshot(packIdsOf(built.document()));
-            ActivationDocument.Built normalized = DocumentRules.normalize(built, snapshot);
+            PacksSession session = packs.session(packIdsOf(built.document()));
+            ActivationDocument.Built normalized = DocumentRules.normalize(built, session.snapshot());
             return switch (expected) {
-                case Expected.Absent() -> created(id, normalized, snapshot).orElseThrow(() -> stale(id));
+                case Expected.Absent() -> created(id, normalized, session).orElseThrow(() -> stale(id));
                 case Expected.At(StoredActivation matched) ->
-                    replaced(matched, normalized, snapshot).orElseThrow(() -> stale(null));
-                case Expected.Latest() -> latest(id, normalized, snapshot);
+                    replaced(matched, normalized, session).orElseThrow(() -> stale(null));
+                case Expected.Latest() -> latest(id, normalized, session);
             };
         });
     }
 
     /** The write without a validator: the last writer wins, judged against the document it replaces. */
-    private Written latest(ActivationId id, ActivationDocument.Built normalized, ClosureSnapshot snapshot) {
+    private Written latest(ActivationId id, ActivationDocument.Built normalized, PacksSession session) {
         for (int attempt = 0; attempt < LATEST_ATTEMPTS; attempt++) {
             Optional<StoredActivation> current = repository.find(id);
             Optional<Written> written = current.isPresent()
-                    ? replaced(current.orElseThrow(), normalized, snapshot)
-                    : created(id, normalized, snapshot);
+                    ? replaced(current.orElseThrow(), normalized, session)
+                    : created(id, normalized, session);
             if (written.isPresent()) {
                 return written.orElseThrow();
             }
@@ -213,8 +213,8 @@ public class ActivationService {
     }
 
     /** Creates the document when the id is free; empty when another writer took it first. */
-    private Optional<Written> created(ActivationId id, ActivationDocument.Built normalized, ClosureSnapshot snapshot) {
-        StaleIds.Dropped drops = judged(normalized, NOTHING_STORED, snapshot);
+    private Optional<Written> created(ActivationId id, ActivationDocument.Built normalized, PacksSession session) {
+        StaleIds.Dropped drops = judged(normalized, NOTHING_STORED, session);
         return repository
                 .create(id, drops.document())
                 .map(stored -> new Written(new CasResult.Written(stored, true), drops));
@@ -222,21 +222,28 @@ public class ActivationService {
 
     /** Replaces a stored document at its revision; empty when another writer came in between. */
     private Optional<Written> replaced(
-            StoredActivation current, ActivationDocument.Built normalized, ClosureSnapshot snapshot) {
-        StaleIds.Dropped drops =
-                judged(DocumentRules.normalize(normalized, snapshot, current.document()), current.document(), snapshot);
+            StoredActivation current, ActivationDocument.Built normalized, PacksSession session) {
+        StaleIds.Dropped drops = judged(
+                DocumentRules.normalize(normalized, session.snapshot(), current.document()),
+                current.document(),
+                session);
         return switch (repository.replace(current.id(), Optional.of(current.revision()), drops.document())) {
             case CasResult.Written written -> Optional.of(new Written(written, drops));
             case CasResult.Stale _, CasResult.Missing _ -> Optional.empty();
         };
     }
 
-    /** The body judged against the document it replaces, less what the packs no longer satisfy (A4, B1). */
+    /**
+     * The body judged against the document it replaces, less what the packs no longer satisfy (A4, B1). A deny entry the
+     * body adds on a required artifact is judged by the session's in-force resolution (IC-13).
+     */
     private static StaleIds.Dropped judged(
-            ActivationDocument.Built normalized, ActivationDocument replaced, ClosureSnapshot snapshot) {
-        DocumentRules.checkReplace(normalized, replaced, snapshot).ifPresent(refusal -> {
-            throw refusal;
-        });
+            ActivationDocument.Built normalized, ActivationDocument replaced, PacksSession session) {
+        ClosureSnapshot snapshot = session.snapshot();
+        DocumentRules.checkReplace(normalized, replaced, snapshot, session::inForce)
+                .ifPresent(refusal -> {
+                    throw refusal;
+                });
         return StaleIds.drop(normalized.document(), snapshot);
     }
 
@@ -294,9 +301,10 @@ public class ActivationService {
 
     /** A create's document, when it may be stored: one snapshot of the closure it names, and every rule over it. */
     private ActivationDocument checked(ActivationDocument.Built built) {
-        ClosureSnapshot snapshot = packs.snapshot(packIdsOf(built.document()));
+        PacksSession session = packs.session(packIdsOf(built.document()));
+        ClosureSnapshot snapshot = session.snapshot();
         ActivationDocument.Built normalized = DocumentRules.normalize(built, snapshot);
-        DocumentRules.check(normalized, snapshot).ifPresent(refusal -> {
+        DocumentRules.check(normalized, snapshot, session::inForce).ifPresent(refusal -> {
             throw refusal;
         });
         return normalized.document();

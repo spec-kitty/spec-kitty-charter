@@ -30,7 +30,7 @@ class DocumentRulesTest {
             .build();
 
     private static CharterRefusal refusal(ActivationDocument.Builder builder) {
-        Optional<CharterRefusal> refusal = DocumentRules.check(builder.build(), CLOSURE);
+        Optional<CharterRefusal> refusal = DocumentRules.check(builder.build(), CLOSURE, InForceFacts.NONE);
         assertThat(refusal).isPresent();
         return refusal.orElseThrow();
     }
@@ -51,7 +51,7 @@ class DocumentRulesTest {
                 .build()
                 .document();
 
-        assertThat(DocumentRules.check(document, CLOSURE)).isEmpty();
+        assertThat(DocumentRules.check(document, CLOSURE, InForceFacts.NONE)).isEmpty();
     }
 
     @Test
@@ -81,7 +81,7 @@ class DocumentRulesTest {
 
         ActivationDocument.Built normalized = DocumentRules.normalize(spelled, closure);
 
-        assertThat(DocumentRules.check(normalized, closure)).isEmpty();
+        assertThat(DocumentRules.check(normalized, closure, InForceFacts.NONE)).isEmpty();
         assertThat(normalized.document()).isEqualTo(declared);
         assertThat(normalized.document().revision()).isEqualTo(declared.revision());
         assertThat(normalized.written().selected().get(DIRECTIVE)).containsExactly("D1", "D3");
@@ -95,7 +95,8 @@ class DocumentRulesTest {
                 .selected(DIRECTIVE, List.of("D1", "twin", "tactic:D1", "NOPE"))
                 .build();
 
-        Optional<CharterRefusal> refusal = DocumentRules.check(DocumentRules.normalize(spelled, closure), closure);
+        Optional<CharterRefusal> refusal =
+                DocumentRules.check(DocumentRules.normalize(spelled, closure), closure, InForceFacts.NONE);
 
         assertThat(refusal).hasValueSatisfying(found -> {
             assertThat(found.code()).isEqualTo(RefusalCode.ACTIVATION_INVALID);
@@ -115,7 +116,8 @@ class DocumentRulesTest {
                 .deactivated(DIRECTIVE, List.of("directive:d1"))
                 .build();
 
-        CharterRefusal refusal = DocumentRules.check(DocumentRules.normalize(spelled, CLOSURE), CLOSURE)
+        CharterRefusal refusal = DocumentRules.check(
+                        DocumentRules.normalize(spelled, CLOSURE), CLOSURE, InForceFacts.NONE)
                 .orElseThrow();
 
         assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_REQUIRED);
@@ -279,7 +281,9 @@ class DocumentRulesTest {
                 .build()
                 .document();
 
-        assertThat(DocumentRules.check(document, CLOSURE).orElseThrow().violations())
+        assertThat(DocumentRules.check(document, CLOSURE, InForceFacts.NONE)
+                        .orElseThrow()
+                        .violations())
                 .extracting(RefusalViolation::pointer)
                 .containsExactly("/selected/directive/0", "/selected/directive/2");
     }
@@ -324,14 +328,15 @@ class DocumentRulesTest {
         ActivationDocument selecting = stale.withSelected(TACTIC, "T1");
         ActivationDocument denying = stale.withDeny(DIRECTIVE, "D2");
 
-        assertThat(DocumentRules.checkWrite(stale, selecting, CLOSURE))
+        assertThat(DocumentRules.checkWrite(stale, selecting, CLOSURE, InForceFacts.NONE))
                 .as("a stored deny entry on the floor is tolerated, not applied")
                 .isEmpty();
-        assertThat(DocumentRules.checkWrite(stale, denying, CLOSURE)).hasValueSatisfying(refusal -> {
-            assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_LOCKED);
-            assertThat(refusal.getMessage()).contains("directive:D2").doesNotContain("directive:D1");
-        });
-        assertThat(DocumentRules.checkWrite(stale, stale.withSelected(TACTIC, "NOPE"), CLOSURE))
+        assertThat(DocumentRules.checkWrite(stale, denying, CLOSURE, InForceFacts.NONE))
+                .hasValueSatisfying(refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_LOCKED);
+                    assertThat(refusal.getMessage()).contains("directive:D2").doesNotContain("directive:D1");
+                });
+        assertThat(DocumentRules.checkWrite(stale, stale.withSelected(TACTIC, "NOPE"), CLOSURE, InForceFacts.NONE))
                 .hasValueSatisfying(refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_INVALID));
     }
 
@@ -350,10 +355,11 @@ class DocumentRulesTest {
                 .build();
         ActivationDocument stored = body.document();
 
-        assertThat(DocumentRules.check(body, CLOSURE))
+        assertThat(DocumentRules.check(body, CLOSURE, InForceFacts.NONE))
                 .as("a create still judges every deny entry")
                 .hasValueSatisfying(refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_REQUIRED));
-        assertThat(DocumentRules.checkReplace(body, stored, CLOSURE)).isEmpty();
+        assertThat(DocumentRules.checkReplace(body, stored, CLOSURE, InForceFacts.NONE))
+                .isEmpty();
     }
 
     @Test
@@ -373,17 +379,18 @@ class DocumentRulesTest {
                         .build(),
                 closure);
 
-        assertThat(DocumentRules.checkReplace(body, stored, closure))
+        assertThat(DocumentRules.checkReplace(body, stored, closure, InForceFacts.NONE))
                 .as("the stored deny entry, spelled otherwise, is the same entry")
                 .isEmpty();
-        assertThat(DocumentRules.checkWrite(stored, body.document().withSelected(TACTIC, "T1"), closure))
+        assertThat(DocumentRules.checkWrite(
+                        stored, body.document().withSelected(TACTIC, "T1"), closure, InForceFacts.NONE))
                 .as("a per-artifact write of another id keeps tolerating it")
                 .isEmpty();
         ActivationDocument urnStored = ActivationDocument.builder()
                 .deactivated(DIRECTIVE, List.of("directive:DIR-001"))
                 .build()
                 .document();
-        assertThat(DocumentRules.checkReplace(body, urnStored, closure))
+        assertThat(DocumentRules.checkReplace(body, urnStored, closure, InForceFacts.NONE))
                 .as("a stored URN spelling is the same entry too")
                 .isEmpty();
     }
@@ -398,14 +405,15 @@ class DocumentRulesTest {
                 .deactivated(DIRECTIVE, List.of("D1", "D2"))
                 .build();
 
-        assertThat(DocumentRules.checkReplace(adding, stored, CLOSURE)).hasValueSatisfying(refusal -> {
-            assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_LOCKED);
-            assertThat(refusal.getMessage()).contains("directive:D2").doesNotContain("directive:D1");
-        });
+        assertThat(DocumentRules.checkReplace(adding, stored, CLOSURE, InForceFacts.NONE))
+                .hasValueSatisfying(refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_LOCKED);
+                    assertThat(refusal.getMessage()).contains("directive:D2").doesNotContain("directive:D1");
+                });
         ActivationDocument.Built denyingD1 = ActivationDocument.builder()
                 .deactivated(DIRECTIVE, List.of("D1"))
                 .build();
-        assertThat(DocumentRules.checkReplace(denyingD1, NOTHING_STORED, CLOSURE))
+        assertThat(DocumentRules.checkReplace(denyingD1, NOTHING_STORED, CLOSURE, InForceFacts.NONE))
                 .as("with nothing stored every deny entry is added")
                 .hasValueSatisfying(refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_REQUIRED));
     }
@@ -425,14 +433,15 @@ class DocumentRulesTest {
                 .selected(DIRECTIVE, List.of("D3", "GONE", "NOPE"))
                 .build();
 
-        assertThat(DocumentRules.checkReplace(roundTrip, stored, CLOSURE)).isEmpty();
-        assertThat(DocumentRules.checkReplace(typo, stored, CLOSURE)
+        assertThat(DocumentRules.checkReplace(roundTrip, stored, CLOSURE, InForceFacts.NONE))
+                .isEmpty();
+        assertThat(DocumentRules.checkReplace(typo, stored, CLOSURE, InForceFacts.NONE)
                         .orElseThrow()
                         .violations())
                 .as("an id the stored document never named is still unknown")
                 .extracting(RefusalViolation::pointer, RefusalViolation::code)
                 .containsExactly(tuple("/selected/directive/2", "unknown_artifact"));
-        assertThat(DocumentRules.checkReplace(roundTrip, NOTHING_STORED, CLOSURE)
+        assertThat(DocumentRules.checkReplace(roundTrip, NOTHING_STORED, CLOSURE, InForceFacts.NONE)
                         .orElseThrow()
                         .violations())
                 .extracting(RefusalViolation::pointer)
@@ -445,11 +454,15 @@ class DocumentRulesTest {
                 .packs(List.of(PackRef.pinned("org-a", "2.0.0")))
                 .build();
 
-        assertThat(DocumentRules.check(body, CLOSURE).orElseThrow().violations())
+        assertThat(DocumentRules.check(body, CLOSURE, InForceFacts.NONE)
+                        .orElseThrow()
+                        .violations())
                 .extracting(RefusalViolation::pointer, RefusalViolation::code)
                 .containsExactly(tuple("/packs/0/version", "version_not_held"));
-        assertThat(DocumentRules.checkReplace(body, NOTHING_STORED, CLOSURE)).isEmpty();
-        assertThat(DocumentRules.checkReplace(body, body.document(), CLOSURE)).isEmpty();
+        assertThat(DocumentRules.checkReplace(body, NOTHING_STORED, CLOSURE, InForceFacts.NONE))
+                .isEmpty();
+        assertThat(DocumentRules.checkReplace(body, body.document(), CLOSURE, InForceFacts.NONE))
+                .isEmpty();
     }
 
     @Test
@@ -458,7 +471,7 @@ class DocumentRulesTest {
                 .packs(List.of(PackRef.pinned("zeta", "1.0.0")))
                 .build();
 
-        assertThat(DocumentRules.checkReplace(body, body.document(), CLOSURE)
+        assertThat(DocumentRules.checkReplace(body, body.document(), CLOSURE, InForceFacts.NONE)
                         .orElseThrow()
                         .violations())
                 .extracting(RefusalViolation::pointer, RefusalViolation::code)
@@ -477,19 +490,22 @@ class DocumentRulesTest {
                         ActivationDocument.builder()
                                 .deactivated(ArtifactKind.MISSION_TYPE, List.of("software-dev"))
                                 .build(),
-                        closure))
+                        closure,
+                        InForceFacts.NONE))
                 .hasValueSatisfying(refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_REQUIRED));
         assertThat(DocumentRules.check(
                         ActivationDocument.builder()
                                 .deactivated(ArtifactKind.MISSION_TYPE, List.of("research"))
                                 .build(),
-                        closure))
+                        closure,
+                        InForceFacts.NONE))
                 .hasValueSatisfying(refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_LOCKED));
         assertThat(DocumentRules.check(
                         ActivationDocument.builder()
                                 .deactivated(ArtifactKind.MISSION_TYPE, List.of("free"))
                                 .build(),
-                        closure))
+                        closure,
+                        InForceFacts.NONE))
                 .isEmpty();
     }
 
@@ -513,7 +529,7 @@ class DocumentRulesTest {
                 .packs(Arrays.stream(packs).map(PackRef::of).toList())
                 .deactivated(DIRECTIVE, List.of(id))
                 .build();
-        return DocumentRules.check(built, EXTENDED).orElseThrow();
+        return DocumentRules.check(built, EXTENDED, InForceFacts.NONE).orElseThrow();
     }
 
     @Test

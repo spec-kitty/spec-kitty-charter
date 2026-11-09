@@ -2,7 +2,7 @@
 title: Offering and activation
 description: "The /offering tree, the activation document, its closure read, the per-artifact writes and their cascade, the two ways core builds one, and how each maps onto the service."
 doc_status: draft
-updated: 2026-11-08T00:00:00Z
+updated: 2026-11-09T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -41,9 +41,9 @@ knows nothing of projects.
 > per-artifact writes (select, unselect, deactivate, re-activate, apply a preset) with their cascade are built
 > ([#291](https://github.com/spec-kitty/spec-kitty-charter/issues/291),
 > [#360](https://github.com/spec-kitty/spec-kitty-charter/issues/360)). Since PR B of the layer-merge mission
-> (2026-11-08) the layer merge is built and two of the four effective reads, `artifacts` and `skipped`, answer
-> ([The effective reads](#the-effective-reads)). The effective graph and the effective action context are declared and
-> answer `501`; they are PR C's.
+> (2026-11-08) the layer merge is built and two of the four effective reads, `artifacts` and `skipped`, answer; since
+> PR C (2026-11-09) the effective graph and the effective action context answer too, so no operation of the activation
+> set is reserved any more ([The effective reads](#the-effective-reads)).
 > The rest of this page is the design decided by ADR-0020 and
 > [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/). [What the labels mean](/#status).
 
@@ -69,8 +69,8 @@ knows nothing of projects.
         ├── presets/{presetId}                 PUT apply a preset (built)
         ├── artifacts{?kind,state}             effective: state, policy, reason (built)  R9
         ├── skipped                            the skipped report (built)                R9
-        ├── graph                              the activation-filtered graph             R9
-        └── mission-types/{missionType}/actions/{action}/context{?depth}   effective      R9
+        ├── graph                              the activation-filtered graph (built)     R9
+        └── mission-types/{missionType}/actions/{action}/context{?depth}   effective (built)   R9
 ```
 
 Every resource under `activations` is declared in the contract (#125). The built ones are `POST /activations`,
@@ -78,9 +78,10 @@ Every resource under `activations` is declared in the contract (#125). The built
 `contracts/charter/scenarios/activation-register.feature` pin, and the five per-artifact writes (`selections`,
 `exclusions`, `presets`), which `activation-selections.feature` and `activation-presets.feature` pin. Two effective
 reads, `artifacts` and `skipped`, are built since PR B; `effective-reads.feature` and `layer-merge.feature` pin them.
-The other two (`graph`, the effective context) still answer `501` (ADR-0020 D8): each carries `x-reserved`, and one
-`@contract @reserved` scenario per operation pins its `501` (`contracts/charter/scenarios/activations.feature`). The R-numbers are the read inventory's
-([#94](https://github.com/spec-kitty/spec-kitty-charter/issues/94)).
+The other two, `graph` and the effective context, are built since PR C; `effective-graph-and-context.feature` pins
+them. Neither answers `501` any more and neither carries `x-reserved`: no operation of the activation set is
+reserved (ADR-0020 D8), and the reservation machinery stays, with a planted-contract control, for a later reservation.
+The R-numbers are the read inventory's ([#94](https://github.com/spec-kitty/spec-kitty-charter/issues/94)).
 
 ## Two answers for one action
 
@@ -89,7 +90,7 @@ The other two (`graph`, the effective context) still answer `501` (ADR-0020 D8):
 | Path | `/offering/mission-types/{mt}/actions/{a}/context` | `/activations/{id}/mission-types/{mt}/actions/{a}/context` |
 | Schema | `ActionContext` | `EffectiveActionContext` |
 | Answers | What the offering says governs the action | What applies under one activation: filtered, with exclusions and the skipped report |
-| Freshness | `governanceFingerprint` | `governanceFingerprint` and the activation's `revision` (not built yet; the built effective reads carry the same two) |
+| Freshness | `governanceFingerprint` | `governanceFingerprint` and the activation's `revision` (built, PR C; the other effective reads carry the same two) |
 
 The two never share a URL or a schema, so a client cannot mistake one for the other (ADR-0018 D1).
 
@@ -296,7 +297,8 @@ activation.
 ### Presets
 
 `applyActivationPreset` resolves the preset in the activation's own closure; when two packs of the closure hold one
-preset id, the last in merge order wins. Each key the preset lists replaces that key of the document
+preset id, the last in merge order wins (rule C29, ADR-0053 d6; a child pack's copy replaces its parent's at one level,
+operator decision `01M6ZCXAJ9MTTF9XJSR89F3NYG`, and two unrelated copies at one level are refused, C34). Each key the preset lists replaces that key of the document
 ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) D6): each `selected.<kind>` it lists becomes
 exactly its members, and `activatedKinds` and `missionTypes` are replaced when it lists them. A key it does not list
 is left as it is, and so are `packs` and `languages`, which a preset never names. A preset lists a key when its file
@@ -352,7 +354,8 @@ contract means. The service follows each way back from the reported artifact, on
 a template, an asset, a lineage ancestor (to the descendant it was passed from) and an unselected intermediate.
 `requiredBy` names the nearest artifact of a kind a document gates that is not an ancestor passed through;
 `referencedBy` names the nearest artifact active after the write. Among the nearest, the first in code-point order
-is named, so the choice does not depend on the order the walk recorded its ways in.
+is named, so the choice does not depend on the order the walk recorded its ways in (activation mission finding F3,
+re-review R2: the name is a deterministic pointer, not a winner of a contest).
 
 **`includeDeactivated`** (ADR-0013 D4, [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/#amendment-2026-11-06)
 A3). The walk stops only at the deny entries of a kind outside the `cascade` scope. The select clears the deny
@@ -362,9 +365,12 @@ the walk stops there and reports it in `skippedDeactivated`, with what lies only
 `unreachedBehindDeactivated`, as it does without `includeDeactivated`. A denied ancestor of a kind outside the scope
 stops the lineage the same way. Nothing the walk does not pass through is cleared.
 
-**Deactivate.** The named artifact gets the only deny entry, and leaves `selected`. A required or locked artifact is
-refused first, `409 artifact_required` or `artifact_locked` naming the packs, before any walk, and nothing changes.
-With a cascade:
+**Deactivate.** The named artifact gets the only deny entry, and leaves `selected`. A locked artifact is refused
+first, `409 artifact_locked`, and so is a required one, `409 artifact_required`, naming the packs, and nothing changes,
+unless an active override of the required artifact satisfies the requirement in the document as the write will store
+it (rule W26, [DIV-204](/conformance/divergence-register/); an enhancement never satisfies, and no override satisfies a
+lock). The refusal comes before the walk; the document the write computes, cascade included, is judged again before
+it is stored. With a cascade:
 
 1. The target's own walk follows the cascade's relations and the lineage, as the select walk does, and stops nowhere
    (ADR-0059 amendment of 2026-11-06), so a cascading deactivate undoes a cascading select. The candidates are what
@@ -391,7 +397,8 @@ An enhancement is returned only when it is itself active. There is no automatic 
 come into force because its target does, nor a target because its enhancer does. This supersedes the read-time pull
 ADR-0059 D2.2 ruled on 2026-11-05. Since PR B the effective list and skipped report apply it, and add the operator's
 ruling Q8: an enhancer is in force only while a target of its enhancement is (DIV-224). Reading `E enhances T` from
-the side of `T`, "T is enhanced by E", is the effective graph's and the action context's, which are PR C's.
+the side of `T`, "T is enhanced by E", is the effective graph's and the action context's, built since PR C: the graph
+holds the edge, and the context's `enhancements` member lists the enhancers in force of each node it names.
 
 **Who owns what.** `packs` owns the traversal: `Reachability` runs every walk on `GraphWalk` over the closure's edges
 (`reach`), and `ClosureView` exposes it. `activations` owns the policy:
@@ -421,14 +428,17 @@ sequenceDiagram
 
 ## The effective reads
 
-Two reads answer what an activation puts in force (PR B; FR-013 to FR-017, FR-020, FR-021). The rules that decide it
-are in [Resolution model](/architecture/resolution-model/#what-is-in-force) and
-[Composition and activation rules](/architecture/composition-and-activation-rules/) (E1 to E14, E17 to E19).
+Four reads answer what an activation puts in force: the artifact list and the skipped report since PR B (FR-013 to
+FR-017, FR-020, FR-021), the graph and the action context since PR C (FR-018, FR-019, FR-020, FR-021). The rules that
+decide it are in [Resolution model](/architecture/resolution-model/#what-is-in-force) and
+[Composition and activation rules](/architecture/composition-and-activation-rules/) (E1 to E21).
 
 | Read | Request | Answers |
 |---|---|---|
 | `listEffectiveArtifacts` | `GET /activations/{id}/artifacts{?kind,state,pageSize,pageCursor}` | Every winning artifact of an activatable kind in the activation's merged closure, with `state`, `reason`, `required`, policy, `packId`, `level`, `satisfiedBy` and `suggestion`; `summary` counts the whole set |
 | `getActivationSkippedReport` | `GET /activations/{id}/skipped` | Each artifact not in force once, in the typed bucket of its first deciding rule, with the activation's `revision` |
+| `getEffectiveGraph` | `GET /activations/{id}/graph` | The nodes in force, the merged edges among them and the layer overrides of those nodes (PR C) |
+| `getEffectiveActionContext` | `GET /activations/{id}/mission-types/{mt}/actions/{a}/context{?depth}` | What ADR-0018's walk reaches from one action's step over the artifacts in force, its suggestions, its `enhancements` and the skipped report (PR C) |
 
 "In force" is `state=active`; use `state=active` for it. Items are ordered by kind, then id in code-point order, and
 paged by a keyset cursor over `(kind, id)`.
@@ -445,10 +455,67 @@ cascade's and are empty at read; at read `skippedDeactivated` has `viaRequires` 
 an active artifact, with the edge's `when` and its `rationale` as `reason`. No other out-of-force artifact has one, and
 `enhances` is not a hard relation (decisions `01M6Y0X5E9ANR25MC8RPFXYM72`, `01M6Y6VE6VZQ4MXD98N93JB3GJ`, DIV-235).
 
+### The graph and the action context
+
+Both are built in `packs` over the merged closure and the in-force states of the request, resolved once for the set,
+the graph and the walk (NFR-007). They answer from one rule for what a node is.
+
+**The node predicate** (rules E15 and E16; decisions `01M702A71YF7WNDTG2AA89K8ZA`, `01M7037ZNKJ6JTRKGD7G695ZV1`). `Eff`,
+the artifacts in force, never holds a step (`action:M/s`): a step is no activatable artifact. The graph's nodes are
+`Eff` plus each held step whose mission type is in `Eff`, so a step appears as a node, and an edge may start at one (a
+step `scope`s its artifacts). The walk starts at the held step the request names, when its mission type is in `Eff`,
+and lists and walks `Eff` only. A template, an asset, a guard and a lifecycle are never nodes, entries or layer
+overrides, even when a lock puts one in force inside `packs` ([DIV-240](/conformance/divergence-register/)). A step is held
+by two forms of one predicate (decision `01M7037V93Y077H8M4W9V8Y6B3`): per pack, a pack that defines `mission_type:M`
+and declares `action:M/s` holds the step; on the closure, some pack holds it, so a layer override of a held step
+counts (`StepHolding`, [DIV-243](/conformance/divergence-register/)).
+
+**`getEffectiveGraph`.**
+
+- `nodes`: sorted by URN. `edges`: the merged edges whose endpoints are both nodes, resolved through the layer
+  overrides (an edge from an overridden version is absent, an edge to one ends at the winner), sorted by source,
+  relation and target, each once.
+- `layerOverrides`: one record per losing version of a node of the graph, `{artifact, winner, loser}` with each side's
+  pack and level, sorted by artifact, then by the loser's level and pack. An override of an artifact out of force, of a
+  template or of an asset is not listed.
+- The `ETag` covers the revision, the closure digest and the read, and a matching `If-None-Match` answers `304`
+  before the merge is built.
+
+**`getEffectiveActionContext`.**
+
+- The walk is ADR-0018's five breadth-first steps from `action:M/a`: the artifacts the step scopes, what they
+  require, what they suggest (`depth` counts `suggests` hops, `0` or `1` in the contract; ADR-0018 D4 allows `2`),
+  what the suggested artifacts require, and one hop of vocabulary. A node `Eff` does not hold is neither listed nor
+  walked through. Entries are sorted by full URN string, whatever step listed them (ADR-0018 D3: the order is the
+  URN's, so a client never reads the walk's order, and the order of the closure, the iteration or the writing of an
+  edge never shows).
+- `artifacts`: the entries in force, and the suggestions. A suggestion is an artifact the listing gives a suggestion
+  (`not_selected`, reached through no hard relation by any artifact in force) that a listed entry reaches through a
+  `suggests` edge. It carries the nearest edge's `when` and `reason` (ADR-0018 D3: the source with the fewest hops, then the smallest
+  source URN, then the smallest edge), is not walked through, and is therefore always a
+  subset of the listing's suggestions (decisions `01M7059T4K64TAVKXN3T1FKWYG`, `01M70CTZP7P2EHSCK2G0RET74B`; one
+  definition for the list and the context, `01M6Y6VE6VZQ4MXD98N93JB3GJ`, [DIV-244](/conformance/divergence-register/)).
+- `enhancements`: `[{target, enhancedBy}]`, one entry per node with an enhancer in force, read from the enhanced
+  node's side (rule E12). The target is a `NodeReference`, because the start step is a node no artifact entry names:
+  a step enhancer enhances the step (decision `01M70C42KC78KB9H6KB7TK9224`). An enhancer is listed only when it is itself
+  in force; nothing is pulled in.
+- `skipped`: the activation's whole skipped report, except that `missionTypeNotInForce` is the mission type itself when
+  the activation does not put it in force, and empty otherwise. A mission type not in force answers no `artifacts` and
+  no `enhancements`.
+- An unknown mission type or action is `404 mission_type_not_found` or `action_not_found`, judged on the merged
+  closure whether or not the mission type is in force, and before the `304`: a matching `If-None-Match` never hides a
+  `404`. A known name with a matching tag answers `304` without computing the resolution.
+- The `ETag` covers the revision, the closure digest, the mission type, the action and the depth. `self` carries
+  `?depth=` only when the request named one.
+
+`NodeReference {kind, id}` is the one carrier for a node that may not be an activatable artifact (`EnhancerWithoutTarget.targets`,
+the context's `enhancements`); `ArtifactReference` stays activatable-only and `Urn` names a graph identity.
+
 **Refusals.** An unknown activation is `404 activation_not_found`. A closure that cannot compose or merge is `500` with
 its code (`pack_unreadable` for an override the level forbids, an override cycle, an unstable answer or an `overrides`
 edge that ends at its own source;
-`pack_sibling_conflict` for a step contest no entry settles), and the answer is never partial. `stale_input` and
+`pack_sibling_conflict` for a step contest no entry settles), and the answer is never partial. The context adds the
+`404`s of an unknown mission type or action. `stale_input` and
 `internal_error` may be retried. `getActivation` answers the same `500`s, because it too reads the closure, and also for a
 document that names a pack no longer configured; it serves a stale document unchanged only while the closure can be read
 ([DIV-233](/conformance/divergence-register/)). A cursor
@@ -503,7 +570,7 @@ artifact (its pack, level or policy) included (an activation whose closure canno
 | `/activations`, `/activations/{id}` and `…/packs` (built) | activation services | the activation document and its write rules; `ActivationRepository` and `AvailablePacks` ports |
 | `/activations/{id}/…` writes (built) | `ActivationSelectionService`, `ActivationExclusionService`, `ActivationPresetService` over `ActivationWrites` | `CascadeRules`, `PresetRules`; walks through the `PacksSession` an `AvailablePacks` adapter opens on one `ClosureView` |
 | `/activations/{id}/artifacts` and `…/skipped` (built, PR B) | `EffectiveReadService`, `IfMatchTags` | `EffectiveSet`, `EffectiveTag`; the in-force resolution and the layer merge come through `AvailablePacks` from `packs` (`InForceResolution`, `LayerMerge`) |
-| `/activations/{id}/graph` and the effective context (not built, PR C) | effective-set queries | the same in-force set over the merged closure |
+| `/activations/{id}/graph` and the effective context (built, PR C) | `EffectiveReadService` | `EffectiveSet`, `EffectiveContext`, `EffectiveTag`; the projection and the walk (`GraphProjection`, `ActionContextWalk`) come through `PacksSession` from `packs`, over the same in-force set |
 | Every resource's problem and refusal bodies, and the JSON body guard | module `web-transport`, package `ai.speckitty.charter.web` (`RefusalHandler`, `ProblemHandler`, `Problems`, `JsonBodyGuard`, `ProblemJson`) | none: a transport ring shared by `packs.infra.api` and `activations.infra.api`, naming no slice |
 
 `activations` is a top-level slice that depends on `packs`. It owns the activation document, its storage, its write
@@ -530,9 +597,10 @@ flowchart LR
 
 These are proposed, not bound. What is bound for the built operations is
 `contracts/charter/scenarios/activation-register.feature`, `activation-selections.feature` and
-`activation-presets.feature`, `effective-reads.feature` and `layer-merge.feature` for the two built effective reads, and
-for each reserved operation one 501 pin (`contracts/charter/scenarios/activations.feature`). The scenarios below stay
-proposed until the effective action context is built; the per-artifact writes they use are bound by those files. They describe what a client does, not which endpoint it calls, so
+`activation-presets.feature`, `effective-reads.feature` and `layer-merge.feature` for the effective list and report,
+`effective-graph-and-context.feature` for the graph and the context, and `activation-deny-satisfied.feature` for a
+deny entry satisfied by an override. No operation is reserved, so no 501 pin remains. The scenarios below stay
+proposed; the per-artifact writes they use are bound by those files. They describe what a client does, not which endpoint it calls, so
 they hold whatever the paths become; the step definitions map each step onto the contract.
 
 ```gherkin
@@ -588,18 +656,13 @@ Feature: The activation document round-trips, and the pack policy holds
     Then the registration is accepted
     And the revision of "a-1" is unchanged
 
-  Scenario: A required artifact cannot be deactivated
+  Scenario: A required artifact that no active override satisfies cannot be deactivated
     Given the org pack "internal" requires the directive "NO_FULL_HEAVY_SUITES_IN_MISSION"
     And the activation "a-1" is registered
     When I deactivate the directive "NO_FULL_HEAVY_SUITES_IN_MISSION" in the activation "a-1"
     Then the change is refused because the pack "internal" requires the artifact
     And the activation "a-1" is unchanged
-
-  Scenario: An activation operation that is not built yet says so
-    Given the activation "a-1" is registered
-    When I retrieve the effective graph of the activation "a-1"
-    Then the request is refused as not implemented yet
 ```
 
-The last scenario holds only while the effective graph is reserved; it is removed when the operation is
-built. It named the effective artifact list until PR B built that read.
+The scenario that said an unbuilt activation operation answers "not implemented yet" is gone: it named the effective
+artifact list until PR B built that read, and the effective graph until PR C built it.
