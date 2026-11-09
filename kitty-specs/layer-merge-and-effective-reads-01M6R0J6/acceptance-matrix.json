@@ -246,13 +246,13 @@
     },
     {
       "criterion_id": "FR-025",
-      "description": "Verify FR-025 is satisfied",
+      "description": "A registration, a DELETE or a per-artifact/relationship write is refused 422 naming the packs when any closure the pack joins or any stored activation's root set holding it would fail to compose, break a lock or mutability rule, or hold an enhances cycle, an enhance-and-override of one target, a self-override or an overrides edge onto a non-open target.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "contracts/charter/scenarios/registration/whole-pack-registration.feature: \"A registration that leaves a closure unable to compose is refused naming the packs\"; contracts/charter/scenarios/pack-removal.feature: \"A removal that leaves a closure of a stored activation broken is refused 422, and is accepted once the closure is whole\"; service/packs/src/test/java/ai/speckitty/charter/packs/application/PerArtifactImpactTest.java#anOverridesEdgeOntoANonOpenTargetThroughTheRelationshipWriteIsRefusedAndAnOpenOneIsNot",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:46:33.536316+00:00",
+      "notes": "PR A (#419, WP15/WP19); IC-15. Per-artifact writes added by DM-01M6VG6GC40AKYYFRR35SV8HVW; strict, no repair writes (#404 out of scope, DM-01M6TQ67C9ZTNGZB9CY28JS54F). Rules outline: 'A registration whose relations break a rule is refused with that rule's code'."
     },
     {
       "criterion_id": "FR-026",
