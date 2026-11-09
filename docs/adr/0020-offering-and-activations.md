@@ -351,11 +351,16 @@ flag):
 |---|---|
 | `GET …/{activationId}/artifacts{?kind,state}` | Each artifact with its `state` (`active`, `inactive`, `excluded`), its policy facts (`required`, `policy`) and a closed `reason` |
 | `GET …/{activationId}/skipped` | The skipped report (ADR-0013 D4) |
-| `GET …/{activationId}/graph` | The activation-filtered graph |
+| `GET …/{activationId}/graph` | The effective graph of the activation: the nodes in force, the merged edges among them and the layer overrides (amendment R6 of ADR-0059) |
 | `GET …/{activationId}/mission-types/{missionType}/actions/{action}/context{?depth}` | The effective action context, `EffectiveActionContext` |
 
 Each effective answer carries the activation's `revision` beside `governanceFingerprint`, so a
 cached answer is tied to both the document and the offering.
+
+*Amended 2026-11-09 (PR C): "active whatever the document says" is qualified by
+[ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) amendment R6 (an active override can hide a
+required artifact), and the graph read of D7 is the effective graph of an activation, not a filter of the offering's
+graph.*
 
 *Amended 2026-11-07 (PR A0): the reads' precedence loses the kind gate. The reason `kind_not_activated`, and
 `kind_default` with it, are dropped when the reads are built (PR B, FR-022), because nothing is in force or out of
