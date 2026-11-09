@@ -89,7 +89,7 @@
     },
     "WP03": {
       "actor": "claude",
-      "agent": "claude:opus:reviewer-renata",
+      "agent": null,
       "agent_profile": "reviewer-renata",
       "agent_profile_version": "1.0",
       "force_count": 1,
@@ -102,6 +102,7 @@
         "Governance walk in packs.application: shared engine (ActionContextWalk.Engine, action walk unchanged), GovernanceWalk (LINEAGE plan, W1-W6), EdgeIndex.writtenLinks/holdsUrn (held=false), ClosureView.governance/packGovernance/effectiveArtifact (+WinnerSource, Holder, EffectiveArtifactView), ProfileGovernance.ofPack (runs in the caller's ConsistentRead supplier via ClosureQueries.snapshotWithin, no inner retry), corpus guard over 31 profiles. :packs:check, HexagonalArchitectureTest, CharterContractSuite, :activations:test green. Touched ClosureQueries and ProfileGovernanceCorpusTest outside owned_files (scope warning)."
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/agent-profile-reads-01M70ZDM-coord/kitty-specs/agent-profile-reads-01M70ZDM/tasks/WP03-the-governance-walk-in-packs-application/review-cycle-1.md",
         "reference": "review-cycle://agent-profile-reads-01M70ZDM/WP03-the-governance-walk-in-packs-application/review-cycle-1.md",
@@ -109,15 +110,15 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 30312,
-      "shell_pid_created_at": "1794263276.26",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T010": "done",
-        "T011": "done",
-        "T012": "done",
-        "T013": "done",
-        "T014": "done",
-        "T015": "done"
+        "T010": "planned",
+        "T011": "planned",
+        "T012": "planned",
+        "T013": "planned",
+        "T014": "planned",
+        "T015": "planned"
       }
     },
     "WP04": {
