@@ -1,4 +1,5 @@
 ---
+okf_version: "0.2"
 title: The docsite moves to DocKitty 0.7.0
 description: The documentation site upgrades to DocKitty 0.7.0 with linked section titles, sidebar icons, source links, and richer OpenAPI and MCP discovery.
 doc_status: active
@@ -15,8 +16,9 @@ audience:
 
 # 2026-11-09 — The docsite moves to DocKitty 0.7.0
 
-The site is built with `@spec-kitty/doc-toolkit` `0.7.0` instead of `0.6.0`. Astro 7,
-Starlight 0.42 and Node 22.22 stay as they were.
+**The docsite lists every contract operation for agents, and its sidebar links each section title to its index**
+(#449). The site is built with `@spec-kitty/doc-toolkit` `0.7.0` instead of `0.6.0`. Astro 7, Starlight 0.42 and
+Node 22.22 stay as they were.
 
 ## What changed
 
