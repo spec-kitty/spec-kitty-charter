@@ -21,6 +21,8 @@ import org.jspecify.annotations.Nullable;
  * @param assets the path and MIME type each asset declares; filled by a full read only
  * @param unreadableFiles every other classified file that could not be parsed or broke its schema: an artifact, an
  *     org charter, a project charter or a graph document outside the load path; filled by a full read only
+ * @param stepEnhancements the step enhancements, their companions and the pack's graph edges as plain facts; filled by
+ *     a full read only, empty in the load-path scope
  */
 public record PackContents(
         PackRoot root,
@@ -31,7 +33,8 @@ public record PackContents(
         List<StepContractFacts> stepContracts,
         List<ArtifactFacts> artifacts,
         List<AssetFacts> assets,
-        List<FileRead.Unreadable<?>> unreadableFiles) {
+        List<FileRead.Unreadable<?>> unreadableFiles,
+        StepEnhancementFacts stepEnhancements) {
     /**
      * Checks the fields and copies the lists.
      *
@@ -44,6 +47,7 @@ public record PackContents(
      * @param artifacts the artifact facts
      * @param assets the asset facts
      * @param unreadableFiles the other files that could not be read
+     * @param stepEnhancements the step enhancement facts
      */
     public PackContents {
         Objects.requireNonNull(root, "root");
@@ -55,6 +59,44 @@ public record PackContents(
         artifacts = List.copyOf(artifacts);
         assets = List.copyOf(assets);
         unreadableFiles = List.copyOf(unreadableFiles);
+        Objects.requireNonNull(stepEnhancements, "stepEnhancements");
+    }
+
+    /**
+     * Contents that carry no step enhancement fact: what the load-path scope reads, and the call sites that predate
+     * the step enhancement rules.
+     *
+     * @param root the pack that was read
+     * @param descriptor what {@code pack.yaml} gave
+     * @param shards the root shards
+     * @param fragment what {@code drg/fragment.yaml} gave
+     * @param files the classified files
+     * @param stepContracts the step contract facts
+     * @param artifacts the artifact facts
+     * @param assets the asset facts
+     * @param unreadableFiles the other files that could not be read
+     */
+    public PackContents(
+            PackRoot root,
+            FileRead<PackDescriptor> descriptor,
+            List<FileRead<RawGraph>> shards,
+            FileRead<RawGraph> fragment,
+            List<ClassifiedFile> files,
+            List<StepContractFacts> stepContracts,
+            List<ArtifactFacts> artifacts,
+            List<AssetFacts> assets,
+            List<FileRead.Unreadable<?>> unreadableFiles) {
+        this(
+                root,
+                descriptor,
+                shards,
+                fragment,
+                files,
+                stepContracts,
+                artifacts,
+                assets,
+                unreadableFiles,
+                StepEnhancementFacts.none());
     }
 
     /**

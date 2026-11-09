@@ -185,14 +185,15 @@ class PackPolicyStepEnhancementTest {
 
     @Test
     void aValidPackAnswersNoFindingAndNoViolation() {
-        assertThat(PackPolicy.stepEnhancementFindings("enhancer", valid())).isEmpty();
+        assertThat(PackPolicy.stepEnhancementFindings("enhancer", valid(), true))
+                .isEmpty();
         assertThat(PackPolicy.stepEnhancementViolations(valid())).isEmpty();
     }
 
     @ParameterizedTest
     @EnumSource(StepEnhancementFault.class)
     void everyFaultIsOneBlockingPromptFragmentInvalidFindingAtItsFile(StepEnhancementFault fault) {
-        List<PackFinding> findings = PackPolicy.stepEnhancementFindings("enhancer", failing(fault));
+        List<PackFinding> findings = PackPolicy.stepEnhancementFindings("enhancer", failing(fault), true);
 
         assertThat(findings).hasSize(1);
         PackFinding finding = findings.getFirst();
