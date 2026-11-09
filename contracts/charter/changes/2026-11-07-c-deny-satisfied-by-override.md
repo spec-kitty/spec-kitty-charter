@@ -14,3 +14,5 @@
   with the reason `required`. The `ArtifactPolicyRefused` response, the `artifact_required` text of
   `CharterRefusalCode` and the descriptions of the three writes say so. A merge refusal of the closure (a forbidden
   layer override) now reaches a write that adds a deny entry on a required artifact, as it reaches the reads.
+  A documented `409 artifact_required` therefore now succeeds (`200` or `201`) when an active override satisfies the
+  requirement. Core's in-process backend still refuses it (DIV-204).

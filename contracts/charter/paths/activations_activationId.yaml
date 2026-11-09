@@ -61,7 +61,11 @@ put:
     * creates only; If-Match makes the write conditional, takes the quoted revision or the current getActivation tag (a closure tag that no longer matches is 412), and without it the write is last-writer-wins. An If-Match on
     an id nothing is stored under is 412, not 404: no stored revision matches it (RFC 9110 section 13.1.1). A document
     that deactivates a locked artifact is 409 artifact_locked, and one that deactivates a required artifact is 409
-    artifact_required, and nothing is stored, unless an active override of it satisfies the requirement in the document as it will be stored: an artifact that overrides it (an overrides edge of the merged closure) and is in force, selected or required, within the language filter and bound to a mission type in force, not denied and not hidden by an override itself. An enhancement never satisfies, and a locked artifact is never satisfied by an override (operator ruling Q9, research R12); an unknown pack, kind or artifact
+    artifact_required, and nothing is stored, unless an active override of it satisfies the requirement in the
+    document as it will be stored: an artifact that overrides it (an overrides edge of the merged closure) and is in
+    force, selected or required, within the language filter and bound to a mission type in force, not denied and not
+    hidden by an override itself. An enhancement never satisfies, and a locked artifact is never satisfied by an
+    override (operator ruling Q9, research R12); an unknown pack, kind or artifact
     is 422 with violations. Both If-Match and If-None-Match on one request is 400, and so is an If-None-Match other
     than * (a malformed precondition); so is an If-Match that is neither * nor one quoted sha256 tag (the revision or the getActivation tag), and an id outside the
     declared pattern. A body over 1 MiB, an unknown member or a null is 422 activation_invalid. A body that sends
@@ -75,7 +79,9 @@ put:
     same body never fails without a pack change: an id the closure no longer holds that the replaced document named
     is dropped, not refused, and listed in the answer's dropped (an unknown id the replaced document did not name is
     still 422); and the floor is judged on the deny entries the body adds only, so a deny entry the replaced document
-    already held is kept even when a pack now requires or locks it, while a new one is 409 as above. A later write that removes the satisfying override is not refused: the stored deny entry is then read as not applied and listed in denyNotApplied. A stored document an
+    already held is kept even when a pack now requires or locks it, while a new one is 409 as above. A later write
+    that removes the satisfying override is not refused: the stored deny entry is then read as not applied and listed
+    in denyNotApplied. A stored document an
     offering change made stale is served as stored on read (ADR-0059 D4). Without If-Match the write is judged
     against the document it replaces, read just before the write and compared on write; when another writer changes
     the activation in between, it is judged again from a fresh read, up to eight times, and when every attempt loses
