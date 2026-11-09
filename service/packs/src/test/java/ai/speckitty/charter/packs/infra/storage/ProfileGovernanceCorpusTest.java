@@ -79,6 +79,9 @@ class ProfileGovernanceCorpusTest {
             assertThat(governance.entries())
                     .as("%s: a held entry has a holder, an unheld one has none", id)
                     .allSatisfy(entry -> assertThat(entry.holder().isPresent()).isEqualTo(entry.held()));
+            assertThat(governance.entries())
+                    .as("%s lists no dangling parent: every entry is held", id)
+                    .allSatisfy(entry -> assertThat(entry.held()).isTrue());
             listed += governance.entries().size();
         }
         assertThat(listed).as("the corpus profiles carry governance").isPositive();
