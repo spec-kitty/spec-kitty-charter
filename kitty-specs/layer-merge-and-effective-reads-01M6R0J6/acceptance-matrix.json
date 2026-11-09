@@ -26,13 +26,13 @@
     },
     {
       "criterion_id": "FR-003",
-      "description": "Verify FR-003 is satisfied",
+      "description": "A stale If-Match on PUT /packs/{packId} answers 412 synchronously, and an archive holding an unknown file, a path leaving the pack, an invalid artifact, a changed pack_level or pack_id, an unstamped registered.graph.yaml, a removed field or an out-of-model preset ends refused 422 validation_failed with violations and stores nothing.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "contracts/charter/scenarios/registration/whole-pack-registration.feature: \"An archive that breaks a pack rule is refused with the violations and stores nothing\"; contracts/charter/scenarios/registration/whole-pack-registration.feature: \"A stale If-Match is refused at once and no registration exists\"",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:45:26.746876+00:00",
+      "notes": "PR A (#419). Also pinned by the outlines 'A replace may not change the level or the pack_id of the stored pack', 'A registered.graph.yaml without the registration stamp is refused...', 'A directive with a field that was removed...' and 'A preset the pack model no longer reads...'."
     },
     {
       "criterion_id": "FR-004",
