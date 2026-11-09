@@ -979,7 +979,8 @@ steps), `01M7037V93Y077H8M4W9V8Y6B3` (the step predicate, OD-9). **Built (PR C).
 **E16 Action context.** `getEffectiveActionContext(mt, a)` is ADR-0018's five-step walk from the held step `action:mt/a`,
 started only when `mission_type:mt ∈ Eff`, over `E_M` restricted to `Eff`: the walk lists and walks `Eff` only, and the start
 node is its one step (E15). Each listed artifact brings its `enhancedBy` (E12); the start step's own enhancers are in
-`enhancements`, one `{target, enhancedBy}` per node with an enhancer in force. A **suggestion** is an artifact the listing
+`enhancements`, one `{target, enhancedBy}` per node with an enhancer in force, sorted by `target` and each `enhancedBy`
+in one order: kind token, then id, by Unicode code point (the order of the full URNs). A **suggestion** is an artifact the listing
 gives a suggestion (E11: `not_selected`, reached through no hard relation by any artifact in force) that a listed entry reaches
 through a `suggests` edge; it carries the nearest edge's `when` and `reason`, is not walked through, and so the context's
 suggestions are a subset of the listing's. Entries are sorted by full URN string (ADR-0018 D3). `mission_type:mt ∉ Eff ⇒

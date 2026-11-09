@@ -498,7 +498,8 @@ counts (`StepHolding`, [DIV-243](/conformance/divergence-register/)).
 - `enhancements`: `[{target, enhancedBy}]`, one entry per node with an enhancer in force, read from the enhanced
   node's side (rule E12). The target is a `NodeReference`, because the start step is a node no artifact entry names:
   a step enhancer enhances the step (decision `01M70C42KC78KB9H6KB7TK9224`). An enhancer is listed only when it is itself
-  in force; nothing is pulled in.
+  in force; nothing is pulled in. The entries are sorted by `target` and each `enhancedBy` by the enhancer, in one order:
+  kind token, then id, compared by Unicode code point (the order of the full URNs, as no kind token is a prefix of another).
 - `skipped`: the activation's whole skipped report, except that `missionTypeNotInForce` is the mission type itself when
   the activation does not put it in force, and empty otherwise. A mission type not in force answers no `artifacts` and
   no `enhancements`.
