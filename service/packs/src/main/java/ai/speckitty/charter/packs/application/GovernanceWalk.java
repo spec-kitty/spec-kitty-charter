@@ -36,9 +36,11 @@ import java.util.function.Predicate;
  * enhancers: a profile takes no step enhancement.
  *
  * <p>A walk is over the links of one index. {@link #over} walks the links between held artifacts, which is what the
- * activation-scoped read wants. {@link #overWritten} walks every edge a held artifact writes: a target no pack holds is
- * listed with {@link Entry#held() held} {@code false} and never expanded, so the pack-scoped read can say that a parent
- * is declared and not there. Entries are sorted by full URN string, whatever step listed them.
+ * activation-scoped read wants. {@link #overWritten} walks every edge a held artifact writes, each resolved as the
+ * activation walk resolves it: an edge to a place that holds nothing is listed with {@link Entry#held() held}
+ * {@code false} and never expanded, so the pack-scoped read can say that a parent is declared and not there. A URN
+ * reached by both a held and a dangling edge takes the parent the usual order picks (fewest hops, smallest parent and
+ * edge, a held edge before a dangling one on a tie), and {@code held} follows that parent's edge. Entries are sorted by full URN string, whatever step listed them.
  */
 public final class GovernanceWalk {
 
@@ -83,8 +85,8 @@ public final class GovernanceWalk {
      * @param when the {@code when} of the {@code suggests} edge that reached it; empty for any other step, and for an
      *     edge that states none
      * @param reason the {@code reason} of that edge; empty likewise
-     * @param held whether a pack of the closure holds the artifact: false only in a walk over written links, for a
-     *     target no pack holds, which is listed and never expanded
+     * @param held whether the place the listing edge leads to holds the artifact: false only in a walk over written
+     *     links, for an edge to a place that holds nothing, which is listed and never expanded
      */
     public record Entry(
             Urn urn, Step step, Urn via, int hops, Optional<String> when, Optional<String> reason, boolean held) {
@@ -143,16 +145,14 @@ public final class GovernanceWalk {
     }
 
     private final Map<Urn, List<Link>> outgoing;
-    private final Predicate<Urn> held;
 
-    private GovernanceWalk(List<Link> links, Predicate<Urn> held) {
+    private GovernanceWalk(List<Link> links) {
         Map<Urn, List<Link>> bySource = new HashMap<>();
         for (Link link : links) {
             bySource.computeIfAbsent(link.source(), ignored -> new ArrayList<>())
                     .add(link);
         }
         this.outgoing = bySource;
-        this.held = held;
     }
 
     /**
@@ -163,7 +163,7 @@ public final class GovernanceWalk {
      * @return the walk
      */
     public static GovernanceWalk over(EdgeIndex index) {
-        return new GovernanceWalk(Objects.requireNonNull(index, "index").links(), urn -> true);
+        return new GovernanceWalk(Objects.requireNonNull(index, "index").links());
     }
 
     /**
@@ -175,7 +175,7 @@ public final class GovernanceWalk {
      */
     public static GovernanceWalk overWritten(EdgeIndex index) {
         Objects.requireNonNull(index, "index");
-        return new GovernanceWalk(index.writtenLinks(), index::holdsUrn);
+        return new GovernanceWalk(index.writtenLinks());
     }
 
     /**
@@ -195,7 +195,7 @@ public final class GovernanceWalk {
         if (depth < 0) {
             throw new IllegalArgumentException("depth counts suggests hops and is at least 0: " + depth);
         }
-        Engine<Step> run = new Engine<>(profile, inForce, outgoing, held);
+        Engine<Step> run = new Engine<>(profile, inForce, outgoing);
         List<Urn> ancestors = run.expand(List.of(profile), Step.LINEAGE, Integer.MAX_VALUE);
         List<Urn> seeds = new ArrayList<>(ancestors);
         seeds.add(profile);
@@ -207,18 +207,8 @@ public final class GovernanceWalk {
         run.expand(everything, Step.VOCABULARY, 1);
         List<Entry> entries = run.listed().stream()
                 .map(item -> new Entry(
-                        item.urn(),
-                        item.step(),
-                        item.via(),
-                        item.hops(),
-                        item.when(),
-                        item.reason(),
-                        isHeld(item.urn())))
+                        item.urn(), item.step(), item.via(), item.hops(), item.when(), item.reason(), item.held()))
                 .toList();
         return new Result(profile, entries, run.suggestions());
-    }
-
-    private boolean isHeld(Urn urn) {
-        return held.test(urn);
     }
 }

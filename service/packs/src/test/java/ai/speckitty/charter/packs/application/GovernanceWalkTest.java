@@ -294,6 +294,63 @@ class GovernanceWalkTest {
     }
 
     @Test
+    void aBareTargetOnlyAnotherPackHoldsIsListedNotHeldInThePackScopedWalkAndNotAtAllInTheActivationWalk() {
+        Closure closure = new Closure()
+                .pack(
+                        "builtin",
+                        List.of(),
+                        List.of("directive:D"),
+                        edge("directive:D", RelationType.REQUIRES, "tactic:T"))
+                .pack("qa", List.of("builtin"), List.of(P), edge(P, RelationType.REQUIRES, "directive:D"));
+
+        Result written = GovernanceWalk.overWritten(closure.merged()).walk(urn(P), 1, GovernanceWalkTest::everything);
+
+        assertThat(written.entries())
+                .as("the bare target means qa's own D, which qa does not hold: listed, not held, never expanded")
+                .extracting(Entry::urn, Entry::step, Entry::via, Entry::held)
+                .containsExactly(tuple(urn("directive:D"), Step.REQUIRES, urn(P), false));
+        assertThat(listed(walk(closure, 1, GovernanceWalkTest::everything)))
+                .as("the activation walk resolves the same edge the same way and drops it")
+                .isEmpty();
+    }
+
+    @Test
+    void aQualifiedTargetItsNamedPackHoldsIsHeldAndItsOwnEdgesAreWalked() {
+        Closure closure = new Closure()
+                .pack(
+                        "builtin",
+                        List.of(),
+                        List.of("directive:D", "tactic:T"),
+                        edge("directive:D", RelationType.REQUIRES, "tactic:T"))
+                .pack("qa", List.of("builtin"), List.of(P), edge(P, RelationType.REQUIRES, "builtin::directive:D"));
+
+        Result written = GovernanceWalk.overWritten(closure.merged()).walk(urn(P), 1, GovernanceWalkTest::everything);
+
+        assertThat(written.entries())
+                .extracting(Entry::urn, Entry::held)
+                .containsExactly(tuple(urn("directive:D"), true), tuple(urn("tactic:T"), true));
+        assertThat(listed(walk(closure, 1, GovernanceWalkTest::everything))).containsExactly("directive:D", "tactic:T");
+    }
+
+    @Test
+    void anUnheldNodeIsNeverExpandedEvenWhereAnotherPackHoldsTheSameUrnWithEdgesOfItsOwn() {
+        Closure closure = new Closure()
+                .pack(
+                        "builtin",
+                        List.of(),
+                        List.of("directive:D", "tactic:Below"),
+                        edge("directive:D", RelationType.REQUIRES, "tactic:Below"))
+                .pack("qa", List.of("builtin"), List.of(P), edge(P, RelationType.REQUIRES, "directive:D"));
+
+        assertThat(GovernanceWalk.overWritten(closure.merged())
+                        .walk(urn(P), 1, GovernanceWalkTest::everything)
+                        .entries())
+                .as("builtin's D requires tactic:Below, but the node reached through the dangling edge is not walked")
+                .extracting(Entry::urn)
+                .containsExactly(urn("directive:D"));
+    }
+
+    @Test
     void theStepsHaveTheirOwnTokensAndRelationsAndLineageIsSpecializesFrom() {
         assertThat(Step.values())
                 .extracting(Step::name, Step::relation)
