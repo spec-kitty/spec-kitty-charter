@@ -826,6 +826,37 @@ A → B → C.
 - **Risks:** with no reserved operation left, `ReservedOperationCoverageTest` must still hold the machinery honest.
   It keeps one bad-fixture control.
 
+### PR C scope added by operator rulings (2026-11-09)
+
+Phase 2 (#438) of the step-enhancements mission (`adr-0066-step-enhancement-service-alignment-01M6ZRYK`) depends on PR C. Its plan point
+ruled (plan "Operator decisions (plan point, 2026-11-09): ruled"; relayed on #429) that these land here:
+
+- **#429 (D3, D4(a), D15, D16).** A new `NodeReference {kind: NodeKind, id}` types `EnhancerWithoutTarget.targets`
+  (`minItems: 1`, `### Breaking`), introduced once for reuse; `ClosureViewSession` carries step targets; each part of
+  the skipped report that dropped a step reference is pinned by a unit test; `requiredNotInForce` covers activatable
+  kinds only, because the floor cannot name a step (rules page E14, C31; a divergence entry). IC-11, WP28.
+- **OD-6, the E6 amendment.** A selected step enhancer is in force exactly when the mission type of its single
+  `enhances` target is in force, else pruned with the reason `MISSION_TYPE_NOT_IN_FORCE`: `enhancerOut` skips
+  `action:` targets and `bindingOf` reads the step enhancement's `enhances` edge, in `packs.domain`. IC-10, WP27; the
+  rules page in WP29.
+- **OD-9, one step predicate.** "P defines `mission_type:M` and declares `action:M/s`", once in `packs.domain`
+  (`StepHolding`), used by `EdgeIndex.stepsOf`, `action_not_found` and the walk; the other mission's FR-009 calls it.
+  IC-10, WP27.
+- **D4b (#436).** The Java type behind `RequiredNotInForce.reason` is narrowed to the two pruning reasons, in both
+  slices, and the parity row pins the contract to it. WP27 and WP28.
+- **The node predicate of E15 and E16 (runner decision, amended at the plan-point squad).** `Eff` never holds a step:
+  the walk starts at a held step whose mission type is in `Eff` and lists and walks through `Eff` only; the graph's
+  nodes are `Eff` plus those held steps. Built in `packs` from the in-force states. Kinds that are not activatable are
+  absent from the effective reads, and so are their layer overrides (a divergence entry).
+- **OD-6 scope (squad).** Only a `step_enhancement` with exactly one `enhances` target, an `action:`; a held target
+  binds it to `M`, an unheld target prunes it with `ENHANCED_TARGET_NOT_IN_FORCE`; every other shape keeps E6.
+- **OD-9 forms (squad).** Per pack (the operator's wording) and on the closure (some pack holds it; the place is the
+  merged winner, so a layer override of a held step counts).
+
+The other mission's boundary (the other mission's C-004, not this spec's C-004): it edits no PR C-owned file and rebases after PR C merges; the PR C symbols
+it consumes (`NodeReference`, `StepHolding`, the action-context walk and name checks, `ACTION_NOT_FOUND`, the OD-6
+reason) stay stable once reviewed.
+
 ### IC-12 (A, B, C) — documentation, divergences and changelogs
 
 - **Purpose:** keep every reader's picture current in the PR that changes behaviour (DIRECTIVE_037, C-007).
