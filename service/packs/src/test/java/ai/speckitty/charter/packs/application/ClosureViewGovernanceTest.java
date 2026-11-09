@@ -136,6 +136,10 @@ class ClosureViewGovernanceTest {
     }
 
     private ClosureQueries queries() {
+        return queries(true);
+    }
+
+    private ClosureQueries queries(boolean withPackStore) {
         PackDescriptorRepository repository = new PackDescriptorRepository() {
             @Override
             public PackDescriptor get(PackIdentifier pack) {
@@ -157,7 +161,9 @@ class ClosureViewGovernanceTest {
         OfferingReadService offering =
                 new OfferingReadService(catalog, repository, pack -> facts.get(pack.value()), read);
         PackRepository packs = pack -> stored.get(pack.value());
-        return new ClosureQueries(offering, catalog, read, packs);
+        return withPackStore
+                ? new ClosureQueries(offering, catalog, read, packs)
+                : new ClosureQueries(offering, catalog, read);
     }
 
     private static InForceStates selecting(ClosureView view, Urn... urns) {
@@ -312,6 +318,34 @@ class ClosureViewGovernanceTest {
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.STALE_INPUT));
+    }
+
+    @Test
+    void aWinnerThePackStoreCannotProduceIsPackUnreadableWhileTheClosureDigestIsUnchanged() {
+        pack("builtin", PackLevel.BUILT_IN, List.of(), List.of("P"), List.of());
+        stored.put(
+                "builtin",
+                Pack.builder()
+                        .id(new PackIdentifier("builtin"))
+                        .descriptor(descriptors.get("builtin"))
+                        .build());
+        ClosureView view = queries().allConfigured();
+
+        assertThatThrownBy(() -> view.effectiveArtifact(ArtifactKind.AGENT_PROFILE, "P", 0, selecting(view, P)))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+                    assertThat(refusal.getMessage()).contains("builtin").contains("agent_profile:P");
+                });
+    }
+
+    @Test
+    void aViewBuiltWithoutAPackStoreFailsTheWinnerReadAsAWiringFaultNotAsAnUnreadablePack() {
+        pack("builtin", PackLevel.BUILT_IN, List.of(), List.of("P"), List.of());
+        ClosureView view = queries(false).allConfigured();
+
+        assertThatThrownBy(() -> view.effectiveArtifact(ArtifactKind.AGENT_PROFILE, "P", 0, selecting(view, P)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("without a pack store");
     }
 
     // ---- pack-scoped -----------------------------------------------------------------------------------------------
