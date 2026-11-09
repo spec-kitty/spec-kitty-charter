@@ -347,6 +347,18 @@
       "title": null,
       "verdict": "in-mission",
       "wp": "WP28"
+    },
+    "#430": {
+      "evidence_ref": "Wire-token parity op, landed as #436 outside this mission; PR C narrows RequiredNotInForce.reason (D4b) in WP27/WP28",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
     }
   },
   "schema_version": 1
