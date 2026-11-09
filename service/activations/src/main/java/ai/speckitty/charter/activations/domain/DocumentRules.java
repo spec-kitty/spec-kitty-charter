@@ -27,8 +27,8 @@ import java.util.stream.Collectors;
  * compared as a number). Every pointer is an RFC 6901 pointer into the request body: a list index is the position as
  * written ({@link ActivationDocument.Built#written()}), a repeated unknown id has one violation per position, and a
  * repeated pack is judged at its first position only (the later ones are {@code duplicate_pack}). A document checked
- * without a written form ({@link #check(ActivationDocument, ClosureSnapshot)}) is indexed by its canonical lists.
- * The codes:
+ * without a written form ({@link #check(ActivationDocument, ClosureSnapshot, InForceFacts)}) is indexed by its
+ * canonical lists. The codes:
  *
  * <ul>
  *   <li>{@code unknown_artifact}: a {@code selected} or {@code deactivated} id the closure does not hold, of any kind,
@@ -78,17 +78,6 @@ public final class DocumentRules {
     private DocumentRules() {}
 
     /**
-     * Checks a document.
-     *
-     * @param document the document
-     * @param snapshot the closure the document names
-     * @return the refusal; empty when the document may be stored
-     */
-    public static Optional<CharterRefusal> check(ActivationDocument document, ClosureSnapshot snapshot) {
-        return check(new ActivationDocument.Built(document, List.of()), snapshot);
-    }
-
-    /**
      * Checks a document, with the in-force facts that decide a deny entry on a required artifact (IC-13).
      *
      * @param document the document
@@ -99,18 +88,6 @@ public final class DocumentRules {
     public static Optional<CharterRefusal> check(
             ActivationDocument document, ClosureSnapshot snapshot, InForceFacts facts) {
         return check(new ActivationDocument.Built(document, List.of()), snapshot, facts);
-    }
-
-    /**
-     * Checks a document just built, together with its shape violations, with no in-force facts: a deny entry on a
-     * required artifact is refused, as no override can be known to satisfy it.
-     *
-     * @param built the document and its shape violations
-     * @param snapshot the closure the document names
-     * @return the refusal; empty when the document may be stored
-     */
-    public static Optional<CharterRefusal> check(ActivationDocument.Built built, ClosureSnapshot snapshot) {
-        return check(built, snapshot, InForceFacts.NONE);
     }
 
     /**
@@ -145,26 +122,12 @@ public final class DocumentRules {
 
     /**
      * Checks the document a per-artifact or preset write computed (data model: "the floor is never denied"): every id
-     * is judged as {@link #check(ActivationDocument, ClosureSnapshot)} judges it (FR-017), but the floor only on the
-     * deny entries the write adds. A stored deny entry on an artifact a pack upgrade made required or locked is
-     * tolerated, not applied (ADR-0059 D4), so it never refuses a write of another id.
-     *
-     * @param before the document as stored
-     * @param after the document the write computed
-     * @param snapshot the closure the document names
-     * @return the refusal; empty when the document may be stored
-     */
-    public static Optional<CharterRefusal> checkWrite(
-            ActivationDocument before, ActivationDocument after, ClosureSnapshot snapshot) {
-        return checkWrite(before, after, snapshot, InForceFacts.NONE);
-    }
-
-    /**
-     * {@link #checkWrite(ActivationDocument, ActivationDocument, ClosureSnapshot)} with the in-force facts that decide a
-     * deny entry the write adds on a required artifact (IC-13): it is accepted when an active override of it satisfies
-     * the requirement in {@code after}, the document as it will be stored. The facts are asked only for such an entry;
-     * a stored deny entry, and a write that adds none (an unselect of the override, a select with
-     * {@code includeDeactivated}), never ask.
+     * is judged as {@link #check(ActivationDocument, ClosureSnapshot, InForceFacts)} judges it (FR-017), but the floor
+     * only on the deny entries the write adds. A stored deny entry on an artifact a pack upgrade made required or
+     * locked is tolerated, not applied (ADR-0059 D4), so it never refuses a write of another id. A deny entry the write
+     * adds on a required artifact is accepted when an active override of it satisfies the requirement in {@code after},
+     * the document as it will be stored (IC-13). The facts are asked only for such an entry; a stored deny entry, and a
+     * write that adds none (an unselect of the override, a select with {@code includeDeactivated}), never ask.
      *
      * @param before the document as stored
      * @param after the document the write computed
@@ -184,31 +147,18 @@ public final class DocumentRules {
 
     /**
      * Checks the body of a full replace against the document it replaces (A4, B1): every id is judged as
-     * {@link #check(ActivationDocument.Built, ClosureSnapshot)} judges it, except that an id the closure no longer
-     * holds is tolerated when the stored document names it (in any known spelling, in either list of its kind), and a
-     * pinned version the closure does not hold is tolerated; {@link StaleIds#drop} then drops both from the document
-     * stored. The floor is judged on the deny entries the body adds to the stored document only ({@link #addedDenies}),
-     * as {@link #checkWrite} judges a per-artifact write.
+     * {@link #check(ActivationDocument.Built, ClosureSnapshot, InForceFacts)} judges it, except that an id the closure
+     * no longer holds is tolerated when the stored document names it (in any known spelling, in either list of its
+     * kind), and a pinned version the closure does not hold is tolerated; {@link StaleIds#drop} then drops both from
+     * the document stored. The floor is judged on the deny entries the body adds to the stored document only
+     * ({@link #addedDenies}), as {@link #checkWrite} judges a per-artifact write. A deny entry the body adds on a
+     * required artifact is accepted when an active override of it satisfies the requirement in the document as it will
+     * be stored, the body less what {@link StaleIds#drop} drops (IC-13), so a body that adds the override and the deny
+     * entry together is accepted.
      *
      * @param built the body as the request built it, normalized, with its shape violations
      * @param stored the document the replace replaces; the empty document when nothing is stored, so that every deny
      *     entry is added and every unknown id is refused
-     * @param snapshot the closure the body names
-     * @return the refusal; empty when the body, less what {@link StaleIds#drop} drops, may be stored
-     */
-    public static Optional<CharterRefusal> checkReplace(
-            ActivationDocument.Built built, ActivationDocument stored, ClosureSnapshot snapshot) {
-        return checkReplace(built, stored, snapshot, InForceFacts.NONE);
-    }
-
-    /**
-     * {@link #checkReplace(ActivationDocument.Built, ActivationDocument, ClosureSnapshot)} with the in-force facts that
-     * decide a deny entry the body adds on a required artifact (IC-13): it is accepted when an active override of it
-     * satisfies the requirement in the document as it will be stored, the body less what {@link StaleIds#drop} drops,
-     * so a body that adds the override and the deny entry together is accepted.
-     *
-     * @param built the body as the request built it, normalized, with its shape violations
-     * @param stored the document the replace replaces; the empty document when nothing is stored
      * @param snapshot the closure the body names
      * @param facts what the in-force resolution puts in force for the document as it will be stored
      * @return the refusal; empty when the body, less what {@link StaleIds#drop} drops, may be stored
@@ -361,7 +311,7 @@ public final class DocumentRules {
      * Writes every known spelling of an id (the declared id, its full URN, a case variant of either) as the declared
      * id, in the allow and deny lists as written and in the document, so that every spelling gives one stored document
      * and one revision (ADR-0020 D4, operator ruling of 2026-11-06). A spelling that is unknown or ambiguous is left
-     * as written, for {@link #check(ActivationDocument.Built, ClosureSnapshot)} to refuse at its position. A closure
+     * as written, for {@link #check(ActivationDocument.Built, ClosureSnapshot, InForceFacts)} to refuse at its position. A closure
      * that did not compose normalizes nothing.
      *
      * @param built the document as the request built it
