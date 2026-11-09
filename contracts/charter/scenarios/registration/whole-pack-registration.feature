@@ -339,6 +339,46 @@ Feature: Registering a whole pack replaces the pack the service holds
       | ../outside.yaml             | a path that leaves the pack                  |
       | directives/C.directive.yaml | id: C, a directive missing its required keys |
 
+  # Operator ruling D-1 (ADR-0066 closeout): a registration answers every fault of the pack in one report, a graph
+  # document that breaks its schema included, one violation per fault at the pack-relative file of the document.
+  Scenario: An archive with two graph documents that break their schema is refused listing both at their files
+    Given the archive "bad" is a copy of the archive "v1"
+    And the archive "bad" holds the file "zeta.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges: []
+      surprise: 1
+      """
+    And the archive "bad" holds the file "alpha.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges: []
+      other: 2
+      """
+    When I PUT "/packs/acme" with the archive "bad"
+    Then the response status is 202
+    When I poll the registration until it ends
+    Then the field at "/state" is "refused"
+    And the field at "/problem/status" is 422
+    And the field at "/problem/code" is "validation_failed"
+    And the field at "/problem/violations" holds exactly 2 item(s)
+    And the field at "/problem/violations/0/code" is "drg_schema_error"
+    And the field at "/problem/violations/0/pointer" is "alpha.graph.yaml"
+    And the field at "/problem/violations/0/detail" contains "alpha.graph.yaml"
+    And the field at "/problem/violations/1/code" is "drg_schema_error"
+    And the field at "/problem/violations/1/pointer" is "zeta.graph.yaml"
+    And the field at "/problem/violations/1/detail" contains "zeta.graph.yaml"
+    When I GET "/packs/acme"
+    Then the response status is 404
+    And the problem code is "pack_not_found"
+    When I PUT "/packs/acme" with the archive "v1"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+
   # bound by: WP16 (US1 AS7: a changed level or pack_id is refused, then the same identity is accepted)
   Scenario Outline: A replace may not change the level or the pack_id of the stored pack
     Given the archive "changed" is a copy of the archive "v1"

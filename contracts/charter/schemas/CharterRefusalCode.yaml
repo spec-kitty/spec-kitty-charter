@@ -31,8 +31,10 @@ description: >-
   action context (getEffectiveActionContext), which answers it with action_not_found too when the path names an action
   the merged closure does not hold for that mission type. pack_level_mismatch is no longer raised: no operation
   loads and judges a pack's level any more. drg_schema_error is raised as a violation code of a refused
-  registration (validation_failed), as the definition of raised below counts it. pack_level_mismatch stays in the enum
-  so that the contract keeps accepting it.
+  registration (validation_failed), as the definition of raised below counts it: a graph document (a root
+  *.graph.yaml shard or drg/fragment.yaml) that cannot be read or breaks its schema is a violation per fault at its
+  pack-relative file, and a registration lists every such fault beside the pack's other faults, not the first
+  only. pack_level_mismatch stays in the enum so that the contract keeps accepting it.
 
   governance_policy_violation (409) is raised by the registration writes: a write the mutability level of
   the pack that owns its target does not permit is refused with it (ADR-0012, the mutability-policy epic
@@ -69,9 +71,9 @@ description: >-
   reaches the code that refuses with it, even when no configuration of this version provokes the refusal
   (governance_policy_violation), or when an operation of this version lists it as the code of a violation inside a 422
   validation_failed: a refused registration lists every fault of the pack as a violation whose pointer is the
-  pack-relative file and whose code is the code (drg_schema_error, prompt_fragment_invalid, prompt_slot_malformed,
-  prompt_slot_not_empty). So the problem that carries such a code is 422 at
-  registration and a composing read answers 500 pack_unreadable naming the file. The declared status of such a code
+  pack-relative file and whose code is the code (drg_schema_error, one per fault of a graph document,
+  prompt_fragment_invalid, prompt_slot_malformed, prompt_slot_not_empty). So the problem that carries such a code is
+  422 at registration and a composing read answers 500 pack_unreadable naming the file. The declared status of such a code
   is kept and read as the status of the read that meets the fault. A code that only a part no operation reaches
   refuses with is not raised. Clients and the contract scenarios read it.
 
