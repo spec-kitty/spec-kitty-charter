@@ -53,8 +53,22 @@ import java.util.function.Supplier;
  */
 public final class ActionContextWalk {
 
+    /**
+     * A step of a breadth-first walk over the typed edges: the relation its entries are listed by. The action walk's
+     * {@link Step} is one, and so is any other walk's, so {@link Engine} serves them all.
+     */
+    interface WalkStep {
+
+        /**
+         * The relation the step's entries are listed by.
+         *
+         * @return the relation
+         */
+        RelationType relation();
+    }
+
     /** One of the five steps, with the relation its entries are listed by. */
-    public enum Step {
+    public enum Step implements WalkStep {
         /** The artifacts the action node scopes. */
         SCOPE(RelationType.SCOPE),
         /** What the scoped artifacts require, transitively. */
@@ -77,6 +91,7 @@ public final class ActionContextWalk {
          *
          * @return the relation
          */
+        @Override
         public RelationType relation() {
             return relation;
         }
@@ -207,8 +222,9 @@ public final class ActionContextWalk {
         }
     }
 
-    /** An entry before its enhancers are known. */
-    private record Listed(Urn urn, Step step, Urn via, int hops, Optional<String> when, Optional<String> reason) {}
+    /** What a walk lists before the caller adds what is its own (the enhancers of an action entry, the holder of a profile's). */
+    record Listed<S extends WalkStep>(
+            Urn urn, S step, Urn via, int hops, Optional<String> when, Optional<String> reason) {}
 
     private static final Comparator<Link> EDGE_TIE_ORDER = Comparator.comparing(
                     (Link link) -> link.when().orElse(""))
@@ -271,14 +287,30 @@ public final class ActionContextWalk {
         if (!inForce.test(type)) {
             return new Context(start, false, List.of(), List.of(), List.of(), List.of());
         }
-        Run run = new Run(start, inForce);
+        Engine<Step> run = new Engine<>(start, inForce, outgoing, held -> true);
         List<Urn> scoped = run.expand(List.of(start), Step.SCOPE, 1);
         run.expand(scoped, Step.REQUIRES, Integer.MAX_VALUE);
         List<Urn> suggested = run.expand(scoped, Step.SUGGESTS, depth);
         run.expand(suggested, Step.REQUIRES_OF_SUGGESTED, Integer.MAX_VALUE);
         run.expand(run.listedUrns(), Step.VOCABULARY, 1);
+        List<Entry> entries = run.listed().stream()
+                .map(item -> new Entry(
+                        item.urn(),
+                        item.step(),
+                        item.via(),
+                        item.hops(),
+                        item.when(),
+                        item.reason(),
+                        enhancersOf(item.urn(), inForce),
+                        enhancedTargetsOf(item.urn(), inForce)))
+                .toList();
         return new Context(
-                start, true, run.entries(), run.suggestions(), run.enhancersOf(start), run.enhancedTargetsOf(start));
+                start,
+                true,
+                entries,
+                run.suggestions(),
+                enhancersOf(start, inForce),
+                enhancedTargetsOf(start, inForce));
     }
 
     /**
@@ -315,18 +347,57 @@ public final class ActionContextWalk {
         }
     }
 
-    /** One walk: what the steps have listed so far, and the hops of everything it has reached. */
-    private final class Run {
+    private List<Urn> enhancersOf(Urn target, Predicate<Urn> inForce) {
+        Set<Urn> enhancers = new TreeSet<>();
+        enhancing.getOrDefault(target, List.of()).stream()
+                .map(Link::source)
+                .filter(inForce)
+                .forEach(enhancers::add);
+        return List.copyOf(enhancers);
+    }
+
+    private List<Urn> enhancedTargetsOf(Urn enhancer, Predicate<Urn> inForce) {
+        Set<Urn> targets = new TreeSet<>();
+        outgoing.getOrDefault(enhancer, List.of()).stream()
+                .filter(link -> link.relation() == RelationType.ENHANCES)
+                .map(Link::target)
+                .filter(inForce)
+                .forEach(targets::add);
+        return List.copyOf(targets);
+    }
+
+    /**
+     * One walk of the steps a caller runs in order, over the links it hands in: what the steps have listed so far, and
+     * the hops of everything the walk has reached. It is the engine the action walk and the profile walk
+     * share; each caller states its start node, the steps it runs and their seeds, so the
+     * rules that make a walk (minimum step, the parent tie order, the predicate) are written once.
+     *
+     * @param <S> the walk's step type
+     */
+    static final class Engine<S extends WalkStep> {
 
         private final Urn start;
         private final Predicate<Urn> inForce;
-        private final Map<Urn, Listed> listed = new LinkedHashMap<>();
+        private final Map<Urn, List<Link>> outgoing;
+        private final Predicate<Urn> expandable;
+        private final Map<Urn, Listed<S>> listed = new LinkedHashMap<>();
         private final Map<Urn, Integer> hops = new HashMap<>();
         private final Map<Urn, Link> refused = new TreeMap<>();
 
-        Run(Urn start, Predicate<Urn> inForce) {
+        /**
+         * A walk from the start node.
+         *
+         * @param start the start node; the walk never lists it, whatever the predicate says of it
+         * @param inForce the predicate: a node it refuses is neither listed nor walked through
+         * @param outgoing the links by source
+         * @param expandable whether a node a step lists is walked through by the later steps: false for a node the
+         *     links carry no edge from because the closure does not hold it, which is listed and never expanded
+         */
+        Engine(Urn start, Predicate<Urn> inForce, Map<Urn, List<Link>> outgoing, Predicate<Urn> expandable) {
             this.start = start;
             this.inForce = inForce;
+            this.outgoing = outgoing;
+            this.expandable = expandable;
             hops.put(start, 0);
         }
 
@@ -338,13 +409,20 @@ public final class ActionContextWalk {
             return List.copyOf(listed.keySet());
         }
 
+        /** What the steps listed, in URN order (ADR-0018 D3). */
+        List<Listed<S>> listed() {
+            return listed.values().stream()
+                    .sorted(Comparator.comparing(Listed::urn))
+                    .toList();
+        }
+
         /**
          * One breadth-first step over the step's relation from the seeds, for at most {@code layers} layers: lists each
          * node reached that no earlier step listed, and walks through the ones already listed.
          *
          * @return the nodes this step listed
          */
-        List<Urn> expand(Collection<Urn> seeds, Step step, int layers) {
+        List<Urn> expand(Collection<Urn> seeds, S step, int layers) {
             Set<Urn> visited = new HashSet<>(seeds);
             visited.add(start);
             List<Urn> frontier = List.copyOf(new TreeSet<>(seeds));
@@ -358,7 +436,7 @@ public final class ActionContextWalk {
                     }
                 }
                 visited.addAll(parents.keySet());
-                frontier = List.copyOf(parents.keySet());
+                frontier = parents.keySet().stream().filter(expandable).toList();
             }
             return fresh;
         }
@@ -429,58 +507,19 @@ public final class ActionContextWalk {
                     .toList();
         }
 
-        private void list(Urn urn, Step step, Link parent) {
+        private void list(Urn urn, S step, Link parent) {
             int reached = hopsOf(parent.source()) + 1;
-            boolean suggested = step == Step.SUGGESTS;
+            boolean suggested = step.relation() == RelationType.SUGGESTS;
             hops.put(urn, reached);
             listed.put(
                     urn,
-                    new Listed(
+                    new Listed<>(
                             urn,
                             step,
                             parent.source(),
                             reached,
                             suggested ? parent.when() : Optional.empty(),
                             suggested ? parent.reason() : Optional.empty()));
-        }
-
-        /** The entries in URN order (ADR-0018 D3), each with its enhancers in force at either end (rule E12). */
-        List<Entry> entries() {
-            return listed.values().stream()
-                    .sorted(Comparator.comparing(Listed::urn))
-                    .map(this::entry)
-                    .toList();
-        }
-
-        private Entry entry(Listed item) {
-            return new Entry(
-                    item.urn(),
-                    item.step(),
-                    item.via(),
-                    item.hops(),
-                    item.when(),
-                    item.reason(),
-                    enhancersOf(item.urn()),
-                    enhancedTargetsOf(item.urn()));
-        }
-
-        List<Urn> enhancersOf(Urn target) {
-            Set<Urn> enhancers = new TreeSet<>();
-            enhancing.getOrDefault(target, List.of()).stream()
-                    .map(Link::source)
-                    .filter(inForce)
-                    .forEach(enhancers::add);
-            return List.copyOf(enhancers);
-        }
-
-        List<Urn> enhancedTargetsOf(Urn enhancer) {
-            Set<Urn> targets = new TreeSet<>();
-            outgoing.getOrDefault(enhancer, List.of()).stream()
-                    .filter(link -> link.relation() == RelationType.ENHANCES)
-                    .map(Link::target)
-                    .filter(inForce)
-                    .forEach(targets::add);
-            return List.copyOf(targets);
         }
     }
 }
