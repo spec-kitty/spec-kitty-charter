@@ -26,6 +26,10 @@ import org.springframework.context.annotation.Configuration;
     "ai.speckitty.charter.activations.application.config",
     "ai.speckitty.charter.activations.infra.api.config",
     "ai.speckitty.charter.activations.infra.packs.config",
+    "ai.speckitty.charter.profiles.application.config",
+    "ai.speckitty.charter.profiles.infra.api.config",
+    "ai.speckitty.charter.profiles.infra.packs.config",
+    "ai.speckitty.charter.profiles.infra.activations.config",
     "ai.speckitty.charter.web.config"
 })
 public class DeployableConfiguration {
