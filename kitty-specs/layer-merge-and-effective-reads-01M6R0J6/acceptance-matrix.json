@@ -276,13 +276,13 @@
     },
     {
       "criterion_id": "FR-028",
-      "description": "Verify FR-028 is satisfied",
+      "description": "The requirement of a preset id is the union of the must-have items of every governing copy across levels (within a level the replacing copy wins), and a must-have item no pack holds is dropped from the floor and reported in requiredNotHeld.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "contracts/charter/scenarios/layer-merge.feature: \"A1 - the requirement of a preset id is the union of every governing copy across levels\"; contracts/charter/scenarios/effective-reads.feature: \"A10 - a must-have item no pack holds is in requiredNotHeld, and a held one is required and in force\"",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:46:42.583808+00:00",
+      "notes": "PR A0 (#414) A10 and PR B (#427) A1 union; DM-01M6RA7FHRC5K8QPX7KN5FZ4S8, DM-01M6RA8MG55V8C2V9PXWDTRNQS, DM-01M6ZCXAJ9MTTF9XJSR89F3NYG. Write side: 'A1 - the union floor holds in the writes...'."
     },
     {
       "criterion_id": "FR-029",
