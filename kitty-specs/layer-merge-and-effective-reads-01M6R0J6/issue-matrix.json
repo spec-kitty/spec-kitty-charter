@@ -337,7 +337,7 @@
       "wp": null
     },
     "#429": {
-      "evidence_ref": "Follow-up from the #427 landing pass: step URNs filtered out of the skipped report; latent until #428; PR C reads it before WP27/WP28",
+      "evidence_ref": "PR C scope by operator ruling D3: NodeReference and step targets in WP28 (T162-T163); OD-6 source in WP27 (T160)",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -345,8 +345,8 @@
       "scope": null,
       "source_file": null,
       "title": null,
-      "verdict": "deferred-with-followup",
-      "wp": null
+      "verdict": "in-mission",
+      "wp": "WP28"
     }
   },
   "schema_version": 1
