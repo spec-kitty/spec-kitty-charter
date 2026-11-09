@@ -386,13 +386,13 @@
     },
     {
       "criterion_id": "FR-039",
-      "description": "Verify FR-039 is satisfied",
+      "description": "GET /packs/{packId} answers the stored pack's PackRegistration summary with its revision as ETag and a self link, so Location and _links point at a declared read.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "contracts/charter/scenarios/registration/whole-pack-registration.feature: \"A pack that does not exist yet is created, and everything the archive carries is readable\"; service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/LinkChecksTest.java#aSelfThatIsTheRootOnAPackPathIsReported",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:47:15.947083+00:00",
+      "notes": "PR A (#419, WP11/WP16); post-plan contract squad. The scenario hook's LinkChecks validate _links.self on every 2xx answer (R-20); 404 on an absent pack pinned in the validation outline."
     },
     {
       "criterion_id": "FR-040",
