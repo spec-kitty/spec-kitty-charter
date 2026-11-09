@@ -251,6 +251,54 @@
       "title": null,
       "verdict": "deferred-with-followup",
       "wp": "WP20"
+    },
+    "#418": {
+      "evidence_ref": "Closed by #423 (merged; main at dabf5093). Its 'correctness to settle before PR B' item, the per-pack generation key (R5, 53dfb013), is verified by WP21's facts cache keying on the configured name (decision 01M6XT2FKK7YPV1GCESFW1ANZ7)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "verified-already-fixed",
+      "wp": "WP21"
+    },
+    "#419": {
+      "evidence_ref": "PR A of this mission (WP10-WP20), merged to main; referenced by the hand-over and the PR B closeout notes",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "in-mission",
+      "wp": null
+    },
+    "#423": {
+      "evidence_ref": "A pull request, not an issue: it merged the #418 follow-ups to main (dabf5093), which the planning branch is rebased onto; it carries no work for this mission",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#426": {
+      "evidence_ref": "Follow-up issue for the PR B pre-PR squad's deferred findings (research/closeout-notes-pr-b.md, Pre-PR squad dispositions)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
+      "wp": null
     }
   },
   "schema_version": 1

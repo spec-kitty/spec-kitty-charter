@@ -176,6 +176,11 @@ They are recorded here as decided. This document does not reopen them; it settle
   - The query (`kind`, `state`, page, `depth`) selects a different resource, and an entity tag is per resource, so
     it needs no field of its own.
   - The domain tag keeps the effective reads' tags apart from the closure read's.
+- **Note (2026-11-08, as built in PR B).** Superseded in two points. The tag also covers the read and the normalized
+  query, because WP22's contract gives each representation (filter, cursor, page size) its own tag (T123). The
+  fingerprint is closure-scoped, not the whole-source verified fingerprint, so a pack outside the closure leaves the
+  tag unchanged (WP24 review F1). `getActivation`'s `ETag` also covers the closure (operator decision
+  `01M6Y11E55YP5TG1EJ1MDKCFRP`), which amends ADR-0059 D5.
 - **Alternatives considered.**
   - Reusing `closureTag` unchanged: rejected. A merge-rule fix in a release would keep the tag for a different body.
   - Digesting the response body: rejected. It costs a serialisation, and a `304` should not compute the body.
