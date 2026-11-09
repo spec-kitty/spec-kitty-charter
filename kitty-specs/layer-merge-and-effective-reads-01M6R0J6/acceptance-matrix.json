@@ -166,13 +166,13 @@
     },
     {
       "criterion_id": "FR-017",
-      "description": "Verify FR-017 is satisfied",
+      "description": "getActivationSkippedReport lists each artifact not in force exactly once in a typed bucket (stale id, deny not applied, language filtered, overridden, mission type not in force, enhanced target not in force, override not applied, pin not held, required not held, required not in force) and carries the activation revision.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "contracts/charter/scenarios/effective-reads.feature: \"US4 AS1 - each artifact not in force is in exactly one bucket, and the report carries the revision\"; service/activations/src/test/java/ai/speckitty/charter/activations/domain/EffectiveSetTest.java#theSummaryCountsTheWholeSetAndEveryEntryOfTheSkippedReport",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:46:09.900328+00:00",
+      "notes": "PR B (#427, WP24/WP25); language-filtered bucket per #408 ruling 2."
     },
     {
       "criterion_id": "FR-018",
