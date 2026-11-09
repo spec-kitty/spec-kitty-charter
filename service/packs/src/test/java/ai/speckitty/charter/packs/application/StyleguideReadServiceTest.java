@@ -77,18 +77,17 @@ class StyleguideReadServiceTest {
         assertThat(read.scope()).isEqualTo(javaStyle.scope());
         assertThat(read.principles()).isEqualTo(javaStyle.principles());
         assertThat(read.tooling()).isEqualTo(javaStyle.tooling());
-        assertThat(read.references()).isEqualTo(javaStyle.references());
     }
 
     @Test
-    void everyReturnedStyleguideCarriesAnEmptyRelationshipsList() {
-        // FR-013: a styleguide mints no relationships (bare citations), so the read returns an empty list, never null.
+    void aReturnedStyleguideCarriesNoRelationship() {
+        // ADR-0064: a styleguide's relationships are graph edges, never derived from a field.
         Styleguide listed = service.styleguidesOf(PACK_A).value().stream()
                 .filter(s -> s.id().equals(JAVA_STYLE))
                 .findFirst()
                 .orElseThrow();
-        assertThat(listed.relationships()).isEmpty();
-        assertThat(service.styleguide(PACK_A, JAVA_STYLE).value().relationships())
+        assertThat(listed.derivedRelationships()).isEmpty();
+        assertThat(service.styleguide(PACK_A, JAVA_STYLE).value().derivedRelationships())
                 .isEmpty();
     }
 
@@ -181,7 +180,6 @@ class StyleguideReadServiceTest {
                 .principle("Prefer immutability")
                 .principle("Fail fast")
                 .tooling(Map.of("spotless", "google-java-format"))
-                .reference("Clean Code ch.3")
                 .appliesToLanguage("java")
                 .build();
     }

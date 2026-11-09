@@ -25,7 +25,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -70,7 +69,7 @@ class AssetPackRegistrationTest {
         PackRevision before = wiring.writeStore.currentRevision(PACK);
 
         DirectiveRegistrationService.Registered registered =
-                wiring.directives.registerDirective(PACK, directive("GUARD"), List.of(), false, before.token());
+                wiring.directives.registerDirective(PACK, directive("GUARD"), false, before.token());
 
         assertThat(registered.created()).isTrue();
         assertThat(registered.revision()).as("the revision advanced").isNotEqualTo(before);

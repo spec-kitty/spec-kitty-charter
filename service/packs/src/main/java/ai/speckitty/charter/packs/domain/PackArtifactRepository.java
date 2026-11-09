@@ -21,10 +21,9 @@ public interface PackArtifactRepository {
      *       {@link ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution#holds}). It names the
      *       files the pack holds and the nodes its graph documents declare for a kind that is never a file (an
      *       {@code anti_pattern});
-     *   <li>the references it writes: both endpoints of every edge of its graph documents, and what each of its
-     *       artifacts writes, as written, bare ({@code <urn>}) or pack-qualified ({@code <pack-name>::<urn>}), in
-     *       first-seen order. An artifact's references are the ones the walk follows plus those a kind keeps without an
-     *       edge, so the check and the walk cannot disagree.
+     *   <li>the references it writes: both endpoints of every edge of its graph documents, and the targets of its
+     *       artifacts' derived relations, as written, bare ({@code <urn>}) or pack-qualified
+     *       ({@code <pack-name>::<urn>}), in first-seen order.
      * </ul>
      *
      * @param pack the pack's identity

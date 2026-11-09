@@ -20,7 +20,9 @@ adapts to the charter through its integration seam.
 
 `contracts/build.gradle.kts` downloads vacuum and oasdiff at pinned versions, checks each archive's
 SHA-256 before extracting it (downloads time out after 30 s without a connection or 60 s without
-data), re-verifies the installed archive and executable against the pin on every build, also after
+data, and a failed download is retried up to four attempts), keeps each verified archive by its
+SHA-256 in `~/.gradle/caches/charter-tools/` so later builds and CI (which restores that directory
+with the Gradle user home) do not download it again, re-verifies the installed archive and executable against the pin on every build, also after
 a Gradle build cache restore (`verifyVacuum`, `verifyOasdiff`), and runs seven tasks:
 
 | Task | What it checks |

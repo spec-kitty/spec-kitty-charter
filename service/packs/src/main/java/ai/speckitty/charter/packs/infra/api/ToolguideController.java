@@ -56,7 +56,7 @@ public class ToolguideController implements ToolguidesApi {
 
     private static final int MIB = 1024 * 1024;
 
-    /** The most items a registration's {@code commands}, {@code appliesToLanguages} or {@code references} holds. */
+    /** The most items a registration's {@code commands} or {@code appliesToLanguages} holds. */
     static final int MAX_LIST_ITEMS = 256;
 
     private final ToolguideRegistrationService registrations;
@@ -238,7 +238,6 @@ public class ToolguideController implements ToolguidesApi {
             bounded("commands", OptionalLists.orEmpty(body.getCommands())).forEach(builder::command);
             bounded("appliesToLanguages", OptionalLists.orEmpty(body.getAppliesToLanguages()))
                     .forEach(builder::appliesToLanguage);
-            bounded("references", OptionalLists.orEmpty(body.getReferences())).forEach(builder::reference);
             ai.speckitty.charter.packs.domain.Toolguide toolguide = builder.build();
             guides.write(toolguide.title(), guide);
             return toolguide;

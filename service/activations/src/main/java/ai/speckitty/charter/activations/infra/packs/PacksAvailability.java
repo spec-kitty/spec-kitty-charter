@@ -3,6 +3,9 @@ package ai.speckitty.charter.activations.infra.packs;
 import ai.speckitty.charter.activations.application.AvailablePacks;
 import ai.speckitty.charter.activations.application.PacksSession;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
+import ai.speckitty.charter.activations.domain.MergedSnapshot;
+import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
+import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
 import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
@@ -47,6 +50,10 @@ import org.springframework.stereotype.Component;
  *
  * <p>Each pack's {@code parent_pack} is copied as the configured id of its parent ({@link ClosureView#parentOf}), so
  * the activation domain can name a refusal's extends chain ({@link ClosureSnapshot#extendsChain}).
+ *
+ * <p>The same read answers {@link PacksSession#merged} and {@link PacksSession#inForce} ({@link ClosureViewSession}): the
+ * layer merge is built from the facts the read holds, on the first question and not before, and never reads again
+ * (NFR-007).
  */
 @Component
 public class PacksAvailability implements AvailablePacks {
@@ -97,6 +104,16 @@ public class PacksAvailability implements AvailablePacks {
         public Reach reach(ReachPlan plan) {
             return Reach.empty();
         }
+
+        @Override
+        public MergedSnapshot merged() {
+            return MergedSnapshot.empty();
+        }
+
+        @Override
+        public InForceAnswer inForce(InForceQuery query) {
+            return InForceAnswer.empty();
+        }
     }
 
     /**
@@ -112,11 +129,12 @@ public class PacksAvailability implements AvailablePacks {
                         .map(entry -> entryOf(entry, view, configuredIdOf))
                         .toList(),
                 view.heldIds(),
-                view.missionTypes(),
                 requiredBy(view, configuredIdOf),
                 lockedBy(view, configuredIdOf),
                 presets(view),
-                view.fingerprint());
+                view.fingerprint(),
+                view.closureFingerprint(),
+                Set.of());
     }
 
     private static ClosureSnapshot.PackEntry entryOf(
@@ -142,7 +160,7 @@ public class PacksAvailability implements AvailablePacks {
 
     private static Map<String, List<String>> requiredBy(ClosureView view, Map<String, String> configuredIdOf) {
         Map<String, List<String>> requiredBy = new LinkedHashMap<>();
-        view.floor()
+        view.mergedFloor()
                 .requiredBy()
                 .forEach((urn, packs) -> requiredBy.put(
                         urn.toString(),
@@ -175,8 +193,7 @@ public class PacksAvailability implements AvailablePacks {
     private static ClosureSnapshot.PresetView presetOf(Preset preset) {
         Map<ArtifactKind, Set<String>> members = new EnumMap<>(ArtifactKind.class);
         preset.artifacts().forEach((kind, items) -> members.put(kind, ids(items)));
-        return new ClosureSnapshot.PresetView(
-                preset.id(), Set.copyOf(preset.activatedKinds()), members, ids(preset.missionTypes()));
+        return new ClosureSnapshot.PresetView(preset.id(), members);
     }
 
     private static Set<String> ids(List<PresetItem> items) {

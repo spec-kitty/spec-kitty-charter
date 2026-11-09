@@ -5,7 +5,7 @@ name: CI gate
 # GitHub cannot usefully require a path-filtered workflow: a PR that does not touch the workflow's
 # paths never posts its context, so a required check keyed on it waits forever and blocks the PR.
 # This workflow always runs on every PR, detects which concern groups the PR actually changed,
-# calls the real gate workflows (service, docs-cleanliness) only for the groups that changed, and
+# calls the real gate workflows (service, docs-cleanliness, whole-pack) only for the groups that changed, and
 # the `gate` job reports a single verdict. Branch protection requires only `CI gate / gate`.
 #
 # The called workflows keep their own `push` (main) and `workflow_dispatch` triggers for main CI;
@@ -61,6 +61,7 @@ jobs:
     outputs:
       service: ${{ steps.detect.outputs.service }}
       docs: ${{ steps.detect.outputs.docs }}
+      wholepack: ${{ steps.detect.outputs.wholepack }}
     steps:
       - name: Check out
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
@@ -84,16 +85,19 @@ jobs:
           # On a queue entry the merge base is BASE itself, so this is BASE..HEAD.
           changed="$(git diff --name-only "$BASE...$HEAD")"
           printf 'changed files:\n%s\n' "$changed"
-          # Mirror the path filters of service.yml and docs-cleanliness.yml exactly; a
+          # Mirror the path filters of service.yml, docs-cleanliness.yml and whole-pack.yml exactly; a
           # change to this gate workflow itself re-runs every group (fail-safe). The four native executables are
           # not a concern group: service-native.yml builds them nightly and per release (ADR-0060).
           # The docs group also runs the unit tests of scripts/ci (the mutation nightly's summary), so it takes those
           # scripts and that workflow too; the floors.json fixture under scripts/ci/fixtures is also the service
-          # group's, whose build-logic tests hold it to the writer.
+          # group's, whose build-logic tests hold it to the writer. The wholepack group runs the whole-pack round
+          # trip (epic #186) for what :packs reads: every contract, the service and the build.
           service_re='^(contracts/|service/|build-logic/|config/|gradle/|deploy/|scripts/ci/fixtures/|\.gitignore$|(.*/)?\.env|[^/]+\.gradle\.kts$|gradle\.properties$|gradlew$|scripts/release/|scripts/packs/|packs/open-packs\.lock\.yaml$|\.github/workflows/(service|ci|sonar|contract-release|service-release)\.yml$|client-java/|docs/guides/generate-a-client\.md$)'
-          docs_re='^(docs/|site/|scripts/docs/|scripts/ci/|\.markdownlint-cli2\.jsonc$|cspell\.json$|lychee\.toml$|\.github/workflows/(docs-cleanliness|ci|mutation-nightly)\.yml$)'
+          wholepack_re='^(contracts/|service/|build-logic/|gradle/|[^/]+\.gradle\.kts$|gradle\.properties$|gradlew$|\.github/workflows/(whole-pack|ci)\.yml$)'
+          docs_re='^(docs/|site/|scripts/docs/|scripts/ci/|\.markdownlint-cli2\.jsonc$|cspell\.json$|\.github/workflows/(docs-cleanliness|ci|mutation-nightly)\.yml$)'
           if printf '%s\n' "$changed" | grep -Eq "$service_re"; then echo "service=true"; else echo "service=false"; fi >> "$GITHUB_OUTPUT"
           if printf '%s\n' "$changed" | grep -Eq "$docs_re"; then echo "docs=true"; else echo "docs=false"; fi >> "$GITHUB_OUTPUT"
+          if printf '%s\n' "$changed" | grep -Eq "$wholepack_re"; then echo "wholepack=true"; else echo "wholepack=false"; fi >> "$GITHUB_OUTPUT"
 
   service:
     name: Service
@@ -107,9 +111,15 @@ jobs:
     if: needs.changes.outputs.docs == 'true'
     uses: ./.github/workflows/docs-cleanliness.yml
 
+  wholepack:
+    name: Whole-pack round trip
+    needs: changes
+    if: needs.changes.outputs.wholepack == 'true'
+    uses: ./.github/workflows/whole-pack.yml
+
   gate:
     name: gate
-    needs: [changes, service, docs]
+    needs: [changes, service, docs, wholepack]
     if: always()
     runs-on: ubuntu-24.04
     # Bounds the wait for a real run's gate (another label's event); see that step.
@@ -157,16 +167,17 @@ jobs:
           CHANGES: ${{ needs.changes.result }}
           SERVICE: ${{ needs.service.result }}
           DOCS: ${{ needs.docs.result }}
+          WHOLEPACK: ${{ needs.wholepack.result }}
         run: |
           set -uo pipefail
-          echo "changes=$CHANGES service=$SERVICE docs=$DOCS"
+          echo "changes=$CHANGES service=$SERVICE docs=$DOCS wholepack=$WHOLEPACK"
           # Fail closed if change detection itself did not complete.
           if [ "$CHANGES" != "success" ]; then
             echo "::error::change detection did not succeed (result: $CHANGES); refusing to pass the gate"
             exit 1
           fi
           fail=0
-          for pair in "service:$SERVICE" "docs:$DOCS"; do
+          for pair in "service:$SERVICE" "docs:$DOCS" "wholepack:$WHOLEPACK"; do
             name="${pair%%:*}"
             result="${pair#*:}"
             case "$result" in

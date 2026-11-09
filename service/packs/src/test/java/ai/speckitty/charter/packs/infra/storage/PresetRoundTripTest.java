@@ -11,6 +11,7 @@ import ai.speckitty.charter.packs.domain.Guide;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.Preset;
+import ai.speckitty.charter.packs.domain.PresetItem;
 import ai.speckitty.charter.packs.domain.Toolguide;
 import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
 import ai.speckitty.charter.packs.infra.storage.GraphDocumentReader.Shape;
@@ -62,8 +63,13 @@ class PresetRoundTripTest {
         assertThat(governing.required())
                 .containsEntry(ArtifactKind.DIRECTIVE, List.of("DIRECTIVE_001"))
                 .containsEntry(ArtifactKind.TACTIC, List.of("acceptance-test-first"))
-                .containsEntry(ArtifactKind.AGENT_PROFILE, List.of("implementer"));
-        assertThat(governing.requiredMissionTypes()).containsExactly("software-dev");
+                .containsEntry(ArtifactKind.AGENT_PROFILE, List.of("implementer"))
+                .containsEntry(ArtifactKind.SKILL, List.of("pr-review"))
+                .containsEntry(ArtifactKind.MISSION_TYPE, List.of("software-dev"))
+                .doesNotContainKey(ArtifactKind.GLOSSARY_PACK);
+        assertThat(governing.artifacts().get(ArtifactKind.GLOSSARY_PACK))
+                .extracting(PresetItem::id)
+                .containsExactly("core-terms");
 
         Path target = host.resolve("written").resolve(FIXTURE);
         store.write(loaded, target);
@@ -91,6 +97,7 @@ class PresetRoundTripTest {
                         "presets/governing.yaml activated_directives[0].must_have",
                         "presets/governing.yaml activated_tactics[0].must_have",
                         "presets/governing.yaml activated_agent_profiles[0].must_have",
+                        "presets/governing.yaml activated_skills[0].must_have",
                         "presets/governing.yaml activated_mission_types[0].must_have");
     }
 
@@ -196,6 +203,11 @@ class PresetRoundTripTest {
                         "p",
                         "mission_type_activations:\n  - software-dev\n",
                         "additionalProperties violated at the document: undeclared key 'mission_type_activations'"),
+                Arguments.of(
+                        "the removed kind gate activated_kinds",
+                        "p",
+                        "activated_kinds:\n  - directives\n",
+                        "additionalProperties violated at the document: undeclared key 'activated_kinds'"),
                 Arguments.of(
                         "must_have false",
                         "p",

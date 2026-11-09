@@ -40,7 +40,9 @@ pages cannot drift from it. For entity diagrams of the descriptor kinds and thei
 - [Paradigm](/architecture/pack-schemas/paradigm/) — a worldview-level framing that guides how the charter is read.
 - [Preset](/architecture/pack-schemas/preset/) — an activation preset that selects artifacts and mission types.
 - [Procedure](/architecture/pack-schemas/procedure/) — a reusable workflow with entry and exit conditions.
+- [Prompt fragment](/architecture/pack-schemas/prompt-fragment/) — the parsed Markdown structure of a step enhancement's prompt fragment companion.
 - [Pack skill](/architecture/pack-schemas/skill/) — a thin skill with parameters distributed in a pack.
+- [Step enhancement](/architecture/pack-schemas/step-enhancement/) — the prompt fragments a pack contributes to a mission step.
 - [Styleguide](/architecture/pack-schemas/styleguide/) — the conventions, anti-patterns and quality tests of one scope.
 - [Tactic](/architecture/pack-schemas/tactic/) — a reusable behavior pattern made of ordered steps.
 - [Toolguide](/architecture/pack-schemas/toolguide/) — a tool-specific governance guide.

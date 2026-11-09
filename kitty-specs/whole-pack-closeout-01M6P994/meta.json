@@ -1,0 +1,39 @@
+{
+  "accept_commit": "12897579ca1d6d9ab742c610d0926a0f5960d3de",
+  "acceptance_history": [
+    {
+      "accept_commit": "12897579ca1d6d9ab742c610d0926a0f5960d3de",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-11-05T17:11:29.388869+00:00",
+      "accepted_by": "system",
+      "accepted_from_commit": "f95c4f105635bc0364a610e2547409f98e97c0d1"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-11-05T17:11:29.388869+00:00",
+  "accepted_by": "system",
+  "accepted_from_commit": "f95c4f105635bc0364a610e2547409f98e97c0d1",
+  "baseline_merge_commit": "be0523363d62e835ba2d54c411cc3d8db8fe8770",
+  "contracts": "none",
+  "contracts_rationale": "No interface changes: a domain refactor, a validate-mode fix and a CI wiring change; the OpenAPI contract is untouched.",
+  "coordination_branch": "kitty/mission-whole-pack-closeout-01M6P994",
+  "created_at": "2026-11-05T16:39:40.710501+00:00",
+  "flattened": false,
+  "friendly_name": "Whole-pack round trip closeout (epic #186)",
+  "merged_at": "2026-11-05T17:12:10.913195+00:00",
+  "merged_commit": "21de267cc632038ff1d1b79f910f3c4e36815f1e",
+  "mid8": "01M6P994",
+  "mission_id": "01M6P9942WSGA296CT16YHGDH9",
+  "mission_number": 17,
+  "mission_slug": "whole-pack-closeout-01M6P994",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "Epic #186 reads all Charter Pack content into the domain and writes it back. The operator ruled on 2026-11-05 that the epic closes once two known gaps are fixed (#299: mission step Markdown is only checked at write; #319: a pack root path with '..' makes validate mode wrongly refuse mission types) and the whole-pack round-trip check becomes part of the one required CI check, with the docs updated to match.",
+  "purpose_tldr": "Close the whole-pack round-trip epic: mission step texts are checked when built, a pack root with '..' validates, and every PR must keep packs round-tripping.",
+  "slug": "whole-pack-closeout-01M6P994",
+  "status_phase": "1",
+  "target_branch": "epic-186-closeout",
+  "topology": "coord",
+  "vcs": "git",
+  "vcs_locked_at": "2026-11-05T16:48:44.583714+00:00"
+}

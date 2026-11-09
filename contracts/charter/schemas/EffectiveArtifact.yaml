@@ -1,10 +1,17 @@
 title: EffectiveArtifact
-description: One artifact of the offering under an activation (ADR-0020 D7).
+description: >-
+  One artifact of the merged closure under an activation (ADR-0020 D7): the version the layer merge keeps, with its
+  state and the reason for it. Every artifact of the closure is listed, so "in force" is state active (operator
+  ruling Q1). satisfiedBy is present only for a required artifact that is out of force: it is the active artifact that
+  overrides it and so satisfies the requirement, never an enhancer (research R11). suggestion is present only for an artifact whose reason is not_selected and whose suggesting artifact is in force, reached only through a suggests edge,
+  with that edge's when and reason, and absent for one reached through requires or another hard relation (#408 ruling 3).
 type: object
 additionalProperties: false
 required:
 - kind
 - artifactId
+- packId
+- level
 - state
 - required
 - policy
@@ -13,9 +20,9 @@ properties:
   kind:
     allOf:
     - $ref: ActivatableKind.yaml
-    description: The artifact's kind.
+    description: The artifact's kind, from the one kind enum, mission types included.
     x-derived:
-      rule: The kind of the offering artifact.
+      rule: The kind of the artifact of the merged closure.
       inputs:
       - schemas/ActivationConfig.yaml
   artifactId:
@@ -23,24 +30,51 @@ properties:
     - $ref: ArtifactId.yaml
     description: The artifact's declared id.
     x-derived:
-      rule: The declared id of the offering artifact.
+      rule: The declared id of the artifact of the merged closure.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  packId:
+    type: string
+    minLength: 1
+    description: >-
+      The configured identifier of the pack that holds the version in force: the winner of the layer merge, the
+      provenance of its content (FR-013).
+    x-derived:
+      rule: The pack of the winning version of the artifact after the layer merge (ADR-0059 D3).
+      inputs:
+      - schemas/ActivationConfig.yaml
+  level:
+    allOf:
+    - $ref: PackLevel.yaml
+    description: The level of the pack that holds the version in force (built-in, org or project).
+    x-derived:
+      rule: The level of the winning pack after the layer merge.
       inputs:
       - schemas/ActivationConfig.yaml
   state:
     allOf:
     - $ref: EffectiveArtifactState.yaml
-    description: Whether it is in force.
+    description: Whether it is in force; in force is active.
     x-derived:
-      rule: The effective-set algebra over config and the offering.
+      rule: The effective-set algebra over config and the merged closure.
       inputs:
       - schemas/ActivationConfig.yaml
   required:
     type: boolean
-    description: True when a pack requires it; a required artifact is always active.
+    description: >-
+      True when a governing preset requires it or a pack locks it. A locked artifact is active unless it is an enhancer
+      none of whose targets is in force or is bound to a mission type not in force (E9). A required one
+      is active unless an active override of it satisfies the requirement (satisfiedBy then names the override), or it
+      cannot stand in force: a required enhancer none of whose targets is in force, or a required artifact bound to a
+      mission type not in force, stays out of force with required true. An enhancement never satisfies a requirement.
     x-derived:
-      rule: Derived from the must-have items of the governing presets (ADR-0031).
+      rule: Derived from the must-have items of the governing presets of the closure (ADR-0031) and the pack locks.
       inputs:
       - schemas/ActivationConfig.yaml
+  satisfiedBy:
+    $ref: ArtifactReference.yaml
+  suggestion:
+    $ref: EffectiveArtifactSuggestion.yaml
   policy:
     allOf:
     - $ref: ArtifactPolicy.yaml

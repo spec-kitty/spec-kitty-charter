@@ -1,0 +1,25 @@
+title: ActivationWarning
+description: >-
+  A warning on a write (FR-032, B6/B7): the artifact, in artifact, that the write put in (a select, or an addition of a
+  preset) and a read of the document as stored will not put in force. A warning names an addition only: an unselect, a
+  deny or a reactivation asks for nothing to be in force, so it carries none. The write is still accepted.
+type: object
+additionalProperties: false
+required:
+- code
+- artifact
+properties:
+  code:
+    type: string
+    enum:
+    - enhanced_target_not_in_force
+    - overridden
+    description: >-
+      enhanced_target_not_in_force: the artifact is an enhancer none of whose targets is in force. overridden: an
+      active override hides the artifact.
+    x-derived:
+      rule: The effective-set rule that keeps the applied artifact out of force.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  artifact:
+    $ref: ArtifactReference.yaml

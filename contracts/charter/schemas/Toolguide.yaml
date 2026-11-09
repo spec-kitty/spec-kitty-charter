@@ -1,5 +1,5 @@
 title: Toolguide
-description: One toolguide of a Charter Pack, as the pack declares it. A toolguide mints no relationships.
+description: One toolguide of a Charter Pack, as the pack declares it. Its relationships are graph edges, read through listArtifactReferences (ADR-0064).
 type: object
 additionalProperties: false
 required:
@@ -12,7 +12,6 @@ required:
   - commands
   - appliesToLanguages
   - lastUpdated
-  - references
 properties:
   id:
     type: string
@@ -75,14 +74,6 @@ properties:
     x-source:
       path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Toolguide.java
       symbol: Toolguide.lastUpdated
-  references:
-    type: array
-    description: The bare citation strings the toolguide points at, in authored order with duplicates kept.
-    items:
-      type: string
-    x-source:
-      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Toolguide.java
-      symbol: Toolguide.references
 x-source:
   path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Toolguide.java
   symbol: Toolguide

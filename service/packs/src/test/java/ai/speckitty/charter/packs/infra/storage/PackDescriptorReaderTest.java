@@ -75,6 +75,33 @@ class PackDescriptorReaderTest {
         assertThat(read(written)).isEqualTo(named);
     }
 
+    /** ADR-0066: a declared {@code schema_version} is read, written back first, and read again unchanged. */
+    @Test
+    void aDeclaredSchemaVersionRoundTripsThroughTheDescriptorWrite() {
+        YamlSerializationStrategy strategy = new YamlSerializationStrategy();
+        PackDescriptor versioned = read("schema_version: \"1.0\"\n" + VALID);
+        assertThat(versioned.schemaVersion()).contains("1.0");
+
+        String written = strategy.writeDescriptor(PackDescriptorDso.of(versioned));
+
+        assertThat(written).startsWith("schema_version: '1.0'\n").contains("pack_id: 01ARWG13C00000000000001ABC\n");
+        assertThat(read(written)).isEqualTo(versioned);
+        assertThat(read(written).schemaVersion()).contains("1.0");
+    }
+
+    /** An unversioned descriptor is the legacy shape: it stays unversioned, and no key is invented on write. */
+    @Test
+    void anUnversionedDescriptorStaysUnversionedThroughTheDescriptorWrite() {
+        YamlSerializationStrategy strategy = new YamlSerializationStrategy();
+        PackDescriptor legacy = read(VALID);
+        assertThat(legacy.schemaVersion()).isEmpty();
+
+        String written = strategy.writeDescriptor(PackDescriptorDso.of(legacy));
+
+        assertThat(written).doesNotContain("schema_version");
+        assertThat(read(written).schemaVersion()).isEmpty();
+    }
+
     @Test
     void anAbsentDependsOnIsEmptyNotDefaulted() {
         assertThat(read(VALID).dependencies()).isEmpty();
@@ -221,6 +248,7 @@ class PackDescriptorReaderTest {
 
         assertThat(declared)
                 .containsExactly(
+                        "schema_version",
                         "pack_id",
                         "pack_version",
                         "parent_pack",

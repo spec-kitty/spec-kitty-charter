@@ -95,6 +95,13 @@ fun pinFor(tool: String): ToolPin = toolPins.getValue(tool)[platform] ?: throw G
  * The build cache is trusted the way class outputs are, not for the integrity of a tool that gets executed:
  * [VerifyTool] re-hashes the archive against the pin on every build, restored or not, and every consumer runs
  * only after it.
+ *
+ * A build-cache hit is not enough to stay off the network: the task's cache key also covers this build script's
+ * classpath, and setup-gradle restores one build-cache snapshot per job, so a pull request that touches the build
+ * misses and downloads (#420: every service job went red on a github.com 504 on 2026-11-08). So the task first
+ * looks in [downloadCache], a directory of verified archives named by their SHA-256 under the Gradle user home's
+ * `caches` (which setup-gradle saves and restores by prefix), and downloads only on a miss, with retries. A cached
+ * archive is used only if it hashes to the pin; a mismatch is deleted and downloaded again.
  */
 @CacheableTask
 abstract class InstallTool @Inject constructor(
@@ -106,6 +113,8 @@ abstract class InstallTool @Inject constructor(
     @get:Input abstract val executable: Property<String>
     @get:OutputFile abstract val archive: RegularFileProperty
     @get:OutputDirectory abstract val installDir: DirectoryProperty
+    /** Verified archives by SHA-256. Internal: where it lives must not change the build-cache key. */
+    @get:Internal abstract val downloadCache: DirectoryProperty
 
     @TaskAction
     fun install() {
@@ -115,23 +124,22 @@ abstract class InstallTool @Inject constructor(
         val verified = archive.get().asFile
         verified.parentFile.mkdirs()
         val download = File(temporaryDir, "download.tar.gz")
-        try {
-            val connection = URI(url.get()).toURL().openConnection()
-            connection.connectTimeout = CONNECT_TIMEOUT_MS
-            connection.readTimeout = READ_TIMEOUT_MS
-            connection.getInputStream().use { input ->
-                Files.copy(input, download.toPath(), StandardCopyOption.REPLACE_EXISTING)
+        val cached = downloadCache.get().file("${sha256.get()}.tar.gz").asFile
+        if (cached.isFile && hex(cached) == sha256.get()) {
+            logger.lifecycle("Using the verified ${executable.get()} archive from $cached")
+            Files.copy(cached.toPath(), download.toPath(), StandardCopyOption.REPLACE_EXISTING)
+        } else {
+            if (cached.exists()) {
+                logger.warn("Discarding $cached: it does not hash to the pinned ${sha256.get()}")
+                cached.delete()
             }
-        } catch (e: SocketTimeoutException) {
-            throw GradleException("Downloading ${url.get()} timed out (connect ${CONNECT_TIMEOUT_MS / 1000} s, " +
-                "read ${READ_TIMEOUT_MS / 1000} s without data): ${e.message}", e)
-        } catch (e: IOException) {
-            throw GradleException("Downloading ${url.get()} failed: $e", e)
-        }
-        val actual = MessageDigest.getInstance("SHA-256").digest(download.readBytes()).joinToString("") { "%02x".format(it) }
-        if (actual != sha256.get()) {
-            download.delete()
-            throw GradleException("Checksum mismatch for ${url.get()}: expected ${sha256.get()}, got $actual. Nothing was extracted.")
+            fetch(download)
+            val actual = hex(download)
+            if (actual != sha256.get()) {
+                download.delete()
+                throw GradleException("Checksum mismatch for ${url.get()}: expected ${sha256.get()}, got $actual. Nothing was extracted.")
+            }
+            remember(download, cached)
         }
         Files.move(download.toPath(), verified.toPath(), StandardCopyOption.REPLACE_EXISTING)
         files.copy {
@@ -144,9 +152,56 @@ abstract class InstallTool @Inject constructor(
         }
     }
 
+    /** Downloads [url] to [target], retrying transient failures (a 5xx, a reset, a timeout) with backoff. */
+    private fun fetch(target: File) {
+        var attempt = 1
+        while (true) {
+            try {
+                val connection = URI(url.get()).toURL().openConnection()
+                connection.connectTimeout = CONNECT_TIMEOUT_MS
+                connection.readTimeout = READ_TIMEOUT_MS
+                connection.getInputStream().use { input ->
+                    Files.copy(input, target.toPath(), StandardCopyOption.REPLACE_EXISTING)
+                }
+                return
+            } catch (e: IOException) {
+                val reason = if (e is SocketTimeoutException) {
+                    "timed out (connect ${CONNECT_TIMEOUT_MS / 1000} s, read ${READ_TIMEOUT_MS / 1000} s without data): ${e.message}"
+                } else {
+                    "failed: $e"
+                }
+                if (attempt >= DOWNLOAD_ATTEMPTS) {
+                    throw GradleException("Downloading ${url.get()} $reason (attempt $attempt of $DOWNLOAD_ATTEMPTS)", e)
+                }
+                val delayMs = RETRY_DELAY_MS * attempt
+                logger.warn("Downloading ${url.get()} $reason; retrying in ${delayMs / 1000} s " +
+                    "(attempt $attempt of $DOWNLOAD_ATTEMPTS)")
+                Thread.sleep(delayMs)
+                attempt++
+            }
+        }
+    }
+
+    /** Keeps a verified archive for later builds. Best effort: a failure here never fails the build. */
+    private fun remember(verified: File, cached: File) {
+        try {
+            cached.parentFile.mkdirs()
+            val partial = File(cached.parentFile, "${cached.name}.${System.nanoTime()}.part")
+            Files.copy(verified.toPath(), partial.toPath(), StandardCopyOption.REPLACE_EXISTING)
+            Files.move(partial.toPath(), cached.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
+        } catch (e: IOException) {
+            logger.warn("Could not keep the verified archive in $cached: $e")
+        }
+    }
+
+    private fun hex(file: File): String =
+        MessageDigest.getInstance("SHA-256").digest(file.readBytes()).joinToString("") { "%02x".format(it) }
+
     private companion object {
         const val CONNECT_TIMEOUT_MS = 30_000
         const val READ_TIMEOUT_MS = 60_000
+        const val DOWNLOAD_ATTEMPTS = 4
+        const val RETRY_DELAY_MS = 10_000L
     }
 }
 
@@ -203,6 +258,8 @@ fun installTask(tool: String) = tasks.register<InstallTool>("install${tool.repla
     executable = pin.executable
     archive = layout.buildDirectory.file("tools/archives/$tool.tar.gz")
     installDir = layout.buildDirectory.dir("tools/$tool")
+    // Under `caches`, which setup-gradle saves with the Gradle user home by default (#420).
+    downloadCache = File(gradle.gradleUserHomeDir, "caches/charter-tools")
 }
 
 fun verifyTask(tool: String, install: TaskProvider<InstallTool>) =
@@ -813,6 +870,20 @@ tasks.test {
     inputs.dir(charterSchemas).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("charterSchemas")
     systemProperty("charter.offeringSchemas", offeringSchemas.asFile.absolutePath)
     systemProperty("charter.charterSchemas", charterSchemas.asFile.absolutePath)
+    // XSourceCitationsTest checks that every x-source.path of the charter contract exists under the repository root (#430).
+    // The cited files are Java sources, ADRs and the offering schema, so those are inputs: a deleted source reruns it.
+    val charterContractDir = layout.projectDirectory.dir("charter")
+    val repositoryRoot = rootProject.layout.projectDirectory
+    inputs.dir(charterContractDir).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("charterContractDir")
+    // Each service module's main sources are named one by one: a tree rooted at the repository or at service/ would
+    // contain other tasks' outputs (build/), which Gradle refuses as an undeclared dependency.
+    val serviceSourceDirs = repositoryRoot.dir("service").asFile.listFiles().orEmpty()
+        .filter { it.resolve("src/main/java").isDirectory }
+        .map { repositoryRoot.dir("service/${it.name}/src/main/java") }
+    inputs.files(serviceSourceDirs, repositoryRoot.dir("docs/adr"), repositoryRoot.dir("contracts/offering"))
+        .withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("xSourceTargets")
+    systemProperty("charter.contractDir", charterContractDir.asFile.absolutePath)
+    systemProperty("charter.repositoryRoot", repositoryRoot.asFile.absolutePath)
 }
 
 val checkClosedResponseObjects = tasks.register<CheckBundle>("checkClosedResponseObjects") {

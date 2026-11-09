@@ -324,7 +324,25 @@ class ReservedRefusalCodesTest {
                 RefusalCode.PACK_SIBLING_CONFLICT,
                 RefusalCode.PACK_REFERENCE_UNQUALIFIED,
                 RefusalCode.PACK_REFERENCE_PACK_MISSING,
-                RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING
+                RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING,
+                RefusalCode.PACK_VERSION_CONFLICT,
+                RefusalCode.ARTIFACT_REFERENCED,
+                RefusalCode.RELATIONSHIP_NOT_FOUND,
+                RefusalCode.RELATIONSHIP_NOT_REGISTERED,
+                RefusalCode.REGISTRATION_NOT_FOUND,
+                RefusalCode.PACK_SOURCE_REFUSED,
+                RefusalCode.PACK_SOURCE_UNAVAILABLE,
+                RefusalCode.OVERRIDE_NOT_PERMITTED,
+                RefusalCode.ENHANCES_CYCLE,
+                RefusalCode.CONFLICTING_RELATIONS,
+                RefusalCode.SELF_OVERRIDE,
+                RefusalCode.OVERRIDE_CYCLE,
+                RefusalCode.REGISTRATION_TIMED_OUT,
+                RefusalCode.PACK_STORAGE_FULL,
+                RefusalCode.PROMPT_SLOT_MALFORMED,
+                RefusalCode.PROMPT_SLOT_NOT_EMPTY,
+                RefusalCode.PROMPT_FRAGMENT_INVALID,
+                RefusalCode.PROMPT_SLOT_MISSING
             };
         }
     }

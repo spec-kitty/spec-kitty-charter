@@ -3,7 +3,7 @@ title: "ADR-0023: An always-on CI gate is the single required status check"
 description: Adds an always-on orchestrator workflow that aggregates the path-filtered service and docs checks into one status context, so branch protection can gate merges on green.
 doc_status: active
 updated: 2026-11-05T00:00:00Z
-decision_status: 'Accepted, with Amendment 2026-11-01 (ADR-0047: merge queue, pr:pause-ci); the native extension superseded by ADR-0060 (2026-11-05)'
+decision_status: 'Accepted, with Amendment 2026-11-01 (ADR-0047: merge queue, pr:pause-ci); the native extension superseded by ADR-0060 (2026-11-05); extended 2026-11-05 (#186: the whole-pack group)'
 decision_date: '2026-10-22'
 type: ADR
 kind: ADR
@@ -38,6 +38,11 @@ changes below are annotated where they stand. The required check is unchanged.
 - The gate also triggers on `merge_group`, and on a queue entry it diffs the queue's base against its head.
 - A `pr:pause-ci` label pauses a pull request's CI.
 - `docs-site.yml` no longer builds the service on a pull request. It builds the Javadoc alone.
+
+Extended 2026-11-05 by the operator's ruling on epic [#186](https://github.com/spec-kitty/spec-kitty-charter/issues/186):
+a further concern group, `wholepack`, calls `whole-pack.yml` (the whole-pack round trip) for changes to the contracts,
+the service and the build; `CI gate / gate` counts it like the others, so the round trip is required. The required
+check is unchanged.
 
 ## Context
 
