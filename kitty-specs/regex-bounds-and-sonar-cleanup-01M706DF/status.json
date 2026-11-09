@@ -1,0 +1,106 @@
+{
+  "event_count": 45,
+  "last_event_id": "01M70M3E7G8FWZR2458BRZKJAA",
+  "materialized_at": "2026-11-09T17:01:12.304229+00:00",
+  "mission_number": "",
+  "mission_slug": "regex-bounds-and-sonar-cleanup-01M706DF",
+  "mission_type": "",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 5,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M70M3BBJ7T9FF2Y3504ZDTZ7",
+      "last_transition_at": "2026-11-09T17:01:09.362336+00:00",
+      "review_result": {
+        "feedback_path": "/home/stijn/Documents/code/kitty/spec-kitty-charter/.worktrees/regex-bounds-and-sonar-cleanup-01M706DF-coord/kitty-specs/regex-bounds-and-sonar-cleanup-01M706DF/tasks/WP01-packs-identifier-bounds/review-cycle-1.md",
+        "reference": "review-cycle://regex-bounds-and-sonar-cleanup-01M706DF/WP01-packs-identifier-bounds/review-cycle-1.md",
+        "reviewer": "opencode:kimi-k3:reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 1259620,
+      "shell_pid_created_at": "1794229795.15"
+    },
+    "WP02": {
+      "actor": "merge",
+      "agent": "claude:sonnet:java-jenny",
+      "force_count": 1,
+      "implementer_of_record": "claude:sonnet:java-jenny",
+      "lane": "done",
+      "last_event_id": "01M70M3C2QZ9VS3CKJ4V5B81PT",
+      "last_transition_at": "2026-11-09T17:01:10.103103+00:00",
+      "review_result": {
+        "feedback_path": "/home/stijn/Documents/code/kitty/spec-kitty-charter/.worktrees/regex-bounds-and-sonar-cleanup-01M706DF-coord/kitty-specs/regex-bounds-and-sonar-cleanup-01M706DF/tasks/WP02-missions-identifier-bounds/review-cycle-2.md",
+        "reference": "review-cycle://regex-bounds-and-sonar-cleanup-01M706DF/WP02-missions-identifier-bounds/review-cycle-2.md",
+        "reviewer": "opencode:kimi-k3:reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 1688483,
+      "shell_pid_created_at": "1794231095.96"
+    },
+    "WP03": {
+      "actor": "merge",
+      "agent": "claude:sonnet:java-jenny",
+      "force_count": 2,
+      "implementer_of_record": "claude:sonnet:java-jenny",
+      "lane": "done",
+      "last_event_id": "01M70M3CTB9P2NMSEW640MN9AG",
+      "last_transition_at": "2026-11-09T17:01:10.859034+00:00",
+      "review_result": {
+        "feedback_path": "/home/stijn/Documents/code/kitty/spec-kitty-charter/.worktrees/regex-bounds-and-sonar-cleanup-01M706DF-coord/kitty-specs/regex-bounds-and-sonar-cleanup-01M706DF/tasks/WP03-pack-schema-caps/review-cycle-2.md",
+        "reference": "review-cycle://regex-bounds-and-sonar-cleanup-01M706DF/WP03-pack-schema-caps/review-cycle-2.md",
+        "reviewer": "claude:sonnet:reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 2569687,
+      "shell_pid_created_at": "1794234867.69"
+    },
+    "WP04": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M70M3DGZ352SVM0ND7T6ZNSM",
+      "last_transition_at": "2026-11-09T17:01:11.583453+00:00",
+      "review_result": {
+        "feedback_path": "/home/stijn/Documents/code/kitty/spec-kitty-charter/.worktrees/regex-bounds-and-sonar-cleanup-01M706DF-coord/kitty-specs/regex-bounds-and-sonar-cleanup-01M706DF/tasks/WP04-yaml-git-policy/review-cycle-1.md",
+        "reference": "review-cycle://regex-bounds-and-sonar-cleanup-01M706DF/WP04-yaml-git-policy/review-cycle-1.md",
+        "reviewer": "opencode:kimi-k3:reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 1292254,
+      "shell_pid_created_at": "1794230189.76"
+    },
+    "WP05": {
+      "actor": "merge",
+      "agent": "claude:sonnet:java-jenny",
+      "force_count": 0,
+      "implementer_of_record": "claude:sonnet:java-jenny",
+      "lane": "done",
+      "last_event_id": "01M70M3E7G8FWZR2458BRZKJAA",
+      "last_transition_at": "2026-11-09T17:01:12.304229+00:00",
+      "review_result": {
+        "feedback_path": "/home/stijn/Documents/code/kitty/spec-kitty-charter/.worktrees/regex-bounds-and-sonar-cleanup-01M706DF-coord/kitty-specs/regex-bounds-and-sonar-cleanup-01M706DF/tasks/WP05-regex-recursion-guard/review-cycle-1.md",
+        "reference": "review-cycle://regex-bounds-and-sonar-cleanup-01M706DF/WP05-regex-recursion-guard/review-cycle-1.md",
+        "reviewer": "claude:sonnet:reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 3915440,
+      "shell_pid_created_at": "1794240194.41"
+    }
+  }
+}

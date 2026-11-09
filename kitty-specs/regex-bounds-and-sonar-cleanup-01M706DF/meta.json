@@ -1,0 +1,53 @@
+{
+  "acceptance_history": [
+    {
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-11-09T16:59:55.867925+00:00",
+      "accepted_by": "stijn",
+      "accepted_from_commit": "b3898106ac140b88c26d2cb0c40385d36daf3316",
+      "lenient": true
+    },
+    {
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-11-09T17:00:06.433183+00:00",
+      "accepted_by": "stijn",
+      "accepted_from_commit": "b3898106ac140b88c26d2cb0c40385d36daf3316",
+      "lenient": true
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-11-09T17:00:06.433183+00:00",
+  "accepted_by": "stijn",
+  "accepted_from_commit": "b3898106ac140b88c26d2cb0c40385d36daf3316",
+  "baseline_merge_commit": "b3898106ac140b88c26d2cb0c40385d36daf3316",
+  "create_return_branch": "fix/regex-bounds-and-sonar-cleanup",
+  "created_at": "2026-11-09T13:02:01.728477+00:00",
+  "flattened": true,
+  "friendly_name": "Bounded identifier patterns and Sonar cleanup",
+  "merged_at": "2026-11-09T17:01:13.696409+00:00",
+  "merged_commit": "de4a2a48be211f12279e8218e817589643c16e63",
+  "mid8": "01M706DF",
+  "mission_branch": "kitty/mission-regex-bounds-and-sonar-cleanup-01M706DF",
+  "mission_id": "01M706DFZEE37MW0VTVAC24DNC",
+  "mission_number": 19,
+  "mission_slug": "regex-bounds-and-sonar-cleanup-01M706DF",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "SonarCloud's first analysis showed that a long id in pack or mission YAML overflows the stack in its pattern match, which answers 500 or kills a worker instead of refusing the pack. This mission bounds every such match three ways: possessive patterns, a domain length cap and a schema maxLength. It also bounds the YAML number resolver and tidies a guarded Optional access (#440, #441, #442).",
+  "purpose_tldr": "Stop long identifiers and YAML scalars from crashing pack reads, and clear the confirmed SonarCloud findings.",
+  "slug": "regex-bounds-and-sonar-cleanup-01M706DF",
+  "status_phase": "1",
+  "target_branch": "fix/regex-bounds-and-sonar-cleanup",
+  "topology_decision": {
+    "code_lane_count": 5,
+    "from": "single_branch",
+    "rule": "lanes_with_coord",
+    "target_protected": false,
+    "to": "lanes_with_coord",
+    "wp_count": 5
+  },
+  "topology_settled": true,
+  "topology_source": "default",
+  "vcs": "git",
+  "vcs_locked_at": "2026-11-09T13:09:57.522327+00:00"
+}
