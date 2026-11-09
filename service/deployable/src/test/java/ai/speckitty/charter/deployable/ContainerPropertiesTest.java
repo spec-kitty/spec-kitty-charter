@@ -229,4 +229,15 @@ class ContainerPropertiesTest {
                         .map(ContainerProperties::allowedHosts)
                         .hasValue(List.of(entry)));
     }
+
+    @Test
+    void underTheContainerProfileALongBracketedEntryIsJudgedWithoutOverflowingTheStack() {
+        // #440: a backtracking (?:0*:)* recursed once per segment, so this entry threw StackOverflowError at binding.
+        String entry = "[" + "0:".repeat(10_000) + "1]";
+        runner.withPropertyValues(CONTAINER, PROPERTY + "=" + entry)
+                .run(context -> assertThat(
+                                context.getBean(ContainerWiring.class).properties())
+                        .map(ContainerProperties::allowedHosts)
+                        .hasValue(List.of(entry)));
+    }
 }
