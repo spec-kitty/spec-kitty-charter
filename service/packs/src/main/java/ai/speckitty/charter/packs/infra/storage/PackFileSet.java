@@ -419,16 +419,13 @@ final class PackFileSet {
     }
 
     /**
-     * The list a {@code markdown} file joins: none when it is a bound kind's companion (a toolguide's guide, #194),
-     * which its artifact holds and reads, or a deferred companion whose owning kind is not bound yet (a step
-     * enhancement's prompt fragment, #424), which no store holds; the pack document's when it is {@code pack.md}
-     * (#260); any other
-     * {@code markdown} file fails loudly ({@link #notStored}).
+     * The list a {@code markdown} file joins: none when it is a bound kind's companion (a toolguide's guide, #194; a
+     * step enhancement's prompt fragment, #428), which its artifact holds and reads; the pack document's when it is
+     * {@code pack.md} (#260); any other {@code markdown} file fails loudly ({@link #notStored}).
      */
     private static Optional<List<String>> markdownHolder(
             String file, PackFileKind.Mapped mapped, List<String> documents) {
-        if (KindBindings.isCompanionStructure(mapped.kind())
-                || KindBindings.isDeferredCompanionStructure(mapped.kind())) {
+        if (KindBindings.isCompanionStructure(mapped.kind())) {
             return Optional.empty();
         }
         if (PackDocumentMarkdown.KIND.equals(mapped.kind())) {

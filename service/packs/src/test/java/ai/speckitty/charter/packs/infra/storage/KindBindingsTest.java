@@ -1,8 +1,11 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.packs.domain.StepEnhancement;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -13,6 +16,14 @@ import org.junit.jupiter.api.Test;
 
 @DisplayName("The storage kind registry (ADR-0037)")
 class KindBindingsTest {
+
+    /**
+     * The kinds whose files are not placed by id alone: the type directory of a step enhancement is not derivable
+     * from its id, so its binding's {@code fileName} refuses and a whole-pack write puts the file back where it was
+     * read (OD-10 row 10, A12). The two loops that call {@code fileName} on every binding skip them;
+     * {@link #theSkippedKindsAreExactlyTheBindingsWhoseFileNameRefuses} keeps the set from growing silently.
+     */
+    static final Set<ArtifactKind> NOT_PLACED_BY_ID = Set.of(ArtifactKind.STEP_ENHANCEMENT);
 
     @Test
     @DisplayName("every bound kind has one YAML format that reads its persistence shape, and nothing else has one")
@@ -61,7 +72,8 @@ class KindBindingsTest {
         List<ArtifactKind> kinds = KindBindings.kinds();
         // Append-only: the eleven kinds bound before it keep their positions, so a pack without mission types keeps
         // its digest.
-        assertThat(kinds).hasSize(14);
+        assertThat(kinds).hasSize(15);
+        assertThat(kinds.get(14)).isEqualTo(ArtifactKind.STEP_ENHANCEMENT);
         assertThat(kinds.get(11)).isEqualTo(ArtifactKind.MISSION_TYPE);
         assertThat(kinds.get(10)).isEqualTo(ArtifactKind.PROCEDURE);
         assertThat(kinds.get(9)).isEqualTo(ArtifactKind.ASSET);
@@ -82,11 +94,12 @@ class KindBindingsTest {
     }
 
     @Test
-    @DisplayName("the guard and the lifecycle are appended last, each placed at its own path (ADR-0054, ADR-0050)")
+    @DisplayName("the guard and the lifecycle are appended after the kinds bound before them, the step enhancement"
+            + " last, each placed at its own path (ADR-0054, ADR-0050)")
     void theGuardAndTheLifecycleAreAppendedLast() {
         List<ArtifactKind> kinds = KindBindings.kinds();
         // Append-only: the twelve kinds bound before them keep their positions, so a pack without either keeps its
-        // digest.
+        // digest; the step enhancement is appended after them (positions 12-13 are the guard and the lifecycle).
         assertThat(kinds.subList(12, 14)).containsExactly(ArtifactKind.GUARD, ArtifactKind.LIFECYCLE);
         assertThat(YamlFormats.all().subList(12, 14)).containsExactly(GuardYaml.INSTANCE, LifecycleYaml.INSTANCE);
         assertThat(GuardBinding.INSTANCE.fileName("review-ref")).isEqualTo("guards/review-ref.guard.yaml");
@@ -141,6 +154,9 @@ class KindBindingsTest {
     @DisplayName("file-kinds.yaml classifies each binding's file name to the schema the binding names (ADR-0037)")
     void eachFileNameIsClassifiedToItsBindingsSchema() {
         for (KindBinding<?, ?> binding : KindBindings.all()) {
+            if (NOT_PLACED_BY_ID.contains(binding.kind())) {
+                continue;
+            }
             String file = "probe-pack/" + binding.fileName("x");
             assertThat(PackFileKind.bundled().classify(file))
                     .as(file)
@@ -174,6 +190,9 @@ class KindBindingsTest {
             throws java.io.IOException {
         java.nio.file.Path pack = java.nio.file.Files.createDirectories(host.resolve("probe-pack"));
         for (KindBinding<?, ?> binding : KindBindings.all()) {
+            if (NOT_PLACED_BY_ID.contains(binding.kind())) {
+                continue;
+            }
             String name = binding.fileName("probe-" + binding.kind().token());
             // A mission type's file name has directories (ADR-0044); the store's write creates them.
             java.nio.file.Files.createDirectories(pack.resolve(name).getParent());
@@ -193,21 +212,14 @@ class KindBindingsTest {
         assertThat(KindBindings.isCompanionStructure("toolguide")).isFalse();
         assertThat(KindBindings.byCompanionStructure(ToolguideBinding.GUIDE_SCHEMA))
                 .containsSame(ToolguideBinding.INSTANCE);
-        // #260: pack.md is no companion; the pack holds it in its own slot. ADR-0066's fragment is a companion of
-        // the step-enhancement kind, whose storage binding is service follow-up #424: it is no companion of a kind
-        // bound here, but a deferred one, validated and held by no store, as its enhancement's YAML is.
+        // #260: pack.md is no companion; the pack holds it in its own slot. ADR-0066's fragment is a companion of the
+        // bound step-enhancement kind (#428): the enhancement holds it, as a toolguide holds its guide.
         assertThat(KindBindings.isCompanionStructure(PackDocumentMarkdown.KIND)).isFalse();
-        assertThat(KindBindings.isCompanionStructure("prompt-fragment")).isFalse();
-        assertThat(KindBindings.isDeferredCompanionStructure("prompt-fragment")).isTrue();
-        assertThat(KindBindings.isDeferredCompanionStructure(ToolguideBinding.GUIDE_SCHEMA))
-                .isFalse();
-        assertThat(KindBindings.isDeferredCompanionStructure(PackDocumentMarkdown.KIND))
-                .isFalse();
-        assertThat(KindBindings.byCompanionStructure("prompt-fragment")).isEmpty();
+        assertThat(KindBindings.isCompanionStructure("prompt-fragment")).isTrue();
+        assertThat(KindBindings.byCompanionStructure("prompt-fragment")).containsSame(StepEnhancementBinding.INSTANCE);
         assertThat(PackFileKind.bundled().fileRules())
                 .filteredOn(rule -> rule.contentForm() == ContentForm.MARKDOWN)
-                .filteredOn(rule -> !Set.of(PackDocumentMarkdown.KIND).contains(rule.schema())
-                        && !KindBindings.isDeferredCompanionStructure(rule.schema()))
+                .filteredOn(rule -> !Set.of(PackDocumentMarkdown.KIND).contains(rule.schema()))
                 .isNotEmpty()
                 .allSatisfy(rule -> assertThat(KindBindings.isCompanionStructure(rule.schema()))
                         .as(rule.match())
@@ -231,5 +243,49 @@ class KindBindingsTest {
                 assertThat(binding.hasCompanions()).as(binding.kind().token()).isTrue();
             }
         }
+    }
+
+    @Test
+    @DisplayName("the step enhancement is appended last, spelled step-enhancement, and its fragment is its companion"
+            + " (#428, ADR-0066)")
+    void theStepEnhancementIsAppendedLast() {
+        assertThat(KindBindings.kinds().getLast()).isEqualTo(ArtifactKind.STEP_ENHANCEMENT);
+        assertThat(YamlFormats.all().getLast()).isSameAs(StepEnhancementYaml.INSTANCE);
+        assertThat(KindBindings.of(ArtifactKind.STEP_ENHANCEMENT)).containsSame(StepEnhancementBinding.INSTANCE);
+        assertThat(StepEnhancementBinding.INSTANCE.fileToken()).isEqualTo("step-enhancement");
+        assertThat(StepEnhancementBinding.INSTANCE.schemaName()).isEqualTo("step-enhancement");
+        assertThat(KindBindings.bySchema("step-enhancement")).containsSame(StepEnhancementBinding.INSTANCE);
+        assertThat(StepEnhancementBinding.INSTANCE.idIsFileStem()).isTrue();
+        assertThat(StepEnhancementBinding.INSTANCE.placedAtItsFileName()).isFalse();
+        assertThat(StepEnhancementBinding.INSTANCE.hasCompanions()).isTrue();
+        assertThat(StepEnhancementBinding.INSTANCE.companionStructures()).containsExactly("prompt-fragment");
+    }
+
+    @Test
+    @DisplayName(
+            "the step enhancement's fileName refuses, so a canonical layout cannot write one at the pack root (A12)")
+    void aStepEnhancementCannotBePlacedByItsId() {
+        assertThatThrownBy(() -> StepEnhancementBinding.INSTANCE.fileName("x"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("step-enhancement");
+        StepEnhancement enhancement =
+                new StepEnhancement("x", new PackIdentifier("01M6ZRYK0000000000000000E1"), "1.0", java.util.List.of());
+        assertThatThrownBy(() -> PackLayout.canonical().pathOf(enhancement))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("the kinds the two fileName loops skip are exactly the bindings whose fileName refuses (OD-10 row 10)")
+    void theSkippedKindsAreExactlyTheBindingsWhoseFileNameRefuses() {
+        Set<ArtifactKind> refusing = new HashSet<>();
+        for (KindBinding<?, ?> binding : KindBindings.all()) {
+            try {
+                binding.fileName("x");
+            } catch (IllegalArgumentException refused) {
+                refusing.add(binding.kind());
+            }
+        }
+
+        assertThat(refusing).isEqualTo(NOT_PLACED_BY_ID);
     }
 }

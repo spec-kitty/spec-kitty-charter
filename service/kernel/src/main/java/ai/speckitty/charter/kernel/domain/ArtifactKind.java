@@ -58,7 +58,8 @@ public enum ArtifactKind {
     /**
      * A step enhancement: add-only guards, emits and prompt fragments joined to a step by an enhances edge
      * (ADR-0053 decision 22, ADR-0066). It is activated explicitly or by a preset's activated_step_enhancements list.
-     * The step-enhancement schema holds only prompt fragments so far, and no store binds the kind yet (#428).
+     * The step-enhancement schema holds only prompt fragments so far; the pack store holds the kind and its fragment
+     * companions (#428), and the guard and emit additions wait for #434.
      */
     STEP_ENHANCEMENT("step_enhancement", "step_enhancements", true);
 

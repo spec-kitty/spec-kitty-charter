@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
@@ -378,12 +379,14 @@ class FileSystemPackInspectorTest {
             """;
 
     /**
-     * The shape of open-packs#175: a step enhancement and its prompt fragment. Neither has a store binding until #424,
-     * so load skips both (the enhancement yaml is classified, validated and not held), and validate reads the fragment
-     * against its structure schema as it reads the yaml against its own. Neither is a 500.
+     * The shape of open-packs#175: a step enhancement and its prompt fragment. The enhancement is a bound kind (#428):
+     * the listing holds its yaml under {@link ArtifactKind#STEP_ENHANCEMENT}, and the store holds the fragment as the
+     * enhancement's companion, so the store's read of the enhancement carries the body ({@code byKind()} never lists a
+     * companion). Validate reads the fragment against its structure schema as it reads the yaml against its own.
+     * Neither is a 500.
      */
     @Test
-    void anEnhancementAndItsPromptFragmentAreLoadedAndValidatedWithoutAFailureAndHeldByNoStore(@TempDir Path dir)
+    void anEnhancementAndItsPromptFragmentAreLoadedAndValidatedWithoutAFailureAndHeldByTheStore(@TempDir Path dir)
             throws IOException {
         write(dir, ENHANCEMENT_DIR + "spdd-specify.step-enhancement.yaml", SPDD_ENHANCEMENT);
         write(dir, ENHANCEMENT_DIR + "spdd-specify.prompt-fragment.md", "## REASONS guidance\n\nState the reasons.\n");
@@ -391,9 +394,18 @@ class FileSystemPackInspectorTest {
         PackFileSet.Listing listing = PackFileSet.listing(dir);
         PackContents contents = full(dir);
 
-        assertThat(listing.byKind().values().stream().flatMap(List::stream))
-                .as("no store holds the enhancement yaml or its fragment yet (#424)")
-                .noneMatch(file -> file.startsWith(ENHANCEMENT_DIR));
+        assertThat(listing.byKind().get(ArtifactKind.STEP_ENHANCEMENT))
+                .as("the store lists the enhancement yaml, and only that, under its kind (#428)")
+                .containsExactly(ENHANCEMENT_DIR + "spdd-specify.step-enhancement.yaml");
+        assertThat(new FilesystemPackStore(dir.getParent(), new YamlSerializationStrategy())
+                        .readListed(
+                                dir,
+                                ENHANCEMENT_DIR + "spdd-specify.step-enhancement.yaml",
+                                StepEnhancementBinding.INSTANCE))
+                .as("the fragment is held as the enhancement's companion: the store's read carries its body")
+                .hasValueSatisfying(dso -> assertThat(dso.promptFragments())
+                        .singleElement()
+                        .satisfies(entry -> assertThat(entry.body()).isPresent()));
         assertThat(contents.unreadableFiles()).isEmpty();
         assertThat(contents.files())
                 .extracting(PackContents.ClassifiedFile::file)
