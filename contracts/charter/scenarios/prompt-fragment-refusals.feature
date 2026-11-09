@@ -935,3 +935,373 @@ Feature: A malformed step enhancement or prompt fragment is refused with prompt_
       """
     When I GET "/offering"
     Then the response status is 200
+
+  # R-REL: putPackRelationship refuses, before anything is committed, an edge that would give a held step
+  # enhancement an overrides edge (R-OVR). It is the one operation that carries prompt_fragment_invalid as the
+  # top-level code (422); a read of the pack keeps its ETag.
+  Scenario: An overrides edge from a held step enhancement is refused and nothing is written
+    Given the org pack "rbase" with the file "pack.yaml":
+      """
+      pack_id: 01M6ZRYK0000000000000000RB
+      pack_version: 1.0.0
+      parent_pack: null
+      name: rbase
+      pack_level: org
+      """
+    And the org pack "rbase" with the file "missions/rdev/rdev.mission-type.yaml":
+      """
+      schema_version: "1.0"
+      id: rdev
+      title: Software development
+      description: Build software
+      steps:
+        - id: plan
+          title: Plan
+          role: planner
+          prompt_path: steps/plan.prompt.md
+      """
+    And the org pack "rbase" with the file "missions/rdev/steps/plan.prompt.md":
+      """
+      # Plan
+
+      <!-- spdd:reasons-block:start --><!-- spdd:reasons-block:end -->
+      """
+    And the org pack "rbase" with the file "missions/rres/rres.mission-type.yaml":
+      """
+      schema_version: "1.0"
+      id: rres
+      title: Research
+      description: Research a question
+      steps:
+        - id: gather
+          title: Gather
+          role: researcher
+          prompt_path: steps/gather.prompt.md
+      """
+    And the org pack "rbase" with the file "missions/rres/steps/gather.prompt.md":
+      """
+      # Gather
+
+      <!-- spdd:reasons-block:start --><!-- spdd:reasons-block:end -->
+      """
+    And the org pack "rbase" with the file "mission_type.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes:
+      - urn: action:rdev/plan
+        kind: action
+        label: plan
+      - urn: action:rres/gather
+        kind: action
+        label: gather
+      edges: []
+      """
+    And the org pack "renhancer" with the file "pack.yaml":
+      """
+      pack_id: 01M6ZRYK0000000000000000RE
+      pack_version: 1.0.0
+      parent_pack: null
+      name: renhancer
+      pack_level: org
+      depends_on:
+      - pack_id: 01M6ZRYK0000000000000000RB
+        range: '>=1.0'
+      """
+    And the org pack "renhancer" with the file "missions/rdev/enhancements/spdd-plan.step-enhancement.yaml":
+      """
+      schema_version: '1.0'
+      id: spdd-plan
+      prompt_fragments:
+        - slot: spdd:reasons-block
+          path: spdd-plan.prompt-fragment.md
+      """
+    And the org pack "renhancer" with the file "missions/rdev/enhancements/spdd-plan.prompt-fragment.md":
+      """
+      Fill or update the REASONS canvas while composing the plan: the approach, its structure and the
+      rejected alternatives.
+      """
+    And the org pack "renhancer" with the file "enhancements.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: step_enhancement:spdd-plan
+        target: rbase::action:rdev/plan
+        relation: enhances
+      """
+    And the org pack "renhancer" with the file "directives/A.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: A
+      title: A
+      intent: A
+      enforcement: required
+      """
+    And the org pack "renhancer" with the file "directives/B.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: B
+      title: B
+      intent: B
+      enforcement: required
+      """
+    Then the contract says "prompt_fragment_invalid" is answered with status 422 by the operation "putPackRelationship"
+    And the contract says "prompt_fragment_invalid" is answered with status 500
+    When I GET "/packs/renhancer/artifacts/directive/A"
+    Then the response status is 200
+    When I remember the ETag
+    And I remember the header "ETag"
+    And I PUT "/packs/renhancer/relationships" with the remembered ETag and the body:
+      """
+      {"from": "step_enhancement:spdd-plan", "to": "mission_type:rdev", "type": "overrides"}
+      """
+    Then the response status is 422
+    And the field at "/code" is "prompt_fragment_invalid"
+    When I GET "/packs/renhancer/artifacts/directive/A"
+    Then the response header "ETag" is the remembered header
+
+  # R-REL: the held enhancement already has its one enhances edge (the pack loaded), so any new one is a second.
+  Scenario: A second enhances edge from a held step enhancement is refused and nothing is written
+    Given the org pack "rbase" with the file "pack.yaml":
+      """
+      pack_id: 01M6ZRYK0000000000000000RB
+      pack_version: 1.0.0
+      parent_pack: null
+      name: rbase
+      pack_level: org
+      """
+    And the org pack "rbase" with the file "missions/rdev/rdev.mission-type.yaml":
+      """
+      schema_version: "1.0"
+      id: rdev
+      title: Software development
+      description: Build software
+      steps:
+        - id: plan
+          title: Plan
+          role: planner
+          prompt_path: steps/plan.prompt.md
+      """
+    And the org pack "rbase" with the file "missions/rdev/steps/plan.prompt.md":
+      """
+      # Plan
+
+      <!-- spdd:reasons-block:start --><!-- spdd:reasons-block:end -->
+      """
+    And the org pack "rbase" with the file "missions/rres/rres.mission-type.yaml":
+      """
+      schema_version: "1.0"
+      id: rres
+      title: Research
+      description: Research a question
+      steps:
+        - id: gather
+          title: Gather
+          role: researcher
+          prompt_path: steps/gather.prompt.md
+      """
+    And the org pack "rbase" with the file "missions/rres/steps/gather.prompt.md":
+      """
+      # Gather
+
+      <!-- spdd:reasons-block:start --><!-- spdd:reasons-block:end -->
+      """
+    And the org pack "rbase" with the file "mission_type.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes:
+      - urn: action:rdev/plan
+        kind: action
+        label: plan
+      - urn: action:rres/gather
+        kind: action
+        label: gather
+      edges: []
+      """
+    And the org pack "renhancer" with the file "pack.yaml":
+      """
+      pack_id: 01M6ZRYK0000000000000000RE
+      pack_version: 1.0.0
+      parent_pack: null
+      name: renhancer
+      pack_level: org
+      depends_on:
+      - pack_id: 01M6ZRYK0000000000000000RB
+        range: '>=1.0'
+      """
+    And the org pack "renhancer" with the file "missions/rdev/enhancements/spdd-plan.step-enhancement.yaml":
+      """
+      schema_version: '1.0'
+      id: spdd-plan
+      prompt_fragments:
+        - slot: spdd:reasons-block
+          path: spdd-plan.prompt-fragment.md
+      """
+    And the org pack "renhancer" with the file "missions/rdev/enhancements/spdd-plan.prompt-fragment.md":
+      """
+      Fill or update the REASONS canvas while composing the plan: the approach, its structure and the
+      rejected alternatives.
+      """
+    And the org pack "renhancer" with the file "enhancements.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: step_enhancement:spdd-plan
+        target: rbase::action:rdev/plan
+        relation: enhances
+      """
+    And the org pack "renhancer" with the file "directives/A.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: A
+      title: A
+      intent: A
+      enforcement: required
+      """
+    And the org pack "renhancer" with the file "directives/B.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: B
+      title: B
+      intent: B
+      enforcement: required
+      """
+    Then the contract says "prompt_fragment_invalid" is answered with status 422 by the operation "putPackRelationship"
+    And the contract says "prompt_fragment_invalid" is answered with status 500
+    When I GET "/packs/renhancer/artifacts/directive/A"
+    Then the response status is 200
+    When I remember the ETag
+    And I remember the header "ETag"
+    And I PUT "/packs/renhancer/relationships" with the remembered ETag and the body:
+      """
+      {"from": "step_enhancement:spdd-plan", "to": "rbase::action:rres/gather", "type": "enhances"}
+      """
+    Then the response status is 422
+    And the field at "/code" is "prompt_fragment_invalid"
+    When I GET "/packs/renhancer/artifacts/directive/A"
+    Then the response header "ETag" is the remembered header
+
+  # R-REL refuses on the source kind: the only difference from the first scenario is a directive in place of the
+  # step enhancement.
+  Scenario: The twin: the same overrides edge from a directive of the pack is registered
+    Given the org pack "rbase" with the file "pack.yaml":
+      """
+      pack_id: 01M6ZRYK0000000000000000RB
+      pack_version: 1.0.0
+      parent_pack: null
+      name: rbase
+      pack_level: org
+      """
+    And the org pack "rbase" with the file "missions/rdev/rdev.mission-type.yaml":
+      """
+      schema_version: "1.0"
+      id: rdev
+      title: Software development
+      description: Build software
+      steps:
+        - id: plan
+          title: Plan
+          role: planner
+          prompt_path: steps/plan.prompt.md
+      """
+    And the org pack "rbase" with the file "missions/rdev/steps/plan.prompt.md":
+      """
+      # Plan
+
+      <!-- spdd:reasons-block:start --><!-- spdd:reasons-block:end -->
+      """
+    And the org pack "rbase" with the file "missions/rres/rres.mission-type.yaml":
+      """
+      schema_version: "1.0"
+      id: rres
+      title: Research
+      description: Research a question
+      steps:
+        - id: gather
+          title: Gather
+          role: researcher
+          prompt_path: steps/gather.prompt.md
+      """
+    And the org pack "rbase" with the file "missions/rres/steps/gather.prompt.md":
+      """
+      # Gather
+
+      <!-- spdd:reasons-block:start --><!-- spdd:reasons-block:end -->
+      """
+    And the org pack "rbase" with the file "mission_type.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes:
+      - urn: action:rdev/plan
+        kind: action
+        label: plan
+      - urn: action:rres/gather
+        kind: action
+        label: gather
+      edges: []
+      """
+    And the org pack "renhancer" with the file "pack.yaml":
+      """
+      pack_id: 01M6ZRYK0000000000000000RE
+      pack_version: 1.0.0
+      parent_pack: null
+      name: renhancer
+      pack_level: org
+      depends_on:
+      - pack_id: 01M6ZRYK0000000000000000RB
+        range: '>=1.0'
+      """
+    And the org pack "renhancer" with the file "missions/rdev/enhancements/spdd-plan.step-enhancement.yaml":
+      """
+      schema_version: '1.0'
+      id: spdd-plan
+      prompt_fragments:
+        - slot: spdd:reasons-block
+          path: spdd-plan.prompt-fragment.md
+      """
+    And the org pack "renhancer" with the file "missions/rdev/enhancements/spdd-plan.prompt-fragment.md":
+      """
+      Fill or update the REASONS canvas while composing the plan: the approach, its structure and the
+      rejected alternatives.
+      """
+    And the org pack "renhancer" with the file "enhancements.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: step_enhancement:spdd-plan
+        target: rbase::action:rdev/plan
+        relation: enhances
+      """
+    And the org pack "renhancer" with the file "directives/A.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: A
+      title: A
+      intent: A
+      enforcement: required
+      """
+    And the org pack "renhancer" with the file "directives/B.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: B
+      title: B
+      intent: B
+      enforcement: required
+      """
+    When I GET "/packs/renhancer/artifacts/directive/A"
+    Then the response status is 200
+    When I remember the ETag
+    And I remember the header "ETag"
+    And I PUT "/packs/renhancer/relationships" with the remembered ETag and the body:
+      """
+      {"from": "directive:A", "to": "directive:B", "type": "overrides"}
+      """
+    Then the response status is 201

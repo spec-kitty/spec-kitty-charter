@@ -90,6 +90,14 @@ public class RefusalHandler {
         Map<String, Map<RefusalCode, HttpStatus>> byOperation = new java.util.HashMap<>();
         byOperation.put(REGISTRATION_STATUS, registrationStatusCodes());
         IMPACT_CHECKED_WRITES.forEach(operation -> byOperation.put(operation, registrationStatusCodes()));
+        // The relationship write is the one operation that carries prompt_fragment_invalid as the problem's own code:
+        // an
+        // edge that would break a held step enhancement's edge rules is the request's fault (R-REL). It gets a copy of
+        // the map of the others, so every other operation's map stays as it was.
+        Map<RefusalCode, HttpStatus> relationshipWrite = new java.util.EnumMap<>(RefusalCode.class);
+        relationshipWrite.putAll(registrationStatusCodes());
+        relationshipWrite.put(RefusalCode.PROMPT_FRAGMENT_INVALID, HttpStatus.UNPROCESSABLE_CONTENT);
+        byOperation.put("putPackRelationship", Map.copyOf(relationshipWrite));
         return Map.copyOf(byOperation);
     }
 
