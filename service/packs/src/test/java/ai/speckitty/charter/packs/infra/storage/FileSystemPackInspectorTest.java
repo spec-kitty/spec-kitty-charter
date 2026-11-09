@@ -370,6 +370,16 @@ class FileSystemPackInspectorTest {
     }
 
     private static final String ENHANCEMENT_DIR = "missions/software-dev/enhancements/";
+    private static final String ENHANCEMENT_GRAPH = "enhancements.graph.yaml";
+    private static final String SPDD_EDGE = """
+            schema_version: '1.0'
+            generated_at: STATIC
+            nodes: []
+            edges:
+            - source: step_enhancement:spdd-specify
+              target: base::action:software-dev/specify
+              relation: enhances
+            """;
     private static final String SPDD_ENHANCEMENT = """
             schema_version: "1.0"
             id: spdd-specify
@@ -388,6 +398,7 @@ class FileSystemPackInspectorTest {
     @Test
     void anEnhancementAndItsPromptFragmentAreLoadedAndValidatedWithoutAFailureAndHeldByTheStore(@TempDir Path dir)
             throws IOException {
+        write(dir, ENHANCEMENT_GRAPH, SPDD_EDGE);
         write(dir, ENHANCEMENT_DIR + "spdd-specify.step-enhancement.yaml", SPDD_ENHANCEMENT);
         write(dir, ENHANCEMENT_DIR + "spdd-specify.prompt-fragment.md", "## REASONS guidance\n\nState the reasons.\n");
 
@@ -415,6 +426,7 @@ class FileSystemPackInspectorTest {
     @Test
     void aPromptFragmentThatBreaksItsStructureIsUnreadableInValidateAndNotAFailureOnLoad(@TempDir Path dir)
             throws IOException {
+        write(dir, ENHANCEMENT_GRAPH, SPDD_EDGE);
         write(dir, ENHANCEMENT_DIR + "spdd-specify.step-enhancement.yaml", SPDD_ENHANCEMENT);
         write(dir, ENHANCEMENT_DIR + "spdd-specify.prompt-fragment.md", "---\ntitle: x\n---\n\nText.\n");
         write(dir, ENHANCEMENT_DIR + "blank.prompt-fragment.md", "\n");
@@ -426,6 +438,23 @@ class FileSystemPackInspectorTest {
                 .containsExactlyInAnyOrder(
                         ENHANCEMENT_DIR + "spdd-specify.prompt-fragment.md",
                         ENHANCEMENT_DIR + "blank.prompt-fragment.md");
+        // OD-10 row 4: validate mode answers prompt_fragment_invalid, at the fragment, for the frontmatter fragment and
+        // for the blank one (an orphan: the staged load refuses it as well, StepEnhancementLoadChecksTest).
+        assertThat(promptFragmentFindings(dir).stream().map(PackFinding::file).distinct())
+                .containsExactlyInAnyOrder(
+                        ENHANCEMENT_DIR + "spdd-specify.prompt-fragment.md",
+                        ENHANCEMENT_DIR + "blank.prompt-fragment.md");
+    }
+
+    @Test
+    void theTwinOfThePromptFragmentThatBreaksItsStructureIsReadableAndAnswersNoPromptFragmentInvalid(@TempDir Path dir)
+            throws IOException {
+        write(dir, ENHANCEMENT_GRAPH, SPDD_EDGE);
+        write(dir, ENHANCEMENT_DIR + "spdd-specify.step-enhancement.yaml", SPDD_ENHANCEMENT);
+        write(dir, ENHANCEMENT_DIR + "spdd-specify.prompt-fragment.md", "## REASONS guidance\n\nState the reasons.\n");
+
+        assertThat(full(dir).unreadableFiles()).isEmpty();
+        assertThat(promptFragmentFindings(dir)).isEmpty();
     }
 
     private static final String PROCEDURE = """
@@ -883,5 +912,274 @@ class FileSystemPackInspectorTest {
             assertThat(violation.reason()).isEqualTo("preset id 'minimal' is not its file stem 'other'");
         });
         assertThat(loaded.pack().presets()).extracting(Preset::id).containsExactly("minimal");
+    }
+
+    // ---- step enhancements and prompt fragments in validate mode (FR-004 to FR-006) ------------------------------
+
+    private static List<PackFinding> promptFragmentFindings(Path dir) {
+        return PackPolicy.judge(full(dir)).findings().stream()
+                .filter(finding -> finding.code() == PackFindingCode.PROMPT_FRAGMENT_INVALID)
+                .toList();
+    }
+
+    private static String yaml(String id) {
+        return ENHANCEMENT_DIR + id + ".step-enhancement.yaml";
+    }
+
+    private static String fragment(String name) {
+        return ENHANCEMENT_DIR + name + ".prompt-fragment.md";
+    }
+
+    /** A valid pair beside its single qualified enhances edge: the fixture each case below breaks in one line. */
+    private static void validPair(Path dir) throws IOException {
+        write(dir, ENHANCEMENT_GRAPH, SPDD_EDGE);
+        write(dir, yaml("spdd-specify"), SPDD_ENHANCEMENT);
+        write(dir, fragment("spdd-specify"), "## REASONS guidance\n\nState the reasons.\n");
+    }
+
+    @Test
+    void aValidPairWithItsEdgeAnswersNoPromptFragmentInvalid(@TempDir Path dir) throws IOException {
+        validPair(dir);
+
+        assertThat(promptFragmentFindings(dir)).isEmpty();
+    }
+
+    @Test
+    void aSlotMarkerInAFragmentIsPromptFragmentInvalidAtTheFragmentAndItsTwinIsNot(@TempDir Path dir)
+            throws IOException {
+        validPair(dir);
+        write(dir, fragment("spdd-specify"), "## Guidance\n\n<!-- other:slot:start -->\nText.\n");
+
+        assertThat(promptFragmentFindings(dir))
+                .singleElement()
+                .satisfies(finding -> assertThat(finding.file()).isEqualTo(fragment("spdd-specify")));
+    }
+
+    @Test
+    void aNamedCompanionThatIsMissingIsPromptFragmentInvalidAtTheYaml(@TempDir Path dir) throws IOException {
+        write(dir, ENHANCEMENT_GRAPH, SPDD_EDGE);
+        write(dir, yaml("spdd-specify"), SPDD_ENHANCEMENT);
+
+        assertThat(promptFragmentFindings(dir))
+                .singleElement()
+                .satisfies(finding -> assertThat(finding.file()).isEqualTo(yaml("spdd-specify")));
+    }
+
+    @Test
+    void anOrphanFragmentBesideAValidPairIsPromptFragmentInvalidAtTheOrphan(@TempDir Path dir) throws IOException {
+        validPair(dir);
+        write(dir, fragment("stray"), "## Stray\n\nNobody names it.\n");
+
+        assertThat(promptFragmentFindings(dir))
+                .singleElement()
+                .satisfies(finding -> assertThat(finding.file()).isEqualTo(fragment("stray")));
+    }
+
+    @Test
+    void anOrphanBesideAnEnhancementWithARuleFaultIsJudgedBesideTheFault(@TempDir Path dir) throws IOException {
+        // The enhancement is held, with a rule fault (no enhances edge), so it excuses no directory (fifth analysis
+        // A5).
+        write(dir, yaml("spdd-specify"), SPDD_ENHANCEMENT);
+        write(dir, fragment("spdd-specify"), "## REASONS guidance\n\nState the reasons.\n");
+        write(dir, fragment("stray"), "## Stray\n\nNobody names it.\n");
+
+        assertThat(promptFragmentFindings(dir))
+                .extracting(PackFinding::file)
+                .containsExactlyInAnyOrder(yaml("spdd-specify"), fragment("stray"));
+    }
+
+    @Test
+    void aFragmentBesideAnEnhancementTheStoreWouldRefuseIsNoOrphan(@TempDir Path dir) throws IOException {
+        // The named companion is missing, so the store refuses the enhancement and leaves every file beside it
+        // unmodelled.
+        write(dir, ENHANCEMENT_GRAPH, SPDD_EDGE);
+        write(dir, yaml("spdd-specify"), SPDD_ENHANCEMENT);
+        write(dir, fragment("stray"), "## Stray\n\nMaybe it was meant.\n");
+
+        assertThat(promptFragmentFindings(dir))
+                .singleElement()
+                .satisfies(finding -> assertThat(finding.file()).isEqualTo(yaml("spdd-specify")));
+    }
+
+    @Test
+    void aFragmentBesideAnEnhancementThatBreaksItsSchemaIsNoOrphan(@TempDir Path dir) throws IOException {
+        write(dir, yaml("spdd-specify"), "schema_version: '1.0'\nid: spdd-specify\nprompt_fragments: []\n");
+        write(dir, fragment("stray"), "## Stray\n\nMaybe it was meant.\n");
+
+        assertThat(promptFragmentFindings(dir)).isEmpty();
+        assertThat(PackPolicy.judge(full(dir)).findings()).anySatisfy(finding -> {
+            assertThat(finding.code()).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR);
+            assertThat(finding.file()).isEqualTo(yaml("spdd-specify"));
+        });
+    }
+
+    @Test
+    void anEnhancementThatOverridesIsPromptFragmentInvalidAndItsTwinWithOnlyTheEnhancesEdgeIsNot(@TempDir Path dir)
+            throws IOException {
+        validPair(dir);
+        assertThat(promptFragmentFindings(dir)).isEmpty();
+
+        write(
+                dir,
+                ENHANCEMENT_GRAPH,
+                SPDD_EDGE + "- source: step_enhancement:spdd-specify\n  target: mission_type:software-dev\n"
+                        + "  relation: overrides\n");
+
+        assertThat(promptFragmentFindings(dir))
+                .singleElement()
+                .satisfies(finding -> assertThat(finding.file()).isEqualTo(yaml("spdd-specify")));
+    }
+
+    @Test
+    void anEnhancesEdgeToANonStepAndAnAbsentEdgeAndAMismatchedDirectoryAreEachPromptFragmentInvalidAtTheYaml(
+            @TempDir Path dir) throws IOException {
+        validPair(dir);
+        String edge = SPDD_EDGE.replace("base::action:software-dev/specify", "%s");
+
+        write(dir, ENHANCEMENT_GRAPH, edge.formatted("base::tactic:x"));
+        assertThat(promptFragmentFindings(dir)).singleElement().satisfies(finding -> {
+            assertThat(finding.file()).isEqualTo(yaml("spdd-specify"));
+            assertThat(finding.detail()).contains("not an action:<type>/<step>");
+        });
+
+        write(dir, ENHANCEMENT_GRAPH, edge.formatted("base::action:research/specify"));
+        assertThat(promptFragmentFindings(dir)).singleElement().satisfies(finding -> {
+            assertThat(finding.file()).isEqualTo(yaml("spdd-specify"));
+            assertThat(finding.detail()).contains("research");
+        });
+
+        write(dir, ENHANCEMENT_GRAPH, "schema_version: '1.0'\ngenerated_at: STATIC\nnodes: []\nedges: []\n");
+        assertThat(promptFragmentFindings(dir)).singleElement().satisfies(finding -> {
+            assertThat(finding.file()).isEqualTo(yaml("spdd-specify"));
+            assertThat(finding.detail()).contains("0 enhances edges");
+        });
+    }
+
+    @Test
+    void aGraphDocumentThatCannotBeReadIsRefusedOnItsOwnAndJudgesNoEdgeRule(@TempDir Path dir) throws IOException {
+        write(dir, yaml("spdd-specify"), SPDD_ENHANCEMENT);
+        write(dir, fragment("spdd-specify"), "## REASONS guidance\n\nState the reasons.\n");
+        write(dir, ENHANCEMENT_GRAPH, "nodes: [\n");
+
+        assertThat(promptFragmentFindings(dir)).isEmpty();
+        assertThat(PackPolicy.judge(full(dir)).findings())
+                .anySatisfy(finding -> assertThat(finding.code()).isEqualTo(PackFindingCode.DRG_SCHEMA_ERROR));
+    }
+
+    @Test
+    void aRepeatedEnhancementIdAnswersOneFindingAtTheSecondFileAndNoDuplicateArtifactId(@TempDir Path dir)
+            throws IOException {
+        String research = "missions/research/enhancements/spdd-plan";
+        String software = "missions/software-dev/enhancements/spdd-plan";
+        String enhancement = """
+                schema_version: '1.0'
+                id: spdd-plan
+                prompt_fragments:
+                  - slot: spdd:reasons-block
+                    path: spdd-plan.prompt-fragment.md
+                """;
+        write(dir, research + ".step-enhancement.yaml", enhancement);
+        write(dir, research + ".prompt-fragment.md", "## Research\n\nResearch guidance.\n");
+        write(dir, software + ".step-enhancement.yaml", enhancement);
+        write(dir, software + ".prompt-fragment.md", "## Software\n\nSoftware guidance.\n");
+        write(dir, ENHANCEMENT_GRAPH, """
+                schema_version: '1.0'
+                generated_at: STATIC
+                nodes: []
+                edges:
+                - source: step_enhancement:spdd-plan
+                  target: base::action:research/plan
+                  relation: enhances
+                """);
+
+        List<PackFinding> findings = PackPolicy.judge(full(dir)).findings();
+
+        assertThat(findings)
+                .filteredOn(finding -> finding.file().endsWith(".step-enhancement.yaml"))
+                .singleElement()
+                .satisfies(finding -> {
+                    assertThat(finding.code()).isEqualTo(PackFindingCode.PROMPT_FRAGMENT_INVALID);
+                    assertThat(finding.file()).isEqualTo(software + ".step-enhancement.yaml");
+                });
+        assertThat(findings).extracting(PackFinding::code).doesNotContain(PackFindingCode.DUPLICATE_ARTIFACT_ID);
+    }
+
+    @Test
+    void theGenericDuplicateIdRuleStillFiresForTwoTacticsOfOneId(@TempDir Path dir) throws IOException {
+        String tactic = "schema_version: '1.0'\nid: same\nname: Same\nsteps:\n  - title: Only step\n";
+        write(dir, "tactics/same.tactic.yaml", tactic);
+        write(dir, "more/same.tactic.yaml", tactic);
+
+        assertThat(PackPolicy.judge(full(dir)).findings())
+                .filteredOn(finding -> finding.code() == PackFindingCode.DUPLICATE_ARTIFACT_ID)
+                .singleElement()
+                .satisfies(finding -> assertThat(finding.file()).isEqualTo("tactics/same.tactic.yaml"));
+    }
+
+    @Test
+    void anIdThatDiffersFromItsFileStemIsASchemaViolationAtTheIdAndNeverPromptFragmentInvalid(@TempDir Path dir)
+            throws IOException {
+        validPair(dir);
+        write(dir, yaml("spdd-specify"), SPDD_ENHANCEMENT.replace("id: spdd-specify", "id: spdd-other"));
+
+        assertThat(promptFragmentFindings(dir)).isEmpty();
+        assertThat(PackPolicy.judge(full(dir)).findings())
+                .filteredOn(finding -> finding.file().equals(yaml("spdd-specify")))
+                .singleElement()
+                .satisfies(finding -> {
+                    assertThat(finding.code()).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR);
+                    assertThat(finding.place()).containsExactly("id");
+                });
+    }
+
+    @Test
+    void anEmptyPromptFragmentsListIsASchemaViolationAndAnAbsentKeyIsPromptFragmentInvalid(@TempDir Path dir)
+            throws IOException {
+        write(dir, ENHANCEMENT_GRAPH, SPDD_EDGE);
+
+        write(dir, yaml("spdd-specify"), "schema_version: '1.0'\nid: spdd-specify\nprompt_fragments: []\n");
+        assertThat(promptFragmentFindings(dir)).isEmpty();
+        assertThat(PackPolicy.judge(full(dir)).findings()).anySatisfy(finding -> {
+            assertThat(finding.code()).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR);
+            assertThat(finding.file()).isEqualTo(yaml("spdd-specify"));
+        });
+
+        write(dir, yaml("spdd-specify"), "schema_version: '1.0'\nid: spdd-specify\n");
+        assertThat(promptFragmentFindings(dir))
+                .singleElement()
+                .satisfies(finding -> assertThat(finding.file()).isEqualTo(yaml("spdd-specify")));
+    }
+
+    @Test
+    void aSlotThatBreaksTheGrammarIsASchemaViolationAndARepeatedSlotIsPromptFragmentInvalid(@TempDir Path dir)
+            throws IOException {
+        validPair(dir);
+        write(dir, fragment("second"), "## Second\n\nAnother.\n");
+
+        write(dir, yaml("spdd-specify"), SPDD_ENHANCEMENT + "  - slot: Bad:Id\n    path: second.prompt-fragment.md\n");
+        assertThat(promptFragmentFindings(dir)).isEmpty();
+        assertThat(PackPolicy.judge(full(dir)).findings()).anySatisfy(finding -> {
+            assertThat(finding.code()).isEqualTo(PackFindingCode.ARTIFACT_SCHEMA_ERROR);
+            assertThat(finding.file()).isEqualTo(yaml("spdd-specify"));
+        });
+
+        write(
+                dir,
+                yaml("spdd-specify"),
+                SPDD_ENHANCEMENT + "  - slot: spdd:reasons-block\n    path: second.prompt-fragment.md\n");
+        assertThat(promptFragmentFindings(dir))
+                .singleElement()
+                .satisfies(finding -> assertThat(finding.file()).isEqualTo(yaml("spdd-specify")));
+    }
+
+    @Test
+    void aFragmentThatBreaksTheCodecAndHoldsAMarkerAnswersTheCodecFaultOnly(@TempDir Path dir) throws IOException {
+        validPair(dir);
+        write(dir, fragment("spdd-specify"), "## Guidance\r\n\r\n<!-- other:slot:start -->\r\n");
+
+        assertThat(promptFragmentFindings(dir)).singleElement().satisfies(finding -> {
+            assertThat(finding.file()).isEqualTo(fragment("spdd-specify"));
+            assertThat(finding.detail()).contains("not valid Markdown");
+        });
     }
 }

@@ -1,8 +1,11 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
+import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackContents.ArtifactFacts;
 import ai.speckitty.charter.packs.domain.PackContents.AssetFacts;
@@ -14,6 +17,8 @@ import ai.speckitty.charter.packs.domain.PackContents.SchemaViolation;
 import ai.speckitty.charter.packs.domain.PackContents.StepContractFacts;
 import ai.speckitty.charter.packs.domain.PackInspector;
 import ai.speckitty.charter.packs.domain.PackRoot;
+import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
+import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
 import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownRefusal;
 import java.io.IOException;
@@ -26,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -182,7 +188,79 @@ public final class FileSystemPackInspector implements PackInspector {
                 full.stepContracts,
                 full.artifacts,
                 full.assets,
-                full.unreadable);
+                full.unreadable,
+                full.stepEnhancementFacts(edgesOf(shards, fragment)));
+    }
+
+    /** The step enhancement edges of the pack's graph documents that were read: the root shards, then the fragment. */
+    private static List<StepEnhancementFacts.Edge> edgesOf(
+            List<FileRead<RawGraph>> shards, FileRead<RawGraph> fragment) {
+        List<FileRead<RawGraph>> documents = new ArrayList<>(shards);
+        documents.add(fragment);
+        List<StepEnhancementFacts.Edge> edges = new ArrayList<>();
+        for (FileRead<RawGraph> document : documents) {
+            if (document instanceof FileRead.Read<RawGraph> read) {
+                read.value()
+                        .edges()
+                        .forEach(edge -> stepEnhancementEdge(edge.relation(), edge.source(), edge.target())
+                                .ifPresent(edges::add));
+            }
+        }
+        return edges;
+    }
+
+    /**
+     * The edge fact of a graph edge whose source is a step enhancement of the pack: an {@code enhances} or an
+     * {@code overrides} edge from a bare {@code step_enhancement:<id>}. The target is split from its pack qualifier
+     * here, once, for the validate-mode facts and the load alike. Any other edge is no fact.
+     *
+     * @param relation the relation as written
+     * @param source the source endpoint as written
+     * @param target the target endpoint as written
+     * @return the edge fact; empty for an edge the step enhancement rules do not judge
+     */
+    static Optional<StepEnhancementFacts.Edge> stepEnhancementEdge(String relation, String source, String target) {
+        Optional<RelationType> type = RelationType.fromToken(relation)
+                .filter(found -> found == RelationType.ENHANCES || found == RelationType.OVERRIDES);
+        if (type.isEmpty() || !source.startsWith(NodeKind.STEP_ENHANCEMENT.token() + ":")) {
+            return Optional.empty();
+        }
+        try {
+            PackQualifiedReference reference = PackQualifiedReference.parse(target);
+            return Optional.of(
+                    new StepEnhancementFacts.Edge(type.get(), source, reference.urn(), reference.packName()));
+        } catch (IllegalArgumentException malformed) {
+            // Not a reference: the graph document is judged where it is read; the rule sees a target that is no step.
+            return Optional.of(
+                    new StepEnhancementFacts.Edge(type.get(), source, target.replace("::", ":"), Optional.empty()));
+        }
+    }
+
+    /**
+     * The type directory of a step enhancement file, the {@code <type>} of {@code missions/<type>/enhancements/}.
+     *
+     * @param file the pack-relative path of the enhancement
+     * @return the second segment of the path; empty when the path has fewer segments
+     */
+    static String typeDirectory(String file) {
+        String[] segments = file.split("/", -1);
+        return segments.length > 1 ? segments[1] : "";
+    }
+
+    /**
+     * The facts of one companion the store or the inspector read: its canonical text is the written text of the parsed
+     * document (A5), so load, validate mode and the read judge one text.
+     *
+     * @param file the companion's pack-relative path
+     * @param document the parsed companion
+     * @return the fact
+     */
+    static StepEnhancementFacts.Companion companionFact(String file, MarkdownDocument document) {
+        boolean blank = document.title().isEmpty()
+                && document.preamble().isBlank()
+                && document.sections().isEmpty();
+        return StepEnhancementFacts.Companion.read(
+                file, document.frontmatter().isPresent(), blank, MarkdownCodec.write(document));
     }
 
     // ---- the full scope ------------------------------------------------------------------------------------------
@@ -216,6 +294,10 @@ public final class FileSystemPackInspector implements PackInspector {
         final List<StepContractFacts> stepContracts = new ArrayList<>();
         final List<ArtifactFacts> artifacts = new ArrayList<>();
         final List<AssetFacts> assets = new ArrayList<>();
+        private final List<StepEnhancementFacts.Enhancement> enhancements = new ArrayList<>();
+        private final List<StepEnhancementFacts.Companion> companions = new ArrayList<>();
+        private final Set<String> fragmentFiles = new HashSet<>();
+        private final Set<String> unparsedEnhancements = new HashSet<>();
         private final Set<String> assetIds = new HashSet<>();
         private final List<SidecarPayloads.Sidecar> sidecars = new ArrayList<>();
         private final PackFileKind table;
@@ -328,16 +410,37 @@ public final class FileSystemPackInspector implements PackInspector {
         }
 
         private void readCompanion(Path path, String file, String structure) {
-            if (read(path, file, name, text -> companion(text, file, structure))
-                    instanceof FileRead.Unreadable<?> bad) {
+            FileRead<Object> outcome = read(path, file, name, text -> companion(text, file, structure));
+            if (outcome instanceof FileRead.Unreadable<?> bad) {
                 unreadable.add(bad);
+            }
+            if (StepEnhancementBinding.FRAGMENT_SCHEMA.equals(structure)) {
+                fragmentFact(file, outcome);
+            }
+        }
+
+        /**
+         * A prompt fragment as a fact. One the read refused is marked unreadable, so no rule judges it again, and is
+         * no orphan candidate: its own fault already refuses it, at the fragment.
+         */
+        private void fragmentFact(String file, FileRead<Object> outcome) {
+            if (outcome instanceof FileRead.Read<Object> good && good.value() instanceof MarkdownDocument document) {
+                companions.add(companionFact(file, document));
+                fragmentFiles.add(file);
+            } else {
+                companions.add(StepEnhancementFacts.Companion.unreadable(file));
             }
         }
 
         private void readMapped(Path path, String file, String kind) {
             FileRead<Object> read = read(path, file, name, text -> parseAndValidate(text, file, kind));
             switch (read) {
-                case FileRead.Unreadable<Object> bad -> unreadable.add(bad);
+                case FileRead.Unreadable<Object> bad -> {
+                    unreadable.add(bad);
+                    if (StepEnhancementBinding.INSTANCE.schemaName().equals(kind)) {
+                        unparsedEnhancements.add(file);
+                    }
+                }
                 case FileRead.Read<Object> good -> {
                     factsOf(file, kind, good.value());
                     MissionTypeChecks.refusal(directory, file, kind, good.value(), table)
@@ -355,6 +458,9 @@ public final class FileSystemPackInspector implements PackInspector {
             if ("mission-step-contract".equals(kind)) {
                 stepContracts.add(new StepContractFacts(file, stepIds(map)));
             }
+            if (StepEnhancementBinding.INSTANCE.schemaName().equals(kind) && map.get("id") instanceof String id) {
+                enhancements.add(new StepEnhancementFacts.Enhancement(file, typeDirectory(file), id, entriesOf(map)));
+            }
             if (map.get("id") instanceof String id && !id.isEmpty()) {
                 artifacts.add(new ArtifactFacts(file, kind.replace('-', '_'), id));
                 if ("asset".equals(kind) && map.get("path") instanceof String path) {
@@ -364,6 +470,52 @@ public final class FileSystemPackInspector implements PackInspector {
                     assets.add(assetFacts(file, id, map));
                 }
             }
+        }
+
+        /** The entries of a step enhancement that passed its schema; none when the key is absent. */
+        private static List<StepEnhancementFacts.Entry> entriesOf(Map<?, ?> enhancement) {
+            List<StepEnhancementFacts.Entry> entries = new ArrayList<>();
+            if (enhancement.get("prompt_fragments") instanceof List<?> listed) {
+                for (Object item : listed) {
+                    if (item instanceof Map<?, ?> entry
+                            && entry.get("slot") instanceof String slot
+                            && entry.get("path") instanceof String path) {
+                        entries.add(new StepEnhancementFacts.Entry(slot, path));
+                    }
+                }
+            }
+            return entries;
+        }
+
+        /**
+         * The facts the step enhancement rules judge. An enhancement the store would not hold joins
+         * {@code unparsedEnhancementFiles}, so no fragment beside it is judged an orphan (A4): one that did not parse,
+         * one with a companion that is missing, refused or named by an earlier enhancement, and the second file of a
+         * repeated id. An enhancement that only has a rule fault is held and is never listed.
+         */
+        StepEnhancementFacts stepEnhancementFacts(List<StepEnhancementFacts.Edge> edges) {
+            Set<String> unparsed = new HashSet<>(unparsedEnhancements);
+            Map<String, StepEnhancementFacts.Companion> existing = new HashMap<>();
+            companions.forEach(companion -> existing.put(companion.path(), companion));
+            Set<String> ids = new HashSet<>();
+            Set<String> claimed = new HashSet<>();
+            List<StepEnhancementFacts.Enhancement> ordered = new ArrayList<>(enhancements);
+            ordered.sort(Comparator.comparing(
+                    StepEnhancementFacts.Enhancement::path, FileSystemPackInspector::comparePaths));
+            for (StepEnhancementFacts.Enhancement enhancement : ordered) {
+                boolean refused = !ids.add(enhancement.id());
+                for (StepEnhancementFacts.Entry entry : enhancement.entries()) {
+                    String companion = enhancement.companionPath(entry);
+                    StepEnhancementFacts.Companion found = existing.get(companion);
+                    if (found == null || found.unreadable() || !claimed.add(companion)) {
+                        refused = true;
+                    }
+                }
+                if (refused) {
+                    unparsed.add(enhancement.path());
+                }
+            }
+            return new StepEnhancementFacts(enhancements, companions, fragmentFiles, unparsed, edges);
         }
 
         private AssetFacts assetFacts(String file, String id, Map<?, ?> manifest) {

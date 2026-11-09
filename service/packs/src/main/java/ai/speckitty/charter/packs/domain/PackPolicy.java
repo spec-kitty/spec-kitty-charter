@@ -61,6 +61,8 @@ public final class PackPolicy {
             "maximum",
             "exclusiveMinimum");
 
+    private static final String STEP_ENHANCEMENT = "step_enhancement";
+
     private static final String NODES = "nodes";
     private static final String EDGES = "edges";
 
@@ -184,42 +186,88 @@ public final class PackPolicy {
         findings.addAll(stepRules(contents.stepContracts()));
         findings.addAll(artifactRules(contents.artifacts()));
         findings.addAll(assetRules(contents.assets()));
+        findings.addAll(stepEnhancementFindings(name, contents.stepEnhancements(), graphsRead(contents)));
         findings.sort(PRECEDENCE);
         return new PackVerdict(contents.files(), findings);
     }
 
     // ---- step enhancements and prompt fragments -------------------------------------------------
 
+    /** The rules that read the pack's graph documents; they are not judged when a graph document could not be read. */
+    private static final Set<StepEnhancementFault> EDGE_RULES = EnumSet.of(
+            StepEnhancementFault.EDGE_COUNT,
+            StepEnhancementFault.EDGE_TARGET_NOT_STEP,
+            StepEnhancementFault.OVERRIDES_EDGE,
+            StepEnhancementFault.DIRECTORY_MISMATCH);
+
     /**
-     * Judges one pack's step enhancements, their fragments and the edges of their graph documents (FR-004 to FR-006)
-     * and answers every fault as the one code {@link PackFindingCode#PROMPT_FRAGMENT_INVALID}, at the file the rule
-     * names. The order is the rules': pack-relative path, then rule order. Validate mode reports these findings.
+     * Judges one pack's step enhancements, their fragments and the edges of their graph documents (FR-004 to FR-006).
+     * A graph document that could not be read is refused on its own, so when {@code edgesRead} is {@code false} the
+     * rules that need its edges are not judged: an enhancement would otherwise lack an edge the pack may well hold.
      *
-     * @param packName the pack's configured name, which prefixes the origin in a text
      * @param facts the pack's step enhancement facts
-     * @return one finding per fault, blocking, with an empty place
+     * @param edgesRead whether every graph document of the pack was read
+     * @return every fault, in the rules' order: pack-relative path, then rule order
      */
-    public static List<PackFinding> stepEnhancementFindings(String packName, StepEnhancementFacts facts) {
+    public static List<StepEnhancementFault.Finding> stepEnhancementFaults(
+            StepEnhancementFacts facts, boolean edgesRead) {
         return StepEnhancementRules.judge(facts).stream()
-                .map(fault -> new PackFinding(
-                        PackFindingCode.PROMPT_FRAGMENT_INVALID,
-                        fault.path(),
-                        List.of(),
-                        origin(packName, fault.path()) + ": " + fault.reason()))
+                .filter(fault -> edgesRead || !EDGE_RULES.contains(fault.rule()))
                 .toList();
     }
 
     /**
-     * The same faults as violations of the pack at its files, for the load: nothing is thrown, so a registration lists
-     * every one at its file and a composing read names the first. The kind is the wire token of the code.
+     * The validate-mode finding of one fault: the one code {@link PackFindingCode#PROMPT_FRAGMENT_INVALID}, at the file
+     * the rule names.
+     *
+     * @param packName the pack's configured name, which prefixes the origin in a text
+     * @param fault the fault
+     * @return the blocking finding, with an empty place
+     */
+    public static PackFinding findingOf(String packName, StepEnhancementFault.Finding fault) {
+        return new PackFinding(
+                PackFindingCode.PROMPT_FRAGMENT_INVALID,
+                fault.path(),
+                List.of(),
+                origin(packName, fault.path()) + ": " + fault.reason());
+    }
+
+    /**
+     * The load violation of one fault: a violation of the pack at the fault's file, of the wire token of its code.
+     * Nothing is thrown for it, so a registration lists every fault at its file and a composing read names the first.
+     *
+     * @param fault the fault
+     * @return the violation
+     */
+    public static PackElementViolation violationOf(StepEnhancementFault.Finding fault) {
+        return new PackElementViolation(
+                fault.path(), violationKind(PackFindingCode.PROMPT_FRAGMENT_INVALID), fault.reason());
+    }
+
+    /**
+     * Judges the step enhancement facts of a validate-mode read and answers every fault as a finding.
+     *
+     * @param packName the pack's configured name, which prefixes the origin in a text
+     * @param facts the pack's step enhancement facts
+     * @param edgesRead whether every graph document of the pack was read
+     * @return one finding per fault, blocking, in the rules' order
+     */
+    public static List<PackFinding> stepEnhancementFindings(
+            String packName, StepEnhancementFacts facts, boolean edgesRead) {
+        return stepEnhancementFaults(facts, edgesRead).stream()
+                .map(fault -> findingOf(packName, fault))
+                .toList();
+    }
+
+    /**
+     * Judges the step enhancement facts of a load and answers every fault as a violation.
      *
      * @param facts the pack's step enhancement facts
      * @return one violation per fault, in the rules' order
      */
     public static List<PackElementViolation> stepEnhancementViolations(StepEnhancementFacts facts) {
-        String kind = violationKind(PackFindingCode.PROMPT_FRAGMENT_INVALID);
-        return StepEnhancementRules.judge(facts).stream()
-                .map(fault -> new PackElementViolation(fault.path(), kind, fault.reason()))
+        return stepEnhancementFaults(facts, true).stream()
+                .map(PackPolicy::violationOf)
                 .toList();
     }
 
@@ -365,6 +413,11 @@ public final class PackPolicy {
         Map<List<String>, String> owners = new LinkedHashMap<>();
         List<PackFinding> findings = new ArrayList<>();
         for (PackContents.ArtifactFacts artifact : ordered) {
+            if (STEP_ENHANCEMENT.equals(artifact.kind())) {
+                // A repeated step enhancement id is the step enhancement rules' STEM_REPEATED, at the same second file:
+                // one finding per same-id file, as the load answers.
+                continue;
+            }
             String first = owners.putIfAbsent(List.of(artifact.kind(), artifact.id()), artifact.file());
             if (first != null) {
                 findings.add(new PackFinding(
@@ -490,6 +543,11 @@ public final class PackPolicy {
             return 3;
         }
         return file.endsWith(".graph.yaml") && file.indexOf('/') < 0 ? 2 : 5;
+    }
+
+    /** Whether every graph document of the load was read: an unreadable one is refused on its own. */
+    private static boolean graphsRead(PackContents contents) {
+        return documents(contents).stream().noneMatch(FileRead.Unreadable.class::isInstance);
     }
 
     /** The graph documents of a load, in merge order: the shards, then the fragment. */
@@ -878,12 +936,20 @@ public final class PackPolicy {
         if (PACK_YAML.equals(file)) {
             return PackFindingCode.PACK_UNREADABLE;
         }
+        if (isPromptFragment(file)) {
+            return PackFindingCode.PROMPT_FRAGMENT_INVALID;
+        }
         if (file.endsWith(".graph.yaml") || isFragment(file)) {
             return PackFindingCode.DRG_SCHEMA_ERROR;
         }
         return file.endsWith("org-charter.yaml")
                 ? PackFindingCode.ORG_CHARTER_SCHEMA_ERROR
                 : PackFindingCode.ARTIFACT_SCHEMA_ERROR;
+    }
+
+    /** A step enhancement's companion: a fault of its own read (a codec refusal, a structure breach) is its code. */
+    private static boolean isPromptFragment(String file) {
+        return file.startsWith("missions/") && file.endsWith(".prompt-fragment.md");
     }
 
     private static boolean isFragment(String file) {
