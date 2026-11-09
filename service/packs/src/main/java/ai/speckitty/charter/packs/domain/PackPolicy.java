@@ -567,11 +567,10 @@ public final class PackPolicy {
             case FRAGMENT ->
                 node.ref().isEmpty()
                         ? origin + ": " + emptyId(node.kind())
-                        : NodeKind.fromPlural(node.kind()).isPresent()
-                                ? origin + ": " + NOT_AUTHORED + "'"
-                                        + new Urn(
-                                                NodeKind.fromPlural(node.kind()).get(), node.ref()) + "'"
-                                : origin + ": node " + node.ref() + " has unknown kind '" + node.kind() + "'";
+                        : NodeKind.fromPlural(node.kind())
+                                .map(kind -> origin + ": " + NOT_AUTHORED + "'" + new Urn(kind, node.ref()) + "'")
+                                .orElseGet(() ->
+                                        origin + ": node " + node.ref() + " has unknown kind '" + node.kind() + "'");
         };
     }
 
