@@ -62,3 +62,152 @@ get:
       $ref: ../responses/OfferingUnreadable.yaml
     default:
       $ref: ../../_shared/responses/Problem.yaml
+delete:
+  operationId: deletePackArtifact
+  summary: Remove one artifact from a Charter Pack.
+  description: >-
+    Removes the artifact, its companion files, its outgoing edges from registered.graph.yaml and every preset item of
+    the pack that names it (a preset key left empty is deleted, since every preset list needs at least one item), and
+    answers 204 with an ETag, the pack's new revision (ADR-0065 D4, FR-005). A DELETE never rewrites a file the author
+    wrote. It is synchronous: it reads no source and does one bounded compose. It requires If-Match on the pack
+    revision, as every sub-resource write does: absent is 428, a stale revision is 412, checked under the registry
+    lock. The pack is judged first: an identifier that matches no configured pack is 404 pack_not_found; then a slug
+    that names no kind the service serves is 404 kind_not_found; then an id the pack does not hold is the
+    not-found code of its kind (tactic_not_found, directive_not_found, styleguide_not_found, paradigm_not_found or
+    toolguide_not_found), the code getPackArtifact answers on the same path. Then, in this order: 409 artifact_referenced while another artifact
+    or pack still refers to it, judged against the tree after the removal, from the edges, the preset items and the
+    descriptor overrides entries of every configured pack, so a referrer the same request removes does not count and
+    the data-only fields of ADR-0064 D11 never do; its packs member (at most 100) names the referring packs and its
+    violations name every referring artifact, a preset item or a descriptor overrides entry included; 409
+    governance_policy_violation (the REMOVE operation of the write gate, ADR-0030 D3), which fires only when an
+    ancestor of the pack holds the id and locks it, so a pack removes its own artifact freely; and 409
+    registration_conflict when a source shard or drg/fragment.yaml the author wrote declares the artifact's node or
+    holds an edge from it, which a DELETE never rewrites (register the whole pack instead). PR A is strict: when the
+    closures that contain the pack, after the removal, no longer compose or break a rule, the answer is 422 with the
+    composition code or one of override_not_permitted, enhances_cycle, conflicting_relations, self_override and
+    override_cycle, naming the packs, and nothing is written. A refused DELETE changes nothing: no file, edge or preset
+    item is removed. A DELETE does not consult activations: a saved selection of the removed artifact reads as stale and
+    is dropped on the next write. The version history is kept.
+    While charter.registration.enabled is off (the default) the answer is 503 pack_source_unavailable before the pack, the
+    path or If-Match is judged (ADR-0065 D13).
+  tags:
+  - Registration
+  parameters:
+  - $ref: ../parameters/PackId.yaml
+  - $ref: ../parameters/ArtifactKind.yaml
+  - $ref: ../parameters/ArtifactId.yaml
+  - $ref: ../parameters/IfMatch.yaml
+  responses:
+    '204':
+      description: The artifact was removed; no body. The ETag is the pack's new revision.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        ETag:
+          description: The pack revision after the removal, quoted.
+          required: true
+          schema:
+            type: string
+            pattern: ^"sha256:[0-9a-f]{64}"$
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      description: >-
+        The pack, the kind or the artifact the path names is not there: 404 pack_not_found, kind_not_found or
+        the not-found code of the kind (directive_not_found, tactic_not_found and so on, as on getPackArtifact), each its
+        own code. The pack is judged first, then the kind, then the id.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+          examples:
+            pack-not-found:
+              summary: No configured pack matches the identifier.
+              value:
+                title: Pack not found
+                status: 404
+                code: pack_not_found
+                detail: Pack nope was not found.
+            kind-not-found:
+              summary: The path names a kind the service does not serve.
+              value:
+                title: Kind not found
+                status: 404
+                code: kind_not_found
+                detail: The service serves no artifact kind procedure.
+            directive-not-found:
+              summary: The pack holds no artifact with the asked kind and id; the code is the one of the kind.
+              value:
+                title: Directive not found
+                status: 404
+                code: directive_not_found
+                detail: Pack qa has no directive GUARD.
+    '409':
+      description: >-
+        The removal conflicts with the state of the packs: artifact_referenced, another artifact or pack still refers to
+        the artifact (packs names the referring packs, at most 100, and violations name every referring artifact);
+        governance_policy_violation, an ancestor of the pack holds the id and locks it (the REMOVE operation of the
+        write gate); or registration_conflict, the artifact is written in the pack's author-written graph documents
+        (a source shard or drg/fragment.yaml), which a DELETE never rewrites. Nothing is written.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+          examples:
+            artifact-referenced:
+              summary: Another pack's edge refers to the artifact.
+              value:
+                title: Artifact referenced
+                status: 409
+                code: artifact_referenced
+                detail: directive:GUARD of pack qa is referred to by tactic:review of pack acme-review-pack.
+                packs:
+                  - descriptorPackId: 01M4P01D5TWB5FKZGNNQG3943R
+                    packId: acme-review-pack
+                    name: acme-review-pack
+                violations:
+                  - pointer: ''
+                    code: referenced_by
+                    detail: tactic:review of pack acme-review-pack requires directive:GUARD.
+    '412':
+      $ref: ../responses/PackPreconditionFailed.yaml
+    '422':
+      description: >-
+        PR A is strict: the closures that contain the pack, after the removal, fail to compose or break a rule, so the
+        removal is refused and nothing is written. The code is one of the eleven pack composition codes or of
+        override_not_permitted, enhances_cycle, conflicting_relations, self_override and override_cycle, with the packs
+        member naming the root pack of the closure and the packs involved; validation_failed when the pack that would
+        result does not revalidate. The composition codes answer 422 here, in place of 500.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+      content:
+        application/problem+json:
+          schema:
+            $ref: ../schemas/CharterRefusal.yaml
+    '428':
+      $ref: ../responses/PreconditionRequired.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    '503':
+      $ref: ../responses/PackRemovalUnavailable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

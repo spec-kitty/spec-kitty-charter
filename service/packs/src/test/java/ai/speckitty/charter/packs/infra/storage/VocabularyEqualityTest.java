@@ -200,6 +200,7 @@ class VocabularyEqualityTest {
                 .as("the ten kinds that were listed by hand, the mission type (#194), the guard and the lifecycle")
                 .containsExactlyInAnyOrder(
                         "mission-type",
+                        "step-enhancement",
                         "guard",
                         "lifecycle",
                         "directive",

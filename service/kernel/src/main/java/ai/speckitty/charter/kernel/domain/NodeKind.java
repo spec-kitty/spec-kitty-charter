@@ -38,7 +38,9 @@ public enum NodeKind {
     /** A node of the artifact kind {@link ArtifactKind#GUARD}, for example {@code guard:subtasks-complete}. */
     GUARD,
     /** A node of the artifact kind {@link ArtifactKind#LIFECYCLE}, for example {@code lifecycle:work-package}. */
-    LIFECYCLE;
+    LIFECYCLE,
+    /** A node of the artifact kind {@link ArtifactKind#STEP_ENHANCEMENT}. */
+    STEP_ENHANCEMENT;
 
     /**
      * The spelling used in URNs.
@@ -90,16 +92,13 @@ public enum NodeKind {
     }
 
     /**
-     * The plural a fragment node names this kind by, the inverse of {@link #fromPlural(String)}.
+     * The plural a fragment node names this kind by, the inverse of {@link #fromPlural(String)}. Every kind but
+     * {@link #ACTION} takes it from {@link ArtifactKind#plural()}, the one registry of plurals.
      *
      * @return the plural kind, for example {@code agent_profiles}, {@code actions} or {@code mission_types}
      */
     public String plural() {
-        return switch (this) {
-            case ACTION -> "actions";
-            case MISSION_TYPE -> "mission_types";
-            default -> ArtifactKind.valueOf(name()).plural();
-        };
+        return artifactKind().map(ArtifactKind::plural).orElse("actions");
     }
 
     /**
@@ -107,7 +106,7 @@ public enum NodeKind {
      * refused).
      *
      * @param plural the plural kind as written in {@code drg/fragment.yaml}
-     * @return the node kind, or empty when the name is not one of the 17 plurals
+     * @return the node kind, or empty when the name is not one of the 18 plurals
      */
     public static Optional<NodeKind> fromPlural(String plural) {
         return switch (plural) {

@@ -169,8 +169,8 @@ the proposed `gate` kind. The rulings that differ from the recommended defaults:
 | The `gate` kind | none; guards are artifacts implemented by executable assets | ADR-0054 |
 | Action code assets | allowed, behind trust (#157) | ADR-0053 decision 17 |
 | Lifecycle reference field | `submachine: {lifecycle, per: work_package, add_guards?}` | ADR-0053 decision 19 |
-| Sibling step enhancements | refused unless settled; ADR-0048 decision 9 stands | ADR-0053 decision 21 |
-| How an enhancement is authored | an additions artifact plus a CRG `enhances` edge, as for profiles | ADR-0053 decision 22 |
+| Sibling step enhancements | sibling overrides refused unless settled; sibling enhancers compose (amended 2026-11-08) | ADR-0053 decision 21 |
+| How an enhancement is authored | an additions artifact (guards, emits, prompt fragments) plus a CRG `enhances` edge, as for profiles | ADR-0053 decision 22, ADR-0066 |
 | `{kind}` path token spelling | the kebab operator token (`mission-type`); breaking | ADR-0053 decision 23 |
 | Census corrections to the procedure sorting | (a) and (c); not (b) | ADR-0053 decision 29 |
 | Anti-pattern shape | `bad_example` required | ADR-0053 decision 30 |

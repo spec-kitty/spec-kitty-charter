@@ -79,9 +79,9 @@ class Lifecycle {
 }
 class StepEnhancement <<pending>> {
   + target : action:<type>/<step>  (d23)
-  adds only: references, guards on outgoing transitions, emit entries (d22)
+  adds only: guards on outgoing transitions, emit entries, prompt fragments (d22; ADR-0066)
   mission_types/<type>/enhancements/<id>.step-enhancement.yaml <color:#8A6D00>[pending ADR-0050 OQ8]</color>
-  sibling enhancements compose, a union <color:#8A6D00>[pending ADR-0050 OQ7]</color>
+  sibling enhancements compose, a union (ruled 2026-11-08; ADR-0053 d21)
 }
 class Term <<node-only URN; ADR-0049 d4>> {
   URN term:<context-id>/<term-id>

@@ -2,9 +2,9 @@
 
 JSON Schemas (Draft 2020-12) for everything an author writes in a Charter Pack: the pack
 descriptor, graph shards, the org fragment, the org charter, the presets and the pack manifest,
-the twelve artifact kinds that have a schema (a template and an anti-pattern have none), the
-Markdown files with a structure (a toolguide's guide, the pack document `pack.md`, a mission
-step's prompt and guidelines), and the project `charter.yaml`.
+the artifact kinds that have a schema (a template and an anti-pattern have none), the Markdown
+files with a structure (a toolguide's guide, the pack document `pack.md`, a mission step's prompt
+and guidelines, and a step enhancement's prompt fragment), and the project `charter.yaml`.
 
 These schemas are canonical in this repository and are edited in place; core consumes them
 ([ADR-0015](../../docs/adr/0015-charter-repository-is-canonical-for-charter-structure.md) decisions 1, 2
@@ -14,15 +14,16 @@ recorded in the mission's
 and in git history. Of the schemas added later, two have outside sources: `skill` is core's
 `skill.schema.yaml` at `581b5c46da` as JSON, and `glossary-pack` is authored here from core's pydantic
 model, since core exports no schema for it. The rest were designed here: `preset`, `pack-manifest`
-and `pack-document` (ADR-0042), `toolguide-guide` (ADR-0043), and `mission-type` with its two step
-schemas (ADR-0044). Where a schema differs from core's behavior, the
+and `pack-document` (ADR-0042), `toolguide-guide` (ADR-0043), `mission-type` with its two step
+schemas (ADR-0044), and `step-enhancement` with its `prompt-fragment` companion (ADR-0053 decision 22
+and ADR-0066). Where a schema differs from core's behavior, the
 [divergence register](../../docs/conformance/divergence-register.md) says why.
 
 ## Files
 
 | Path | Holds |
 |---|---|
-| `schemas/<kind>.schema.json` | One schema per kind, 23 in all (the pack-level `preset` and `pack-manifest` included, ADR-0042), four of them Markdown structure schemas (`toolguide-guide`, `pack-document`, `mission-step-prompt`, `mission-step-guidelines`; ADR-0043, ADR-0042 decision 8, ADR-0044) |
+| `schemas/<kind>.schema.json` | One schema per kind, 28 in all (the pack-level `preset` and `pack-manifest` included, ADR-0042), five of them Markdown structure schemas (`toolguide-guide`, `pack-document`, `mission-step-prompt`, `mission-step-guidelines`, `prompt-fragment`; ADR-0043, ADR-0042 decision 8, ADR-0044, ADR-0066) |
 | `file-kinds.yaml` | Node kinds, fragment plurals, which file gets which schema, the reviewed exclusions, the schema-less payloads and the retired files |
 
 `file-kinds.yaml` classifies a pack file in four steps, in this order: its `files` rules map a file to the schema
@@ -47,11 +48,67 @@ A `files` rule may declare `content_form: markdown` with a `schema`: its files a
 `content`), compared by that model and written back in a canonical form. The rule's schema is a **structure
 schema**, a Draft 2020-12 schema in `schemas/` with standard keywords only, that validates the model as the JSON
 tree `{"frontmatter": {...}, "title": "...", "preamble": "...", "sections": [{"title": "...", "content": "..."}]}`;
-`frontmatter` and `title` are left out when the document has none. Four rules declare `markdown`: the toolguide
+`frontmatter` and `title` are left out when the document has none. Five rules declare `markdown`: the toolguide
 guide (`**/toolguides/*.guide.md`, schema `toolguide-guide`), the pack document (`*/pack.md`, schema
-`pack-document`) and a mission step's prompt and guidelines
+`pack-document`), a mission step's prompt and guidelines
 (`*/missions/*/steps/*.prompt.md` and `*.guidelines.md`, schemas `mission-step-prompt` and
-`mission-step-guidelines`).
+`mission-step-guidelines`), and a step enhancement's prompt fragment
+(`*/missions/*/enhancements/*.prompt-fragment.md`, schema `prompt-fragment`).
+
+## Prompt slots and fragments (ADR-0066)
+
+A step enhancement is an artifact of the enhancing pack at
+`missions/<type>/enhancements/<id>.step-enhancement.yaml`. Its URN is `step_enhancement:<id>`, its fragment node
+kind is `step_enhancements`, and its `id` equals its file stem. It has no `target` field: exactly one `enhances`
+edge in the enhancing pack's graph documents joins it to `action:<type>/<step>`, pack-qualified across packs. The
+shape is closed, with required `schema_version: "1.0"` and `id`, and the optional additions list
+`prompt_fragments`. A preset activates it with `activated_step_enhancements`, applied as
+`selected.step_enhancement`; no previous preset key named this kind. There is no second activation gate for its
+fragments.
+
+Each `prompt_fragments` entry has exactly two fields:
+
+```yaml
+prompt_fragments:
+  - slot: spdd:reasons-block
+    path: spdd-specify.prompt-fragment.md
+```
+
+- `slot` is one `<namespace>:<name>` slot id. Each part matches `[a-z][a-z0-9-]*`; the namespace names a concern,
+  not a pack. One enhancement names a slot at most once.
+- `path` names one `<id>.prompt-fragment.md` companion beside the enhancement. It is a file name, not a
+  subdirectory, URL or pack-qualified reference. The companion is Markdown content with no frontmatter and
+  non-blank text in its H1, preamble or at least one H2. It contains no slot marker of any id.
+- There is no range, anchor, position, priority or order field. The enhancement cannot replace base text or add a
+  slot. Multiple enhancements into one slot compose; their service-side order is pack level, pack name and
+  enhancement id, not activation order.
+
+A base prompt declares a slot between `<!-- <slot-id>:start -->` and `<!-- <slot-id>:end -->`. Each id is declared
+once, its start precedes its end, starts and ends pair correctly, and slots do not nest. Only the prompt in force
+for the step declares slots; a fragment never does. The slot id grammar is the same as `prompt_fragments[].slot`.
+The `mission-step-prompt` structure schema and `prompt-fragment` structure schema both document these rules, but
+they validate the parsed Markdown model, so raw-marker checks are **semantic checks beside those schemas**, not
+JSON Schema keywords. The service implementation of those checks and of compose resolution is #424.
+
+The pack descriptor's optional `schema_version` is the string `"1.0"` when written. That version declares the
+current `depends_on` shape and switches on the empty-slot check: every paired slot in the pack's mission step
+prompts holds only whitespace. An unversioned descriptor is the legacy shape and keeps legacy text between paired
+markers with a warning. Descriptor 1.0 makes that finding a refusal. There is no lenient flag; a pack empties its
+slots and moves to 1.0 in the same change.
+
+The load- and compose-time codes are:
+
+| Code | Meaning |
+|---|---|
+| `prompt_slot_malformed` | A base prompt has a malformed id or marker, duplicate declaration, nesting, wrong order or unpaired marker. Always a refusal. |
+| `prompt_slot_not_empty` | Non-whitespace occurs between paired markers. A refusal at descriptor 1.0, a warning for an unversioned descriptor. |
+| `prompt_fragment_invalid` | An enhancement or fragment breaks a load rule: bad schema or slot grammar, a repeated slot, a missing or blank companion, frontmatter, a slot marker in a fragment, or a non-step `enhances` target. |
+| `prompt_slot_missing` | At compose, regardless of activation, the prompt in force (a layer override included) declares no slot the enhancement names. |
+
+A missing target pack or artifact keeps `pack_reference_pack_missing` or
+`pack_reference_artifact_missing`; a locked target keeps `artifact_locked`. The four new refusal codes are reserved
+with `raised: false` in `CharterRefusalCode` until #424 raises them. The warning spelling is reserved in
+`DiagnosticCode`.
 
 ## Validate a file
 

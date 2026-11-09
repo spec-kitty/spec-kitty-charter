@@ -1,0 +1,30 @@
+title: LayerOverrideSide
+description: >-
+  One version of an artifact in a layer override: the configured identifier of the pack that holds it and the level that
+  pack is configured at.
+type: object
+additionalProperties: false
+required:
+- packId
+- level
+properties:
+  packId:
+    type: string
+    minLength: 1
+    description: The configured identifier of the pack that holds this version.
+    x-derived:
+      rule: The configured id of the pack that holds the version (ADR-0059 D3).
+      inputs:
+      - schemas/ActivationConfig.yaml
+  level:
+    allOf:
+    - $ref: PackLevel.yaml
+    description: The level of that pack (built-in, org or project).
+    x-derived:
+      rule: The level the pack is configured at.
+      inputs:
+      - schemas/ActivationConfig.yaml
+x-derived:
+  rule: The pack and level of one version of an artifact the layer merge compared.
+  inputs:
+  - schemas/ActivationConfig.yaml

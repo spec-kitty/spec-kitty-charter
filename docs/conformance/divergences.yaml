@@ -3,8 +3,8 @@
 # one by one, the context-read and activation entries in a table). DivergenceRegisterTest fails
 # when an id is listed twice here or is on one of the two and not the other. The blocks are pack
 # schemas (DIV-001..099, ADR-0017), context read (DIV-101..110, ADR-0018), activation
-# (DIV-201..207, ADR-0020; DIV-201 and DIV-202 proposed), pack-level files (DIV-301..399, ADR-0042), procedures and
-# toolguide guides (DIV-401..499, ADR-0043) and mission types (DIV-501..599, ADR-0044). Consumers: the
+# (DIV-201..237, ADR-0020; DIV-208 withdrawn before it landed, so its id stays taken; DIV-201 and DIV-202 were proposed until PR B), pack-level files (DIV-301..399, ADR-0042), procedures and
+# toolguide guides (DIV-401..499, ADR-0043), mission types (DIV-501..599, ADR-0044) and registration (DIV-601..699, ADR-0065). Consumers: the
 # conformance gate (#72) and the pack doctor parity test (#115) read this file; a difference from
 # core that is not listed here with status `open` fails them, so a `proposed` entry is not yet
 # enforced.
@@ -565,17 +565,21 @@
 - id: DIV-201
   surface: A required or locked artifact under an explicit allow list that omits it, on read
   core: Does not add it under such an allow list; doctor and list warn.
-  service: Keeps it active on read even under an allow list that omits it (ADR-0020 D7).
+  service: >-
+    Keeps it active on read even under an allow list that omits it (ADR-0020 D7). The exceptions
+    are those of E9: a required or locked enhancer none of whose targets is in force, and an
+    artifact bound to a mission type not in force, stay out of force (DIV-224, DIV-225). A
+    required one that an active override of it satisfies is satisfied by that override instead
+    (DIV-225).
   rationale: >-
     A required or locked floor is not opt-out: the read keeps it active so the allow list cannot
-    silently drop a required artifact. Proposed with the activation resource; the operation is not
-    built yet, so the gate does not enforce it.
+    silently drop a required artifact. Proposed with the activation resource; open since
+    2026-11-08, when PR B built the effective reads.
   ruling: ADR-0020 (proposed on #123); agreed with core's activation ledger mission 2026-10-20
-  status: proposed
+  status: open
   since: 2026-10-20
   note: >-
-    Page-only until the activation operations are built; recorded here so the page and this file
-    list the same ids. Not enforced by the gate while the status is proposed.
+    Proposed until the effective reads were built (PR B, 2026-11-08), then enforced by the gate.
   evidence:
     - "corpus case: required-under-allow-list"
 
@@ -585,26 +589,26 @@
   service: Derives the required floor from the packs at read time and never stores it (ADR-0020 D4).
   rationale: >-
     Deriving the floor at read time keeps it correct as packs change, rather than freezing a
-    written copy. Proposed with the activation resource; the operation is not built yet, so the
-    gate does not enforce it.
+    written copy. Proposed with the activation resource; open since 2026-11-08, when PR B built
+    the effective reads.
   ruling: ADR-0020 (proposed on #123); agreed with core's activation ledger mission 2026-10-20
-  status: proposed
+  status: open
   since: 2026-10-20
   note: >-
-    Page-only until the activation operations are built; recorded here so the page and this file
-    list the same ids. Not enforced by the gate while the status is proposed.
+    Proposed until the effective reads were built (PR B, 2026-11-08), then enforced by the gate.
   evidence:
     - "corpus case: required-promoted-at-write"
 
 - id: DIV-203
-  surface: An absent selected.<kind>, activatedKinds or missionTypes in an activation document
+  surface: An absent selected.<kind> in an activation document (and, in a document stored before 2026-11-07, activatedKinds or missionTypes)
   core: >-
     Applies a per-kind default when the key is absent: every available artifact of the kind, or
     only the org packs' required skills for skill.
   service: >-
     Absent means none, the same as []: nothing of the kind is in force, skill included, which loses
     its "only the required skills" default. The two stay distinct on the wire. An absent packs
-    still means every configured pack.
+    still means every configured pack. activatedKinds and missionTypes are no longer members of
+    the document (DIV-212, DIV-213, DIV-214); a mission type is selected like any kind.
   rationale: >-
     One meaning for an absent list and an empty one removes the per-kind table a client has to
     know, and a selection adds to nothing rather than narrowing a default. Core's seam stops
@@ -627,13 +631,21 @@
   service: >-
     Refuses the write 409 artifact_required or artifact_locked, naming the requiring or locking
     pack in requiredBy, and stores nothing. Create and replace judge every deny entry of the
-    document; a per-artifact or preset write judges only the deny entries it adds.
+    document; a per-artifact or preset write judges only the deny entries it adds. The
+    requirement follows A1 (DIV-205). The requirement of a governing preset id is the union,
+    across the levels (built-in, org, project), of the must-have items of the copy in force at
+    each level. Within one level the copy of the pack last in closure order replaces the others,
+    a child pack's copy its parent's, and a replaced copy requires nothing. A deny of an
+    artifact only an earlier level's copy requires, which a later level's copy replaced, is 409
+    artifact_required naming that earlier level's pack.
   rationale: >-
     A deny entry that can never apply misleads the reader of the document. Refusing it at write
     keeps every stored deny entry meaningful; a stale entry left by a pack upgrade is served as
     stored, tolerated by a per-artifact write that does not add it, and refused on the next create
     or replace (ADR-0059 D4).
-  ruling: ADR-0020 D9; ADR-0059 D4
+  ruling: >-
+    ADR-0020 D9; ADR-0059 D4; decisions `01M6YKZRM7VF19A57E40D59N81`,
+    `01M6ZCXAJ9MTTF9XJSR89F3NYG`
   status: open
   since: 2026-11-05
   evidence:
@@ -645,13 +657,28 @@
   core: The org packs' required_* lists.
   service: >-
     The must-have items of every governing preset in the activation's closure (the depends_on
-    closure of its packs).
+    and parent_pack closure of its packs).
   rationale: >-
     Requirement is authored as a preset (ADR-0031), and only the packs an activation builds on
-    govern it. An assumed default, flagged to the operator as open review item 1.
-  ruling: decision DM-01M6PCWSA65497T9A7J80K6V56 (mission activation-register-and-closure-01M6NXBD, 2026-11-05)
+    govern it. The closure scope was an assumed default of the mission, and the operator ruled on
+    2026-11-06 that it stands.
+  ruling: >-
+    operator ruling of 2026-11-06, decision DM-01M6R0TK6F4CC0Z00CZTS21V72 of mission
+    layer-merge-and-effective-reads-01M6R0J6 (ratified; decision DM-01M6PCWSA65497T9A7J80K6V56
+    of mission activation-register-and-closure-01M6NXBD had assumed it on 2026-11-05); decision
+    DM-01M6RA7FHRC5K8QPX7KN5FZ4S8 (A1); decision 01M6YKZRM7VF19A57E40D59N81; ruling
+    01M6ZCXAJ9MTTF9XJSR89F3NYG
   status: open
   since: 2026-11-05
+  note: >-
+    Ratified on 2026-11-06, and since 2026-11-08 the effective reads take the floor from the
+    merged closure: the union, across the levels (built-in, org, project), of the must-have
+    items of the copy of a preset id in force at each level (decision
+    DM-01M6RA7FHRC5K8QPX7KN5FZ4S8, A1; ruling 01M6ZCXAJ9MTTF9XJSR89F3NYG). Within one level the
+    copy of the pack last in closure order replaces the others, a child pack's copy its
+    parent's, and a replaced copy requires nothing. The writes' floor refusal (DIV-204) and the
+    registration notices `floorAdded` and `floorRemoved` follow the same rule (decision
+    01M6YKZRM7VF19A57E40D59N81).
   evidence:
     - "charter: service/activations/src/main/java/ai/speckitty/charter/activations/domain/ClosureSnapshot.java"
     - "corpus case: floor-closure-scoped"
@@ -666,8 +693,10 @@
     A denied ancestor stops
     the pass-through there and is reported in skippedDeactivated; what lies only behind it is in
     unreachedBehindDeactivated. With includeDeactivated a denied ancestor whose kind is in the
-    cascade scope is passed through and its deny entry cleared, never selected; one outside the scope
-    stops the pass-through as without includeDeactivated. requiredBy never names an ancestor passed through; it leads
+    cascade scope is passed through and never selected, and its deny entry is kept: includeDeactivated
+    clears only the deny entries of what the walk reaches and selects (ruling B5, 2026-11-06, built
+    2026-11-07). One outside the scope stops the pass-through as without includeDeactivated.
+    requiredBy never names an ancestor passed through; it leads
     back to the descendant the ancestor was passed from. A cascading deactivate's own walk passes
     through the lineage as a select's does, so a cascading select and a cascading deactivate of
     the same profile round-trip (operator ruling of 2026-11-06), but it stops at no deny entry: it
@@ -677,12 +706,13 @@
     A specialized profile needs what its parent requires or scopes, but selecting the profile must
     not put the parent in force beside it. Passing only requires and scope keeps the parent's
     recommendations (suggests) and other edges out of the walk.
-  ruling: ADR-0059 D2.4 (as revised 2026-11-05) and its amendment of 2026-11-06 (R2)
+  ruling: ADR-0059 D2.4 (as revised 2026-11-05), its amendment of 2026-11-06 (A2) and its amendment of 2026-11-07 (B5, decision DM-01M6RA9XQSH3E07C7VCPCVD6R4)
   status: open
   since: 2026-11-06
   evidence:
     - "charter: service/packs/src/main/java/ai/speckitty/charter/packs/application/ReachRequest.java (Lineage.specializesFrom passes requires and scope)"
-    - "charter: contracts/charter/scenarios/activation-selections.feature (A cascade passes through a profile's ancestor without putting it in force; A denied ancestor stops the lineage and is reported, with what lies behind it; A cascading deactivate follows the lineage, so it undoes a cascading select)"
+    - "charter: contracts/charter/scenarios/activation-selections.feature (A cascade passes through a profile's ancestor without putting it in force; A denied ancestor stops the lineage and is reported, with what lies behind it; A cascading deactivate follows the lineage, so it undoes a cascading select; includeDeactivated passes through a denied ancestor inside the scope and keeps its deny entry)"
+    - "charter: contracts/charter/scenarios/activation-ruling-changes.feature (B5 - includeDeactivated clears the deny entry of a reached artifact and keeps a passed ancestor's)"
     - "corpus case: cascade-lineage-pass-through"
 
 - id: DIV-207
@@ -700,7 +730,7 @@
     select and a cascading deactivate of the same artifact round-trip. An enhancer and the artifact
     it enhances stay in force together because the cascade selects both, not because a read pulls
     one in.
-  ruling: ADR-0059 D2 as amended on 2026-11-06 (R4), superseding D2.2
+  ruling: ADR-0059 D2 as amended on 2026-11-06 (A4), superseding D2.2
   status: open
   since: 2026-11-06
   note: >-
@@ -713,27 +743,751 @@
     - "charter: contracts/charter/scenarios/activation-selections.feature (A cascading select of an enhancer selects the artifact it enhances; A cascading select of an enhanced artifact selects no enhancer; A cascading deactivate of an enhancer unselects the artifact it enhances; includeDeactivated clears the deny entries the walk passes through, and no enhancer's)"
     - "corpus case: cascade-enhances-relation"
 
-- id: DIV-208
-  surface: The spelling of an artifact id in an activation document or path
+# Activation: the A0 rulings, the kind model and the cascade depth (DIV-209..215), mission
+# layer-merge-and-effective-reads-01M6R0J6 (PR A0, 2026-11-07). DIV-208 is withdrawn and stays taken.
+- id: DIV-209
+  surface: A replace and the per-artifact writes drop what the packs no longer hold, and report it
   core: >-
-    Accepts another known spelling of an artifact's id; the allow list can then mix spellings of one
+    Has no stored document to replace: its seam drops a stale deny entry at export and keeps no
+    version pin of a pack.
+  service: >-
+    replaceActivation drops an id of the body that the closure no longer holds and that the replaced
+    document named, and lists it in the answer's dropped; an unknown id the replaced document did not
+    name is still 422 unknown_artifact. replaceActivation, the four per-artifact writes and
+    applyActivationPreset drop a version pin no pack of the closure holds and list it in droppedPins
+    (ActivationChange.droppedPins; Activation.droppedPins on a replace answer), instead of 422
+    version_not_held. createActivation keeps 422 version_not_held for a pin in its own body. A replace
+    judges the floor only on the deny entries it adds, so a GET then PUT of the same body is never
+    refused without a pack change.
+  rationale: >-
+    A document an offering change made stale must still round-trip, and a pin to a version that is
+    gone is as stale as an id. The drop is never silent: dropped and droppedPins report it.
+  ruling: >-
+    ADR-0059 amendment of 2026-11-07 (ruleset A4 and B1; decisions DM-01M6RA7XC5HC8915GZT2R3H83W,
+    DM-01M6RA9BKJY7X9BFV93QW1KM1T, DM-01M6RN5Y406SB4KA13QYMQ2P8J)
+  status: open
+  since: 2026-11-07
+  evidence:
+    - "charter: contracts/charter/changes/2026-11-07-a0-ruling-breaking.md"
+    - "charter: contracts/charter/scenarios/activation-ruling-changes.feature (A4 - a GET then PUT of a body whose deny entry a pack now requires is 200 with the same ETag; A4 - a PUT of the body read before a pack upgrade removed an id drops the id and lists it in dropped; B1 - a per-artifact write drops a pin no pack holds into droppedPins, and a create refuses it)"
+    - "corpus case: replace-drops-stale"
+
+- id: DIV-210
+  surface: A mission type's id in an activation path or document, in any spelling
+  core: >-
+    A mission type is not an artifact kind (DIV-501), so its id is matched as the mission-tier path
+    spells it.
+  service: >-
+    A mission type id is normalized as every kind's is: the declared id, its full URN or another case
+    names it, and the stored document holds the declared id. A match that is ambiguous between two
+    declared ids differing only by case is 422 activation_invalid (ambiguous_artifact). In the
+    document a mission type is judged under the same code as any artifact (unknown_artifact, at
+    /selected/mission_type/<i> or /deactivated/mission_type/<i>); the code unknown_mission_type is gone.
+    The path of the selections and exclusions operations answers 404 mission_type_not_found for a
+    mission type the closure does not hold.
+  rationale: >-
+    One id rule for every kind removes the exact-match exception the old missionTypes member had.
+  ruling: ADR-0020 D4 note of 2026-11-06 (spellings); decisions DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY, DM-01M6RCXZ9HSHT4K3443YYZ8ZFC
+  status: open
+  since: 2026-11-07
+  evidence:
+    - "charter: contracts/charter/scenarios/activation-selections.feature (A mission type path id names it in any known spelling and stores the declared id, as any kind's does)"
+    - "charter: contracts/charter/changes/2026-11-07-a0-ruling-changes.md (ArtifactIdPath)"
+    - "corpus case: mission-type-id-spellings"
+
+- id: DIV-211
+  surface: What a preset may carry
+  core: >-
+    A preset may carry activated_kinds, the kind gate, and its member lists exclude skill and
+    glossary_pack; mission types are named under mission_type_activations.
+  service: >-
+    A preset carrying activated_kinds refuses the pack as 500 pack_unreadable, as the preset item id grammar does; a 422 on registration is planned for PR A. A preset may name
+    any kind: it gains activated_skills and activated_glossary_packs, and activated_mission_types is
+    a plain member list applied as selected.mission_type. applyActivationPreset applies every kind
+    the preset lists and sets no kind gate.
+  rationale: >-
+    With the kind gate gone (DIV-212) a preset has nothing to gate, and one kind registry serves
+    activations, presets, packs and the contract.
+  ruling: decisions DM-01M6RCY40CQQTHC130RWF43W0D (Q3), DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY (A7); ADR-0042 D2 amended 2026-11-07
+  status: open
+  since: 2026-11-07
+  evidence:
+    - "charter: contracts/packs/schemas/preset.schema.json"
+    - "charter: contracts/charter/scenarios/activation-kind-model.feature (A preset naming a skill applies it)"
+    - "charter: contracts/charter/scenarios/activation-presets.feature (A preset that lists mission types replaces selected.mission_type)"
+    - "corpus case: preset-any-kind"
+
+- id: DIV-212
+  surface: Core's activated_kinds narrowing
+  core: >-
+    A project may narrow activated_kinds, and only the kinds it lists are in force.
+  service: >-
+    Nothing is in force because its kind is activated: there is no kind gate, and a select brings its
+    artifact into force. activatedKinds is not a member of the document, and a create or replace that sends it is
+    422 validation_failed (removed_member) naming selected.<kind>. A core project that narrows
+    activated_kinds sees a larger effective set from the service.
+  rationale: >-
+    The gate was a core remnant, not a domain rule. It had no observable effect in the service (reads
+    answered 501, writes ignored it), and selection already says what is in force.
+  ruling: decisions DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY (A7), DM-01M6RCY8MYNGNPJ247M2Y4880N (Q4)
+  status: open
+  since: 2026-11-07
+  note: >-
+    Core's seam must regenerate its strict DTOs and stop sending activatedKinds and missionTypes (each
+    is refused); the migration note is handed over in the pull request and an issue comment, and
+    nothing is edited in core (C-003).
+  evidence:
+    - "charter: contracts/charter/changes/2026-11-07-a0-one-kind-model.md"
+    - "charter: contracts/charter/scenarios/activation-kind-model.feature (activatedKinds in a create body is 422 validation_failed naming selected.<kind>; missionTypes in a create body is 422 validation_failed naming selected.mission_type; A replace that sends both remnant members is 422 with one violation per member and stores nothing)"
+    - "corpus case: activated-kinds-narrowing"
+
+- id: DIV-213
+  surface: A stored activation document of schemaVersion 1
+  core: Has no stored activation document of this shape and no version to upgrade.
+  service: >-
+    A document stored at schemaVersion 1 is answered as its version 2 upgrade: its missionTypes become
+    selected.mission_type, every selection is kept and activatedKinds is discarded. A read upgrades in
+    memory and never writes; the upgrade is stored on the next write, so each activation's revision
+    and ETag change once and a client holding an old ETag gets one 412.
+  rationale: >-
+    The kind gate had no observable effect, so no selection is outside it, and no stored document
+    needs a migration step.
+  ruling: decisions DM-01M6RMJHDKNTXAM055Q8WR6SDN, DM-01M6RFGMDH859CJP3RHHF9YC3H
+  status: open
+  since: 2026-11-07
+  evidence:
+    - "charter: contracts/charter/scenarios/activation-kind-model.feature (A stored version 1 document reads back as its version 2 upgrade; Reads leave a stored version 1 document untouched, and the next conditional write stores version 2)"
+    - "corpus case: v1-upgraded-on-read"
+
+- id: DIV-214
+  surface: A mission type is selected, cascaded and denied like any kind
+  core: >-
+    Holds mission types in mission_type_activations, a plain list with no deny list (ADR-0020 D4
+    table), and selecting one does not put the artifacts its steps reach into activated_<plural>.
+  service: >-
+    A mission type is selected under selected.mission_type and denied under deactivated.mission_type.
+    Selecting one with a cascade crosses to the steps it holds like requires, and what the steps reach
+    is selected (CascadeKind gains mission_type; rule W20); a cascading deactivate of a mission type
+    unselects what only it kept (W23). A deny entry on a required or locked mission type is 409
+    artifact_required or artifact_locked, as for any kind, and a deny on any other is accepted.
+  rationale: >-
+    A mission type follows the same activation, override and enhancement rules as any artifact, and
+    ADR-0050 decision 6 made it an ordinary kind.
+  ruling: decisions DM-01M6RCXTS0SMDNTWZ8G7GJ2P5S (Q1), DM-01M6RCXZ9HSHT4K3443YYZ8ZFC (Q2); #410
+  status: open
+  since: 2026-11-07
+  evidence:
+    - "charter: contracts/charter/scenarios/activation-kind-model.feature (Selecting a mission type with a cascade selects what its steps reach; A cascading deactivate of a mission type unselects what only it kept; A deny entry on a mission type is accepted; A deny entry on a required mission type is 409 artifact_required and stores nothing; A deny entry on a locked mission type is 409 artifact_locked and stores nothing)"
+    - "corpus case: mission-type-selected-like-any-kind"
+
+- id: DIV-215
+  surface: A depth on a cascading select or deactivate
+  core: Has no write-cascade depth; the activation cascade is unlimited.
+  service: >-
+    A cascading select (SelectionRequest) and a cascading deactivate (ExclusionRequest) take an
+    optional depth that counts suggests hops only. requires, the other hard relations, enhances, the
+    specializes_from pass-through and a mission type's steps are walked in full; depth 0 follows no
+    suggests edge; an absent depth is unlimited, as in core. SkippedReport.skippedByDepth lists the next
+    suggests frontier when a depth was sent. A depth that is not an integer is 422 activation_invalid
+    (unreadable_body) at /depth, a negative one below_minimum and one past the int32 range above_maximum.
+    The deactivate honours depth in the target's own walk; the shared walk that decides what is kept
+    is unlimited, so a deactivate at depth N undoes a select at depth N only in what it removes.
+  rationale: >-
+    Iterative deepening of a cascade (#408) needs a bound, and truncating a hard relation would write
+    a selection whose requirements are not selected. One meaning of depth across the contract.
+  ruling: operator ruling on #408 of 2026-11-07; decisions DM-01M6TDH0SY5Q224GX709DXWG8K, DM-01M6TF3BA808JMW0W0A0CPXBNW
+  status: open
+  since: 2026-11-07
+  evidence:
+    - "charter: contracts/charter/changes/2026-11-07-a0-cascade-depth.md"
+    - "charter: contracts/charter/scenarios/activation-cascade-depth.feature (A cascading select at depth 0 selects the target and its hard closure only; A cascading deactivate at depth 1 undoes a cascading select at depth 1; The round trip is not exact when another active artifact suggests a candidate)"
+    - "corpus case: cascade-depth"
+
+- id: DIV-216
+  surface: >-
+    A layer override: the version from the level that applies replaces the artifact whole
+  core: >-
+    Merges the layers field by field (core ADR `3.x/2026-05-16-1`, as ADR-0059 D3 cites it); not
+    re-run against core's code here.
+  service: >-
+    The version from the level that applies (built-in, then org, then project) is the artifact
+    in force, whole: no field of a losing version is read and nothing is inherited. The answer
+    names the winner's `packId` and `level`. An edge that starts at a losing version is dropped
+    with it; an edge that ends at the overridden id, written bare or as `<pack>::<id>`, resolves
+    to the winner. One winner function picks the version of an artifact and the copy of a
+    preset. `/offering` stays the unmerged catalog and merges nothing; only the effective reads
+    and the writes build the merge.
+  rationale: >-
+    An overriding artifact says everything it takes from no lower level, so no field of a lower
+    one surprises a reader. An `enhances` edge adds to an artifact without replacing it.
+  ruling: >-
+    ADR-0059 D3; ADR-0053 d6; decision `DM-01M6R0TNEBR7KGJMW2SQXQGJ0A` (provenance); FR-009,
+    FR-010, FR-023
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: service/packs/src/main/java/ai/speckitty/charter/packs/domain/LayerMerge.java"
+    - "charter: contracts/charter/scenarios/layer-merge.feature (US3 AS1 - a directive held at built-in and at project level is listed once, with the project version's provenance)"
+    - "corpus case: layer-override-replaces-whole"
+
+- id: DIV-217
+  surface: >-
+    The mutability gate on a layer override
+  core: >-
+    A collision warning (ADR-0059 D3). The service's understanding of core, to be confirmed
+    against core: no mutability level refuses a layer override.
+  service: >-
+    A layer override is allowed only when the overridden artifact is `open`. The level is judged
+    along the closure with the winning pack left out, so the losers' own files and any pack that
+    raised the level count, and a pack never blocks its own override. Otherwise the read refuses
+    `500 pack_unreadable`, naming the artifact, both packs and the level; it is not
+    `governance_policy_violation`, which ADR-0012 d9 names. Every write that builds the merge
+    answers it too (DIV-230).
+  rationale: >-
+    Only an `open` artifact may be replaced by a later level (ADR-0012 d1). The contract answers
+    a read that cannot merge with the composition's `500` codes, and a refusal of the closure is
+    never a partial answer.
+  ruling: >-
+    ADR-0012 d1, d8; ADR-0059 D3; ADR-0063 D3; FR-011; research R3
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: contracts/charter/scenarios/layer-merge.feature (A layer override the overridden artifact's level forbids is 500 pack_unreadable, and one of an open artifact is served)"
+    - "charter: service/packs/src/test/java/ai/speckitty/charter/packs/domain/LayerMergeTest.java"
+    - "corpus case: layer-override-mutability-gate"
+
+- id: DIV-218
+  surface: >-
+    A same-level contest settled by an `overrides` entry; a step contest no entry settles
+  core: >-
+    Merges two org packs that declare one URN by load order: the later-declared pack wins (core
+    `59d190a7`, #87). The service's understanding of core, to be confirmed against core: core
+    has no settlement entry.
+  service: >-
+    A contest at one level that exactly one descriptor `overrides` entry settles puts the named
+    member's version in force (#357, ADR-0053 d5), and no load order decides. A step
+    (`action:<mission type>/<step>`) shares its mission type's settlement. The compose refuses
+    an unsettled contest of every artifact but a step, so a step contest no entry settles
+    reaches the merge, which refuses it at read as `500 pack_sibling_conflict` (the compose lets
+    it through). A settled loser has no `LayerOverride` record; the winner's provenance shows
+    the settlement. Two copies of one preset at one level are parent and child, and the child
+    holds it.
+  rationale: >-
+    A settled contest is a choice the distribution pack made, not a layer override. The merge
+    never answers part of a conflict.
+  ruling: >-
+    ADR-0048 d9; ADR-0053 d5; FR-012; research R3; WP21 review, cycle 1
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: contracts/charter/scenarios/layer-merge.feature (US6 AS1 - a distribution pack's settlement puts the named member's version in force (#357); US6 AS2 - the same conflict without a settlement is refused, and an activation that avoids it still answers)"
+    - "charter: service/packs/src/test/java/ai/speckitty/charter/packs/domain/LayerMergeTest.java (the unsettled step)"
+    - "corpus case: sibling-settlement-in-force"
+
+- id: DIV-219
+  surface: >-
+    The settlement entry is not gated by level until #358
+  core: >-
+    The service's understanding of core, to be confirmed against core: core has no settlement
+    entry (DIV-218).
+  service: >-
+    Any pack of the compose may declare the settling `overrides` entry, and the settlement is
+    not gated by level: C21 judges cross-level overrides only. Until #358 lets only the
+    distribution pack settle a sibling contest, a pack of the closure can settle a contest in
+    favour of a sibling and displace an artifact that is locked, with no level check. A known
+    gap, recorded, not ruled acceptable.
+  rationale: >-
+    The ruling of the WP21 review (a): C21, research R3 and ADR-0063 D3 judge cross-level
+    overrides only, and #358 owns who may settle.
+  ruling: >-
+    ADR-0053 d5 as amended 2026-11-03; research R3; WP21 review, cycle 1, ruling (a); #358
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: docs/architecture/composition-and-activation-rules.md (C15, C21)"
+    - "charter: service/packs/src/main/java/ai/speckitty/charter/packs/domain/LayerMerge.java"
+    - "corpus case: sibling-settlement-not-level-gated"
+
+- id: DIV-220
+  surface: >-
+    A graph node counts as holding an artifact
+  core: >-
+    The service's understanding of core, to be confirmed against core: core merges artifacts by
+    file, and a graph document's node holds nothing.
+  service: >-
+    The merge counts every holder of a URN, a node a graph document declares included. An org
+    pack whose graph only declares the node of a built-in step replaces that step whole at its
+    level and drops the step's built-in edges. A qualified source (`built-in::action:<mission
+    type>/<step>`) restates an edge without holding the node.
+  rationale: >-
+    One winner function over every holder keeps provenance and edges on one rule. A pack author
+    who restates a node replaces it; the record says so.
+  ruling: >-
+    ADR-0059 D3; ADR-0064; WP21 review, cycle 1
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: service/packs/src/main/java/ai/speckitty/charter/packs/domain/LayerMerge.java"
+    - "charter: service/packs/src/test/java/ai/speckitty/charter/packs/domain/LayerMergeTest.java"
+    - "corpus case: graph-node-holds"
+
+- id: DIV-221
+  surface: >-
+    An active `E overrides T` at read
+  core: >-
+    The service's understanding of core, to be confirmed against core: core's read does not hide
+    an artifact because another overrides it, and a requirement on T is not satisfied by an
+    override.
+  service: >-
+    Overrides compose transitively from the top: in `F -> E -> T` only `F` stays in force, and
+    `F` satisfies a requirement on `E` and on `T`. A hidden artifact that was selected is
+    `inactive` with reason `overridden`, in the `overridden` bucket with its `overriddenBy`; an
+    unselected one stays `not_selected`. A required target an override satisfies keeps its state
+    and gains `satisfiedBy`. A target that is not `open` (locked, or `extendable`) is never
+    hidden: it stays, and the pair is in `overrideNotApplied`. The edge is judged at
+    registration and again at read, because a later pack may tighten the target.
+  rationale: >-
+    One gate for both override paths: only an `open` artifact can be replaced, by a later level
+    or by an edge (A6).
+  ruling: >-
+    Decisions `DM-01M6R0TGX3DSR54EVS58Q1V8FV`, `DM-01M6R2X2SW8KVAJCDX23PGJBMT`,
+    `DM-01M6RA7RPNZS810FTFC98Z13GH` (A3), `DM-01M6RA86QPBM1VE5QZTB9AZ195` (A6); research R11,
+    R13; FR-016
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: contracts/charter/scenarios/effective-reads.feature (US3 AS6 - an active override hides its target with reason overridden; A3 - in a chain F overrides E overrides T only F stays in force; A required T hidden by an active override is satisfied by it; An override of a locked T is not applied)"
+    - "charter: service/packs/src/main/java/ai/speckitty/charter/packs/domain/InForceResolution.java"
+    - "corpus case: override-hides-and-satisfies"
+
+- id: DIV-222
+  surface: >-
+    An `overrides` cycle at read
+  core: >-
+    The service's understanding of core, to be confirmed against core: core's read applies no
+    `overrides` edge, so it has no cycle to refuse.
+  service: >-
+    A cycle of `overrides` edges among `open` artifacts that the candidates or the required
+    floor reach is refused `500 pack_unreadable`, naming a node of it (`override_cycle`); no
+    pick breaks it. A cycle that nothing reaches is not judged. A registration refuses the same
+    cycle (PR A).
+  rationale: >-
+    The requirement iteration must end, and no arbitrary pick may decide which artifact in a
+    ring stays.
+  ruling: >-
+    Decisions `DM-01M6RA7M56M1409EV9JX1EW83K` (A2), `DM-01M6RN6BWE6SVZZE8ERQ8Z9MV6`; FR-016;
+    research R13
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: service/packs/src/test/java/ai/speckitty/charter/packs/domain/InForceResolutionTest.java (anOverrideCycleAmongTheCandidatesIsRefusedAsUnreadable; anOverrideCycleNothingReachesIsNotJudged)"
+    - "corpus case: override-cycle-refused"
+
+- id: DIV-223
+  surface: >-
+    An in-force set that has no stable answer
+  core: >-
+    The service's understanding of core, to be confirmed against core: core resolves no enhancer
+    or override at read.
+  service: >-
+    What is in force is solved in four strata to a fixed point (research R13): candidates,
+    overrides, the requirement, then enhancers. An overrider that the enhancer or binding
+    pruning removes loses its overrides, and the requirement and the pruning run again until no
+    overrider is newly removed. When an overrider is pruned while its overrides apply and is in
+    force once they are withdrawn, the answer has no stable value, and the read refuses `500
+    pack_unreadable` (`override_unstable`). This replaces the earlier rule of one re-run.
+  rationale: >-
+    A single pass lets a later step undo an earlier judgement, and a greatest fixed point lets
+    an enhancer ring hold itself up. A refusal is better than an arbitrary order.
+  ruling: >-
+    Decisions `DM-01M6RA8S9G57W4BW55SNVHBQ10` (A11), `DM-01M6RA8G0RGRWSFW4DERH8W319` (A8);
+    research R13
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: service/packs/src/main/java/ai/speckitty/charter/packs/domain/InForceResolution.java"
+    - "charter: service/packs/src/test/java/ai/speckitty/charter/packs/domain/InForceResolutionPropertyTest.java"
+    - "corpus case: in-force-fixed-point"
+
+- id: DIV-224
+  surface: >-
+    An enhancer, or an artifact bound to a mission type, is in force only while what it needs is
+  core: >-
+    The service's understanding of core, to be confirmed against core: core returns an
+    enhancement without asking whether its target is in force.
+  service: >-
+    An artifact that declares `enhances` is in force only when a target of its enhancement is in
+    force and the support chain reaches an artifact that enhances nothing (a least fixed point),
+    so an `enhances` ring is not in force. Otherwise it is `inactive` with reason
+    `enhanced_target_not_in_force`, in the `enhancedTargetNotInForce` bucket naming its targets.
+    A step contract is bound to its mission type and is in force only while the mission type is
+    (`mission_type_not_in_force`); only step contracts are bound, and the binding of a step
+    enhancer is PR C. A denied artifact that the rule prunes (a denied enhancer whose target is
+    out of force) is `inactive`, listed in `enhancedTargetNotInForce` and never in
+    `skippedDeactivated`, and not `excluded`: only the reason `deactivated` is `excluded`. A
+    write that selects such an enhancer is accepted and answers a warning (`warnings`,
+    `enhanced_target_not_in_force`).
+  rationale: >-
+    Enhancers do not stand on their own (operator ruling Q8), and nothing bound to a mission
+    type outlives it.
+  ruling: >-
+    Operator ruling Q8 of 2026-11-06; decisions `DM-01M6R3YTNT1P2MBERBN7WV71ND`,
+    `DM-01M6R4W3ZMSESETMQ0ZQTCZCFJ`, `DM-01M6RA8G0RGRWSFW4DERH8W319` (A8),
+    `DM-01M6RCXTS0SMDNTWZ8G7GJ2P5S`; FR-015
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: contracts/charter/scenarios/effective-reads.feature (An enhancer whose target is out of force is inactive with enhanced_target_not_in_force; A8 - an enhancer ring is not in force, and an enhancer of a target in force is; A step of a denied mission type is not in force (the binding))"
+    - "charter: contracts/charter/scenarios/effective-reads.feature (B6/B7 - a select of an enhancer whose target is denied is 200 with the warning enhanced_target_not_in_force)"
+    - "corpus case: enhancer-needs-target"
+
+- id: DIV-225
+  surface: >-
+    A required artifact is a requirement, not a forced member
+  core: >-
+    Promotes org `required_*` into the allow list at write time (DIV-202). The service's
+    understanding of core, to be confirmed against core: an override does not satisfy a required
     artifact.
   service: >-
-    Matches an id exactly as declared (the tail of the artifact's URN). Another spelling of the same
-    artifact is an unknown id: 422 activation_invalid in a document, 404 artifact_not_found in the
-    path of a per-artifact write. The normalization of another
-    known spelling to the declared id that ADR-0020 D4 rules is not built.
+    A required artifact is satisfied by itself in force or by an artifact in force that
+    overrides it, directly or through a chain (`satisfiedBy` names it), never by an enhancement.
+    Otherwise it is put in force with reason `required`, and a deny entry on it is listed in
+    `denyNotApplied`. A locked artifact is in force unless the enhancer or binding rule prunes
+    it (E9). The requirement is the union, across the levels, of the must-have items of the copy
+    of a preset id in force at each level, read from the merged closure (DIV-205); a must-have
+    item no pack holds is in `requiredNotHeld`. The writes' floor refusal and the registration
+    notices judge the floor by the same rule (DIV-204, DIV-205): a deny of an artifact only an
+    earlier level's copy requires, which a later level's copy replaced, is refused. A required
+    or locked artifact that the enhancer or binding rule prunes stays out of force and is listed
+    once, in `requiredNotInForce`. A required, unselected artifact an override hides is
+    `not_selected` with `satisfiedBy`.
   rationale: >-
-    The register is built with exact lookups; normalizing needs the set of known spellings of each
-    artifact, which no read of this version derives. Core already emits declared ids (its response of
-    2026-10-20), so a document core writes is accepted as written.
-  ruling: ADR-0020 D4
+    Requirement is authored as a preset (ADR-0031). `required` means the artifact, or an
+    override of it, must be in force (operator ruling Q6).
+  ruling: >-
+    Operator rulings Q6 and Q8 of 2026-11-06; decisions `DM-01M6R0TK6F4CC0Z00CZTS21V72`,
+    `DM-01M6RA7FHRC5K8QPX7KN5FZ4S8` (A1), `01M6YKZRM7VF19A57E40D59N81`,
+    `01M6ZCXAJ9MTTF9XJSR89F3NYG`, `DM-01M6R3YTNT1P2MBERBN7WV71ND`,
+    `DM-01M6RFGFW3S0YJ222QMHD2W11B`; research R11
   status: open
-  since: 2026-11-06
+  since: 2026-11-08
   evidence:
-    - "charter: contracts/charter/schemas/ArtifactId.yaml; contracts/charter/parameters/ArtifactIdPath.yaml"
-    - "charter: service/activations/src/main/java/ai/speckitty/charter/activations/domain/DocumentRules.java (an id the closure does not hold is a violation)"
-    - "corpus case: id-matched-as-declared"
+    - "charter: contracts/charter/scenarios/effective-reads.feature (US3 AS2 - a denied required directive stays in force with reason required, and the deny entry is not applied; An enhancer alone does not satisfy a required T, which is put in force; A required step whose mission type is not in force is dropped and reported; A10 - a must-have item no pack holds is in requiredNotHeld, and a held one is required and in force)"
+    - "charter: contracts/charter/scenarios/layer-merge.feature (A1 - the requirement of a preset id is the union of every governing copy across levels)"
+    - "corpus case: required-is-a-requirement"
+
+- id: DIV-226
+  surface: >-
+    A required artifact the language filter excludes is put in force
+  core: >-
+    The service's understanding of core, to be confirmed against core: the sources of this
+    mission do not say how core combines its language filter with a required artifact.
+  service: >-
+    The language filter narrows the candidates, and the requirement then adds a required
+    artifact whatever its `applies_to_languages` say; a locked artifact is a candidate whatever
+    the filter says. Such an artifact is `active` with reason `required` or `locked`, and is not
+    in the `languageFiltered` bucket, which lists only a selected artifact the filter excluded.
+  rationale: >-
+    A requirement must hold under every filter; a filter that dropped a required artifact would
+    let a language setting opt out of the floor.
+  ruling: >-
+    Rules E3 and E5 (the Unclear note of E5 resolved on 2026-11-08); decision
+    `DM-01M6R2X2SW8KVAJCDX23PGJBMT`
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: service/packs/src/test/java/ai/speckitty/charter/packs/domain/InForceResolutionTest.java (aRequiredArtifactTheLanguageFilterExcludesIsStillPutInForce)"
+    - "corpus case: required-despite-language-filter"
+
+- id: DIV-227
+  surface: >-
+    The language filter applies at read only
+  core: >-
+    The service's understanding of core, to be confirmed against core: core applies `languages`
+    where it builds the active list, not only on a read.
+  service: >-
+    The activation document stays language-neutral, and a write applies no language filter. The
+    two effective reads apply it: an artifact with a non-empty `applies_to_languages` that
+    shares none with the document's `languages` is `inactive` with reason `language_filtered`.
+    An absent `languages` filters nothing; `[]` filters every tagged artifact. This is the one
+    absent list that does not mean none (DIV-203). A read with no activation applies no
+    filtering.
+  rationale: >-
+    The document records what a project selects, and what it can use depends on its languages
+    (operator ruling 2 on #408).
+  ruling: >-
+    Operator ruling on #408 of 2026-11-07 (ruling 2); FR-013, FR-017
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: contracts/charter/scenarios/effective-reads.feature (The language filter applies at read only: no languages filters nothing, and what it filtered is in the bucket)"
+    - "charter: service/activations/src/test/java/ai/speckitty/charter/activations/domain/EffectiveSetTest.java"
+    - "corpus case: language-filter-at-read-only"
+
+- id: DIV-228
+  surface: >-
+    The skipped report is typed, and each artifact is reported once
+  core: >-
+    The skipped report takes core's structure (ADR-0020 D6): `skippedByScope`,
+    `skippedDeactivated`, `unreachedBehindDeactivated` and `skippedShared`, which describe a
+    cascade. The service's understanding of core, to be confirmed against core: core has no
+    typed bucket for what a read leaves out.
+  service: >-
+    `getActivationSkippedReport` lists each artifact that is not in force once, in the bucket of
+    the first rule that decided it. A required or locked artifact that the enhancer or binding
+    rule prunes is listed once, in `requiredNotInForce`, and `summary.skipped` counts it once.
+    `SkippedReport` gains ten required buckets: `staleIds`, `denyNotApplied`,
+    `languageFiltered`, `overridden`, `missionTypeNotInForce`, `overrideNotApplied`,
+    `enhancedTargetNotInForce`, `pinNotHeld`, `requiredNotHeld` and `requiredNotInForce`.
+    `skippedByScope`, `unreachedBehindDeactivated` and `skippedShared` stay and are always empty
+    at read; at read `skippedDeactivated` has `viaRequires` false and `requiredBy` empty. A
+    write's `skipped` and the action context answer every new bucket as `[]`.
+  rationale: >-
+    One typed bucket per rule makes the answer checkable, where a diagnostic list shared by the
+    reads was not. The cascade's buckets describe a write, so a read leaves them empty.
+  ruling: >-
+    Decisions `DM-01M6R0TNEBR7KGJMW2SQXQGJ0A`, `DM-01M6RN5MTWC98PXEVJNFQSRRJX`,
+    `01M6YM02EG3X5V8G33T1HT5N0K`; ADR-0059 D4; FR-017
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: contracts/charter/changes/2026-11-07-b-effective-reads.md (Breaking, SkippedReport)"
+    - "charter: contracts/charter/scenarios/effective-reads.feature (US4 AS1 - each artifact not in force is in exactly one bucket, and the report carries the revision)"
+    - "corpus case: skipped-report-typed"
+
+- id: DIV-229
+  surface: >-
+    The reasons `kind_default` and `kind_not_activated` are gone
+  core: >-
+    Has a per-kind default (DIV-203) and a kind gate, `activated_kinds` (DIV-212). The service's
+    earlier contract named a reason for each; whether core reports them as reasons is not
+    confirmed.
+  service: >-
+    `EffectiveArtifactReason` loses `kind_default` and `kind_not_activated`. Nothing is in force
+    because its kind is activated, and an absent list means none, so neither reason can arise.
+    The enum gains `overridden`, `mission_type_not_in_force` and `enhanced_target_not_in_force`.
+    A client that switches on the closed enum must regenerate.
+  rationale: >-
+    ADR-0053 d10 made `kind_default` unreachable, and the kind gate is gone (A7).
+  ruling: >-
+    ADR-0053 d10; decisions `DM-01M6RA8BJ0FZV9BHFJ1MV4SVJY`, `DM-01M6RCY8MYNGNPJ247M2Y4880N`;
+    FR-022
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: contracts/charter/changes/2026-11-07-b-effective-reads.md (Breaking, EffectiveArtifactReason)"
+    - "corpus case: reasons-without-kind-gate"
+
+- id: DIV-230
+  surface: >-
+    The write cascade walks the merged edges, so a write can answer `500 pack_unreadable`
+  core: >-
+    The service's understanding of core, to be confirmed against core: the cascade walks the one
+    graph core merges (DIV-216).
+  service: >-
+    The cascade of a select or a deactivate walks the edges of the merged closure, so it never
+    follows an edge a losing version declared. Where no layer override exists the answer is
+    unchanged. A write over a closure whose layer merge refuses (DIV-217, DIV-218) answers `500
+    pack_unreadable` or `pack_sibling_conflict`, as a read does; before PR B no write could. A
+    write's preconditions are judged before the packs are read, except that an `If-Match` that
+    is a closure tag reads the closure to judge its `412` (DIV-234).
+  rationale: >-
+    A cascade that followed an edge of a replaced version would select what the version in force
+    no longer names.
+  ruling: >-
+    Research R2 (open point, resolved); decision `DM-01M6R4W1H9P3451V89KHP97XKM`; FR-038; rule
+    E20
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: service/packs/src/main/java/ai/speckitty/charter/packs/application/ClosureView.java (reach)"
+    - "charter: service/packs/src/test/java/ai/speckitty/charter/packs/application/ClosureViewMergedTest.java"
+    - "corpus case: write-cascade-over-merged-edges"
+
+- id: DIV-231
+  surface: >-
+    The tag of an effective read names one representation and the closure
+  core: >-
+    The service's understanding of core, to be confirmed against core: no activation read
+    carries a validator that covers a closure.
+  service: >-
+    The `ETag` of `listEffectiveArtifacts` and of `getActivationSkippedReport` is `sha256:` over
+    a domain tag, the read, the activation's revision, the digest of the packs in the
+    activation's closure and the normalized query (`kind`, `state`, cursor, page size). A page,
+    a filter or the other read never matches the tag of another, and a pack outside the closure
+    changes nothing. The body's `governanceFingerprint` is that closure digest, no longer
+    `ServiceInfo.sourceFingerprint`. A read carries three digests: the revision, the closure
+    digest and, in `Charter-Source-Fingerprint`, the digest of the whole source. A matching
+    `If-None-Match` answers `304`.
+  rationale: >-
+    An answer depends on the document and the packs it was computed from, and a strong tag must
+    change with the bytes (RFC 9110).
+  ruling: >-
+    ADR-0059 D5; research R5; decision `01M6Y11E55YP5TG1EJ1MDKCFRP`; FR-020
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: service/activations/src/main/java/ai/speckitty/charter/activations/domain/EffectiveTag.java"
+    - "charter: contracts/charter/scenarios/effective-reads.feature (US3 AS7 - a state, a kind and a cursor page never answer 304 to the tag of another representation; US3 AS7 - a change to a pack outside the closure keeps the tag)"
+    - "corpus case: effective-tag-per-representation"
+
+- id: DIV-232
+  surface: >-
+    A page cursor is bound to its set, and the page links name `pageSize` only when the request
+    did
+  core: >-
+    The service's understanding of core, to be confirmed against core: core has no paged
+    effective list.
+  service: >-
+    `listEffectiveArtifacts` is paged by a keyset cursor over `(kind, id)`. The cursor binds the
+    tag of the set it pages (the same kind and state, no cursor, no page size), so a cursor from
+    another set, or after the revision or a pack of the closure changed, is `400` without a
+    code, as a malformed one is. `summary` counts the whole set and is identical on every page.
+    The `self`, `first` and `next` links repeat `pageSize` only when the request named it.
+  rationale: >-
+    A cursor over a recomputed set would skip or repeat items; refusing it tells the client to
+    read the first page again.
+  ruling: >-
+    Decision `DM-01M6R0TNEBR7KGJMW2SQXQGJ0A`; FR-013, FR-020
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: contracts/charter/scenarios/effective-reads.feature (The list is paged by a keyset cursor, and summary is identical on every page; A cursor from another tag is 400, and a fresh cursor of the new tag pages on)"
+    - "corpus case: effective-list-keyset-cursor"
+
+- id: DIV-233
+  surface: >-
+    The `ETag` of `getActivation` covers the closure
+  core: >-
+    The service's understanding of core, to be confirmed against core: core stores its
+    activation in files and has no such read.
+  service: >-
+    The `ETag` of `getActivation` is no longer the bare quoted revision. It is the tag of the
+    revision and the closure's digest, because the answer now carries `denyNotApplied`, which is
+    judged against the packs of the closure. It changes when a pack of the closure changes, and
+    not when a pack outside it does. `getActivation` can also answer `500` with a composition
+    code or `pack_unreadable`. A document that names a pack no longer configured, a closure
+    whose layer merge refuses and an in-force refusal are `500` too, so the "served unchanged"
+    of ADR-0059 D4 holds only while the closure can be read. It sends no
+    `Charter-Source-Fingerprint`, as before. A write's answer keeps the revision as its `ETag`
+    and carries no `denyNotApplied`.
+  rationale: >-
+    A strong `ETag` must change with the bytes. The operator chose a covering tag over dropping
+    the field or accepting a stale tag.
+  ruling: >-
+    Operator decision `01M6Y11E55YP5TG1EJ1MDKCFRP` (amends ADR-0059 D5); FR-027
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: contracts/charter/scenarios/effective-reads.feature (B4 - the ETag of getActivation changes when a pack of the closure changes, and not for an unrelated pack; B4 - GET /activations/{id} lists a deny entry the floor overrides in denyNotApplied, and not an applied one)"
+    - "corpus case: get-activation-tag-covers-closure"
+
+- id: DIV-234
+  surface: >-
+    `If-Match` on an activation write takes either tag, and a closure tag costs a read
+  core: >-
+    The service's understanding of core, to be confirmed against core: core's seam sends no
+    `If-Match` that names a closure.
+  service: >-
+    A write (`PUT`, `DELETE` and the five sub-resource writes) accepts `If-Match` carrying the
+    quoted revision or the current `getActivation` tag, so a client may send what it read; `*`
+    still matches any stored document. A closure tag that no longer matches is `412`. The
+    revision is checked first and costs no read. A tag-shaped header that is not the revision
+    costs one verified read of the closure to compute the current tag, and the write then reads
+    the packs again for its own judgment; a pack change between the two reads could let a
+    just-stale tag pass.
+  rationale: >-
+    A client that read the activation can write with what it read, whichever validator it kept.
+  ruling: >-
+    Operator decision `01M6Y3GZFRC5WEQQ7G6GT0YMW3` (amends ADR-0020 D6); FR-027
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: service/activations/src/main/java/ai/speckitty/charter/activations/application/IfMatchTags.java"
+    - "charter: contracts/charter/scenarios/effective-reads.feature (B4 - a write takes the getActivation tag or the revision as If-Match, and a stale closure tag is 412)"
+    - "corpus case: if-match-either-tag"
+
+- id: DIV-235
+  surface: >-
+    Only a `not_selected` artifact carries a suggestion
+  core: >-
+    The service's understanding of core, to be confirmed against core: core's action context
+    lists a `suggests` target without a reason carrier.
+  service: >-
+    `EffectiveArtifact.suggestion {when, reason}` is present only for an artifact that is out of
+    force with reason `not_selected` and that a `suggests` edge of an active artifact reaches;
+    the edge's `rationale` is served as `reason`. A denied, overridden, language-filtered or
+    mission-type-filtered artifact is out of force for its own reason, and its reason says so.
+    `enhances` is not a hard relation, so an artifact an active one enhances keeps its
+    suggestion. PR C's action context uses the same definition.
+  rationale: >-
+    A suggestion is something the client may still choose; attaching one to an artifact the
+    rules exclude would invite selecting it.
+  ruling: >-
+    Operator ruling on #408 of 2026-11-07 (ruling 3); decisions `01M6Y0X5E9ANR25MC8RPFXYM72`,
+    `01M6Y6VE6VZQ4MXD98N93JB3GJ`; FR-013
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: contracts/charter/scenarios/effective-reads.feature (An artifact reached only through suggests is listed as a suggestion with its when and reason)"
+    - "corpus case: suggestion-only-not-selected"
+
+- id: DIV-236
+  surface: >-
+    A pack's composition facts are cached, and every read still reads the pack revision
+  core: >-
+    The service's understanding of core, to be confirmed against core: core has no composition
+    facts to cache.
+  service: >-
+    `CompositionFactsCache` keeps the composition facts of each pack between reads, keyed by the
+    pack's configured name and valid for one write generation and one path-inclusive digest of
+    the pack's files together. It never fills or serves from a read whose generation was odd or
+    moved, from a holder of the registry write lock, or from a failure, and by default it keeps
+    at most 256 packs. It reads the path-inclusive digest on every call, in the one pass that
+    takes the pack revision, because a change no write bracketed (an out-of-band edit or rename)
+    must miss: the digest covers each file's path as well as its bytes. PR B therefore claims no
+    gain on #416.
+  rationale: >-
+    The cache follows #416's invariants rather than a second mechanism, and the revision read is
+    what makes an out-of-band edit visible.
+  ruling: >-
+    Decision `DM-01M6XT2FKK7YPV1GCESFW1ANZ7`; NFR-007; #416, #418 R5
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: service/packs/src/main/java/ai/speckitty/charter/packs/application/CompositionFactsCache.java"
+    - "charter: service/packs/src/test/java/ai/speckitty/charter/packs/application/CompositionFactsCacheTest.java"
+    - "corpus case: composition-facts-cache"
+
+- id: DIV-237
+  surface: >-
+    A write warns what a read will not put in force, and a registration lists the activations it
+    affects
+  core: >-
+    The service's understanding of core, to be confirmed against core: core's writes answer
+    neither.
+  service: >-
+    `ActivationChange.warnings` (`[{code, artifact}]`, `[]` when none) lists each artifact the
+    write puts in (a select, or the additions of a preset) that a read will not put in force:
+    `enhanced_target_not_in_force` and `overridden`. A removal (an unselect), a deny and a
+    reactivation never warn. A write still succeeds, but the warnings come from one in-force
+    resolution of the stored document asked before anything is stored, so a closure whose
+    resolution refuses (DIV-222, DIV-223) refuses the write; a write that applies nothing asks
+    nothing. `PackRegistration.notices.activationsAffected` lists, bounded and sorted, the
+    stored activations whose in-force set a registration changes, a change of the version in
+    force of an artifact (the pack that holds it, its level or its mutability level) included;
+    an activation whose closure cannot be merged counts as changed.
+  rationale: >-
+    Writes stay total and reads explain (R17); a client learns at write time what the read will
+    say.
+  ruling: >-
+    Decisions `DM-01M6RAA2B2G9PNXN2F9SJ7B1CR` (B6, B7), `DM-01M6RA9SAKCBSKGX165JM3CAGS` (B4),
+    `01M6YKZXGFGS340D1D9TE5T809`; FR-027, FR-032
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: contracts/charter/scenarios/effective-reads.feature (B6/B7 - a select of an enhancer whose target is denied is 200 with the warning enhanced_target_not_in_force; B6/B7 - a select of an artifact an active override hides is 200 with the warning overridden; B4 - a registration that changes an activation's in-force set lists it in activationsAffected, and not an unrelated one)"
+    - "corpus case: write-warnings"
 
 # Pack-level files (DIV-301..399), mission pack-level-files-round-trip-01M60H1A (#195, ADR-0042).
 - id: DIV-301
@@ -823,7 +1577,9 @@
     (offering/artifact_kinds.py).
   service: >-
     mission_type is an artifact kind (ArtifactKind.MISSION_TYPE, plural mission_types), bound in
-    the kind registry and a pack-manifest constituent kind; its node kind is artifact-backed. One
+    the kind registry and a pack-manifest constituent kind; its node kind is artifact-backed. It is
+    activatable like any kind: selected under selected.mission_type, deniable unless required or
+    locked, and none in force when absent (DIV-203, DIV-214; updated 2026-11-07). One
     file per type, missions/<id>/<id>.mission-type.yaml, holds the steps as sub-items of steps and
     on_demand_steps; a mission step is a domain type with no artifact kind or fragment plural.
   rationale: >-
@@ -872,3 +1628,307 @@
   evidence:
     - "charter: contracts/charter/scenarios/relationships.feature; RelationshipRegistrationService"
     - "charter: contracts/charter/CHANGELOG.md, 0.1.0-SNAPSHOT, Mission types are an artifact kind (issue #194)"
+- id: DIV-601
+  surface: What a pack registration does to the pack the service holds, and how it answers
+  core: >-
+    The service's understanding of core, to be confirmed against core: it merges per artifact: a
+    registration adds or updates the artifacts it carries and leaves the others.
+  service: >-
+    PUT /packs/{packId} and POST /packs replace the stored pack whole. An artifact, an edge, a
+    preset item or a file the upload does not carry is gone, and the same version with the same
+    revision ends unchanged. The registration is asynchronous: 202 and a status to poll. Two
+    registrations run and eight wait, a ninth waiter is 503 with Retry-After, and the 90 second
+    deadline counts the time spent in the queue. A slot is taken after the body is spooled, so a
+    slow upload holds none while it arrives (what it holds is a connection, up to 32 MiB of
+    staging and one of ten places for uploads open at once; the eleventh is 503 with Retry-After);
+    the queue and If-Match are checked before the body is read and again then. The free-space
+    check (503 pack_storage_full) runs at admission, on top of the declared bytes of the uploads
+    already open, and when the job runs, on the staging and the pack volume, against the per-job
+    peak of about three times the archive bound.
+    The status is kept in memory for one hour, at most 1,000 entries.
+  rationale: >-
+    A registration is the whole truth about a pack, so nothing a client dropped can survive in it,
+    and one request is one atomic swap.
+  ruling: ADR-0065 D1, D8; SC-003; FR-024
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: contracts/charter/scenarios/registration/whole-pack-registration.feature (A replace drops what the new archive leaves out and keeps what it carries; Sending the identical archive again changes nothing)"
+    - "charter: PackRegistrationServiceTest; RegistrationAcceptanceTimingTest; RegistrationJobsTest"
+- id: DIV-602
+  surface: The pack_version of a registration
+  core: >-
+    The service's understanding of core, to be confirmed against core: it registers per artifact and
+    keeps no history of the versions a pack name held.
+  service: >-
+    pack_version is a label, not an order: a registration may go back to an older version. The
+    service keeps every (pack_version, revision) a pack name was registered with, in the same swap
+    as the pack, and a DELETE keeps the history. The same version with another revision is refused
+    409 pack_version_conflict, whether or not it is the stored version. This check runs before the
+    If-Match precondition, so a re-send of an archive with the same version after a per-artifact PUT
+    moved the revision is 409, not 412; the 412 race needs a new version. A history entry that the
+    service restores after a repair carries the time of the repair, not of the lost registration.
+    The service restores the stored pair only when the history has no entry for the stored
+    pack_version: a per-artifact write moves the revision without registering anything, so a version
+    registered with revision A stays restorable with A after a PUT moved the stored revision.
+  rationale: >-
+    A version that names content must keep naming it, or a client that pins a version reads
+    different packs under one label.
+  ruling: FR-026; decision DM-01M6RA9BKJY7X9BFV93QW1KM1T (B1); IC-16
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: contracts/charter/scenarios/registration/whole-pack-registration.feature (The same version with other content is refused, and a new version is accepted)"
+    - "charter: PackVersionHistoryTest; PackRegistrationServiceTest"
+- id: DIV-603
+  surface: The mutability gate over a write that removes something
+  core: >-
+    The service's understanding of core, to be confirmed against core: it judges the artifacts a
+    write adds or changes.
+  service: >-
+    REMOVE joins the gate's operations. An edge a write adds or drops is a RELATIONSHIP write on its
+    source, in a whole-pack registration and in the relationship PUT and DELETE alike. The
+    relationship DELETE is refused 409 governance_policy_violation for an edge whose source is a
+    locked artifact of an ancestor, as a whole-pack replace is refused for dropping it. An artifact
+    DELETE is refused the same way for an id an ancestor locks.
+  rationale: >-
+    A lock must hold whichever door the write comes through; removal and edge writes are writes.
+  ruling: ADR-0012; decision DM-01M6TR1KDAJ64GMJD6AYNZKT59 (item 4)
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: PackRegistrationServiceTest (anEdgeRemovedFromALockedArtifactIsGatedAndOneFromAnOpenArtifactIsNot); RelationshipRemovalServiceTest (anEdgeWhoseSourceIsALockedArtifactOfAnAncestorIsNotRemovedAndOneFromAnOpenArtifactIs); ArtifactRemovalServiceTest"
+- id: DIV-604
+  surface: What a write is refused for when it breaks a closure
+  core: >-
+    The service's understanding of core, to be confirmed against core: it warns when a write leaves
+    a closure that no longer composes or breaks a relation rule.
+  service: >-
+    A registration, a per-artifact write, the relationship write and both DELETEs are refused 422,
+    with the composition code or one of the five relation codes naming the packs, when a closure the
+    pack joins no longer composes or breaks a rule after the write. PR A does not apply the repair
+    writes of #404. One stored dependent that cannot be read makes every registration of its
+    ancestor fail pack_unreadable; the repair is to fix or remove the dependent. A write into a
+    stored pack that cannot be read, or whose dependency is missing, is refused even when it would
+    repair it. A whole-pack replace is the repair path, and the stored pack is salvaged for it: it
+    is read file by file, an artifact file counts by the id it declares and by the id its path
+    names, and each readable graph entry is an edge. An artifact the upload leaves out is a REMOVE
+    through the gate and the inbound scan, a dropped edge is a RELATIONSHIP write on its source, and
+    a stored artifact that does not bind counts as a REPLACE. When the set of stored artifacts
+    cannot be determined at all (the directory cannot be listed), the registration is refused
+    pack_unreadable; the pack is never taken as empty. At start-up the service logs a WARN for each
+    stored pack that would now be refused.
+  rationale: >-
+    A write that leaves a broken closure would make every composed read fail; refusing it keeps the
+    offering readable.
+  ruling: >-
+    Decisions DM-01M6TQ67C9ZTNGZB9CY28JS54F, DM-01M6VG6GC40AKYYFRR35SV8HVW,
+    DM-01M6V4WMF8CD8NBN7A065E9ZQ5, DM-01M6V6N74ER28H8S6TSVZ8ZEY2, DM-01M6RA8225EXG6GAT1MM2R9T6C
+    (A5); FR-025
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: contracts/charter/scenarios/registration/whole-pack-registration.feature (A registration that leaves a closure unable to compose is refused naming the packs); contracts/charter/scenarios/pack-removal.feature (A removal that leaves a closure of a stored activation broken is refused 422)"
+    - "charter: RegistrationImpactTest; PerArtifactImpactTest; PackRegistrationServiceTest (aStoredPackThatCannotBeReadIsReplacedByAFixedUpload)"
+- id: DIV-605
+  surface: The notices of a succeeded registration
+  core: >-
+    The service's understanding of core, to be confirmed against core: it has no registration
+    notices.
+  service: >-
+    The notices list the must-have items added to or removed from the required floor and the
+    artifacts put under or released from a lock. They name activatable kinds only. An entry of
+    another kind (a template, an asset, a guard, a lifecycle) is left out and logged at WARN with
+    its URN. Issue #417 tracks widening the kinds.
+  rationale: >-
+    The contract's artifact reference names activatable kinds, and a notice must be a reference a
+    client can follow.
+  ruling: >-
+    Operator ruling 2026-11-07, decision 01M6VXMCDQJWBJXGRQNMF5G6SV; #417
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: PackRegistrationMapperNoticesTest; contracts/charter/changes/2026-11-08-a-notices-activatable-kinds.md"
+- id: DIV-606
+  surface: >-
+    deletePackArtifact: what a removal does and refuses
+  core: >-
+    The service's understanding of core, to be confirmed against core: it has no operation that
+    removes one artifact from a pack; an author deletes its files.
+  service: >-
+    DELETE /packs/{packId}/artifacts/{kind}/{artifactId} removes the artifact, its companion files,
+    its registered edges and the preset items of the pack that name it, and deletes a preset key
+    whose last item goes. It needs If-Match (428 without, 412 stale; * is accepted) and answers 204
+    with the new revision. It is refused 409 artifact_referenced while another artifact or pack
+    refers to it (another pack's preset item and a descriptor overrides entry count), 409
+    governance_policy_violation for an id an ancestor locks, and 409 registration_conflict when an
+    author-written graph document names the artifact. It never rewrites an author graph file. It
+    does re-serialize a preset file when it removes a preset item, so comments and formatting are
+    lost. A removal that leaves a closure broken is 422.
+  rationale: >-
+    A client can remove what it registered without sending the whole pack, and a refused removal
+    changes nothing.
+  ruling: ADR-0065 D4; FR-005, FR-007; decision DM-01M6TQ62HXYF362GAFS2BZ3PGF
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: contracts/charter/scenarios/pack-removal.feature; ArtifactRemovalServiceTest"
+- id: DIV-607
+  surface: >-
+    deletePackRelationship: which edge it removes
+  core: >-
+    The service's understanding of core, to be confirmed against core: it has no operation that
+    removes one edge; an author edits a graph document.
+  service: >-
+    DELETE /packs/{packId}/relationships removes an edge only from registered.graph.yaml. It is 409
+    relationship_not_registered for a pair an author wrote, a derived one, or one held both in the
+    registered file and in an author-written document, and 404 relationship_not_found when no graph
+    document holds the pair. If-Match is required (428, 412). A reference that names a pack matches
+    only an edge end that names the same pack, so with the edges A to base::X and A to other::X a
+    DELETE naming base::X removes one; a reference that names no pack matches by its URN, as the
+    kernel compares. The removed edge is gated as a RELATIONSHIP write on its source (DIV-603). A
+    removal that leaves a closure broken is 422 (strict; #404 is out of scope).
+  rationale: Only the edge the client named may go, and a 204 must never leave the edge in force.
+  ruling: >-
+    ADR-0065 D4; FR-006; decisions DM-01M6TQ62HXYF362GAFS2BZ3PGF, DM-01M6TR1KDAJ64GMJD6AYNZKT59
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: contracts/charter/scenarios/pack-removal.feature (A registered relationship is removed, whichever end the request names first; An edge the author wrote into a source shard is refused); RelationshipRemovalServiceTest"
+- id: DIV-608
+  surface: pack-manifest.yaml, If-Match and what a DELETE is judged on
+  core: >-
+    The service's understanding of core, to be confirmed against core: it has no per-artifact write;
+    the manifest is derived when the pack is written.
+  service: >-
+    A per-artifact write or DELETE does not update pack-manifest.yaml, so its hashes go stale and
+    after a DELETE it still lists the removed file. Reads do not verify the manifest; a round trip
+    and validate mode report it. A per-artifact PUT with If-Match: * satisfies the 428 requirement.
+    A DELETE is judged on the facts overlay; the edited tree is not read again. A per-artifact PUT
+    or POST and the relationship write can answer 422 with composition and relation codes (DIV-604).
+  rationale: >-
+    Recorded as known limits of PR A so a consumer does not rely on the manifest after a per-
+    artifact write.
+  ruling: ADR-0042; plan IC-06; WP19 review
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: ArtifactRemovalServiceTest; RelationshipRemovalServiceTest"
+- id: DIV-609
+  surface: The charter.registration and charter.pack-sources settings
+  core: >-
+    The service's understanding of core, to be confirmed against core: it has no service-side source
+    configuration.
+  service: >-
+    Each source kind is off by default and its flag is read at every request. https: enabled,
+    allowed-hosts (empty), timeout 60s, max-size 32MB, max-redirects 3. git: enabled, allowed-hosts
+    (empty), executable, timeout 60s. filesystem: enabled and root. Registration itself is off
+    (charter.registration.enabled) and spools under charter.registration.staging-dir. A filesystem
+    root must not lie under /proc, /sys or /dev or overlap charter.config-root. The resolver guard
+    covers the union of the guide, archive and git hosts. A filesystem kind switched on with no root
+    stops the start.
+  rationale: >-
+    A service that was never configured for a source must refuse it, and an outbound fetch is
+    reachable only to hosts an operator named.
+  ruling: ADR-0065 D10; FR-037; NFR-010; plan IC-18
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: docs/guides/service-build.md (Registering packs); PackSourceRegistrationTest; SourceUrlsTest"
+- id: DIV-610
+  surface: pack_source_refused, 502, 504 and the local-path refusal
+  core: >-
+    The service's understanding of core, to be confirmed against core: it has no source refusals.
+  service: >-
+    A source the service refuses ends the registration 422 pack_source_refused. The detail is
+    <token>: <fixed sentence>, with no URL, path or upstream text. The tokens are host_not_allowed,
+    address_not_global, url_refused, redirect_refused, wrong_media_type, too_large, digest_mismatch,
+    name_mismatch, source_malformed, path_refused, bad_ref and commit_mismatch. An upstream failure
+    is a plain 502 and a timeout a plain 504. Every local-path refusal is one path_refused; its
+    reason is in the operator log only. PackSource.url matches ^https://\S+$. For POST the
+    descriptor name must equal the target pack id; for PUT it need not.
+  rationale: >-
+    A refusal must not echo an address or a path, and must not tell a client which host or path
+    exists.
+  ruling: ADR-0065 D10; IC-05; decisions of WP17 and its review
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: SourceRefusalContractTest; PackSourceStagersTest; contracts/charter/scenarios/registration/whole-pack-registration.feature (A source the service refuses ends the registration refused with pack_source_refused)"
+- id: DIV-611
+  surface: source in the status of a registration
+  core: >-
+    The service's understanding of core, to be confirmed against core: it has no registration
+    status.
+  service: >-
+    The status of a succeeded registration records its source. source.url keeps no query, no
+    fragment and no user information. For a git source, source.commit is the commit the ref resolved
+    to.
+  rationale: A query or user information can carry a credential and must not be stored or echoed.
+  ruling: ADR-0065 D10; WP18 and its review
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: PackRegistrationMapperSourceTest; PackSourceRegistrationTest"
+- id: DIV-612
+  surface: The filesystem source's file checks
+  core: >-
+    The service's understanding of core, to be confirmed against core: it has no local source.
+  service: >-
+    The file-key and link-count checks look a file up by name, not on the open handle, because the
+    JDK has no fstat on a channel. A race between the check and the open needs write access under
+    the root.
+  rationale: >-
+    A known limit: closing it needs a call the JDK does not offer, and the threat needs the attacker
+    to write under the operator's root.
+  ruling: ADR-0065 D10; WP17 review
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: LocalSourceReader; PackSourceStagersTest"
+- id: DIV-613
+  surface: POST /packs with a git source
+  core: >-
+    The service's understanding of core, to be confirmed against core: it has no git source.
+  service: >-
+    The service runs the system git, 2.50.1 or later, on the PATH or at charter.pack-
+    sources.git.executable, into a bare work repository; there is no JGit and no work tree. It
+    checks the version at every start. An old or missing git makes the git kind answer 503
+    pack_source_unavailable while the other kinds work. It accepts https only, follows no redirect,
+    and refuses links and submodules in the tree (422 validation_failed, violation entry_type, as
+    for an archive). A branch ref without a commit is 428 unless If-Match or If-None-Match: * is
+    sent. The reasons bad_ref and commit_mismatch are new. sha256 repositories are untested. CI has
+    a new required job, git-source, that runs the real-git tests. Every run carries config pins that
+    bound the memory git inflates and maps (a 1 MiB big-file threshold, 16 MiB of pack window and
+    window memory, 64 MiB of mapped packs, a 16 MiB delta base cache, one thread), so a fetch stays
+    within tens of MiB. They do not cap address space or time beyond the one deadline. With
+    core.bigFileThreshold=1m and transfer.fsckObjects=true git refuses a .gitmodules blob over
+    1 MiB (gitmodulesLarge).
+  rationale: >-
+    A host binary is the operator's ruling (no JGit); the version floor and the fixed command line
+    bound what it can do.
+  ruling: C-008; NFR-011; ADR-0065 D10; WP18 and its review
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: contracts/charter/scenarios/registration/whole-pack-registration.feature (A git ref is pinned to the commit it points at; A hostile git ref is refused); NetworkCodeBoundaryTest; .github/workflows/service.yml (git-source)"
+- id: DIV-614
+  surface: Pack writes when the activation store cannot be listed
+  core: >-
+    The service's understanding of core, to be confirmed against core: it has no activation store to
+    list.
+  service: >-
+    The registration impact check lists the stored activations. When the store cannot be listed (the
+    platform refuses to read its directory), a per-artifact write, a DELETE or a registration job
+    ends as 500 internal_error, the job as refused with internal_error and failed:internal_error in
+    the audit log. Nothing is written, the body is the generic one and the cause is in the operator
+    log. This is how a stored document that cannot be read back is answered. No refusal code names a
+    fault of the activation store, and none is added.
+  rationale: >-
+    A fault of the store is the service's, not the client's, and a code that blames neither the pack
+    nor the request would mislead.
+  ruling: ADR-0065; issue 418 (R6)
+  status: open
+  since: 2026-11-08
+  evidence:
+    - "charter: ActivationListingFaultTest; FileActivationRepositoryListingFailureTest; ActivationImpactAdapterTest"

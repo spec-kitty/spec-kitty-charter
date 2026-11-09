@@ -23,16 +23,22 @@ class ConsistentReadTest {
 
     /** A port that logs each digest and answers the scripted outcomes in order: a digest string or a failure. */
     private ConsistentRead reading(Object... digests) {
+        return reading(new PackWriteGeneration(), () -> {}, digests);
+    }
+
+    /** As {@link #reading(Object...)}, over {@code generation}; {@code onDigest} runs inside each digest. */
+    private ConsistentRead reading(PackWriteGeneration generation, Runnable onDigest, Object... digests) {
         Iterator<Object> script = List.of(digests).iterator();
         PackSources sources = () -> {
             events.add("digest");
+            onDigest.run();
             Object next = script.next();
             if (next instanceof RuntimeException failure) {
                 throw failure;
             }
             return (String) next;
         };
-        return new ConsistentRead(sources);
+        return new ConsistentRead(sources, generation);
     }
 
     private <T> Supplier<T> loading(Supplier<T> load) {
@@ -173,5 +179,132 @@ class ConsistentReadTest {
                 })))
                 .isSameAs(error);
         assertThat(events).containsExactly("digest", "load");
+    }
+
+    private static void assertStale(Throwable thrown) {
+        assertThat(thrown)
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.STALE_INPUT))
+                .hasMessage(STALE);
+    }
+
+    @Test
+    void aSwapRunningWhenTheReadStartsIsStaleAndNeitherDigestsNorLoads() {
+        PackWriteGeneration generation = new PackWriteGeneration();
+        generation.begin("pack-a");
+
+        assertThatThrownBy(() -> reading(generation, () -> {}, D1, D1).read(STALE, loading(() -> "value")))
+                .satisfies(ConsistentReadTest::assertStale);
+        assertThat(events).as("no digest, no load while the generation is odd").isEmpty();
+    }
+
+    @Test
+    void aSwapThatRunsAndFinishesDuringTheLoadIsStaleEvenWhenBothDigestsAgree() {
+        PackWriteGeneration generation = new PackWriteGeneration();
+
+        assertThatThrownBy(() -> reading(generation, () -> {}, D1, D1).read(STALE, loading(() -> {
+                    generation.begin("pack-a");
+                    generation.end("pack-a");
+                    return "A-B-A: the files are back to what they were";
+                })))
+                .satisfies(ConsistentReadTest::assertStale);
+        assertThat(events)
+                .as("the moved generation settles it; no second digest is needed")
+                .containsExactly("digest", "load");
+    }
+
+    @Test
+    void aFirstDigestThatRefusesWhileASwapRunsIsStaleNotUnreadable() {
+        PackWriteGeneration generation = new PackWriteGeneration();
+        CharterRefusal unreadable = refusal(RefusalCode.PACK_UNREADABLE);
+
+        assertThatThrownBy(() -> reading(generation, () -> generation.begin("pack-a"), unreadable)
+                        .read(STALE, loading(() -> "value")))
+                .satisfies(ConsistentReadTest::assertStale)
+                .hasCause(unreadable);
+        assertThat(events).containsExactly("digest");
+    }
+
+    @Test
+    void aLoadThatFailsWhileASwapRanIsStaleEvenWhenBothDigestsAgree() {
+        PackWriteGeneration generation = new PackWriteGeneration();
+        CharterRefusal notFound = refusal(RefusalCode.TACTIC_NOT_FOUND);
+
+        assertThatThrownBy(() -> reading(generation, () -> {}, D1, D1).read(STALE, loading(() -> {
+                    generation.begin("pack-a");
+                    generation.end("pack-a");
+                    throw notFound;
+                })))
+                .satisfies(ConsistentReadTest::assertStale)
+                .hasCause(notFound);
+    }
+
+    @Test
+    void aReadOverAQuietGenerationIsUnchanged() {
+        PackWriteGeneration generation = new PackWriteGeneration();
+        generation.begin("pack-a");
+        generation.end("pack-a");
+
+        assertThat(reading(generation, () -> {}, D1, D1).read(STALE, loading(() -> "value")))
+                .isEqualTo(new ConsistentRead.Verified<>("value", D1));
+    }
+
+    @Test
+    void theGenerationIsOddExactlyWhileASwapRunsAndOnlyEverGrows() {
+        PackWriteGeneration generation = new PackWriteGeneration();
+        long idle = generation.registry();
+
+        generation.begin("pack-a");
+        generation.begin("pack-b");
+        long running = generation.registry();
+        generation.end("pack-a");
+        long oneOfTwoDone = generation.registry();
+        generation.end("pack-b");
+        long done = generation.registry();
+
+        assertThat(PackWriteGeneration.isSwapping(idle)).isFalse();
+        assertThat(PackWriteGeneration.isSwapping(running)).isTrue();
+        assertThat(PackWriteGeneration.isSwapping(oneOfTwoDone))
+                .as("one swap still runs")
+                .isTrue();
+        assertThat(PackWriteGeneration.isSwapping(done)).isFalse();
+        assertThat(done).isGreaterThan(idle);
+        assertThat(PackWriteGeneration.isSwapping(generation.ofPack("pack-a"))).isFalse();
+        assertThat(generation.ofPack("pack-a")).as("pack-a swapped once").isGreaterThan(generation.ofPack("never"));
+    }
+
+    @Test
+    void bracketEndsTheSwapWhenTheSwapThrows() {
+        PackWriteGeneration generation = new PackWriteGeneration();
+
+        assertThatThrownBy(() -> generation.bracket("pack-a", () -> {
+                    assertThat(PackWriteGeneration.isSwapping(generation.registry()))
+                            .isTrue();
+                    throw new IllegalStateException("the swap failed");
+                }))
+                .isInstanceOf(IllegalStateException.class);
+
+        assertThat(PackWriteGeneration.isSwapping(generation.registry())).isFalse();
+        assertThat(PackWriteGeneration.isSwapping(generation.ofPack("pack-a"))).isFalse();
+    }
+
+    @Test
+    void awaitIdleReturnsWhenTheSwapEndsAndGivesUpWhenItDoesNot() throws InterruptedException {
+        PackWriteGeneration generation = new PackWriteGeneration();
+        generation.begin("pack-a");
+        assertThat(generation.awaitIdle(java.time.Duration.ofMillis(20))).isFalse();
+
+        Thread ender = new Thread(() -> {
+            try {
+                Thread.sleep(30);
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+            }
+            generation.end("pack-a");
+        });
+        ender.start();
+
+        assertThat(generation.awaitIdle(java.time.Duration.ofSeconds(10))).isTrue();
+        ender.join();
     }
 }

@@ -2,7 +2,7 @@
 title: "ADR-0061: A deployment of the charter service runs exactly one replica for now"
 description: "One replica per deployment: pack writes are serialized inside one JVM, so a second replica could lose a write. More replicas wait until a hosting option is chosen."
 doc_status: active
-updated: 2026-11-05T00:00:00Z
+updated: 2026-11-06T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-11-05'
 type: ADR
@@ -101,6 +101,25 @@ is no platform yet.
   "single replica" next to the compose example. The future image documentation repeats it.
   A rolling update also overlaps the old and new process, even at one replica. A redeploy must stop the old process
   before starting the new one (Kubernetes: `strategy: Recreate`).
+
+## Amendment 2026-11-06: the storage decision was taken
+
+The Context and decision 3 above leave the activation copy's storage to "when it is built". It is built now (mission
+`activation-register-and-closure-01M6NXBD`, decision `DM-01M6P92QKYFZW9KDGGQGX9H9VS`), and the one-replica rule is the
+assumption it rests on. The original text stands; this records what was decided:
+
+- The register is a file register: one `activation.json` per activation under `activations/<encoded id>/` of the
+  configuration root ([ADR-0038](/adr/0038-one-configuration-root-a-directory-per-domain/), amendment of the same
+  date). The file holds exactly the canonical bytes whose digest is the activation's revision.
+- Writes are serialized by 64 striped locks inside the JVM: an id's stripe is chosen by the hash of its encoded
+  directory name, so the lock structure never grows with the ids written. Every operation, a read included, holds its
+  id's lock across its read-compare-write. This is the in-process lock decision 3 describes, and it is why a second
+  process over the same root is still unsupported.
+- A write goes to a temporary file in the id's directory, is forced to the device, and replaces the document with an
+  atomic move, after which the directory is forced; a failed write leaves the previous document untouched. A delete
+  forces the id's directory and the root.
+- There is one writer, as decision 1 says. Nothing detects a second process, and the register's compare-and-set only
+  protects writers inside one JVM.
 
 ## Alternatives considered
 

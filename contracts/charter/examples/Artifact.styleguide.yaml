@@ -16,8 +16,6 @@ value:
     qualityTest: null
     structuralLintConfig: null
     appliesToLanguages: []
-    references: []
-    relationships: []
   _links:
     self:
       href: /api/v1/packs/qa/artifacts/styleguide/java-style

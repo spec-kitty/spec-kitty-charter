@@ -70,8 +70,7 @@ enum StyleguideYaml implements YamlFormat<StyleguideDso> {
                 tooling,
                 optional(root, "quality_test"),
                 lint,
-                strings(root, "applies_to_languages"),
-                strings(root, "references"));
+                strings(root, "applies_to_languages"));
     }
 
     @Override
@@ -108,7 +107,6 @@ enum StyleguideYaml implements YamlFormat<StyleguideDso> {
                 .structuralLintConfig()
                 .ifPresent(config -> emitter.present("structural_lint_config", config.toParsed()));
         return emitter.strings("applies_to_languages", styleguide.appliesToLanguages())
-                .strings("references", styleguide.references())
                 .dump();
     }
 }

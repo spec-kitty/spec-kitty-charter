@@ -4,6 +4,8 @@
 plugins {
     id("charter.spring-conventions")
     id("charter.hand-written")
+    // The nightly mutation floor (#239, ADR-0062 as amended 2026-11-06).
+    id("charter.mutation-conventions")
 }
 
 dependencies {
@@ -22,6 +24,8 @@ dependencies {
     // The standalone MockMvc tests of infra.api validate the generated interface's constraints, as the service does.
     testImplementation(catalog.lib("spring-boot-starter-validation"))
     testImplementation(catalog.lib("archunit"))
+    // ActivationWireTokenParityTest reads the contract enums that no generated model carries (#430).
+    testImplementation(catalog.lib("snakeyaml-engine"))
 }
 
 // The CPU-time budgets (tests tagged `timing`, #316, ADR-0057), report-only and never part of `test` or `check`, as in
@@ -31,6 +35,10 @@ dependencies {
 //   ./gradlew :activations:timingBudgets
 tasks.test {
     useJUnitPlatform { excludeTags("timing") }
+    // ActivationWireTokenParityTest reads the contract's CascadeKind enum, which no generated model carries (#430).
+    val contractSchemas = rootProject.layout.projectDirectory.dir("contracts/charter/schemas")
+    inputs.dir(contractSchemas).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("contractSchemas")
+    systemProperty("charter.contractSchemas", contractSchemas.asFile.absolutePath)
 }
 
 tasks.register<Test>("timingBudgets") {
@@ -44,4 +52,18 @@ tasks.register<Test>("timingBudgets") {
     mustRunAfter(tasks.test)
     doNotTrackState("a budget measured on another run says nothing about this one (#316)")
     testLogging { showStandardStreams = true }
+}
+
+// The nightly mutation floor (#239): one group for the whole module, ruled at 85 by the operator on 2026-11-06
+// (a trial run scored 91.4 %); raised by PR once the score clears it by 5.
+mutationFloors {
+    group("activations") {
+        packages.add("ai.speckitty.charter.activations")
+        floor = 85
+    }
+}
+
+// PIT runs the unit tests as `test` does: the timing budgets above stay out of it.
+pitest {
+    excludedGroups = setOf("timing")
 }

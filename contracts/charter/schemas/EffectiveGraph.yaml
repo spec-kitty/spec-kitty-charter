@@ -1,5 +1,10 @@
 title: EffectiveGraph
-description: The offering's graph filtered by an activation (ADR-0020 D7).
+description: >-
+  The graph of the merged closure under an activation (ADR-0020 D7, FR-018): the nodes in force, the edges among them
+  resolved through the layer overrides, and the layer overrides applied. It never answers what the offering says: the
+  offering lists every pack unmerged, this lists the one version in force of each artifact. An edge is dropped with
+  either endpoint, an edge from an overridden version is absent, and an edge to one ends at the winner. Nodes, edges and
+  layer overrides are each sorted, so the answer is byte-stable.
 type: object
 additionalProperties: false
 required:
@@ -8,6 +13,7 @@ required:
 - governanceFingerprint
 - nodes
 - edges
+- layerOverrides
 - _links
 properties:
   activationId:
@@ -42,18 +48,35 @@ properties:
     type: array
     items:
       $ref: EffectiveGraphNode.yaml
-    description: The nodes in force.
+    description: >-
+      The nodes in force, sorted by URN: the artifacts in force, and each step of a mission type (kind action) that the
+      closure holds while its mission type is in force. A template, an asset, a guard and a lifecycle are not nodes of
+      this graph: they have no state under an activation.
     x-derived:
-      rule: The offering's nodes, filtered by the activation.
+      rule: The artifacts in force of the merged closure, and the held steps of the mission types in force.
       inputs:
       - schemas/ActivationConfig.yaml
   edges:
     type: array
     items:
       $ref: EffectiveGraphEdge.yaml
-    description: The edges between nodes in force.
+    description: >-
+      The edges between nodes in force, resolved through the layer overrides and sorted by source, relation and target.
+      An edge starts at a step for the artifacts the step scopes.
     x-derived:
-      rule: The offering's edges whose endpoints both remain.
+      rule: The edges of the merged closure whose endpoints are both nodes in force.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  layerOverrides:
+    type: array
+    items:
+      $ref: LayerOverride.yaml
+    description: >-
+      The layer overrides whose artifact is a node of the graph, one record per losing version, sorted by artifact, then
+      by the loser's level and pack. An override of an artifact that is not in force, of a template or an asset, is not
+      listed.
+    x-derived:
+      rule: The versions the layer merge replaced, restricted to the nodes of the graph.
       inputs:
       - schemas/ActivationConfig.yaml
   _links:

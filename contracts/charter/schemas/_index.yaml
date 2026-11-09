@@ -24,10 +24,10 @@ files:
   - Sha256Digest.yaml
   - Slug.yaml
   - Tactic.yaml
-  - TacticReference.yaml
   - TacticStep.yaml
   - Urn.yaml
   - ActivatableKind.yaml
+  - ActionEnhancement.yaml
   - Activation.yaml
   - ActivationChange.yaml
   - ActivationConfig.yaml
@@ -53,11 +53,19 @@ files:
   - EffectiveGraphNode.yaml
   - ExclusionRequest.yaml
   - LanguageToken.yaml
+  - LayerOverride.yaml
+  - LayerOverrideSide.yaml
+  - NodeReference.yaml
   - PackPin.yaml
   - PresetApplication.yaml
-  - SelectableKind.yaml
   - SelectedArtifacts.yaml
   - SelectionRequest.yaml
   - SharedSkip.yaml
   - SkippedDeactivated.yaml
   - SkippedReport.yaml
+  - PackRegistration.yaml
+  - PackRegistrationStatus.yaml
+  - PackSource.yaml
+  - PackRegistrationNotices.yaml
+  - PackSourceRecord.yaml
+  - PackRegistrationProblem.yaml

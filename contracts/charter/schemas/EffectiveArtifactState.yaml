@@ -1,5 +1,9 @@
 title: EffectiveArtifactState
-description: Whether an artifact is in force under an activation.
+description: >-
+  Whether an artifact is in force under an activation. active: in force. excluded: out of force with the reason
+  deactivated, that is, denied by the document and not pruned by an earlier rule. inactive: every other artifact out of
+  force; a denied artifact that the enhancer rule or the mission type binding prunes (reason enhanced_target_not_in_force
+  or mission_type_not_in_force, which come before deactivated) is inactive, not excluded.
 type: string
 enum:
 - active

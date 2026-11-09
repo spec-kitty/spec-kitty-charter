@@ -47,6 +47,46 @@ class FileSystemPackSourcesTest {
     }
 
     @Test
+    void theFingerprintOfNamedPacksFollowsTheirFilesAloneOnRealDirectories(@TempDir Path dir) throws IOException {
+        Path inside = Files.createDirectories(dir.resolve("inside"));
+        Path outside = Files.createDirectories(dir.resolve("outside"));
+        Files.writeString(inside.resolve("pack.yaml"), "name: inside\n");
+        Files.writeString(outside.resolve("pack.yaml"), "name: outside\n");
+        FileSystemPackSources sources = new FileSystemPackSources(() -> List.of(
+                new PackLocation("inside", PackLevel.ORG, inside),
+                new PackLocation("outside", PackLevel.ORG, outside)));
+        String whole = sources.fingerprint();
+        String scoped = sources.fingerprintOf(List.of("inside"));
+
+        Files.writeString(outside.resolve("pack.yaml"), "name: outside\nchanged: true\n");
+        assertThat(sources.fingerprint()).as("the whole digest").isNotEqualTo(whole);
+        assertThat(sources.fingerprintOf(List.of("inside")))
+                .as("a pack that is not named")
+                .isEqualTo(scoped);
+
+        Files.writeString(inside.resolve("pack.yaml"), "name: inside\nchanged: true\n");
+        assertThat(sources.fingerprintOf(List.of("inside"))).as("a named pack").isNotEqualTo(scoped);
+        assertThat(scoped).matches("sha256:[0-9a-f]{64}");
+    }
+
+    @Test
+    void theFingerprintOfANameNoConfiguredPackBearsIsRefusedNotSkipped(@TempDir Path dir) throws IOException {
+        Path inside = Files.createDirectories(dir.resolve("inside"));
+        Files.writeString(inside.resolve("pack.yaml"), "name: inside\n");
+        FileSystemPackSources sources =
+                new FileSystemPackSources(() -> List.of(new PackLocation("inside", PackLevel.ORG, inside)));
+        assertThat(sources.fingerprintOf(List.of("inside")))
+                .as("the control: a configured name")
+                .startsWith("sha256:");
+
+        assertThatThrownBy(() -> sources.fingerprintOf(List.of("inside", "ghost")))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+                    assertThat(refusal.getMessage()).contains("ghost");
+                });
+    }
+
+    @Test
     void aPackThatIsNoDirectoryHasNoSourceFingerprint(@TempDir Path dir) {
         assertThatThrownBy(() -> sources(dir.resolve("missing")).fingerprint())
                 .isInstanceOfSatisfying(
@@ -220,7 +260,8 @@ class FileSystemPackSourcesTest {
      * each fixture below, and the fingerprint of all three locations in this order. The fixtures were byte-identical on
      * 90de8f9 and on this branch until 2026-11-03, when the {@code pack_id} of pack-a and pack-descriptor-only became
      * valid ULIDs (FR-003); their two fingerprints and the combined one were re-captured from the unchanged digest
-     * code, so the pin still guards the digest scheme.
+     * code, so the pin still guards the digest scheme. pack-a's fingerprint (and so the combined one) was re-captured on
+     * 2026-11-05 from the unchanged digest code after its alpha tactic lost its {@code references} (ADR-0064).
      */
     private static final List<PinnedPack> PINNED = List.of(
             new PinnedPack(
@@ -231,7 +272,7 @@ class FileSystemPackSourcesTest {
                             "alpha-tactic.tactic.yaml",
                             "beta-tactic.tactic.yaml",
                             "broken-tactic.tactic.yaml"),
-                    "sha256:1113dfc82113a09f82beff426ab6c98f386090d948240074ce7805ee6b5ed4af"),
+                    "sha256:843d6e5be4c925704f212a59c1b29ac01d454eb0c985bfb0d627527cd2c8897e"),
             new PinnedPack(
                     "pack-descriptor-only",
                     "/roundtrip-fixtures/pack-descriptor-only",
@@ -244,7 +285,7 @@ class FileSystemPackSourcesTest {
                     "sha256:731c25459783e328fb650111f46747f0b9bdc84f80f96388a9e6cfff682ffa44"));
 
     /** The fingerprint of the three {@link #PINNED} locations together, in that order (captured as above). */
-    private static final String PINNED_ALL = "sha256:659183f270b0a3511a97df724b96dcca0cdf4ff6064aded6b59136e031d62e52";
+    private static final String PINNED_ALL = "sha256:b2500f2a3d6a272d694047ae88ca5c3af5cf1f2a3ee1557ce232a174b9af6129";
 
     private record PinnedPack(String name, String resource, List<String> digested, String fingerprint) {}
 
