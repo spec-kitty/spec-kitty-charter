@@ -23,9 +23,10 @@ Feature: A deny entry on a required artifact is accepted when an active override
   is active in the document as it will be stored (selected or required, within the language filter, bound to a mission
   type in force, not denied and not hidden itself). The rule is the in-force resolution's own, so a write that is
   accepted is a deny entry the next read applies. An enhancement never satisfies, and a locked artifact is never
-  satisfied by an override. A create judges every deny entry of the body; a replace, a deactivate, a preset applied with
-  force and a select with includeDeactivated judge only the deny entries they add. A later write that removes the
-  override is not refused, and the read lists the deny entry in denyNotApplied (DIV-204).
+  satisfied by an override. A create judges every deny entry of the body; a deactivate judges the named target whether
+  or not its deny entry is already stored; a replace and the other writes judge only the deny entries they add (a
+  preset and a select add none). A later write that removes the override is not refused, and the read lists the deny
+  entry in denyNotApplied (DIV-204).
 
   Background:
     Given the org pack "main" with the file "pack.yaml":
