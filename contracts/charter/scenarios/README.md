@@ -116,8 +116,8 @@ Keep it small; add a step only when a scenario cannot be written without it.
   can spell out.
 - `Then the graph holds exactly the nodes:`, `... the edges:` and `... the layer overrides:` followed by a doc string, one
   line per member, in the answer's order: a URN; `<source> <relation> <target>`; `<artifact> won by <pack>@<level> over
-  <pack>@<level>`. `Then the context holds exactly the artifacts:` (`<kind>:<id> <state>/<reason>`, then ` suggested when
-  "<when>" because "<reason>"` for a suggestion) and `... the enhancements:` (`<kind>:<id> is enhanced by <kind>:<id>[,
+  <pack>@<level>`. `Then the context holds exactly the artifacts:` (`<kind>:<id> <state>/<reason>`, then
+  `suggested when "<when>" because "<reason>"` after a space for a suggestion) and `... the enhancements:` (`<kind>:<id> is enhanced by <kind>:<id>[,
   ...]`) read the action context the same way (`effective-graph-and-context.feature`, bound in `EffectiveGraphSteps`).
 - `Then the operation is refused as not implemented` — the last request's operation is declared in `../openapi.yaml`
   with `x-reserved` and a `501` of its own (read from the declaration, with no `default` fallback), and the answer is
