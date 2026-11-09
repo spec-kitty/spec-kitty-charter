@@ -790,6 +790,67 @@ class WholePackStoreTest {
     }
 
     @Test
+    @DisplayName("loadStaged lists every broken graph document at its file, beside the pack's other faults")
+    void loadStagedListsEveryGraphFaultAtItsFile(@TempDir Path host) throws IOException {
+        Path pack = richPack(host);
+        write(
+                pack,
+                "zeta.graph.yaml",
+                "schema_version: '1.0'\ngenerated_at: STATIC\nnodes: []\nedges: []\nsurprise: 1\n");
+        write(
+                pack,
+                "alpha.graph.yaml",
+                "schema_version: '1.0'\ngenerated_at: STATIC\nnodes: []\nedges: []\nother: 2\n");
+        write(pack, "notes/readme.txt", "stray");
+
+        assertThatThrownBy(() -> store.loadStaged(new StagedPack(pack)))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.VALIDATION_FAILED);
+                    assertThat(refusal.violations())
+                            .extracting(violation -> violation.pointer() + " " + violation.code())
+                            .containsExactly(
+                                    "alpha.graph.yaml drg_schema_error",
+                                    "zeta.graph.yaml drg_schema_error",
+                                    "notes/readme.txt unmodelled");
+                    assertThat(refusal.violations().getFirst().detail()).contains("alpha.graph.yaml");
+                });
+    }
+
+    @Test
+    @DisplayName("loadStaged lists a single broken graph document at its file, and no unmodelled entry for it")
+    void loadStagedListsOneGraphFaultAtItsFile(@TempDir Path host) throws IOException {
+        Path pack = richPack(host);
+        write(
+                pack,
+                "broken.graph.yaml",
+                "schema_version: '1.0'\ngenerated_at: STATIC\nnodes: []\nedges: []\nsurprise: 1\n");
+
+        assertThatThrownBy(() -> store.loadStaged(new StagedPack(pack)))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.violations())
+                                .extracting(violation -> violation.pointer() + " " + violation.code())
+                                .containsExactly("broken.graph.yaml drg_schema_error"));
+    }
+
+    @Test
+    @DisplayName("loadStaged lists each fault of one broken graph document, every one at that file")
+    void loadStagedListsEachFaultOfOneGraphDocument(@TempDir Path host) throws IOException {
+        Path pack = richPack(host);
+        write(pack, "broken.graph.yaml", "schema_version: '1.0'\nsurprise: 1\n");
+
+        assertThatThrownBy(() -> store.loadStaged(new StagedPack(pack)))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.violations())
+                                .hasSizeGreaterThan(1)
+                                .allSatisfy(violation -> {
+                                    assertThat(violation.pointer()).isEqualTo("broken.graph.yaml");
+                                    assertThat(violation.code()).isEqualTo("drg_schema_error");
+                                }));
+    }
+
+    @Test
     @DisplayName(
             "salvageStored keeps what can be read of a pack that does not read whole: ids by path, edges that parse")
     void salvageStoredCountsAnUnparsableFileByItsPathAndKeepsTheEdgesThatParse(@TempDir Path host) throws IOException {

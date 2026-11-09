@@ -31,6 +31,7 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -215,6 +216,19 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
      *     files declaring one id
      */
     public LoadedPack load(Path directory) {
+        return load(directory, true, new ArrayList<>()).pack();
+    }
+
+    /** What a load read: the pack, and the graph documents that could not be read, when the load did not refuse them. */
+    private record Loaded(LoadedPack pack, List<PackElementViolation> graphFaults) {}
+
+    /**
+     * The one load. With {@code refuseGraphFault} it refuses on the first unreadable graph document as {@link #load}
+     * does, right after the graph read; without it, it goes on and answers the faults in {@link Loaded#graphFaults()}
+     * (the registration, which lists every fault at once). The faults are also copied to {@code graphFaults} the moment
+     * they are read, so a caller that meets a later refusal still has them.
+     */
+    private Loaded load(Path directory, boolean refuseGraphFault, List<PackElementViolation> graphFaults) {
         Path packDir = directory.toAbsolutePath().normalize();
         Path parent = packDir.getParent();
         if (parent == null || packDir.getFileName() == null) {
@@ -228,8 +242,9 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         FilesystemPackStore.GraphRead graphs = store.readGraphs(key);
         List<PackFinding> warnings = new ArrayList<>();
         Pack.Builder builder = DomainRepositoryService.assembly(id, read, places, graphs, warnings);
-        if (!graphs.violations().isEmpty()) {
-            PackElementViolation first = graphs.violations().getFirst();
+        graphFaults.addAll(graphs.violations());
+        if (refuseGraphFault && !graphFaults.isEmpty()) {
+            PackElementViolation first = graphFaults.getFirst();
             throw new CharterRefusal(
                     RefusalCode.DRG_SCHEMA_ERROR, id.value() + "/" + first.file() + ": " + first.reason());
         }
@@ -247,6 +262,8 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         modelled.addAll(companionFiles(packDir, read));
         modelled.add(PackFileSet.PACK_YAML);
         graphs.documents().forEach(graph -> modelled.add(graph.file()));
+        // An unreadable graph document is already a fault at its file; it is not also an unmodelled file.
+        graphs.violations().forEach(fault -> modelled.add(fault.file()));
         pack.assetFiles().forEach(file -> modelled.add(PackFileSet.ASSETS + file.path()));
         pack.presets().forEach(preset -> modelled.add(PresetFiles.pathOf(preset.id())));
         if (pack.document().isPresent()) {
@@ -256,14 +273,16 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
             modelled.add(PackFileSet.MANIFEST);
         }
         namedPolicy.ifPresent(modelled::add);
-        return new LoadedPack(
-                pack,
-                new PackLayout(places),
-                graphs.documents(),
-                unmodelled(packDir, modelled, key),
-                manifest,
-                policy,
-                warnings);
+        return new Loaded(
+                new LoadedPack(
+                        pack,
+                        new PackLayout(places),
+                        graphs.documents(),
+                        unmodelled(packDir, modelled, key),
+                        manifest,
+                        policy,
+                        warnings),
+                List.copyOf(graphFaults));
     }
 
     /**
@@ -271,13 +290,19 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
      * {@code validation_failed} (IC-04 step 2): what {@link #load} refuses ({@code pack_unreadable}, a graph that breaks
      * its schema, an aggregate invariant) and what it tolerates, which a registration may not: a read violation, a file
      * nothing models, and a {@value RelationshipShard#SHARD_PATH} without the registration stamp, which is a reserved
-     * shard. Each fault is a violation of the refusal, so an author sees every one at once.
+     * shard. Each fault is a violation of the refusal, so an author sees every one at once, a graph document that breaks
+     * its schema included: each of its faults is a {@code drg_schema_error} violation at its pack-relative file, not a refusal on
+     * the first (operator ruling D-1). The order is deterministic: the graph faults first, in path order (the load's own
+     * first refusal, now listed with the rest), then the pack's read and rule violations, the unmodelled files and
+     * orphan fragments in path order, and the reserved shard last. When the aggregate itself cannot be built, the
+     * refusal at {@code pack} follows the graph faults already read.
      */
     @Override
     public WholePackWriteStore.Contents loadStaged(StagedPack staged) {
         Path directory = staged.directory();
-        LoadedPack loaded = loadRefusingAsInvalid(directory);
-        List<RefusalViolation> violations = new ArrayList<>();
+        Loaded read = loadRefusingAsInvalid(directory);
+        LoadedPack loaded = read.pack();
+        List<RefusalViolation> violations = new ArrayList<>(graphViolations(read.graphFaults()));
         loaded.pack()
                 .violations()
                 .forEach(violation ->
@@ -540,16 +565,31 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         return name.endsWith(suffix) ? name.substring(0, name.length() - suffix.length()) : name;
     }
 
-    /** {@link #load} with each fault of the tree, which in an upload is the author's, answered {@code validation_failed}. */
-    private LoadedPack loadRefusingAsInvalid(Path directory) {
+    /**
+     * {@link #load} with each fault of the tree, which in an upload is the author's, answered {@code validation_failed}.
+     * The graph faults are collected, not refused on; a refusal of the load that follows them (the pack as a whole) is
+     * listed after them.
+     */
+    private Loaded loadRefusingAsInvalid(Path directory) {
+        List<PackElementViolation> graphFaults = new ArrayList<>();
         try {
-            return load(directory);
+            return load(directory, false, graphFaults);
         } catch (CharterRefusal refusal) {
+            List<RefusalViolation> violations = new ArrayList<>(graphViolations(graphFaults));
+            violations.add(violationOf("pack", refusal.code().token(), String.valueOf(refusal.getMessage())));
             throw CharterRefusal.withViolations(
                     RefusalCode.VALIDATION_FAILED,
                     "The pack cannot be registered: " + refusal.getMessage(),
-                    List.of(violationOf("pack", refusal.code().token(), String.valueOf(refusal.getMessage()))));
+                    violations);
         }
+    }
+
+    /** A {@code drg_schema_error} violation per unreadable graph document, at its file, in path order. */
+    private static List<RefusalViolation> graphViolations(List<PackElementViolation> faults) {
+        return faults.stream()
+                .sorted(Comparator.comparing(PackElementViolation::file))
+                .map(fault -> violationOf(fault.file(), RefusalCode.DRG_SCHEMA_ERROR.token(), fault.reason()))
+                .toList();
     }
 
     /** A violation of the refusal; a kind that is no snake-case token is told as {@code invalid}. */
