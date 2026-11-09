@@ -24,6 +24,8 @@ dependencies {
     // The standalone MockMvc tests of infra.api validate the generated interface's constraints, as the service does.
     testImplementation(catalog.lib("spring-boot-starter-validation"))
     testImplementation(catalog.lib("archunit"))
+    // ActivationWireTokenParityTest reads the contract enums that no generated model carries (#430).
+    testImplementation(catalog.lib("snakeyaml-engine"))
 }
 
 // The CPU-time budgets (tests tagged `timing`, #316, ADR-0057), report-only and never part of `test` or `check`, as in
@@ -33,6 +35,10 @@ dependencies {
 //   ./gradlew :activations:timingBudgets
 tasks.test {
     useJUnitPlatform { excludeTags("timing") }
+    // ActivationWireTokenParityTest reads the contract's CascadeKind enum, which no generated model carries (#430).
+    val contractSchemas = rootProject.layout.projectDirectory.dir("contracts/charter/schemas")
+    inputs.dir(contractSchemas).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("contractSchemas")
+    systemProperty("charter.contractSchemas", contractSchemas.asFile.absolutePath)
 }
 
 tasks.register<Test>("timingBudgets") {

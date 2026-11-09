@@ -17,5 +17,5 @@ enum:
   - pack_unknown_key
   - prompt_slot_not_empty
 x-source:
-  path: service/charter-domain/src/main/java/ai/speckitty/charter/domain/Diagnostic.java
+  path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Diagnostic.java
   symbol: Diagnostic.Code
