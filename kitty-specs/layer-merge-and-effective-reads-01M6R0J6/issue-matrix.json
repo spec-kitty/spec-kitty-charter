@@ -108,6 +108,18 @@
       "verdict": "in-mission",
       "wp": null
     },
+    "#358": {
+      "evidence_ref": "Out of PR C by the operator's scope ruling; Follow-up: #358",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
+      "wp": "WP29"
+    },
     "#374": {
       "evidence_ref": "Cited for context: #374 is a closed input analysis; #398/#399 are the base PRs this mission stacks on",
       "fr": null,
