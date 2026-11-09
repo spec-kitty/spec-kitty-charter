@@ -96,7 +96,7 @@ class KindBindingsTest {
     @Test
     @DisplayName("the guard and the lifecycle are appended after the kinds bound before them, the step enhancement"
             + " last, each placed at its own path (ADR-0054, ADR-0050)")
-    void theGuardAndTheLifecycleAreAppendedLast() {
+    void theGuardAndTheLifecycleAreAppendedAfterTheTwelveKindsBoundBeforeThem() {
         List<ArtifactKind> kinds = KindBindings.kinds();
         // Append-only: the twelve kinds bound before them keep their positions, so a pack without either keeps its
         // digest; the step enhancement is appended after them (positions 12-13 are the guard and the lifecycle).

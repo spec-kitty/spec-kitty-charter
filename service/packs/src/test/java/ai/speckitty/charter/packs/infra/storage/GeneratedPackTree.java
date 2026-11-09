@@ -561,7 +561,9 @@ final class GeneratedPackTree {
         if (valid && kind == Kind.STEP_ENHANCEMENT) {
             // The enhancement's fragment companion (ADR-0066), beside it; part of its row, not a shape of its own. The
             // plant holds no enhances edge: one tree holds no base pack to qualify a target with, and the digest
-            // oracle reads files, not edges.
+            // oracle reads files, not edges. It is LOADED for listing purposes only: under the edge rules a
+            // registration or load would refuse it (EDGE_COUNT), so the verdict says it is listed and digested, not
+            // that the pack it sits in would register.
             Files.writeString(
                     file.resolveSibling(id + ".prompt-fragment.md"), ENHANCEMENT_FRAGMENT, StandardCharsets.UTF_8);
         }

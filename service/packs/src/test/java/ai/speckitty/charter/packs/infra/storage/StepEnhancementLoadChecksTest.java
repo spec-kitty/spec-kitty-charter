@@ -556,6 +556,22 @@ class StepEnhancementLoadChecksTest {
     }
 
     @Test
+    @DisplayName("a fragment with a byte-order mark and a marker answers the codec fault only, as a CRLF one does")
+    void aByteOrderMarkIsACodecFaultToo() throws IOException {
+        Enhancer pack = new Enhancer().pair("brief").graph();
+        pack.fragment(TYPE, "brief", "\uFEFF## Guidance\n\n<!-- other:slot:start -->\n");
+
+        assertThat(pack.stagedAs(CODE)).singleElement().satisfies(violation -> {
+            assertThat(violation.pointer()).isEqualTo(pack.yamlOf(TYPE, "brief"));
+            assertThat(violation.detail()).contains("brief.prompt-fragment.md").doesNotContain("slot marker");
+        });
+        assertThat(pack.validate()).singleElement().satisfies(finding -> {
+            assertThat(finding.file()).isEqualTo(pack.fragmentOf(TYPE, "brief"));
+            assertThat(finding.detail()).doesNotContain("slot marker");
+        });
+    }
+
+    @Test
     @DisplayName("a slot marker in a fragment is prompt_fragment_invalid at the fragment; the enhancement is held")
     void aSlotMarkerIsAtTheFragment() throws IOException {
         Enhancer pack = new Enhancer().pair("brief").graph();

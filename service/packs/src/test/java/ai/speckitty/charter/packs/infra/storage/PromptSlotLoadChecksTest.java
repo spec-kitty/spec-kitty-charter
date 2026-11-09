@@ -414,6 +414,17 @@ class PromptSlotLoadChecksTest {
                 .satisfies(violation -> assertThat(violation.kind()).isEqualTo("companion"));
     }
 
+    @Test
+    @DisplayName("a prompt with a byte-order mark is reported by the read before any grammar runs, as CRLF is")
+    void aByteOrderMarkIsReportedBeforeTheGrammar() throws IOException {
+        Pack pack = plan(new Pack(true), "\uFEFF" + UNPAIRED);
+
+        assertThat(pack.validate()).isEmpty();
+        assertThat(pack.violations())
+                .singleElement()
+                .satisfies(violation -> assertThat(violation.kind()).isEqualTo("companion"));
+    }
+
     // ---- A11: the load seat parses the document the store read, and it agrees with the raw text -------------------
 
     private static final List<String> FIXTURE_PROMPTS = List.of(

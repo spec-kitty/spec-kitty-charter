@@ -969,14 +969,43 @@ class FileSystemPackInspectorTest {
     }
 
     @Test
-    void aSlotMarkerInAFragmentIsPromptFragmentInvalidAtTheFragmentAndItsTwinIsNot(@TempDir Path dir)
-            throws IOException {
+    void aSlotMarkerInAFragmentIsPromptFragmentInvalidAtTheFragment(@TempDir Path dir) throws IOException {
         validPair(dir);
         write(dir, fragment("spdd-specify"), "## Guidance\n\n<!-- other:slot:start -->\nText.\n");
 
         assertThat(promptFragmentFindings(dir))
                 .singleElement()
                 .satisfies(finding -> assertThat(finding.file()).isEqualTo(fragment("spdd-specify")));
+    }
+
+    @Test
+    void aBlankCompanionThatAnEntryNamesIsPromptFragmentInvalidAtTheFragmentAndItsNonBlankTwinIsNot(@TempDir Path dir)
+            throws IOException {
+        write(dir, ENHANCEMENT_GRAPH, SPDD_EDGE);
+        write(dir, yaml("spdd-specify"), SPDD_ENHANCEMENT);
+        write(dir, fragment("spdd-specify"), "\n");
+
+        // A blank body breaks the structure schema three ways (no title, a preamble that is not text, no section):
+        // every finding is at the fragment, none at the enhancement or as an orphan.
+        assertThat(promptFragmentFindings(dir))
+                .isNotEmpty()
+                .allSatisfy(finding -> assertThat(finding.file()).isEqualTo(fragment("spdd-specify")));
+
+        write(dir, fragment("spdd-specify"), "## REASONS guidance\n\nState the reasons.\n");
+
+        assertThat(promptFragmentFindings(dir)).isEmpty();
+    }
+
+    @Test
+    void aFragmentOfOnlySpacesAndTabsIsBlankAndPromptFragmentInvalidAtTheFragment(@TempDir Path dir)
+            throws IOException {
+        write(dir, ENHANCEMENT_GRAPH, SPDD_EDGE);
+        write(dir, yaml("spdd-specify"), SPDD_ENHANCEMENT);
+        write(dir, fragment("spdd-specify"), "   \t \n\t\t\n  \n");
+
+        assertThat(promptFragmentFindings(dir))
+                .isNotEmpty()
+                .allSatisfy(finding -> assertThat(finding.file()).isEqualTo(fragment("spdd-specify")));
     }
 
     @Test
