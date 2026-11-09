@@ -36,6 +36,7 @@ class EffectiveContextTest {
         return ArtifactRef.of(Urn.parse(urn).orElseThrow()).orElseThrow();
     }
 
+    /** An artifact as the list gives it: a not-selected one carries the suggestion the list's rule found for it. */
     private static EffectiveArtifact artifact(String urn, State state, Reason reason) {
         return new EffectiveArtifact(
                 ref(urn),
@@ -46,7 +47,9 @@ class EffectiveContextTest {
                 Optional.empty(),
                 Policy.OPEN,
                 reason,
-                Optional.empty());
+                reason == Reason.NOT_SELECTED
+                        ? Optional.of(new Suggestion(Optional.empty(), Optional.empty()))
+                        : Optional.empty());
     }
 
     private static EffectiveSet set(EffectiveSkippedReport skipped, EffectiveArtifact... artifacts) {

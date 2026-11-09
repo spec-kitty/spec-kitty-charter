@@ -109,7 +109,9 @@ class EffectiveReadServiceTest {
         for (ArtifactRef ref : List.of(T1, C, B, A)) {
             winners.put(ref, new MergedSnapshot.Winner("main", PackLevel.ORG, Policy.OPEN));
         }
-        return new MergedSnapshot(winners, Map.of(), List.of(), List.of());
+        MergedSnapshot.Edge suggests =
+                new MergedSnapshot.Edge(A, B, RelationType.SUGGESTS, Optional.of("when"), Optional.of("why"));
+        return new MergedSnapshot(winners, Map.of(), List.of(suggests), List.of());
     }
 
     private static ArtifactState state(ArtifactRef ref, State state, Reason reason, Optional<Bucket> bucket) {

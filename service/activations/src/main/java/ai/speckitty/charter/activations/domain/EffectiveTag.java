@@ -14,7 +14,8 @@ import java.util.regex.Pattern;
 /**
  * The strong entity tag of a read that depends on the packs of an activation's closure (research R5, decisions
  * {@code 01M6Y11E55YP5TG1EJ1MDKCFRP} and {@code 01M6Y3GZFRC5WEQQ7G6GT0YMW3}): the four effective reads and
- * {@code getActivation}; the graph and the context each name their own read, and the context its mission type, action and depth. It is {@code sha256:} over a domain tag, the representation read, the activation's revision,
+ * {@code getActivation}; the graph and the context each name their own read, and the context its mission type, action and
+ * depth. It is {@code sha256:} over a domain tag, the representation read, the activation's revision,
  * the verified digest of the packs IN the closure ({@link ClosureSnapshot#closureFingerprint()}, never the source
  * fingerprint of every configured pack) and the normalized query, so it changes when the document or a pack of the
  * closure changes and never names two representations (another page, kind, state or read). A configured pack outside

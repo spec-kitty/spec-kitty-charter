@@ -94,7 +94,9 @@ class EffectiveReadHttpTest {
         for (ArtifactRef ref : List.of(A, B, C)) {
             winners.put(ref, new MergedSnapshot.Winner("fixture", PackLevel.ORG, Policy.OPEN));
         }
-        return new MergedSnapshot(winners, Map.of(), List.of(), List.of());
+        MergedSnapshot.Edge suggests =
+                new MergedSnapshot.Edge(A, B, RelationType.SUGGESTS, Optional.of("when"), Optional.of("why"));
+        return new MergedSnapshot(winners, Map.of(), List.of(suggests), List.of());
     }
 
     private static InForceAnswer answer() {

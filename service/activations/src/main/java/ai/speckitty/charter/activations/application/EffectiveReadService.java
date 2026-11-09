@@ -281,13 +281,15 @@ public class EffectiveReadService {
      * @param ifNoneMatch the {@code If-None-Match} header, verbatim; null when absent
      * @return the context, or {@code NotModified} when the header matches its tag
      * @throws CharterRefusal with {@code mission_type_not_found} or {@code action_not_found} when the merged closure
-     *     holds no such mission type or action, or as {@link #activation} does
+     *     holds no such mission type or action, judged before {@code If-None-Match} is compared, or as
+     *     {@link #activation} does
      */
     public Read<ContextRead> actionContext(
             ActivationId id, EffectiveTag.ContextQuery query, @Nullable String ifNoneMatch) {
         StoredActivation stored = found(id);
         PacksSession session = open(stored);
         ClosureSnapshot closure = session.snapshot();
+        session.requireAction(query.missionType(), query.action());
         String etag = EffectiveTag.context(stored.revision(), closure, query).token();
         if (EntityTags.noneMatch(ifNoneMatch, etag)) {
             return new Read.NotModified<>(etag);

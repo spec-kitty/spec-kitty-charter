@@ -263,20 +263,22 @@ public record EffectiveSet(List<EffectiveArtifact> artifacts, EffectiveSkippedRe
     }
 
     /**
-     * An artifact the action context lists as a suggestion: one the walk reached only through a {@code suggests} edge of an
-     * artifact it lists. It is a suggestion only when the activation does not select it ({@code not_selected}), by the
-     * rule {@link #suggestionsOf} applies to the list, so an artifact that is out of force for another reason (denied,
-     * overridden, language filtered, bound to a mission type not in force) is no suggestion and is not listed.
+     * An artifact the action context lists as a suggestion (decision {@code 01M70CTZP7P2EHSCK2G0RET74B}): one the listing
+     * gives a suggestion, judged over every artifact in force by {@link #suggestionsOf} (not selected, and no artifact in
+     * force reaches it through a hard relation, inside the context or outside it), and that an artifact the context lists
+     * reaches through {@code suggests}. The caller, which holds the walk, answers the second half; this answers the first,
+     * from the one rule of the list, and carries the edge the walk reached the artifact by.
      *
-     * @param ref the suggested artifact
+     * @param ref the artifact a listed artifact suggests
      * @param when the {@code when} of the {@code suggests} edge that reaches it, if it states one
      * @param reason the {@code reason} of that edge, if it states one
      * @return the artifact as the list gives it, with the edge's {@code when} and {@code reason} as its suggestion; empty
-     *     when the set does not hold it or it is out of force for another reason than a missing selection
+     *     when the list gives it no suggestion
      */
     public Optional<EffectiveArtifact> suggested(ArtifactRef ref, Optional<String> when, Optional<String> reason) {
         return artifacts.stream()
-                .filter(artifact -> artifact.ref().equals(ref) && notSelected(artifact.reason()))
+                .filter(artifact ->
+                        artifact.ref().equals(ref) && artifact.suggestion().isPresent())
                 .findFirst()
                 .map(artifact -> new EffectiveArtifact(
                         artifact.ref(),
@@ -387,7 +389,7 @@ public record EffectiveSet(List<EffectiveArtifact> artifacts, EffectiveSkippedRe
                 .isPresent();
     }
 
-    /** The one rule of a suggestion, for the list and for the action context: no other rule keeps the artifact out. */
+    /** The not-selected half of the one rule of a suggestion: no other rule keeps the artifact out. */
     private static boolean notSelected(Reason reason) {
         return reason == Reason.NOT_SELECTED;
     }

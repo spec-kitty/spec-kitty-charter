@@ -579,7 +579,9 @@ class EffectiveSetTest {
     @Test
     void anEdgeThatStatesNeitherWhenNorReasonIsStillASuggestionOfTheContext() {
         EffectiveSet set = new Scene()
+                .artifact("directive:D", State.ACTIVE, Reason.SELECTED)
                 .artifact("directive:S", State.INACTIVE, Reason.NOT_SELECTED)
+                .suggests("directive:D", "directive:S", null, null)
                 .of();
 
         assertThat(set.suggested(ref("directive:S"), Optional.empty(), Optional.empty()))
@@ -596,9 +598,11 @@ class EffectiveSetTest {
                 "tactic:Filtered", Reason.LANGUAGE_FILTERED,
                 "tactic:Unbound", Reason.MISSION_TYPE_NOT_IN_FORCE,
                 "tactic:Ungrounded", Reason.ENHANCED_TARGET_NOT_IN_FORCE);
-        outOfForce.forEach((urn, reason) ->
-                scene.artifact(urn, reason == Reason.DEACTIVATED ? State.EXCLUDED : State.INACTIVE, reason));
-        scene.artifact("tactic:Unselected", State.INACTIVE, Reason.NOT_SELECTED);
+        outOfForce.forEach((urn, reason) -> scene.artifact(
+                        urn, reason == Reason.DEACTIVATED ? State.EXCLUDED : State.INACTIVE, reason)
+                .suggests("directive:D", urn, "w", "r"));
+        scene.artifact("tactic:Unselected", State.INACTIVE, Reason.NOT_SELECTED)
+                .suggests("directive:D", "tactic:Unselected", "w", "r");
         EffectiveSet set = scene.of();
 
         outOfForce.forEach((urn, reason) -> assertThat(set.suggested(ref(urn), Optional.of("w"), Optional.of("r")))

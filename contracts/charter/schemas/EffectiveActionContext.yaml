@@ -3,9 +3,9 @@ description: >-
   What governs one action of one mission type under an activation (ADR-0020 D7, FR-019): ADR-0018's walk from the
   action's step over the artifacts in force of the merged closure, each with the enhancers in force that enhance it, and
   the skipped report. Never the offering's walk, which answers what the offering says. The walk follows the artifacts in
-  force only. An artifact the action reaches only through a suggests edge of an artifact listed, that the activation does
-  not select, is listed as a suggestion (state inactive, reason not_selected, with the edge's when and reason) and the walk
-  goes no further through it. A mission type that the activation does not put in force answers no artifacts and no
+  force only. An artifact that the listing gives a suggestion (not selected, and reached through no hard relation by any
+  artifact in force) and that an artifact listed here reaches through a suggests edge is listed as a suggestion
+  (state inactive, reason not_selected, with the edge's when and reason) and the walk goes no further through it. A mission type that the activation does not put in force answers no artifacts and no
   enhancements, and the skipped report lists the mission type in missionTypeNotInForce.
 type: object
 additionalProperties: false

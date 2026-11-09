@@ -278,8 +278,7 @@ class ClosureViewSessionStepRefsTest {
     @Test
     void aStepEnhancementOfAStepNoPackHoldsNamesThatStepInTheReportOfTheRealResolution() {
         // The production-shaped source (OD-6): a step enhancer selected next to its mission type, whose target step no
-        // pack
-        // holds, is not in force, and the report names the step as a node of kind action.
+        // pack holds, is not in force, and the report names the step as a node of kind action.
         Closure closure = new Closure()
                 .pack(
                         "alpha",

@@ -101,7 +101,14 @@ final class ClosureViewSession implements PacksSession {
 
     @Override
     public void requireAction(String missionType, String action) {
-        // stub: the green commit judges the names
+        // The packs slice judges the names first, whether or not the mission type is in force; with nothing in force
+        // the
+        // walk stops there, so no in-force resolution and no walk is paid for.
+        view.actionContext(
+                missionType,
+                action,
+                0,
+                new InForceStates(Map.of(), List.of(), List.of(), List.of(), List.of(), List.of(), Map.of()));
     }
 
     /** What is in force under the query: resolved on the first ask and kept for a request that asks again. */
