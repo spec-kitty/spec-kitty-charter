@@ -376,13 +376,13 @@
     },
     {
       "criterion_id": "FR-038",
-      "description": "Verify FR-038 is satisfied",
+      "description": "The activation write cascade walks the merged edges, so it never follows an edge of an artifact a layer override replaced, and walks the same edges as before where no override exists.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "service/packs/src/test/java/ai/speckitty/charter/packs/application/ClosureViewMergedTest.java#theCascadeNeverFollowsAnEdgeOfAnOverriddenArtifact; service/packs/src/test/java/ai/speckitty/charter/packs/application/ClosureViewMergedTest.java#theCascadeWalksTheSameEdgesWhereNoLayerOverrideExists",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:47:13.170796+00:00",
+      "notes": "PR B (#427, WP23); IC-07, DM-01M6R4W1H9P3451V89KHP97XKM. Unit-level guard; no dedicated contract scenario."
     },
     {
       "criterion_id": "FR-039",
