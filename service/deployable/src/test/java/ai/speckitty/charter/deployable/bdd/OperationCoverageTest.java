@@ -31,7 +31,8 @@ class OperationCoverageTest {
 
     @Test
     void aReservedOperationsSuccessesAreNotDeclaredForCoverage(@TempDir Path fixture) throws IOException {
-        // The control of the test above, on a planted contract: the rule still holds for a reservation to come.
+        // A planted contract: a reserved operation's successes are not declared for coverage, so the rule holds
+        // for a reservation to come, though the shipped contract reserves none.
         Files.createDirectories(fixture.resolve("charter/paths"));
         Files.writeString(fixture.resolve("charter/openapi.yaml"), """
                 openapi: 3.1.0

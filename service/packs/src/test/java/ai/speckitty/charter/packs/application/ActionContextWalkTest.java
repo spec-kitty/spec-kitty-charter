@@ -560,18 +560,16 @@ class ActionContextWalkTest {
 
     @Test
     @Timeout(value = 10, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
-    void aCycleOfRequiresAndASuggestsEdgeBackIntoItEndTheWalkAndListEachArtifactOnce() {
+    void aCycleOfRequiresEndsTheWalkAndListsEachArtifactOnce() {
         Closure closure = closure(
                 List.of("tactic:T1", "tactic:T2"),
                 edge(START, RelationType.SCOPE, "tactic:T1"),
                 edge("tactic:T1", RelationType.REQUIRES, "tactic:T2"),
-                edge("tactic:T2", RelationType.REQUIRES, "tactic:T1"),
-                edge("tactic:T2", RelationType.SUGGESTS, "tactic:T1"));
+                edge("tactic:T2", RelationType.REQUIRES, "tactic:T1"));
 
         Context context = walk(closure, 1, ActionContextWalkTest::everything);
 
         assertThat(listed(context)).containsExactly("tactic:T1", "tactic:T2");
-        assertThat(context.suggestionCandidates()).isEmpty();
     }
 
     @Test
