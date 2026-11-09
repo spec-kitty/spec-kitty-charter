@@ -757,8 +757,11 @@ class FileSystemPackInspectorTest {
         // their extension (the 7 asset payloads and 27 templates the whole-pack census counts, less the YAML payload
         // this walk listed already). The pin f85cf23 adds four mission step prompts (open-packs 7963b62), all under
         // missions/<type>/steps/, which this walk does not list: no step prompt or guideline file is classified. The
-        // #240 migration adds the 43 built-in procedures its directives' steps became.
-        assertThat(verdict.files()).hasSize(386 - 74 + 4 + (7 + 27 - 1) + 43);
+        // #240 migration adds the 43 built-in procedures its directives' steps became. The pin a2a9379 removes nine
+        // listed files (directive 038, five paradigms, the reasons-canvas styleguide and its two tactics) and adds six
+        // (the git-flow procedure, three conventions styleguides, the lane-recovery tactic and the execution-lanes
+        // toolguide); its guide and the two deleted __init__.py files are not listed by this walk.
+        assertThat(verdict.files()).hasSize(386 - 74 + 4 + (7 + 27 - 1) + 43 - 9 + 6);
         assertThat(verdict.files())
                 .filteredOn(f -> f.file().equals("assets/docs_structural_lint.config.yaml"))
                 .containsExactly(classified("assets/docs_structural_lint.config.yaml", "asset-payload"));
