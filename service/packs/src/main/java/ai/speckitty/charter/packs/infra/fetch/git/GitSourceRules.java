@@ -38,7 +38,7 @@ final class GitSourceRules {
     private static final String TAGS = "refs/tags/";
     private static final Pattern HOST_NAME =
             Pattern.compile("(?=.{1,253}$)[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*");
-    private static final Pattern PATH = Pattern.compile("(/[A-Za-z0-9._~-]+)+");
+    private static final Pattern PATH = Pattern.compile("(?:/[A-Za-z0-9._~-]++)++");
     private static final Pattern COMMIT = Pattern.compile("[0-9a-f]{40}|[0-9a-f]{64}");
     private static final Pattern NAME = Pattern.compile("[A-Za-z0-9._/-]+");
 
