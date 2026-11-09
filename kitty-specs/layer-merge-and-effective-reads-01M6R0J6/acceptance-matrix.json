@@ -136,13 +136,13 @@
     },
     {
       "criterion_id": "FR-014",
-      "description": "Verify FR-014 is satisfied",
+      "description": "The required floor is computed at read from the must-have items of every governing preset in the closure (convenience items excluded) and is never stored in the activation document.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "contracts/charter/scenarios/effective-reads.feature: \"US3 AS2 - a denied required directive stays in force with reason required, and the deny entry is not applied\"; service/packs/src/test/java/ai/speckitty/charter/packs/domain/RequiredFloorTest.java#aGoverningPresetsMustHaveItemIsRequiredByItsPackAndAConvenienceItemIsNot",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:46:00.983538+00:00",
+      "notes": "Ratchet (DIV-205), held through PR A0/B (#414, #427)."
     },
     {
       "criterion_id": "FR-015",
