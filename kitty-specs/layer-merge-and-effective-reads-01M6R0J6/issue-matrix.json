@@ -395,6 +395,18 @@
       "title": null,
       "verdict": "deferred-with-followup",
       "wp": null
+    },
+    "#45": {
+      "evidence_ref": "Release hold: PR C cuts no tag; cited for context only",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": "WP29"
     }
   },
   "schema_version": 1
