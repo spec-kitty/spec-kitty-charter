@@ -46,13 +46,13 @@
     },
     {
       "criterion_id": "FR-005",
-      "description": "Verify FR-005 is satisfied",
+      "description": "DELETE /packs/{packId}/artifacts/{kind}/{artifactId} answers 204 and removes the artifact, its outgoing registered edges and the pack's preset items naming it, answers 404 with its own code when not held, and 409 artifact_referenced naming the referring pack when another pack references it.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "contracts/charter/scenarios/pack-removal.feature: \"Deleting an artifact removes it and the preset item that names it, and keeps the rest of the pack\"; contracts/charter/scenarios/pack-removal.feature: \"An artifact another pack refers to is not deleted, and the refusal names the referrer\"",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:45:33.144251+00:00",
+      "notes": "PR A (#419, WP19). Outgoing edges: 'Deleting an artifact removes its outgoing registered edges...'; 404 codes: 'A path that names nothing the pack holds is a 404 with its own code'."
     },
     {
       "criterion_id": "FR-006",
