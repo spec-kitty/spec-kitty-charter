@@ -10,3 +10,8 @@
 - `drg_schema_error` is raised by the same definition: a registration refuses a graph document that breaks its schema
   with it, as a violation of `422 validation_failed` (operator ruling OD-3 (a)). Only `pack_level_mismatch` stays
   unraised among the codes the earlier text listed. The raised-code table of `errors.feature` lists both codes.
+- The shared texts say what a registration lists: `Problem.violations` also covers the `422 validation_failed` of a
+  registration, one entry per fault of the pack, and `RefusalViolation.pointer` is the pack-relative path of the file at
+  fault on such a violation. The reserved paragraph of the description now keeps only `prompt_slot_malformed`,
+  `prompt_slot_not_empty` and `prompt_slot_missing` reserved, and no longer suggests `artifact_locked` for an ADR-0066
+  refusal.
