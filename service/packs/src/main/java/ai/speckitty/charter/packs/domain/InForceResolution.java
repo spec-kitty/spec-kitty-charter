@@ -343,7 +343,8 @@ public final class InForceResolution {
 
         /** The mission type an artifact is bound to: a step by its URN, any other by the closure's bindings. */
         private Optional<Urn> bindingOf(Urn urn) {
-            return StepHolding.missionTypeOf(urn).or(() -> Optional.ofNullable(edges.bindings().get(urn)));
+            return StepHolding.missionTypeOf(urn)
+                    .or(() -> Optional.ofNullable(edges.bindings().get(urn)));
         }
 
         /** One step of the requirement (E5): add what no artifact in force satisfies, then hide what that hides. */

@@ -6,16 +6,16 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.activations.application.PacksSession;
 import ai.speckitty.charter.activations.domain.ActivationDocument;
+import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.ClosureSnapshots;
 import ai.speckitty.charter.activations.domain.DocumentRules;
-import ai.speckitty.charter.activations.domain.PackRef;
-import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport;
 import ai.speckitty.charter.activations.domain.GraphSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
 import ai.speckitty.charter.activations.domain.NodeRef;
+import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
@@ -144,7 +144,9 @@ class ClosureViewSessionStepRefsTest {
         MergedSnapshot.ArtifactState read =
                 ClosureViewSession.inForceOf(hidden).states().get(ref("directive:T"));
         assertThat(read.state()).isEqualTo(ai.speckitty.charter.activations.domain.EffectiveSet.State.INACTIVE);
-        assertThat(read.satisfiedBy()).as("a template is no artifact an activation selects").isEmpty();
+        assertThat(read.satisfiedBy())
+                .as("a template is no artifact an activation selects")
+                .isEmpty();
         assertThat(read.overriddenBy()).isEmpty();
 
         ActivationDocument denied = ActivationDocument.builder()

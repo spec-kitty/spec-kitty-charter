@@ -407,7 +407,9 @@ final class ClosureViewSession implements PacksSession {
      * no artifact) writes the relation for its mission type, so the via is kept as {@code mission_type:<M>}.
      */
     private static Optional<Urn> writer(Urn predecessor) {
-        return predecessor.kind() != NodeKind.ACTION ? Optional.of(predecessor) : StepHolding.missionTypeOf(predecessor);
+        return predecessor.kind() != NodeKind.ACTION
+                ? Optional.of(predecessor)
+                : StepHolding.missionTypeOf(predecessor);
     }
 
     private static Set<Urn> urns(Set<ArtifactRef> refs) {
