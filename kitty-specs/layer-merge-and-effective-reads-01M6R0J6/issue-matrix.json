@@ -168,6 +168,18 @@
       "verdict": "not-applicable",
       "wp": null
     },
+    "#392": {
+      "evidence_ref": "ADR-numbering reference, context only",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": "WP29"
+    },
     "#393": {
       "evidence_ref": "Context: PR reference for a merge-collision note",
       "fr": null,
