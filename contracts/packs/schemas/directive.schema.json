@@ -18,6 +18,7 @@
   "properties": {
     "id": {
       "pattern": "^[A-Z][A-Z0-9_-]*$",
+      "maxLength": 64,
       "title": "Id",
       "type": "string"
     },

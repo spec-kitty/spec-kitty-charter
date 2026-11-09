@@ -223,6 +223,8 @@ that calls it. A run that selects only some scenarios reports the others' operat
   defines, a `Problem` without a code, with no alias (FR-006); a `GET` on a write path and a `PUT` on the item of a
   kind without a write (a tactic) are a 405 `Problem` without a code. A write to a kind that cannot be written is
   not `kind_not_found`: the path names a served kind, and the method is what the path does not define.
+- `pack-id-length.feature`: the id length caps of the pack schemas (#440): a directive id of exactly 64 characters
+  is read, and one of 65 refuses the pack as `500 pack_unreadable`.
 - `activation-register.feature`: the activation register (ADR-0020 D3-D6, ADR-0059 D4-D5, #125, #360): create,
   register, read and remove an activation document in canonical form under its revision, its `ETag`, `If-Match` and
   `If-None-Match`, its refusals (`activation_invalid` with `violations`, `artifact_required` and `artifact_locked`

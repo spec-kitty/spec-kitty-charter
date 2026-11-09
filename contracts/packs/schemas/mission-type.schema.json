@@ -9,7 +9,8 @@
         "id": {
           "title": "Id",
           "type": "string",
-          "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+          "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+          "maxLength": 64
         },
         "title": {
           "title": "Title",
@@ -109,6 +110,7 @@
           "title": "Artifact Key",
           "type": "string",
           "pattern": "^[a-z][a-z0-9-]*(\\.[a-z0-9_-]+)+$",
+          "maxLength": 255,
           "description": "An opaque dotted key, kept verbatim; not an identity: the same key may stand at two steps."
         },
         "path_pattern": {
@@ -143,6 +145,7 @@
           "title": "Artifact Key",
           "type": "string",
           "pattern": "^[a-z][a-z0-9-]*(\\.[a-z0-9_-]+)+$",
+          "maxLength": 255,
           "description": "An opaque dotted key, kept verbatim; not an identity: the same key may stand at two steps."
         },
         "artifact_class": {
@@ -204,6 +207,7 @@
       "title": "Id",
       "type": "string",
       "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+      "maxLength": 64,
       "description": "The file stem; the file is missions/<id>/<id>.mission-type.yaml."
     },
     "title": {
