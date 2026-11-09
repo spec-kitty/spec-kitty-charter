@@ -180,6 +180,10 @@ class LayerMergeTest {
                         "C15",
                         "a step contest settled by one entry puts the named sibling in force in either order",
                         LayerMergeTest::c15StepSettledByOneEntry),
+                new Row(
+                        "C15",
+                        "an action that names no step (action:M/) shares no contest with its mission type",
+                        LayerMergeTest::c15ActionWithoutAStepNameIsNoStep),
                 new Row("C18", "a winner's languages keep the order it declares", LayerMergeTest::c18LanguageOrder),
                 new Row(
                         "C29",
@@ -375,6 +379,19 @@ class LayerMergeTest {
             assertThat(winner(merged, urn("action:M/s")).packId())
                     .as("the named sibling is in force whatever the closure order")
                     .isEqualTo(configured("org-y"));
+        }
+    }
+
+    private static void c15ActionWithoutAStepNameIsNoStep() {
+        for (boolean xFirst : new boolean[] {true, false}) {
+            Fixture contested = twoDefiners("action:M/", "mission_type:M", "org-y", "org-y", xFirst);
+
+            assertThatThrownBy(contested::merge).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT);
+                assertThat(refusal.getMessage())
+                        .as("the entry names the mission type, and an action that names no step is not its step")
+                        .contains("action:M/", "no overrides entry names");
+            });
         }
     }
 
