@@ -330,6 +330,7 @@ Feature: A deny entry on a required artifact is accepted when an active override
     When I GET "/activations/a-1"
     Then the response status is 200
     When I remember the ETag
+    And I remember the stored file of the activation "a-1"
     And I PUT "/activations/a-1/exclusions/directive/LK" with the remembered ETag and the body:
       """
       {}
@@ -337,11 +338,7 @@ Feature: A deny entry on a required artifact is accepted when an active override
     Then the response status is 409
     And the problem code is "artifact_locked"
     And the field at "/requiredBy/0/packId" is "main"
-    When I GET "/activations/a-1"
-    Then the field at "/config/deactivated/directive" holds exactly the ids:
-      """
-      LK
-      """
+    And the stored file of the activation "a-1" is the remembered one
 
   Scenario: IC-13 - deactivating T again after the override was unselected is 409 artifact_required
     R12, F1: T's deny entry was accepted for F's sake and stays stored when F is unselected. Deactivating T once more
