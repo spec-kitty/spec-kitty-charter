@@ -1,0 +1,129 @@
+{
+  "mission_slug": "regex-bounds-and-sonar-cleanup-01M706DF",
+  "mission_number": "",
+  "mission_type": "software-dev",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "packs/domain IdentifierBoundsTest (lane-a/e), WP01 approved; missions/domain IdentifierBoundsTest (lane-b/e), WP02 approved",
+      "pass_fail": "pass",
+      "verified_by": "claude:sonnet:generic-agent",
+      "verified_at": "2026-11-09T16:58:13.257299+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "packs/domain IdentifierBoundsTest (lane-a/e), WP01 approved; missions/domain IdentifierBoundsTest (lane-b/e), WP02 approved (ratchet cases)",
+      "pass_fail": "pass",
+      "verified_by": "claude:sonnet:generic-agent",
+      "verified_at": "2026-11-09T16:58:15.120646+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "packs/domain IdentifierBoundsTest (lane-a/e), WP01 approved; missions/domain IdentifierBoundsTest (lane-b/e), WP02 approved (captured parts)",
+      "pass_fail": "pass",
+      "verified_by": "claude:sonnet:generic-agent",
+      "verified_at": "2026-11-09T16:58:16.976316+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "packs/domain IdentifierBoundsTest (lane-a/e), WP01 approved; missions/domain IdentifierBoundsTest (lane-b/e), WP02 approved (domain caps 64/255)",
+      "pass_fail": "pass",
+      "verified_by": "claude:sonnet:generic-agent",
+      "verified_at": "2026-11-09T16:58:18.859151+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "lane-c contracts/packs/schemas maxLength + scenarios/pack-id-length.feature, WP03 approved",
+      "pass_fail": "pass",
+      "verified_by": "claude:sonnet:generic-agent",
+      "verified_at": "2026-11-09T16:58:20.743245+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "contracts/charter/changes/2026-11-09-pack-id-length-caps.md (lane-c), WP03 approved",
+      "pass_fail": "pass",
+      "verified_by": "claude:sonnet:generic-agent",
+      "verified_at": "2026-11-09T16:58:22.614979+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": ":packs:wholePackRoundTrip rc=0 on lane-e (domain caps) against pinned open-packs",
+      "pass_fail": "pass",
+      "verified_by": "claude:sonnet:generic-agent",
+      "verified_at": "2026-11-09T16:59:52.251447+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "packs infra.storage YamlResolverBoundsTest (lane-d), WP04 approved",
+      "pass_fail": "pass",
+      "verified_by": "claude:sonnet:generic-agent",
+      "verified_at": "2026-11-09T16:58:25.707994+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Verify FR-009 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "YamlResolverBoundsTest ratchet cases (lane-d), WP04 approved",
+      "pass_fail": "pass",
+      "verified_by": "claude:sonnet:generic-agent",
+      "verified_at": "2026-11-09T16:58:27.597113+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "Verify FR-010 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "GitSourceRulesBoundsTest (lane-d), WP04 approved",
+      "pass_fail": "pass",
+      "verified_by": "claude:sonnet:generic-agent",
+      "verified_at": "2026-11-09T16:58:29.480905+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-011",
+      "description": "Verify FR-011 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "build-logic RegexRecursionGuardTest (lane-e), WP05 approved",
+      "pass_fail": "pass",
+      "verified_by": "claude:sonnet:generic-agent",
+      "verified_at": "2026-11-09T16:58:31.355882+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-012",
+      "description": "Verify FR-012 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PackPolicy single-expression message (lane-d), WP04 approved",
+      "pass_fail": "pass",
+      "verified_by": "claude:sonnet:generic-agent",
+      "verified_at": "2026-11-09T16:58:33.228612+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}
