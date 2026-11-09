@@ -216,13 +216,13 @@
     },
     {
       "criterion_id": "FR-022",
-      "description": "Verify FR-022 is satisfied",
+      "description": "EffectiveArtifactReason no longer declares kind_default and declares the new reasons (overridden, language_filtered, mission_type_not_in_force, enhanced_target_not_in_force), and the domain reason enum matches the contract enum exactly.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "contracts/charter/schemas/EffectiveArtifactReason.yaml; service/activations/src/test/java/ai/speckitty/charter/activations/infra/api/ActivationWireTokenParityTest.java#everyDomainTokenIsAContractValueAndNoMore",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:46:24.097625+00:00",
+      "notes": "PR B (#427, WP22); ADR-0053 d10."
     },
     {
       "criterion_id": "FR-023",
