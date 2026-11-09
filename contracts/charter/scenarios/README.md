@@ -114,6 +114,11 @@ Keep it small; add a step only when a scenario cannot be written without it.
 - `When I PUT "<path>" with the body, its "<field>" padded to <n> bytes:` — the same PUT, after appending `a` to that
   top-level string field of the JSON doc string until it is exactly `<n>` bytes of UTF-8; for a size cap no doc string
   can spell out.
+- `Then the graph holds exactly the nodes:`, `... the edges:` and `... the layer overrides:` followed by a doc string, one
+  line per member, in the answer's order: a URN; `<source> <relation> <target>`; `<artifact> won by <pack>@<level> over
+  <pack>@<level>`. `Then the context holds exactly the artifacts:` (`<kind>:<id> <state>/<reason>`, then ` suggested when
+  "<when>" because "<reason>"` for a suggestion) and `... the enhancements:` (`<kind>:<id> is enhanced by <kind>:<id>[,
+  ...]`) read the action context the same way (`effective-graph-and-context.feature`, bound in `EffectiveGraphSteps`).
 - `Then the operation is refused as not implemented` — the last request's operation is declared in `../openapi.yaml`
   with `x-reserved` and a `501` of its own (read from the declaration, with no `default` fallback), and the answer is
   `501` with an `application/problem+json` body whose `status` is 501 and which has no `code` member, with the
@@ -244,8 +249,13 @@ that calls it. A run that selects only some scenarios reports the others' operat
   A10, A14, A15, B8; SC-005), each with a control in the same answer; the A10 report and `DELETE` half is `@WIP`.
 - `activation-cascade-depth.feature`: the optional `depth` of a cascading select and deactivate (IC-21, FR-043; #408): the
   count of `suggests` hops, `skippedByDepth`, the round trip of a deactivate and its gap, and the refusals at `/depth`.
-- `activations.feature`: the activation operations still reserved (ADR-0020 D8), the four effective reads: one 501
-  pin per operation, each removed when its operation is built.
+- `effective-reads.feature` and `layer-merge.feature`: the effective artifact list, the skipped report and the layer
+  merge as they answer (PR B). `effective-graph-and-context.feature`: the effective graph and the effective action
+  context (PR C, IC-11, FR-018 to FR-021, US5 AS1 to AS5): an edge with an endpoint out of force is absent, a layer
+  override is listed (a held step's, not a template's), an enhancer is read from the node's side, a suggestion only
+  through `suggests`, a mission type not in force answers an empty context, an unknown mission type or action is `404`,
+  and each read has an `ETag` of its own. No operation is reserved any more, so no scenario pins a `501`
+  (`ReservedOperationCoverageTest` keeps the machinery, with a planted contract as its control).
 - `relationships.feature`: a registered relationship from a mission type the pack holds, and the refusal of one it
   does not hold (#194, ADR-0044).
 - `composition.feature`: the compose of the configured packs' `depends_on` closure on `GET /offering`, in the

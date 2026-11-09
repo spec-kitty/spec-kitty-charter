@@ -252,6 +252,28 @@ public record EffectiveSkippedReport(
     }
 
     /**
+     * The report with another {@code missionTypeNotInForce}, for an action context, whose bucket names the mission type
+     * itself and nothing else.
+     *
+     * @param missionTypes the mission types not in force; empty for none
+     * @return a copy with that bucket, every other bucket as it is
+     */
+    public EffectiveSkippedReport withMissionTypeNotInForce(List<ArtifactRef> missionTypes) {
+        return new EffectiveSkippedReport(
+                staleIds,
+                denyNotApplied,
+                enhancedTargetNotInForce,
+                overrideNotApplied,
+                requiredNotHeld,
+                requiredNotInForce,
+                pinNotHeld,
+                languageFiltered,
+                missionTypes,
+                skippedDeactivated,
+                overridden);
+    }
+
+    /**
      * The report in the shape a write's {@link SkippedReport} has: the denied artifacts, and the three buckets a write
      * fills left empty, as they are at read.
      *

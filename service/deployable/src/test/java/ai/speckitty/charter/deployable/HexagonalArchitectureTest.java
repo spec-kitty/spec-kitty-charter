@@ -338,7 +338,10 @@ class HexagonalArchitectureTest {
     @Test
     @DisplayName("RESERVED_METHOD_READS_NOTHING")
     void aReservedOperationReadsAndStoresNothing() {
-        RESERVED_METHOD_READS_NOTHING.check(classes);
+        // PR C built the last two reserved operations (IC-11), so the rule may select no method here; it still gates
+        // one
+        // that is marked, and its control below runs it unchanged on a marked method that reaches a use case.
+        RESERVED_METHOD_READS_NOTHING.allowEmptyShould(true).check(classes);
     }
 
     @Test

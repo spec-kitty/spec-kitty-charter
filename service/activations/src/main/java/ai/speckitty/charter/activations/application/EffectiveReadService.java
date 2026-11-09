@@ -1,6 +1,7 @@
 package ai.speckitty.charter.activations.application;
 
 import ai.speckitty.charter.activations.application.ActivationService.Read;
+import ai.speckitty.charter.activations.domain.ActionContext;
 import ai.speckitty.charter.activations.domain.ActivationId;
 import ai.speckitty.charter.activations.domain.ActivationRepository;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
@@ -16,10 +17,12 @@ import ai.speckitty.charter.activations.domain.EffectiveTag;
 import ai.speckitty.charter.activations.domain.GraphSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
+import ai.speckitty.charter.activations.domain.NodeRef;
 import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.transport.EntityTags;
 import java.util.List;
@@ -32,7 +35,8 @@ import org.springframework.stereotype.Service;
 
 /**
  * The reads of what an activation puts in force: {@code getActivation} with its deny notice, the effective artifact
- * list and the skipped report (IC-09, FR-013, FR-017, FR-020, FR-021, FR-027).
+ * list, the skipped report, the effective graph and the effective action context (IC-09, IC-11, FR-013, FR-017 to
+ * FR-021, FR-027).
  *
  * <p>Each read opens one {@link PacksSession}, one verified read of the closure the stored document names (E19), and
  * answers everything from it: the tag, then, only when the {@code If-None-Match} does not match it, the merge and the
@@ -257,9 +261,15 @@ public class EffectiveReadService {
      */
     public Read<GraphRead> graph(ActivationId id, @Nullable String ifNoneMatch) {
         StoredActivation stored = found(id);
+        PacksSession session = open(stored);
+        ClosureSnapshot closure = session.snapshot();
+        String etag = EffectiveTag.graph(stored.revision(), closure).token();
+        if (EntityTags.noneMatch(ifNoneMatch, etag)) {
+            return new Read.NotModified<>(etag);
+        }
+        GraphSnapshot graph = session.graph(EffectiveSet.queryOf(stored.document()));
         return new Read.Found<>(
-                new GraphRead(stored, "", "", GraphSnapshot.empty()),
-                EffectiveTag.skipped(stored.revision(), open(stored).snapshot()).token());
+                new GraphRead(stored, closure.fingerprint(), closure.closureFingerprint(), graph), etag);
     }
 
     /**
@@ -276,10 +286,21 @@ public class EffectiveReadService {
     public Read<ContextRead> actionContext(
             ActivationId id, EffectiveTag.ContextQuery query, @Nullable String ifNoneMatch) {
         StoredActivation stored = found(id);
-        EffectiveContext empty = new EffectiveContext(List.of(), List.of(), EffectiveSkippedReport.empty());
+        PacksSession session = open(stored);
+        ClosureSnapshot closure = session.snapshot();
+        String etag = EffectiveTag.context(stored.revision(), closure, query).token();
+        if (EntityTags.noneMatch(ifNoneMatch, etag)) {
+            return new Read.NotModified<>(etag);
+        }
+        ActionContext walked = session.actionContext(
+                query.missionType(), query.action(), query.depth(), EffectiveSet.queryOf(stored.document()));
+        EffectiveContext context = EffectiveContext.of(
+                effectiveSet(stored, session),
+                walked,
+                new ArtifactRef(ArtifactKind.MISSION_TYPE, query.missionType()),
+                new NodeRef(NodeKind.ACTION, query.missionType() + "/" + query.action()));
         return new Read.Found<>(
-                new ContextRead(stored, "", "", query, empty),
-                EffectiveTag.skipped(stored.revision(), open(stored).snapshot()).token());
+                new ContextRead(stored, closure.fingerprint(), closure.closureFingerprint(), query, context), etag);
     }
 
     /** The page of the set the query asks for: filtered, strictly after the cursor's position, at most a page size. */

@@ -275,7 +275,19 @@ public record EffectiveSet(List<EffectiveArtifact> artifacts, EffectiveSkippedRe
      *     when the set does not hold it or it is out of force for another reason than a missing selection
      */
     public Optional<EffectiveArtifact> suggested(ArtifactRef ref, Optional<String> when, Optional<String> reason) {
-        return Optional.empty();
+        return artifacts.stream()
+                .filter(artifact -> artifact.ref().equals(ref) && notSelected(artifact.reason()))
+                .findFirst()
+                .map(artifact -> new EffectiveArtifact(
+                        artifact.ref(),
+                        artifact.packId(),
+                        artifact.level(),
+                        artifact.state(),
+                        artifact.required(),
+                        artifact.satisfiedBy(),
+                        artifact.policy(),
+                        artifact.reason(),
+                        Optional.of(new Suggestion(when, reason))));
     }
 
     /**
@@ -371,8 +383,13 @@ public record EffectiveSet(List<EffectiveArtifact> artifacts, EffectiveSkippedRe
     /** Whether the artifact is out of force for want of a selection: no other rule keeps it out (decision 01M6Y6VE6VZQ4MXD98N93JB3GJ). */
     private static boolean notSelected(Map<ArtifactRef, ArtifactState> states, ArtifactRef ref) {
         return Optional.ofNullable(states.get(ref))
-                .filter(state -> state.reason() == Reason.NOT_SELECTED)
+                .filter(state -> notSelected(state.reason()))
                 .isPresent();
+    }
+
+    /** The one rule of a suggestion, for the list and for the action context: no other rule keeps the artifact out. */
+    private static boolean notSelected(Reason reason) {
+        return reason == Reason.NOT_SELECTED;
     }
 
     private static boolean inForce(Map<ArtifactRef, ArtifactState> states, ArtifactRef ref) {

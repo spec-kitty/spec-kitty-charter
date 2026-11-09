@@ -11,8 +11,10 @@ import ai.speckitty.charter.api.model.ArtifactSummary;
 import ai.speckitty.charter.api.model.CharterRefusal;
 import ai.speckitty.charter.api.model.DenyNotApplied;
 import ai.speckitty.charter.api.model.EffectiveArtifact;
+import ai.speckitty.charter.api.model.EffectiveGraphEdge;
 import ai.speckitty.charter.api.model.EffectiveGraphNode;
 import ai.speckitty.charter.api.model.EnhancerWithoutTarget;
+import ai.speckitty.charter.api.model.LayerOverrideSide;
 import ai.speckitty.charter.api.model.Link;
 import ai.speckitty.charter.api.model.NodeReference;
 import ai.speckitty.charter.api.model.OfferingPack;
@@ -25,6 +27,7 @@ import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.packs.application.ArtifactReadService;
 import ai.speckitty.charter.packs.domain.Diagnostic;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -185,9 +188,11 @@ class WireTokenParityTest {
                         tokens(ArtifactReadService.SERVED.toArray(ArtifactKind[]::new), ArtifactKind::token),
                         ARTIFACT_KIND_TOKENS,
                         token -> member(ARTIFACT_KIND_TOKENS, token)),
-                // NodeKind would reach the wire only through EffectiveGraphNode.kind (a reserved read no main code
-                // builds yet); the domain side is the kinds authored in graphs (see AUTHORED_NODE_KINDS for why guard
-                // and lifecycle are not among them).
+                // NodeKind reaches the wire through EffectiveGraphNode.kind (the effective graph, served since PR C)
+                // and
+                // NodeReference.kind (below); the domain side is the kinds authored in graphs (see AUTHORED_NODE_KINDS
+                // for
+                // why guard and lifecycle are not among them).
                 new Pair(
                         "NodeKind",
                         AUTHORED_NODE_KINDS,
@@ -205,7 +210,25 @@ class WireTokenParityTest {
                         "PackLevel",
                         tokens(PackLevel.values(), PackLevel::token),
                         values(OfferingPack.LevelEnum.values(), OfferingPack.LevelEnum::getValue),
-                        OfferingPack.LevelEnum::fromValue));
+                        OfferingPack.LevelEnum::fromValue),
+                // The two copies the generator inlines for the effective graph (IC-11): the level of a layer override's
+                // version and the relation of an edge, which ClosureViewSession's callers read by fromValue.
+                new Pair(
+                        "LayerOverrideSide.level (PackLevel)",
+                        tokens(PackLevel.values(), PackLevel::token),
+                        values(LayerOverrideSide.LevelEnum.values(), LayerOverrideSide.LevelEnum::getValue),
+                        LayerOverrideSide.LevelEnum::fromValue),
+                new Pair(
+                        "EffectiveGraphEdge.relation (RelationType)",
+                        // Less implemented_by, a guard's derived edge: its source is a guard, which is no node of the
+                        // graph
+                        // (no activation state, decision 01M702A71YF7WNDTG2AA89K8ZA), so no edge of the graph carries
+                        // it.
+                        tokens(RelationType.values(), RelationType::token).stream()
+                                .filter(token -> !token.equals("implemented_by"))
+                                .toList(),
+                        values(EffectiveGraphEdge.RelationEnum.values(), EffectiveGraphEdge.RelationEnum::getValue),
+                        EffectiveGraphEdge.RelationEnum::fromValue));
     }
 
     private static List<String> artifactKindTokens() {

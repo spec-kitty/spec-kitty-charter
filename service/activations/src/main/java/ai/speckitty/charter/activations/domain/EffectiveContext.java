@@ -1,8 +1,12 @@
 package ai.speckitty.charter.activations.domain;
 
 import ai.speckitty.charter.activations.domain.EffectiveSet.EffectiveArtifact;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 /**
  * What {@code getEffectiveActionContext} answers (IC-11, FR-019, rule E16), assembled from the {@link EffectiveSet} and
@@ -20,7 +24,7 @@ public record EffectiveContext(
      * A node of the context and the enhancers in force that enhance it.
      *
      * @param target the step, or a listed artifact
-     * @param enhancedBy the enhancers in force, sorted
+     * @param enhancedBy the enhancers in force, sorted by kind and id whatever order they are given in
      */
     public record Enhancement(NodeRef target, List<ArtifactRef> enhancedBy) {
 
@@ -32,7 +36,9 @@ public record EffectiveContext(
          */
         public Enhancement {
             Objects.requireNonNull(target, "target");
-            enhancedBy = List.copyOf(Objects.requireNonNull(enhancedBy, "enhancedBy"));
+            enhancedBy = Objects.requireNonNull(enhancedBy, "enhancedBy").stream()
+                    .sorted()
+                    .toList();
         }
     }
 
@@ -56,9 +62,44 @@ public record EffectiveContext(
      * @param walked what the walk reached from the action's step
      * @param missionType the mission type of the action
      * @param step the action's step
-     * @return the context
+     * @return the context; for a mission type not in force it lists nothing and names the mission type itself in the
+     *     skipped report's {@code missionTypeNotInForce}, as an action context's report does
+     * @throws IllegalStateException when the walk lists an artifact the set does not hold
      */
     public static EffectiveContext of(EffectiveSet set, ActionContext walked, ArtifactRef missionType, NodeRef step) {
-        return new EffectiveContext(List.of(), List.of(), set.skipped());
+        if (!walked.missionTypeInForce()) {
+            return new EffectiveContext(
+                    List.of(), List.of(), set.skipped().withMissionTypeNotInForce(List.of(missionType)));
+        }
+        Map<ArtifactRef, EffectiveArtifact> byRef = new HashMap<>();
+        set.artifacts().forEach(artifact -> byRef.put(artifact.ref(), artifact));
+        List<EffectiveArtifact> artifacts = Stream.concat(
+                        walked.entries().stream().map(entry -> inForce(byRef, entry.ref())),
+                        walked.suggestionCandidates().stream()
+                                .flatMap(candidate ->
+                                        set.suggested(candidate.ref(), candidate.when(), candidate.reason()).stream()))
+                .sorted(Comparator.comparing(artifact -> artifact.ref().urn(), ActivationDocument.CODE_POINT_ORDER))
+                .toList();
+        return new EffectiveContext(
+                artifacts, enhancements(walked, step), set.skipped().withMissionTypeNotInForce(List.of()));
+    }
+
+    private static EffectiveArtifact inForce(Map<ArtifactRef, EffectiveArtifact> byRef, ArtifactRef ref) {
+        EffectiveArtifact artifact = byRef.get(ref);
+        if (artifact == null) {
+            throw new IllegalStateException("The walk lists " + ref.urn() + ", which the effective set does not hold.");
+        }
+        return artifact;
+    }
+
+    /** The enhancers in force of the step and of each listed artifact that has one, by node. */
+    private static List<Enhancement> enhancements(ActionContext walked, NodeRef step) {
+        Stream<Enhancement> ofStep = Stream.of(new Enhancement(step, walked.stepEnhancedBy()));
+        Stream<Enhancement> ofArtifacts =
+                walked.entries().stream().map(entry -> new Enhancement(NodeRef.of(entry.ref()), entry.enhancedBy()));
+        return Stream.concat(ofStep, ofArtifacts)
+                .filter(enhancement -> !enhancement.enhancedBy().isEmpty())
+                .sorted(Comparator.comparing(Enhancement::target))
+                .toList();
     }
 }

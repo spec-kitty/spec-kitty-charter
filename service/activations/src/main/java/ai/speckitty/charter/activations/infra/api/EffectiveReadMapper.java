@@ -7,10 +7,15 @@ import ai.speckitty.charter.activations.application.EffectiveReadService.Page;
 import ai.speckitty.charter.activations.application.EffectiveReadService.PageQuery;
 import ai.speckitty.charter.activations.application.EffectiveReadService.Report;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
+import ai.speckitty.charter.activations.domain.EffectiveContext;
 import ai.speckitty.charter.activations.domain.EffectiveSet;
 import ai.speckitty.charter.activations.domain.EffectiveSet.EffectiveArtifact;
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport;
+import ai.speckitty.charter.activations.domain.EffectiveTag;
+import ai.speckitty.charter.activations.domain.GraphSnapshot;
+import ai.speckitty.charter.activations.domain.MergedSnapshot;
 import ai.speckitty.charter.activations.domain.NodeRef;
+import ai.speckitty.charter.api.model.ActionEnhancement;
 import ai.speckitty.charter.api.model.ActivationSkippedReport;
 import ai.speckitty.charter.api.model.ActivationSummary;
 import ai.speckitty.charter.api.model.DenyNotApplied;
@@ -18,7 +23,11 @@ import ai.speckitty.charter.api.model.EffectiveActionContext;
 import ai.speckitty.charter.api.model.EffectiveArtifactList;
 import ai.speckitty.charter.api.model.EffectiveArtifactSuggestion;
 import ai.speckitty.charter.api.model.EffectiveGraph;
+import ai.speckitty.charter.api.model.EffectiveGraphEdge;
+import ai.speckitty.charter.api.model.EffectiveGraphNode;
 import ai.speckitty.charter.api.model.EnhancerWithoutTarget;
+import ai.speckitty.charter.api.model.LayerOverride;
+import ai.speckitty.charter.api.model.LayerOverrideSide;
 import ai.speckitty.charter.api.model.Link;
 import ai.speckitty.charter.api.model.NodeReference;
 import ai.speckitty.charter.api.model.OverriddenArtifact;
@@ -27,7 +36,6 @@ import ai.speckitty.charter.api.model.PageInfo;
 import ai.speckitty.charter.api.model.RequiredNotInForce;
 import ai.speckitty.charter.api.model.SkippedReport;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -105,13 +113,28 @@ public class EffectiveReadMapper {
      */
     public EffectiveGraph toGraph(GraphRead read) {
         String id = read.stored().id().value();
+        GraphSnapshot graph = read.graph();
         return new EffectiveGraph(
                 id,
                 read.stored().revision().token(),
                 read.governanceFingerprint(),
-                List.of(),
-                List.of(),
-                List.of(),
+                graph.nodes().stream()
+                        .map(node -> new EffectiveGraphNode(
+                                node.urn(),
+                                EffectiveGraphNode.KindEnum.fromValue(
+                                        node.kind().token())))
+                        .toList(),
+                graph.edges().stream()
+                        .map(edge -> new EffectiveGraphEdge(
+                                edge.source().urn(),
+                                EffectiveGraphEdge.RelationEnum.fromValue(
+                                        edge.relation().token()),
+                                edge.target().urn()))
+                        .toList(),
+                graph.layerOverrides().stream()
+                        .map(replaced -> new LayerOverride(
+                                replaced.ref().urn(), side(replaced.winner()), side(replaced.loser())))
+                        .toList(),
                 Map.of("self", new Link(activations.self(id) + "/graph")));
     }
 
@@ -125,16 +148,39 @@ public class EffectiveReadMapper {
      */
     public EffectiveActionContext toContext(ContextRead read, boolean depthGiven) {
         String id = read.stored().id().value();
+        EffectiveContext context = read.context();
         return new EffectiveActionContext(
                 id,
                 read.stored().revision().token(),
                 read.governanceFingerprint(),
                 read.query().missionType(),
                 read.query().action(),
-                List.of(),
-                List.of(),
-                skipped(read.context().skipped()),
-                Map.of("self", new Link(activations.self(id) + "/graph")));
+                context.artifacts().stream().map(EffectiveReadMapper::item).toList(),
+                context.enhancements().stream()
+                        .map(enhancement -> new ActionEnhancement(
+                                node(enhancement.target()),
+                                ActivationChangeMapper.references(enhancement.enhancedBy())))
+                        .toList(),
+                skipped(context.skipped()),
+                Map.of("self", contextLink(id, read.query(), depthGiven)));
+    }
+
+    /** The context's own request: its path, and the depth when the request named one. */
+    private Link contextLink(String id, EffectiveTag.ContextQuery query, boolean depthGiven) {
+        UriComponentsBuilder href = UriComponentsBuilder.fromPath(
+                activations.self(id) + "/mission-types/{missionType}" + "/actions/{action}/context");
+        if (depthGiven) {
+            href.queryParam("depth", query.depth());
+        }
+        return new Link(href.buildAndExpand(query.missionType(), query.action())
+                .encode()
+                .toUriString());
+    }
+
+    private static LayerOverrideSide side(MergedSnapshot.LayerOverride.Side side) {
+        return new LayerOverrideSide(
+                side.packId(),
+                LayerOverrideSide.LevelEnum.fromValue(side.level().token()));
     }
 
     private static ActivationSummary summary(EffectiveSet.Summary counts) {

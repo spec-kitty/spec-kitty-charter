@@ -180,10 +180,9 @@ Feature: Failures outside the charter's refusals
     names the code), and the registration job and its admission add registration_not_found, pack_source_unavailable,
     registration_timed_out and pack_storage_full, the https_archive, filesystem and git source fetchers add
     pack_source_refused, and the two DELETEs add relationship_not_found and relationship_not_registered (and
-    artifact_referenced, the code of the removal of an artifact another pack refers to). action_not_found is not raised:
-    the
-    operation that answered it is gone, and the reserved activation operation that will answer it again
-    (ADR-0020 D7) answers 501 until it is built. unresolved_edge_endpoint, and, with the load that
+    artifact_referenced, the code of the removal of an artifact another pack refers to). action_not_found is raised by
+    the effective action context (ADR-0020 D7, PR C), which answers it with 404 when the merged closure holds no such
+    action of the mission type. unresolved_edge_endpoint, and, with the load that
     judged a pack's graph, pack_level_mismatch and drg_schema_error, are raised by no operation (no
     operation reaches the whole-pack load that still refuses a graph as drg_schema_error). The activation
     register adds activation_not_found, activation_invalid, artifact_required and artifact_locked, its
@@ -234,4 +233,5 @@ Feature: Failures outside the charter's refusals
       | artifact_locked             |
       | artifact_not_found          |
       | mission_type_not_found      |
+      | action_not_found            |
       | preset_not_found            |

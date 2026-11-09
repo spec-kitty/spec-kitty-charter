@@ -229,6 +229,16 @@ Feature: The effective graph and the effective action context answer what the ac
           title: implement
           role: implementer
       """
+    And the built-in pack "core" with the file "steps.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes:
+      - urn: action:software-dev/implement
+        kind: action
+        label: implement
+      edges: []
+      """
     And the built-in pack "core" with the file "directives/E.directive.yaml":
       """
       schema_version: '1.0'
@@ -259,6 +269,16 @@ Feature: The effective graph and the effective action context answer what the ac
         - id: implement
           title: implement
           role: implementer
+      """
+    And the project pack "proj" with the file "steps.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes:
+      - urn: action:software-dev/implement
+        kind: action
+        label: implement
+      edges: []
       """
     And the project pack "proj" with the file "directives/E.directive.yaml":
       """
@@ -349,7 +369,10 @@ Feature: The effective graph and the effective action context answer what the ac
       """
       schema_version: '1.0'
       generated_at: STATIC
-      nodes: []
+      nodes:
+      - urn: action:software-dev/implement
+        kind: action
+        label: implement
       edges:
       - source: tactic:e
         target: directive:T
@@ -475,7 +498,10 @@ Feature: The effective graph and the effective action context answer what the ac
       """
       schema_version: '1.0'
       generated_at: STATIC
-      nodes: []
+      nodes:
+      - urn: action:software-dev/implement
+        kind: action
+        label: implement
       edges:
       - source: action:software-dev/implement
         target: directive:D
@@ -582,7 +608,13 @@ Feature: The effective graph and the effective action context answer what the ac
       """
       schema_version: '1.0'
       generated_at: STATIC
-      nodes: []
+      nodes:
+      - urn: action:software-dev/implement
+        kind: action
+        label: implement
+      - urn: action:research/gather
+        kind: action
+        label: gather
       edges:
       - source: action:research/gather
         target: directive:D
@@ -646,6 +678,19 @@ Feature: The effective graph and the effective action context answer what the ac
           title: gather
           role: implementer
       """
+    And the org pack "main" with the file "steps.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes:
+      - urn: action:software-dev/implement
+        kind: action
+        label: implement
+      - urn: action:research/gather
+        kind: action
+        label: gather
+      edges: []
+      """
     And the org pack "main" with the file "directives/D.directive.yaml":
       """
       schema_version: '1.0'
@@ -692,6 +737,16 @@ Feature: The effective graph and the effective action context answer what the ac
         - id: implement
           title: implement
           role: implementer
+      """
+    And the org pack "main" with the file "steps.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes:
+      - urn: action:software-dev/implement
+        kind: action
+        label: implement
+      edges: []
       """
     And the org pack "main" with the file "directives/D.directive.yaml":
       """
@@ -777,7 +832,10 @@ Feature: The effective graph and the effective action context answer what the ac
       """
       schema_version: '1.0'
       generated_at: STATIC
-      nodes: []
+      nodes:
+      - urn: action:software-dev/implement
+        kind: action
+        label: implement
       edges:
       - source: tactic:e
         target: directive:T
@@ -860,7 +918,10 @@ Feature: The effective graph and the effective action context answer what the ac
       """
       schema_version: '1.0'
       generated_at: STATIC
-      nodes: []
+      nodes:
+      - urn: action:software-dev/implement
+        kind: action
+        label: implement
       edges:
       - source: action:software-dev/implement
         target: directive:D
