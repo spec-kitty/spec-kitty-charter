@@ -224,7 +224,9 @@ that calls it. A run that selects only some scenarios reports the others' operat
   kind without a write (a tactic) are a 405 `Problem` without a code. A write to a kind that cannot be written is
   not `kind_not_found`: the path names a served kind, and the method is what the path does not define.
 - `pack-id-length.feature`: the id length caps of the pack schemas (#440): a directive id of exactly 64 characters
-  is read, and one of 65 refuses the pack as `500 pack_unreadable`.
+  is read, and one of 65 refuses the pack as `500 pack_unreadable`; an executable entry of 255 characters is read
+  and one of 256 refuses it; an expected artifact key of 256 refuses it; and a directive `PUT` whose id is 65
+  characters is refused as `422 validation_failed` and leaves the pack readable.
 - `activation-register.feature`: the activation register (ADR-0020 D3-D6, ADR-0059 D4-D5, #125, #360): create,
   register, read and remove an activation document in canonical form under its revision, its `ETag`, `If-Match` and
   `If-None-Match`, its refusals (`activation_invalid` with `violations`, `artifact_required` and `artifact_locked`

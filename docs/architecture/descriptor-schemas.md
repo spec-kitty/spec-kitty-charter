@@ -147,18 +147,18 @@ The mission type as a declared state machine, as decided in ADR-0050 and ADR-005
 **`mission-type`** (`missions/<id>/<id>.mission-type.yaml`):
 
 - `+ schema_version`: `"1.0"`
-- `+ id`: `~ ^[a-z][a-z0-9]*(-[a-z0-9]+)*$`, equal to the file stem
+- `+ id`: `~ ^[a-z][a-z0-9]*(-[a-z0-9]+)*$`, at most 64 characters, equal to the file stem
 - `+ title`, `+ description`; `- content`
 - `- requires_substantive_spec`: only `true`
 - `- path_conventions`: at least one of `workspace`, `tests`, `deliverables`, `documentation`,
   `data`
 - `- expected_output_artifacts`, `- references`: each `[1..]`
 - `+ steps`: `[1..]` steps, in run order; `- on_demand_steps`: `[1..]` steps
-- a step: `+ id` (the id grammar), `+ title`, `- description` (1 to 160 characters), `- role`
+- a step: `+ id` (the id grammar, at most 64 characters), `+ title`, `- description` (1 to 160 characters), `- role`
   (`~ ^[a-z][a-z0-9-]*$`), `- prompt_path`, `- guidelines_path`, `- expected_input_artifacts`,
   `- expected_output_artifacts`, `- references`
-- an input: `+ artifact_key`, `+ path_pattern`, `- blocking` (only `true`)
-- an output: `+ artifact_key`, `+ artifact_class`, `+ path_pattern`, `- blocking`,
+- an input: `+ artifact_key` (at most 255 characters), `+ path_pattern`, `- blocking` (only `true`)
+- an output: `+ artifact_key` (at most 255 characters), `+ artifact_class`, `+ path_pattern`, `- blocking`,
   `- template_path`
 - a reference: `+ type` (a guidance kind), `+ id`, `- when`, `- reason`
 
