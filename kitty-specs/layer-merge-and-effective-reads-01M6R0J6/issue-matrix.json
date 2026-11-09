@@ -301,7 +301,7 @@
       "wp": null
     },
     "#426": {
-      "evidence_ref": "Follow-up issue for the PR B pre-PR squad's deferred findings (research/closeout-notes-pr-b.md, Pre-PR squad dispositions)",
+      "evidence_ref": "Follow-up: #426 holds the PR B pre-PR squad deferred findings (research/closeout-notes-pr-b.md, Pre-PR squad dispositions)",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -337,7 +337,55 @@
       "wp": null
     },
     "#429": {
-      "evidence_ref": "Follow-up from the #427 landing pass: step URNs filtered out of the skipped report; latent until #428; PR C reads it before WP27/WP28",
+      "evidence_ref": "PR C scope by operator ruling D3: NodeReference and step targets in WP28 (T162-T163); OD-6 source in WP27 (T160)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "in-mission",
+      "wp": "WP28"
+    },
+    "#430": {
+      "evidence_ref": "Wire-token parity op, landed as #436 outside this mission; PR C narrows RequiredNotInForce.reason (D4b) in WP27/WP28",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#436": {
+      "evidence_ref": "Merged PR for #430 outside this mission; its D4b deviation is taken by WP27 (T161) and WP28 (T164)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#438": {
+      "evidence_ref": "Phase 2 of the step-enhancements mission; consumer of PR C symbols (StepHolding, NodeRef, the walk); notified at PR C merge",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#439": {
+      "evidence_ref": "Follow-up: #439 (smallest-URN tie of satisfiedBy/overriddenBy needs an operator ruling; plan-point squad finding 23)",
       "fr": null,
       "nfr": null,
       "repo": null,
