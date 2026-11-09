@@ -10,3 +10,6 @@
   `prompt_slot_not_empty`, `prompt_fragment_invalid` and `prompt_slot_missing`, all `raised: false` until #424 builds
   the checks; `DiagnosticCode` reserves the legacy-warning spelling of `prompt_slot_not_empty`. As with other 0.x
   contract additions, core must regenerate its refusal-code DTOs; no existing operation raises the new codes.
+  The service classifies and validates step-enhancement files but does not store or activate the kind until #424
+  (#428): until then, selecting a `step_enhancement` answers `404 artifact_not_found`, and a preset's
+  `activated_step_enhancements` ids are stale.
