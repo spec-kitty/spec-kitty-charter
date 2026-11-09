@@ -1,7 +1,7 @@
 title: ActivatableKind
 description: >-
-  An artifact kind an activation selects or deactivates: every artifact kind of NodeKind except template and asset,
-  which are never activated. mission_type is an ordinary kind of the document (one kind model, IC-20): it is selected
+  An artifact kind an activation selects or deactivates: every artifact kind of NodeKind except template, asset and
+  action, which are never activated (an action is a step of a mission type, held through it). mission_type is an ordinary kind of the document (one kind model, IC-20): it is selected
   under selected.mission_type and denied under deactivated.mission_type like any other kind. The snake_case token of
   ArtifactKind.
 type: string
