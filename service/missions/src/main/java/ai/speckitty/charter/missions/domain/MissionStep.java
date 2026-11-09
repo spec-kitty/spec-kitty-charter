@@ -44,8 +44,9 @@ public record MissionStep(
 
     private static final ModularRuleset<String> ID_RULES = ModularRuleset.<String>emptyRules()
             .must(Constraints.of(
-                    "A mission step id is a letter-first kebab slug.",
-                    id -> MissionTypeIdentifier.ID.matcher(id).matches()));
+                    "A mission step id is a letter-first kebab slug of at most 64 characters.",
+                    id -> id.length() <= MissionTypeIdentifier.MAX_LENGTH
+                            && MissionTypeIdentifier.ID.matcher(id).matches()));
     private static final ModularRuleset<String> TEXT_RULES = ModularRuleset.<String>emptyRules()
             .must(Constraints.of("A mission step's title and description are not blank.", text -> !text.isBlank()));
     private static final ModularRuleset<String> DESCRIPTION_RULES = ModularRuleset.<String>emptyRules()

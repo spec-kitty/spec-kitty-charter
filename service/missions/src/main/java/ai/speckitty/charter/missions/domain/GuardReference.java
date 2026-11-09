@@ -14,8 +14,17 @@ import java.util.regex.Pattern;
  */
 public record GuardReference(Optional<String> pack, String id) {
 
-    private static final String KEBAB = "[a-z0-9]+(?:-[a-z0-9]+)*";
-    private static final Pattern SPELLING = Pattern.compile("(?:(" + KEBAB + ")::guard:)?(" + KEBAB + ")");
+    private static final String KEBAB = "[a-z0-9]++(?:-[a-z0-9]++)*+";
+
+    /** The longest pack name or guard id a reference accepts (#440). */
+    private static final int MAX_PART_LENGTH = 64;
+
+    private static final String SEPARATOR = "::guard:";
+
+    /** The longest spelling {@link #parse(String)} matches: two capped parts and the separator. */
+    private static final int MAX_SPELLING_LENGTH = 2 * MAX_PART_LENGTH + SEPARATOR.length();
+
+    private static final Pattern SPELLING = Pattern.compile("(?:(" + KEBAB + ")" + SEPARATOR + ")?(" + KEBAB + ")");
 
     /**
      * Checks the parts.
@@ -26,6 +35,10 @@ public record GuardReference(Optional<String> pack, String id) {
     public GuardReference {
         Objects.requireNonNull(pack, "pack");
         Objects.requireNonNull(id, "id");
+        if (id.length() > MAX_PART_LENGTH || pack.map(String::length).orElse(0) > MAX_PART_LENGTH) {
+            throw new IllegalArgumentException(
+                    "a guard reference's pack name and guard id are at most " + MAX_PART_LENGTH + " characters");
+        }
     }
 
     /**
@@ -36,6 +49,10 @@ public record GuardReference(Optional<String> pack, String id) {
      * @throws IllegalArgumentException when the text is neither spelling
      */
     public static GuardReference parse(String text) {
+        if (text.length() > MAX_SPELLING_LENGTH) {
+            throw new IllegalArgumentException(
+                    "a guard reference is not longer than " + MAX_SPELLING_LENGTH + " characters");
+        }
         Matcher m = SPELLING.matcher(text);
         if (!m.matches()) {
             throw new IllegalArgumentException("guard ref '" + text + "' is neither <id> nor <pack>::guard:<id>");
@@ -58,6 +75,6 @@ public record GuardReference(Optional<String> pack, String id) {
      * @return the bare id, or {@code <pack>::guard:<id>}
      */
     public String spelling() {
-        return pack.map(p -> p + "::guard:" + id).orElse(id);
+        return pack.map(p -> p + SEPARATOR + id).orElse(id);
     }
 }

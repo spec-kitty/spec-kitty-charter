@@ -13,12 +13,17 @@ import java.util.regex.Pattern;
 public record LifecycleIdentifier(String value) {
 
     /** The id grammar of a lifecycle, as the {@code lifecycle} schema has it. */
-    static final Pattern ID = Pattern.compile("[a-z0-9]+(-[a-z0-9]+)*");
+    static final Pattern ID = Pattern.compile("[a-z0-9]++(?:-[a-z0-9]++)*+");
+
+    /** The longest lifecycle id accepted, checked before the pattern (#440). */
+    static final int MAX_LENGTH = 64;
 
     private static final ModularRuleset<String> RULES = ModularRuleset.<String>emptyRules()
             .must(Constraints.of(
-                    "A lifecycle identifier is a kebab slug.",
-                    text -> text != null && ID.matcher(text).matches()));
+                    "A lifecycle identifier is a kebab slug of at most 64 characters.",
+                    text -> text != null
+                            && text.length() <= MAX_LENGTH
+                            && ID.matcher(text).matches()));
 
     /**
      * Checks the identifier's grammar.
