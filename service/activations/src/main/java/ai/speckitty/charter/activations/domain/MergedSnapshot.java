@@ -98,13 +98,13 @@ public record MergedSnapshot(
     }
 
     /**
-     * One version of an artifact that a later level replaced.
+     * One version of a node that a later level replaced.
      *
-     * @param ref the artifact
+     * @param ref the node: an artifact, or a step of a mission type held by the closure
      * @param winner the version in force
      * @param loser the version it replaced
      */
-    public record LayerOverride(ArtifactRef ref, Side winner, Side loser) {
+    public record LayerOverride(NodeRef ref, Side winner, Side loser) {
 
         /**
          * One version of the artifact.
@@ -129,7 +129,7 @@ public record MergedSnapshot(
         /**
          * Checks the fields.
          *
-         * @param ref the artifact
+         * @param ref the node
          * @param winner the version in force
          * @param loser the version it replaced
          */
@@ -234,7 +234,7 @@ public record MergedSnapshot(
             List<OverrideNotApplied> overrideNotApplied,
             List<ArtifactRef> requiredNotHeld,
             List<RequiredNotInForce> requiredNotInForce,
-            Map<ArtifactRef, List<ArtifactRef>> enhancedTargets) {
+            Map<ArtifactRef, List<NodeRef>> enhancedTargets) {
 
         private static final InForceAnswer EMPTY =
                 new InForceAnswer(Map.of(), List.of(), List.of(), List.of(), List.of(), List.of(), Map.of());
@@ -257,7 +257,7 @@ public record MergedSnapshot(
             overrideNotApplied = List.copyOf(Objects.requireNonNull(overrideNotApplied, "overrideNotApplied"));
             requiredNotHeld = List.copyOf(Objects.requireNonNull(requiredNotHeld, "requiredNotHeld"));
             requiredNotInForce = List.copyOf(Objects.requireNonNull(requiredNotInForce, "requiredNotInForce"));
-            Map<ArtifactRef, List<ArtifactRef>> targets = new LinkedHashMap<>();
+            Map<ArtifactRef, List<NodeRef>> targets = new LinkedHashMap<>();
             Objects.requireNonNull(enhancedTargets, "enhancedTargets")
                     .forEach((ref, list) -> targets.put(ref, List.copyOf(list)));
             enhancedTargets = Collections.unmodifiableMap(targets);

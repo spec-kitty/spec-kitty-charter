@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -35,11 +36,9 @@ import org.snakeyaml.engine.v2.api.LoadSettings;
  * domain lacks. The mappers read each enum by {@code fromValue}, so a constant added on one side only would be a
  * runtime 500, not a compile error (#430).
  *
- * <p>{@code RequiredNotInForce.reason} is filled from {@link EffectiveSet.Reason}, which has ten values against the
- * contract's two. Only the pruning reasons reach that bucket: in-force resolution lists a required or locked artifact
- * there only when the enhancer or binding rule prunes it ({@code InForceResolution.listedAsRequiredNotInForce}). So its
- * row pins the contract against those two constants ({@link #PRUNING_REASONS}). Narrowing the domain type instead would
- * change the records of both layers and {@code ClosureViewSession}, which PR C owns; that is left to the operator.
+ * <p>{@code RequiredNotInForce.reason} is the one row that reads its domain side by reflection: the enum type of the
+ * {@code reason} component of {@link EffectiveSkippedReport.RequiredNotInForce}, whatever that type is, so the row pins
+ * the contract to the type the record really holds and cannot drift from it as a copy of a list would (D4b, #436).
  */
 class ActivationWireTokenParityTest {
 
@@ -60,10 +59,6 @@ class ActivationWireTokenParityTest {
                             .map(ArtifactKind::token),
                     Stream.of(CascadeScope.ALL))
             .toList();
-
-    /** The reasons for which pruning removes a required or locked artifact: the only ones in {@code requiredNotInForce}. */
-    private static final List<EffectiveSet.Reason> PRUNING_REASONS =
-            List.of(EffectiveSet.Reason.MISSION_TYPE_NOT_IN_FORCE, EffectiveSet.Reason.ENHANCED_TARGET_NOT_IN_FORCE);
 
     private static List<Pair> pairs() {
         return List.of(
@@ -91,7 +86,7 @@ class ActivationWireTokenParityTest {
                         DenyNotApplied.ReasonEnum::fromValue),
                 new Pair(
                         "RequiredNotInForce.reason",
-                        PRUNING_REASONS.stream().map(EffectiveSet.Reason::token).toList(),
+                        componentTokens(EffectiveSkippedReport.RequiredNotInForce.class, "reason"),
                         values(RequiredNotInForce.ReasonEnum.values(), RequiredNotInForce.ReasonEnum::getValue),
                         RequiredNotInForce.ReasonEnum::fromValue),
                 new Pair(
@@ -118,6 +113,21 @@ class ActivationWireTokenParityTest {
             throw new IllegalArgumentException(token + " is not one of " + values);
         }
         return token;
+    }
+
+    /** The lower-case constant names of the enum type of one record component, read by reflection. */
+    private static List<String> componentTokens(Class<? extends Record> record, String component) {
+        Class<?> type = Arrays.stream(record.getRecordComponents())
+                .filter(candidate -> candidate.getName().equals(component))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError(record.getSimpleName() + " has no component " + component))
+                .getType();
+        assertThat(type.isEnum())
+                .as("the %s component of %s is an enum", component, record.getSimpleName())
+                .isTrue();
+        return Arrays.stream(type.getEnumConstants())
+                .map(constant -> ((Enum<?>) constant).name().toLowerCase(Locale.ROOT))
+                .toList();
     }
 
     private static <E> List<String> tokens(E[] constants, Function<E, String> token) {

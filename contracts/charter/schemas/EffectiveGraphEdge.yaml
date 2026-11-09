@@ -1,5 +1,7 @@
 title: EffectiveGraphEdge
-description: An edge of the activation-filtered graph; an edge is dropped with either endpoint.
+description: >-
+  An edge of the graph of the merged closure under an activation. It resolves through the layer overrides: an edge
+  from an overridden version is absent, and an edge to one ends at the winner. An edge is dropped with either endpoint.
 type: object
 additionalProperties: false
 required:

@@ -13,8 +13,9 @@ import java.util.regex.Pattern;
 
 /**
  * The strong entity tag of a read that depends on the packs of an activation's closure (research R5, decisions
- * {@code 01M6Y11E55YP5TG1EJ1MDKCFRP} and {@code 01M6Y3GZFRC5WEQQ7G6GT0YMW3}): the two effective reads and
- * {@code getActivation}. It is {@code sha256:} over a domain tag, the representation read, the activation's revision,
+ * {@code 01M6Y11E55YP5TG1EJ1MDKCFRP} and {@code 01M6Y3GZFRC5WEQQ7G6GT0YMW3}): the four effective reads and
+ * {@code getActivation}; the graph and the context each name their own read, and the context its mission type, action and
+ * depth. It is {@code sha256:} over a domain tag, the representation read, the activation's revision,
  * the verified digest of the packs IN the closure ({@link ClosureSnapshot#closureFingerprint()}, never the source
  * fingerprint of every configured pack) and the normalized query, so it changes when the document or a pack of the
  * closure changes and never names two representations (another page, kind, state or read). A configured pack outside
@@ -43,7 +44,37 @@ public record EffectiveTag(String token) {
         /** {@code listEffectiveArtifacts}. */
         ARTIFACTS,
         /** {@code getActivationSkippedReport}. */
-        SKIPPED
+        SKIPPED,
+        /** {@code getEffectiveGraph}. */
+        GRAPH,
+        /** {@code getEffectiveActionContext}. */
+        CONTEXT
+    }
+
+    /**
+     * The query of {@code getEffectiveActionContext}, as it selects a representation.
+     *
+     * @param missionType the mission type of the path
+     * @param action the action of the path
+     * @param depth the number of {@code suggests} hops the request resolved to, its default when it sent none
+     */
+    public record ContextQuery(String missionType, String action, int depth) {
+
+        /**
+         * Checks the fields.
+         *
+         * @param missionType the mission type
+         * @param action the action
+         * @param depth the depth
+         */
+        public ContextQuery {
+            Objects.requireNonNull(missionType, "missionType");
+            Objects.requireNonNull(action, "action");
+        }
+
+        private String normalized() {
+            return "missionType=" + missionType + "\naction=" + action + "\ndepth=" + depth;
+        }
     }
 
     /**
@@ -125,6 +156,29 @@ public record EffectiveTag(String token) {
      */
     public static EffectiveTag artifacts(Revision revision, ClosureSnapshot closure, Query query) {
         return of(Read.ARTIFACTS, revision, closure, query.normalized());
+    }
+
+    /**
+     * The tag of the effective graph.
+     *
+     * @param revision the activation's revision
+     * @param closure the closure the answer was computed from
+     * @return the tag
+     */
+    public static EffectiveTag graph(Revision revision, ClosureSnapshot closure) {
+        return of(Read.GRAPH, revision, closure, NO_QUERY);
+    }
+
+    /**
+     * The tag of one effective action context.
+     *
+     * @param revision the activation's revision
+     * @param closure the closure the answer was computed from
+     * @param query the mission type, the action and the depth
+     * @return the tag
+     */
+    public static EffectiveTag context(Revision revision, ClosureSnapshot closure, ContextQuery query) {
+        return of(Read.CONTEXT, revision, closure, query.normalized());
     }
 
     private static EffectiveTag of(Read read, Revision revision, ClosureSnapshot closure, String query) {

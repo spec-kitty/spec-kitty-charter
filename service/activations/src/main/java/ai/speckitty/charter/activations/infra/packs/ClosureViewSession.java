@@ -1,20 +1,25 @@
 package ai.speckitty.charter.activations.infra.packs;
 
 import ai.speckitty.charter.activations.application.PacksSession;
+import ai.speckitty.charter.activations.domain.ActionContext;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.activations.domain.EffectiveSet;
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport;
+import ai.speckitty.charter.activations.domain.GraphSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
+import ai.speckitty.charter.activations.domain.NodeRef;
 import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.packs.application.ActionContextWalk;
 import ai.speckitty.charter.packs.application.ClosureView;
+import ai.speckitty.charter.packs.application.GraphProjection;
 import ai.speckitty.charter.packs.application.ReachRequest;
 import ai.speckitty.charter.packs.application.ReachResult;
 import ai.speckitty.charter.packs.domain.InForceRequest;
@@ -30,6 +35,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A {@link PacksSession} over one {@link ClosureView}: the snapshot copied from the view, and every walk answered by the
@@ -43,6 +49,14 @@ final class ClosureViewSession implements PacksSession {
 
     private final ClosureView view;
     private final ClosureSnapshot snapshot;
+
+    /**
+     * The in-force states of the last request put to this session, so a request that asks for the set and for the graph or
+     * the walk resolves once (NFR-003). A session serves one request, on one thread.
+     */
+    private @Nullable InForceRequest resolvedFor;
+
+    private @Nullable InForceStates resolved;
 
     /**
      * A session over a verified view.
@@ -72,7 +86,90 @@ final class ClosureViewSession implements PacksSession {
 
     @Override
     public InForceAnswer inForce(InForceQuery query) {
-        return inForceOf(view.inForce(requestOf(query)));
+        return inForceOf(statesOf(query));
+    }
+
+    @Override
+    public GraphSnapshot graph(InForceQuery query) {
+        return graphOf(view.mergedGraph(statesOf(query)));
+    }
+
+    @Override
+    public ActionContext actionContext(String missionType, String action, int depth, InForceQuery query) {
+        return contextOf(view.actionContext(missionType, action, depth, statesOf(query)));
+    }
+
+    @Override
+    public void requireAction(String missionType, String action) {
+        // The packs slice judges the names first, whether or not the mission type is in force; with nothing in force
+        // the
+        // walk stops there, so no in-force resolution and no walk is paid for.
+        view.actionContext(
+                missionType,
+                action,
+                0,
+                new InForceStates(Map.of(), List.of(), List.of(), List.of(), List.of(), List.of(), Map.of()));
+    }
+
+    /** What is in force under the query: resolved on the first ask and kept for a request that asks again. */
+    InForceStates statesOf(InForceQuery query) {
+        InForceRequest request = requestOf(query);
+        InForceStates states = resolved;
+        if (states == null || !request.equals(resolvedFor)) {
+            states = view.inForce(request);
+            resolved = states;
+            resolvedFor = request;
+        }
+        return states;
+    }
+
+    /**
+     * The activation domain's graph for the packs slice's projection: every node a node reference can name, the edges
+     * among them and the layer overrides of those nodes, in the order the projection gave them.
+     *
+     * @param graph the projection
+     * @return the graph, as values
+     */
+    static GraphSnapshot graphOf(GraphProjection graph) {
+        List<GraphSnapshot.Edge> edges = new ArrayList<>();
+        for (GraphProjection.Edge edge : graph.edges()) {
+            NodeRef.of(edge.source())
+                    .ifPresent(source -> NodeRef.of(edge.target())
+                            .ifPresent(target -> edges.add(new GraphSnapshot.Edge(source, edge.relation(), target))));
+        }
+        List<MergedSnapshot.LayerOverride> overrides = new ArrayList<>();
+        for (LayerOverride replaced : graph.layerOverrides()) {
+            NodeRef.of(replaced.urn())
+                    .ifPresent(node -> overrides.add(
+                            new MergedSnapshot.LayerOverride(node, side(replaced.winner()), side(replaced.loser()))));
+        }
+        return new GraphSnapshot(nodesOf(graph.nodes()), edges, overrides);
+    }
+
+    /**
+     * The activation domain's context for the packs slice's walk: the artifacts in force the walk lists with their
+     * enhancers, the candidates for a suggestion, and the enhancers in force of the step. The walk's step, via and hops are
+     * its own: the context names artifacts, and the effective set decides their states.
+     *
+     * @param walked what the walk reached
+     * @return the context, as values
+     */
+    static ActionContext contextOf(ActionContextWalk.Context walked) {
+        if (!walked.missionTypeInForce()) {
+            return ActionContext.notInForce();
+        }
+        List<ActionContext.Reached> entries = new ArrayList<>();
+        for (ActionContextWalk.Entry entry : walked.entries()) {
+            activatable(entry.urn())
+                    .ifPresent(ref -> entries.add(new ActionContext.Reached(ref, listOf(entry.enhancedBy()))));
+        }
+        List<ActionContext.SuggestionCandidate> candidates = new ArrayList<>();
+        for (ActionContextWalk.SuggestionCandidate candidate : walked.suggestionCandidates()) {
+            activatable(candidate.urn())
+                    .ifPresent(ref -> candidates.add(
+                            new ActionContext.SuggestionCandidate(ref, candidate.when(), candidate.reason())));
+        }
+        return new ActionContext(true, entries, candidates, listOf(walked.actionEnhancedBy()));
     }
 
     /**
@@ -149,8 +246,8 @@ final class ClosureViewSession implements PacksSession {
         List<MergedSnapshot.LayerOverride> overrides = new ArrayList<>();
         for (LayerOverride replaced : closure.layerOverrides()) {
             activatable(replaced.urn())
-                    .ifPresent(ref -> overrides.add(
-                            new MergedSnapshot.LayerOverride(ref, side(replaced.winner()), side(replaced.loser()))));
+                    .ifPresent(ref -> overrides.add(new MergedSnapshot.LayerOverride(
+                            NodeRef.of(ref), side(replaced.winner()), side(replaced.loser()))));
         }
         return overrides;
     }
@@ -169,9 +266,9 @@ final class ClosureViewSession implements PacksSession {
     static InForceAnswer inForceOf(InForceStates states) {
         Map<ArtifactRef, MergedSnapshot.ArtifactState> byRef = new LinkedHashMap<>();
         states.states().forEach((urn, state) -> activatable(urn).ifPresent(ref -> byRef.put(ref, stateOf(ref, state))));
-        Map<ArtifactRef, List<ArtifactRef>> targets = new LinkedHashMap<>();
+        Map<ArtifactRef, List<NodeRef>> targets = new LinkedHashMap<>();
         states.enhancedTargets()
-                .forEach((urn, list) -> activatable(urn).ifPresent(ref -> targets.put(ref, listOf(list))));
+                .forEach((urn, list) -> activatable(urn).ifPresent(ref -> targets.put(ref, nodesOf(list))));
         return new InForceAnswer(
                 byRef,
                 listOf(states.staleIds()),
@@ -215,19 +312,42 @@ final class ClosureViewSession implements PacksSession {
         return kept;
     }
 
+    /**
+     * The required or locked artifacts the resolution pruned. Only an artifact an activation can select is carried: no
+     * preset and no pack lock can name a step (the policy and preset schemas exclude {@code action}), so the required floor
+     * holds activatable kinds by construction and the resolution never lists a step here. Were one fed in, it is dropped
+     * explicitly, as every other part of the report drops what is no artifact (decision D16;
+     * {@code ClosureViewSessionStepRefsTest} pins the drop and the schemas).
+     */
     private static List<EffectiveSkippedReport.RequiredNotInForce> requiredNotInForce(InForceStates states) {
         List<EffectiveSkippedReport.RequiredNotInForce> dropped = new ArrayList<>();
         for (InForceStates.RequiredNotInForce entry : states.requiredNotInForce()) {
             activatable(entry.urn())
-                    .ifPresent(ref -> dropped.add(new EffectiveSkippedReport.RequiredNotInForce(
-                            ref, EffectiveSet.Reason.valueOf(entry.reason().name()))));
+                    .ifPresent(ref -> dropped.add(
+                            new EffectiveSkippedReport.RequiredNotInForce(ref, pruningReason(entry.reason()))));
         }
         return dropped;
+    }
+
+    /** The activations slice's pruning reason for the packs slice's, by an exhaustive switch and never by name. */
+    static EffectiveSkippedReport.PruningReason pruningReason(InForceStates.PruningReason reason) {
+        return switch (reason) {
+            case MISSION_TYPE_NOT_IN_FORCE -> EffectiveSkippedReport.PruningReason.MISSION_TYPE_NOT_IN_FORCE;
+            case ENHANCED_TARGET_NOT_IN_FORCE -> EffectiveSkippedReport.PruningReason.ENHANCED_TARGET_NOT_IN_FORCE;
+        };
     }
 
     /** The artifact a URN names, when it is one of an activatable kind: an action, a template or an asset is none. */
     private static Optional<ArtifactRef> activatable(Urn urn) {
         return ArtifactRef.of(urn).filter(ref -> ref.kind().activatable());
+    }
+
+    /**
+     * The nodes the URNs name, steps included: the targets of an enhancer are the one part of the report whose type is a
+     * node, so a step an enhancer enhances is carried and not dropped (#429, D4(a)).
+     */
+    private static List<NodeRef> nodesOf(Collection<Urn> urns) {
+        return urns.stream().flatMap(urn -> NodeRef.of(urn).stream()).toList();
     }
 
     private static List<ArtifactRef> listOf(Collection<Urn> urns) {

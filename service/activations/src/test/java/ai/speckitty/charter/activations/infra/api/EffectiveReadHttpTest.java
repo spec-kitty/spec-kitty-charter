@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
 import ai.speckitty.charter.activations.application.FakeAvailablePacks;
+import ai.speckitty.charter.activations.domain.ActionContext;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.activations.domain.ClosureSnapshots;
@@ -15,15 +16,18 @@ import ai.speckitty.charter.activations.domain.EffectiveSet.State;
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport.DenyNotApplied;
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport.DenyReason;
 import ai.speckitty.charter.activations.domain.EffectiveTag;
+import ai.speckitty.charter.activations.domain.GraphSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.ArtifactState;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
+import ai.speckitty.charter.activations.domain.NodeRef;
 import ai.speckitty.charter.activations.domain.Revision;
 import ai.speckitty.charter.activations.infra.storage.InMemoryActivationRepository;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.transport.EntityTags;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -55,6 +59,7 @@ class EffectiveReadHttpTest {
     private static final ArtifactRef B = new ArtifactRef(ArtifactKind.DIRECTIVE, "b-2");
     private static final ArtifactRef C = new ArtifactRef(ArtifactKind.DIRECTIVE, "c-3");
     private static final JsonMapper JSON = JsonMapper.builder().build();
+    private static final String CONTEXT = "/mission-types/software-dev/actions/implement/context";
 
     private final InMemoryActivationRepository repository = new InMemoryActivationRepository();
     private FakeAvailablePacks packs;
@@ -89,7 +94,9 @@ class EffectiveReadHttpTest {
         for (ArtifactRef ref : List.of(A, B, C)) {
             winners.put(ref, new MergedSnapshot.Winner("fixture", PackLevel.ORG, Policy.OPEN));
         }
-        return new MergedSnapshot(winners, Map.of(), List.of(), List.of());
+        MergedSnapshot.Edge suggests =
+                new MergedSnapshot.Edge(A, B, RelationType.SUGGESTS, Optional.of("when"), Optional.of("why"));
+        return new MergedSnapshot(winners, Map.of(), List.of(suggests), List.of());
     }
 
     private static InForceAnswer answer() {
@@ -313,7 +320,7 @@ class EffectiveReadHttpTest {
 
     @Test
     void anUnknownActivationIs404OnBothReads() throws Exception {
-        for (String path : List.of("/artifacts", "/skipped", "")) {
+        for (String path : List.of("/artifacts", "/skipped", "", "/graph", CONTEXT)) {
             MockHttpServletResponse answer = read("/api/v1/activations/nope" + path);
 
             assertThat(answer.getStatus()).as(path).isEqualTo(404);
@@ -325,7 +332,7 @@ class EffectiveReadHttpTest {
     void aClosureThatCannotComposeIs500WithItsCodeOnEveryRead() throws Exception {
         packs.refuse(new CharterRefusal(RefusalCode.PACK_SIBLING_CONFLICT, "two packs contest a-1"));
 
-        for (String path : List.of("/artifacts", "/skipped", "")) {
+        for (String path : List.of("/artifacts", "/skipped", "", "/graph", CONTEXT)) {
             MockHttpServletResponse answer = read(BASE + path);
 
             assertThat(answer.getStatus()).as(path).isEqualTo(500);
@@ -361,5 +368,115 @@ class EffectiveReadHttpTest {
 
         assertThat(read(BASE + "/skipped", skipped).getStatus()).isEqualTo(304);
         assertThat(read(BASE + "/skipped", list).getStatus()).isEqualTo(200);
+    }
+
+    // ---- getEffectiveGraph and getEffectiveActionContext
+
+    private static GraphSnapshot graph() {
+        return new GraphSnapshot(
+                List.of(NodeRef.of(A), NodeRef.of(B)),
+                List.of(new GraphSnapshot.Edge(NodeRef.of(A), RelationType.REQUIRES, NodeRef.of(B))),
+                List.of());
+    }
+
+    @Test
+    void theGraphAnswersItsTagTheSourceFingerprintAndTheNodesEdgesAndLayerOverrides() throws Exception {
+        packs.graphs(query -> graph());
+
+        MockHttpServletResponse answer = read(BASE + "/graph");
+
+        assertThat(answer.getStatus()).as(answer.getContentAsString()).isEqualTo(200);
+        assertThat(answer.getHeader("ETag")).matches("\"sha256:[0-9a-f]{64}\"");
+        assertThat(answer.getHeader("Charter-Source-Fingerprint")).isEqualTo(SOURCE);
+        JsonNode body = body(answer);
+        assertThat(body.path("governanceFingerprint").asString()).isEqualTo(CLOSURE);
+        assertThat(body.path("nodes"))
+                .extracting(node -> node.path("urn").asString())
+                .containsExactly("directive:a-1", "directive:b-2");
+        assertThat(body.path("edges")).hasSize(1);
+        assertThat(body.path("layerOverrides").isArray()).isTrue();
+        assertThat(body.path("_links").path("self").path("href").asString()).isEqualTo(BASE + "/graph");
+    }
+
+    @Test
+    void theGraphIs304OnItsOwnTagWithoutBodyOrFingerprintAndNotOnTheContextsTag() throws Exception {
+        packs.graphs(query -> graph());
+        packs.contexts(ask -> ActionContext.notInForce());
+        String graph = read(BASE + "/graph").getHeader("ETag");
+        String context = read(BASE + CONTEXT).getHeader("ETag");
+
+        MockHttpServletResponse matching = read(BASE + "/graph", graph);
+
+        assertThat(matching.getStatus()).isEqualTo(304);
+        assertThat(matching.getHeader("ETag")).isEqualTo(graph);
+        assertThat(matching.getContentAsString()).isEmpty();
+        assertThat(matching.getHeader("Charter-Source-Fingerprint")).isNull();
+        assertThat(context).isNotEqualTo(graph);
+        assertThat(read(BASE + "/graph", context).getStatus()).isEqualTo(200);
+    }
+
+    @Test
+    void theContextAnswersItsEntriesItsSuggestionItsFingerprintAndASelfThatKeepsTheDepth() throws Exception {
+        packs.contexts(ask -> new ActionContext(
+                true,
+                List.of(new ActionContext.Reached(A, List.of())),
+                List.of(new ActionContext.SuggestionCandidate(B, Optional.of("when"), Optional.of("why"))),
+                List.of()));
+
+        MockHttpServletResponse answer = read(BASE + CONTEXT + "?depth=1");
+
+        assertThat(answer.getStatus()).as(answer.getContentAsString()).isEqualTo(200);
+        assertThat(answer.getHeader("ETag")).matches("\"sha256:[0-9a-f]{64}\"");
+        assertThat(answer.getHeader("Charter-Source-Fingerprint")).isEqualTo(SOURCE);
+        JsonNode body = body(answer);
+        assertThat(body.path("missionType").asString()).isEqualTo("software-dev");
+        assertThat(body.path("action").asString()).isEqualTo("implement");
+        assertThat(body.path("artifacts"))
+                .extracting(item -> item.path("artifactId").asString())
+                .containsExactly("a-1", "b-2");
+        assertThat(body.path("artifacts").get(1).path("suggestion").path("when").asString())
+                .isEqualTo("when");
+        assertThat(body.path("enhancements")).isEmpty();
+        assertThat(body.path("_links").path("self").path("href").asString()).isEqualTo(BASE + CONTEXT + "?depth=1");
+        assertThat(body(read(BASE + CONTEXT))
+                        .path("_links")
+                        .path("self")
+                        .path("href")
+                        .asString())
+                .as("the default depth is not repeated in self")
+                .isEqualTo(BASE + CONTEXT);
+        assertThat(packs.contextAsks()).extracting(ask -> ask.depth()).containsExactly(1, 0);
+    }
+
+    @Test
+    void theContextIs304OnItsOwnTagAndAnotherDepthIsAnotherRepresentation() throws Exception {
+        packs.contexts(ask -> ActionContext.notInForce());
+        String tag = read(BASE + CONTEXT).getHeader("ETag");
+
+        assertThat(read(BASE + CONTEXT, tag).getStatus()).isEqualTo(304);
+        assertThat(read(BASE + CONTEXT + "?depth=1", tag).getStatus()).isEqualTo(200);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"depth=2", "depth=-1", "depth=deep"})
+    void aDepthOutsideTheContractIsA400WithoutACode(String query) throws Exception {
+        MockHttpServletResponse answer = read(BASE + CONTEXT + "?" + query);
+
+        assertThat(answer.getStatus()).as(answer.getContentAsString()).isEqualTo(400);
+        assertThat(body(answer).has("code")).isFalse();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"mission_type_not_found", "action_not_found"})
+    void anUnknownMissionTypeOrActionIsA404WithItsCode(String code) throws Exception {
+        RefusalCode refusal = RefusalCode.valueOf(code.toUpperCase(java.util.Locale.ROOT));
+        packs.contexts(ask -> {
+            throw new CharterRefusal(refusal, "no such name");
+        });
+
+        MockHttpServletResponse answer = read(BASE + CONTEXT);
+
+        assertThat(answer.getStatus()).as(answer.getContentAsString()).isEqualTo(404);
+        assertThat(body(answer).path("code").asString()).isEqualTo(code);
     }
 }

@@ -27,9 +27,13 @@ properties:
       - schemas/ActivationConfig.yaml
   targets:
     type: array
+    minItems: 1
     items:
-      $ref: ArtifactReference.yaml
-    description: The artifacts the enhancer enhances, none of which is in force.
+      $ref: NodeReference.yaml
+    description: >-
+      The nodes the enhancer enhances, none of which is in force. A target may be a step of a mission type (kind
+      action, id <missionType>/<step>), which no activation selects and so is never in force as an artifact; an
+      enhancer that enhances nothing is not an enhancer, so the list is never empty.
     x-derived:
       rule: The targets of the enhancer's enhances edges, sorted.
       inputs:

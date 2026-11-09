@@ -9,6 +9,7 @@ import ai.speckitty.charter.activations.application.EffectiveReadService;
 import ai.speckitty.charter.activations.domain.ActivationId;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.activations.domain.EffectiveSet;
+import ai.speckitty.charter.activations.domain.EffectiveTag;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.api.ActivationApi;
 import ai.speckitty.charter.api.model.Activation;
@@ -24,7 +25,6 @@ import ai.speckitty.charter.api.model.PresetApplication;
 import ai.speckitty.charter.api.model.SelectionRequest;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.transport.EntityTags;
-import ai.speckitty.charter.kernel.transport.ReservedOperation;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
@@ -39,7 +39,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 /**
@@ -51,19 +50,19 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
  * {@link ActivationExclusionService} and {@link ActivationPresetService}, each answering the {@code ActivationChange}
  * with the stored revision as its {@code ETag}. A refusal they throw is answered by the problem handlers. The faults
  * {@link ActivationBodyAdvice} found in a write's body ({@link DeferredBody}) go to the use case, which refuses them
- * once the preconditions hold. {@code getActivation} and the two effective reads ({@code listEffectiveArtifacts} and
- * {@code getActivationSkippedReport}, PR B) answer through {@link EffectiveReadService}. The other two effective reads,
- * the graph and the action context, stay reserved until PR C (ADR-0020 D8): each carries its own
- * {@link ReservedOperation} mark, so an operation is built by removing its mark alone. The composition root's
- * {@code ReservedOperationInterceptor} answers a marked one {@code 501} before the request is bound; each throws the same
- * answer in case one is reached. A marked method reads and stores nothing ({@code HexagonalArchitectureTest}).
+ * once the preconditions hold. {@code getActivation} and the four effective reads ({@code listEffectiveArtifacts},
+ * {@code getActivationSkippedReport}, and, in PR C, {@code getEffectiveGraph} and {@code getEffectiveActionContext})
+ * answer through {@link EffectiveReadService}. Every operation is built, so none carries a {@code ReservedOperation} mark
+ * (ADR-0020 D8); an operation reserved later is marked on its method alone, and the composition root's
+ * {@code ReservedOperationInterceptor} answers a marked one {@code 501} before the request is bound. A marked method reads
+ * and stores nothing ({@code HexagonalArchitectureTest}).
  *
  * <p>The reads answer {@code 304} themselves when the {@code If-None-Match} matches ({@link EntityTags#noneMatch}, a
  * weak comparison), with the {@code ETag} and no body. Spring's {@code HttpEntityMethodProcessor} re-checks only a
  * {@code 200} carrying an {@code ETag}, by the same weak comparison, so the two agree: a tag the service found not
  * matching is one Spring finds not matching. {@code getActivation}'s {@code ETag} is the strong closure tag, over the
  * revision and the closure's own digest, because its {@code denyNotApplied} is judged against the packs of the closure
- * (decision {@code 01M6Y11E55YP5TG1EJ1MDKCFRP}); the two effective reads' tags also name their representation. The two
+ * (decision {@code 01M6Y11E55YP5TG1EJ1MDKCFRP}); the four effective reads' tags also name their representation. The four
  * effective reads are verified reads and send the {@code Charter-Source-Fingerprint} they verified on a {@code 200}; the
  * document read and the closure read send none (the closure read reports a change through its {@code ETag}). The
  * writes answer the revision as their {@code ETag} and take it, or the {@code getActivation} tag, as {@code If-Match}.
@@ -171,16 +170,24 @@ public class ActivationController implements ActivationApi {
     }
 
     @Override
-    @ReservedOperation
     public ResponseEntity<EffectiveActionContext> getEffectiveActionContext(
             String activationId, String missionType, String action, @Nullable String ifNoneMatch, Integer depth) {
-        throw notBuilt();
+        boolean depthGiven = queryParamGiven("depth");
+        return verified(
+                effective.actionContext(
+                        new ActivationId(activationId),
+                        new EffectiveTag.ContextQuery(missionType, action, depth),
+                        ifNoneMatch),
+                EffectiveReadService.ContextRead::sourceFingerprint,
+                read -> reads.toContext(read, depthGiven));
     }
 
     @Override
-    @ReservedOperation
     public ResponseEntity<EffectiveGraph> getEffectiveGraph(String activationId, @Nullable String ifNoneMatch) {
-        throw notBuilt();
+        return verified(
+                effective.graph(new ActivationId(activationId), ifNoneMatch),
+                EffectiveReadService.GraphRead::sourceFingerprint,
+                reads::toGraph);
     }
 
     @Override
@@ -206,7 +213,7 @@ public class ActivationController implements ActivationApi {
             return verified(
                     effective.list(new ActivationId(activationId), query, ifNoneMatch),
                     EffectiveReadService.Page::sourceFingerprint,
-                    page -> reads.toList(page, pageSizeGiven()));
+                    page -> reads.toList(page, queryParamGiven("pageSize")));
         } catch (EffectiveReadService.StaleCursorException anotherSet) {
             throw new ErrorResponseException(HttpStatus.BAD_REQUEST, anotherSet);
         }
@@ -310,12 +317,12 @@ public class ActivationController implements ActivationApi {
         };
     }
 
-    /** Whether the request named a page size: it has a default, so this is read from the request itself. */
-    private static boolean pageSizeGiven() {
+    /** Whether the request named a query parameter that has a default, so that this is read from the request itself. */
+    private static boolean queryParamGiven(String name) {
         return ServletUriComponentsBuilder.fromCurrentRequest()
                 .build()
                 .getQueryParams()
-                .containsKey("pageSize");
+                .containsKey(name);
     }
 
     /** The kind filter: an activatable kind, or a {@code 400} problem without a code. */
@@ -331,14 +338,5 @@ public class ActivationController implements ActivationApi {
                 .filter(state -> state.token().equals(token))
                 .findFirst()
                 .orElseThrow(() -> new ErrorResponseException(HttpStatus.BAD_REQUEST));
-    }
-
-    /**
-     * The answer of a reserved operation, should one ever be reached past the interceptor.
-     *
-     * @return a {@code 501} that {@code ProblemHandler} renders as a {@code Problem} without a code
-     */
-    private static ResponseStatusException notBuilt() {
-        return new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED);
     }
 }

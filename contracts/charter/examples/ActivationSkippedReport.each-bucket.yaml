@@ -43,10 +43,15 @@ value:
           artifactId: DIRECTIVE_021
     enhancedTargetNotInForce:
       - kind: tactic
+        artifactId: review-extra
+        targets:
+          - kind: action
+            id: software-dev/review
+      - kind: tactic
         artifactId: tdd-extra
         targets:
           - kind: tactic
-            artifactId: tdd
+            id: tdd
     pinNotHeld:
       - packId: main
         version: 0.9.0

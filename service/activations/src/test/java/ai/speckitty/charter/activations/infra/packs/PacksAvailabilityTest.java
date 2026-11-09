@@ -15,6 +15,7 @@ import ai.speckitty.charter.activations.domain.EffectiveTag;
 import ai.speckitty.charter.activations.domain.MergedSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
+import ai.speckitty.charter.activations.domain.NodeRef;
 import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
@@ -581,7 +582,7 @@ class PacksAvailabilityTest {
                 .containsExactly("python", "java");
         assertThat(merged.layerOverrides())
                 .containsExactly(new MergedSnapshot.LayerOverride(
-                        ref("directive:D1"),
+                        NodeRef.of(ref("directive:D1")),
                         new MergedSnapshot.LayerOverride.Side("alpha", PackLevel.ORG),
                         new MergedSnapshot.LayerOverride.Side("beta", PackLevel.BUILT_IN)));
         assertThat(merged.edges())
