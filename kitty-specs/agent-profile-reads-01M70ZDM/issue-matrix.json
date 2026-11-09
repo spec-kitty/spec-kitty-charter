@@ -60,6 +60,18 @@
       "verdict": "not-applicable",
       "wp": null
     },
+    "#380": {
+      "evidence_ref": "Context only: enhances/overrides resolution not built",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
     "#405": {
       "evidence_ref": "WP01 commit 371748ed pins open-packs a2a9379, which carries java-jenny requires java-conventions",
       "fr": null,
