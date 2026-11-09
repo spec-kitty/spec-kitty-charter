@@ -80,6 +80,9 @@ A user can deactivate a charter element, but nothing records the choice durably.
    built-ins still arrive. A deny-list is omitted
    while it is empty. Migrations and presets never remove a deny-list entry, so the upgrade
    reset (#66) reduces to a gate test that proves it.
+   *Amended 2026-11-09 (PR C): an active override can hide a required artifact and let a deny entry on it be accepted;
+   see [ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) amendment R6, which qualifies "never
+   subtracted".*
    *Amendment (2026-11-05, #291/#360): in the service's activation document, "absent means all" becomes "absent
    means none": an absent allow list puts nothing of the kind in force, the same as `[]`
    ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) d10;
@@ -87,7 +90,7 @@ A user can deactivate a charter element, but nothing records the choice durably.
    key. A preset applied with `force` clears only the deny entries that match its members
    ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) D6). A create or replace whose deny list
    names a required or locked artifact is refused `409`; the per-artifact writes (#291) tolerate such an entry already
-   stored, and refuse `409` a deny entry they add ([DIV-204](/conformance/divergence-register/)). #291 builds the
+   stored, and refuse `409` a deny entry they add, a deactivate also its named target ([DIV-204](/conformance/divergence-register/)). #291 builds the
    writes and #360 the closure read.*
 3. **Only the user's explicit choice changes a deny-list.** A user deactivation adds the named
    id. `charter activate <kind> <id>` removes it. Elements that a cascade deactivates along with

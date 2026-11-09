@@ -1,6 +1,6 @@
 ---
 title: "ADR-0059: The switch gate, the cascade edges, the layer-override grain and the activation write rulings"
-description: "Operator rulings of 2026-11-04 to 2026-11-07: BDD scenarios and contract tests gate each core switch; cascade edges; whole-artifact layer overrides; ADR-0020 questions 4 to 7."
+description: "Operator rulings of 2026-11-04 to 2026-11-09: BDD scenarios and contract tests gate each core switch; cascade edges; whole-artifact layer overrides; ADR-0020 questions 4 to 7."
 doc_status: active
 updated: 2026-11-09T00:00:00Z
 decision_status: Accepted
