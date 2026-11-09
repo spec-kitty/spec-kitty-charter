@@ -256,13 +256,13 @@
     },
     {
       "criterion_id": "FR-026",
-      "description": "Verify FR-026 is satisfied",
+      "description": "Every (pack_version, revision) a pack ever held is remembered so a version is never reused with other content, a write drops a pin no pack holds into droppedPins instead of refusing every write, and a read reports it in pinNotHeld.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "service/packs/src/test/java/ai/speckitty/charter/packs/application/PackVersionHistoryTest.java#aReusedVersionWithOtherContentIsRefusedAfterADowngradeEvenThoughItIsNotTheStoredOne; contracts/charter/scenarios/activation-ruling-changes.feature: \"B1 - a per-artifact write drops a pin no pack holds into droppedPins, and a create refuses it\"; contracts/charter/scenarios/effective-reads.feature: \"B1 - a version pin no pack holds is in pinNotHeld, and a held pin of the same document is not\"",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:46:36.715120+00:00",
+      "notes": "PR A0/A/B (#414, #419, #427); IC-16/IC-19, DM-01M6RA9BKJY7X9BFV93QW1KM1T. History heal fixed in PR A squad F7."
     },
     {
       "criterion_id": "FR-027",
