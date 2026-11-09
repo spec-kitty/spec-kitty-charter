@@ -21,7 +21,8 @@ class PackFindingTest {
             PackFindingCode.PACK_VERSION_INVALID,
             PackFindingCode.DEPENDENCY_RANGE_INVALID,
             PackFindingCode.ORG_FRAGMENT_MISSING,
-            PackFindingCode.DRG_SCHEMA_ERROR);
+            PackFindingCode.DRG_SCHEMA_ERROR,
+            PackFindingCode.PROMPT_FRAGMENT_INVALID);
 
     private static PackFinding finding(PackFindingCode code) {
         return new PackFinding(code, "pack.yaml", List.of("a", "b"), "the detail");

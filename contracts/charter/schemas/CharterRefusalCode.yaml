@@ -29,9 +29,9 @@ description: >-
   mission_type_not_found is raised again, by the select and the unselect of an activation for kind
   mission_type, when the path names a mission type the activation's closure does not hold, and by the effective
   action context (getEffectiveActionContext), which answers it with action_not_found too when the path names an action
-  the merged closure does not hold for that mission type. pack_level_mismatch and drg_schema_error are no longer raised: no operation
-  loads and judges a pack's graph any more (the whole-pack load that refuses a graph breaking its schema as
-  drg_schema_error is not reached by any operation). All four values stay in the enum so that the contract
+  the merged closure does not hold for that mission type. pack_level_mismatch is no longer raised: no operation
+  loads and judges a pack's level any more. drg_schema_error is raised as a violation code of a refused
+  registration (validation_failed), as the definition of raised below counts it. All four values stay in the enum so that the contract
   keeps accepting them.
 
   governance_policy_violation (409) is raised by the registration writes: a write the mutability level of
@@ -56,8 +56,8 @@ description: >-
   only an earlier level's copy requires, which a later level's copy replaced, is 409 artifact_required naming that
   earlier level's pack. No operation of the activation set is reserved any more (ADR-0020 D8), and
   action_not_found is raised (above). A unit test of the service fails when any main class
-  other than the enum and its mappings names a code the map marks not raised, outside the two classes no
-  operation reaches (the whole-pack load and its findings).
+  other than the enum and its mappings names a code the map marks not raised, outside the finding
+  projection no operation reaches (PackFindingCode and PackFinding).
 
   x-refusal declares, for every code, the HTTP status it is answered with, whether the read may be retried,
   and whether an operation of this version raises it (raised). A code has one status, except where its entry
@@ -67,8 +67,12 @@ description: >-
   deletePackArtifact, deletePackRelationship, putPackRelationship and the eight per-artifact writes (registerPack and
   putPack of a directive, a paradigm, a styleguide and a toolguide). A code is raised when an operation of this version
   reaches the code that refuses with it, even when no configuration of this version provokes the refusal
-  (governance_policy_violation); a code that only a part no operation reaches refuses with is not raised
-  (drg_schema_error). Clients and the contract scenarios read it.
+  (governance_policy_violation), or when it is raised as a violation code of a 422 validation_failed: a refused
+  registration lists every fault of the pack as a violation whose pointer is the pack-relative file and whose code is
+  the code (drg_schema_error, prompt_fragment_invalid), so the problem that carries such a code is 422 at
+  registration and a composing read answers 500 pack_unreadable naming the file. The declared status of such a code
+  is kept and read as the status of the read that meets the fault. A code that only a part no operation reaches
+  refuses with is not raised. Clients and the contract scenarios read it.
 
   How a consumer dispatches on a non-2xx answer. A body with a code is a charter refusal, and the
   code says why. A body without a code is a transport or routing failure (an unknown path, a
@@ -158,13 +162,19 @@ description: >-
   that is not one is refused as drg_schema_error. The value stays in the enum so that the
   contract keeps accepting it.
 
-  Four codes are reserved for ADR-0066 prompt slots and fragments, raised: false until #424 builds their checks:
-  prompt_slot_malformed (a bad, repeated, nested or unpaired slot declaration), prompt_slot_not_empty (non-whitespace
-  between paired markers at descriptor schema_version "1.0"), prompt_fragment_invalid (an invalid enhancement or
-  fragment at load, including a repeated slot, blank or frontmatter-bearing fragment, slot marker or non-step target),
-  and prompt_slot_missing (the prompt in force declares no slot an active or inactive enhancement names at compose).
-  They are 500: the configured packs, not the request, are broken. pack_reference_pack_missing,
-  pack_reference_artifact_missing and artifact_locked keep their existing meanings for the other ADR-0066 refusals.
+  Four codes belong to ADR-0066 prompt slots and fragments, and are 500: the configured packs, not the request, are
+  broken. prompt_fragment_invalid is raised as a violation code of a refused registration: an invalid step
+  enhancement or prompt fragment (a repeated slot, a missing, shared or orphan companion, a blank or
+  frontmatter-bearing fragment, a slot marker, an enhancement without exactly one enhances edge to an
+  action:<type>/<step>, an overrides edge from an enhancement, a directory that differs from the edge's type, a
+  repeated id) is listed at its file inside 422 validation_failed, and a composing read answers 500 pack_unreadable
+  naming the file.
+  prompt_slot_malformed (a bad, repeated, nested or unpaired slot declaration) and prompt_slot_not_empty
+  (non-whitespace between paired markers at descriptor schema_version "1.0") stay reserved, raised: false until #424
+  builds their checks. prompt_slot_missing stays reserved: the prompt in force declares no slot an active or inactive
+  enhancement names at compose, and #424 raises it with the compose check. pack_reference_pack_missing and
+  pack_reference_artifact_missing keep their existing meanings for references between packs; no ADR-0066 refusal
+  is artifact_locked.
 type: string
 enum:
   - mission_type_not_found
@@ -240,7 +250,7 @@ x-refusal:
   drg_schema_error:
     status: 500
     retryable: false
-    raised: false
+    raised: true
   unresolved_edge_endpoint:
     status: 500
     retryable: false
@@ -720,8 +730,15 @@ x-refusal:
   prompt_fragment_invalid:
     status: 500
     retryable: false
-    raised: false
-    description: an enhancement or Markdown prompt fragment breaks its load-time rules (ADR-0066, reserved for #424)
+    raised: true
+    operations:
+      putPackRelationship:
+        status: 422
+    description: >-
+      an invalid step enhancement or prompt fragment (ADR-0066): a violation code of the file inside 422 validation_failed
+      at registration, and 500 pack_unreadable naming the file on a composing read. The one operation that answers it as
+      the problem's own code is putPackRelationship, 422, for an edge that would give a held step enhancement an
+      overrides edge or a second enhances edge, or replace its one enhances edge
   prompt_slot_missing:
     status: 500
     retryable: false

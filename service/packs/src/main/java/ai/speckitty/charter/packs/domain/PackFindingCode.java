@@ -31,7 +31,13 @@ public enum PackFindingCode {
     /** An asset path leaves the assets root; validate mode only. */
     ASSET_PATH_ESCAPE(Severity.BLOCKING),
     /** An asset declares a MIME type its extension does not allow; validate mode only. */
-    ASSET_MIME_INVALID(Severity.BLOCKING);
+    ASSET_MIME_INVALID(Severity.BLOCKING),
+    /**
+     * A step enhancement or a prompt fragment breaks a rule of ADR-0066: the fragment's content, the enhancement's slots,
+     * companions, edges, directory or identity (FR-004 to FR-006). It is a violation code of the file at registration
+     * and the cause of a {@code pack_unreadable} read.
+     */
+    PROMPT_FRAGMENT_INVALID(Severity.BLOCKING);
 
     /** How a finding weighs. */
     public enum Severity {
@@ -71,6 +77,7 @@ public enum PackFindingCode {
                     DEPENDENCY_RANGE_INVALID,
                     ORG_FRAGMENT_MISSING -> RefusalCode.PACK_UNREADABLE;
             case DRG_SCHEMA_ERROR -> RefusalCode.DRG_SCHEMA_ERROR;
+            case PROMPT_FRAGMENT_INVALID -> RefusalCode.PROMPT_FRAGMENT_INVALID;
             default -> throw new IllegalStateException(name() + " has no refusal on the load path");
         };
     }
