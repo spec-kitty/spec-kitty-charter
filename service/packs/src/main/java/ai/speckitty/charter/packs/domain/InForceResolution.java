@@ -9,6 +9,7 @@ import ai.speckitty.charter.packs.domain.InForceStates.Bucket;
 import ai.speckitty.charter.packs.domain.InForceStates.DenyNotApplied;
 import ai.speckitty.charter.packs.domain.InForceStates.DenyReason;
 import ai.speckitty.charter.packs.domain.InForceStates.OverrideNotApplied;
+import ai.speckitty.charter.packs.domain.InForceStates.PruningReason;
 import ai.speckitty.charter.packs.domain.InForceStates.Reason;
 import ai.speckitty.charter.packs.domain.InForceStates.RequiredNotInForce;
 import ai.speckitty.charter.packs.domain.InForceStates.State;
@@ -401,9 +402,18 @@ public final class InForceResolution {
                     .filter(urn -> required.contains(urn) || locked.contains(urn))
                     .map(urn -> new RequiredNotInForce(
                             urn,
-                            Objects.requireNonNull(states.get(urn), "a held artifact has a state")
-                                    .reason()))
+                            pruningReasonOf(Objects.requireNonNull(states.get(urn), "a held artifact has a state")
+                                    .reason())))
                     .toList();
+        }
+
+        /** The pruning reason of an artifact the pruning removed: it is the enhancer rule's or the binding rule's. */
+        private static PruningReason pruningReasonOf(Reason reason) {
+            return switch (reason) {
+                case MISSION_TYPE_NOT_IN_FORCE -> PruningReason.MISSION_TYPE_NOT_IN_FORCE;
+                case ENHANCED_TARGET_NOT_IN_FORCE -> PruningReason.ENHANCED_TARGET_NOT_IN_FORCE;
+                default -> throw new IllegalStateException("a pruned artifact has a pruning reason, not " + reason);
+            };
         }
 
         private Map<Urn, List<Urn>> enhancedTargets(Map<Urn, ArtifactState> states) {

@@ -393,4 +393,30 @@ class ReachabilityTest {
                 .containsExactly(via("mission_type:m", RelationType.REQUIRES));
         assertThat(result.behindStopped()).containsExactly(urn("directive:D"));
     }
+
+    @Test
+    void theCascadeFollowsOnlyHeldStepsSoAStepDeclaredWhereNoClosurePackDefinesItsMissionTypeIsNotEntered() {
+        // OD-9 closure form: stepsOf follows held steps only. Pack alpha defines mission_type:m and declares
+        // action:m/held (the positive control); pack beta alone declares action:m/orphan, so it is not a step of m.
+        EdgeIndex index = new Closure()
+                .pack(
+                        "alpha",
+                        List.of("mission_type:m", "action:m/held", "directive:Held"),
+                        edge("action:m/held", RelationType.REQUIRES, "directive:Held"))
+                .pack(
+                        "beta",
+                        List.of("action:m/orphan", "directive:Orphan"),
+                        edge("action:m/orphan", RelationType.REQUIRES, "directive:Orphan"))
+                .index();
+
+        ReachResult result = reach(index, urns("mission_type:m"), urn -> false);
+
+        assertThat(result.reached())
+                .as("the held step and its requires are reached")
+                .containsKeys(urn("action:m/held"), urn("directive:Held"));
+        assertThat(result.reached())
+                .as(
+                        "the orphan step is declared where no pack defines mission_type:m: not followed, nor what it requires")
+                .doesNotContainKeys(urn("action:m/orphan"), urn("directive:Orphan"));
+    }
 }

@@ -66,6 +66,14 @@ public record InForceStates(
         ENHANCED_TARGET_NOT_IN_FORCE
     }
 
+    /** Why the pruning removed a required or locked artifact from force (rule E6): the two reasons it gives, no other. */
+    public enum PruningReason {
+        /** Out of force because the mission type it is bound to is not in force. */
+        MISSION_TYPE_NOT_IN_FORCE,
+        /** Out of force because it is an enhancer none of whose targets is in force. */
+        ENHANCED_TARGET_NOT_IN_FORCE
+    }
+
     /** The bucket of the skipped report an artifact the request names falls into (E14). */
     public enum Bucket {
         /** Bound to a mission type that is not in force. */
@@ -185,9 +193,9 @@ public record InForceStates(
      * A required or locked artifact that cannot stand in force.
      *
      * @param urn the artifact
-     * @param reason {@link Reason#ENHANCED_TARGET_NOT_IN_FORCE} or {@link Reason#MISSION_TYPE_NOT_IN_FORCE}
+     * @param reason the pruning reason: the enhancer rule or the binding rule
      */
-    public record RequiredNotInForce(Urn urn, Reason reason) {
+    public record RequiredNotInForce(Urn urn, PruningReason reason) {
 
         /**
          * Checks the fields.
