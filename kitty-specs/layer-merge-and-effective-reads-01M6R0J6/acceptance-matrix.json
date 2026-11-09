@@ -116,13 +116,13 @@
     },
     {
       "criterion_id": "FR-012",
-      "description": "Verify FR-012 is satisfied",
+      "description": "A distribution pack's descriptor overrides entry puts the named sibling's artifact in force without a pack_sibling_conflict, and the same sibling conflict without a settlement still refuses the read with 500 pack_sibling_conflict.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "contracts/charter/scenarios/layer-merge.feature: \"US6 AS1 - a distribution pack's settlement puts the named member's version in force (#357)\"; contracts/charter/scenarios/layer-merge.feature: \"US6 AS2 - the same conflict without a settlement is refused, and an activation that avoids it still answers\"",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:45:54.552894+00:00",
+      "notes": "PR B (#427, WP21); #357. Known gap recorded, not a fail: same-level settlement is not yet restricted to the distribution pack (#358, DIV-219)."
     },
     {
       "criterion_id": "FR-013",
