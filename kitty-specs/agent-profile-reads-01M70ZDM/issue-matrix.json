@@ -156,6 +156,18 @@
       "verdict": "not-applicable",
       "wp": null
     },
+    "#452": {
+      "evidence_ref": "Context only: core's synthesized project pack",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
     "#454": {
       "evidence_ref": "WP08 adds the root activations link; Follow-up: #454 keeps the bare-404 and token-error items",
       "fr": null,
