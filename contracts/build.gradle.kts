@@ -870,6 +870,20 @@ tasks.test {
     inputs.dir(charterSchemas).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("charterSchemas")
     systemProperty("charter.offeringSchemas", offeringSchemas.asFile.absolutePath)
     systemProperty("charter.charterSchemas", charterSchemas.asFile.absolutePath)
+    // XSourceCitationsTest checks that every x-source.path of the charter contract exists under the repository root (#430).
+    // The cited files are Java sources, ADRs and the offering schema, so those are inputs: a deleted source reruns it.
+    val charterContractDir = layout.projectDirectory.dir("charter")
+    val repositoryRoot = rootProject.layout.projectDirectory
+    inputs.dir(charterContractDir).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("charterContractDir")
+    // Each service module's main sources are named one by one: a tree rooted at the repository or at service/ would
+    // contain other tasks' outputs (build/), which Gradle refuses as an undeclared dependency.
+    val serviceSourceDirs = repositoryRoot.dir("service").asFile.listFiles().orEmpty()
+        .filter { it.resolve("src/main/java").isDirectory }
+        .map { repositoryRoot.dir("service/${it.name}/src/main/java") }
+    inputs.files(serviceSourceDirs, repositoryRoot.dir("docs/adr"), repositoryRoot.dir("contracts/offering"))
+        .withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("xSourceTargets")
+    systemProperty("charter.contractDir", charterContractDir.asFile.absolutePath)
+    systemProperty("charter.repositoryRoot", repositoryRoot.asFile.absolutePath)
 }
 
 val checkClosedResponseObjects = tasks.register<CheckBundle>("checkClosedResponseObjects") {
