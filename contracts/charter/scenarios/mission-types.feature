@@ -7,7 +7,7 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
   contract is a served kind of the generic item read (FR-001, FR-004), and a skeleton is read by its one-segment name,
   the path under the type's templates/ escaped as in RFC 6901 (FR-005, D9). Both kinds are listed, filtered and
   referenced like the other served kinds. Refusals come in order: the pack, then the mission type, then the step or
-  the skeleton (FR-009). The activation-scoped reads are reserved and answer 501 until they are built (ADR-0020 D8).
+  the skeleton (FR-009).
 
   Background:
     Given the org pack "main" with the file "pack.yaml":
@@ -560,21 +560,3 @@ Feature: A pack's mission types are read with their steps, step contracts and sk
     When I GET "/packs/bare/artifacts/mission_step_contract/nope"
     Then the response status is 500
     And the problem code is "pack_unreadable"
-
-  @reserved
-  Scenario: Reading a mission type under an activation is reserved
-    ADR-0020 D8: getActivationMissionType is declared in full and answers 501 until it is built (WP05).
-    When I GET "/activations/a-1/artifacts/mission_type/software-dev"
-    Then the operation is refused as not implemented
-
-  @reserved
-  Scenario: Reading a step of a mission type under an activation is reserved
-    ADR-0020 D8: getActivationMissionStep is declared in full and answers 501 until it is built (WP05).
-    When I GET "/activations/a-1/artifacts/mission_type/software-dev/steps/specify"
-    Then the operation is refused as not implemented
-
-  @reserved
-  Scenario: Reading a skeleton of a mission type under an activation is reserved
-    ADR-0020 D8: getActivationMissionSkeleton is declared in full and answers 501 until it is built (WP05).
-    When I GET "/activations/a-1/artifacts/mission_type/software-dev/skeletons/spec-template.md"
-    Then the operation is refused as not implemented

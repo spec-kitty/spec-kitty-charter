@@ -18,7 +18,6 @@ files:
   - UnsupportedMediaType.yaml
   - PackPreconditionFailed.yaml
   - PackRegistrationUnavailable.yaml
-  - ActivationMissionTypeNotFound.yaml
   - MissionSkeletonNotFound.yaml
   - MissionStepNotFound.yaml
   - MissionTypeNotFound.yaml
