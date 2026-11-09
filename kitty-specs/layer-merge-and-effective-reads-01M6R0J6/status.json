@@ -1029,7 +1029,14 @@
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 19717,
-      "shell_pid_created_at": "1794237485.18"
+      "shell_pid_created_at": "1794237485.18",
+      "subtasks": {
+        "T143": "done",
+        "T144": "done",
+        "T145": "done",
+        "T146": "done",
+        "T165": "done"
+      }
     },
     "WP30": {
       "actor": "claude",
