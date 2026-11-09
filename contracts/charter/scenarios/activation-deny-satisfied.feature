@@ -337,7 +337,10 @@ Feature: A deny entry on a required artifact is accepted when an active override
     And the problem code is "artifact_locked"
     And the field at "/requiredBy/0/packId" is "main"
     When I GET "/activations/a-1"
-    Then the field at "/revision" is the stored revision
+    Then the field at "/config/deactivated/directive" holds exactly the ids:
+      """
+      LK
+      """
 
   Scenario: IC-13 - deactivating T again after the override was unselected is 409 artifact_required
     R12, F1: T's deny entry was accepted for F's sake and stays stored when F is unselected. Deactivating T once more
