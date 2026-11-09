@@ -356,13 +356,13 @@
     },
     {
       "criterion_id": "FR-036",
-      "description": "Verify FR-036 is satisfied",
+      "description": "The inbound-reference check of a DELETE or replace judges references against the tree after the change (referrers the same request removes do not block), counts other packs' edges, preset items and descriptor overrides entries but not ADR-0064 D11 data-only fields, and every 409 artifact_referenced lists the referring artifacts and packs.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "contracts/charter/scenarios/pack-removal.feature: \"An artifact another pack's preset names is not deleted, and the preset is named\"; service/packs/src/test/java/ai/speckitty/charter/packs/application/InboundReferencesTest.java#aReferrerTheSameRequestRemovesDoesNotBlockButOneItKeepsDoes",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:47:07.306723+00:00",
+      "notes": "PR A (#419, WP14/WP19); IC-06, DM-01M6RA9MQ6YAP048KD43DNFS4F, DM-01M6RA8MG55V8C2V9PXWDTRNQS. Also InboundReferencesTest#aDataOnlyFieldIsNotInboundButAnEdgeOntoTheSameArtifactIs."
     },
     {
       "criterion_id": "FR-037",
