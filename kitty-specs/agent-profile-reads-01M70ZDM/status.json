@@ -20,9 +20,9 @@
   "work_packages": {
     "WP01": {
       "actor": "claude",
-      "agent": "claude",
-      "agent_profile": "java-jenny",
-      "agent_profile_version": "1.0",
+      "agent": "claude:sonnet:java-jenny",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 2,
       "implementer_of_record": "claude",
       "lane": "in_progress",
@@ -31,7 +31,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "Pin at a2a9379; one commit (pin alone is red). Counts moved with upstream traces in commit body: manifest 315->310 (entries 317->312), built-in procedures 65->66, toolguides/guides 18->19, corpus 87/24/24->88/25/25, markdown 89->90, inspector files 392->389, exclusions.yaml **/__init__.py entry removed (dfc6601). Unmoved: Counts(), 31 profiles, MissionType 47/13/17/32, StepContract 28, CompanionDigest 10, expected-red.yaml. Scope note: also edited FileSystemPackInspectorTest, ProcedureAndGuideCorpusTest, MarkdownCorpusTest (outside owned_files, red at pin). Divergence: .kittify implement index.yaml:33-35 and implement.step-contract.yaml:15-17 name deleted paradigms (execution-lanes, shared-branch-ci, git-flow); for open-packs/core follow-up. Open-packs manifest omits git-flow procedure and execution-lanes toolguide. Prompt's :packs:test command does not run open-packs-tagged tests; used :packs:openPacksRoundTrip.",
-        "Re-record the implementer hand-off with its profile (java-jenny); no change to the work"
+        "Re-record the implementer hand-off with its profile (java-jenny); no change to the work",
+        "Re-record the implementer of record with its full identity; no code change"
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": null,
