@@ -86,13 +86,13 @@
     },
     {
       "criterion_id": "FR-009",
-      "description": "Verify FR-009 is satisfied",
+      "description": "An activation's closure is merged in merge order (built-in, org, project) and the level that applies wins, its artifact replacing the others whole with no field inherited, so a directive held at built-in and project level is listed once with packId and level of the project version.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "contracts/charter/scenarios/layer-merge.feature: \"US3 AS1 - a directive held at built-in and at project level is listed once, with the project version's provenance\"; service/packs/src/test/java/ai/speckitty/charter/packs/domain/LayerMergeTest.java#everyRuleTheMergeDecidesHasItsRow",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:45:45.075331+00:00",
+      "notes": "PR B (#427, WP21). LayerMergeTest rows C17/C18 (winner whole, languages not inherited)."
     },
     {
       "criterion_id": "FR-010",
