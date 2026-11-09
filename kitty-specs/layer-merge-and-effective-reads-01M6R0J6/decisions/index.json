@@ -2044,6 +2044,29 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-09T16:33:04.497354Z",
+      "decision_id": "01M70JFXZHY2NKA6Y6RQ66AYA9",
+      "final_answer": "keep ### Changed: the WP, contract-delta and the operator handover rule it; the response shapes do not change; the fragment says plainly that a documented 409 artifact_required now succeeds when an active override satisfies the requirement",
+      "input_key": "wp29-ic13-fragment-section",
+      "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",
+      "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
+      "opened_by": "claude-runner",
+      "options": [
+        "keep ### Changed: the WP, contract-delta and the operator handover rule it; the response shapes do not change; the fragment says plainly that a documented 409 artifact_required now succeeds when an active override satisfies the requirement",
+        "change to ### Breaking: a documented 409 becomes 200/201 for the same input"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "WP29 review MINOR-1: the IC-13 fragment (2026-11-07-c-deny-satisfied-by-override.md) uses ### Changed, but a documented 409 artifact_required becomes 200/201 for the same input; the mission's precedent files a refusal-becomes-success as ### Breaking. Which section?",
+      "rationale": "Runner: the planning artefacts (WP29, contract-delta 'The relaxed write rule (IC-13)') and the operator's PR C handover (### Changed list: deny satisfied by override IC-13) all file IC-13 as Changed: the write accepts more, no response shape changes, and oasdiff does not flag it. The a0 Breaking precedent was a 422 becoming a silent drop (data a client sent is no longer stored), which a client must react to; here a client that handled 409 keeps working. The fragment is amended in the WP29 fix cycle to state the relaxed 409 explicitly and that core's in-process backend still refuses (DIV-204), so a reader sees the behaviour change without the section.",
+      "resolved_at": "2026-11-09T16:33:17.212883Z",
+      "resolved_by": "claude-runner",
+      "slot_key": "wp29-ic13-fragment-section",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",
