@@ -38,7 +38,8 @@
       "description": "Human-readable handle; not the runtime identity. It is the qualifier of a cross-pack reference (<name>::<urn>), so it follows the identifier grammar: lower-case letters, digits, '-' and '_', starting with a letter or digit.",
       "title": "Name",
       "type": "string",
-      "pattern": "^[a-z0-9][a-z0-9_-]*$"
+      "pattern": "^[a-z0-9][a-z0-9_-]*$",
+      "maxLength": 64
     },
     "pack_level": {
       "description": "Declared Charter Pack tier: built-in, org or project. Required when depends_on is non-empty; otherwise optional, and when present it is one of the three.",

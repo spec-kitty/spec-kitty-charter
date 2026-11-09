@@ -49,6 +49,7 @@
     "id": {
       "description": "The guard's id, kebab-case; it is the file stem.",
       "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "maxLength": 64,
       "title": "Id",
       "type": "string",
       "not": {

@@ -23,6 +23,7 @@
         "entry": {
           "description": "A payload file of the same pack, relative to its assets/ directory: the asset's own or another's. The load checks that the pack holds it (ADR-0054 decision 5 as amended on 2026-11-03). No absolute path, no .. or hidden segment, no whitespace or backslash.",
           "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]*(/[A-Za-z0-9_][A-Za-z0-9_.-]*)*$",
+          "maxLength": 255,
           "title": "Entry",
           "type": "string"
         },

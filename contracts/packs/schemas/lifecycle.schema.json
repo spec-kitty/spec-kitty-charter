@@ -9,6 +9,7 @@
         "ref": {
           "description": "The guard: its bare id in the same pack, or <pack>::guard:<id> in another pack.",
           "pattern": "^([a-z0-9]+(-[a-z0-9]+)*::guard:)?[a-z0-9]+(-[a-z0-9]+)*$",
+          "maxLength": 136,
           "title": "Ref",
           "type": "string",
           "not": {
@@ -68,6 +69,7 @@
         "$ref": "#/$defs/YamlWord"
       },
       "pattern": "^[a-z][a-z0-9]*([_-][a-z0-9]+)*$",
+      "maxLength": 64,
       "title": "StateId",
       "type": "string"
     },
@@ -151,6 +153,7 @@
     "id": {
       "description": "The lifecycle's id, kebab-case; it is the file stem.",
       "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "maxLength": 64,
       "title": "Id",
       "type": "string",
       "not": {
