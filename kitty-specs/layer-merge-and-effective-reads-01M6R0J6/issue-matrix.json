@@ -311,6 +311,18 @@
       "title": null,
       "verdict": "in-mission",
       "wp": null
+    },
+    "#429": {
+      "evidence_ref": "Follow-up from the #427 landing pass: step URNs filtered out of the skipped report; latent until #428; PR C reads it before WP27/WP28",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
+      "wp": null
     }
   },
   "schema_version": 1
