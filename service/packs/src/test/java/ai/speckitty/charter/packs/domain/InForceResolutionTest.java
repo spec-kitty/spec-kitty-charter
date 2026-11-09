@@ -968,4 +968,35 @@ class InForceResolutionTest {
         assertThat(Arrays.stream(type.getEnumConstants()).map(constant -> ((Enum<?>) constant).name()))
                 .containsExactlyInAnyOrder("MISSION_TYPE_NOT_IN_FORCE", "ENHANCED_TARGET_NOT_IN_FORCE");
     }
+
+    @Test
+    void aStepEnhancerBoundToItsMissionTypeWithNoEnhancesEdgeIsInForceOnlyWhileTheMissionTypeIs() {
+        // OD-6: the merged-edge derivation hands the resolution the binding and no enhances edge for a step enhancer
+        // whose single target is a held step.
+        Closure closure = new Closure()
+                .open("mission_type:m", "step_enhancement:x")
+                .bound("step_enhancement:x", "mission_type:m");
+
+        expect(
+                closure.select("step_enhancement:x", "mission_type:m"),
+                "step_enhancement:x",
+                State.ACTIVE,
+                Reason.SELECTED);
+        InForceStates without = closure.select("step_enhancement:x");
+        expect(without, "step_enhancement:x", State.INACTIVE, Reason.MISSION_TYPE_NOT_IN_FORCE);
+        assertThat(without.stateOf(u("step_enhancement:x")).orElseThrow().bucket())
+                .contains(Bucket.MISSION_TYPE_NOT_IN_FORCE);
+    }
+
+    @Test
+    void aStepEnhancerWhoseKeptEnhancesEdgeEndsAtNoWinnerIsPrunedForItsTarget() {
+        // OD-6, an unheld target: the derivation keeps the edge though its target is no winner, so I11 holds.
+        InForceStates states = new Closure()
+                .open("mission_type:m", "step_enhancement:x")
+                .enhances("step_enhancement:x", "action:m/missing")
+                .select("step_enhancement:x", "mission_type:m");
+
+        expect(states, "step_enhancement:x", State.INACTIVE, Reason.ENHANCED_TARGET_NOT_IN_FORCE);
+        assertThat(states.enhancedTargets()).containsEntry(u("step_enhancement:x"), List.of(u("action:m/missing")));
+    }
 }
