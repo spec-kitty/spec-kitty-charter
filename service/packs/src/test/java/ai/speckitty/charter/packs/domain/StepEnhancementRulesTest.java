@@ -14,6 +14,7 @@ import static ai.speckitty.charter.packs.domain.StepEnhancementFault.OVERRIDES_E
 import static ai.speckitty.charter.packs.domain.StepEnhancementFault.SLOT_REPEATED;
 import static ai.speckitty.charter.packs.domain.StepEnhancementFault.STEM_REPEATED;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.domain.RelationType;
@@ -289,6 +290,21 @@ class StepEnhancementRulesTest {
             assertOnly(judge(parsed), COMPANION_ORPHAN, stray);
         }
 
+        /** New coverage: a rule fault on a held enhancement does not excuse an orphan (only an unparsed or withheld one does). */
+        @Test
+        void anOrphanBesideAHeldEnhancementWithARuleFaultIsStillAnOrphan() {
+            PackFixture pack = new PackFixture()
+                    .valid(PLAN, "brief", "plan")
+                    .enhances("brief", "base", "action:software-dev/tasks")
+                    .orphan(PLAN, "a-stray.prompt-fragment.md");
+
+            assertThat(judge(pack))
+                    .extracting(Finding::rule, Finding::path)
+                    .containsExactly(
+                            tuple(COMPANION_ORPHAN, PackFixture.fragmentPath(PLAN, "a-stray.prompt-fragment.md")),
+                            tuple(EDGE_COUNT, BRIEF));
+        }
+
         @Test
         void aRefusedEnhancementInAnotherDirectoryDoesNotExcuseAnOrphan() {
             PackFixture elsewhere = new PackFixture()
@@ -429,6 +445,13 @@ class StepEnhancementRulesTest {
         }
 
         @Test
+        void aRepeatedFileWithNoEntriesAnswersOnlyStemRepeatedForIdentity() {
+            PackFixture pack = new PackFixture().valid("a", "brief", "plan").enhancement("b", "brief");
+
+            assertOnly(judge(pack), STEM_REPEATED, PackFixture.path("b", "brief"));
+        }
+
+        @Test
         void thePathOrderIsTheComparatorsNotTheInputOrNotStringOrder() {
             // 'plan-x/' sorts below 'plan/' as a String, so a caller listing by String order passes it first.
             // PackPolicy.comparePaths puts the shorter 'plan' segment first, so 'plan-x' is the second file.
@@ -491,6 +514,27 @@ class StepEnhancementRulesTest {
             assertThat(once).hasSize(4);
             assertThat(judge(fourFaults(true))).isEqualTo(once);
             assertThat(judge(fourFaults(false))).isEqualTo(once);
+        }
+    }
+
+    @Nested
+    class EdgeFact {
+
+        @Test
+        void aTargetStillCarryingItsPackQualifierIsRefusedLoudlyAndTheSplitFormIsNot() {
+            assertThatThrownBy(() -> new Edge(
+                            RelationType.ENHANCES,
+                            "step_enhancement:brief",
+                            "base::action:software-dev/plan",
+                            Optional.empty()))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("base::action:software-dev/plan");
+            assertThat(new Edge(
+                            RelationType.ENHANCES,
+                            "step_enhancement:brief",
+                            "action:software-dev/plan",
+                            Optional.of("base")))
+                    .isNotNull();
         }
     }
 }

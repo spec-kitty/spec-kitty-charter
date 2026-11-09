@@ -152,13 +152,13 @@ public final class StepEnhancementRules {
     private static void identity(StepEnhancementFacts facts, List<Enhancement> ordered, List<Finding> found) {
         Set<String> seen = new HashSet<>();
         for (Enhancement enhancement : ordered) {
-            if (enhancement.entries().isEmpty()) {
-                found.add(new Finding(
-                        StepEnhancementFault.NO_FRAGMENTS,
-                        enhancement.path(),
-                        "the enhancement has no prompt_fragments entry"));
-            }
             if (seen.add(enhancement.id())) {
+                if (enhancement.entries().isEmpty()) {
+                    found.add(new Finding(
+                            StepEnhancementFault.NO_FRAGMENTS,
+                            enhancement.path(),
+                            "the enhancement has no prompt_fragments entry"));
+                }
                 edges(enhancement, facts.edges(), found);
             } else {
                 found.add(new Finding(
