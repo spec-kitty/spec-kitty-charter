@@ -1,0 +1,397 @@
+# Planning fragment (OpenAPI 3.1) for IC-05 of mission adr-0066-step-enhancement-service-alignment-01M6ZRYK.
+# Not part of the bundled contract. Each top-level key under `x-files` is the content of one file the IC creates under
+# contracts/charter/, written with the $ref paths that file will use there. The fragment is built AFTER PR C merges
+# (C-004, operator ruling D2); `action_not_found` is raised by PR C's WP28 by then.
+#
+# Classes (ADR-0022, 0.x, C-001): the operation and the four schemas are ### Added; prompt_slot_missing raised is
+# ### Changed; the compose refusal it brings is ### Breaking (branch per open item D13 = plan OD-1).
+#
+# Revised after the plan-point squad (2026-11-09): packName (C-04), 400 for all three path parameters (C-09), slot
+# cited (C-10), enhancement without kind prefix (C-14), x-refusal wording (C-13, C-15), scoped OfferingUnreadable text
+# (C-08), _links.prompt on the action context (C-05). Text marked "OD-n" waits on that plan operator decision and is
+# shown with a placeholder, never as decided.
+openapi: 3.1.0
+info:
+  title: Charter API (planning fragment, effective step prompt)
+  version: 0.2.0-SNAPSHOT
+paths:
+  /activations/{activationId}/mission-types/{missionType}/actions/{action}/prompt:
+    $ref: '#/x-files/paths~1activations_activationId_missionTypes_missionType_actions_action_prompt.yaml'
+
+x-files:
+  # ---------------------------------------------------------------------------------------------------------------
+  paths/activations_activationId_missionTypes_missionType_actions_action_prompt.yaml:
+    parameters:
+    - $ref: ../parameters/ActivationId.yaml
+    - $ref: ../parameters/MissionTypePath.yaml
+    - $ref: ../parameters/ActionPath.yaml
+    get:
+      operationId: getEffectiveStepPrompt
+      summary: Read the prompt one step gets under an activation.
+      description: >-
+        The effective prompt of the step (ADR-0066 decision 9): the prompt in force for action {action} of mission type
+        {missionType} under the activation's merged closure, an override's when one wins the layer merge, rendered from
+        the held step document with the same meaning (ADR-0036; operator ruling D5), and, for every slot that prompt
+        declares, in declaration order, the fragments of the active step enhancements that fill it. A slot nothing
+        fills is listed with no fragments. Fragments of one slot are ordered by the level of the enhancing pack
+        (built-in, then org, then project), then the pack's descriptor name (packName), then the enhancement's id,
+        each compared by code point (decision 5); each names its pack and enhancement. Only the winning copy of an
+        enhancement after the layer merge contributes. A fragment is listed only while its enhancement is itself in
+        force: nothing is pulled into force because its target is, or the other way round (decision 4, E12).
+        The charter does not render: a renderer replaces each empty slot's marker pair with its fragments, one blank
+        line between them, and an empty slot with no fragment leaves nothing, not even the markers. [OD-8: what a
+        renderer does with a slot that still holds legacy text under an unversioned descriptor.]
+
+        ETag follows the rule of the effective reads: it changes with the activation's revision and with any pack of
+        the activation's closure, not with a pack outside it, and a matching If-None-Match is a 304 without a body.
+
+        An activationId, missionType or action outside its declared pattern is a 400 Problem without a code. An
+        unknown activation is 404 activation_not_found. A mission type the closure does not hold is 404
+        mission_type_not_found; an action the mission type does not declare is 404 action_not_found. [OD-5: a
+        mission type the closure holds but the activation does not put in force; squad recommendation: 200 with
+        missionTypeInForce false and every slot listed with no fragments.] A closure that cannot compose or merge is
+        500 with its code, including prompt_slot_missing when the prompt in force does not declare a slot an
+        enhancement names [OD-1: every enhancement of the closure, or only those in force], and
+        pack_reference_pack_missing, pack_reference_artifact_missing or pack_reference_unqualified when an
+        enhancement's target step does not resolve. A pack whose files break a load rule answers 500 pack_unreadable
+        naming the file [OD-3]. The answer is never partial.
+      tags:
+      - Activation
+      parameters:
+      - $ref: ../parameters/IfNoneMatch.yaml
+      responses:
+        '200':
+          description: The effective prompt.
+          headers:
+            Charter-Contract-Version:
+              $ref: ../headers/CharterContractVersion.yaml
+            Charter-Worktree:
+              $ref: ../headers/CharterWorktree.yaml
+            Charter-Source-Fingerprint:
+              $ref: ../headers/CharterSourceFingerprint.yaml
+            ETag:
+              $ref: ../headers/EffectiveETag.yaml
+          content:
+            application/json:
+              schema:
+                $ref: ../schemas/EffectiveStepPrompt.yaml
+              examples:
+                three-levels:
+                  $ref: ../examples/EffectiveStepPrompt.three-levels.yaml
+                empty-slot:
+                  $ref: ../examples/EffectiveStepPrompt.empty-slot.yaml
+        '304':
+          $ref: ../responses/NotModified.yaml
+        '400':
+          $ref: ../../_shared/responses/Problem.yaml
+        '401':
+          $ref: ../responses/Unauthorized.yaml
+        '403':
+          $ref: ../responses/Forbidden.yaml
+        '404':
+          $ref: ../responses/ActivationNotFound.yaml
+        '500':
+          $ref: ../responses/OfferingUnreadable.yaml
+        default:
+          $ref: ../../_shared/responses/Problem.yaml
+
+  # ---------------------------------------------------------------------------------------------------------------
+  schemas/EffectiveStepPrompt.yaml:
+    title: EffectiveStepPrompt
+    description: >-
+      The prompt one step of one mission type gets under an activation (ADR-0066 decision 9): the prompt in force with
+      the same meaning as the held document, and every slot it declares with the active fragments that fill it, in
+      order, each with its provenance. The charter serves it; the renderer places the fragments.
+    type: object
+    additionalProperties: false
+    required:
+    - activationId
+    - revision
+    - governanceFingerprint
+    - missionType
+    - action
+    - prompt
+    - slots
+    - _links
+    properties:
+      activationId:
+        allOf:
+        - $ref: ActivationId.yaml
+        description: The activation's id.
+        x-derived:
+          rule: The {activationId} path segment.
+          inputs:
+          - parameters/ActivationId.yaml
+      revision:
+        allOf:
+        - $ref: Sha256Digest.yaml
+        description: >-
+          The activation's revision: sha256: and the hex SHA-256 of the RFC 8785 (JCS) serialization of its canonical
+          config.
+        x-derived:
+          rule: SHA-256 over the JCS serialization of the canonical ActivationConfig.
+          inputs:
+          - schemas/ActivationConfig.yaml
+      governanceFingerprint:
+        allOf:
+        - $ref: Sha256Digest.yaml
+        description: >-
+          The charter-closure/v1 digest of the packs of the activation's closure alone, taken in the same consistent read
+          as the answer, as on the other effective reads.
+        x-derived:
+          rule: sha256 of "charter-closure/v1", the configured id and level of each pack of the closure, and their files.
+          inputs:
+          - schemas/ActivationConfig.yaml
+      missionType:
+        allOf:
+        - $ref: Slug.yaml
+        description: The mission type.
+        x-derived:
+          rule: The {missionType} path segment.
+          inputs:
+          - parameters/MissionTypePath.yaml
+      action:
+        allOf:
+        - $ref: Slug.yaml
+        description: The step (action) of the mission type.
+        x-derived:
+          rule: The {action} path segment.
+          inputs:
+          - parameters/ActionPath.yaml
+      prompt:
+        type: string
+        description: >-
+          The prompt in force for the step, as Markdown with LF line endings and its slot markers in place: the
+          layer-merge winner's prompt, as the canonical text of the held step document (frontmatter included), with
+          the same meaning as the authored file (ADR-0036), so its bytes may differ from it. It is the text the load
+          checks parsed. Outside the slots it is the base text unchanged (ADR-0066 decision 7). Empty when the step has
+          no prompt.
+        x-derived:
+          rule: The canonical Markdown render of the prompt of step {action} in the winning version of mission_type:{missionType}.
+          inputs:
+          - schemas/ActivationConfig.yaml
+      slots:
+        type: array
+        items:
+          $ref: EffectivePromptSlot.yaml
+        description: >-
+          Every slot the prompt declares, in declaration order, filled or not; empty when it declares none.
+        x-derived:
+          rule: The slot declarations of prompt, each with the active fragments that name it.
+          inputs:
+          - schemas/ActivationConfig.yaml
+      _links:
+        $ref: Links.yaml
+
+  # ---------------------------------------------------------------------------------------------------------------
+  schemas/EffectivePromptSlot.yaml:
+    title: EffectivePromptSlot
+    description: One slot the prompt in force declares, and the active fragments that fill it, in order.
+    type: object
+    additionalProperties: false
+    required:
+    - slot
+    - fragments
+    properties:
+      slot:
+        allOf:
+        - $ref: SlotId.yaml
+        description: The slot's id, as the prompt declares it.
+        x-derived:
+          rule: The id of a slot marker pair of prompt, in declaration order.
+          inputs:
+          - schemas/ActivationConfig.yaml
+      fragments:
+        type: array
+        items:
+          $ref: EffectivePromptFragment.yaml
+        description: >-
+          The fragments of the step enhancements in force for this step that name the slot, ordered by pack level
+          (built-in, org, project), then packName (the descriptor name), then enhancement id, each by code point; []
+          when none does. Nothing is merged or de-duplicated (ADR-0066 decision 6).
+        x-derived:
+          rule: The active enhancements whose enhances edge targets the step, one item per entry naming the slot.
+          inputs:
+          - schemas/ActivationConfig.yaml
+
+  # ---------------------------------------------------------------------------------------------------------------
+  schemas/EffectivePromptFragment.yaml:
+    title: EffectivePromptFragment
+    description: One prompt fragment of an active step enhancement, with where it came from.
+    type: object
+    additionalProperties: false
+    required:
+    - packId
+    - packName
+    - level
+    - enhancement
+    - text
+    properties:
+      packId:
+        type: string
+        minLength: 1
+        description: The configured identifier of the pack that holds the enhancement version in force.
+        x-derived:
+          rule: The pack of the winning version of the step enhancement after the layer merge.
+          inputs:
+          - schemas/ActivationConfig.yaml
+      packName:
+        type: string
+        minLength: 1
+        description: >-
+          The descriptor name of that pack (pack.yaml name), the second ordering key. Distinct from packId, the
+          configured identifier.
+        x-derived:
+          rule: The name of the descriptor of the winning pack after the layer merge.
+          inputs:
+          - pack.yaml of the winning pack
+      level:
+        allOf:
+        - $ref: PackLevel.yaml
+        description: The level of that pack; the first ordering key.
+        x-derived:
+          rule: The level of the winning pack after the layer merge.
+          inputs:
+          - schemas/ActivationConfig.yaml
+      enhancement:
+        allOf:
+        - $ref: ArtifactId.yaml
+        description: The step enhancement's declared id, without a kind prefix.
+        x-derived:
+          rule: The id of the step enhancement whose prompt_fragments entry names the slot.
+          inputs:
+          - schemas/ActivationConfig.yaml
+      text:
+        type: string
+        minLength: 1
+        description: >-
+          The fragment's Markdown body as the canonical text of the held fragment, LF line endings, with no
+          frontmatter and no slot marker (checked at load). Read as text: an artifact its prose mentions is never a
+          reference.
+        x-derived:
+          rule: The body of the companion the entry names.
+          inputs:
+          - schemas/ActivationConfig.yaml
+
+  # ---------------------------------------------------------------------------------------------------------------
+  schemas/SlotId.yaml:
+    title: SlotId
+    description: >-
+      A prompt slot's id, <namespace>:<name> (ADR-0066 decision 2). The namespace names a concern, not a pack. Stable
+      like a pack name.
+    type: string
+    pattern: ^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*$
+
+  # ---------------------------------------------------------------------------------------------------------------
+  examples/EffectiveStepPrompt.three-levels.yaml:
+    summary: >-
+      Four enhancements in force at three levels fill spdd:reasons-block of software-dev/plan. The two org packs
+      sort by descriptor name (architecture-notes before spdd), the reverse of their configured ids.
+    value:
+      activationId: a-1
+      revision: sha256:3f1b2c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809
+      governanceFingerprint: sha256:9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2f1e0d9c8b7a6f5e4d3c2b1a0f9e8d
+      missionType: software-dev
+      action: plan
+      prompt: "# Plan\n\nWrite the plan.\n\n<!-- spdd:reasons-block:start -->\n<!-- spdd:reasons-block:end -->\n"
+      slots:
+      - slot: spdd:reasons-block
+        fragments:
+        - packId: built-in
+          packName: built-in
+          level: built-in
+          enhancement: base-plan-note
+          text: "Name the constraint each decision answers.\n"
+        - packId: zz-org-arch
+          packName: architecture-notes
+          level: org
+          enhancement: arch-plan
+          text: "Name the ADR each decision answers to.\n"
+        - packId: aa-spdd
+          packName: spdd
+          level: org
+          enhancement: spdd-plan
+          text: "Fill the REASONS canvas before the concern map.\n"
+        - packId: team
+          packName: team
+          level: project
+          enhancement: team-plan
+          text: "Link the team's ADR index.\n"
+      _links:
+        self:
+          href: /api/v1/activations/a-1/mission-types/software-dev/actions/plan/prompt
+
+  examples/EffectiveStepPrompt.empty-slot.yaml:
+    summary: The slot is declared and no active enhancement fills it, so it is listed with no fragments.
+    value:
+      activationId: a-1
+      revision: sha256:3f1b2c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809
+      governanceFingerprint: sha256:9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2f1e0d9c8b7a6f5e4d3c2b1a0f9e8d
+      missionType: software-dev
+      action: plan
+      prompt: "# Plan\n\nWrite the plan.\n\n<!-- spdd:reasons-block:start -->\n<!-- spdd:reasons-block:end -->\n"
+      slots:
+      - slot: spdd:reasons-block
+        fragments: []
+      _links:
+        self:
+          href: /api/v1/activations/a-1/mission-types/software-dev/actions/plan/prompt
+
+  # ---------------------------------------------------------------------------------------------------------------
+  # The 500 answer reuses responses/OfferingUnreadable.yaml, which 26 path files share. IC-05 adds this example to
+  # it, and its description says "on the operations that build the layer merge" rather than naming the code for every
+  # operation that reuses it; each operation that can answer prompt_slot_missing names it in its own description,
+  # under each D13 branch (C-08). ### Changed, wording.
+  responses/OfferingUnreadable.yaml#examples/prompt-slot-missing:
+    summary: A project prompt override drops a slot an enhancement names.
+    value:
+      title: Prompt slot missing
+      status: 500
+      code: prompt_slot_missing
+      detail: >-
+        step enhancement spdd-plan of pack spdd names slot spdd:reasons-block, which the prompt in force for
+        action:software-dev/plan (pack team, project) does not declare
+
+  # ---------------------------------------------------------------------------------------------------------------
+  # The x-refusal entries of CharterRefusalCode.yaml after the mission (IC-04 the first three, IC-05 the fourth).
+  # The `raised` value of the three load codes is plan OD-3, shown as <OD-3>: under OD-3 (a) the x-refusal definition
+  # of raised is amended to count a violation code of validation_failed, and drg_schema_error flips with them; under
+  # (a') they stay false; under (b) they are top-level codes with operations: {getPackRegistration: 422}.
+  # prompt_slot_missing's operations map is OD-4 (squad: getPackRegistration: 422); its wording keeps the current
+  # x-refusal text, and the reserved paragraph keeps "an active or inactive enhancement" until D13 (C-13).
+  schemas/CharterRefusalCode.yaml#x-refusal:
+    prompt_slot_malformed:
+      status: 500
+      retryable: false
+      raised: <OD-3>
+      description: >-
+        a base prompt's slot declaration is malformed, repeated, nested or unpaired (ADR-0066); a registration lists it
+        as a violation at the prompt file, and a composing read answers pack_unreadable naming the file
+    prompt_slot_not_empty:
+      status: 500
+      retryable: false
+      raised: <OD-3>
+      description: >-
+        a slot holds text in a pack whose descriptor declares schema_version 1.0 (ADR-0066); for an unversioned
+        descriptor see DiagnosticCode.prompt_slot_not_empty
+    prompt_fragment_invalid:
+      status: 500
+      retryable: false
+      raised: <OD-3>
+      description: >-
+        an invalid step enhancement or prompt fragment at load (ADR-0066; rulings D8 to D12); a registration lists it
+        as a violation at the file, and a composing read answers pack_unreadable naming the file
+    prompt_slot_missing:
+      status: 500
+      retryable: false
+      raised: true
+      # operations: {getPackRegistration: {status: 422}}   # only if plan OD-4 rules registration-time judgement
+      description: the prompt in force declares no slot an enhancement names (ADR-0066 decision 8)
+
+  # ---------------------------------------------------------------------------------------------------------------
+  # The action context (PR C's EffectiveActionContext) gains a `prompt` relation in IC-05/IC-07, after PR C merges,
+  # landing with the built read (no relation may point at an unbuilt operation, schemas/Links.yaml). Links is an open
+  # map, so this is an example and a rel row in docs/development/hypermedia-hateoas.md plus RelationTableParityTest, not
+  # a shape change (C-05; D5 sub-ruling).
+  examples/EffectiveActionContext.*.yaml#_links.prompt:
+    href: /api/v1/activations/a-1/mission-types/software-dev/actions/plan/prompt
