@@ -2,10 +2,11 @@ parameters:
 - $ref: ../parameters/ActivationId.yaml
 get:
   operationId: getEffectiveGraph
-  summary: Read the graph of the offering filtered by an activation.
+  summary: Read the effective graph of an activation.
   description: >-
-    The graph of the merged closure under the activation (ADR-0020 D7, FR-018): the nodes in force, the edges among them
-    resolved through the layer overrides, and the layer overrides applied. An edge is dropped with either endpoint, an
+    The effective graph of the activation (ADR-0020 D7, FR-018): the nodes in force (the artifacts in force and the held
+    steps of the mission types in force), the edges among them resolved through the layer overrides, and the layer
+    overrides applied, not the offering's graph filtered by it. An edge is dropped with either endpoint, an
     edge from an overridden version is absent and an edge to one ends at the winner, so a client reads, from either end,
     what an enhancer enhances. The answer carries an ETag over the activation's revision and the packs of its closure,
     and answers 304 on a matching If-None-Match.
