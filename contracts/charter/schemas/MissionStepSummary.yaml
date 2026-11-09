@@ -1,0 +1,34 @@
+title: MissionStepSummary
+description: One step as its mission type lists it, with the self link to its step read.
+type: object
+additionalProperties: false
+required:
+  - id
+  - title
+  - onDemand
+  - _links
+properties:
+  id:
+    type: string
+    description: The step's id, unique across the type's steps and on-demand steps; its graph node is action:<type>/<id>.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/MissionStep.java
+      symbol: MissionStep.id
+  title:
+    type: string
+    description: The step's title.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/MissionStep.java
+      symbol: MissionStep.title
+  onDemand:
+    type: boolean
+    description: True for a step of the type's on_demand_steps, false for one of its steps.
+    x-derived:
+      rule: True exactly when the step is one of MissionType.onDemandSteps.
+      inputs:
+        - schemas/MissionType.yaml#/properties/steps
+  _links:
+    $ref: Links.yaml
+x-source:
+  path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/MissionStep.java
+  symbol: MissionStep

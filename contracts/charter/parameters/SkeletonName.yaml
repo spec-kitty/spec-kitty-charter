@@ -1,0 +1,16 @@
+name: skeletonName
+in: path
+required: true
+description: >-
+  The skeleton, by its one-segment name (D9): the skeleton's template id without the <missionTypeId>/ prefix, escaped
+  as in RFC 6901, '~' as '~0' and then '/' as '~1'. The mapping is one to one: spec-template.md names
+  templates/spec-template.md, and divio~1howto-template.md names templates/divio/howto-template.md. The service
+  decodes it ('~1' to '/', then '~0' to '~') and looks the result up among the type's skeletons only, so nothing is
+  resolved outside the mission type; a name that does not decode to a skeleton of the type, a '~' followed by
+  anything but 0 or 1 included, is a 404 skeleton_not_found, after the pack and the mission type are found. A '/'
+  in the name, even percent-encoded, is not one segment.
+schema:
+  type: string
+  minLength: 1
+  maxLength: 255
+  pattern: '^[^/]+$'

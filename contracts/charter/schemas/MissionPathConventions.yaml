@@ -1,0 +1,41 @@
+title: MissionPathConventions
+description: >-
+  The directories a mission type names for its work, as its path_conventions declares them. Each member is absent
+  when the file names no such directory; at least one is present. The member is absent from the mission type when the
+  file declares no path_conventions.
+type: object
+additionalProperties: false
+properties:
+  workspace:
+    type: string
+    description: The directory the mission's work is done in.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/PathConventions.java
+      symbol: PathConventions.workspace
+  tests:
+    type: string
+    description: The directory of the mission's tests.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/PathConventions.java
+      symbol: PathConventions.tests
+  deliverables:
+    type: string
+    description: The directory of the mission's deliverables.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/PathConventions.java
+      symbol: PathConventions.deliverables
+  documentation:
+    type: string
+    description: The directory of the mission's documentation.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/PathConventions.java
+      symbol: PathConventions.documentation
+  data:
+    type: string
+    description: The directory of the mission's data.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/PathConventions.java
+      symbol: PathConventions.data
+x-source:
+  path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/PathConventions.java
+  symbol: PathConventions

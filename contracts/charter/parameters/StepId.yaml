@@ -1,0 +1,9 @@
+name: stepId
+in: path
+required: true
+description: >-
+  The step, by its id among the mission type's steps and on-demand steps: the action action:<missionTypeId>/<stepId>.
+  A value that is not a slug is a 400 Problem without a code; a slug that names no step of the type is a 404
+  action_not_found, after the pack and the mission type are found.
+schema:
+  $ref: ../schemas/Slug.yaml

@@ -1,0 +1,32 @@
+summary: >-
+  Step implement of the software-dev in force under activation a-1, prompt and guidelines shortened here to their first
+  lines; the step contract link names the merged closure's winner, under the activation.
+value:
+  id: implement
+  title: Implementation
+  description: Execute implementation
+  role: implementer
+  onDemand: false
+  prompt: |
+    ---
+    description: Execute a work package implementation
+    ---
+    # /spec-kitty.implement - Execute Work Package Implementation
+
+    **Version**: 0.12.0+
+
+    <!-- spdd:reasons-block:start -->
+    <!-- spdd:reasons-block:end -->
+  guidelines: |
+    # Implement Action - Governance Guidelines
+  expectedInputArtifacts:
+    - artifactKey: output.tasks.per_wp
+      pathPattern: tasks/WP*.md
+      blocking: true
+  _links:
+    self:
+      href: /api/v1/activations/a-1/artifacts/mission_type/software-dev/steps/implement
+    mission-type:
+      href: /api/v1/activations/a-1/artifacts/mission_type/software-dev
+    step-contract:
+      href: /api/v1/activations/a-1/artifacts/mission_step_contract/implement

@@ -1,0 +1,6 @@
+summary: The pack holds no mission step contract with the asked identity.
+value:
+  title: Mission step contract not found
+  status: 404
+  code: mission_step_contract_not_found
+  detail: Pack core has no mission_step_contract nope.

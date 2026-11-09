@@ -16,3 +16,6 @@ files:
   - MissionTypePath.yaml
   - PresetId.yaml
   - SelectableKindPath.yaml
+  - MissionTypeId.yaml
+  - SkeletonName.yaml
+  - StepId.yaml

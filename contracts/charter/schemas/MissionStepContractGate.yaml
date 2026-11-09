@@ -1,0 +1,48 @@
+title: MissionStepContractGate
+description: One gate a step contract binds to a lane transition.
+type: object
+additionalProperties: false
+required:
+  - onTransition
+  - handler
+  - schemaVersion
+properties:
+  onTransition:
+    type: string
+    description: The lane transition the gate runs on, as stored, for example in_progress->for_review.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/GateBinding.java
+      symbol: GateBinding.onTransition
+  handler:
+    type: string
+    description: The handler the gate runs.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/GateBinding.java
+      symbol: GateBinding.handler
+  handlerKind:
+    type: string
+    description: The kind of the handler, as stored; absent when the gate declares none.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/GateBinding.java
+      symbol: GateBinding.handlerKind
+  schemaVersion:
+    type: string
+    description: The schema version of the gate binding.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/GateBinding.java
+      symbol: GateBinding.schemaVersion
+  failOpen:
+    type: boolean
+    description: Whether the transition goes on when the handler cannot run; absent when the gate does not say.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/GateBinding.java
+      symbol: GateBinding.failOpen
+  provenance:
+    type: string
+    description: Where the gate binding comes from, as stored; absent when the gate declares none.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/GateBinding.java
+      symbol: GateBinding.provenance
+x-source:
+  path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/GateBinding.java
+  symbol: GateBinding

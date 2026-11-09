@@ -1,0 +1,30 @@
+title: MissionExpectedInput
+description: An artifact a step reads before it runs, as its expected_input_artifacts entry declares it.
+type: object
+additionalProperties: false
+required:
+  - artifactKey
+  - pathPattern
+  - blocking
+properties:
+  artifactKey:
+    type: string
+    description: The artifact's dotted key, for example input.spec.main.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/ExpectedInput.java
+      symbol: ExpectedInput.artifactKey
+  pathPattern:
+    type: string
+    description: Where the artifact is read from, relative to the mission's workspace; it may hold a glob.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/ExpectedInput.java
+      symbol: ExpectedInput.pathPattern
+  blocking:
+    type: boolean
+    description: Whether the step cannot run without the artifact; false when the entry declares none.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/ExpectedInput.java
+      symbol: ExpectedInput.blocking
+x-source:
+  path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/ExpectedInput.java
+  symbol: ExpectedInput

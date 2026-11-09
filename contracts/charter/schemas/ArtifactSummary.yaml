@@ -15,8 +15,9 @@ properties:
     pattern: '^[a-z0-9][a-z0-9_-]*$'
     maxLength: 64
     description: >-
-      The kind token; this version lists tactic, directive, styleguide, paradigm, toolguide and agent_profile; a
-      client tolerates a kind it does not know (skips the item).
+      The kind token; this version lists tactic, directive, styleguide, paradigm, toolguide,
+      agent_profile, mission_type and mission_step_contract; a client tolerates a kind it does not know
+      (skips the item).
     x-source:
       path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/ArtifactKind.java
       symbol: ArtifactKind.token
@@ -30,7 +31,7 @@ properties:
     type: string
     description: >-
       The artifact's human-readable name: the name of a tactic or a paradigm, the title of a
-      directive, a styleguide or a toolguide.
+      directive, a styleguide, a toolguide or a mission type, the action of a mission step contract.
     x-source:
       path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/CharterArtifact.java
       symbol: CharterArtifact.label

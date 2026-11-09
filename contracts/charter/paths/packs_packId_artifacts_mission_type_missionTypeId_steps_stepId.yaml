@@ -1,0 +1,50 @@
+get:
+  operationId: getPackMissionStep
+  summary: Get one step of a mission type of a Charter Pack.
+  description: >-
+    One step of a mission type, from its steps or its on-demand steps: its stored fields, its prompt and guidelines
+    files byte for byte as stored, and its expected input and output artifacts. _links holds self, mission-type (the
+    getPackMissionType read of its type) and, when the pack holds a mission step contract whose mission and action are
+    the type and the step, step-contract (its getPackArtifact read; the lowest id when several are). Each expected
+    output artifact whose templatePath names a stored skeleton of the type links it as skeleton
+    (getPackMissionSkeleton); a templatePath with no stored skeleton gives no link. A path parameter that is not a slug
+    is a 400 Problem without a code, before anything is read. Then, in this order: an unknown pack is a 404
+    pack_not_found, an unreadable pack a 500 pack_unreadable, an unknown mission type a 404 mission_type_not_found, and
+    a step the type does not hold a 404 action_not_found (a step is the action action:<type>/<step>). The answer is one
+    verified read and carries the source fingerprint it verified; inputs that change while it is read are stale_input.
+    No ETag.
+  tags:
+    - MissionTypes
+  parameters:
+    - $ref: ../parameters/PackId.yaml
+    - $ref: ../parameters/MissionTypeId.yaml
+    - $ref: ../parameters/StepId.yaml
+  responses:
+    '200':
+      description: The step.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/MissionStep.yaml
+          examples:
+            specify:
+              $ref: ../examples/MissionStep.specify.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/MissionStepNotFound.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml

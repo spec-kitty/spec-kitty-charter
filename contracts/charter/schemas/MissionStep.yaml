@@ -1,0 +1,86 @@
+title: MissionStep
+description: >-
+  One step of a mission type (the action action:<type>/<id>), from its steps or its on_demand_steps: its stored
+  fields, its prompt and guidelines files as stored, byte for byte (slot markers such as
+  <!-- spdd:reasons-block:start --> included; the composed prompt is not this read's), and its expected input and
+  output artifacts. _links holds self, mission-type (the type's read), step-contract (the step contract in scope whose
+  mission and action are the type and the step, the lowest id when several are; absent when none is) and, on each
+  expected output artifact whose templatePath names a stored skeleton of the type, skeleton.
+type: object
+additionalProperties: false
+required:
+  - id
+  - title
+  - onDemand
+  - _links
+properties:
+  id:
+    type: string
+    description: The step's id, unique across the type's steps and on-demand steps.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/MissionStep.java
+      symbol: MissionStep.id
+  title:
+    type: string
+    description: The step's title.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/MissionStep.java
+      symbol: MissionStep.title
+  description:
+    type: string
+    description: The step's one-line description, at most 160 characters; absent when the step declares none.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/MissionStep.java
+      symbol: MissionStep.description
+  role:
+    type: string
+    description: The role that runs the step, a lower-case role token such as implementer; absent when none is declared.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/MissionStep.java
+      symbol: MissionStep.role
+  onDemand:
+    type: boolean
+    description: True for a step of the type's on_demand_steps, false for one of its steps.
+    x-derived:
+      rule: True exactly when the step is one of MissionType.onDemandSteps.
+      inputs:
+        - schemas/MissionType.yaml#/properties/steps
+  prompt:
+    type: string
+    description: >-
+      The stored text of the step's prompt file, steps/<id>.prompt.md beside the mission type, byte for byte as
+      UTF-8, its frontmatter included. Absent when the step has no prompt file, never an empty string.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/MissionStep.java
+      symbol: MissionStep.prompt
+  guidelines:
+    type: string
+    description: >-
+      The stored text of the step's guidelines file, steps/<id>.guidelines.md beside the mission type, byte for
+      byte as UTF-8. Absent when the step has no guidelines file, never an empty string.
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/MissionStep.java
+      symbol: MissionStep.guidelines
+  expectedInputArtifacts:
+    type: array
+    description: The artifacts the step reads, in stored order; absent when the step declares none.
+    items:
+      $ref: MissionExpectedInput.yaml
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/MissionStep.java
+      symbol: MissionStep.expectedInputArtifacts
+  expectedOutputArtifacts:
+    type: array
+    description: >-
+      The artifacts the step produces, in stored order, each linked to its skeleton when its templatePath names a
+      stored skeleton of the type; absent when the step declares none.
+    items:
+      $ref: MissionExpectedArtifact.yaml
+    x-source:
+      path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/MissionStep.java
+      symbol: MissionStep.expectedOutputArtifacts
+  _links:
+    $ref: Links.yaml
+x-source:
+  path: service/missions/src/main/java/ai/speckitty/charter/missions/domain/MissionStep.java
+  symbol: MissionStep

@@ -33,3 +33,13 @@ files:
   - PackRegistrationStatus.accepted.yaml
   - PackRegistrationStatus.succeeded.yaml
   - PackRegistrationStatus.version-conflict.yaml
+  - Artifact.mission-type.yaml
+  - Artifact.activation-mission-type.yaml
+  - Artifact.mission-step-contract.yaml
+  - MissionStep.specify.yaml
+  - MissionStep.activation-implement.yaml
+  - MissionSkeleton.spec-template.yaml
+  - MissionSkeleton.activation-spec-template.yaml
+  - CharterRefusal.pack-mission-type-not-found.yaml
+  - CharterRefusal.skeleton-not-found.yaml
+  - CharterRefusal.mission-step-contract-not-found.yaml

@@ -1,0 +1,80 @@
+title: MissionSkeleton
+description: >-
+  One skeleton of a mission type: a file under the type's templates/ directory, the starting shape of a document a
+  step produces, stored as kind template (template:<type>/<path>) and called a skeleton on the wire (D7). Its content
+  is the stored bytes, never altered: as text when they are valid UTF-8, else base64 (RFC 4648, with padding), as
+  encoding says. _links holds self and mission-type.
+type: object
+additionalProperties: false
+required:
+  - name
+  - path
+  - missionTypeId
+  - encoding
+  - content
+  - sha256
+  - size
+  - _links
+properties:
+  name:
+    type: string
+    description: >-
+      The skeleton's one-segment name (D9): its template id without the <type>/ prefix, escaped as in RFC 6901 ('~'
+      becomes '~0', then '/' becomes '~1'), as the skeletonName path parameter takes it.
+    x-derived:
+      rule: Template.id without its '<missionType>/' prefix, with '~' replaced by '~0' and then '/' by '~1'.
+      inputs:
+        - schemas/MissionSkeleton.yaml#/properties/path
+  path:
+    type: string
+    description: >-
+      The skeleton's path beside its mission type, spelled as a step's templatePath names it: templates/ followed by
+      the template id without its <type>/ prefix.
+    x-derived:
+      rule: templates/ followed by Template.id without its '<missionType>/' prefix.
+      inputs:
+        - schemas/MissionExpectedArtifact.yaml#/properties/templatePath
+  missionTypeId:
+    type: string
+    description: The id of the mission type the skeleton belongs to.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Template.java
+      symbol: Template.missionType
+  encoding:
+    type: string
+    enum:
+      - text
+      - base64
+    description: >-
+      How content holds the stored bytes: text when they are valid UTF-8 (content is the text), base64 otherwise
+      (content is their RFC 4648 base64 spelling). A closed enum.
+    x-derived:
+      rule: text when Payload.bytes decode as UTF-8 without error, else base64.
+      inputs:
+        - schemas/MissionSkeleton.yaml#/properties/content
+  content:
+    type: string
+    description: The stored bytes of the skeleton, in the spelling encoding names.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Payload.java
+      symbol: Payload.bytes
+  sha256:
+    description: The SHA-256 digest of the stored bytes (not of content's spelling), as sha256:<64 hex digits>.
+    allOf:
+      - $ref: Sha256Digest.yaml
+    x-derived:
+      rule: "'sha256:' followed by Payload.sha256, the lower-case hex digest of the stored bytes."
+      inputs:
+        - schemas/MissionSkeleton.yaml#/properties/content
+  size:
+    type: integer
+    minimum: 0
+    description: The number of stored bytes.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Payload.java
+      symbol: Payload.size
+  _links:
+    $ref: Links.yaml
+x-source:
+  path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/Template.java
+  symbol: Template

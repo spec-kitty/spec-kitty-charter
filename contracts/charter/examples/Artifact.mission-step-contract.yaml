@@ -1,0 +1,47 @@
+summary: >-
+  Step contract specify of open-packs a2a9379 in the envelope, its steps shortened to three. A directive candidate
+  links to its read; a procedure, a kind the service does not serve, has no link.
+value:
+  kind: mission_step_contract
+  id: specify
+  packId: core
+  missionStepContract:
+    id: specify
+    schemaVersion: '1.0'
+    action: specify
+    mission: software-dev
+    steps:
+      - id: bootstrap
+        description: Load charter context for this action
+        command: spec-kitty charter context --action specify --json
+      - id: capture_intent
+        description: |
+          Conduct or verify the human discovery interview, then capture confirmed user intent
+        delegatesTo:
+          kind: directive
+          candidates:
+            - id: DIRECTIVE_010
+              _links:
+                artifact:
+                  href: /api/v1/packs/core/artifacts/directive/DIRECTIVE_010
+            - id: DIRECTIVE_037
+              _links:
+                artifact:
+                  href: /api/v1/packs/core/artifacts/directive/DIRECTIVE_037
+      - id: map_examples
+        description: Capture concrete rules, examples, and open questions for the behavior slice
+        delegatesTo:
+          kind: procedure
+          candidates:
+            - id: example-mapping-workshop
+              _links: {}
+    gates: []
+  _links:
+    self:
+      href: /api/v1/packs/core/artifacts/mission_step_contract/specify
+    collection:
+      href: /api/v1/packs/core/artifacts?kind=mission_step_contract
+    mission-type:
+      href: /api/v1/packs/core/artifacts/mission_type/software-dev
+    step:
+      href: /api/v1/packs/core/artifacts/mission_type/software-dev/steps/specify

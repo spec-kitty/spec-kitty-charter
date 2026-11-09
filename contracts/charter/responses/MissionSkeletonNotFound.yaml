@@ -1,0 +1,26 @@
+description: >-
+  The pack, the mission type or the skeleton the path names is not there, refused with 404, judged in that order: an
+  identifier that matches no configured pack is pack_not_found; then a mission type the pack does not hold is
+  mission_type_not_found; then a name that does not decode (D9) to a skeleton of the type is refused with the
+  skeleton's not-found code, which getPackMissionSkeleton names until it is raised. A
+  configured pack whose directory is missing or that has no readable pack.yaml is not this answer: it is
+  pack_unreadable (500).
+headers:
+  Charter-Contract-Version:
+    $ref: ../headers/CharterContractVersion.yaml
+  Charter-Worktree:
+    $ref: ../headers/CharterWorktree.yaml
+content:
+  application/problem+json:
+    schema:
+      $ref: ../schemas/CharterRefusal.yaml
+    examples:
+      pack-not-found:
+        summary: No configured pack matches the identifier.
+        value:
+          title: Pack not found
+          status: 404
+          code: pack_not_found
+          detail: Pack nope was not found.
+      mission-type-not-found:
+        $ref: ../examples/CharterRefusal.pack-mission-type-not-found.yaml

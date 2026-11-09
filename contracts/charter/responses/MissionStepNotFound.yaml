@@ -1,0 +1,32 @@
+description: >-
+  The pack, the mission type or the step the path names is not there, refused with 404, judged in that order: an
+  identifier that matches no configured pack is pack_not_found; then a mission type the pack does not hold is
+  mission_type_not_found; then a step the type holds neither among its steps nor among its on-demand steps is
+  action_not_found, since a step is the action action:<type>/<step>. A configured pack whose directory is missing or
+  that has no readable pack.yaml is not this answer: it is pack_unreadable (500).
+headers:
+  Charter-Contract-Version:
+    $ref: ../headers/CharterContractVersion.yaml
+  Charter-Worktree:
+    $ref: ../headers/CharterWorktree.yaml
+content:
+  application/problem+json:
+    schema:
+      $ref: ../schemas/CharterRefusal.yaml
+    examples:
+      pack-not-found:
+        summary: No configured pack matches the identifier.
+        value:
+          title: Pack not found
+          status: 404
+          code: pack_not_found
+          detail: Pack nope was not found.
+      mission-type-not-found:
+        $ref: ../examples/CharterRefusal.pack-mission-type-not-found.yaml
+      action-not-found:
+        summary: The mission type has no such step.
+        value:
+          title: Action not found
+          status: 404
+          code: action_not_found
+          detail: Mission type software-dev of pack open-packs has no step deploy.

@@ -1,0 +1,29 @@
+title: MissionStepContractInput
+description: One input of a step contract step's command.
+type: object
+additionalProperties: false
+required:
+  - flag
+  - source
+properties:
+  flag:
+    type: string
+    description: The flag the input is passed with.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/StepInput.java
+      symbol: StepInput.flag
+  source:
+    type: string
+    description: Where the input's value comes from.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/StepInput.java
+      symbol: StepInput.source
+  optional:
+    type: boolean
+    description: Whether the input may be left out; absent when the file does not say.
+    x-source:
+      path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/StepInput.java
+      symbol: StepInput.optional
+x-source:
+  path: service/packs/src/main/java/ai/speckitty/charter/packs/domain/StepInput.java
+  symbol: StepInput

@@ -1,10 +1,13 @@
 title: ArtifactKindToken
 description: >-
   An artifact kind this service lists, as its lower-case token: tactic, directive, styleguide,
-  paradigm, toolguide or agent_profile, the served-kind order of a list. An agent_profile is read
-  whole by getPackAgentProfile, not by the templated item read. Other kernel kinds (procedure and
-  the rest) are not served yet. It types only the request's ?kind= filter; a response's kind is an
-  open slug, so a kind served later is additive for a client.
+  paradigm, toolguide, agent_profile, mission_type or mission_step_contract, the served-kind order of a
+  list. An agent_profile is read whole by getPackAgentProfile, not by the templated item read. A
+  mission_step_contract is read through the generic item read; a mission_type is listed and filtered
+  here, and its item is answered by getPackMissionType. Neither mission_type nor mission_step_contract
+  answers an ETag. Other kernel kinds (procedure, template and the rest) are not served yet. It types
+  only the request's ?kind= filter; a response's kind is an open slug, so a kind served later is
+  additive for a client.
 type: string
 enum:
   - tactic
@@ -13,6 +16,8 @@ enum:
   - paradigm
   - toolguide
   - agent_profile
+  - mission_type
+  - mission_step_contract
 x-source:
   path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/ArtifactKind.java
   symbol: ArtifactKind.token

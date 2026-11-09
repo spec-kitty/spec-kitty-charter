@@ -1,0 +1,49 @@
+get:
+  operationId: getPackMissionType
+  summary: Get one mission type of a Charter Pack, with its steps and skeletons.
+  description: >-
+    One mission type of one pack in the common Artifact envelope: kind mission_type, id, packId, _links and the
+    missionType member. The member holds the type's stored fields, its steps in stored order then its on-demand steps,
+    each marked onDemand and linked (self) to getPackMissionStep, and its skeletons, each linked (self) to
+    getPackMissionSkeleton. _links holds self and collection, the pack's artifacts of kind mission_type. This literal
+    path is preferred over the generic GET /packs/{packId}/artifacts/{kind}/{artifactId}, which serves no mission_type
+    item. A missionTypeId that is not a slug is a 400 Problem without a code, before anything is read. Then the pack is
+    judged: an identifier that matches no configured pack, by name or by declared pack_id, is a 404 pack_not_found; a
+    configured pack whose directory is missing or that has no readable pack.yaml, or a pack holding a file the
+    fingerprint covers that cannot be read, is a 500 pack_unreadable. Then a mission type the pack does not hold is a
+    404 mission_type_not_found. The answer is one verified read and carries the source fingerprint it verified; inputs
+    that change while it is read are stale_input. A mission type has no write here, so the answer carries no ETag.
+  tags:
+    - MissionTypes
+  parameters:
+    - $ref: ../parameters/PackId.yaml
+    - $ref: ../parameters/MissionTypeId.yaml
+  responses:
+    '200':
+      description: The mission type, in the Artifact envelope.
+      headers:
+        Charter-Contract-Version:
+          $ref: ../headers/CharterContractVersion.yaml
+        Charter-Worktree:
+          $ref: ../headers/CharterWorktree.yaml
+        Charter-Source-Fingerprint:
+          $ref: ../headers/CharterSourceFingerprint.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/Artifact.yaml
+          examples:
+            software-dev:
+              $ref: ../examples/Artifact.mission-type.yaml
+    '400':
+      $ref: ../../_shared/responses/Problem.yaml
+    '401':
+      $ref: ../responses/Unauthorized.yaml
+    '403':
+      $ref: ../responses/Forbidden.yaml
+    '404':
+      $ref: ../responses/MissionTypeNotFound.yaml
+    '500':
+      $ref: ../responses/OfferingUnreadable.yaml
+    default:
+      $ref: ../../_shared/responses/Problem.yaml
