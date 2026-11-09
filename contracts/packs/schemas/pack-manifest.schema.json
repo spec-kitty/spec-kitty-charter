@@ -24,7 +24,8 @@
             "template",
             "mission_type",
             "guard",
-            "lifecycle"
+            "lifecycle",
+            "step_enhancement"
           ],
           "title": "Kind",
           "type": "string"

@@ -96,6 +96,38 @@ public class ScenarioHttp {
     public MvcResult perform(
             String method, String path, Map<String, String> headers, @Nullable String body, @Nullable String token)
             throws Exception {
+        return exchange(
+                method,
+                path,
+                headers,
+                body == null ? null : () -> body.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                token);
+    }
+
+    /**
+     * Sends a request with a binary body, as an archive upload is, and records the exchange.
+     *
+     * @param method the HTTP method, for example {@code PUT}
+     * @param path the path below the base path, with its query if any
+     * @param headers the request headers; an {@code Authorization} header here replaces the bearer token
+     * @param body the request body bytes
+     * @param token the token to send as {@code Authorization: Bearer <token>}, or {@code null} to send none
+     * @return the response
+     * @throws Exception when the request cannot be performed
+     */
+    public MvcResult performBytes(
+            String method, String path, Map<String, String> headers, byte[] body, @Nullable String token)
+            throws Exception {
+        return exchange(method, path, headers, () -> body, token);
+    }
+
+    private MvcResult exchange(
+            String method,
+            String path,
+            Map<String, String> headers,
+            java.util.function.@Nullable Supplier<byte[]> body,
+            @Nullable String token)
+            throws Exception {
         MockHttpServletRequestBuilder request = MockMvcRequestBuilders.request(HttpMethod.valueOf(method), BASE + path);
         boolean ownAuthorization = headers.keySet().stream().anyMatch(HttpHeaders.AUTHORIZATION::equalsIgnoreCase);
         if (token != null && !ownAuthorization) {
@@ -103,7 +135,7 @@ public class ScenarioHttp {
         }
         headers.forEach(request::header);
         if (body != null) {
-            request.content(body);
+            request.content(body.get());
         }
         // The contract check matches the path without its query.
         int mark = path.indexOf('?');

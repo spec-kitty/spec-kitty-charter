@@ -1,0 +1,10 @@
+summary: The document pins a pack to a version the service does not hold.
+value:
+  title: Activation invalid
+  status: 422
+  code: activation_invalid
+  detail: The activation document names 1 thing(s) its packs do not hold.
+  violations:
+  - pointer: /packs/0/version
+    code: version_not_held
+    detail: The pack 'alpha' is held at 1.0.0, not 2.0.0.

@@ -1,0 +1,77 @@
+title: PackRegistrationNotices
+description: >-
+  Only in the result of a succeeded registration (FR-027): what the write changed about the floor and the locks, and
+  the activations whose in-force set it changes, so no change of force is silent. Every list is empty when the write
+  changed nothing of its kind. Notices name activatable kinds only: an entry of another kind (a template, an asset, a
+  guard, a lifecycle) is left out of the lists, and the service logs it. Widening the kinds is tracked in issue #417.
+type: object
+additionalProperties: false
+properties:
+  floorAdded:
+    type: array
+    items:
+      $ref: ArtifactReference.yaml
+    description: >-
+      The must-have items of the pack's governing presets that the write added to the required floor. The requirement
+      of a governing preset id is the union, across the levels (built-in, org, project), of the must-have items of the
+      copy in force at each level; within one level the copy of the pack last in closure order replaces the others, a
+      child pack's copy its parent's, and a replaced copy requires nothing. The floorAdded and floorRemoved notices
+      follow the same rule, so an item an earlier level's copy still requires is not added.
+    x-derived:
+      rule: The must-have items of the staged pack's governing presets that the stored pack's did not name.
+      inputs:
+      - the stored pack before the write
+      - the staged pack
+  floorRemoved:
+    type: array
+    items:
+      $ref: ArtifactReference.yaml
+    description: >-
+      The must-have items that the write took off the required floor. The floor is the union, across
+      the levels (built-in, org, project), of the must-have items of the copy in force at each level, as the reads
+      judge it: an item an earlier level's copy still requires stays on the floor, so it is not listed.
+    x-derived:
+      rule: The must-have items of the stored pack's governing presets that the staged pack's do not name.
+      inputs:
+      - the stored pack before the write
+      - the staged pack
+  locksAdded:
+    type: array
+    items:
+      $ref: ArtifactReference.yaml
+    description: The artifacts the write put under a lock of the pack's policy.
+    x-derived:
+      rule: The artifacts the staged pack's policy locks that the stored pack's did not.
+      inputs:
+      - the stored pack before the write
+      - the staged pack
+  locksRemoved:
+    type: array
+    items:
+      $ref: ArtifactReference.yaml
+    description: The artifacts the write released from a lock of the pack's policy.
+    x-derived:
+      rule: The artifacts the stored pack's policy locks that the staged pack's does not.
+      inputs:
+      - the stored pack before the write
+      - the staged pack
+  activationsAffected:
+    type: array
+    items:
+      $ref: ActivationId.yaml
+    description: >-
+      The stored activations whose in-force set the write changes: the ids of the activations whose closure holds the
+      pack and whose effective set differs before and after the write (B4, FR-027). The comparison covers which artifacts
+      are in force and also the version in force of each: a change of the pack that holds it, its level or its mutability level counts. Sorted. Empty
+      when no activation is affected.
+    x-derived:
+      rule: The stored activations over whose closure the in-force set, or the version in force of an artifact of it, differs before and after the write.
+      inputs:
+      - the stored pack before the write
+      - the staged pack
+      - schemas/ActivationConfig.yaml
+x-derived:
+  rule: The floor and lock items of the pack's presets and policy before and after the write.
+  inputs:
+  - the stored pack before the write
+  - the staged pack

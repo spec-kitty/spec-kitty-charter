@@ -307,7 +307,7 @@ class ReachabilityTest {
                 .containsOnlyKeys(urn("directive:D"), urn("tactic:T1"), urn("tactic:T2"));
     }
 
-    // ---- enhances (ADR-0059 D2 as amended on 2026-11-06, R4) --------------------------------------------------------
+    // ---- enhances (ADR-0059 D2 as amended on 2026-11-06, A4) --------------------------------------------------------
 
     @Test
     void enhancesIsCrossedInItsDeclaredDirectionOnlyLikeAnyRelation() {
@@ -325,5 +325,72 @@ class ReachabilityTest {
                 .containsOnlyKeys(urn("tactic:E"), urn("tactic:T"))
                 .containsEntry(urn("tactic:T"), List.of(via("tactic:E", RelationType.ENHANCES)));
         assertThat(fromT.reached()).as("no walk runs an edge backwards").containsOnlyKeys(urn("tactic:T"));
+    }
+
+    /**
+     * Mission type m holds the steps plan and review; plan requires directive D. Another type's step is held too.
+     * With {@code requirer}, directive R requires m.
+     */
+    private static EdgeIndex missionTypeIndex(boolean requirer) {
+        List<String> held = List.of(
+                "mission_type:m",
+                "action:m/plan",
+                "action:m/review",
+                "action:other/plan",
+                "directive:D",
+                "directive:R");
+        List<Relationship> edges =
+                new ArrayList<>(List.of(edge("action:m/plan", RelationType.REQUIRES, "directive:D")));
+        if (requirer) {
+            edges.add(edge("directive:R", RelationType.REQUIRES, "mission_type:m"));
+        }
+        return new Closure()
+                .pack("alpha", held, edges.toArray(Relationship[]::new))
+                .index();
+    }
+
+    @Test
+    void aMissionTypeReachesTheStepsItHoldsLikeRequiresAndTheirRequiresClosure() {
+        // A7 Q1, rule W20's step term: steps(m) are the held action:m/<s> nodes, crossed like requires.
+        ReachResult result = reach(missionTypeIndex(false), urns("mission_type:m"), urn -> false);
+
+        assertThat(result.reached())
+                .containsOnlyKeys(
+                        urn("mission_type:m"), urn("action:m/plan"), urn("action:m/review"), urn("directive:D"));
+        assertThat(result.reached().get(urn("action:m/plan")))
+                .containsExactly(via("mission_type:m", RelationType.REQUIRES));
+        assertThat(result.reached().get(urn("action:m/review")))
+                .containsExactly(via("mission_type:m", RelationType.REQUIRES));
+        assertThat(result.reached().get(urn("directive:D")))
+                .containsExactly(via("action:m/plan", RelationType.REQUIRES));
+    }
+
+    @Test
+    void aMissionTypeTheWalkReachesBringsItsStepsToo() {
+        ReachResult result = reach(missionTypeIndex(true), urns("directive:R"), urn -> false);
+
+        assertThat(result.reached())
+                .containsKeys(urn("mission_type:m"), urn("action:m/plan"), urn("action:m/review"), urn("directive:D"))
+                .doesNotContainKey(urn("action:other/plan"));
+    }
+
+    @Test
+    void theStepsOfAStoppedMissionTypeLieBehindTheStop() {
+        ReachResult result = reach(missionTypeIndex(true), urns("directive:R"), denied("mission_type:m"));
+
+        assertThat(result.reached()).containsOnlyKeys(urn("directive:R"));
+        assertThat(result.stopped()).containsOnlyKeys(urn("mission_type:m"));
+        assertThat(result.behindStopped())
+                .containsExactlyInAnyOrder(urn("action:m/plan"), urn("action:m/review"), urn("directive:D"));
+    }
+
+    @Test
+    void aStepTheRequestStopsAtIsReportedNotDescended() {
+        ReachResult result = reach(missionTypeIndex(false), urns("mission_type:m"), denied("action:m/plan"));
+
+        assertThat(result.reached()).containsOnlyKeys(urn("mission_type:m"), urn("action:m/review"));
+        assertThat(result.stopped().get(urn("action:m/plan")))
+                .containsExactly(via("mission_type:m", RelationType.REQUIRES));
+        assertThat(result.behindStopped()).containsExactly(urn("directive:D"));
     }
 }

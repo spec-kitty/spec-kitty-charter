@@ -3,10 +3,12 @@ package ai.speckitty.charter.packs.application;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.domain.Directive;
@@ -14,6 +16,9 @@ import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
+import ai.speckitty.charter.packs.domain.PackEdge;
+import ai.speckitty.charter.packs.domain.PackEdgeRepository;
+import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Paradigm;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
@@ -23,8 +28,7 @@ import ai.speckitty.charter.packs.domain.Tactic;
 import ai.speckitty.charter.packs.domain.TacticIdentifier;
 import ai.speckitty.charter.packs.domain.Toolguide;
 import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -72,6 +76,21 @@ public final class ArtifactReadService {
             ArtifactKind.PARADIGM, RefusalCode.PARADIGM_NOT_FOUND,
             ArtifactKind.TOOLGUIDE, RefusalCode.TOOLGUIDE_NOT_FOUND);
 
+    /**
+     * The code a request for an artifact of a served kind that the pack does not hold is refused with.
+     *
+     * @param kind a served kind
+     * @return its not-found code, for example {@code directive_not_found}
+     * @throws IllegalArgumentException when the kind is not served
+     */
+    public static RefusalCode absentCode(ArtifactKind kind) {
+        RefusalCode code = ABSENT.get(kind);
+        if (code == null) {
+            throw new IllegalArgumentException("not a served kind: " + kind);
+        }
+        return code;
+    }
+
     private final PackRepository packs;
     private final PackDescriptorRepository descriptors;
     private final ConsistentRead read;
@@ -82,6 +101,7 @@ public final class ArtifactReadService {
     private final ToolguideReadService toolguides;
     private final OfferingReadService offerings;
     private final CompositeComponentResolver components;
+    private final PackEdgeRepository graphs;
 
     /**
      * One artifact as the list names it.
@@ -217,6 +237,7 @@ public final class ArtifactReadService {
      * @param toolguides the toolguide reads an item of that kind delegates to
      * @param offerings the offering read whose compose a reference is resolved against, resolved once per read
      * @param components the resolver that resolves a reference a read is given, against the compose closure
+     * @param graphs the port that reads a pack's graph-document edges, the references an artifact writes
      */
     @Autowired
     public ArtifactReadService(
@@ -229,7 +250,8 @@ public final class ArtifactReadService {
             ParadigmReadService paradigms,
             ToolguideReadService toolguides,
             OfferingReadService offerings,
-            CompositeComponentResolver components) {
+            CompositeComponentResolver components,
+            PackEdgeRepository graphs) {
         this.packs = Objects.requireNonNull(packs, "packs");
         this.descriptors = Objects.requireNonNull(descriptors, "descriptors");
         this.read = Objects.requireNonNull(read, "read");
@@ -240,6 +262,7 @@ public final class ArtifactReadService {
         this.toolguides = Objects.requireNonNull(toolguides, "toolguides");
         this.offerings = Objects.requireNonNull(offerings, "offerings");
         this.components = Objects.requireNonNull(components, "components");
+        this.graphs = Objects.requireNonNull(graphs, "graphs");
     }
 
     /**
@@ -320,13 +343,13 @@ public final class ArtifactReadService {
      * One reference an artifact writes, resolved through the compose.
      *
      * @param written the reference as the artifact writes it, bare or pack-qualified
-     * @param relation the relation it is written under; empty for a reference the artifact keeps without a relationship
+     * @param relation the relation of its edge, or of the relation the artifact derives
      * @param holder the pack of the compose that holds what it names; empty when no pack holds it
      * @param urn the bare URN it resolves to
      */
     public record Reference(
             PackQualifiedReference written,
-            Optional<RelationType> relation,
+            RelationType relation,
             Optional<PackCompositionResolver.PackUnderResolution> holder,
             Urn urn) {}
 
@@ -357,12 +380,13 @@ public final class ArtifactReadService {
         }
         String stale = "The inputs changed while the references were read; read them again.";
         ConsistentRead.Verified<ConsistentRead.Verified<List<Reference>>> judged = read.read(stale, () -> {
-            judgeDescriptor(pack);
+            String packName = judgeDescriptor(pack).name();
             // The compose is resolved once, inside this read, before the artifact: a broken compose refuses the read.
             CompositeComponentResolver.Composed composed = components.over(offerings.composed());
             ConsistentRead.Verified<Item> referrer = servedItem(pack, kind.get(), id);
             return new ConsistentRead.Verified<>(
-                    resolved(composed, pack, referrer.value().artifact()), referrer.fingerprint());
+                    resolved(composed, pack, packName, referrer.value().artifact(), graphs.edges(pack)),
+                    referrer.fingerprint());
         });
         if (!judged.fingerprint().equals(judged.value().fingerprint())) {
             throw new CharterRefusal(RefusalCode.STALE_INPUT, stale);
@@ -370,25 +394,45 @@ public final class ArtifactReadService {
         return new ConsistentRead.Verified<>(judged.value().value(), judged.fingerprint());
     }
 
+    /**
+     * The references an artifact writes (ADR-0064): the edges of its pack's graph documents whose source is the
+     * artifact, written bare or qualified with the pack's own name, in document order, then its derived relations. Each
+     * carries its relation. A target is listed once per relation: the same artifact written bare and qualified with
+     * its holder's name is one reference, and the first spelling is kept.
+     */
     private static List<Reference> resolved(
-            CompositeComponentResolver.Composed composed, PackIdentifier pack, CharterArtifact referrer) {
-        // The schemas refuse a malformed reference when a pack is read, so the grammar's parser cannot refuse one here.
-        List<PackQualifiedReference> written = referrer.writtenReferences();
-        Map<String, RelationType> relations = new HashMap<>();
-        referrer.relationships()
-                .forEach(relationship ->
-                        relations.putIfAbsent(relationship.toReference().toString(), relationship.type()));
-        List<Reference> references = new ArrayList<>();
-        for (PackQualifiedReference reference : written) {
-            reference
-                    .asUrn()
-                    .ifPresent(urn -> references.add(new Reference(
-                            reference,
-                            Optional.ofNullable(relations.get(reference.toString())),
-                            composed.holder(reference, pack),
-                            urn)));
+            CompositeComponentResolver.Composed composed,
+            PackIdentifier pack,
+            String packName,
+            CharterArtifact referrer,
+            List<PackEdge> edges) {
+        // The schemas refuse a malformed endpoint when a pack is read, so the grammar's parser cannot refuse one here.
+        PackQualifiedReference self =
+                new PackQualifiedReference(Optional.empty(), referrer.urn().toString());
+        Map<String, Reference> references = new LinkedHashMap<>();
+        for (PackEdge edge : edges) {
+            if (PackPolicy.joinsItself(packName, self, PackQualifiedReference.parse(edge.source()))) {
+                add(references, composed, pack, PackQualifiedReference.parse(edge.target()), edge.relation());
+            }
         }
-        return List.copyOf(references);
+        for (Relationship derived : referrer.derivedRelationships()) {
+            add(references, composed, pack, derived.toReference(), derived.type());
+        }
+        return List.copyOf(references.values());
+    }
+
+    private static void add(
+            Map<String, Reference> references,
+            CompositeComponentResolver.Composed composed,
+            PackIdentifier pack,
+            PackQualifiedReference written,
+            RelationType relation) {
+        written.asUrn().ifPresent(urn -> {
+            Optional<PackCompositionResolver.PackUnderResolution> holder = composed.holder(written, pack);
+            String held = holder.map(h -> h.configured().id().value()).orElse("");
+            references.putIfAbsent(
+                    held + " " + urn + " " + relation.name(), new Reference(written, relation, holder, urn));
+        });
     }
 
     /** The kind's own verified read of one artifact, typed by its kind. */
@@ -500,9 +544,10 @@ public final class ArtifactReadService {
      * The storage refuses an identifier no configured pack answers to {@link RefusalCode#PACK_NOT_FOUND} itself, and a
      * configured pack it cannot read {@link RefusalCode#PACK_UNREADABLE}; both pass through.
      */
-    private void judgeDescriptor(PackIdentifier pack) {
-        if (descriptors.find(pack).isEmpty()) {
-            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + pack.value() + " has no pack.yaml");
-        }
+    private PackDescriptor judgeDescriptor(PackIdentifier pack) {
+        return descriptors
+                .find(pack)
+                .orElseThrow(() ->
+                        new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + pack.value() + " has no pack.yaml"));
     }
 }

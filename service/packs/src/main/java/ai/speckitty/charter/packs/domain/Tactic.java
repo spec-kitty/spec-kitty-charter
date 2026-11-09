@@ -2,10 +2,7 @@ package ai.speckitty.charter.packs.domain;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
-import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
-import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
-import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import java.util.ArrayList;
@@ -19,7 +16,8 @@ import org.jspecify.annotations.Nullable;
  * they have the same identity, whatever their other fields hold; the fidelity of a round trip is asserted on the
  * storage representation, not here.
  *
- * <p>It owns its steps and references; their order and duplicates are significant. Build one with {@link #builder()}.
+ * <p>It owns its steps; their order and duplicates are significant. Its relationships are authored in the pack's
+ * graph documents (ADR-0064). Build one with {@link #builder()}.
  */
 public final class Tactic implements CharterArtifact {
 
@@ -38,7 +36,6 @@ public final class Tactic implements CharterArtifact {
     private final Optional<String> notes;
     private final List<String> failureModes;
     private final List<String> appliesToLanguages;
-    private final List<TacticReference> references;
 
     /**
      * Reconstructs a tactic from its parts; reachable only inside the domain package, for the adapter's use through
@@ -53,7 +50,6 @@ public final class Tactic implements CharterArtifact {
      * @param notes the notes, possibly empty
      * @param failureModes the failure modes, in authored order
      * @param appliesToLanguages the applicable languages, in authored order
-     * @param references the references, in authored order with duplicates kept
      * @throws ai.speckitty.charter.kernel.validation.ConstraintBreachException when an invariant is breached
      */
     Tactic(
@@ -65,8 +61,7 @@ public final class Tactic implements CharterArtifact {
             Optional<String> purpose,
             Optional<String> notes,
             List<String> failureModes,
-            List<String> appliesToLanguages,
-            List<TacticReference> references) {
+            List<String> appliesToLanguages) {
         this.id = Objects.requireNonNull(id, "id");
         this.packId = Objects.requireNonNull(packId, "packId");
         this.schemaVersion = Objects.requireNonNull(schemaVersion, "schemaVersion");
@@ -76,7 +71,6 @@ public final class Tactic implements CharterArtifact {
         this.notes = Objects.requireNonNull(notes, "notes");
         this.failureModes = List.copyOf(failureModes);
         this.appliesToLanguages = List.copyOf(appliesToLanguages);
-        this.references = List.copyOf(references);
         RULES.guard(this);
     }
 
@@ -116,33 +110,6 @@ public final class Tactic implements CharterArtifact {
     @Override
     public Optional<String> description() {
         return purpose;
-    }
-
-    @Override
-    public List<Relationship> relationships() {
-        List<ArtifactEdges.TypedRef> typed = references.stream()
-                .map(ref -> new ArtifactEdges.TypedRef(
-                        ref.type(),
-                        ref.id(),
-                        ref.when().isBlank() ? Optional.empty() : Optional.of(ref.when()),
-                        Optional.empty()))
-                .toList();
-        return ArtifactEdges.build(urn(), typed, NodeKind.of(ArtifactKind.DIRECTIVE), List.of());
-    }
-
-    /**
-     * The references the tactic writes: those its relationships mint, and the references of its steps, which are kept
-     * but are not edges of the walk.
-     *
-     * @return the references, bare or pack-qualified
-     */
-    @Override
-    public List<PackQualifiedReference> writtenReferences() {
-        List<PackQualifiedReference> written = new ArrayList<>(CharterArtifact.super.writtenReferences());
-        for (TacticStep step : steps) {
-            step.references().forEach(ref -> written.add(PackQualifiedReference.typed(ref.type(), ref.id())));
-        }
-        return written.stream().distinct().toList();
     }
 
     /**
@@ -219,15 +186,6 @@ public final class Tactic implements CharterArtifact {
         return appliesToLanguages;
     }
 
-    /**
-     * The references, in authored order with duplicates kept.
-     *
-     * @return an immutable list
-     */
-    public List<TacticReference> references() {
-        return references;
-    }
-
     /** Entity identity: equal when the identifier is equal, whatever the other fields hold. */
     @Override
     public boolean equals(@Nullable Object other) {
@@ -255,7 +213,6 @@ public final class Tactic implements CharterArtifact {
         private Optional<String> notes = Optional.empty();
         private final List<String> failureModes = new ArrayList<>();
         private final List<String> appliesToLanguages = new ArrayList<>();
-        private final List<TacticReference> references = new ArrayList<>();
 
         private Builder() {}
 
@@ -359,17 +316,6 @@ public final class Tactic implements CharterArtifact {
         }
 
         /**
-         * Appends a reference.
-         *
-         * @param value the reference
-         * @return this builder
-         */
-        public Builder reference(TacticReference value) {
-            this.references.add(value);
-            return this;
-        }
-
-        /**
          * Builds the tactic.
          *
          * @return the validated tactic
@@ -386,8 +332,7 @@ public final class Tactic implements CharterArtifact {
                     purpose,
                     notes,
                     failureModes,
-                    appliesToLanguages,
-                    references);
+                    appliesToLanguages);
         }
     }
 }

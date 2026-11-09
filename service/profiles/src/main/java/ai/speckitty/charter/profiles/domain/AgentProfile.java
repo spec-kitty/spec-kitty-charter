@@ -3,7 +3,6 @@ package ai.speckitty.charter.profiles.domain;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
-import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import java.util.ArrayList;
@@ -361,17 +360,6 @@ public final class AgentProfile implements CharterArtifact {
      */
     public Optional<Exclusion> excluding() {
         return excluding;
-    }
-
-    /**
-     * None. A profile's edges, its {@code specializes_from} lineage included, are authored in the pack's graph, and the
-     * relation of a reference there is not derivable from the reference, so the profile mints none.
-     *
-     * @return an empty list
-     */
-    @Override
-    public List<Relationship> relationships() {
-        return List.of();
     }
 
     /** Entity identity: equal when the identifier is equal, whatever the other fields hold. */

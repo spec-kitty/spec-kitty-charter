@@ -19,6 +19,7 @@ enum:
   - template
   - action
   - mission_type
+  - step_enhancement
 x-source:
-  path: service/charter-domain/src/main/java/ai/speckitty/charter/domain/NodeKind.java
+  path: service/kernel/src/main/java/ai/speckitty/charter/kernel/domain/NodeKind.java
   symbol: NodeKind

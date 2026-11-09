@@ -2,10 +2,19 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RefusalViolation;
+import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
+import ai.speckitty.charter.packs.application.PackRevision;
+import ai.speckitty.charter.packs.application.StagedPack;
+import ai.speckitty.charter.packs.application.WholePackWriteStore;
 import ai.speckitty.charter.packs.domain.AssetFile;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
@@ -15,11 +24,9 @@ import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.Template;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,8 +35,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 /**
  * Loads a whole pack from a directory into the {@link Pack} aggregate, and writes an aggregate to a new directory
@@ -57,7 +67,8 @@ import org.jspecify.annotations.Nullable;
  * and a pack with read violations: writing it would drop content without a word. A {@code pack.yaml} with an undeclared
  * key never loads (its schema is closed, ADR-0036 decision 3), so the descriptor written is the whole of the file read.
  */
-public final class WholePackStore {
+@Service
+public final class WholePackStore implements WholePackWriteStore.Loader {
 
     /**
      * A loaded pack and what is stored beside the aggregate.
@@ -140,6 +151,7 @@ public final class WholePackStore {
      *
      * @param strategy the serialization format
      */
+    @Autowired
     public WholePackStore(SerializationStrategy strategy) {
         this(strategy, KindBindings.all(), Companions.Rules.bundled());
     }
@@ -211,6 +223,334 @@ public final class WholePackStore {
         namedPolicy.ifPresent(modelled::add);
         return new LoadedPack(
                 pack, new PackLayout(places), graphs.documents(), unmodelled(packDir, modelled, key), manifest, policy);
+    }
+
+    /**
+     * Reads a staged tree for a registration, refusing everything that makes the upload wrong with
+     * {@code validation_failed} (IC-04 step 2): what {@link #load} refuses ({@code pack_unreadable}, a graph that breaks
+     * its schema, an aggregate invariant) and what it tolerates, which a registration may not: a read violation, a file
+     * nothing models, and a {@value RelationshipShard#SHARD_PATH} without the registration stamp, which is a reserved
+     * shard. Each fault is a violation of the refusal, so an author sees every one at once.
+     */
+    @Override
+    public WholePackWriteStore.Contents loadStaged(StagedPack staged) {
+        Path directory = staged.directory();
+        LoadedPack loaded = loadRefusingAsInvalid(directory);
+        List<RefusalViolation> violations = new ArrayList<>();
+        loaded.pack()
+                .violations()
+                .forEach(violation ->
+                        violations.add(violationOf(violation.file(), violation.kind(), violation.reason())));
+        loaded.unmodelled()
+                .forEach(file -> violations.add(violationOf(
+                        file,
+                        "unmodelled",
+                        "no pack file kind models this file; a registration holds only modelled files")));
+        reservedShard(directory).ifPresent(violations::add);
+        if (!violations.isEmpty()) {
+            throw CharterRefusal.withViolations(
+                    RefusalCode.VALIDATION_FAILED,
+                    "The pack cannot be registered: " + violations.size() + " fault(s), the first at "
+                            + violations.getFirst().pointer() + ".",
+                    violations);
+        }
+        return stagedContentsOf(directory, loaded);
+    }
+
+    /** The facts of a staged tree; a file the reading of them cannot take is a fault of the upload, a 422, not a 500. */
+    private WholePackWriteStore.Contents stagedContentsOf(Path directory, LoadedPack loaded) {
+        try {
+            return contentsOf(directory, loaded);
+        } catch (CharterRefusal refusal) {
+            if (refusal.code() != RefusalCode.PACK_UNREADABLE) {
+                throw refusal;
+            }
+            String detail = String.valueOf(refusal.getMessage());
+            throw CharterRefusal.withViolations(
+                    RefusalCode.VALIDATION_FAILED,
+                    "The pack cannot be registered: " + detail,
+                    List.of(violationOf("pack", "unreadable", detail)));
+        }
+    }
+
+    @Override
+    public WholePackWriteStore.Contents loadStored(Path directory) {
+        return contentsOf(directory, load(directory));
+    }
+
+    /** What a salvage has read so far. */
+    private static final class Salvage {
+        final Set<String> defined = new TreeSet<>();
+        final Map<Urn, String> digests = new HashMap<>();
+        final List<Relationship> edges = new ArrayList<>();
+        final Map<String, Urn> loose = new HashMap<>();
+
+        /** The ids a file that failed to read declares: no copy of such an id stands for it, whatever else reads. */
+        final Set<String> unreadable = new HashSet<>();
+    }
+
+    /** The digest of an id one of whose files cannot be read: no upload's copy ever equals it. */
+    private static final String UNREADABLE_DIGEST = "unreadable";
+
+    /**
+     * Reads what can still be read of a stored pack, every file on its own (ADR-0065, decision 01M6V6N74ER28H8S6TSVZ8ZEY2):
+     * an artifact file by the {@code id} it declares, read as plain YAML, and by the id its path names when that differs
+     * or the key cannot be read, and as an entity when it binds; a graph file as plain YAML, entry by entry. A file that
+     * fails to read costs only itself.
+     */
+    @Override
+    public WholePackWriteStore.Remains salvageStored(Path directory) {
+        Path packDir = directory.toAbsolutePath().normalize();
+        Path parent = packDir.getParent();
+        if (parent == null || packDir.getFileName() == null) {
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "a pack directory needs a parent directory");
+        }
+        String name = String.valueOf(packDir.getFileName());
+        PackIdentifier key = new PackIdentifier(name);
+        FilesystemPackStore store = new FilesystemPackStore(parent, strategy, companionRules);
+        Salvage salvage = new Salvage();
+        PackFileSet.Listing listing = PackFileSet.listing(packDir); // the pack is listed once
+        for (KindBinding<?, ?> binding : bindings) {
+            for (String file : listing.files(binding.kind())) {
+                salvageFile(store, key, packDir, binding, file, salvage);
+            }
+        }
+        listing.templates().forEach(file -> salvageTemplate(packDir, file, salvage));
+        List<Path> graphs = new ArrayList<>(PackFileSet.rootShards(packDir, name));
+        if (Files.isRegularFile(packDir.resolve(PackFileSet.FRAGMENT))) {
+            graphs.add(packDir.resolve(PackFileSet.FRAGMENT));
+        }
+        graphs.forEach(graph -> salvageGraph(graph, salvage));
+        salvage.unreadable.forEach(id -> Urn.parse(id).ifPresent(urn -> salvage.digests.put(urn, UNREADABLE_DIGEST)));
+        return new WholePackWriteStore.Remains(salvage.defined, salvage.digests, salvage.edges, salvage.loose);
+    }
+
+    private <D, E extends CharterArtifact> void salvageFile(
+            FilesystemPackStore store,
+            PackIdentifier key,
+            Path packDir,
+            KindBinding<D, E> binding,
+            String file,
+            Salvage out) {
+        String stem = stemOf(file, binding.fileToken());
+        Optional<String> declared = plainText(packDir.resolve(file)).flatMap(text -> declaredId(text, binding.idKey()));
+        Optional<String> byDeclared = urnOf(binding, declared.orElse(stem));
+        Optional<String> byName = urnOf(binding, stem);
+        byDeclared.ifPresent(out.defined::add);
+        byName.ifPresent(out.defined::add);
+        if (!readEntity(store, key, packDir, binding, file, out)) {
+            // One copy of the id cannot be read: the readable twin, if any, is no proof that the id is unchanged.
+            byDeclared.ifPresent(out.unreadable::add);
+            byName.ifPresent(out.unreadable::add);
+        }
+    }
+
+    /**
+     * The listed file itself, never a lookup by id: two files declaring one id each contribute their own read.
+     *
+     * @return whether the file read
+     */
+    private <D, E extends CharterArtifact> boolean readEntity(
+            FilesystemPackStore store,
+            PackIdentifier key,
+            Path packDir,
+            KindBinding<D, E> binding,
+            String file,
+            Salvage out) {
+        try {
+            Optional<D> read = store.readListed(packDir, file, binding);
+            read.ifPresent(dso -> addRead(binding.toEntity(key, dso), out));
+            return read.isPresent();
+        } catch (RuntimeException readFault) {
+            // This file's read fault: it is counted by its ids above, and nothing else of it is known.
+            return false;
+        }
+    }
+
+    /**
+     * An id declared by two files has no one digest: the two are combined, so that no upload's copy equals it.
+     */
+    private void addRead(CharterArtifact entity, Salvage out) {
+        out.digests.merge(
+                entity.urn(),
+                digestOf(entity),
+                (first, second) -> PackRevision.computeOverBytes(List.of(
+                                first.getBytes(StandardCharsets.UTF_8), second.getBytes(StandardCharsets.UTF_8)))
+                        .token());
+        out.edges.addAll(entity.derivedRelationships());
+    }
+
+    private static Optional<String> urnOf(KindBinding<?, ?> binding, String id) {
+        try {
+            return Optional.of(new Urn(NodeKind.of(binding.kind()), id).toString());
+        } catch (IllegalArgumentException notAnId) {
+            return Optional.empty();
+        }
+    }
+
+    private static Optional<String> plainText(Path file) {
+        return FilesystemPackStore.readBytes(file).flatMap(FilesystemPackStore::decodeUtf8);
+    }
+
+    /** The {@code id} a file declares, read as plain YAML outside any schema. */
+    private static Optional<String> declaredId(String text, String idKey) {
+        if (ParsedYaml.parse(text, "salvage").document() instanceof Map<?, ?> map
+                && map.get(idKey) instanceof String id
+                && !id.isBlank()) {
+            return Optional.of(id.strip());
+        }
+        return Optional.empty();
+    }
+
+    private static void salvageTemplate(Path packDir, String file, Salvage out) {
+        Urn urn = new Urn(NodeKind.TEMPLATE, PackFileSet.templateId(file));
+        out.defined.add(urn.toString());
+        FilesystemPackStore.readBytes(packDir.resolve(file))
+                .ifPresent(bytes -> out.digests.put(
+                        urn, PackRevision.computeOverBytes(List.of(bytes)).token()));
+    }
+
+    /** A graph file as plain YAML: every entry of {@code edges} whose source can be read; a file that is no YAML adds none. */
+    private static void salvageGraph(Path file, Salvage out) {
+        Optional<String> text = plainText(file);
+        if (text.isPresent()
+                && ParsedYaml.parse(text.get(), "salvage").document() instanceof Map<?, ?> document
+                && document.get("edges") instanceof List<?> entries) {
+            for (Object entry : entries) {
+                if (entry instanceof Map<?, ?> fields) {
+                    salvageEdge(fields, out);
+                }
+            }
+        }
+    }
+
+    private static void salvageEdge(Map<?, ?> entry, Salvage out) {
+        Optional<PackQualifiedReference> source = reference(entry.get("source"));
+        if (source.isEmpty() || source.get().asUrn().isEmpty()) {
+            return;
+        }
+        Optional<PackQualifiedReference> target = reference(entry.get("target"));
+        Optional<RelationType> relation =
+                entry.get("relation") instanceof String token ? RelationType.fromToken(token) : Optional.empty();
+        if (target.isPresent() && target.get().asUrn().isPresent() && relation.isPresent()) {
+            try {
+                out.edges.add(new Relationship(
+                        source.get().asUrn().get(),
+                        source.get().packName(),
+                        target.get().asUrn().get(),
+                        target.get().packName(),
+                        relation.get(),
+                        Optional.empty(),
+                        Optional.empty()));
+                return;
+            } catch (IllegalArgumentException selfLoop) {
+                // not a relationship: it is kept loosely below
+            }
+        }
+        out.loose.put(
+                source.get() + "|" + entry.get("target"), source.get().asUrn().get());
+    }
+
+    private static Optional<PackQualifiedReference> reference(@Nullable Object value) {
+        if (!(value instanceof String text)) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(PackQualifiedReference.parse(text));
+        } catch (IllegalArgumentException malformed) {
+            return Optional.empty();
+        }
+    }
+
+    private static String stemOf(String file, String token) {
+        String name = file.substring(file.lastIndexOf('/') + 1);
+        String suffix = "." + token + ".yaml";
+        return name.endsWith(suffix) ? name.substring(0, name.length() - suffix.length()) : name;
+    }
+
+    /** {@link #load} with each fault of the tree, which in an upload is the author's, answered {@code validation_failed}. */
+    private LoadedPack loadRefusingAsInvalid(Path directory) {
+        try {
+            return load(directory);
+        } catch (CharterRefusal refusal) {
+            throw CharterRefusal.withViolations(
+                    RefusalCode.VALIDATION_FAILED,
+                    "The pack cannot be registered: " + refusal.getMessage(),
+                    List.of(violationOf("pack", refusal.code().token(), String.valueOf(refusal.getMessage()))));
+        }
+    }
+
+    /** A violation of the refusal; a kind that is no snake-case token is told as {@code invalid}. */
+    private static RefusalViolation violationOf(String pointer, String code, String detail) {
+        // The detail names the file as the pointer does, so a client that shows only the detail still says where.
+        String named = pointer.isEmpty() || detail.contains(pointer) ? detail : pointer + ": " + detail;
+        return new RefusalViolation(pointer, code.matches("[a-z][a-z0-9_]*") ? code : "invalid", named);
+    }
+
+    /** The reserved shard, when the tree holds one that no registration wrote. */
+    private static Optional<RefusalViolation> reservedShard(Path directory) {
+        Path shard = directory.resolve(RelationshipShard.SHARD_PATH);
+        if (!Files.isRegularFile(shard, LinkOption.NOFOLLOW_LINKS)) {
+            return Optional.empty();
+        }
+        boolean stamped;
+        try {
+            stamped = RelationshipShard.isWrittenByRegistration(Files.readString(shard, StandardCharsets.UTF_8));
+        } catch (IOException | RuntimeException unreadable) {
+            stamped = false;
+        }
+        return stamped
+                ? Optional.empty()
+                : Optional.of(violationOf(
+                        RelationshipShard.SHARD_PATH,
+                        "reserved_shard",
+                        RelationshipShard.SHARD_PATH
+                                + " is reserved for the registered relationships; a file of this name"
+                                + " without generated_by: charter-registration is refused. Register the edges in a shard of"
+                                + " your own."));
+    }
+
+    /** What the registration judges of a loaded tree: the aggregate, the facts the compose reads, and each artifact's digest. */
+    private WholePackWriteStore.Contents contentsOf(Path directory, LoadedPack loaded) {
+        Path packDir = directory.toAbsolutePath().normalize();
+        PackIdentifier key = new PackIdentifier(String.valueOf(packDir.getFileName()));
+        PackLevel level = loaded.pack().descriptor().declaredLevel().orElse(PackLevel.ORG);
+        // The facts are read the way the compose reads a stored pack, through a repository that lists only this tree.
+        DomainRepositoryService single =
+                new DomainRepositoryService(() -> List.of(new PackLocation(key.value(), level, packDir)), strategy);
+        return new WholePackWriteStore.Contents(loaded.pack(), single.compositionFacts(key), digestsOf(loaded.pack()));
+    }
+
+    /** A digest of each file-backed artifact as {@link #write} would write it, its companions included. */
+    private Map<Urn, String> digestsOf(Pack pack) {
+        Map<Urn, String> digests = new HashMap<>();
+        for (CharterArtifact artifact : pack.artifacts()) {
+            digests.put(artifact.urn(), digestOf(artifact));
+        }
+        return digests;
+    }
+
+    private String digestOf(CharterArtifact artifact) {
+        List<byte[]> parts = new ArrayList<>();
+        if (artifact instanceof Template template) {
+            parts.add(TemplateBinding.INSTANCE.payloadOf(template).bytes());
+        } else {
+            KindBinding<?, ?> kind = bindings.stream()
+                    .filter(binding -> binding.kind() == artifact.kind())
+                    .findFirst()
+                    .orElseThrow(
+                            () -> new IllegalArgumentException("cannot digest a " + artifact.kind() + " artefact"));
+            digestParts(kind, artifact, parts);
+        }
+        return PackRevision.computeOverBytes(parts).token();
+    }
+
+    private <D> void digestParts(KindBinding<D, ?> kind, CharterArtifact artifact, List<byte[]> parts) {
+        D dso = kind.dsoOf(artifact);
+        parts.add(utf8(strategy.write(kind, dso)));
+        for (KindBinding.Companion companion : kind.companions(dso)) {
+            companion.content().ifPresent(content -> parts.add(utf8(Companions.text(content))));
+        }
     }
 
     /**
@@ -364,16 +704,16 @@ public final class WholePackStore {
             reserved = reserve(destination, pack);
             staging = Files.createTempDirectory(parent, ".pack-write-");
             putContents(staging, loaded);
-            moveOver(staging, reserved);
+            PackCommitStore.moveOver(staging, reserved);
             staging = null; // moved into place; nothing left to clean up
             reserved = null;
         } catch (CharterRefusal refusal) {
             PackCommitStore.deleteTree(staging);
-            release(reserved);
+            PackCommitStore.release(reserved);
             throw refusal;
         } catch (IOException | RuntimeException failure) {
             PackCommitStore.deleteTree(staging);
-            release(reserved);
+            PackCommitStore.release(reserved);
             throw new CharterRefusal(
                     RefusalCode.PACK_UNREADABLE,
                     "cannot write pack " + pack.id().value(),
@@ -478,28 +818,6 @@ public final class WholePackStore {
             throw new CharterRefusal(
                     RefusalCode.PACK_UNREADABLE,
                     "refusing to write pack " + pack.id().value() + " over an existing " + destination.getFileName());
-        }
-    }
-
-    /** Renames the staged pack over the empty directory this write reserved. */
-    private static void moveOver(Path staging, Path reserved) throws IOException {
-        try {
-            Files.move(staging, reserved, StandardCopyOption.ATOMIC_MOVE);
-        } catch (AtomicMoveNotSupportedException notAtomic) {
-            Files.delete(reserved);
-            Files.move(staging, reserved);
-        }
-    }
-
-    /** Removes the reserved target if it is still the empty directory this write created. */
-    private static void release(@Nullable Path reserved) {
-        if (reserved == null) {
-            return;
-        }
-        try {
-            Files.deleteIfExists(reserved);
-        } catch (IOException ignored) {
-            // the original failure is the one worth reporting
         }
     }
 

@@ -19,7 +19,9 @@ public record Diagnostic(Code code, String detail) {
          * The pack has no {@code pack.yaml}, or its {@code pack.yaml} declares no {@code pack_level}; the configured
          * level is used.
          */
-        PACK_LEVEL_MISSING("pack_level_missing");
+        PACK_LEVEL_MISSING("pack_level_missing"),
+        /** Legacy text in a slot of an unversioned pack descriptor (ADR-0066; reserved for #424). */
+        PROMPT_SLOT_NOT_EMPTY("prompt_slot_not_empty");
 
         private final String token;
 

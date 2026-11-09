@@ -26,3 +26,7 @@ files:
   - EffectiveActionContext.implement.yaml
   - EffectiveArtifactList.first-page.yaml
   - EffectiveGraph.one-edge.yaml
+  - PackRegistration.stored.yaml
+  - PackRegistrationStatus.accepted.yaml
+  - PackRegistrationStatus.succeeded.yaml
+  - PackRegistrationStatus.version-conflict.yaml

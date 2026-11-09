@@ -2,13 +2,15 @@
 title: Hexagonal service
 description: The Gradle modules of the Java charter service and the rule that infrastructure depends inward on a plain-Java domain.
 doc_status: draft
-updated: 2026-11-05T00:00:00Z
+updated: 2026-11-08T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
   - architecture/overview
   - architecture/contract-and-dtos
   - architecture/pack-registration-distribution
+  - guides/compose-packs
+  - changelog/2026-11-07-a-pack-registration
   - adr/0006-onion-vertical-slices-archunit
 audience:
   - profile: charter-service-contributor
@@ -40,8 +42,8 @@ One Gradle module per **vertical concern slice** ([ADR-0006](/adr/0006-onion-ver
 
 | Module | Depends on | Holds |
 |---|---|---|
-| `kernel` | nothing outside the JDK | The shared domain kernel: the cross-slice vocabulary — packs, the CRG, `PackSource`, artifact kinds, refusal codes. Pure; no infra |
-| `packs` | `kernel`, `web-transport` | The packs slice (pack registration, validation and storage), built; its layers are: `domain` (models, repository ports, services), `application` (read/write use cases, and the ports of what a use case needs from outside the domain: `GuideFormat`, `GuideFetcher`), `infra` (`api.rest`, reserved `api.graphql`, `storage`, and `fetch`, the outbound HTTPS adapter that fetches a toolguide's guide by URI, [ADR-0043](/adr/0043-sanitized-artifact-shapes-procedures-and-toolguide-guides/)) |
+| `kernel` | nothing outside the JDK | The shared domain kernel: the cross-slice vocabulary — packs, the CRG, `PackSource`, artifact kinds, refusal codes, and the `markdown` form's line rules (#299). Pure; no infra |
+| `packs` | `kernel`, `web-transport` | The packs slice (pack registration, validation and storage), built; its layers are: `domain` (models, repository ports, services), `application` (read/write use cases, and the ports of what a use case needs from outside the domain: `GuideFormat`, `GuideFetcher`), `infra` (`api.rest`, reserved `api.graphql`, `storage`, `fetch`, the outbound adapter that fetches a toolguide's guide by URI ([ADR-0043](/adr/0043-sanitized-artifact-shapes-procedures-and-toolguide-guides/)) and a pack from an https archive, a git repository or a local path, and `archive`, which reads an uploaded or fetched pack archive into staging) |
 | `activations` | `kernel`, `packs`, `web-transport` | The activation register: the document, its storage, its write rules and its HTTP adapter (with its request-body advice and problem mapping); asks `packs` through one port (`AvailablePacks`, implemented in `infra.packs`). Its layers are `domain`, `application`, `infra.api` and `infra.packs`; the composition root chooses where its documents are stored |
 | `missiontypes` | `kernel` | The mission-types slice, same four layers as packages |
 | `profiles` | `kernel` | The agent-profiles slice, built with its `domain` ring only (`AgentProfile`); `packs.infra.storage` stores the kind ([ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/), amendment of 2026-10-27) |
@@ -91,6 +93,14 @@ infra.fetch (outbound HTTPS) ────────┴────────
   port and is composed by `deployable`. No other adapter names it, and it names no other adapter
   (the `FETCH_ADAPTER_STANDS_ALONE` rule); the entry point reaches it only through the application
   ring (`ENTRYPOINT_OVER_APPLICATION`).
+- **`infra.archive`** is a ring of its own, beside `infra.fetch`. It reads a tar.gz or zip archive into a staging
+  directory, within bounds (32 MiB of body and of expanded content, 10,000 entries, path rules), and implements the application-ring port
+  `PackArchiveReader`. `deployable` composes it. No other adapter names it, and it names no other adapter
+  (`ARCHIVE_ADAPTER_STANDS_ALONE`, `ARCHIVE_ADAPTER_NAMES_NO_OTHER_ADAPTER`). The application ring sees the port only.
+- **One package starts a process.** The system `git` is a host binary the git source runs as a subprocess (no JGit, no
+  work tree). Only `packs.infra.fetch.git` names `ProcessBuilder` or `Process`
+  (`PROCESSES_START_ONLY_IN_THE_GIT_ADAPTER`, in `NetworkCodeBoundaryTest`). Every other class, in every ring, is
+  refused if it does. The git requirement is in [Building the service](/guides/service-build/#registering-packs).
 
 ### A slice over another slice
 

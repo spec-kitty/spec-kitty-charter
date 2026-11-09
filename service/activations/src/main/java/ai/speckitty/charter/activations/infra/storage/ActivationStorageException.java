@@ -33,6 +33,21 @@ public final class ActivationStorageException extends RuntimeException {
         super(message(id, detail), cause);
     }
 
+    private ActivationStorageException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    /**
+     * The fault of a store whose directory the platform refuses to list. It concerns no one activation, and it is the
+     * same kind of fault as a document that cannot be read back: the service's, answered {@code internal_error}.
+     *
+     * @param cause the platform's failure
+     * @return the fault
+     */
+    static ActivationStorageException listing(Throwable cause) {
+        return new ActivationStorageException("The activation store cannot be listed.", cause);
+    }
+
     private static String message(ActivationId id, String detail) {
         return "The stored activation " + id.value() + " " + detail + ".";
     }
