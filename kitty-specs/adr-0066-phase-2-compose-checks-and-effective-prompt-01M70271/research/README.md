@@ -86,3 +86,18 @@ From the phase-1 plan's "ruled" table (2026-11-09):
   table of `contracts/charter/scenarios/errors.feature` and, if it is listed there, in `ReservedRefusalCodesTest`. The
   operator approved these added rows in the interview of 2026-11-09. Nothing is removed or weakened; the parked WP10
   may land them with the new code without asking again.
+
+## PR C symbols and later phase 1 rulings (2026-11-09)
+
+- `prc-symbols.md` collects what the PR C runner sent: the public names approved for WP27 and WP28 (`StepHolding`,
+  `ActionContextWalk`, `ClosureView`, `NodeReference`/`NodeRef`, `PruningReason`, the `EffectiveActionContext`
+  `enhancements` member, `action_not_found` raised) and its OD-6 scope. Re-check them against `main` after PR C merges.
+  WP29 was still in progress at hand-over.
+- Phase 1 later added rules that this mission must respect:
+  - R-OVR: a step enhancement may carry no `overrides` edge.
+  - R-REL: the relationship write refuses such edges.
+  - A1: an id that differs from the file stem is a schema violation.
+  - A2: a repeated id is withheld from the pack.
+  - A place-aware write seam for step enhancements (A2-harness).
+  - OD-10 rows 9–12.
+  All of these are in phase 1's `plan.md` ruled table, on branch `issue-424-428-adr-0066-service-alignment`.
