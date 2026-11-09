@@ -194,4 +194,24 @@ class EffectiveTagTest {
 
         assertThat(tags).as("no two contexts share a tag").hasSize(variants.size());
     }
+
+    // ---- the domain string is pinned: a rule change must touch these literals on purpose (PR C squad R-1) ----
+
+    private static final Revision GOLDEN_REVISION =
+            new Revision("sha256:0e9561cfb83d50990a103b3896fe249a11fe27fa28985448187f93ec12116d72");
+
+    @Test
+    void theTagDomainIsPinnedByLiteralTokens() {
+        ClosureSnapshot closure = closure("sha256:one");
+
+        assertThat(EffectiveTag.graph(GOLDEN_REVISION, closure).token())
+                .as("graph, domain v2")
+                .isEqualTo("sha256:a01f7179ac5e8f92de38adcaa3b6af17adbd68e4ac36e4f9c509da95de2654e9");
+        assertThat(EffectiveTag.artifacts(GOLDEN_REVISION, closure, FIRST_PAGE).token())
+                .as("artifacts, domain v2")
+                .isEqualTo("sha256:64d97876f83802bd3046852c35421b7a7d865617609f54c0f3492cd9ccaa9db0");
+        assertThat(EffectiveTag.context(GOLDEN_REVISION, closure, IMPLEMENT).token())
+                .as("context, domain v2")
+                .isEqualTo("sha256:2abe372a3a96ccbb03e1f250bd6f7f34bff98e0a12e0fc43e766ebf03300705a");
+    }
 }
