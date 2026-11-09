@@ -9,7 +9,8 @@
     preset id and a skill id were already capped at 64.
   - **136 characters**: a lifecycle guard entry's `ref` (`<pack>::guard:<id>`): two 64-character parts and the
     `::guard:` separator, the same ceiling the domain's guard reference applies.
-  - **255 characters**: an executable's `entry` and an expected input or output artifact's `artifact_key`.
+  - **255 characters**: an executable's `entry` (asset.schema.json) and an expected input or output artifact's
+    `artifact_key`.
 - The domain applies the same caps before it matches an id. Every pattern it matches with is possessive, so an id
   of any length is judged without overflowing the stack. Before this change, an id of about 10 000 characters threw
   `StackOverflowError`, which answered a bare `500` with no refusal code.
