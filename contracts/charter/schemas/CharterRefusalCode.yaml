@@ -31,9 +31,8 @@ description: >-
   mission_type, when the path names a mission type the activation's closure does not hold, and by the effective
   action context (getEffectiveActionContext), which answers it with action_not_found too when the path names an action
   the merged closure does not hold for that mission type. Both are raised by the mission type reads too
-  (getPackMissionType, getPackMissionStep, getPackMissionSkeleton, and their activation counterparts once built):
-  mission_type_not_found for a mission type the pack or the merged closure does not hold, after the pack or the
-  activation is judged, and action_not_found by the step reads for a step the type does not hold, since a step is
+  (getPackMissionType, getPackMissionStep and getPackMissionSkeleton): mission_type_not_found for a mission type the
+  pack does not hold, after the pack is judged, and action_not_found by the step reads for a step the type does not hold, since a step is
   the action action:<type>/<step>. The references read of a mission_type answers mission_type_not_found as the
   not-found code of its kind. mission_step_contract_not_found (404) is the not-found code of kind
   mission_step_contract on the generic item and references reads, and skeleton_not_found (404) is answered by the
@@ -67,8 +66,7 @@ description: >-
   the must-have items of the copy in force at each level. Within one level the copy of the pack last in closure order
   replaces the others, a child pack's copy its parent's, and a replaced copy requires nothing. A deny of an artifact
   only an earlier level's copy requires, which a later level's copy replaced, is 409 artifact_required naming that
-  earlier level's pack. No operation of the activation set is reserved any more (ADR-0020 D8) but the three
-  activation-scoped mission type reads of #99, which answer 501 and raise nothing until they are built, and
+  earlier level's pack. No operation of the activation set is reserved any more (ADR-0020 D8), and
   action_not_found is raised (above). A unit test of the service fails when any main class
   other than the enum and its mappings names a code the map marks not raised, outside the finding
   projection no operation reaches (PackFindingCode and PackFinding).

@@ -56,11 +56,9 @@ tags:
       the activation set's: the generic effective read of an artifact never renders a profile body.
   - name: MissionTypes
     description: >-
-      The mission types of a Charter Pack and of an activation: a mission type in the Artifact envelope, its steps
-      with their stored prompt and guidelines, and its skeletons, the starting shapes of the documents its steps
-      produce. A mission type is listed, filtered and referenced through Artifacts; its item and sub-resources are
-      read here. The activation-scoped reads are declared in full and carry x-reserved, answering 501, until they
-      are built (ADR-0020 D8).
+      The mission types of a Charter Pack: a mission type in the Artifact envelope, its steps with their stored
+      prompt and guidelines, and its skeletons, the starting shapes of the documents its steps produce. A mission
+      type is listed, filtered and referenced through Artifacts; its item and sub-resources are read here.
   - name: Activation
     description: >-
       The activation set (ADR-0020): active charters the service stores under an opaque id, their writes and their
@@ -131,12 +129,6 @@ paths:
     $ref: paths/activations_activationId_artifacts_agent_profile_artifactId.yaml
   /activations/{activationId}/artifacts/{kind}/{artifactId}:
     $ref: paths/activations_activationId_artifacts_kind_artifactId.yaml
-  /activations/{activationId}/artifacts/mission_type/{missionTypeId}:
-    $ref: paths/activations_activationId_artifacts_mission_type_missionTypeId.yaml
-  /activations/{activationId}/artifacts/mission_type/{missionTypeId}/steps/{stepId}:
-    $ref: paths/activations_activationId_artifacts_mission_type_missionTypeId_steps_stepId.yaml
-  /activations/{activationId}/artifacts/mission_type/{missionTypeId}/skeletons/{skeletonName}:
-    $ref: paths/activations_activationId_artifacts_mission_type_missionTypeId_skeletons_skeletonName.yaml
   /activations/{activationId}/skipped:
     $ref: paths/activations_activationId_skipped.yaml
   /activations/{activationId}/graph:

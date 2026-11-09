@@ -32,17 +32,17 @@ import org.snakeyaml.engine.v2.api.LoadSettings;
  * for fails too. Only the request lines of the {@code @reserved} scenarios count: a scenario of a pin file that is not a pin
  * may call a built operation.
  *
- * <p>The activation set reserves the three activation-scoped mission type reads (#99) until they are built, and pins them
- * in {@code mission-types.feature}. Before them, PR C built the effective graph and the effective action context (IC-11),
- * the last reservations then, and the pack-registration set reserves nothing. No other feature may carry a 501 pin. A
- * bad-fixture control keeps the check honest: the same check, run over a planted contract that reserves two operations,
- * reports an operation with no pin, a pin whose operation is built and a body that is not pinned before it is bound.
+ * <p>No operation of the contract is reserved any more: the activation set reserved the effective graph and the effective
+ * action context until PR C built them (IC-11), and the pack-registration set reserved nothing before that. So no set has a
+ * pin file and no scenario carries {@code @reserved}. The machinery stays for a reservation to come, and a bad-fixture
+ * control keeps it honest: the same check, run over a planted contract that reserves two operations, reports an operation
+ * with no pin, a pin whose operation is built and a body that is not pinned before it is bound.
  */
 class ReservedOperationCoverageTest {
 
     private static final String OPENAPI = "contract/charter/openapi.yaml";
-    /** The pin file of each contract set that reserves an operation now. */
-    private static final Map<String, String> FEATURES = Map.of("activation", "scenarios/mission-types.feature");
+    /** The pin file of each contract set; no set reserves an operation now, so none has one. */
+    private static final Map<String, String> FEATURES = Map.of();
 
     private static final Pattern REQUEST =
             Pattern.compile("^\\s*(?:When|And) I (?:send )?(GET|PUT|POST|DELETE|PATCH) \"([^\"?]+)(?:\\?[^\"]*)?\"");
@@ -74,7 +74,7 @@ class ReservedOperationCoverageTest {
     }
 
     @Test
-    void noScenarioOutsideAPinFilePinsAnOperationAs501() throws IOException, URISyntaxException {
+    void noScenarioPinsAnOperationAs501AndNoPinFileRemains() throws IOException, URISyntaxException {
         Path scenarios = Path.of(ReservedOperationCoverageTest.class
                 .getClassLoader()
                 .getResource("scenarios")
@@ -85,17 +85,15 @@ class ReservedOperationCoverageTest {
                     .sorted()
                     .toList()) {
                 String content = Files.readString(feature, StandardCharsets.UTF_8);
-                String resource = "scenarios/" + scenarios.relativize(feature).toString().replace('\\', '/');
-                if ((RESERVED_TAG.matcher(content).find()
-                                || content.contains("Then the operation is refused as not implemented"))
-                        && !FEATURES.containsValue(resource)) {
-                    pins.add(resource);
+                if (RESERVED_TAG.matcher(content).find()
+                        || content.contains("Then the operation is refused as not implemented")) {
+                    pins.add(scenarios.relativize(feature).toString());
                 }
             }
         }
 
         assertThat(pins)
-                .as("a scenario of these files pins a 501 outside the pin file of a contract set")
+                .as("a scenario of these files still pins a 501 for an operation the contract no longer reserves")
                 .isEmpty();
     }
 
