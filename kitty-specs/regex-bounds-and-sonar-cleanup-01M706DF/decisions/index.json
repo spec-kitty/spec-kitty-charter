@@ -1,0 +1,102 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-11-09T13:02:14.205770Z",
+      "decision_id": "01M706DW5XHBA4781BYHVDFNT5",
+      "final_answer": "All three layers: possessive quantifiers, a domain length cap, and schema maxLength on pack ids (operator, 2026-11-09)",
+      "input_key": "defence_layers",
+      "mission_id": "01M706DFZEE37MW0VTVAC24DNC",
+      "mission_slug": "regex-bounds-and-sonar-cleanup-01M706DF",
+      "opened_by": "cli",
+      "options": [
+        "Possessive only",
+        "Possessive + domain cap",
+        "All three layers"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "How many defence layers bound the identifier matches?",
+      "rationale": null,
+      "resolved_at": "2026-11-09T13:02:15.479483Z",
+      "resolved_by": null,
+      "slot_key": "specify.scope.defence-layers",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-09T13:02:16.754284Z",
+      "decision_id": "01M706DYNJRHY13DDN5C269JTT",
+      "final_answer": "255 for both; kebab ids 64 (operator, 2026-11-09)",
+      "input_key": "path_caps",
+      "mission_id": "01M706DFZEE37MW0VTVAC24DNC",
+      "mission_slug": "regex-bounds-and-sonar-cleanup-01M706DF",
+      "opened_by": "cli",
+      "options": [
+        "255 for both",
+        "128 for both",
+        "64 for everything"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "What cap do path-like values (Executable, ExpectedArtifact key) get?",
+      "rationale": null,
+      "resolved_at": "2026-11-09T13:02:18.041120Z",
+      "resolved_by": null,
+      "slot_key": "specify.scope.path-caps",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-09T13:02:19.317487Z",
+      "decision_id": "01M706E15NPBQMX2AGC88F65NF",
+      "final_answer": "Breaking fragment, per the ADR-0022 0.x rule (operator, 2026-11-09)",
+      "input_key": "maxlength_classification",
+      "mission_id": "01M706DFZEE37MW0VTVAC24DNC",
+      "mission_slug": "regex-bounds-and-sonar-cleanup-01M706DF",
+      "opened_by": "cli",
+      "options": [
+        "Breaking fragment",
+        "Non-breaking tightening"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "How is the schema maxLength change classed in the contract changelog?",
+      "rationale": null,
+      "resolved_at": "2026-11-09T13:02:20.603885Z",
+      "resolved_by": null,
+      "slot_key": "specify.contract.maxlength-classification",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-09T13:02:21.862093Z",
+      "decision_id": "01M706E3N6ZHX1SJQXNZ9DY6ZJ",
+      "final_answer": "GitSourceRules.PATH possessive and a heuristic regression guard test are in scope; charter request id caps (#443) and a kernel kebab grammar (#444) are filed as follow-ups (operator, 2026-11-09)",
+      "input_key": "scope_extras",
+      "mission_id": "01M706DFZEE37MW0VTVAC24DNC",
+      "mission_slug": "regex-bounds-and-sonar-cleanup-01M706DF",
+      "opened_by": "cli",
+      "options": [
+        "GitSourceRules.PATH possessive",
+        "Regression guard test",
+        "Follow-up: charter request ids",
+        "Follow-up: kernel kebab grammar"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Which extras are in scope?",
+      "rationale": null,
+      "resolved_at": "2026-11-09T13:02:23.131801Z",
+      "resolved_by": null,
+      "slot_key": "specify.scope.extras",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M706DFZEE37MW0VTVAC24DNC",
+  "version": 1
+}

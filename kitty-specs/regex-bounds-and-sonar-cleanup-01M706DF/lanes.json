@@ -1,0 +1,118 @@
+{
+  "version": 1,
+  "mission_slug": "regex-bounds-and-sonar-cleanup-01M706DF",
+  "mission_id": "01M706DFZEE37MW0VTVAC24DNC",
+  "mission_branch": "kitty/mission-regex-bounds-and-sonar-cleanup-01M706DF",
+  "target_branch": "fix/regex-bounds-and-sonar-cleanup",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/Executable.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/GuardIdentifier.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/GuardImplementation.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/Preset.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/ProcedureIdentifier.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/SkillIdentifier.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/ToolguideIdentifier.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/IdentifierBoundsTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "service/missions/src/main/java/ai/speckitty/charter/missions/domain/ExpectedArtifact.java",
+        "service/missions/src/main/java/ai/speckitty/charter/missions/domain/GuardReference.java",
+        "service/missions/src/main/java/ai/speckitty/charter/missions/domain/LifecycleIdentifier.java",
+        "service/missions/src/main/java/ai/speckitty/charter/missions/domain/MissionTypeIdentifier.java",
+        "service/missions/src/test/java/ai/speckitty/charter/missions/domain/IdentifierBoundsTest.java"
+      ],
+      "predicted_surfaces": [
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "contracts/charter/changes/2026-11-09-pack-id-length-caps.md",
+        "contracts/charter/scenarios/pack-id-length.feature",
+        "contracts/packs/schemas/asset.schema.json",
+        "contracts/packs/schemas/directive.schema.json",
+        "contracts/packs/schemas/guard.schema.json",
+        "contracts/packs/schemas/lifecycle.schema.json",
+        "contracts/packs/schemas/mission-type.schema.json",
+        "contracts/packs/schemas/pack-descriptor.schema.json",
+        "contracts/packs/schemas/paradigm.schema.json",
+        "contracts/packs/schemas/procedure.schema.json",
+        "contracts/packs/schemas/step-enhancement.schema.json",
+        "contracts/packs/schemas/styleguide.schema.json",
+        "contracts/packs/schemas/tactic.schema.json",
+        "contracts/packs/schemas/toolguide.schema.json"
+      ],
+      "predicted_surfaces": [
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/PackPolicy.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/fetch/git/GitSourceRules.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/Yaml.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/fetch/git/GitSourceRulesBoundsTest.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/YamlResolverBoundsTest.java"
+      ],
+      "predicted_surfaces": [
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-e",
+      "wp_ids": [
+        "WP05"
+      ],
+      "write_scope": [
+        "build-logic/src/test/kotlin/RegexRecursionGuardTest.kt"
+      ],
+      "predicted_surfaces": [
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-a",
+        "lane-b",
+        "lane-d"
+      ],
+      "parallel_group": 1
+    }
+  ],
+  "computed_at": "2026-11-09T13:08:55.170781+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "planning_commit_sha": "b3898106ac140b88c26d2cb0c40385d36daf3316"
+}

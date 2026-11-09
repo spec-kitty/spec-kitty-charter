@@ -1,0 +1,65 @@
+{
+  "rows": {
+    "#440": {
+      "evidence_ref": "WP01 992e5719, WP02 02c9336c, WP03 7c945629: possessive patterns, domain caps, schema maxLength; red-first IdentifierBoundsTest and pack-id-length.feature",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "fixed",
+      "wp": "WP01"
+    },
+    "#441": {
+      "evidence_ref": "WP04 97d16d47: possessive YAML int/float resolver; red-first YamlResolverBoundsTest",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "fixed",
+      "wp": "WP04"
+    },
+    "#442": {
+      "evidence_ref": "WP04 6996a027: PackPolicy fragment message as one map/orElseGet",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "fixed",
+      "wp": "WP04"
+    },
+    "#443": {
+      "evidence_ref": "Follow-up filed by the operator scope decision 01M706E3N6ZHX1SJQXNZ9DY6ZJ; out of scope (C-001)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#444": {
+      "evidence_ref": "Follow-up filed by the operator scope decision 01M706E3N6ZHX1SJQXNZ9DY6ZJ; out of scope (C-001)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "not-applicable",
+      "wp": null
+    }
+  },
+  "schema_version": 1
+}
