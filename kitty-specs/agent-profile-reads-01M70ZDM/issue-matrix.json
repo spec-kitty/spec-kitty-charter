@@ -24,6 +24,18 @@
       "verdict": "deferred-with-followup",
       "wp": null
     },
+    "#135": {
+      "evidence_ref": "Context only: upstream edge curation arriving with the pin",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
     "#148": {
       "evidence_ref": "Owned by the parallel mission-types mission",
       "fr": null,
