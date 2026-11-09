@@ -2,7 +2,7 @@
   "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
   "mission_number": "",
   "mission_type": "",
-  "overall_verdict": "pending",
+  "overall_verdict": "pass",
   "criteria": [
     {
       "criterion_id": "FR-001",
@@ -416,13 +416,13 @@
     },
     {
       "criterion_id": "FR-042",
-      "description": "Verify FR-042 is satisfied",
+      "description": "A GET then PUT of an activation through the generated Java client sends back exactly the document read (absent lists stay absent, never []), and the service keeps the revision for such a round trip.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "client-java/src/test/java/ai/speckitty/charter/client/ActivationRoundTripTest.java#aFetchedConfigIsSentBackAsItWasRead; contracts/charter/scenarios/activation-kind-model.feature: \"A PUT that sends [] for the selected kinds a GET answered as absent keeps the ETag and the stored bytes\"",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:47:24.686570+00:00",
+      "notes": "PR A0 (#414); IC-19, A7 squad side finding, DM-01M6RN62PPCMSH6M54D2HXYZEQ."
     }
   ],
   "negative_invariants": []
