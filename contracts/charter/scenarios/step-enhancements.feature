@@ -1,16 +1,15 @@
 @contract @activations
 Feature: A step enhancement is held, registers, and is selectable like any other artifact
   A step enhancement (ADR-0066, issue #428) is an artifact of the enhancing pack, at
-  missions/<type>/enhancements/<id>.step-enhancement.yaml, with one companion
-  <id>.prompt-fragment.md per entry of its prompt_fragments. It carries no target: its only enhances edge, in the
+  missions/<type>/enhancements/<id>.step-enhancement.yaml, with one Markdown companion per entry of its
+  prompt_fragments, any stem matching *.prompt-fragment.md. It carries no target: its only enhances edge, in the
   enhancing pack's graph documents, names the step it enhances, qualified with the base pack's name
   (base::action:software-dev/plan), the base pack being one the enhancing pack depends_on. The store holds the file
   and its fragments, so the URN step_enhancement:<id> joins the compose: it can be selected directly and through a
   preset, two packs at one level cannot both define one id, and a pack that carries one registers.
 
-  Selection and holding do not depend on being in force. Under the activation model as built no step enhancement is in
-  force until the effective-graph amendment lands (operator ruling OD-6), so these scenarios assert that the
-  activation lists the id as selected, never that it is in force.
+  Selection and holding do not depend on being in force. These scenarios assert that the activation lists the id as
+  selected; whether it is in force follows rule E6 (OD-6) and is pinned with the effective reads.
 
   Every fixture follows the two-pack shape of the spdd pack: a base pack whose software-dev mission type has a step
   plan whose prompt declares the slot spdd:reasons-block empty, and an enhancing pack that holds no mission type, only

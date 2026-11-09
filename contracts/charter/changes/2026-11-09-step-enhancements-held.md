@@ -9,6 +9,7 @@
   - A registration of a pack that carries step enhancements is accepted, where it was refused `422` as an unmodelled
     file (`paths/packs_packId.yaml`), and the whole-pack write keeps the enhancement files and the fragments beside
     them (scenario "A pack that carries a step enhancement and its fragment registers", `step-enhancements.feature`).
-  - A selected step enhancement is still reported not in force until PR C's E6 amendment lands (operator ruling OD-6).
-    What `listEffectiveArtifacts`, `getActivationSkippedReport` and `ActivationChange.dropped` show for it is
-    delivered, with its scenarios, by PR C and the phase-2 mission (#438).
+  - Now that the service holds step enhancements, a selected one is in force exactly when the mission type of the step
+    it enhances is in force (rule E6 as amended by OD-6, `2026-11-09-c-step-enhancer-binding.md`).
+  - `PUT /packs/{packId}/relationships` accepts the one `enhances` edge of a held step enhancement, where it answered
+    `409 registration_conflict`.

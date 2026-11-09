@@ -14,8 +14,8 @@
     enhancement only adds.
 - `PUT /packs/{packId}/relationships` refuses, with `422 prompt_fragment_invalid` and nothing written, an edge that
   would give a held step enhancement an `overrides` edge or a second `enhances` edge, or replace its one `enhances`
-  edge; it answered `2xx` before and left every composing read of the pack answering `500`. `prompt_fragment_invalid`
-  declares `operations: {putPackRelationship: {status: 422}}` for it.
+  edge. Before, a step enhancement was not held, and every edge from one answered `409 registration_conflict`.
+  `prompt_fragment_invalid` declares `operations: {putPackRelationship: {status: 422}}` for it.
 - A registration lists every such fault at once, each as a violation `{pointer: <pack-relative file>, code:
   prompt_fragment_invalid}` of `422 validation_failed`; an id that differs from the file stem, an entry whose `slot`
   breaks `<namespace>:<name>` and `prompt_fragments: []` stay schema violations.
