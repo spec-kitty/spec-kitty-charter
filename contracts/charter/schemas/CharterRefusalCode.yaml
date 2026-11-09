@@ -49,7 +49,11 @@ description: >-
   document or body the service refuses, each refused part listed in violations (a document carrying a removed member, activatedKinds or missionTypes, is
   validation_failed, not activation_invalid); artifact_required and
   artifact_locked (409), a deactivation a pack requires or locks, whose refusal names every requiring pack in
-  requiredBy; The requirement of a governing preset id is the union, across the levels (built-in, org, project), of the must-have items of the copy in force at each level. Within one level the copy of the pack last in closure order replaces the others, a child pack's copy its parent's, and a replaced copy requires nothing. A deny of an artifact only an earlier level's copy requires, which a later level's copy replaced, is 409 artifact_required naming that earlier level's pack. Only the two effective reads
+  requiredBy. The requirement of a governing preset id is the union, across the levels (built-in, org, project), of
+  the must-have items of the copy in force at each level. Within one level the copy of the pack last in closure order
+  replaces the others, a child pack's copy its parent's, and a replaced copy requires nothing. A deny of an artifact
+  only an earlier level's copy requires, which a later level's copy replaced, is 409 artifact_required naming that
+  earlier level's pack. Only the two effective reads
   of an activation that remain (the graph and the action context) stay reserved (ADR-0020 D8), and the one code they
   will raise again, action_not_found, is not raised (above). A unit test of the service fails when any main class
   other than the enum and its mappings names a code the map marks not raised, outside the two classes no
