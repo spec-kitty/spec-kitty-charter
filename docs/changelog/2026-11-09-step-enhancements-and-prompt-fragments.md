@@ -29,13 +29,12 @@ audience:
   `schema_version: "1.0"`. A registration answers `422 validation_failed` with one violation per fault; a read answers
   `500 pack_unreadable` naming the first file. An edge write that breaks the rules answers `422 prompt_fragment_invalid`.
 - **Registration `diagnostics`.** A succeeded registration lists the `prompt_slot_not_empty` warning of an unversioned
-  descriptor. The five pinned built-in prompts give five.
+  descriptor. At the pin, the built-in pack loads with five such warnings, one per software-dev step prompt (open-packs#175).
 - **Breaking, sibling conflict.** Two packs at one level that define the same step enhancement id are refused
   `500 pack_sibling_conflict` on every composing read. A descriptor `overrides` entry settles it, and a higher level
   replaces the lower by layer override.
 - **Raised definition.** A code counts as raised when it is a violation code of a `422 validation_failed`, so
   `drg_schema_error` is raised too.
-- **Id caps.** See [pack id length caps](/changelog/2026-11-09-pack-id-length-caps/).
 
 Rules: [Load rules](/architecture/composition-and-activation-rules/#load-rules). Rulings:
 [ADR-0053 question 2](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) (layout) and

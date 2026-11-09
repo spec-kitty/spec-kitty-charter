@@ -26,7 +26,7 @@ The file names no target. The enhancing pack's graph documents carry the one `en
 | `prompt_fragments` | One entry per slot: `slot` (`<namespace>:<name>`) and `path` (the companion `<stem>.prompt-fragment.md` beside this file). At least one entry. |
 
 The shape has no target, range, anchor, position or priority field. Guard and emit additions are fields too, not edges
-(`add_guards`, `add_lifecycle_guards` and `emits`), but they are not in this shape yet: they are built under
+(`add_guards`, `add_lifecycle_guards` and `emits`), but they are not in this shape yet: they will be built under
 [#434](https://github.com/spec-kitty/spec-kitty-charter/issues/434) ([ADR-0066 annotation of 2026-11-09](/adr/0066-a-step-enhancement-may-contribute-prompt-fragments/#annotation-2026-11-09-guards-and-emits-are-fields-d6)).
 
 ## Layout
@@ -49,7 +49,8 @@ are on [Load rules](/architecture/composition-and-activation-rules/#load-rules).
 | No `prompt_fragments` key | `prompt_fragment_invalid`. |
 | Not exactly one `enhances` edge to an `action:<type>/<step>`; any `overrides` edge from the enhancement; a `<type>` directory that differs from the edge's type | `prompt_fragment_invalid`. |
 | The id repeated across type directories | `prompt_fragment_invalid` at the second file in path order, which is withheld from the pack. |
-| A fragment that is blank, has frontmatter or holds a slot marker | `prompt_fragment_invalid` at the fragment. |
+| A fragment that holds a slot marker | `prompt_fragment_invalid` at the fragment. |
+| A fragment that is blank, has frontmatter, a carriage return or a byte order mark | `prompt_fragment_invalid`; at registration and on a read, at the enhancement that names the fragment. |
 
 At registration the answer is a violation `{pointer, code}` inside `422 validation_failed`, one for each fault; on a
 composing read it is `500 pack_unreadable` naming the first faulty file. Two packs at one level that define the same

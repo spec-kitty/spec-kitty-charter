@@ -1249,22 +1249,22 @@ equal meaning. This section states what is **built** (the step-enhancement servi
 [#428](https://github.com/spec-kitty/spec-kitty-charter/issues/428) and
 [#424](https://github.com/spec-kitty/spec-kitty-charter/issues/424)). Checks made when packs compose, and the read of a
 step's effective prompt, are **planned** in the phase-2 mission
-([#438](https://github.com/spec-kitty/spec-kitty-charter/issues/438)); no rule below depends on them. The sub-headings
-for those follow this one.
+([#438](https://github.com/spec-kitty/spec-kitty-charter/issues/438)); no rule below depends on them. The phase-2 mission adds their
+sub-headings after this one when it builds them.
 
 ### Load rules
 
 Each rule names the moment it is judged: **V** validate mode, **L** load (both the staged load of a registration and
-every composing read), **W** the relationship write (`PUT /packs/{packId}/relationships`). A fault found at L is a
+every composing read), **W** the relationship write (`PUT /packs/{packId}/relationships`), **C** compose (every composing read). A fault found at L is a
 violation at its file: a registration answers `422 validation_failed` and lists every fault at once, each as
 `{pointer: <pack-relative file>, code}`; a composing read answers `500 pack_unreadable` naming the first faulty file.
 The wire shape is the one under "How a load fault reaches the wire" in the mission's contract notes, restated in the
 annotations of [ADR-0066](/adr/0066-a-step-enhancement-may-contribute-prompt-fragments/#annotation-2026-11-09-how-the-load-codes-of-decision-8-reach-the-wire-od-3-a-od-7).
 
-**F1 Fragment content.** A `*.prompt-fragment.md` is refused `prompt_fragment_invalid`, at the fragment, when its body
-is blank, carries frontmatter, or holds a slot marker of any id, anywhere in the text, code fences included. A
-carriage return or a byte order mark is refused by the Markdown codec first, with the same code, before the marker
-check runs.
+**F1 Fragment content.** A slot marker of any id, anywhere in the text, code fences included, is refused
+`prompt_fragment_invalid` at the fragment (V, L). A blank body, frontmatter, a carriage return or a byte order mark is
+refused `prompt_fragment_invalid` at the fragment in validate mode; at load the store's companion read refuses it
+first, at the enhancement that names the fragment, and the reason names the fragment.
 *Source:* FR-004; ADR-0066 d3, d7; ADR-0036. **Built.** Moments: V, L.
 
 **F2 Enhancement structure.** An enhancement is refused `prompt_fragment_invalid`, at its file, when it names one slot
@@ -1303,8 +1303,11 @@ registration only. A composing read discards it.
 
 **F6 Precedence.** Several rules can fail in one pack, and the answer stays deterministic. A schema violation of a file
 is reported alone (F2, F4). A codec refusal precedes the slot grammar (F1). A composing read names the first violation in
-assembly order: the store's read violations, then each kind in binding order, then the slot faults of F5, and last the
-step-enhancement faults of F1 to F4 in path order. A registration lists them all.
+assembly order: the store's read violations (among them the companion faults of F1 and F2, a blank,
+frontmatter-bearing, CR/BOM, missing or shared companion, as `prompt_fragment_invalid` at the enhancement), then each
+kind in binding order, the templates, the presets and the pack document, then the slot faults of F5, and last the rule
+faults of F1 to F4 (marker, repeated slot, edges, directory, repeated id, no entries) by path, then by rule. A
+registration lists them all.
 *Source:* research P9; plan IC-02. **Built.**
 
 **F7 Same-id enhancements.** A step enhancement defines its own URN `step_enhancement:<id>`, so C14 and C15 apply as to
