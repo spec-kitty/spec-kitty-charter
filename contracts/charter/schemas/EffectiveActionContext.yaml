@@ -82,7 +82,8 @@ properties:
       $ref: ActionEnhancement.yaml
     description: >-
       The enhancers in force of the action's own step and of each artifact the context lists in force, read from the
-      enhanced node's side (rule E12), sorted by node. A step enhancer enhances the step, which is no artifact, so it is
+      enhanced node's side (rule E12), sorted by node: kind, then id, in Unicode code point order (the order of the
+      full URNs). A step enhancer enhances the step, which is no artifact, so it is
       carried here and nowhere else. An enhancer is returned only when it is itself in force; nothing is pulled in.
     x-derived:
       rule: The artifacts in force with an enhances edge to the action's step or to a listed artifact.

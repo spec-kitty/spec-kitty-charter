@@ -17,7 +17,8 @@ properties:
     minItems: 1
     items:
       $ref: ArtifactReference.yaml
-    description: The enhancers in force that enhance the target, sorted by kind and id.
+    description: The enhancers in force that enhance the target, sorted by kind and then id, in Unicode code point order (the order
+      of their full URNs).
     x-derived:
       rule: The artifacts in force with an enhances edge to the target.
       inputs:
