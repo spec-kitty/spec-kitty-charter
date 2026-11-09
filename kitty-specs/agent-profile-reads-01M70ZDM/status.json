@@ -89,9 +89,9 @@
     },
     "WP03": {
       "actor": "claude",
-      "agent": null,
-      "agent_profile": "java-jenny",
-      "agent_profile_version": "1.0",
+      "agent": "claude:sonnet:java-jenny",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
       "implementer_of_record": "claude:sonnet:java-jenny",
       "lane": "for_review",
@@ -99,7 +99,8 @@
       "last_transition_at": "2026-11-09T22:59:29.091304+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Governance walk in packs.application: shared engine (ActionContextWalk.Engine, action walk unchanged), GovernanceWalk (LINEAGE plan, W1-W6), EdgeIndex.writtenLinks/holdsUrn (held=false), ClosureView.governance/packGovernance/effectiveArtifact (+WinnerSource, Holder, EffectiveArtifactView), ProfileGovernance.ofPack (runs in the caller's ConsistentRead supplier via ClosureQueries.snapshotWithin, no inner retry), corpus guard over 31 profiles. :packs:check, HexagonalArchitectureTest, CharterContractSuite, :activations:test green. Touched ClosureQueries and ProfileGovernanceCorpusTest outside owned_files (scope warning)."
+        "Governance walk in packs.application: shared engine (ActionContextWalk.Engine, action walk unchanged), GovernanceWalk (LINEAGE plan, W1-W6), EdgeIndex.writtenLinks/holdsUrn (held=false), ClosureView.governance/packGovernance/effectiveArtifact (+WinnerSource, Holder, EffectiveArtifactView), ProfileGovernance.ofPack (runs in the caller's ConsistentRead supplier via ClosureQueries.snapshotWithin, no inner retry), corpus guard over 31 profiles. :packs:check, HexagonalArchitectureTest, CharterContractSuite, :activations:test green. Touched ClosureQueries and ProfileGovernanceCorpusTest outside owned_files (scope warning).",
+        "Cycle 1: writtenLinks() now resolves via neighbour(edge) with held per link (holdsUrn removed); Engine expands only held parent links; WinnerSource.none() throws IllegalStateException; PACK_UNREADABLE pinned; corpus asserts no dangling entry."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
