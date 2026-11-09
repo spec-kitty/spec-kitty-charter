@@ -178,9 +178,8 @@ class WireTokenParityTest {
                         ARTIFACT_KIND_TOKENS,
                         token -> member(ARTIFACT_KIND_TOKENS, token)),
                 // NodeKind would reach the wire only through EffectiveGraphNode.kind (a reserved read no main code
-                // builds
-                // yet); the domain side is the kinds authored
-                // in graphs (see AUTHORED_NODE_KINDS for why guard and lifecycle are not among them).
+                // builds yet); the domain side is the kinds authored in graphs (see AUTHORED_NODE_KINDS for why guard
+                // and lifecycle are not among them).
                 new Pair(
                         "NodeKind",
                         AUTHORED_NODE_KINDS,
