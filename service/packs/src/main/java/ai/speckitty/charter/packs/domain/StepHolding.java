@@ -18,8 +18,8 @@ import java.util.TreeSet;
  *       function serves both;
  *   <li><strong>on the closure</strong>: the closure holds the step when some closure pack holds it per pack. The step's
  *       place is the winner of {@code action:M/s} on the merged view, so a layer override of a held step is the winning
- *       version of a held step. A winning {@code mission_type:M} does not take the unique steps of the versions it
- *       replaced (A7): a step is a URN of its own.
+ *       version of a held step. A winning {@code mission_type:M} keeps the unique steps of the versions it replaced
+ *       (A7, DIV-243): a step is a URN of its own, and a pack that holds it per pack holds it on the closure.
  * </ul>
  *
  * <p>A pack that declares {@code action:M/s} while no closure pack defines {@code mission_type:M} alongside it holds no
