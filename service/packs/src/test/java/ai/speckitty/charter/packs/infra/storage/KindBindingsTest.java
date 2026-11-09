@@ -194,13 +194,20 @@ class KindBindingsTest {
         assertThat(KindBindings.byCompanionStructure(ToolguideBinding.GUIDE_SCHEMA))
                 .containsSame(ToolguideBinding.INSTANCE);
         // #260: pack.md is no companion; the pack holds it in its own slot. ADR-0066's fragment is a companion of
-        // the step-enhancement kind whose storage binding is service follow-up #424, not of a kind bound here.
+        // the step-enhancement kind, whose storage binding is service follow-up #424: it is no companion of a kind
+        // bound here, but a deferred one, validated and held by no store, as its enhancement's YAML is.
         assertThat(KindBindings.isCompanionStructure(PackDocumentMarkdown.KIND)).isFalse();
         assertThat(KindBindings.isCompanionStructure("prompt-fragment")).isFalse();
+        assertThat(KindBindings.isDeferredCompanionStructure("prompt-fragment")).isTrue();
+        assertThat(KindBindings.isDeferredCompanionStructure(ToolguideBinding.GUIDE_SCHEMA))
+                .isFalse();
+        assertThat(KindBindings.isDeferredCompanionStructure(PackDocumentMarkdown.KIND))
+                .isFalse();
+        assertThat(KindBindings.byCompanionStructure("prompt-fragment")).isEmpty();
         assertThat(PackFileKind.bundled().fileRules())
                 .filteredOn(rule -> rule.contentForm() == ContentForm.MARKDOWN)
-                .filteredOn(rule ->
-                        !Set.of(PackDocumentMarkdown.KIND, "prompt-fragment").contains(rule.schema()))
+                .filteredOn(rule -> !Set.of(PackDocumentMarkdown.KIND).contains(rule.schema())
+                        && !KindBindings.isDeferredCompanionStructure(rule.schema()))
                 .isNotEmpty()
                 .allSatisfy(rule -> assertThat(KindBindings.isCompanionStructure(rule.schema()))
                         .as(rule.match())

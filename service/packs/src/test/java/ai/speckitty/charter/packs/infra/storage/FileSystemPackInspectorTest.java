@@ -368,6 +368,54 @@ class FileSystemPackInspectorTest {
                 .isEmpty();
     }
 
+    private static final String ENHANCEMENT_DIR = "missions/software-dev/enhancements/";
+    private static final String SPDD_ENHANCEMENT = """
+            schema_version: "1.0"
+            id: spdd-specify
+            prompt_fragments:
+              - slot: spdd:reasons-block
+                path: spdd-specify.prompt-fragment.md
+            """;
+
+    /**
+     * The shape of open-packs#175: a step enhancement and its prompt fragment. Neither has a store binding until #424,
+     * so load skips both (the enhancement yaml is classified, validated and not held), and validate reads the fragment
+     * against its structure schema as it reads the yaml against its own. Neither is a 500.
+     */
+    @Test
+    void anEnhancementAndItsPromptFragmentAreLoadedAndValidatedWithoutAFailureAndHeldByNoStore(@TempDir Path dir)
+            throws IOException {
+        write(dir, ENHANCEMENT_DIR + "spdd-specify.step-enhancement.yaml", SPDD_ENHANCEMENT);
+        write(dir, ENHANCEMENT_DIR + "spdd-specify.prompt-fragment.md", "## REASONS guidance\n\nState the reasons.\n");
+
+        PackFileSet.Listing listing = PackFileSet.listing(dir);
+        PackContents contents = full(dir);
+
+        assertThat(listing.byKind().values().stream().flatMap(List::stream))
+                .as("no store holds the enhancement yaml or its fragment yet (#424)")
+                .noneMatch(file -> file.startsWith(ENHANCEMENT_DIR));
+        assertThat(contents.unreadableFiles()).isEmpty();
+        assertThat(contents.files())
+                .extracting(PackContents.ClassifiedFile::file)
+                .contains(ENHANCEMENT_DIR + "spdd-specify.step-enhancement.yaml");
+    }
+
+    @Test
+    void aPromptFragmentThatBreaksItsStructureIsUnreadableInValidateAndNotAFailureOnLoad(@TempDir Path dir)
+            throws IOException {
+        write(dir, ENHANCEMENT_DIR + "spdd-specify.step-enhancement.yaml", SPDD_ENHANCEMENT);
+        write(dir, ENHANCEMENT_DIR + "spdd-specify.prompt-fragment.md", "---\ntitle: x\n---\n\nText.\n");
+        write(dir, ENHANCEMENT_DIR + "blank.prompt-fragment.md", "\n");
+
+        PackFileSet.listing(dir);
+
+        assertThat(full(dir).unreadableFiles())
+                .extracting(FileRead::file)
+                .containsExactlyInAnyOrder(
+                        ENHANCEMENT_DIR + "spdd-specify.prompt-fragment.md",
+                        ENHANCEMENT_DIR + "blank.prompt-fragment.md");
+    }
+
     private static final String PROCEDURE = """
             schema_version: '1.0'
             id: %s
