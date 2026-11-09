@@ -237,7 +237,7 @@ public final class ActionContextWalk {
      * @param inForce whether an artifact is in force: the effective set, which holds no step
      * @return what the action reaches. Beside the entries, {@link Context#suggestionCandidates()} holds each target of a
      *     {@code suggests} edge of step 3 (from a scoped or suggested artifact in force, within {@code depth}) that the
-     *     closure holds and the predicate refuses, unless a listed artifact also reaches it through a hard relation
+     *     closure holds and the predicate refuses, unless the start step or a listed artifact also reaches it through a hard relation
      *     ({@code requires}, {@code refines}, {@code scope}, {@code instantiates}). They are candidates only: never
      *     listed, expanded or given vocabulary; whether one is {@code not_selected} is the activations slice's to judge.
      *     Where several {@code suggests} edges reach one target, the parent is the one of the frontier with the fewest
@@ -375,10 +375,15 @@ public final class ActionContextWalk {
             return parents;
         }
 
-        /** The out-of-force suggestion candidates no listed artifact reaches through a hard relation, in URN order. */
+        /**
+         * The out-of-force suggestion candidates that neither the start step nor a listed artifact reaches through a hard
+         * relation (the start step's own {@code scope} edges count), in URN order.
+         */
         List<SuggestionCandidate> suggestions() {
             Set<Urn> hard = new HashSet<>();
-            for (Urn source : listed.keySet()) {
+            Set<Urn> reaching = new HashSet<>(listed.keySet());
+            reaching.add(start);
+            for (Urn source : reaching) {
                 outgoing.getOrDefault(source, List.of()).stream()
                         .filter(link -> HARD_RELATIONS.contains(link.relation()))
                         .forEach(link -> hard.add(link.target()));
