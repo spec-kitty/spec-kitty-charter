@@ -43,8 +43,8 @@ public record ContainerProperties(
      * strips it.
      */
     static final String HOST_ENTRY = "\\s*(?!(?:0+|0x0*)(?:\\.(?:0+|0x0*)){0,3}\\s*$)(?!\\[[0:.]*\\]\\s*$)"
-            + "(?!\\[(?:0*:)*ffff:(?:0+(?:\\.0+){3}|0+:0+)\\]\\s*$)"
-            + "(?:(?=[a-z0-9.-]{1,253}\\s*$)[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*"
+            + "(?!\\[(?:0*+:)*+ffff:(?:0+(?:\\.0+){3}|0+:0+)\\]\\s*$)"
+            + "(?:(?=[a-z0-9.-]{1,253}\\s*$)[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*+"
             + "|\\[[0-9a-f:.]+\\])\\s*";
 
     static final String HOST_ENTRY_MESSAGE = "charter.container.allowed-hosts entries must each be a host name, an IPv4"

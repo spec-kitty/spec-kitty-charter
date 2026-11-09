@@ -32,9 +32,6 @@ class RegexRecursionGuardTest {
             + " repeated body cannot match, so iterations cannot overlap",
         "GuideAllowlist.java:HOST_NAME" to
             "bounded: the same host grammar as GitSourceRules HOST_NAME, capped by its (?=.{1,253}\$) lookahead",
-        "ContainerProperties.java:HOST_ENTRY" to
-            "bounded: the host label repeat is capped by the (?=[a-z0-9.-]{1,253}\\s*\$) lookahead and starts with"
-            + " a literal '.'; the (?:0*:)* repeat consumes exactly one ':' per iteration, so it cannot overlap",
         "Re2jRegularExpressionFactory.java:regex" to
             "re2j: com.google.re2j.Pattern matches in linear time and has no backtracking",
         "PackFileKind.java:regex.toString()" to
