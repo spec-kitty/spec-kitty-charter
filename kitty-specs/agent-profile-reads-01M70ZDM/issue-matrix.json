@@ -12,6 +12,18 @@
       "verdict": "not-applicable",
       "wp": null
     },
+    "#102": {
+      "evidence_ref": "Field-merge profile resolution stays out; Follow-up: #102",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
+      "wp": null
+    },
     "#148": {
       "evidence_ref": "Owned by the parallel mission-types mission",
       "fr": null,
