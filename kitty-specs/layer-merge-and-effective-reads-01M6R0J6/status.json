@@ -1017,7 +1017,7 @@
     },
     "WP29": {
       "actor": "claude",
-      "agent": null,
+      "agent": "claude:sonnet:java-jenny",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -1027,7 +1027,8 @@
       "last_transition_at": "2026-11-09T16:53:33.129996+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "WP29 implemented: T143-T146, T165; lane-{ head 2ecda553 (planning commit ff0cadbd merged)"
+        "WP29 implemented: T143-T146, T165; lane-{ head 2ecda553 (planning commit ff0cadbd merged)",
+        "Fix cycle 1: MAJOR-1 fixed red-first, MINOR-1..4 and NIT rewrap"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
