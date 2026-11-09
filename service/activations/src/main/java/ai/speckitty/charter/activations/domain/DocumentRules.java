@@ -1,5 +1,6 @@
 package ai.speckitty.charter.activations.domain;
 
+import ai.speckitty.charter.activations.domain.MergedSnapshot.ArtifactState;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
@@ -42,7 +43,14 @@ import java.util.stream.Collectors;
  *
  * <p>Only a document with no violation meets the floor (ADR-0012 D7): a deny entry on an artifact a pack locks is a
  * {@code 409 artifact_locked} naming each locking pack, and otherwise one on an artifact a pack requires is a
- * {@code 409 artifact_required} naming each requiring pack. Locked wins, since locked implies required. Each
+ * {@code 409 artifact_required} naming each requiring pack, unless an active override of it satisfies the requirement
+ * (IC-13, operator ruling Q9, research R12). Locked wins, since locked implies required, and no override satisfies a
+ * lock. "Active" is the in-force resolution's own judgement of the document as it will be stored ({@link InForceFacts}:
+ * an artifact it reports as satisfied by an artifact in force), never a rule of this class, so a deny entry accepted on
+ * write is one the next read applies; an enhancement never satisfies. The facts are asked only when a write adds a
+ * deny entry on a required artifact no pack locks, and a refusal of the closure's merge ({@code pack_unreadable})
+ * reaches that write. Removing the override later is not refused: no write judges a stored deny entry, and the read
+ * lists it in {@code denyNotApplied}. Each
  * {@link RequiringPack} names the pack by the id it is configured under, and its {@code via} is the extends chain
  * ({@link ClosureSnapshot#extendsChain}) from the first pack the document names, in its order, whose
  * {@code parent_pack} line reaches the requiring pack: empty when a pack the document names (or, without
@@ -81,29 +89,45 @@ public final class DocumentRules {
     }
 
     /**
-     * Stub: ignores the facts.
+     * Checks a document, with the in-force facts that decide a deny entry on a required artifact (IC-13).
      *
      * @param document the document
      * @param snapshot the closure the document names
-     * @param facts the in-force facts
+     * @param facts what the in-force resolution puts in force for the document as it will be stored
      * @return the refusal; empty when the document may be stored
      */
     public static Optional<CharterRefusal> check(
             ActivationDocument document, ClosureSnapshot snapshot, InForceFacts facts) {
-        return check(document, snapshot);
+        return check(new ActivationDocument.Built(document, List.of()), snapshot, facts);
     }
 
     /**
-     * Checks a document just built, together with its shape violations.
+     * Checks a document just built, together with its shape violations, with no in-force facts: a deny entry on a
+     * required artifact is refused, as no override can be known to satisfy it.
      *
      * @param built the document and its shape violations
      * @param snapshot the closure the document names
      * @return the refusal; empty when the document may be stored
      */
     public static Optional<CharterRefusal> check(ActivationDocument.Built built, ClosureSnapshot snapshot) {
+        return check(built, snapshot, InForceFacts.NONE);
+    }
+
+    /**
+     * Checks a document just built, together with its shape violations, judging every deny entry on the floor (a
+     * create). A deny entry on a required artifact is accepted when an active override of it satisfies the requirement
+     * in this document, as the in-force resolution judges it ({@link InForceFacts}); one on a locked artifact never is.
+     *
+     * @param built the document and its shape violations
+     * @param snapshot the closure the document names
+     * @param facts what the in-force resolution puts in force for the document as it will be stored
+     * @return the refusal; empty when the document may be stored
+     */
+    public static Optional<CharterRefusal> check(
+            ActivationDocument.Built built, ClosureSnapshot snapshot, InForceFacts facts) {
         List<RefusalViolation> violations = violations(built, snapshot, Tolerance.NONE);
         if (violations.isEmpty()) {
-            return floorRefusal(built.document(), snapshot);
+            return floorRefusal(built.document(), built.document(), snapshot, facts);
         }
         return Optional.of(invalid(violations));
     }
@@ -132,39 +156,30 @@ public final class DocumentRules {
      */
     public static Optional<CharterRefusal> checkWrite(
             ActivationDocument before, ActivationDocument after, ClosureSnapshot snapshot) {
-        Optional<CharterRefusal> refusal = check(after, snapshot);
-        if (refusal.isEmpty() || !refusal.orElseThrow().violations().isEmpty()) {
-            return refusal;
-        }
-        return floorRefusal(addedDenies(before, after, snapshot), snapshot);
+        return checkWrite(before, after, snapshot, InForceFacts.NONE);
     }
 
     /**
-     * Stub: ignores the facts.
+     * {@link #checkWrite(ActivationDocument, ActivationDocument, ClosureSnapshot)} with the in-force facts that decide a
+     * deny entry the write adds on a required artifact (IC-13): it is accepted when an active override of it satisfies
+     * the requirement in {@code after}, the document as it will be stored. The facts are asked only for such an entry;
+     * a stored deny entry, and a write that adds none (an unselect of the override, a select with
+     * {@code includeDeactivated}), never ask.
      *
      * @param before the document as stored
      * @param after the document the write computed
      * @param snapshot the closure the document names
-     * @param facts the in-force facts
+     * @param facts what the in-force resolution puts in force for {@code after}
      * @return the refusal; empty when the document may be stored
      */
     public static Optional<CharterRefusal> checkWrite(
             ActivationDocument before, ActivationDocument after, ClosureSnapshot snapshot, InForceFacts facts) {
-        return checkWrite(before, after, snapshot);
-    }
-
-    /**
-     * Stub: ignores the facts.
-     *
-     * @param built the body as the request built it
-     * @param stored the document the replace replaces
-     * @param snapshot the closure the body names
-     * @param facts the in-force facts
-     * @return the refusal; empty when the body may be stored
-     */
-    public static Optional<CharterRefusal> checkReplace(
-            ActivationDocument.Built built, ActivationDocument stored, ClosureSnapshot snapshot, InForceFacts facts) {
-        return checkReplace(built, stored, snapshot);
+        List<RefusalViolation> violations =
+                violations(new ActivationDocument.Built(after, List.of()), snapshot, Tolerance.NONE);
+        if (!violations.isEmpty()) {
+            return Optional.of(invalid(violations));
+        }
+        return floorRefusal(addedDenies(before, after, snapshot), after, snapshot, facts);
     }
 
     /**
@@ -183,13 +198,30 @@ public final class DocumentRules {
      */
     public static Optional<CharterRefusal> checkReplace(
             ActivationDocument.Built built, ActivationDocument stored, ClosureSnapshot snapshot) {
+        return checkReplace(built, stored, snapshot, InForceFacts.NONE);
+    }
+
+    /**
+     * {@link #checkReplace(ActivationDocument.Built, ActivationDocument, ClosureSnapshot)} with the in-force facts that
+     * decide a deny entry the body adds on a required artifact (IC-13): it is accepted when an active override of it
+     * satisfies the requirement in the document as it will be stored, the body less what {@link StaleIds#drop} drops,
+     * so a body that adds the override and the deny entry together is accepted.
+     *
+     * @param built the body as the request built it, normalized, with its shape violations
+     * @param stored the document the replace replaces; the empty document when nothing is stored
+     * @param snapshot the closure the body names
+     * @param facts what the in-force resolution puts in force for the document as it will be stored
+     * @return the refusal; empty when the body, less what {@link StaleIds#drop} drops, may be stored
+     */
+    public static Optional<CharterRefusal> checkReplace(
+            ActivationDocument.Built built, ActivationDocument stored, ClosureSnapshot snapshot, InForceFacts facts) {
         List<RefusalViolation> violations = violations(built, snapshot, Tolerance.replacing(stored));
         if (!violations.isEmpty()) {
             return Optional.of(invalid(violations));
         }
         ActivationDocument kept =
                 snapshot.resolved() ? StaleIds.drop(built.document(), snapshot).document() : built.document();
-        return floorRefusal(addedDenies(stored, kept, snapshot), snapshot);
+        return floorRefusal(addedDenies(stored, kept, snapshot), kept, snapshot, facts);
     }
 
     /**
@@ -387,8 +419,14 @@ public final class DocumentRules {
         return resolution instanceof ArtifactSpellings.Resolution.Declared found ? found.id() : id;
     }
 
-    private static Optional<CharterRefusal> floorRefusal(ActivationDocument document, ClosureSnapshot snapshot) {
-        List<String> denied = deniedUrns(document);
+    /**
+     * The floor refusal for the deny entries of {@code denying}: a locked one wins, since locked implies required; a
+     * required one is refused unless an active override satisfies it in {@code stored}, the document as it will be
+     * stored (IC-13). The facts are asked once, and only when a deny entry is on a required artifact no pack locks.
+     */
+    private static Optional<CharterRefusal> floorRefusal(
+            ActivationDocument denying, ActivationDocument stored, ClosureSnapshot snapshot, InForceFacts facts) {
+        List<String> denied = deniedUrns(denying);
         List<String> locked = denied.stream()
                 .filter(urn -> snapshot.lockingPack(urn).isPresent())
                 .toList();
@@ -396,18 +434,43 @@ public final class DocumentRules {
             Set<String> locking = locked.stream()
                     .flatMap(urn -> snapshot.lockingPack(urn).stream())
                     .collect(Collectors.toCollection(LinkedHashSet::new));
-            return Optional.of(floor(RefusalCode.ARTIFACT_LOCKED, "locks", locked, via(document, snapshot, locking)));
+            return Optional.of(floor(RefusalCode.ARTIFACT_LOCKED, "locks", locked, via(denying, snapshot, locking)));
         }
-        List<String> required = denied.stream()
-                .filter(urn -> !snapshot.requiringPacks(urn).isEmpty())
-                .toList();
-        Set<String> requiring = required.stream()
+        List<String> unmet = unsatisfied(
+                denied.stream()
+                        .filter(urn -> !snapshot.requiringPacks(urn).isEmpty())
+                        .toList(),
+                stored,
+                facts);
+        Set<String> requiring = unmet.stream()
                 .flatMap(urn -> snapshot.requiringPacks(urn).stream())
                 .collect(Collectors.toCollection(LinkedHashSet::new));
-        return required.isEmpty()
+        return unmet.isEmpty()
                 ? Optional.empty()
                 : Optional.of(
-                        floor(RefusalCode.ARTIFACT_REQUIRED, "requires", required, via(document, snapshot, requiring)));
+                        floor(RefusalCode.ARTIFACT_REQUIRED, "requires", unmet, via(denying, snapshot, requiring)));
+    }
+
+    /**
+     * The denied required artifacts no active override satisfies in the document as it will be stored. The in-force
+     * resolution decides: an artifact it reports as satisfied by an artifact in force (E5, E9) is satisfied; one it
+     * puts back in force with its deny entry not applied, or does not report, is not. An enhancement never satisfies.
+     */
+    private static List<String> unsatisfied(List<String> required, ActivationDocument stored, InForceFacts facts) {
+        if (required.isEmpty()) {
+            return required;
+        }
+        Map<ArtifactRef, ArtifactState> states =
+                facts.inForce(EffectiveSet.queryOf(stored)).states();
+        return required.stream().filter(urn -> !satisfied(urn, states)).toList();
+    }
+
+    private static boolean satisfied(String urn, Map<ArtifactRef, ArtifactState> states) {
+        return Urn.parse(urn)
+                .flatMap(ArtifactRef::of)
+                .map(states::get)
+                .flatMap(ArtifactState::satisfiedBy)
+                .isPresent();
     }
 
     private static List<String> deniedUrns(ActivationDocument document) {

@@ -129,8 +129,9 @@ Feature: A deny entry on a required artifact is accepted when an active override
 
   Scenario: IC-13 - deactivating a required T with an active override of it is 200 and the deny entry is applied
     Q9, R12: the governing preset requires T, and F, selected, overrides T. The deactivate adds a deny entry on T,
-    which F satisfies, so it answers 200 and stores the entry. The read applies it: T is not in force and its deny
-    entry is not in denyNotApplied, while F, in force, is the control in the same answer.
+    which F satisfies, so it answers 200 and stores the entry. The read applies it: T is not in force (the in-force
+    directives are F, the locked LK and the required T2, the controls in the same answer) and its deny entry is not in
+    denyNotApplied.
     Given the activation "a-1" holds:
       """
       {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["F"]}}
@@ -159,6 +160,8 @@ Feature: A deny entry on a required artifact is accepted when an active override
     And the field at "/items" holds exactly the ids:
       """
       directive:F
+      directive:LK
+      directive:T2
       """
     When I GET "/activations/a-1/skipped"
     Then the response status is 200
