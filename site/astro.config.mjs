@@ -31,18 +31,22 @@ export default defineConfig({
     // MUST equal the loader `base` in src/content.config.ts. Without it the toolkit
     // looks for site/docs, ignores docs/_meta/sections.yaml and lists drafts in the sitemap.
     docsDir: '../docs',
+    // Add a source link to each authored page. siteDir is the repo-relative Astro
+    // project folder; the loader's page paths lead from it to ../docs.
+    repository: { provider: 'github', repo: 'spec-kitty/spec-kitty-charter', branch: 'main', siteDir: 'site' },
     // Brain Kitty brand mark (olive bow tie) over the Spec Kitty theme.
     theme: { extends: specKittyTheme, assets: { logo: './src/assets/brain-kitty.png' } },
     markua: true,
-    // Diagrams render at build time (DocKitty 0.6.0, DK_DIAGRAM_BUILD_RENDER=build in CI): Mermaid
+    // Diagrams render at build time (DocKitty 0.7.0, DK_DIAGRAM_BUILD_RENDER=build in CI): Mermaid
     // through Playwright's Chromium, PlantUML through the render service (DK_PLANTUML_SERVER_URL).
     diagrams: true,
     // Render ```gherkin fences as structured scenarios and warn on imperative steps
     // (silence a step with @dk:allow=imperative). Fences only: no generated feature
     // pages — the contracts/charter/scenarios/*.feature pipeline is a separate choice.
     gherkin: { fences: true, lint: { imperativeSteps: true } },
-    // Label a section's index entry that repeats the group label (since doc-kitty 0.4.0).
-    sidebar: { indexLabel: 'Overview' },
+    // Link each generated group's title to its index page (since 0.7.0); groups
+    // and metadata blocks keep their default collapsed behaviour.
+    sidebar: { titleIsIndex: true },
     // Starlight escape hatch: show a clickable anchor on every heading (since 0.4.0).
     starlight: { markdown: { headingLinks: true } },
     // The charter contract as API reference pages at <base>/reference/api/main/, with the raw file and its
@@ -51,6 +55,8 @@ export default defineConfig({
       renderer: starlightOpenAPI,
       section: 'reference/api',
       specs: [{ path: 'openapi/charter-openapi.yaml', label: 'main', released: false }],
+      // List each operation below its contract version in llms.txt (since 0.7.0).
+      llmsOperations: true,
     },
     // MUST match the loader in src/content.config.ts.
     indexBasename: ['README'],

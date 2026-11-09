@@ -2,7 +2,7 @@
 title: Building the docsite
 description: How the docs/ tree becomes a doc-kitty site — building and checking it locally, what the CI workflow runs, and the one-time GitHub settings it needs.
 doc_status: active
-updated: 2026-11-08T00:00:00Z
+updated: 2026-11-09T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -17,7 +17,7 @@ audience:
 # Building the docsite
 
 The `docs/` tree is rendered by [doc-kitty](https://github.com/spec-kitty/doc-kitty)'s
-published toolkit, `@spec-kitty/doc-toolkit` (pinned to `0.5.0`, which builds on Astro 7 and
+published toolkit, `@spec-kitty/doc-toolkit` (pinned to `0.7.0`, which builds on Astro 7 and
 Starlight 0.42). The Astro project that does it lives in `site/`; it owns no content and
 reads `../docs` directly.
 
@@ -66,6 +66,19 @@ Diagrams render at build time. A local `npm run build` renders no diagrams unles
 `site/.npmrc` maps the `@spec-kitty` scope to GitHub Packages and every other package to the
 public npm registry. It holds no secret. Because the registry is set there, a default
 registry in your own `~/.npmrc` (a company proxy, for example) does not apply to this site.
+
+## Site chrome and machine-readable surfaces
+
+Each generated sidebar group's title links to its index page, and top-level sections show the
+Font Awesome icons declared in `docs/_meta/sections.yaml`. Sidebar groups and page metadata
+blocks start collapsed by default. Authored, published pages link to their source file on
+GitHub and to their JSON, OKF and Atom representations.
+
+`llms.txt` lists every operation in the charter OpenAPI contract and advertises the generic
+`doc-kitty-mcp --site …` command. That MCP server is a client-side stdio process that reads the
+published artifacts; the docsite neither deploys nor requires a separate MCP service. The
+`main` contract is unreleased, so its OpenAPI pages are built and included in agent surfaces
+but omitted from the sitemap and search.
 
 ## Writing links
 

@@ -110,7 +110,7 @@ jobs:
       !cancelled() && !contains(needs.*.result, 'failure')
       && (needs.service.result == 'success' || needs.javadoc.result == 'success')
     runs-on: ubuntu-24.04
-    # Diagrams render at build time (DocKitty 0.6.0): Mermaid through Chromium, PlantUML through the
+    # Diagrams render at build time (DocKitty 0.7.0): Mermaid through Chromium, PlantUML through the
     # self-hosted service below. The Playwright image carries Chromium and its OS libraries, so there is
     # no `playwright install` step. Pinned by the multi-arch index digest, resolved on 2026-11-02 with
     #   docker buildx imagetools inspect mcr.microsoft.com/playwright:v1.62.1-noble
@@ -121,7 +121,7 @@ jobs:
       options: --ipc=host --init
     services:
       plantuml:
-        # Pinned by the multi-arch index digest of jetty-v1.2026.9 (the same as DocKitty v0.6.0 deploy.yml).
+        # Pinned by the multi-arch index digest of jetty-v1.2026.9 (the same as DocKitty v0.7.0 deploy.yml).
         # In a container job the service is reached by name; no port mapping is needed.
         image: plantuml/plantuml-server:jetty-v1.2026.9@sha256:065c66adc6728ba6dd353a29d4ada73f8358b68549a0f710c4bf46b43c103618
         # SANDBOX: PlantUML refuses every URL read, so a diagram cannot reach the network.
@@ -150,7 +150,7 @@ jobs:
       - name: Set up Node 22 with the GitHub Packages registry
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          # doc-kitty 0.6.0 (Astro 7) requires Node 22.22+.
+          # doc-kitty 0.7.0 (Astro 7) requires Node 22.22+.
           node-version: 22.22
           registry-url: https://npm.pkg.github.com
           scope: '@spec-kitty'
@@ -202,10 +202,10 @@ jobs:
         with:
           # A container job's workspace is /__w/..., not the host path; the cache action maps it itself.
           path: .dk-diagram-cache
-          # Bump the 0.6.0 in the key and restore-keys together with the @spec-kitty/doc-toolkit pin in site/package.json.
-          key: dk-diagram-0.6.0-${{ hashFiles('docs/**/*.md') }}
+          # Bump the 0.7.0 in the key and restore-keys together with the @spec-kitty/doc-toolkit pin in site/package.json.
+          key: dk-diagram-0.7.0-${{ hashFiles('docs/**/*.md') }}
           restore-keys: |
-            dk-diagram-0.6.0-
+            dk-diagram-0.7.0-
       - name: Generate the changelog and ADR indexes
         # The hubs commit an empty generated block; no pull request edits them (ADR-0047).
         # Fails when an entry lacks the frontmatter its index line needs.
