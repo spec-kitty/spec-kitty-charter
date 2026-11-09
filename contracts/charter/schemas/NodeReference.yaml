@@ -1,0 +1,37 @@
+title: NodeReference
+description: >-
+  One node of the graph, by kind and id, when the node may not be an activatable artifact: a step of a mission type
+  (kind action, id <missionType>/<step>) is one. It is closed to the authored kinds of NodeKind, so a guard or a
+  lifecycle cannot be named. The id admits the slash of a step. Reuse rule: use ArtifactReference for an artifact an
+  activation can select or deny (kind from ActivatableKind, id an ArtifactId), NodeReference for a node that may not be
+  activatable, and Urn for the identity of a graph node. A schema that names a node that may be a step reuses this
+  one and never defines a second copy.
+type: object
+additionalProperties: false
+required:
+- kind
+- id
+properties:
+  kind:
+    allOf:
+    - $ref: NodeKind.yaml
+    description: The node's kind.
+    x-derived:
+      rule: The kind of the node the read reached.
+      inputs:
+      - schemas/ActivationConfig.yaml
+  id:
+    type: string
+    minLength: 1
+    maxLength: 256
+    pattern: ^[A-Za-z0-9][A-Za-z0-9_./-]*$
+    description: >-
+      The node's id, the tail of its URN: a declared artifact id, or <missionType>/<step> for an action.
+    x-derived:
+      rule: The id of the node the read reached.
+      inputs:
+      - schemas/ActivationConfig.yaml
+x-derived:
+  rule: The kind and id of a node the read reached.
+  inputs:
+  - schemas/ActivationConfig.yaml

@@ -52,6 +52,7 @@ files:
   - EffectiveGraphNode.yaml
   - ExclusionRequest.yaml
   - LanguageToken.yaml
+  - NodeReference.yaml
   - PackPin.yaml
   - PresetApplication.yaml
   - SelectedArtifacts.yaml

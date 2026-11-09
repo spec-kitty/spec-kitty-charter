@@ -30,6 +30,7 @@ import ai.speckitty.charter.api.model.Activation;
 import ai.speckitty.charter.api.model.ActivationSkippedReport;
 import ai.speckitty.charter.api.model.ArtifactReference;
 import ai.speckitty.charter.api.model.EffectiveArtifactList;
+import ai.speckitty.charter.api.model.NodeReference;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import java.util.List;
@@ -283,8 +284,8 @@ class EffectiveReadMapperTest {
             assertThat(entry.getArtifactId()).isEqualTo("t");
             assertThat(entry.getTargets())
                     .containsExactly(
-                            new ArtifactReference(ArtifactReference.KindEnum.DIRECTIVE, "A"),
-                            new ArtifactReference(ArtifactReference.KindEnum.DIRECTIVE, "B"));
+                            new NodeReference(NodeReference.KindEnum.DIRECTIVE, "A"),
+                            new NodeReference(NodeReference.KindEnum.DIRECTIVE, "B"));
         });
         assertThat(report.getOverrideNotApplied()).singleElement().satisfies(entry -> {
             assertThat(entry.getArtifactId()).isEqualTo("A");

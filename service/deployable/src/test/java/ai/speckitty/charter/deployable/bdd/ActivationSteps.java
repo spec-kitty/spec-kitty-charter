@@ -184,7 +184,8 @@ public class ActivationSteps {
                     item.isString()
                             ? item.asString()
                             : item.path("kind").asString() + ":"
-                                    + item.path("artifactId").asString());
+                                    + item.path(item.has("id") ? "id" : "artifactId")
+                                            .asString());
         }
         assertThat(held)
                 .as("the ids of %s", pointer)

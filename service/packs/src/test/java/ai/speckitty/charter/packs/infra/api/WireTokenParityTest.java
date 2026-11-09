@@ -14,6 +14,7 @@ import ai.speckitty.charter.api.model.EffectiveArtifact;
 import ai.speckitty.charter.api.model.EffectiveGraphNode;
 import ai.speckitty.charter.api.model.EnhancerWithoutTarget;
 import ai.speckitty.charter.api.model.Link;
+import ai.speckitty.charter.api.model.NodeReference;
 import ai.speckitty.charter.api.model.OfferingPack;
 import ai.speckitty.charter.api.model.OverriddenArtifact;
 import ai.speckitty.charter.api.model.RequiredNotInForce;
@@ -160,6 +161,13 @@ class WireTokenParityTest {
                         ACTIVATABLE,
                         values(OverriddenArtifact.KindEnum.values(), OverriddenArtifact.KindEnum::getValue),
                         OverriddenArtifact.KindEnum::fromValue),
+                // NodeReference.kind is a copy of NodeKind the generator inlines; the targets of an enhancer without a
+                // target in force are the one place it reaches the wire before the graph is served.
+                new Pair(
+                        "NodeReference.kind (NodeKind)",
+                        AUTHORED_NODE_KINDS,
+                        values(NodeReference.KindEnum.values(), NodeReference.KindEnum::getValue),
+                        NodeReference.KindEnum::fromValue),
                 new Pair(
                         "SelectedArtifacts members",
                         ACTIVATABLE,

@@ -15,6 +15,7 @@ import ai.speckitty.charter.api.model.EffectiveArtifactList;
 import ai.speckitty.charter.api.model.EffectiveArtifactSuggestion;
 import ai.speckitty.charter.api.model.EnhancerWithoutTarget;
 import ai.speckitty.charter.api.model.Link;
+import ai.speckitty.charter.api.model.NodeReference;
 import ai.speckitty.charter.api.model.OverriddenArtifact;
 import ai.speckitty.charter.api.model.PackPin;
 import ai.speckitty.charter.api.model.PageInfo;
@@ -168,7 +169,7 @@ public class EffectiveReadMapper {
                         EnhancerWithoutTarget.KindEnum.fromValue(
                                 entry.ref().kind().token()),
                         entry.ref().id(),
-                        ActivationChangeMapper.references(entry.targets())))
+                        entry.targets().stream().map(EffectiveReadMapper::node).toList()))
                 .toList());
         wire.setPinNotHeld(report.pinNotHeld().stream()
                 .map(pin -> new PackPin(pin.packId()).version(pin.version()))
@@ -181,6 +182,11 @@ public class EffectiveReadMapper {
                         RequiredNotInForce.ReasonEnum.fromValue(entry.reason().token())))
                 .toList());
         return wire;
+    }
+
+    /** A node of the enhancer's targets as the wire spells it: a kind of NodeKind and an id. */
+    private static NodeReference node(ArtifactRef ref) {
+        return new NodeReference(NodeReference.KindEnum.fromValue(ref.kind().token()), ref.id());
     }
 
     private static OverriddenArtifact overridden(ArtifactRef ref, ArtifactRef by) {
