@@ -73,17 +73,23 @@ Implementation command:
 
 ## Scope added by operator rulings (2026-11-09)
 
-- **The rules page (T165).** E6 is amended to the ruled meaning (OD-6): a selected step enhancer is in force exactly
+- **The rules page (T165).** E6 is amended to the ruled meaning (OD-6): a selected step enhancer is grounded exactly
   when the mission type of its single `enhances` target is in force; otherwise it is pruned with
-  `mission_type_not_in_force` as its reason (`composition-and-activation-rules.md`, E6, around line 798, and its
+  `mission_type_not_in_force` as its reason (`composition-and-activation-rules.md`, E6, near line 787, and its
   status row). E14 and C31 say the floor holds activatable kinds only, so `requiredNotInForce` never names a step
   (D16). E15 and E16 state the node predicate (`Eff` plus held steps of mission types in `Eff`, WP27) and the OD-9
-  step predicate.
-- **Divergences.** D16 (`requiredNotInForce` covers activatable kinds); the graph and the context leave out kinds with
-  no activation state (template, asset, guard, lifecycle), and so do `layerOverrides`; the step enhancer's binding
-  (OD-6) if core differs.
-- **Explicit rulings, never accidental order.** Wherever the docs describe a contest, winner or tie, say that it is
-  settled by an explicit ruling or refused, never by closure, iteration or list order (C15 at the #427 landing).
+  step predicate. Each amended rule cites the test that pins it (the `InForceResolutionTest` OD-6 cases,
+  `StepHoldingTest`, `ClosureViewTest`, `ClosureViewSessionStepRefsTest`), so the docs cannot pass on wording alone.
+- **Divergences.** D16 (`requiredNotInForce` covers activatable kinds); the effective reads leave out kinds that are not
+  activatable (template, asset, guard, lifecycle) even when a lock puts one in force inside `packs`, and so do
+  `layerOverrides`; the step enhancer's binding (OD-6) and the unheld-target case if core differs. Take the next free
+  DIV numbers after checking `main` and the step-enhancements mission's branch (it has claimed DIV-238).
+- **Explicit rulings, never accidental order (T165).** Sweep `composition-and-activation-rules.md`,
+  `resolution-model.md`, `offering-and-activation.md`, `logical-model.md` and ADR-0063: each sentence that describes a
+  contest, a winner or a tie cites the ruling that settles it or the refusal (C15 at the #427 landing; the A1 floor's
+  within-level rule cites decision `01M6ZCXAJ9MTTF9XJSR89F3NYG`). Acceptance: a list of the sentences checked, in the
+  hand-off note. The smallest-URN tie of `satisfiedBy`/`overriddenBy` (PR B) is documented as found and tracked as a
+  follow-up for an operator ruling, not changed here.
 
 ## Context
 
@@ -107,11 +113,12 @@ These files are owned by another WP (the no-overlap rule) but this WP must make 
 - `contracts/charter/paths/activations_activationId_exclusions_kind_artifactId.yaml` — description of the deactivate (owned by WP01)
 - `contracts/charter/schemas/CharterRefusalCode.yaml` — `artifact_required` text (owned by WP11)
 - `docs/adr/0059-switch-gate-cascade-edges-and-activation-rulings.md` — amendment R6 (owned by WP09)
-- `docs/conformance/divergence-register.md` — DIV-204 (owned by WP09)
+- `docs/conformance/divergence-register.md` and `docs/conformance/divergences.yaml` — DIV-204 and the new PR C entries (owned by WP09)
 - `docs/architecture/offering-and-activation.md` — the graph and the context (owned by WP26)
 - `docs/conformance/ruleset-scenario-trace.md` — fill the PR C rows and mark the trace complete (owned by WP09)
-
-- `docs/architecture/composition-and-activation-rules.md` — E6 (OD-6), E14/C31 (D16), E15/E16 node and step predicates, status rows (owned by WP09)
+- `docs/architecture/composition-and-activation-rules.md` — E6 (OD-6), E14/C31 (D16), E15/E16 node and step predicates, status rows, the order sweep (owned by WP09)
+- `docs/architecture/resolution-model.md` — the order sweep (owned by WP26)
+- `docs/adr/0063-pack-mutability-policy-file.md` — the order sweep, only if a sentence needs its ruling cited (owned by WP09)
 
 ## Project constraints (apply to every subtask)
 

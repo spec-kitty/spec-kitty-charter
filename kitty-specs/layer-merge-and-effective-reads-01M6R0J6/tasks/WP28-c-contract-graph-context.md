@@ -13,6 +13,7 @@ requirement_refs:
 - SC-001
 - SC-002
 - FR-017
+- FR-015
 planning_base_branch: issue-10-layer-merge-effective-reads
 merge_target_branch: issue-10-layer-merge-effective-reads
 branch_strategy: Planning artifacts for this mission were generated on issue-10-layer-merge-effective-reads. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-10-layer-merge-effective-reads unless the human explicitly redirects the landing branch.
@@ -101,13 +102,31 @@ mission reuses it and never defines a second copy.
   (the policy and preset schemas exclude `action`), so the floor holds activatable kinds only by construction. A
   test pins that `requiredNotInForce` never carries a step; WP29 writes the sentence into E14 and C31 and the
   divergence entry.
-- **D4b, the activations half (T164).** `EffectiveSkippedReport.RequiredNotInForce.reason` is narrowed to the
-  two-value type WP27 introduces (mapped, not by name); `ActivationWireTokenParityTest`'s `RequiredNotInForce.reason`
-  row pins the contract against that type instead of the `PRUNING_REASONS` copy of `InForceResolution`'s condition.
-- **`LayerOverride` (T138).** `artifact` is a `Urn`, so any kind can be named; the records follow the node predicate
-  (WP27): a held step's override under an in-force `M` is listed, while template, asset, guard and lifecycle
-  overrides are not (they are never in force). `ClosureViewSession.overridesOf` keeps step overrides for the graph;
-  WP29 records the drop of the other kinds as a divergence.
+- **D4b, the activations half (T164).** `activations` gets its own two-value enum behind
+  `EffectiveSkippedReport.RequiredNotInForce.reason` (never the packs type: `HexagonalArchitectureTest`), mapped in
+  `ClosureViewSession` by an exhaustive switch, not by name. `ActivationWireTokenParityTest`'s row reads the record
+  component's enum type by reflection and drops the `PRUNING_REASONS` copy; red first (the row fails against the
+  ten-value `Reason`).
+- **#429 tests that can fail (T163).** The production-shaped source of a step target is WP27's unheld-target step
+  enhancement: `enhancedTargetNotInForce` then lists `targets: [{kind: action, id: M/s}]`. D16 is pinned by its
+  reason: a parity assertion that the policy and preset kind enums exclude `action`, plus a `ClosureViewSession` unit
+  test that feeds an `InForceStates` with a step in `requiredNotInForce` and asserts the explicit, documented drop.
+  Every other part gets a case stating its answer for a step: one per `activatable(` call site in `ClosureViewSession`
+  (14 at `main` `5458e1fa`: winners, languages, edges, versions, layer overrides, states, enhancer targets,
+  `satisfiedBy`, `overriddenBy`, deny, override-not-applied, `requiredNotInForce`, `requiredNotHeld`, lists).
+- **`NodeReference` fragment and reuse (T162).** The `### Breaking` fragment names every carrier of `SkippedReport`,
+  the writes included (`ActivationChange.skipped`), the `artifactId` → `id` rename and the widened `kind`
+  (`ActivatableKind` → `NodeKind`). The schema description states the reuse rule: `ArtifactReference` for activatable
+  artifacts, `NodeReference` for a node that may not be activatable, `Urn` for graph identities. `NodeKind.yaml` lists
+  the authored kinds only (no guard or lifecycle); no carrier of `NodeReference` can name those. The Java value is
+  `activations.domain.NodeRef(NodeKind kind, String id)`, the one the step-enhancements mission reuses.
+- **`LayerOverride` and the graph (T138, T140).** `EffectiveGraph.layerOverrides` (required) and the changed
+  `EffectiveActionContext.skipped` are `### Breaking` (PR B precedent: a new member on a closed response of an
+  operation on the contract, though it answered `501`); the new schemas are `### Added`. A unit test in
+  `ClosureViewSessionStepRefsTest` and a US5 scenario pin that a held step's override is listed and that template,
+  asset, guard and lifecycle overrides are not.
+- **Tags (T140, T141).** The graph and the context each get their own `EffectiveTag` (the representation in the
+  preimage, over `closureFingerprint()`); a test shows the two tags differ and a closure-level change moves both.
 
 ## Context
 
@@ -133,12 +152,16 @@ These files are owned by another WP (the no-overlap rule) but this WP must make 
 - `service/deployable/src/test/java/ai/speckitty/charter/deployable/bdd/ReservedOperationCoverageTest.java` — 2 → 0 with one bad-fixture control (owned by WP22)
 - `service/deployable/src/test/java/ai/speckitty/charter/deployable/ReservedRefusalCodesTest.java` — `ACTION_NOT_FOUND` moves from the unraised to the raised set (owned by WP11)
 - `contracts/charter/examples/EffectiveActionContext.implement.yaml` — the `skipped` member of the context (owned by WP22)
-
 - `contracts/charter/schemas/EnhancerWithoutTarget.yaml` — `targets` items become `NodeReference`, `minItems: 1` (#429, D15) (owned by WP22)
 - `service/activations/src/main/java/ai/speckitty/charter/activations/domain/EffectiveSkippedReport.java` — enhancer targets as node references; `RequiredNotInForce.reason` narrowed (D4b) (owned by WP24)
 - `service/activations/src/main/java/ai/speckitty/charter/activations/infra/api/EffectiveReadMapper.java` — map `NodeReference` (owned by WP25)
 - `service/activations/src/test/java/ai/speckitty/charter/activations/infra/api/ActivationWireTokenParityTest.java` — the `RequiredNotInForce.reason` row against the narrowed type (D4b; from #436, not owned by a WP)
-- `client-java` fixtures and the generated-model tests that pin `EnhancerWithoutTarget` — follow the schema change
+- `client-java/src/test/java/ai/speckitty/charter/client/CascadeDepthRoundTripTest.java` — follows the `NodeReference` change (unowned)
+- `contracts/charter/examples/ActivationSkippedReport.each-bucket.yaml`, `ActivationSkippedReport.nothing-skipped.yaml`, `ActivationChange.selected.yaml` — targets as `NodeReference` (owned by WP22)
+- `contracts/charter/schemas/SkippedReport.yaml` — `enhancedTargetNotInForce` and `requiredNotInForce` descriptions (#429, D16) (owned by WP22)
+- `service/activations/src/main/java/ai/speckitty/charter/activations/domain/MergedSnapshot.java` — layer overrides of held steps (owned by WP24)
+- `service/activations/src/main/java/ai/speckitty/charter/activations/domain/EffectiveSet.java` — the conditional entries of the context through the existing suggestion carrier (owned by WP24)
+- `service/activations/src/test/java/ai/speckitty/charter/activations/infra/api/EffectiveReadMapperTest.java`, `service/activations/src/test/java/ai/speckitty/charter/activations/domain/EffectiveSetTest.java` — follow `NodeReference` (owned by WP25, WP24)
 
 ## Project constraints (apply to every subtask)
 
@@ -215,7 +238,7 @@ Contract lint, the new feature file, `ReservedOperationCoverageTest`, controller
 
 - Every subtask above is done, and recorded with `spec-kitty agent tasks mark-status <Txxx> --status done`.
 - The tests and scenarios named above were seen failing first (an assertion failure with every step bound, decision `DM-01M6RN6GC7PJS8BGHMAYM4JSSW`) and now pass.
-- **Exit check:** the contract suite passes; `ReservedOperationCoverageTest` counts 0 with its bad-fixture control; `ReservedRefusalCodesTest` passes with `action_not_found` raised.
+- **Exit check:** the contract suite, `:activations:test` and `:client-java:test` pass; `ReservedOperationCoverageTest` counts 0 with its bad-fixture control; `ReservedRefusalCodesTest` passes with `action_not_found` raised; `ClosureViewSessionStepRefsTest` and the re-pinned `ActivationWireTokenParityTest` row were red first.
 - No disabled test, no new suppression, `HexagonalArchitectureTest` green, Checkstyle limits met.
 - Changes stay inside `owned_files`, plus the shared-file edits listed above with their rationale.
 

@@ -828,7 +828,7 @@ A → B → C.
 
 ### PR C scope added by operator rulings (2026-11-09)
 
-The step-enhancements mission (`adr-0066-step-enhancement-service-alignment-01M6ZRYK`) depends on PR C. Its plan point
+Phase 2 (#438) of the step-enhancements mission (`adr-0066-step-enhancement-service-alignment-01M6ZRYK`) depends on PR C. Its plan point
 ruled (plan "Operator decisions (plan point, 2026-11-09): ruled"; relayed on #429) that these land here:
 
 - **#429 (D3, D4(a), D15, D16).** A new `NodeReference {kind: NodeKind, id}` types `EnhancerWithoutTarget.targets`
@@ -844,11 +844,16 @@ ruled (plan "Operator decisions (plan point, 2026-11-09): ruled"; relayed on #42
   IC-10, WP27.
 - **D4b (#436).** The Java type behind `RequiredNotInForce.reason` is narrowed to the two pruning reasons, in both
   slices, and the parity row pins the contract to it. WP27 and WP28.
-- **The node predicate of E15 and E16 (runner decision).** `Eff` never holds a step, so the graph and the walk use
-  `Eff` plus each held step whose mission type is in `Eff`. Kinds with no activation state are left out, and so are
-  their layer overrides (a divergence entry).
+- **The node predicate of E15 and E16 (runner decision, amended at the plan-point squad).** `Eff` never holds a step:
+  the walk starts at a held step whose mission type is in `Eff` and lists and walks through `Eff` only; the graph's
+  nodes are `Eff` plus those held steps. Built in `packs` from the in-force states. Kinds that are not activatable are
+  absent from the effective reads, and so are their layer overrides (a divergence entry).
+- **OD-6 scope (squad).** Only a `step_enhancement` with exactly one `enhances` target, an `action:`; a held target
+  binds it to `M`, an unheld target prunes it with `ENHANCED_TARGET_NOT_IN_FORCE`; every other shape keeps E6.
+- **OD-9 forms (squad).** Per pack (the operator's wording) and on the closure (some pack holds it; the place is the
+  merged winner, so a layer override of a held step counts).
 
-The other mission's boundary (its C-004): it edits no PR C-owned file and rebases after PR C merges; the PR C symbols
+The other mission's boundary (the other mission's C-004, not this spec's C-004): it edits no PR C-owned file and rebases after PR C merges; the PR C symbols
 it consumes (`NodeReference`, `StepHolding`, the action-context walk and name checks, `ACTION_NOT_FOUND`, the OD-6
 reason) stay stable once reviewed.
 
