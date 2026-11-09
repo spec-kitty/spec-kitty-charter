@@ -176,13 +176,13 @@
     },
     {
       "criterion_id": "FR-018",
-      "description": "Verify FR-018 is satisfied",
+      "description": "getEffectiveGraph answers only the edges among artifacts in force (an edge is dropped with either endpoint), resolved through layer overrides, with the list of layer overrides applied (artifact, winning level, losing level).",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "contracts/charter/scenarios/effective-graph-and-context.feature: \"US5 AS1 - an edge whose endpoint is not in force is absent from the graph\"; service/packs/src/test/java/ai/speckitty/charter/packs/application/GraphProjectionTest.java#anEdgeIsDroppedWithEitherEndpoint",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:46:12.676882+00:00",
+      "notes": "PR C (#448, WP27/WP28). Override listing: 'US5 AS2 - the edge from an overridden version is gone...'."
     },
     {
       "criterion_id": "FR-019",
