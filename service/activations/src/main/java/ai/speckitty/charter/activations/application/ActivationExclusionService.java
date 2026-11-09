@@ -113,6 +113,7 @@ public class ActivationExclusionService {
             Set<ArtifactRef> floor = floorOf(snapshot);
             Reach others = ActivationWrites.walk(session, CascadeRules.planShared(before, target, scope, own, floor));
             ActivationChange change = CascadeRules.applyDeactivate(before, target, scope, depth, own, others, floor);
+            refuseFloor(change.after(), target, session);
             return writes.commit(loaded, change, session);
         });
     }
@@ -151,13 +152,14 @@ public class ActivationExclusionService {
      * with the entry removed is the {@code before}), so the refusal names exactly the packs that lock or require it.
      * A deny entry stored earlier, for an override that is gone or for an artifact a pack upgrade has since locked,
      * is therefore refused again. A required target is accepted when an active override of it satisfies the
-     * requirement (IC-13); the document the write stores, with its cascade, is judged again by
-     * {@link ActivationWrites#commit}.
+     * requirement (IC-13). It is asked twice: of the stored document before the walk, which refuses a target on the
+     * floor cheaply, and of the document the cascade computes, whose unselected overrides may leave a stored deny entry
+     * unsatisfied ({@link ActivationWrites#commit} judges only the entries a write adds, and this one is not added).
      */
-    private static void refuseFloor(ActivationDocument before, ArtifactRef target, PacksSession session) {
+    private static void refuseFloor(ActivationDocument judged, ArtifactRef target, PacksSession session) {
         DocumentRules.checkWrite(
-                        before.withoutDeny(target.kind(), target.id()),
-                        before.withDeny(target.kind(), target.id()),
+                        judged.withoutDeny(target.kind(), target.id()),
+                        judged.withDeny(target.kind(), target.id()),
                         session.snapshot(),
                         session::inForce)
                 .filter(refusal -> refusal.violations().isEmpty())

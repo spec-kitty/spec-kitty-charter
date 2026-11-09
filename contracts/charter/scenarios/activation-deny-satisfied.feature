@@ -126,6 +126,9 @@ Feature: A deny entry on a required artifact is accepted when an active override
       - source: tactic:e
         target: directive:T
         relation: enhances
+      - source: directive:T
+        target: directive:F
+        relation: suggests
       """
 
   Scenario: IC-13 - deactivating a required T with an active override of it is 200 and the deny entry is applied
@@ -364,6 +367,31 @@ Feature: A deny entry on a required artifact is accepted when an active override
     Then the response status is 409
     And the problem code is "artifact_required"
     And the field at "/requiredBy/0/packId" is "main"
+
+  Scenario: IC-13 - deactivating T again with a cascade that unselects its override is 409 artifact_required
+    R12, F1: T suggests F, so the cascade of a deactivate of T unselects F, the only override that satisfied T. T's deny
+    entry is already stored (accepted for F's sake), so the write adds no deny entry, but the document it would store
+    leaves T required and unsatisfied: the answer is the 409 artifact_required that the same request answers when T is
+    not yet denied, and the revision is unchanged.
+    Given the activation "a-1" holds:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "main"}], "selected": {"directive": ["F"]}}
+      """
+    When I PUT "/activations/a-1/exclusions/directive/T" with the stored ETag and the body:
+      """
+      {}
+      """
+    Then the response status is 200
+    When I remember the ETag
+    And I remember the stored file of the activation "a-1"
+    And I PUT "/activations/a-1/exclusions/directive/T" with the remembered ETag and the body:
+      """
+      {"cascade": ["directive"]}
+      """
+    Then the response status is 409
+    And the problem code is "artifact_required"
+    And the field at "/requiredBy/0/packId" is "main"
+    And the stored file of the activation "a-1" is the remembered one
 
   Scenario: IC-13 - a merge refusal reaches a write that adds a deny entry on a required artifact
     ADR-0063 D3, C21; the write consults the merged closure for a deny entry on a required artifact only. core

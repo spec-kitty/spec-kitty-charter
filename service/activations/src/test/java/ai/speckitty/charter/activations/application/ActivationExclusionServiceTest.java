@@ -7,6 +7,10 @@ import ai.speckitty.charter.activations.domain.ActivationDocument;
 import ai.speckitty.charter.activations.domain.ActivationId;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.ClosureSnapshots;
+import ai.speckitty.charter.activations.domain.EffectiveSet.Reason;
+import ai.speckitty.charter.activations.domain.EffectiveSet.State;
+import ai.speckitty.charter.activations.domain.MergedSnapshot.ArtifactState;
+import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
 import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
@@ -40,6 +44,8 @@ class ActivationExclusionServiceTest {
     private static final ArtifactRef T2 = new ArtifactRef(ArtifactKind.TACTIC, "t2");
     private static final ArtifactRef T3 = new ArtifactRef(ArtifactKind.TACTIC, "t3");
     private static final ArtifactRef E2 = new ArtifactRef(ArtifactKind.TACTIC, "e2");
+    private static final ArtifactRef RQ = new ArtifactRef(ArtifactKind.DIRECTIVE, "RQ");
+    private static final ArtifactRef F = new ArtifactRef(ArtifactKind.DIRECTIVE, "F");
     private static final Optional<List<String>> ALL = Optional.of(List.of("all"));
 
     private final CountingRepository repository = new CountingRepository();
@@ -50,7 +56,7 @@ class ActivationExclusionServiceTest {
     void setUp() {
         packs = new FakeAvailablePacks(ClosureSnapshots.snapshot()
                 .pack("main", "1.0.0")
-                .held(ArtifactKind.DIRECTIVE, "D", "D2", "LK", "RQ")
+                .held(ArtifactKind.DIRECTIVE, "D", "D2", "LK", "RQ", "F")
                 .held(ArtifactKind.TACTIC, "t", "t2", "t3", "e2")
                 .held(ArtifactKind.MISSION_TYPE, "research", "mt-lk", "mt-rq")
                 .lockedBy("directive:LK", "main")
@@ -72,7 +78,9 @@ class ActivationExclusionServiceTest {
             D2,
             List.of(new Reach.Via(T2, RelationType.REQUIRES)),
             E2,
-            List.of(new Reach.Via(T3, RelationType.ENHANCES)));
+            List.of(new Reach.Via(T3, RelationType.ENHANCES)),
+            RQ,
+            List.of(new Reach.Via(F, RelationType.SUGGESTS)));
 
     private StoredActivation stored(ActivationDocument.Builder builder) {
         return repository
@@ -154,6 +162,45 @@ class ActivationExclusionServiceTest {
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_REQUIRED));
         assertThat(packs.walked()).isEmpty();
         assertThat(repository.replaces()).isZero();
+        assertThat(repository.find(ID).orElseThrow().revision()).isEqualTo(before.revision());
+    }
+
+    @Test
+    void aStoredDenyEntryIsJudgedAgainstTheDocumentTheCascadeComputes() {
+        // RQ is required, F overrides it and is selected, and RQ suggests F. RQ's entry was accepted for F's sake. The
+        // facts answer "satisfied" only for a document that selects F, as the resolution does.
+        packs.resolves(query -> query.selected().contains(F)
+                ? new InForceAnswer(
+                        Map.of(
+                                RQ,
+                                new ArtifactState(
+                                        RQ,
+                                        State.INACTIVE,
+                                        Reason.DEACTIVATED,
+                                        true,
+                                        Optional.of(F),
+                                        Optional.empty(),
+                                        Optional.empty())),
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        Map.of())
+                : InForceAnswer.empty());
+        StoredActivation before = stored(ActivationDocument.builder()
+                .selected(ArtifactKind.DIRECTIVE, List.of("F"))
+                .deactivated(ArtifactKind.DIRECTIVE, List.of("RQ")));
+
+        service.deactivate(ID, "directive", "RQ", Optional.empty(), List.of(), quoted(before));
+        assertThat(now().selected(ArtifactKind.DIRECTIVE).orElseThrow())
+                .as("without a cascade F stays selected and satisfies RQ")
+                .containsExactly("F");
+        assertThatThrownBy(() -> service.deactivate(ID, "directive", "RQ", ALL, List.of(), quoted(before)))
+                .as("the cascade unselects F, so the document it computes leaves RQ unsatisfied")
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_REQUIRED));
         assertThat(repository.find(ID).orElseThrow().revision()).isEqualTo(before.revision());
     }
 
