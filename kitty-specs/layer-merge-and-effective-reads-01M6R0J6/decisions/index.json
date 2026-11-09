@@ -2113,6 +2113,29 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-09T19:48:56.543353Z",
+      "decision_id": "01M70XPJJZSD54FH54ZVXP7PB7",
+      "final_answer": "Accept with the operator override: record this ruling, leave the CLI refusal on record, and do not alter the status log",
+      "input_key": "acceptance-review-independence-wp17-wp19",
+      "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",
+      "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
+      "opened_by": "claude-lander",
+      "options": [
+        "Accept with the operator override: record this ruling, leave the CLI refusal on record, and do not alter the status log",
+        "Re-review WP17 and WP19 with a recorded independent reviewer before accepting"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Mission acceptance: spec-kitty accept refuses REVIEW_NOT_INDEPENDENT for WP17 and WP19 because each work package's implementer of record is logged as the bare identity claude:: (no model or profile), so the gate cannot confirm that the approving reviewer claude:opus:reviewer-renata was independent. Both approvals cite the operator's independence override of 2026-11-08. Every other acceptance check passes (42/42 matrix criteria pass; failed_checks empty). How is the mission accepted?",
+      "rationale": "Operator ruling 2026-11-09, given in the landing session of PR #448: accept the mission with the review-independence override and update the acceptance matrix. WP17 and WP19 were implemented by claude:sonnet:java-jenny (per their for_review events) and approved by claude:opus:reviewer-renata, under the operator's independence override of 2026-11-08 cited in each approval; the gap is that the implementer of record was logged without model or profile. The acceptance matrix records FR-001..FR-042 as pass with evidence on main 55c7d824; spec-kitty accept --diagnose reports failed_checks empty and only REVIEW_NOT_INDEPENDENT for WP17/WP19. The status log is not rewritten to satisfy the gate; the refusal stays on record. The matrix carries no NFR-001..012, SC-001..005 or FR-043 rows.",
+      "resolved_at": "2026-11-09T19:49:16.656680Z",
+      "resolved_by": "operator",
+      "slot_key": "acceptance-review-independence-wp17-wp19",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",
