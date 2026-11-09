@@ -61,7 +61,7 @@
       "wp": "WP01"
     },
     "#437": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Context only: parallel ADR-0066 phase 1; merge order decides",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -69,7 +69,7 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "not-applicable",
       "wp": null
     },
     "#438": {
