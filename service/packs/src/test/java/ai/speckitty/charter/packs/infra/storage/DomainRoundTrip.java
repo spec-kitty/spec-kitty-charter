@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.DoctrineGraph;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
@@ -41,8 +42,10 @@ import org.jspecify.annotations.Nullable;
  * {@code generated_by}. Nothing here touches {@code Pack} or {@code FilesystemPackStore} directly (#189 owns them).
  *
  * <p>A new artefact is written as {@code <id>.<fileToken>.yaml} at the pack root, wherever its source lived, so source
- * and written files are paired by kind and {@code id}. The modelled artefact kinds are the registry's: a kind joins the
- * gate by binding itself, with no edit here.
+ * and written files are paired by kind and {@code id}. The exception is a kind whose place cannot be derived from its
+ * id ({@link #NOT_PLACED_BY_ID}, the step enhancement, ADR-0066): it is written at the place its source file sat, through
+ * the place-aware save, and paired by kind and {@code id} in subdirectories too. The modelled artefact kinds are the
+ * registry's: a kind joins the gate by binding itself, with no edit here.
  *
  * <p>#193: an asset sidecar is saved like an artefact; asset files and templates are written in place, byte for byte,
  * and paired by path. A sidecar the store refused for a missing payload is refused with the store's exact reason.
@@ -86,6 +89,14 @@ final class DomainRoundTrip implements WholePackRoundTrip {
 
     /** #260: the pack document, {@code pack.md}, a pack-level file: written in place, paired by path. */
     static final String PACK_DOCUMENT = PackDocumentMarkdown.KIND;
+
+    /**
+     * The kinds whose files are not placed by id alone, so a write cannot derive the place from the id: the step
+     * enhancement's type directory is the target step's (A12). They are written at the place their file was read from
+     * in the source pack and paired by that place, in subdirectories too. {@code KindBindingsTest} skips the same set
+     * in its two {@code fileName} loops, and a test holds the two equal.
+     */
+    static final Set<ArtifactKind> NOT_PLACED_BY_ID = Set.of(ArtifactKind.STEP_ENHANCEMENT);
 
     /** The gate kinds of the bound artefact kinds: each binding's schema name, as the census names its files. */
     static final Set<String> ARTEFACT_KINDS =
@@ -134,9 +145,12 @@ final class DomainRoundTrip implements WholePackRoundTrip {
         DomainRepositoryService to = service(name, target);
 
         SortedMap<String, Outcome> outcomes = new TreeMap<>();
+        SortedMap<String, WholePackCensus.CompanionFile> companions = WholePackCensus.companionsOf(source);
+        Map<String, @Nullable String> sourceIds = sourceIds(source, kindOf, companions.keySet());
         Loaded loaded = load(from, id);
         @Nullable Pack pack = loaded.pack();
-        @Nullable String descriptorFailure = writeAll(from, to, id, pack == null ? null : beforeSave.apply(pack));
+        @Nullable String descriptorFailure =
+                writeAll(from, to, id, pack == null ? null : beforeSave.apply(pack), sourcePlaces(sourceIds, kindOf));
         Map<String, List<String>> refusals = pack == null ? Map.of() : byFile(pack.violations(), "");
         @Nullable String assemblyFailure = loaded.failure();
         Loaded reloaded = descriptorFailure == null ? load(to, id) : new Loaded(null, "nothing was written");
@@ -144,8 +158,6 @@ final class DomainRoundTrip implements WholePackRoundTrip {
                 ? Map.of(READ_BACK_FAILED, List.of("read-back: the written pack does not load: " + reloaded.failure()))
                 : byFile(reloaded.pack().violations(), "read-back: ");
         Map<String, String> written = writtenByKindAndId(target);
-        SortedMap<String, WholePackCensus.CompanionFile> companions = WholePackCensus.companionsOf(source);
-        Map<String, @Nullable String> sourceIds = sourceIds(source, kindOf, companions.keySet());
         Map<String, List<String>> missingPayloads = pack == null ? Map.of() : missingPayloads(pack);
         kindOf.forEach((path, kind) -> {
             if (companions.containsKey(path)) {
@@ -225,10 +237,16 @@ final class DomainRoundTrip implements WholePackRoundTrip {
      * Writes the descriptor and every artefact of {@code pack} through {@code to}; when the pack did not load, only the
      * descriptor is copied.
      *
+     * @param places the source place of each artefact of a kind in {@link #NOT_PLACED_BY_ID}, keyed
+     *     {@code <gate kind>/<id>}
      * @return why the descriptor could not be read or written, or null when it was written
      */
     private static @Nullable String writeAll(
-            DomainRepositoryService from, DomainRepositoryService to, PackIdentifier id, @Nullable Pack pack) {
+            DomainRepositoryService from,
+            DomainRepositoryService to,
+            PackIdentifier id,
+            @Nullable Pack pack,
+            Map<String, String> places) {
         try {
             if (pack == null) {
                 to.save(id, from.get(id));
@@ -237,7 +255,14 @@ final class DomainRoundTrip implements WholePackRoundTrip {
             to.save(id, pack.descriptor());
             // #193: asset files byte for byte, in place; sidecars and templates are artefacts like any other.
             pack.assetFiles().forEach(file -> to.writeAssetFile(id, file));
-            pack.artifacts().forEach(to::saveArtifact);
+            // A kind not placed by id is written where its source file sat; every other kind at its canonical place.
+            for (CharterArtifact artifact : pack.artifacts()) {
+                if (NOT_PLACED_BY_ID.contains(artifact.kind())) {
+                    to.saveArtifact(id, artifact, placeOf(artifact, places));
+                } else {
+                    to.saveArtifact(artifact);
+                }
+            }
             // #195: presets in place, at presets/<id>.yaml.
             pack.presets().forEach(preset -> to.writePreset(id, preset));
             // #260: the pack document in place, at pack.md.
@@ -246,6 +271,39 @@ final class DomainRoundTrip implements WholePackRoundTrip {
         } catch (CharterRefusal | ConstraintBreachException | IllegalArgumentException refused) {
             return String.valueOf(refused.getMessage());
         }
+    }
+
+    /**
+     * The source place (pack-relative path) of each artefact of a kind in {@link #NOT_PLACED_BY_ID}, keyed
+     * {@code <gate kind>/<id>} as {@link #writtenByKindAndId} keys the written files. Computed from the census before
+     * anything is written.
+     */
+    private static Map<String, String> sourcePlaces(
+            Map<String, @Nullable String> sourceIds, Map<String, String> kindOf) {
+        Map<String, String> places = new HashMap<>();
+        sourceIds.forEach((path, elementId) -> {
+            String kind = kindOf.get(path);
+            if (elementId != null && kind != null && notPlacedById(kind)) {
+                places.putIfAbsent(kind + "/" + elementId, path);
+            }
+        });
+        return places;
+    }
+
+    private static boolean notPlacedById(String gateKind) {
+        return KindBindings.bySchema(gateKind)
+                .map(binding -> NOT_PLACED_BY_ID.contains(binding.kind()))
+                .orElse(false);
+    }
+
+    private static String placeOf(CharterArtifact artifact, Map<String, String> places) {
+        String schema = KindBindings.of(artifact.kind()).orElseThrow().schemaName();
+        @Nullable String place = places.get(schema + "/" + artifact.localId());
+        if (place == null) {
+            throw new IllegalArgumentException(
+                    "no source place for " + artifact.urn() + ": its file is not in the source census");
+        }
+        return place;
     }
 
     private DomainRepositoryService service(String name, Path directory) {
@@ -341,9 +399,9 @@ final class DomainRoundTrip implements WholePackRoundTrip {
      */
     private static Map<String, String> writtenByKindAndId(Path target) {
         Map<String, String> written = new HashMap<>();
-        // A kind placed at its own path (a mission type, ADR-0044) is written below the pack directory; every other
-        // kind
-        // directly in it, so only the former is looked for in subdirectories.
+        // A kind placed at its own path (a mission type, ADR-0044) is written below the pack directory, and so is a
+        // kind written at its source place (NOT_PLACED_BY_ID); every other kind directly in it, so only those two are
+        // looked for in subdirectories.
         try (Stream<Path> files = Files.walk(target)) {
             for (Path file : files.filter(Files::isRegularFile).sorted().toList()) {
                 boolean nested = !target.equals(file.getParent());
@@ -359,7 +417,8 @@ final class DomainRoundTrip implements WholePackRoundTrip {
                 }
                 String token = stem.substring(stem.lastIndexOf('.') + 1);
                 for (KindBinding<?, ?> binding : KindBindings.all()) {
-                    boolean candidate = binding.fileToken().equals(token) && (!nested || binding.placedAtItsFileName());
+                    boolean candidate = binding.fileToken().equals(token)
+                            && (!nested || binding.placedAtItsFileName() || NOT_PLACED_BY_ID.contains(binding.kind()));
                     @Nullable String elementId = candidate ? idOf(read(file), binding.idKey()) : null;
                     if (elementId != null) {
                         written.put(binding.schemaName() + "/" + elementId, fileName);
