@@ -184,6 +184,13 @@ model the reads are built on.
 | T156 | The packs walk honours the bound | WP30 | |
 | T157 | API glue and the client | WP30 | |
 | T158 | ADR-0059 D2 amendment and divergence for the #408 rulings | WP09 | |
+| T159 | One step predicate (OD-9) | WP27 | |
+| T160 | E6 amendment (OD-6) | WP27 | |
+| T161 | Narrow the pruned reason (D4b, packs) | WP27 | |
+| T162 | `NodeReference` (D15) | WP28 | |
+| T163 | Step references in the skipped report (#429) | WP28 | |
+| T164 | Narrow the pruned reason (D4b, activations) | WP28 | |
+| T165 | Rules page and divergences for the 2026-11-09 rulings | WP29 | |
 
 ## Work packages
 
@@ -559,6 +566,9 @@ T134 Graph projection (WP27)
 T135 Action-context walk (WP27)
 T136 Unknown names (WP27)
 T137 One read (WP27)
+T159 One step predicate (OD-9) (WP27)
+T160 E6 amendment (OD-6) (WP27)
+T161 Narrow the pruned reason (D4b, packs) (WP27)
 
 ### WP28 — C · Contract C and the last two reads served
 
@@ -572,6 +582,9 @@ T139 Red scenarios (WP28)
 T140 Serve the graph (WP28)
 T141 Serve the action context (WP28)
 T142 Reservation coverage (WP28)
+T162 `NodeReference` (D15) (WP28)
+T163 Step references in the skipped report (#429) (WP28)
+T164 Narrow the pruned reason (D4b, activations) (WP28)
 
 ### WP29 — C · Deny on a required artifact satisfied by an override, and PR C docs
 
@@ -584,3 +597,4 @@ T143 Contract red first (WP29)
 T144 Red scenarios (WP29)
 T145 The rule (WP29)
 T146 Docs (WP29)
+T165 Rules page and divergences for the 2026-11-09 rulings (WP29)

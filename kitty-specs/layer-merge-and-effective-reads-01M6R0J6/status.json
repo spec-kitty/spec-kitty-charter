@@ -1,13 +1,13 @@
 {
-  "event_count": 288,
-  "last_event_id": "01M6YHHJF7G7YER4GVJTMNWBY0",
-  "materialized_at": "2026-11-08T21:38:00.808049+00:00",
+  "event_count": 316,
+  "last_event_id": "01M70MKZTRMT604C2CJDEAHXN4",
+  "materialized_at": "2026-11-09T17:10:14.616882+00:00",
   "mission_number": "",
   "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
   "mission_type": "",
   "schema_version": 2,
   "summary": {
-    "approved": 27,
+    "approved": 30,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
@@ -15,7 +15,7 @@
     "for_review": 0,
     "in_progress": 0,
     "in_review": 0,
-    "planned": 3
+    "planned": 0
   },
   "work_packages": {
     "WP01": {
@@ -943,25 +943,112 @@
       }
     },
     "WP27": {
-      "actor": "finalize-tasks",
-      "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M6RGA86H0B8YNTP3XKYJWGAQ",
-      "last_transition_at": "2026-11-06T13:21:05.745800+00:00"
+      "actor": "claude",
+      "agent": "claude:opus:reviewer-renata",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 1,
+      "implementer_of_record": "claude:sonnet:java-jenny",
+      "lane": "approved",
+      "last_event_id": "01M708AKPGJY11W53TTNG4SPGX",
+      "last_transition_at": "2026-11-09T13:35:24.368973+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review: T134-T137, T159-T161 and the suggestions addendum (decision 01M7059T4K64TAVKXN3T1FKWYG); hand-off at /tmp/claude-0/wp27-handoff.md",
+        "Cycle 1 fixes: f0ffc9fc..1cf230f5; see /tmp/claude-0/wp27-handoff.md 'Cycle 1 fixes'",
+        "Review cycle 2 approved; two NITs (Javadoc reflow, relation test list) folded at closeout"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "reference": "review-cycle://layer-merge-and-effective-reads-01M6R0J6/WP27-c-graph-and-action-walk/review-cycle-2.md",
+        "reviewer": "claude:opus:reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
+      "subtasks": {
+        "T134": "done",
+        "T135": "done",
+        "T136": "done",
+        "T137": "done",
+        "T159": "done",
+        "T160": "done",
+        "T161": "done"
+      }
     },
     "WP28": {
-      "actor": "finalize-tasks",
-      "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M6RGAAVGPJYPMPGQT11R6YMR",
-      "last_transition_at": "2026-11-06T13:21:08.464600+00:00"
+      "actor": "claude",
+      "agent": "claude:opus:reviewer-renata",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 1,
+      "implementer_of_record": "claude:sonnet:java-jenny",
+      "lane": "approved",
+      "last_event_id": "01M70E2HSM6BEE5WWB1R3EG2ZD",
+      "last_transition_at": "2026-11-09T15:15:51.732200+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review: T138-T142, T162-T164; hand-off /tmp/claude-0/wp28-handoff.md; decision 01M70C42KC78KB9H6KB7TK9224 (enhancements member)",
+        "Cycle 1 fixes 302a475c (red), 0f439309 (fix)",
+        "Review cycle 2 approved; two NITs (requireAction comment reflow, a long description line) folded at closeout"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "reference": "review-cycle://layer-merge-and-effective-reads-01M6R0J6/WP28-c-contract-graph-context/review-cycle-2.md",
+        "reviewer": "claude:opus:reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
+      "subtasks": {
+        "T138": "done",
+        "T139": "done",
+        "T140": "done",
+        "T141": "done",
+        "T142": "done",
+        "T162": "done",
+        "T163": "done",
+        "T164": "done"
+      }
     },
     "WP29": {
-      "actor": "finalize-tasks",
-      "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M6RGADGDN8EBCKP5DYJ57P8V",
-      "last_transition_at": "2026-11-06T13:21:11.181625+00:00"
+      "actor": "claude",
+      "agent": "claude:opus:reviewer-renata",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 1,
+      "implementer_of_record": "claude:sonnet:java-jenny",
+      "lane": "approved",
+      "last_event_id": "01M70MKZTRMT604C2CJDEAHXN4",
+      "last_transition_at": "2026-11-09T17:10:14.616882+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "WP29 implemented: T143-T146, T165; lane-{ head 2ecda553 (planning commit ff0cadbd merged)",
+        "Fix cycle 1: MAJOR-1 fixed red-first, MINOR-1..4 and NIT rewrap",
+        "Review cycle 2 passed: MAJOR-1 fixed red-first; MINOR-5/6 and NIT-1/2 folded at the PR C closeout; issue matrix complete"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/layer-merge-and-effective-reads-01M6R0J6-coord/kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP29-c-deny-satisfied-by-override/review-cycle-2.md",
+        "reference": "review-cycle://layer-merge-and-effective-reads-01M6R0J6/WP29-c-deny-satisfied-by-override/review-cycle-2.md",
+        "reviewer": "claude:opus:reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 18754,
+      "shell_pid_created_at": "1794243268.02",
+      "subtasks": {
+        "T143": "done",
+        "T144": "done",
+        "T145": "done",
+        "T146": "done",
+        "T165": "done"
+      }
     },
     "WP30": {
       "actor": "claude",
