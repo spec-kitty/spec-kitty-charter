@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.domain;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.Urn;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -13,9 +14,10 @@ import java.util.TreeSet;
  * artifacts a pack defines, in two forms:
  *
  * <ul>
- *   <li><strong>per pack</strong>: P defines {@code mission_type:M} and declares {@code action:M/s}. The compose reads it
- *       from {@link PackCompositionFacts#defined()}, the merged reads from the same lists the closure carries, so one
- *       function serves both;
+ *   <li><strong>per pack</strong>: P defines {@code mission_type:M} and declares {@code action:M/s}. The merged reads
+ *       take it from the lists of defined artifacts the closure carries. It is meant to serve the compose too, which
+ *       holds the same lists in {@link PackCompositionFacts#defined()}: the step-enhancements mission is to call
+ *       {@link #heldByPack} from there, and nothing in main calls it directly yet;
  *   <li><strong>on the closure</strong>: the closure holds the step when some closure pack holds it per pack. The step's
  *       place is the winner of {@code action:M/s} on the merged view, so a layer override of a held step is the winning
  *       version of a held step. A winning {@code mission_type:M} keeps the unique steps of the versions it replaced
@@ -83,9 +85,10 @@ public final class StepHolding {
     public static Set<Urn> stepsHeldByPack(Collection<String> definedArtifacts) {
         Objects.requireNonNull(definedArtifacts, "definedArtifacts");
         Set<Urn> steps = new TreeSet<>();
-        definedArtifacts.stream()
-                .flatMap(defined -> Urn.parse(defined).stream())
-                .filter(urn -> heldByPack(definedArtifacts, urn))
+        Set<String> defined = new HashSet<>(definedArtifacts);
+        defined.stream()
+                .flatMap(text -> Urn.parse(text).stream())
+                .filter(urn -> heldByPack(defined, urn))
                 .forEach(steps::add);
         return steps;
     }

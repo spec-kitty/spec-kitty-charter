@@ -22,8 +22,8 @@ import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
-import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.transport.EntityTags;
 import java.util.List;
 import java.util.Objects;
@@ -300,7 +300,7 @@ public class EffectiveReadService {
                 effectiveSet(stored, session),
                 walked,
                 new ArtifactRef(ArtifactKind.MISSION_TYPE, query.missionType()),
-                new NodeRef(NodeKind.ACTION, query.missionType() + "/" + query.action()));
+                NodeRef.of(Urn.action(query.missionType(), query.action())).orElseThrow());
         return new Read.Found<>(
                 new ContextRead(stored, closure.fingerprint(), closure.closureFingerprint(), query, context), etag);
     }

@@ -374,16 +374,7 @@ public final class ActionContextWalk {
             Map<Urn, Link> parents = new TreeMap<>();
             for (Urn parent : frontier) {
                 for (Link link : outgoing.getOrDefault(parent, List.of())) {
-                    if (relation == RelationType.SUGGESTS
-                            && link.relation() == RelationType.SUGGESTS
-                            && !link.target().equals(start)
-                            && !visited.contains(link.target())
-                            && !inForce.test(link.target())) {
-                        refused.merge(
-                                link.target(),
-                                link,
-                                (first, second) -> byParent.compare(first, second) <= 0 ? first : second);
-                    }
+                    recordRefusedSuggestion(link, relation, visited, byParent);
                     if (link.relation() == relation
                             && !visited.contains(link.target())
                             && inForce.test(link.target())) {
@@ -395,6 +386,23 @@ public final class ActionContextWalk {
                 }
             }
             return parents;
+        }
+
+        /**
+         * Records, for the report of refused suggestions, a {@code suggests} edge of a suggests layer whose target is
+         * out of force: the one with the fewest hops, then the smallest parent and edge, is kept per target. It is
+         * recorded while the layer is walked, whether or not the target is reached by another edge later.
+         */
+        private void recordRefusedSuggestion(
+                Link link, RelationType relation, Set<Urn> visited, Comparator<Link> byParent) {
+            if (relation == RelationType.SUGGESTS
+                    && link.relation() == RelationType.SUGGESTS
+                    && !link.target().equals(start)
+                    && !visited.contains(link.target())
+                    && !inForce.test(link.target())) {
+                refused.merge(
+                        link.target(), link, (first, second) -> byParent.compare(first, second) <= 0 ? first : second);
+            }
         }
 
         /**

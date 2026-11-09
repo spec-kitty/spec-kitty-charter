@@ -3,7 +3,6 @@ package ai.speckitty.charter.packs.application;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
-import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
@@ -20,6 +19,7 @@ import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolu
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.ResolvedReference;
 import ai.speckitty.charter.packs.domain.StepHolding;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -28,6 +28,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The typed edges of one composed closure, indexed by (holding pack, source URN), as a {@link ComposeResolver}:
@@ -107,6 +108,9 @@ public final class EdgeIndex implements ComposeResolver {
     private final Map<PackIdentifier, PackUnderResolution> byPack = new LinkedHashMap<>();
     private final Map<Place, List<Relationship>> outgoing = new LinkedHashMap<>();
     private final IdentityHashMap<Relationship, Place> sources = new IdentityHashMap<>();
+
+    /** The steps the closure holds, worked out once on first use: the index never changes, so neither does the set. */
+    private volatile @Nullable Set<Urn> heldSteps;
 
     /** The place of the version in force per URN under a layer merge; empty for an index that is not merged. */
     private final Map<Urn, Place> winners;
@@ -253,11 +257,12 @@ public final class EdgeIndex implements ComposeResolver {
      */
     List<Place> stepsOf(Urn missionType) {
         Set<Urn> held = heldSteps();
-        String prefix = missionType.id() + "/";
         return closure.stream()
                 .flatMap(pack -> pack.definedArtifacts().stream()
                         .flatMap(defined -> Urn.parse(defined).stream())
-                        .filter(urn -> urn.kind() == NodeKind.ACTION && urn.id().startsWith(prefix))
+                        .filter(urn -> StepHolding.missionTypeOf(urn)
+                                .filter(missionType::equals)
+                                .isPresent())
                         .filter(held::contains)
                         .map(urn -> new Place(idOf(pack), urn)))
                 .filter(this::wins)
@@ -266,14 +271,18 @@ public final class EdgeIndex implements ComposeResolver {
 
     /** The steps the closure holds ({@link StepHolding#stepsHeldByClosure}), from the artifacts each pack defines. */
     Set<Urn> heldSteps() {
-        return StepHolding.stepsHeldByClosure(
-                closure.stream().map(PackUnderResolution::definedArtifacts).toList());
+        Set<Urn> steps = heldSteps;
+        if (steps == null) {
+            steps = Collections.unmodifiableSet(StepHolding.stepsHeldByClosure(
+                    closure.stream().map(PackUnderResolution::definedArtifacts).toList()));
+            heldSteps = steps;
+        }
+        return steps;
     }
 
     /** Whether the closure holds the step ({@link StepHolding#heldByClosure}). */
     boolean holdsStep(Urn step) {
-        return StepHolding.heldByClosure(
-                closure.stream().map(PackUnderResolution::definedArtifacts).toList(), step);
+        return heldSteps().contains(step);
     }
 
     /**
