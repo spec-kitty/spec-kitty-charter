@@ -102,4 +102,25 @@ public final class StepHolding {
         packs.forEach(defined -> steps.addAll(stepsHeldByPack(defined)));
         return steps;
     }
+
+    /**
+     * The one step a step enhancer enhances, when its shape is the one rule E6 amends (OD-6): the source is a
+     * {@code step_enhancement} and it has exactly one {@code enhances} target, an {@code action:} URN. Every other shape
+     * (two targets, a mixed target list, another kind whose targets are actions) is not this one and keeps rule E6 as
+     * built. The shape is read from the merged edges before any edge to a non-winner is dropped.
+     *
+     * @param source the enhancer
+     * @param enhancesTargets the distinct targets of the enhancer's {@code enhances} edges, all of them
+     * @return the sole action target; empty for any other shape
+     */
+    public static Optional<Urn> soleActionTarget(Urn source, Collection<Urn> enhancesTargets) {
+        Objects.requireNonNull(source, "source");
+        Objects.requireNonNull(enhancesTargets, "enhancesTargets");
+        if (source.kind() != NodeKind.STEP_ENHANCEMENT || enhancesTargets.size() != 1) {
+            return Optional.empty();
+        }
+        return enhancesTargets.stream()
+                .filter(target -> target.kind() == NodeKind.ACTION)
+                .findFirst();
+    }
 }

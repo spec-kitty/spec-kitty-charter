@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.application;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
@@ -16,6 +17,7 @@ import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolu
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.RequiredFloor;
+import ai.speckitty.charter.packs.domain.StepHolding;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
@@ -181,33 +183,52 @@ public record ClosureView(
 
         /**
          * The {@code overrides} and {@code enhances} edges among the winners, as the in-force resolution reads them
-         * (FR-013 to FR-016): from the merged index, so an edge a losing version declared is not among them.
+         * (FR-013 to FR-016): from the merged index, so an edge a losing version declared is not among them. The binding
+         * of a step enhancer is derived here, from the merged edges and before an edge to a non-winner is dropped (OD-6,
+         * rule E6 as amended): a {@code step_enhancement} with exactly one {@code enhances} target, an {@code action:},
+         * is bound to the mission type of the step when the closure holds the step ({@link StepHolding}), and the edge is
+         * not counted; when it does not, the edge is kept though its target is no winner, so the enhancer is pruned for
+         * its target. Every other shape keeps rule E6 as built.
          *
-         * @return each overrider and enhancer with the winning artifacts it names
+         * @return each overrider and enhancer with the winning artifacts it names, and the bindings
          */
         InForceResolution.Edges resolutionEdges() {
             Map<Urn, Set<Urn>> overrides = new LinkedHashMap<>();
             Map<Urn, Set<Urn>> enhances = new LinkedHashMap<>();
-            closure.winners()
-                    .forEach((urn, winner) -> edges.inPack(new PackIdentifier(winner.descriptorPackId()))
-                            .resolve(urn)
-                            .ifPresent(node -> node.derivedRelationships()
-                                    .forEach(edge -> record(urn, edge, overrides, enhances))));
-            return new InForceResolution.Edges(overrides, enhances, bindings);
+            Map<Urn, Urn> derived = new LinkedHashMap<>(bindings);
+            closure.winners().forEach((urn, winner) -> {
+                List<Relationship> written = edges.inPack(new PackIdentifier(winner.descriptorPackId()))
+                        .resolve(urn)
+                        .map(CharterArtifact::derivedRelationships)
+                        .orElse(List.of());
+                written.stream()
+                        .filter(edge -> edge.type() == RelationType.OVERRIDES)
+                        .filter(edge -> closure.winners().containsKey(edge.to()))
+                        .forEach(edge -> overrides
+                                .computeIfAbsent(urn, ignored -> new LinkedHashSet<>())
+                                .add(edge.to()));
+                enhancements(urn, written, enhances, derived);
+            });
+            return new InForceResolution.Edges(overrides, enhances, derived);
         }
 
-        /** Files an {@code overrides} or {@code enhances} edge to a winner under its source; any other edge is not read. */
-        private void record(Urn source, Relationship edge, Map<Urn, Set<Urn>> overrides, Map<Urn, Set<Urn>> enhances) {
-            if (!closure.winners().containsKey(edge.to())) {
-                return;
-            }
-            if (edge.type() == RelationType.OVERRIDES) {
-                overrides
-                        .computeIfAbsent(source, ignored -> new LinkedHashSet<>())
-                        .add(edge.to());
-            } else if (edge.type() == RelationType.ENHANCES) {
-                enhances.computeIfAbsent(source, ignored -> new LinkedHashSet<>())
-                        .add(edge.to());
+        /** Files the {@code enhances} edges of one winner, or the binding that stands for them (OD-6). */
+        private void enhancements(
+                Urn source, List<Relationship> written, Map<Urn, Set<Urn>> enhances, Map<Urn, Urn> derived) {
+            Set<Urn> targets = new LinkedHashSet<>();
+            written.stream()
+                    .filter(edge -> edge.type() == RelationType.ENHANCES)
+                    .forEach(edge -> targets.add(edge.to()));
+            Optional<Urn> step = StepHolding.soleActionTarget(source, targets);
+            if (step.isPresent() && edges.holdsStep(step.get())) {
+                StepHolding.missionTypeOf(step.get()).ifPresent(missionType -> derived.put(source, missionType));
+            } else if (step.isPresent()) {
+                enhances.put(source, Set.of(step.get()));
+            } else {
+                targets.stream()
+                        .filter(closure.winners()::containsKey)
+                        .forEach(target -> enhances.computeIfAbsent(source, ignored -> new LinkedHashSet<>())
+                                .add(target));
             }
         }
     }
