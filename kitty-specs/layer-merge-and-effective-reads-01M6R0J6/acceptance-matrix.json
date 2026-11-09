@@ -286,13 +286,13 @@
     },
     {
       "criterion_id": "FR-029",
-      "description": "Verify FR-029 is satisfied",
+      "description": "Overrides compose transitively (F over E over T leaves only F in force) and a requirement on T is satisfied by F, the floor being judged on the final set by iterating to a fixed point.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "contracts/charter/scenarios/effective-reads.feature: \"A3 - in a chain F overrides E overrides T only F stays in force\"; contracts/charter/scenarios/effective-reads.feature: \"A required T hidden by an active override is satisfied by it\"; service/packs/src/test/java/ai/speckitty/charter/packs/domain/InForceResolutionTest.java#theRequirementIsJudgedOnTheFinalSetAndTheAnswerIsExactlyTheRuledOne",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:46:45.663958+00:00",
+      "notes": "PR B (#427, WP23); DM-01M6RA7RPNZS810FTFC98Z13GH, DM-01M6RA7M56M1409EV9JX1EW83K."
     },
     {
       "criterion_id": "FR-030",
