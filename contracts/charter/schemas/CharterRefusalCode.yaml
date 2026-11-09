@@ -27,9 +27,9 @@ description: >-
   after the second digest, or one reverted between the two, goes unseen.
 
   mission_type_not_found is raised again, by the select and the unselect of an activation for kind
-  mission_type, when the path names a mission type the activation's closure does not hold. action_not_found
-  is not raised: the action-context operation that answered it is gone, and the reserved effective context of
-  an activation (ADR-0020 D7) that will answer it again answers 501 until it is built. pack_level_mismatch and drg_schema_error are no longer raised: no operation
+  mission_type, when the path names a mission type the activation's closure does not hold, and by the effective
+  action context (getEffectiveActionContext), which answers it with action_not_found too when the path names an action
+  the merged closure does not hold for that mission type. pack_level_mismatch and drg_schema_error are no longer raised: no operation
   loads and judges a pack's graph any more (the whole-pack load that refuses a graph breaking its schema as
   drg_schema_error is not reached by any operation). All four values stay in the enum so that the contract
   keeps accepting them.
@@ -53,9 +53,8 @@ description: >-
   the must-have items of the copy in force at each level. Within one level the copy of the pack last in closure order
   replaces the others, a child pack's copy its parent's, and a replaced copy requires nothing. A deny of an artifact
   only an earlier level's copy requires, which a later level's copy replaced, is 409 artifact_required naming that
-  earlier level's pack. Only the two effective reads
-  of an activation that remain (the graph and the action context) stay reserved (ADR-0020 D8), and the one code they
-  will raise again, action_not_found, is not raised (above). A unit test of the service fails when any main class
+  earlier level's pack. No operation of the activation set is reserved any more (ADR-0020 D8), and
+  action_not_found is raised (above). A unit test of the service fails when any main class
   other than the enum and its mappings names a code the map marks not raised, outside the two classes no
   operation reaches (the whole-pack load and its findings).
 
@@ -228,7 +227,7 @@ x-refusal:
   action_not_found:
     status: 404
     retryable: false
-    raised: false
+    raised: true
   pack_level_mismatch:
     status: 500
     retryable: false

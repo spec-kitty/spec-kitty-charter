@@ -139,7 +139,9 @@ properties:
       $ref: EnhancerWithoutTarget.yaml
     description: >-
       The selected enhancers none of whose targets is in force, each with its targets. An enhancer does not stand on its
-      own.
+      own. A target is a NodeReference: it may be a step of a mission type (kind action, id <missionType>/<step>), which
+      is never in force as an artifact, so an enhancer of a step the closure does not hold, or of a mission type that
+      is not in force, names it here.
     x-derived:
       rule: The selected enhancers whose enhances targets are all out of force.
       inputs:
@@ -173,7 +175,9 @@ properties:
     description: >-
       The required artifacts that cannot stand in force: an enhancer none of whose targets is in force, or an artifact
       bound to a mission type not in force. Each is also out of force in the list, with required true. Such an artifact
-      is listed once, here, and not again in enhancedTargetNotInForce or missionTypeNotInForce.
+      is listed once, here, and not again in enhancedTargetNotInForce or missionTypeNotInForce. Only an artifact an
+      activation can select is listed (an ArtifactReference-kind): no preset or pack lock can name a step, so the
+      required floor holds activatable kinds only and this list never names one.
     x-derived:
       rule: The required artifacts kept out by the enhancer rule or by the mission type binding.
       inputs:

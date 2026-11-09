@@ -14,6 +14,7 @@ import ai.speckitty.charter.activations.domain.EffectiveSkippedReport.EnhancerWi
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport.Overridden;
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport.OverrideNotApplied;
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport.PinNotHeld;
+import ai.speckitty.charter.activations.domain.EffectiveSkippedReport.PruningReason;
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport.RequiredNotInForce;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.ArtifactState;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.Edge;
@@ -56,6 +57,10 @@ import org.junit.jupiter.api.Test;
  */
 class EffectiveSetTest {
 
+    private static NodeRef node(String urn) {
+        return NodeRef.of(ref(urn));
+    }
+
     private static ArtifactRef ref(String urn) {
         return ArtifactRef.of(Urn.parse(urn).orElseThrow()).orElseThrow();
     }
@@ -71,7 +76,7 @@ class EffectiveSetTest {
         private final List<DenyNotApplied> denies = new ArrayList<>();
         private final List<OverrideNotApplied> overrides = new ArrayList<>();
         private final List<RequiredNotInForce> notInForce = new ArrayList<>();
-        private final Map<ArtifactRef, List<ArtifactRef>> targets = new LinkedHashMap<>();
+        private final Map<ArtifactRef, List<NodeRef>> targets = new LinkedHashMap<>();
 
         /** An artifact of the pack {@code alpha} at {@code org}, open, in the given state and for the given reason. */
         Scene artifact(String urn, State state, Reason reason) {
@@ -283,13 +288,13 @@ class EffectiveSetTest {
         Scene scene = new Scene()
                 .artifact("skill:E", State.INACTIVE, Reason.ENHANCED_TARGET_NOT_IN_FORCE)
                 .bucket("skill:E", Bucket.ENHANCED_TARGET_NOT_IN_FORCE);
-        scene.targets.put(ref("skill:E"), List.of(ref("skill:Z"), ref("skill:A")));
+        scene.targets.put(ref("skill:E"), List.of(node("skill:Z"), node("skill:A")));
 
         EffectiveSet set = scene.of();
 
         assertThat(only(set, "skill:E").reason()).isEqualTo(Reason.ENHANCED_TARGET_NOT_IN_FORCE);
         assertThat(set.skipped().enhancedTargetNotInForce())
-                .containsExactly(new EnhancerWithoutTarget(ref("skill:E"), List.of(ref("skill:A"), ref("skill:Z"))));
+                .containsExactly(new EnhancerWithoutTarget(ref("skill:E"), List.of(node("skill:A"), node("skill:Z"))));
     }
 
     // ---- the requirement, judged after the table ----
@@ -327,14 +332,14 @@ class EffectiveSetTest {
         Scene scene = new Scene()
                 .artifact("skill:E", State.INACTIVE, Reason.ENHANCED_TARGET_NOT_IN_FORCE)
                 .required("skill:E");
-        scene.notInForce.add(new RequiredNotInForce(ref("skill:E"), Reason.ENHANCED_TARGET_NOT_IN_FORCE));
+        scene.notInForce.add(new RequiredNotInForce(ref("skill:E"), PruningReason.ENHANCED_TARGET_NOT_IN_FORCE));
 
         EffectiveSet set = scene.of();
 
         assertThat(only(set, "skill:E").state()).isEqualTo(State.INACTIVE);
         assertThat(only(set, "skill:E").required()).isTrue();
         assertThat(set.skipped().requiredNotInForce())
-                .containsExactly(new RequiredNotInForce(ref("skill:E"), Reason.ENHANCED_TARGET_NOT_IN_FORCE));
+                .containsExactly(new RequiredNotInForce(ref("skill:E"), PruningReason.ENHANCED_TARGET_NOT_IN_FORCE));
     }
 
     // ---- the buckets of the rules not applied, and of the ids and pins the closure no longer has ----
@@ -420,7 +425,7 @@ class EffectiveSetTest {
                 .bucket("tactic:T", Bucket.OVERRIDDEN)
                 .artifact("skill:E", State.INACTIVE, Reason.ENHANCED_TARGET_NOT_IN_FORCE)
                 .required("skill:E");
-        scene.notInForce.add(new RequiredNotInForce(ref("skill:E"), Reason.ENHANCED_TARGET_NOT_IN_FORCE));
+        scene.notInForce.add(new RequiredNotInForce(ref("skill:E"), PruningReason.ENHANCED_TARGET_NOT_IN_FORCE));
         scene.stale.add(ref("tactic:gone"));
         scene.denies.add(new DenyNotApplied(ref("directive:L"), DenyReason.LOCKED));
 
@@ -545,6 +550,107 @@ class EffectiveSetTest {
 
         assertThat(only(set, "directive:S").suggestion())
                 .contains(new Suggestion(Optional.of("from a"), Optional.of("a")));
+    }
+
+    // ---- a suggestion the action context lists, through the one carrier ----
+
+    @Test
+    void anArtifactTheActionReachesOnlyThroughSuggestsIsListedWithTheWalksEdgeAsItsSuggestion() {
+        EffectiveSet set = new Scene()
+                .artifact("directive:D", State.ACTIVE, Reason.SELECTED)
+                .artifact("directive:S", State.INACTIVE, Reason.NOT_SELECTED)
+                .suggests("directive:D", "directive:S", "the list's edge", "the list's reason")
+                .of();
+
+        Optional<EffectiveArtifact> suggested =
+                set.suggested(ref("directive:S"), Optional.of("the walk's edge"), Optional.of("the walk's reason"));
+
+        assertThat(suggested).hasValueSatisfying(artifact -> {
+            assertThat(artifact.ref()).isEqualTo(ref("directive:S"));
+            assertThat(artifact.state()).isEqualTo(State.INACTIVE);
+            assertThat(artifact.reason()).isEqualTo(Reason.NOT_SELECTED);
+            assertThat(artifact.packId()).isEqualTo("alpha");
+            assertThat(artifact.suggestion())
+                    .as("the edge the walk reached it by, which is the nearest, not the one the list picks")
+                    .contains(new Suggestion(Optional.of("the walk's edge"), Optional.of("the walk's reason")));
+        });
+    }
+
+    @Test
+    void anEdgeThatStatesNeitherWhenNorReasonIsStillASuggestionOfTheContext() {
+        EffectiveSet set = new Scene()
+                .artifact("directive:D", State.ACTIVE, Reason.SELECTED)
+                .artifact("directive:S", State.INACTIVE, Reason.NOT_SELECTED)
+                .suggests("directive:D", "directive:S", null, null)
+                .of();
+
+        assertThat(set.suggested(ref("directive:S"), Optional.empty(), Optional.empty()))
+                .hasValueSatisfying(artifact ->
+                        assertThat(artifact.suggestion()).contains(new Suggestion(Optional.empty(), Optional.empty())));
+    }
+
+    @Test
+    void onlyAnArtifactTheDocumentDoesNotSelectIsListedAsASuggestionWhateverOtherReasonKeepsAnArtifactOut() {
+        Scene scene = new Scene().artifact("directive:D", State.ACTIVE, Reason.SELECTED);
+        Map<String, Reason> outOfForce = Map.of(
+                "tactic:Denied", Reason.DEACTIVATED,
+                "tactic:Hidden", Reason.OVERRIDDEN,
+                "tactic:Filtered", Reason.LANGUAGE_FILTERED,
+                "tactic:Unbound", Reason.MISSION_TYPE_NOT_IN_FORCE,
+                "tactic:Ungrounded", Reason.ENHANCED_TARGET_NOT_IN_FORCE);
+        outOfForce.forEach((urn, reason) -> scene.artifact(
+                        urn, reason == Reason.DEACTIVATED ? State.EXCLUDED : State.INACTIVE, reason)
+                .suggests("directive:D", urn, "w", "r"));
+        scene.artifact("tactic:Unselected", State.INACTIVE, Reason.NOT_SELECTED)
+                .suggests("directive:D", "tactic:Unselected", "w", "r");
+        EffectiveSet set = scene.of();
+
+        outOfForce.forEach((urn, reason) -> assertThat(set.suggested(ref(urn), Optional.of("w"), Optional.of("r")))
+                .as(reason.token())
+                .isEmpty());
+        assertThat(set.suggested(ref("tactic:Unselected"), Optional.of("w"), Optional.of("r")))
+                .as("not_selected, in the same set")
+                .isPresent();
+    }
+
+    @Test
+    void anArtifactInForceAndOneTheSetDoesNotHoldAreNoSuggestion() {
+        EffectiveSet set = new Scene()
+                .artifact("directive:D", State.ACTIVE, Reason.SELECTED)
+                .of();
+
+        assertThat(set.suggested(ref("directive:D"), Optional.of("w"), Optional.of("r")))
+                .isEmpty();
+        assertThat(set.suggested(ref("directive:Unknown"), Optional.of("w"), Optional.of("r")))
+                .isEmpty();
+    }
+
+    @Test
+    void anArtifactAnotherArtifactInForceRequiresOutsideTheContextIsNoSuggestionOfTheContextAndOneNobodyRequiresIs() {
+        // Decision 01M70CTZP7P2EHSCK2G0RET74B: a context suggestion is an artifact the listing gives a suggestion and
+        // that a
+        // listed entry reaches through suggests. X is in force, outside the context, and requires S: the listing gives
+        // S none.
+        EffectiveSet set = new Scene()
+                .artifact("directive:D", State.ACTIVE, Reason.SELECTED)
+                .artifact("directive:X", State.ACTIVE, Reason.SELECTED)
+                .artifact("directive:S", State.INACTIVE, Reason.NOT_SELECTED)
+                .artifact("directive:S2", State.INACTIVE, Reason.NOT_SELECTED)
+                .suggests("directive:D", "directive:S", "w", "r")
+                .suggests("directive:D", "directive:S2", "w2", "r2")
+                .edge("directive:X", RelationType.REQUIRES, "directive:S")
+                .of();
+
+        assertThat(only(set, "directive:S").suggestion())
+                .as("the listing's own answer")
+                .isEmpty();
+        assertThat(set.suggested(ref("directive:S"), Optional.of("w"), Optional.of("r")))
+                .as("hard-reached by an artifact in force outside the context")
+                .isEmpty();
+        assertThat(set.suggested(ref("directive:S2"), Optional.of("w2"), Optional.of("r2")))
+                .as("the control, in the same set: suggested only")
+                .hasValueSatisfying(artifact -> assertThat(artifact.suggestion())
+                        .contains(new Suggestion(Optional.of("w2"), Optional.of("r2"))));
     }
 
     // ---- the report of a write's shape, and the request ----

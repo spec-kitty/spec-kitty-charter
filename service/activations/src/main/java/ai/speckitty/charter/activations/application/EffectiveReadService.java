@@ -1,10 +1,12 @@
 package ai.speckitty.charter.activations.application;
 
 import ai.speckitty.charter.activations.application.ActivationService.Read;
+import ai.speckitty.charter.activations.domain.ActionContext;
 import ai.speckitty.charter.activations.domain.ActivationId;
 import ai.speckitty.charter.activations.domain.ActivationRepository;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
+import ai.speckitty.charter.activations.domain.EffectiveContext;
 import ai.speckitty.charter.activations.domain.EffectiveSet;
 import ai.speckitty.charter.activations.domain.EffectiveSet.EffectiveArtifact;
 import ai.speckitty.charter.activations.domain.EffectiveSet.State;
@@ -12,12 +14,15 @@ import ai.speckitty.charter.activations.domain.EffectiveSet.Summary;
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport;
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport.DenyNotApplied;
 import ai.speckitty.charter.activations.domain.EffectiveTag;
+import ai.speckitty.charter.activations.domain.GraphSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
+import ai.speckitty.charter.activations.domain.NodeRef;
 import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.transport.EntityTags;
 import java.util.List;
@@ -30,7 +35,8 @@ import org.springframework.stereotype.Service;
 
 /**
  * The reads of what an activation puts in force: {@code getActivation} with its deny notice, the effective artifact
- * list and the skipped report (IC-09, FR-013, FR-017, FR-020, FR-021, FR-027).
+ * list, the skipped report, the effective graph and the effective action context (IC-09, IC-11, FR-013, FR-017 to
+ * FR-021, FR-027).
  *
  * <p>Each read opens one {@link PacksSession}, one verified read of the closure the stored document names (E19), and
  * answers everything from it: the tag, then, only when the {@code If-None-Match} does not match it, the merge and the
@@ -126,6 +132,33 @@ public class EffectiveReadService {
             String governanceFingerprint,
             EffectiveSkippedReport skipped) {}
 
+    /**
+     * The effective graph of an activation.
+     *
+     * @param stored the stored activation
+     * @param sourceFingerprint the source fingerprint of the read
+     * @param governanceFingerprint the digest of the closure's own packs
+     * @param graph the nodes in force, the edges among them and the layer overrides
+     */
+    public record GraphRead(
+            StoredActivation stored, String sourceFingerprint, String governanceFingerprint, GraphSnapshot graph) {}
+
+    /**
+     * The effective context of one action of an activation.
+     *
+     * @param stored the stored activation
+     * @param sourceFingerprint the source fingerprint of the read
+     * @param governanceFingerprint the digest of the closure's own packs
+     * @param query the mission type, the action and the depth
+     * @param context what the action's step names
+     */
+    public record ContextRead(
+            StoredActivation stored,
+            String sourceFingerprint,
+            String governanceFingerprint,
+            EffectiveTag.ContextQuery query,
+            EffectiveContext context) {}
+
     /** A page cursor of another set, which a client holds after the document or a pack of the closure changed. */
     public static final class StaleCursorException extends RuntimeException {
 
@@ -215,6 +248,61 @@ public class EffectiveReadService {
         EffectiveSet set = effectiveSet(stored, session);
         return new Read.Found<>(
                 new Report(stored, closure.fingerprint(), closure.closureFingerprint(), set.skipped()), etag);
+    }
+
+    /**
+     * {@code getEffectiveGraph}: the nodes in force (the artifacts in force, and each held step of a mission type in
+     * force), the merged edges among them resolved through the layer overrides, and the layer overrides applied.
+     *
+     * @param id the activation's id
+     * @param ifNoneMatch the {@code If-None-Match} header, verbatim; null when absent
+     * @return the graph, or {@code NotModified} when the header matches its tag
+     * @throws CharterRefusal as {@link #activation} does
+     */
+    public Read<GraphRead> graph(ActivationId id, @Nullable String ifNoneMatch) {
+        StoredActivation stored = found(id);
+        PacksSession session = open(stored);
+        ClosureSnapshot closure = session.snapshot();
+        String etag = EffectiveTag.graph(stored.revision(), closure).token();
+        if (EntityTags.noneMatch(ifNoneMatch, etag)) {
+            return new Read.NotModified<>(etag);
+        }
+        GraphSnapshot graph = session.graph(EffectiveSet.queryOf(stored.document()));
+        return new Read.Found<>(
+                new GraphRead(stored, closure.fingerprint(), closure.closureFingerprint(), graph), etag);
+    }
+
+    /**
+     * {@code getEffectiveActionContext}: ADR-0018's walk from the action's step over the artifacts in force, with the
+     * enhancers in force, the suggestions and the skipped report.
+     *
+     * @param id the activation's id
+     * @param query the mission type, the action and the depth
+     * @param ifNoneMatch the {@code If-None-Match} header, verbatim; null when absent
+     * @return the context, or {@code NotModified} when the header matches its tag
+     * @throws CharterRefusal with {@code mission_type_not_found} or {@code action_not_found} when the merged closure
+     *     holds no such mission type or action, judged before {@code If-None-Match} is compared, or as
+     *     {@link #activation} does
+     */
+    public Read<ContextRead> actionContext(
+            ActivationId id, EffectiveTag.ContextQuery query, @Nullable String ifNoneMatch) {
+        StoredActivation stored = found(id);
+        PacksSession session = open(stored);
+        ClosureSnapshot closure = session.snapshot();
+        session.requireAction(query.missionType(), query.action());
+        String etag = EffectiveTag.context(stored.revision(), closure, query).token();
+        if (EntityTags.noneMatch(ifNoneMatch, etag)) {
+            return new Read.NotModified<>(etag);
+        }
+        ActionContext walked = session.actionContext(
+                query.missionType(), query.action(), query.depth(), EffectiveSet.queryOf(stored.document()));
+        EffectiveContext context = EffectiveContext.of(
+                effectiveSet(stored, session),
+                walked,
+                new ArtifactRef(ArtifactKind.MISSION_TYPE, query.missionType()),
+                new NodeRef(NodeKind.ACTION, query.missionType() + "/" + query.action()));
+        return new Read.Found<>(
+                new ContextRead(stored, closure.fingerprint(), closure.closureFingerprint(), query, context), etag);
     }
 
     /** The page of the set the query asks for: filtered, strictly after the cursor's position, at most a page size. */

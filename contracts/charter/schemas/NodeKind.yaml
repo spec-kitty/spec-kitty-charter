@@ -1,7 +1,9 @@
 title: NodeKind
 description: >-
   The kind of a DRG node: every artifact kind plus action and mission_type. The retiring
-  glossary node kinds are not part of this contract.
+  glossary node kinds are not part of this contract. It lists the authored kinds only: a guard and a lifecycle are
+  nodes of the graph that no read of this contract names, so no schema typed by NodeKind (EffectiveGraphNode,
+  NodeReference) can carry one.
 type: string
 enum:
   - directive

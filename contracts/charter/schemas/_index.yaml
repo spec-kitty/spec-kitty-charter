@@ -27,6 +27,7 @@ files:
   - TacticStep.yaml
   - Urn.yaml
   - ActivatableKind.yaml
+  - ActionEnhancement.yaml
   - Activation.yaml
   - ActivationChange.yaml
   - ActivationConfig.yaml
@@ -52,6 +53,9 @@ files:
   - EffectiveGraphNode.yaml
   - ExclusionRequest.yaml
   - LanguageToken.yaml
+  - LayerOverride.yaml
+  - LayerOverrideSide.yaml
+  - NodeReference.yaml
   - PackPin.yaml
   - PresetApplication.yaml
   - SelectedArtifacts.yaml
