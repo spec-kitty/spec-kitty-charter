@@ -247,6 +247,16 @@ The operator also replaced ADR-0050's `gate` kind with asset-backed guards (ADR-
 2. ~~**Where an enhancing artifact lives** (decision 22).~~ **Ruled 2026-11-03 (operator), as recommended:** beside
    the kind it adds to in the enhancing pack, with the `enhances` edge in that pack's graph shard, as for profiles. No
    separate enhancements area. Recorded with [ADR-0055](/adr/0055-cutover-sequencing-the-java-service-first/).
+
+   **Annotation 2026-11-09 (operator ruling D7 of the step-enhancement service-alignment mission, phase 1).** For a
+   step enhancement, "beside the kind it adds to" is the per-type directory `missions/<type>/enhancements/`: the file
+   is `missions/<type>/enhancements/<id>.step-enhancement.yaml`, with its `*.prompt-fragment.md` companions beside it.
+   The place is per mission type, not a pack-wide area, so the ruling above stands and no separate enhancements area
+   exists. The `<type>` directory must equal the type of the enhancement's single `enhances` edge. It is checked
+   against the edge and never read in its place, because the graph document stays the only statement of the target
+   ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/)). An enhancement id is unique per pack,
+   across the type directories. See [Load rules](/architecture/composition-and-activation-rules/#load-rules) and
+   [Pack schema: Step enhancement](/architecture/pack-schemas/step-enhancement/).
 3. ~~**URN kind tokens**~~ **Ruled 2026-11-02 (operator):** the multi-word URN kind tokens move to kebab case directly
    (`agent-profile:<id>`, `mission-step-contract:<id>`, `mission-type:<id>`, `anti-pattern:<id>`,
    `event-registry:<id>`), in the same change as the kebab path token. No split-migration reader: the service has no

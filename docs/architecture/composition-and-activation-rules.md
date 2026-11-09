@@ -38,7 +38,7 @@ audience:
 This page states every rule that decides **which packs compose**, **what a registration may change**, **what an
 activation write stores** and **what an effective read answers**, as rule sets over sets, relations and functions.
 Each rule is one or two lines of notation, a one-sentence gloss, its source and its status. Section 7 maps every rule
-to its source and status in one table.
+to its source and status in one table; section 8 holds the load rules for step enhancements and prompt fragments.
 
 It restates decisions; it decides nothing. Where two sources disagree, the rule is written as the sources are best
 read and carries a **⚠ Unclear** note. The prose pages remain the design: [Logical model](/architecture/logical-model/),
@@ -1227,11 +1227,95 @@ activations it affects (G20), and every stored deny entry that the floor overrid
 | E19 One verified read | NFR-007; `DM-01M6R2X563` | Built (PR B) |
 | E20 Writes walk merged edges | research R2; `DM-01M6R4W1H9` | Built (PR B) |
 | E21 Deny entries not applied | B4 | Built (PR B) |
+| F1 Fragment content | FR-004; ADR-0066 d3, d7 | Built |
+| F2 Enhancement structure | FR-005, FR-006; ADR-0066 d3, d6; D11 | Built |
+| F3 Identity | FR-006; D8; operator ruling A2 | Built |
+| F4 Target and edges | FR-006; ADR-0064; ADR-0066 d7; R-OVR; R-REL | Built |
+| F5 Base prompt slots | FR-007; ADR-0066 d8 | Built |
+| F6 Precedence | research P9 | Built |
+| F7 Same-id enhancements | ADR-0048 d9, d10; ADR-0066 d6 | Built |
 
 Decision ids are shortened to their first twelve characters in the table; the full ids are in the rule text. "Spec",
 "FR", "NFR" and "plan IC" without a mission name are the layer-merge mission's
 (`kitty-specs/layer-merge-and-effective-reads-01M6R0J6/`); "activation mission" is
 `kitty-specs/activation-register-and-closure-01M6NXBD/`.
+
+## 8. Step enhancements and prompt fragments
+
+A step enhancement adds Markdown prompt fragments to named, empty slots of the step prompt it enhances
+([ADR-0066](/adr/0066-a-step-enhancement-may-contribute-prompt-fragments/)). The service holds the enhancement and its
+`*.prompt-fragment.md` companions as parts of its pack, checks them when a pack is loaded, and writes them back with
+equal meaning. This section states what is **built** (the step-enhancement service-alignment mission, phase 1,
+[#428](https://github.com/spec-kitty/spec-kitty-charter/issues/428) and
+[#424](https://github.com/spec-kitty/spec-kitty-charter/issues/424)). Checks made when packs compose, and the read of a
+step's effective prompt, are **planned** in the phase-2 mission
+([#438](https://github.com/spec-kitty/spec-kitty-charter/issues/438)); no rule below depends on them. The sub-headings
+for those follow this one.
+
+### Load rules
+
+Each rule names the moment it is judged: **V** validate mode, **L** load (both the staged load of a registration and
+every composing read), **W** the relationship write (`PUT /packs/{packId}/relationships`). A fault found at L is a
+violation at its file: a registration answers `422 validation_failed` and lists every fault at once, each as
+`{pointer: <pack-relative file>, code}`; a composing read answers `500 pack_unreadable` naming the first faulty file.
+The wire shape is the one under "How a load fault reaches the wire" in the mission's contract notes, restated in the
+annotations of [ADR-0066](/adr/0066-a-step-enhancement-may-contribute-prompt-fragments/#annotation-2026-11-09-how-the-load-codes-of-decision-8-reach-the-wire-od-3-a-od-7).
+
+**F1 Fragment content.** A `*.prompt-fragment.md` is refused `prompt_fragment_invalid`, at the fragment, when its body
+is blank, carries frontmatter, or holds a slot marker of any id, anywhere in the text, code fences included. A
+carriage return or a byte order mark is refused by the Markdown codec first, with the same code, before the marker
+check runs.
+*Source:* FR-004; ADR-0066 d3, d7; ADR-0036. **Built.** Moments: V, L.
+
+**F2 Enhancement structure.** An enhancement is refused `prompt_fragment_invalid`, at its file, when it names one slot
+twice, names a companion that does not exist beside it, or names a companion another entry already names (in the same
+enhancement or another). A fragment under `missions/<type>/enhancements/` that no entry names (an orphan) is refused at
+the fragment. Three shapes are schema violations and not `prompt_fragment_invalid`: a `slot` that breaks
+`<namespace>:<name>`, `prompt_fragments: []`, and an `id` that differs from its file stem (the store's stem rule;
+operator ruling A1, 2026-11-09). A file that breaks its schema gets no further rule.
+*Source:* FR-005, FR-006; ADR-0066 d3, d6; D11. **Built.** Moments: V, L. The orphan is judged at V and at a
+registration's staged load, not on a composing read, which holds no unmodelled file.
+
+**F3 Identity.** An enhancement id is unique in its pack across all `<type>` directories. The second file in path
+order (segment by segment, by code point) is refused `prompt_fragment_invalid` and withheld from the pack; the files of
+one id share their edges, so the edge rules (F4) are judged once, at the first file. Packs may repeat an id, each at its
+own level, by C14 and layer override (F7).
+*Source:* FR-006; D8; operator ruling A2, 2026-11-09. **Built.** Moments: V, L.
+
+**F4 Target and edges.** The enhancement's target is read from the pack's graph documents, never from the file or the
+directory. The enhancement must have exactly one `enhances` edge, to an `action:<type>/<step>`. It may be the source of
+no `overrides` edge at all: an enhancement only adds (operator ruling R-OVR, 2026-11-09). Its `<type>` directory must
+equal the type of that edge. It must carry at least one `prompt_fragments` entry; an absent key is refused here, and
+`prompt_fragments: []` by the schema (F2). All are `prompt_fragment_invalid`. When the edge count is not one, the target
+and directory rules are skipped for that id. The relationship write refuses, with `422 prompt_fragment_invalid` and
+nothing written, an edge that would give a held step enhancement an `overrides` edge or a second `enhances` edge, or
+replace its one `enhances` edge (operator ruling R-REL, 2026-11-09).
+*Source:* FR-006; ADR-0064; ADR-0066 d3, d7; D7, D9, D12; C-003. **Built.** Moments: V, L, W (edge rules only).
+
+**F5 Base prompt slots.** A slot is a marker pair `<!-- <namespace>:<name>:start -->` and `<!-- ...:end -->` in a step
+prompt. A prompt is refused `prompt_slot_malformed`, naming the prompt file, when a marker is unpaired, repeated,
+nested, or its id breaks the grammar, whatever the pack descriptor declares. Text between a pair is refused
+`prompt_slot_not_empty` when the pack descriptor declares `schema_version: "1.0"`; with no `schema_version` the load
+goes on and the registration result lists the `prompt_slot_not_empty` warning in its `diagnostics`, never as a violation.
+Only whitespace (space, tab, line feed) counts as empty.
+*Source:* FR-007; ADR-0066 d1, d2, d8 and its version gate. **Built.** Moments: V, L; the warning is shown by a
+registration only. A composing read discards it.
+
+**F6 Precedence.** Several rules can fail in one pack, and the answer stays deterministic. A schema violation of a file
+is reported alone (F2, F4). A codec refusal precedes the slot grammar (F1). A composing read names the first violation in
+assembly order: the store's read violations, then each kind in binding order, then the slot faults of F5, and last the
+step-enhancement faults of F1 to F4 in path order. A registration lists them all.
+*Source:* research P9; plan IC-02. **Built.**
+
+**F7 Same-id enhancements.** A step enhancement defines its own URN `step_enhancement:<id>`, so C14 and C15 apply as to
+any definer: two packs at one level that define the same id are refused `pack_sibling_conflict` unless a descriptor
+`overrides` entry names one winner, and a same-id enhancement at a higher level replaces the lower one by layer
+override (ADR-0048 d10). The enhancement is selectable like any other artifact (`step_enhancement` in a selection, and `activated_step_enhancements` in a preset).
+*Source:* ADR-0048 d9, d10; ADR-0066 d6. **Built** with the holding of step enhancements. Moment: C.
+
+Not built, planned in the phase-2 mission (#438): refusal when a named slot is missing from the prompt in force
+(`prompt_slot_missing`), resolution of the target step across the `depends_on` closure, the integrity check of the
+target, and the read of a step's effective prompt. `prompt_slot_missing` stays reserved.
 
 ## Sources
 
