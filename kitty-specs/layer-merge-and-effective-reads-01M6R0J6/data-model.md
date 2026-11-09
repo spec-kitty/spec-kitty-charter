@@ -222,8 +222,9 @@ among the base set and the unsatisfied required artifacts refuses with `500 pack
 (`DM-01M6RN6BWE6SVZZE8ERQ8Z9MV6`).
 
 Rule 8 is applied after the requirement step, repeating down enhancer chains. An enhancer it removes that also
-overrides withdraws its overrides, and the steps run once more; a second change refuses with `pack_unreadable`
-(research R11).
+overrides withdraws its overrides, and the strata run again until nothing changes (research R13, which replaced the
+earlier "one re-run, a second change refuses" rule; A2 `DM-01M6RA7M56M1409EV9JX1EW83K`). Only an answer with no
+stable fixed point refuses with `pack_unreadable` (rules page E7, as built in PR B).
 
 The `overrides` of the artifacts this step puts in force then apply once more. An override never hides a locked
 artifact (rule 1): it is listed in `overrideNotApplied`. An `overrides` cycle among active artifacts refuses with
@@ -272,7 +273,12 @@ is byte-stable.
 
 ### EffectiveTag
 
-- `sha256:` over `charter-effective-read\0v1\n`, the revision and the verified fingerprint (research R5).
+- `sha256:` over `charter-effective-read\0v1\n`, the read (list, skipped report or activation), the revision, the
+  closure-scoped fingerprint (`ClosureSnapshot.closureFingerprint()`: the closure packs' configured ids, levels and
+  files, taken in the same verified read) and the normalized query (`state`, `kind`, cursor, resolved `pageSize`), so
+  two representations never share a tag and a pack outside the closure leaves it unchanged (as built in PR B, WP24;
+  research R5 note). `getActivation`'s strong `ETag` is the `activation` variant (operator decision
+  `01M6Y11E55YP5TG1EJ1MDKCFRP`).
 - Weak comparison for `If-None-Match` answers `304`, with the `ETag` and no body.
 
 ## State transitions (a pack, PR A)

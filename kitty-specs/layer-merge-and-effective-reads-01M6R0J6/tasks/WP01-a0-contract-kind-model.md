@@ -35,7 +35,6 @@ execution_mode: code_change
 model: ''
 owned_files:
 - contracts/charter/schemas/ActivatableKind.yaml
-- contracts/charter/schemas/SelectableKind.yaml
 - contracts/charter/schemas/CascadeKind.yaml
 - contracts/charter/schemas/Activation.yaml
 - contracts/charter/schemas/ActivationConfig.yaml
