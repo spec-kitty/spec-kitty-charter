@@ -183,7 +183,9 @@ public record StepEnhancementFacts(
      *
      * @param relation {@code ENHANCES} or {@code OVERRIDES}; any other relation is ignored
      * @param source the source URN, {@code step_enhancement:<id>}
-     * @param target the target URN without its pack qualifier, for example {@code action:software-dev/plan}
+     * @param target the target URN without its pack qualifier, for example {@code action:software-dev/plan}; split a
+     *     written {@code <pack>::<urn>} with {@code PackQualifiedReference.parse} first; a target still holding
+     *     {@code ::} is refused with an {@link IllegalArgumentException}
      * @param qualifier the {@code <pack>::} qualifier the target was written with; empty for a bare target
      */
     public record Edge(RelationType relation, String source, String target, Optional<String> qualifier) {
@@ -192,14 +194,20 @@ public record StepEnhancementFacts(
          *
          * @param relation the relation
          * @param source the source URN
-         * @param target the target URN
+         * @param target the target URN, without a {@code ::}
          * @param qualifier the qualifier
+         * @throws IllegalArgumentException when the target still carries its pack qualifier
          */
         public Edge {
             Objects.requireNonNull(relation, "relation");
             Objects.requireNonNull(source, "source");
             Objects.requireNonNull(target, "target");
             Objects.requireNonNull(qualifier, "qualifier");
+            if (target.contains("::")) {
+                throw new IllegalArgumentException(
+                        "The edge target must not carry its pack qualifier (split it into the qualifier), but is '"
+                                + target + "'");
+            }
         }
     }
 }
