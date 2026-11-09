@@ -85,7 +85,7 @@
       "wp": null
     },
     "#450": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "WP08 links effective items to their reads; Follow-up: #450 keeps the scoping rule",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -93,8 +93,8 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "verdict": "deferred-with-followup",
+      "wp": "WP08"
     },
     "#454": {
       "evidence_ref": "<link or commit>",
