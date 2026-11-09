@@ -188,6 +188,61 @@ class RefusalHandlerTest {
                 .isEqualTo("The activation names unknown tactics. 150 more violations are not listed.");
     }
 
+    /** The controller methods the handler names an operation after; the bodies are never run. */
+    @SuppressWarnings("unused")
+    private static final class Operations {
+        void putPackRelationship() {}
+
+        void putPackDirective() {}
+
+        void getOffering() {}
+    }
+
+    private ResponseEntity<CharterRefusal> refusedIn(String operation, RefusalCode code) throws NoSuchMethodException {
+        org.springframework.mock.web.MockHttpServletRequest servlet =
+                new org.springframework.mock.web.MockHttpServletRequest();
+        org.springframework.web.context.request.ServletWebRequest request =
+                new org.springframework.web.context.request.ServletWebRequest(servlet);
+        request.setAttribute(
+                org.springframework.web.servlet.HandlerMapping.BEST_MATCHING_HANDLER_ATTRIBUTE,
+                new org.springframework.web.method.HandlerMethod(
+                        new Operations(), Operations.class.getDeclaredMethod(operation)),
+                org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST);
+        return handler.refused(new ai.speckitty.charter.kernel.domain.CharterRefusal(code, "detail"), request);
+    }
+
+    @Test
+    @DisplayName(
+            "prompt_fragment_invalid is a 422 on putPackRelationship alone: the code's own status is 500 elsewhere")
+    void promptFragmentInvalidIsA422OnTheRelationshipWriteOnly() throws NoSuchMethodException {
+        ResponseEntity<CharterRefusal> onTheWrite =
+                refusedIn("putPackRelationship", RefusalCode.PROMPT_FRAGMENT_INVALID);
+
+        assertThat(onTheWrite.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+        assertThat(onTheWrite.getBody().getCode()).isEqualTo(CharterRefusal.CodeEnum.PROMPT_FRAGMENT_INVALID);
+        assertThat(refusedIn("putPackDirective", RefusalCode.PROMPT_FRAGMENT_INVALID)
+                        .getStatusCode())
+                .as("another impact-checked write keeps the code's own status")
+                .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+        assertThat(refusedIn("getOffering", RefusalCode.PROMPT_FRAGMENT_INVALID).getStatusCode())
+                .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+        assertThat(handler.refused(new ai.speckitty.charter.kernel.domain.CharterRefusal(
+                                RefusalCode.PROMPT_FRAGMENT_INVALID, "detail"))
+                        .getStatusCode())
+                .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @Test
+    @DisplayName("the relationship write keeps the composition codes as 422, with its own copy of the map")
+    void theRelationshipWriteStillAnswersTheCompositionCodesAs422() throws NoSuchMethodException {
+        assertThat(refusedIn("putPackRelationship", RefusalCode.PACK_REFERENCE_PACK_MISSING)
+                        .getStatusCode())
+                .isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+        assertThat(refusedIn("putPackDirective", RefusalCode.PACK_REFERENCE_PACK_MISSING)
+                        .getStatusCode())
+                .isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+    }
+
     @ParameterizedTest(name = "{0} -> {1}")
     @CsvSource({
         "PACK_DEPENDENCY_CYCLE, 422",

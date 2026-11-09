@@ -2,8 +2,10 @@ package ai.speckitty.charter.packs.application;
 
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
@@ -77,7 +79,9 @@ public final class RelationshipRegistrationService {
      * @return the registration outcome; {@link Registered#created()} is {@code true} when the pair was not registered
      *     before (in either orientation)
      * @throws CharterRefusal {@link RefusalCode#PACK_NOT_FOUND} (404) when the pack is unknown,
-     *     {@link RefusalCode#REGISTRATION_CONFLICT} (409) when {@code from} does not resolve within the pack, the
+     *     {@link RefusalCode#REGISTRATION_CONFLICT} (409) when {@code from} does not resolve within the pack,
+     *     {@link RefusalCode#PROMPT_FRAGMENT_INVALID} (422 here) when the edge would give a held step enhancement an
+     *     {@code overrides} edge, a second {@code enhances} edge or replace its one {@code enhances} edge, the
      *     compose's {@link RefusalCode#PACK_REFERENCE_PACK_MISSING}, {@link RefusalCode#PACK_REFERENCE_UNQUALIFIED} or
      *     {@link RefusalCode#PACK_REFERENCE_ARTIFACT_MISSING} (422 here) when {@code to} cannot resolve, a composition
      *     refusal (500) when the configured packs do not compose, or the policy's
@@ -106,16 +110,61 @@ public final class RelationshipRegistrationService {
                         "A relationship cannot be a self-loop: " + relationship.from() + " to "
                                 + relationship.toReference() + " in pack " + pack.value() + ".");
             }
-            // Before anything is written: a target the compose cannot resolve would make the next offering read refuse.
+            List<Relationship> existing = writeStore.registeredRelationships(pack);
+            // Before anything is written: an edge that breaks the edge rules of a held step enhancement would make
+            // every composing read of the pack refuse (R-REL), and a target the compose cannot resolve the next
+            // offering read.
+            refuseStepEnhancementEdge(current, relationship, existing);
             targets.require(pack, relationship.toReference());
             policy.authorize(current, WritePolicyGate.Operation.RELATIONSHIP, relationship.from());
-            List<Relationship> existing = writeStore.registeredRelationships(pack);
             boolean created = existing.stream().noneMatch(relationship::equals);
             List<Relationship> merged = RelationshipMerge.upsert(existing, relationship);
             PackRevision revision =
                     writeStore.commit(pack, ifMatch, PackWriteStore.Change.relationships(current, merged));
             return new Registered(revision, created, relationship.from());
         });
+    }
+
+    /**
+     * Refuses an edge that would give a held step enhancement an {@code overrides} edge (an enhancement only adds), a
+     * second {@code enhances} edge, or no {@code enhances} edge at all (R-REL, FR-006). The pack loaded, so each held
+     * enhancement has its one {@code enhances} edge already, in a source document or in the registered shard; the
+     * shard is the only one of the two this write can change.
+     */
+    private static void refuseStepEnhancementEdge(
+            Pack current, Relationship relationship, List<Relationship> registered) {
+        Urn from = relationship.from();
+        if (isHeldStepEnhancement(current, from)) {
+            if (relationship.type() == RelationType.OVERRIDES) {
+                throw refused(from, "an enhancement only adds, so it cannot be the source of an overrides edge");
+            }
+            boolean registeredAlready = registered.stream()
+                    .anyMatch(edge -> edge.type() == RelationType.ENHANCES
+                            && edge.from().equals(from)
+                            && edge.equals(relationship));
+            if (relationship.type() == RelationType.ENHANCES && !registeredAlready) {
+                throw refused(from, "it has its enhances edge already and may have exactly one");
+            }
+        }
+        for (Relationship edge : registered) {
+            if (edge.type() == RelationType.ENHANCES
+                    && isHeldStepEnhancement(current, edge.from())
+                    && edge.equals(relationship)
+                    && !(relationship.type() == RelationType.ENHANCES
+                            && relationship.from().equals(edge.from()))) {
+                throw refused(edge.from(), "the relationship would replace its enhances edge and leave it with none");
+            }
+        }
+    }
+
+    private static boolean isHeldStepEnhancement(Pack pack, Urn urn) {
+        return urn.kind() == NodeKind.STEP_ENHANCEMENT && urnsOf(pack).contains(urn);
+    }
+
+    private static CharterRefusal refused(Urn enhancement, String rule) {
+        return new CharterRefusal(
+                RefusalCode.PROMPT_FRAGMENT_INVALID,
+                "The step enhancement " + enhancement + " is refused: " + rule + ".");
     }
 
     private void precondition(PackIdentifier pack, @Nullable String ifMatch) {

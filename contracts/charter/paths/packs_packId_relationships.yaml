@@ -103,6 +103,10 @@ put:
         defining one id, among them), and one that would break a relation rule with override_not_permitted,
         enhances_cycle, conflicting_relations, self_override or override_cycle. The packs member names the closure's
         root pack and the packs involved, and nothing is written.
+        An edge that would give a held step enhancement an overrides edge or a second enhances edge, or replace its one
+        enhances edge (prompt_fragment_invalid), is refused as well: an enhancement only adds and has exactly one
+        enhances edge, and the detail names the enhancement. This is the one operation that answers the code as the
+        problem's own, 422 in place of the 500 of a read; nothing is written.
       headers:
         Charter-Contract-Version:
           $ref: ../headers/CharterContractVersion.yaml

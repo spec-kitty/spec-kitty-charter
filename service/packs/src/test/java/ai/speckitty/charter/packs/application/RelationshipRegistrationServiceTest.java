@@ -26,8 +26,11 @@ import ai.speckitty.charter.packs.domain.MutabilityLevel;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackRepository;
+import ai.speckitty.charter.packs.domain.PromptFragment;
+import ai.speckitty.charter.packs.domain.StepEnhancement;
 import ai.speckitty.charter.packs.domain.Template;
 import ai.speckitty.charter.packs.domain.WritePolicyGate;
+import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
 import ai.speckitty.charter.packs.infra.storage.CommitStorePackWriteStore;
 import ai.speckitty.charter.packs.infra.storage.DomainRepositoryService;
 import ai.speckitty.charter.packs.infra.storage.PackCommitStore;
@@ -447,6 +450,159 @@ class RelationshipRegistrationServiceTest {
                         Optional.empty(),
                         Optional.empty()))
                 .build();
+    }
+
+    // ---- R-REL: the edge rules of a held step enhancement, judged before anything is written
+    // ----------------------------
+
+    private static StepEnhancement enhancement(String id) {
+        return new StepEnhancement(
+                id,
+                PACK,
+                StepEnhancement.SCHEMA_VERSION,
+                List.of(new StepEnhancement.Entry(
+                        "spdd:reasons-block",
+                        new PromptFragment(
+                                id + ".prompt-fragment.md",
+                                new MarkdownDocument(Optional.empty(), Optional.empty(), "Fill it.", List.of())))));
+    }
+
+    private static final Urn ENHANCEMENT = new Urn(NodeKind.STEP_ENHANCEMENT, "spdd-plan");
+    private static final Urn STEP = new Urn(NodeKind.ACTION, "software-dev/plan");
+    private static final Urn OTHER_STEP = new Urn(NodeKind.ACTION, "software-dev/build");
+    private static final Urn TYPE = new Urn(NodeKind.MISSION_TYPE, "software-dev");
+
+    private void seedEnhancementAndDirectives() {
+        Pack pack = store.packs
+                .get(PACK)
+                .with(enhancement("spdd-plan"))
+                .with(directive("A"))
+                .with(directive("B"));
+        store.packs.put(PACK, pack);
+    }
+
+    private void assertRefusedAndNothingWritten(Relationship relationship, String named) {
+        int before = store.commits;
+        List<Relationship> shard = store.relationships(PACK);
+
+        assertThatThrownBy(() -> service.registerRelationship(
+                        PACK, relationship, store.currentRevision(PACK).token()))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.PROMPT_FRAGMENT_INVALID);
+                    assertThat(refusal.getMessage())
+                            .contains(ENHANCEMENT.toString())
+                            .contains(named);
+                });
+        assertThat(store.commits).isEqualTo(before);
+        assertThat(store.relationships(PACK)).isEqualTo(shard);
+    }
+
+    @Test
+    void anOverridesEdgeFromAHeldStepEnhancementIsRefusedAndTheShardIsUnchanged() {
+        seedEnhancementAndDirectives();
+
+        assertRefusedAndNothingWritten(Relationship.of(ENHANCEMENT, TYPE, RelationType.OVERRIDES), "overrides");
+    }
+
+    @Test
+    void theTwinOfTheOverridesRefusalIsAnOverridesEdgeFromADirectiveAndItIsRegistered() {
+        seedEnhancementAndDirectives();
+        Urn a = new Urn(NodeKind.DIRECTIVE, "A");
+        Urn b = new Urn(NodeKind.DIRECTIVE, "B");
+        int before = store.commits;
+
+        service.registerRelationship(
+                PACK,
+                Relationship.of(a, b, RelationType.OVERRIDES),
+                store.currentRevision(PACK).token());
+
+        assertThat(store.commits).isEqualTo(before + 1);
+        assertThat(store.relationships(PACK))
+                .singleElement()
+                .satisfies(r -> assertThat(r.type()).isEqualTo(RelationType.OVERRIDES));
+    }
+
+    @Test
+    void aSecondEnhancesEdgeFromAHeldStepEnhancementIsRefusedAndTheShardIsUnchanged() {
+        seedEnhancementAndDirectives();
+
+        assertRefusedAndNothingWritten(Relationship.of(ENHANCEMENT, STEP, RelationType.ENHANCES), "enhances");
+    }
+
+    @Test
+    void anEnhancesEdgeToANonStepIsRefusedBySameRule() {
+        seedEnhancementAndDirectives();
+
+        assertRefusedAndNothingWritten(
+                Relationship.of(ENHANCEMENT, new Urn(NodeKind.DIRECTIVE, "A"), RelationType.ENHANCES), "enhances");
+    }
+
+    @Test
+    void reRegisteringTheEnhancesEdgeTheShardAlreadyHoldsIsAnIdempotentUpsert() {
+        seedEnhancementAndDirectives();
+        store.edges.put(PACK, new ArrayList<>(List.of(Relationship.of(ENHANCEMENT, STEP, RelationType.ENHANCES))));
+        int before = store.commits;
+
+        service.registerRelationship(
+                PACK,
+                new Relationship(
+                        ENHANCEMENT, STEP, RelationType.ENHANCES, Optional.empty(), Optional.of("a new rationale")),
+                store.currentRevision(PACK).token());
+
+        assertThat(store.commits).isEqualTo(before + 1);
+        assertThat(store.relationships(PACK))
+                .singleElement()
+                .satisfies(r -> assertThat(r.rationale()).contains("a new rationale"));
+    }
+
+    @Test
+    void aSecondEnhancesEdgeIsStillRefusedWhenTheShardHoldsAnother() {
+        seedEnhancementAndDirectives();
+        store.edges.put(PACK, new ArrayList<>(List.of(Relationship.of(ENHANCEMENT, STEP, RelationType.ENHANCES))));
+
+        assertRefusedAndNothingWritten(Relationship.of(ENHANCEMENT, OTHER_STEP, RelationType.ENHANCES), "enhances");
+    }
+
+    @Test
+    void aRelationshipOfAnotherTypeOverTheEnhancesPairOfAHeldEnhancementWouldReplaceItAndIsRefused() {
+        seedEnhancementAndDirectives();
+        Urn a = new Urn(NodeKind.DIRECTIVE, "A");
+        store.edges.put(PACK, new ArrayList<>(List.of(Relationship.of(ENHANCEMENT, a, RelationType.ENHANCES))));
+
+        assertRefusedAndNothingWritten(Relationship.of(a, ENHANCEMENT, RelationType.SUGGESTS), "leave it with none");
+    }
+
+    @Test
+    void theTwinOfTheReplaceRefusalIsTheSameTypeBetweenTwoDirectivesAndItIsRegistered() {
+        seedEnhancementAndDirectives();
+        Urn a = new Urn(NodeKind.DIRECTIVE, "A");
+        Urn b = new Urn(NodeKind.DIRECTIVE, "B");
+        store.edges.put(PACK, new ArrayList<>(List.of(Relationship.of(a, b, RelationType.ENHANCES))));
+        int before = store.commits;
+
+        service.registerRelationship(
+                PACK,
+                Relationship.of(b, a, RelationType.SUGGESTS),
+                store.currentRevision(PACK).token());
+
+        assertThat(store.commits).isEqualTo(before + 1);
+        assertThat(store.relationships(PACK))
+                .singleElement()
+                .satisfies(r -> assertThat(r.type()).isEqualTo(RelationType.SUGGESTS));
+    }
+
+    @Test
+    void anEdgeThatDoesNotStartAtAHeldStepEnhancementIsNotJudgedByTheEnhancementRules() {
+        seedEnhancementAndDirectives();
+        Urn a = new Urn(NodeKind.DIRECTIVE, "A");
+        int before = store.commits;
+
+        service.registerRelationship(
+                PACK,
+                Relationship.of(a, ENHANCEMENT, RelationType.SUGGESTS),
+                store.currentRevision(PACK).token());
+
+        assertThat(store.commits).isEqualTo(before + 1);
     }
 
     /** One fake that realizes both the load port and the write-path port, recording what a commit persisted. */
