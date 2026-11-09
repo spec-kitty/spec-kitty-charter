@@ -56,13 +56,13 @@
     },
     {
       "criterion_id": "FR-006",
-      "description": "Verify FR-006 is satisfied",
+      "description": "A relationship DELETE removes the edge from registered.graph.yaml only (204), answers 404 relationship_not_found when the pack holds no edge on the pair, and 409 relationship_not_registered without rewriting any file when the edge is authored in a source shard or drg/fragment.yaml, held in both, or derived.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "contracts/charter/scenarios/pack-removal.feature: \"A registered relationship is removed, whichever end the request names first\"; contracts/charter/scenarios/pack-removal.feature: \"An edge the author wrote into a source shard is refused, and the file is not rewritten\"",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:45:36.001650+00:00",
+      "notes": "PR A (#419, WP19); ruling DM-01M6TQ62HXYF362GAFS2BZ3PGF and DM-01M6TR1KDAJ64GMJD6AYNZKT59. Also 'An edge the author wrote into drg/fragment.yaml...', 'A pair held both...', 'A derived relation is refused as not registered'."
     },
     {
       "criterion_id": "FR-007",
