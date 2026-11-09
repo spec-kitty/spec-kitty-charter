@@ -264,6 +264,18 @@
       "verdict": "in-mission",
       "wp": "WP05"
     },
+    "#411": {
+      "evidence_ref": "Out of scope for this mission by the operator's rulings (handover: do not take on #406, #407, #409, #411, #97, #99)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": "WP29"
+    },
     "#416": {
       "evidence_ref": "Lookup cache proposal raised by the operator's 2026-11-07 request; the mission keeps its local fixes (WP15 pin, WP16 identity scan) and is not blocked on #416",
       "fr": null,
