@@ -359,6 +359,18 @@
       "title": null,
       "verdict": "not-applicable",
       "wp": null
+    },
+    "#436": {
+      "evidence_ref": "Merged PR for #430 outside this mission; its D4b deviation is taken by WP27 (T161) and WP28 (T164)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
     }
   },
   "schema_version": 1
