@@ -45,7 +45,8 @@ final class Yaml {
      * such as {@code 2026-07-29}, octal, binary, sexagesimal and underscored numbers, {@code <<} and {@code =}).
      * The emitter writes a string plain only when the schema resolves the plain form back to a string, so with these
      * resolvers a string that core's YAML 1.1 loader (ruamel) would read as another type is quoted. Nothing is ever
-     * <em>loaded</em> with it, so the extra tags need no constructors.
+     * <em>loaded</em> with it, so the extra tags need no constructors. The sexagesimal branches are possessive, so a
+     * scalar of any length is judged without recursing once per {@code :NN} segment (#441).
      */
     private static final class Yaml11SafeDumpSchema implements Schema {
         private static final Tag TIMESTAMP = new Tag(Tag.PREFIX + "timestamp");
@@ -64,13 +65,13 @@ final class Yaml {
             resolver.addImplicitResolver(
                     Tag.INT,
                     Pattern.compile("^(?:[-+]?0b[0-1_]+|[-+]?0[0-7_]+|[-+]?(?:0|[1-9][0-9_]*)|[-+]?0x[0-9a-fA-F_]+"
-                            + "|[-+]?[1-9][0-9_]*(?::[0-5]?[0-9])+)$"),
+                            + "|[-+]?[1-9][0-9_]*+(?::[0-5]?[0-9])++)$"),
                     "-+0123456789");
             resolver.addImplicitResolver(
                     Tag.FLOAT,
                     Pattern.compile(
                             "^(?:[-+]?(?:[0-9][0-9_]*)?\\.[0-9_]*(?:[eE][-+][0-9]+)?"
-                                    + "|[-+]?[0-9][0-9_]*(?::[0-5]?[0-9])+\\.[0-9_]*|[-+]?\\.(?:inf|Inf|INF)|\\.(?:nan|NaN|NAN))$"),
+                                    + "|[-+]?[0-9][0-9_]*+(?::[0-5]?[0-9])++\\.[0-9_]*|[-+]?\\.(?:inf|Inf|INF)|\\.(?:nan|NaN|NAN))$"),
                     "-+0123456789.");
             resolver.addImplicitResolver(
                     TIMESTAMP,
