@@ -36,13 +36,13 @@
     },
     {
       "criterion_id": "FR-004",
-      "description": "Verify FR-004 is satisfied",
+      "description": "POST /packs naming a fetchable source (https_archive, git or filesystem) with its target packId and optional sha256 or commit is accepted 202, fetches the pack, applies the same validation and full replacement, and on success the status records the source location.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "contracts/charter/scenarios/registration/whole-pack-registration.feature: \"A pack fetched from an allowlisted https archive is registered and its source recorded\"; contracts/charter/scenarios/registration/whole-pack-registration.feature: \"A git ref is pinned to the commit it points at, and the commit is the source's record\"",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:45:29.896797+00:00",
+      "notes": "PR A (#419, WP17/WP18; git answers once git >= 2.50.1). Refusals pinned by the outline 'A source the service refuses ends the registration refused with pack_source_refused' (allowlist, digest mismatch, other target, foreign member)."
     },
     {
       "criterion_id": "FR-005",
