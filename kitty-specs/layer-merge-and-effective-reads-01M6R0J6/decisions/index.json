@@ -2021,6 +2021,29 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-09T15:18:07.714060Z",
+      "decision_id": "01M70E6PK2HSWEFDVS9KGRGE71",
+      "final_answer": "proceed with --allow-sparse-checkout: the sparse config is byte-identical to the managed one on lane-y and lane-z",
+      "input_key": "pr-c-lane-brace-sparse",
+      "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",
+      "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
+      "opened_by": "claude-runner",
+      "options": [
+        "proceed with --allow-sparse-checkout: the sparse config is byte-identical to the managed one on lane-y and lane-z",
+        "re-allocate WP29 to another lane"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "implement WP29 refuses lane-{ as legacy sparse-checkout state: the CLI's lane-id pattern (lane-[a-z]+, branch_naming.py:109) does not match the allocated lane id lane-{, so its own managed status exclusion reads as unmanaged. Proceed?",
+      "rationale": "Runner: lane-{ worktree's config.worktree and info/sparse-checkout equal lane-y's and lane-z's (sparseCheckout=true, cone=false, /* minus the two Mission status files), which the CLI wrote itself; only the lane-id regex rejects '{'. Re-allocating would rewrite lanes.json for a CLI naming bug. No core change or issue (C-003); noted in the closeout notes. Later CLI steps on lane-{ are watched for the same pattern.",
+      "resolved_at": "2026-11-09T15:18:09.780871Z",
+      "resolved_by": "claude-runner",
+      "slot_key": "pr-c-lane-brace-sparse",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",

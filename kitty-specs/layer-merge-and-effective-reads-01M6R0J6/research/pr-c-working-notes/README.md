@@ -2,15 +2,22 @@
 
 Kept so another runner or session can take over. The live state is on the branches; these are the notes behind it.
 
-## State at this snapshot
+## State at this snapshot (updated)
 
 - **WP27** approved (two review cycles), lane `kitty/mission-layer-merge-and-effective-reads-01M6R0J6-lane-y`.
-- **WP28** in fix cycle 1 on lane `…-lane-z`. The reviewer approved with minors; the runner folds MINOR-1, -2 and -4 and the NITs
-  before approval (see `wp28-review-cycle-1.md`, "Runner dispositions"). The implementer's uncommitted work in the
-  lane worktree is not pushed: a new runner restarts the fix cycle from that review file if it is lost.
-- **WP29** planned; `lane-{` is not built yet. Rebuild it on `lane-z` once WP28 is approved, as `lane-y` and `lane-z` were
-  (one signed merge commit: the dependency lane's code tree, the current planning commit's planning files, the lane's
-  status files; parents: the lane, its dependency lanes, the planning commit), then `agent action implement WP29`.
+- **WP28** approved (two review cycles), lane `…-lane-z` (built on `lane-y`).
+- **WP29** implemented on lane `…-lane-{` (built on `lane-z`): T143–T146 and T165 marked done, six signed commits
+  `66481b02..0fa69ecc`, pushed; hand-off `wp29-handoff.md`. **Not yet reviewed.** Next: re-pin the planning commit,
+  merge it into `lane-{`, `move-task WP29 --to for_review --allow-sparse-checkout` (decision `01M70E6PK2HSWEFDVS9KGRGE71`:
+  the CLI's lane-id pattern rejects `{`), then an opus `reviewer-renata` review.
+- **The `{` in the lane directory breaks the build:** `:charter-api:validateContract` fails with "Illegal character in
+  path", so nothing that compiles the API runs inside `.worktrees/…-lane-{`. The WP29 implementer built and tested
+  from a copy (`/tmp/claude-0/wp29-build`, synced by a script) and committed only in the lane. A reviewer must do the
+  same (or check out the lane head into a worktree whose path has no `{`). The PR C history rebuild and the
+  `verifyAll` gate run on a normally named branch/worktree, so the gate is unaffected.
+- Two NITs per approved WP (Javadoc/comment reflow, long description lines) are folded at closeout.
+- The coordination worktree carries ~380 untracked files (copies of main-era files); nothing tracked is modified and
+  nothing of it is committed. Ignore them, or `git clean` that worktree only after checking.
 
 ## Files
 
