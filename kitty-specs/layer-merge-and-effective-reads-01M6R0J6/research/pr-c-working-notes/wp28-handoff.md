@@ -117,3 +117,17 @@ controller: with no reserved operation left there is nothing real to route).
   ("Ruled, not built" / "Planned, not built") and E12's "Partly built", the `Links.yaml` prose is unaffected. `ReservedOperationCoverageTest`
   now counts 0 (its control is a planted contract), and no scenario pins a 501.
 - The `HexagonalArchitectureTest` rule `RESERVED_METHOD_READS_NOTHING` now allows an empty selection (as its type-level sibling does).
+
+## Cycle 1 fixes (claude:sonnet:java-jenny)
+
+Red `302a475c` -> fix (the commit after it). Tasks marked done again; `git status` clean; nothing pushed.
+
+| Finding | Failing assertion seen at red |
+|---|---|
+| MINOR-1 once-per-request resolution | Adapter-level pins `ClosureViewSessionStepRefsTest.theInForceStatesOfOneRequestAreResolvedOnceForTheSetTheGraphAndTheWalk` and `aDifferentRequestOfTheSameSessionResolvesAgain` (isSameAs on `ClosureViewSession.statesOf`, which lost its `private`). They pass on the existing cache; control: with the cache condition forced to resolve every call, both fail ('Expecting actual: InForceStates[...]'), and they pass with it restored |
+| MINOR-2 (decision 01M70CTZP7P2EHSCK2G0RET74B) | `EffectiveSetTest.anArtifactAnotherArtifactInForceRequiresOutsideTheContext...`: 'Expecting an empty Optional but was containing value: EffectiveArtifact[S ...]', control S2 in the same set. Fix: `EffectiveSet.suggested` requires the listing's own suggestion, carries the walk's edge. Older fixtures got the suggests edge the rule needs |
+| MINOR-4 | `EffectiveReadServiceTest.anUnknownNameIsRefusedBeforeTheTag...` and `ClosureViewSessionStepRefsTest.theNamesOfAnActionAreJudged...`: 'Expecting code to raise a throwable'. Fix: `PacksSession.requireAction` before the tag; known names keep the 304. No scenario line: the matching tag of an unknown name cannot be built from a scenario |
+| NITs | reflowed (HexagonalArchitectureTest, ClosureViewSessionStepRefsTest, EffectiveTag Javadoc); also the yaml line I touched |
+
+MINOR-3 is accepted as a record by the runner. Gates: `:contracts:check :activations:check :packs:check :deployable:check` (1201 tests) `:client-java:test` BUILD SUCCESSFUL (4m21s), activations 786 tests pass.
+For WP29: E16 now reads "a context suggestion is an artifact the listing gives a suggestion and that a listed entry reaches through suggests".
