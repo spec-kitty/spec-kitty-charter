@@ -153,6 +153,13 @@ final class DomainRoundTrip implements WholePackRoundTrip {
                 writeAll(from, to, id, pack == null ? null : beforeSave.apply(pack), sourcePlaces(sourceIds, kindOf));
         Map<String, List<String>> refusals = pack == null ? Map.of() : byFile(pack.violations(), "");
         @Nullable String assemblyFailure = loaded.failure();
+        // The shards are written before the read-back: the step enhancement rules read the pack's graph documents.
+        Map<String, Outcome> shards = new HashMap<>();
+        kindOf.forEach((path, kind) -> {
+            if (GRAPH_SHARD.equals(kind) && !companions.containsKey(path)) {
+                shards.put(path, shard(name, source, target, path));
+            }
+        });
         Loaded reloaded = descriptorFailure == null ? load(to, id) : new Loaded(null, "nothing was written");
         Map<String, List<String>> readBack = reloaded.pack() == null
                 ? Map.of(READ_BACK_FAILED, List.of("read-back: the written pack does not load: " + reloaded.failure()))
@@ -176,7 +183,7 @@ final class DomainRoundTrip implements WholePackRoundTrip {
                         path,
                         artefact(source, path, kind, refusals, readBack, written, kindOf, sourceIds, assemblyFailure));
             } else if (GRAPH_SHARD.equals(kind)) {
-                outcomes.put(path, shard(name, source, target, path));
+                outcomes.put(path, shards.get(path));
             } else if (ASSET_PAYLOAD.equals(kind) || TEMPLATE.equals(kind)) {
                 outcomes.put(path, payload(path, kind, pack, assemblyFailure, reloaded));
             } else if (MANIFEST.equals(kind)) {
