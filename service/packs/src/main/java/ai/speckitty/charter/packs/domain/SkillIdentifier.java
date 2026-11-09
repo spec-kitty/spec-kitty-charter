@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
  */
 public record SkillIdentifier(String value) {
 
-    private static final Pattern SHAPE = Pattern.compile("[a-z][a-z0-9]*(-[a-z0-9]+)*");
+    private static final Pattern SHAPE = Pattern.compile("[a-z][a-z0-9]*+(?:-[a-z0-9]++)*+");
     private static final int MAX_LENGTH = 64;
 
     private static final ModularRuleset<String> RULES = ModularRuleset.<String>emptyRules()

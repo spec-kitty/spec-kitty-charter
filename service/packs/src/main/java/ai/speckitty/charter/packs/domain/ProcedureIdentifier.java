@@ -12,12 +12,17 @@ import java.util.regex.Pattern;
  */
 public record ProcedureIdentifier(String value) {
 
-    private static final Pattern PATTERN = Pattern.compile("^[a-z0-9]+(-[a-z0-9]+)*$");
+    private static final Pattern PATTERN = Pattern.compile("^[a-z0-9]++(?:-[a-z0-9]++)*+$");
+
+    /** The longest identifier accepted, checked before the pattern (#440). */
+    private static final int MAX_LENGTH = 64;
 
     private static final ModularRuleset<String> RULES = ModularRuleset.<String>emptyRules()
             .must(Constraints.of(
-                    "A procedure identifier must match ^[a-z0-9]+(-[a-z0-9]+)*$.",
-                    text -> text != null && PATTERN.matcher(text).matches()));
+                    "A procedure identifier must match ^[a-z0-9]+(-[a-z0-9]+)*$ and be at most 64 characters.",
+                    text -> text != null
+                            && text.length() <= MAX_LENGTH
+                            && PATTERN.matcher(text).matches()));
 
     /**
      * Checks that the identifier matches the schema pattern.

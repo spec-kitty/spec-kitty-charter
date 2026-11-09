@@ -13,7 +13,10 @@ public sealed interface GuardImplementation permits GuardImplementation.Builtin,
 
     /** {@code builtin:<id>}, {@code asset:<id>} or {@code <pack>::asset:<id>}. */
     Pattern SPELLING =
-            Pattern.compile("builtin:([a-z0-9-]+)|(?:([a-z0-9]+(?:-[a-z0-9]+)*)::)?asset:([A-Za-z0-9_/.-]+)");
+            Pattern.compile("builtin:([a-z0-9-]++)|(?:([a-z0-9]++(?:-[a-z0-9]++)*+)::)?asset:([A-Za-z0-9_/.-]++)");
+
+    /** The longest pack name an asset-backed spelling may qualify with (#440). */
+    int MAX_PACK_LENGTH = 64;
 
     /**
      * Reads the authored spelling.
@@ -32,7 +35,12 @@ public sealed interface GuardImplementation permits GuardImplementation.Builtin,
             return new Builtin(BuiltinGuard.fromId(id)
                     .orElseThrow(() -> new IllegalArgumentException("builtin:" + id + " is not a built-in guard")));
         }
-        return new AssetBacked(Optional.ofNullable(m.group(2)), m.group(3));
+        String pack = m.group(2);
+        if (pack != null && pack.length() > MAX_PACK_LENGTH) {
+            throw new IllegalArgumentException(
+                    "implemented_by '" + text + "' names a pack longer than " + MAX_PACK_LENGTH + " characters");
+        }
+        return new AssetBacked(Optional.ofNullable(pack), m.group(3));
     }
 
     /**
