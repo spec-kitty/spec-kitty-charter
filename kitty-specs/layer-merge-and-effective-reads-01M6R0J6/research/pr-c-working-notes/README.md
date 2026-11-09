@@ -6,11 +6,15 @@ Kept so another runner or session can take over. The live state is on the branch
 
 - **WP27** approved (two review cycles), lane `kitty/mission-layer-merge-and-effective-reads-01M6R0J6-lane-y`.
 - **WP28** approved (two review cycles), lane `…-lane-z` (built on `lane-y`).
-- **WP29** in progress on lane `…-lane-{` (built on `lane-z`), implementer `claude:sonnet:java-jenny`. Pushed commits
-  `66481b02..0fa69ecc` (contract, red tests, the IC-13 rule, rules page and ADR-0059 R6, DIV-239 to DIV-244, the
-  graph/context docs). Anything the implementer has not committed yet is not on the branch. Before review: re-pin
-  the planning commit, merge it into `lane-{`, `move-task WP29 --to for_review` (add `--allow-sparse-checkout` on
-  this lane: decision `01M70E6PK2HSWEFDVS9KGRGE71`, the CLI's lane-id pattern rejects `{`).
+- **WP29** implemented on lane `…-lane-{` (built on `lane-z`): T143–T146 and T165 marked done, six signed commits
+  `66481b02..0fa69ecc`, pushed; hand-off `wp29-handoff.md`. **Not yet reviewed.** Next: re-pin the planning commit,
+  merge it into `lane-{`, `move-task WP29 --to for_review --allow-sparse-checkout` (decision `01M70E6PK2HSWEFDVS9KGRGE71`:
+  the CLI's lane-id pattern rejects `{`), then an opus `reviewer-renata` review.
+- **The `{` in the lane directory breaks the build:** `:charter-api:validateContract` fails with "Illegal character in
+  path", so nothing that compiles the API runs inside `.worktrees/…-lane-{`. The WP29 implementer built and tested
+  from a copy (`/tmp/claude-0/wp29-build`, synced by a script) and committed only in the lane. A reviewer must do the
+  same (or check out the lane head into a worktree whose path has no `{`). The PR C history rebuild and the
+  `verifyAll` gate run on a normally named branch/worktree, so the gate is unaffected.
 - Two NITs per approved WP (Javadoc/comment reflow, long description lines) are folded at closeout.
 - The coordination worktree carries ~380 untracked files (copies of main-era files); nothing tracked is modified and
   nothing of it is committed. Ignore them, or `git clean` that worktree only after checking.
