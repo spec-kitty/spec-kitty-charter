@@ -238,7 +238,8 @@ computes the whole new document from one view of the closure, judges it, and sto
 compare-and-set ([The per-artifact writes](/architecture/offering-and-activation/#the-per-artifact-writes)). A deny entry on a
 required artifact is accepted when an active override of it satisfies the requirement in the document being stored, and
 refused otherwise; a locked artifact is always refused (rule W26, DIV-204; the in-force resolution above judges it, so a
-write and a read cannot disagree).
+write and a read cannot disagree, except for an overrider of a non-activatable kind, which the read shows and the write
+does not count, [#447](https://github.com/spec-kitty/spec-kitty-charter/issues/447)).
 In core, applying a preset over customized lists is refused without `--force`, and the
 applied preset name is not persisted. The service applies a preset over any list: its
 `force` clears the deny entries of the preset's members

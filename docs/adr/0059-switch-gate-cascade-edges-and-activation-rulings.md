@@ -408,8 +408,11 @@ registration and is not the place.
     satisfied when an artifact in force overrides it, directly or through a chain, and "in force" is the read's
     (selected or required, within the language filter, bound to a mission type in force, not denied, not hidden by an
     override). An enhancement never satisfies. A locked `T` is refused `409 artifact_locked` whatever overrides it.
-  - The write and the read cannot disagree: the write asks the same `InForceResolution` the reads share, through the
-    `PacksSession` of its request, and a deny entry it accepts is one the next read applies.
+  - The write and the read cannot disagree, with one exception: the write asks the same `InForceResolution` the reads
+    share, through the `PacksSession` of its request, and a deny entry it accepts is one the next read applies. The
+    exception is an overrider of a non-activatable kind (a template, a guard, a lifecycle): the read shows the required
+    artifact hidden by it, and the write finds no satisfier, so it refuses the deny entry
+    ([#447](https://github.com/spec-kitty/spec-kitty-charter/issues/447)).
   - Scope, as DIV-204: a create judges every deny entry of its body; a replace judges only the deny entries it adds
     (A4 of the amendment of 2026-11-07); a deactivate judges the named target whether or not its deny entry is already
     stored; a preset applied with `force` and a select with `includeDeactivated` add no deny entry and judge none. A

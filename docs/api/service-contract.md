@@ -181,23 +181,23 @@ is exempt, or is out of the cutover. Until a read is decided it has no shape her
 | Effective context (R9): what applies in one project, with activation, exclusions, selection roots, the language filter and the directive allowlist, built on the walk. **It gates cutover stage 3** | [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103) | `spec-kitty charter context --action <name> --mission-type <type>` | The effective context is built (PR C): `getEffectiveActionContext`, with the effective list, report and graph (below). The seam's switch to it (stage 3) is not part of the service |
 | Tension annotation over authored tension relationships ([ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/), [ADR-0045](/adr/0045-tension-beside-the-relationships-and-nodes-keep-every-declared-field/)), in the creed contract set | [#16](https://github.com/spec-kitty/spec-kitty-charter/issues/16), [#77](https://github.com/spec-kitty/spec-kitty-charter/issues/77) | the `in_tension_with` annotation in `charter context` | Not built |
 | Artifact bodies (R2) | [#96](https://github.com/spec-kitty/spec-kitty-charter/issues/96) | `charter.offering` repositories | Answered per pack, for the five served kinds, by `listPackArtifacts` and `getPackArtifact`; the merged `/offering/artifacts` waits for merge |
-| Merged graph and graph queries (R3) | [#97](https://github.com/spec-kitty/spec-kitty-charter/issues/97) | `charter.offering.drg` callers | Deferred to the minor that brings merge |
+| Merged graph and graph queries (R3) | [#97](https://github.com/spec-kitty/spec-kitty-charter/issues/97) | `charter.offering.drg` callers | The effective graph of an activation is built (PR C): `getEffectiveGraph`. The graph queries over a pack and the merged `/offering/graph` wait for merge |
 | Pack listing with presets (R4) | [#98](https://github.com/spec-kitty/spec-kitty-charter/issues/98) | `spec-kitty charter pack list` | Partly answered by `GET /offering` (the configured packs in force); presets deferred |
 | Mission types and the action index (R5) | [#99](https://github.com/spec-kitty/spec-kitty-charter/issues/99) | `specify_cli` mission repositories | Deferred to the minor that brings merge |
 | Profile resolution and lineage | [#102](https://github.com/spec-kitty/spec-kitty-charter/issues/102) | `spec-kitty agent profile show`, profile-load contract | Not built |
-| Active charter and effective activation sets | [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103) | `spec-kitty charter` status commands | Not built |
+| Active charter and effective activation sets | [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103) | `spec-kitty charter` status commands | The effective activation sets are built (PR B and PR C): `listEffectiveArtifacts`, `getActivationSkippedReport`, `getEffectiveGraph` and `getEffectiveActionContext`. The status commands' own output is not part of the service |
 | The other reads (step contracts, expected-artifact manifests, templates, assets, glossary packs, pack skills, model routing, override policy, pack pins, the kind taxonomy) | [#100](https://github.com/spec-kitty/spec-kitty-charter/issues/100), [#101](https://github.com/spec-kitty/spec-kitty-charter/issues/101), [#104](https://github.com/spec-kitty/spec-kitty-charter/issues/104) to [#110](https://github.com/spec-kitty/spec-kitty-charter/issues/110), [#112](https://github.com/spec-kitty/spec-kitty-charter/issues/112) | various | Not built; the kind taxonomy, `/offering/kinds` (R18), is deferred to the minor that brings merge |
 | SPDD/REASONS blocks (R17) | [#111](https://github.com/spec-kitty/spec-kitty-charter/issues/111) | `charter.spdd_reasons`, over the command templates | **Decided: a contract operation with no separate shape.** The marker blocks are text in the built-in pack's `software-dev` step prompts, so they come with the mission-type read that serves those prompts (R5, [#99](https://github.com/spec-kitty/spec-kitty-charter/issues/99)). Whether a project should see them depends on its effective artifacts, which R9 answers. Under [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 10 a project with no activation keys stops seeing them. *Amended 2026-11-08: the blocks move into the opt-in `spdd` pack as prompt fragments of step enhancements, filling slots the built-in prompts declare ([ADR-0066](/adr/0066-a-step-enhancement-may-contribute-prompt-fragments/)). The prompt read then returns the base text and the active fragments per slot; the contract change is made with R5 and R9, not here.* |
 
-R1, R3, R5 and R18 are deferred to the minor that brings merge, activation and cascade
+R5 and R18 are deferred to the minor that brings merge, activation and cascade
 ([#10](https://github.com/spec-kitty/spec-kitty-charter/issues/10),
 [#11](https://github.com/spec-kitty/spec-kitty-charter/issues/11)): they answer merged content, which the service
 does not compute yet (operator ruling 3 on [#126](https://github.com/spec-kitty/spec-kitty-charter/issues/126),
 2026-10-31). No link points to them.
 
-The action-context walk (R1, #95) and its `depth` parameter are decided
-([ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/)) but not served: PR #139
-removed the operation. The reserved 1.0 surface that is built is `ServiceInfo`, the source
+The action-context walk (R1, #95) and its `depth` parameter
+([ADR-0018](/adr/0018-action-context-read-and-seam-access-surface/)) are served by `getEffectiveActionContext`
+(PR C). The 1.0 surface that is built also holds `ServiceInfo`, the source
 fingerprint inputs and the per-worktree token
 ([#113](https://github.com/spec-kitty/spec-kitty-charter/issues/113)).
 

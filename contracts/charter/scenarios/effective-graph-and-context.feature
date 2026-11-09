@@ -643,11 +643,12 @@ Feature: The effective graph and the effective action context answer what the ac
       """
     And the field at "/skipped/missionTypeNotInForce" holds exactly 0 items
 
-  Scenario: US5 AS5 - an unknown mission type or action is 404, whether or not the mission type is in force
+  Scenario: US5 AS5 - an unknown mission type or action is 404, whether or not the mission type is in force, and a depth of 2 is 400
     US5 AS5, FR-019, E16: the merged closure holds software-dev with its step implement, and research (not selected) with
     its step gather. An unknown mission type is 404 mission_type_not_found, an unknown action of a held mission type is 404
     action_not_found, and so is one of research, which is not in force: the names are judged against the closure, not against
     what is in force. research/gather answers 200 in the same scenario: the control that the mission type is held.
+    A depth of 2 is outside 0 to 1, so it is 400 (the operation declares the Problem).
     Given the org pack "main" with the file "pack.yaml":
       """
       pack_id: 01M4P01D5TWB5FKZGNNQG3943R
@@ -715,6 +716,8 @@ Feature: The effective graph and the effective action context answer what the ac
     When I GET "/activations/a-1/mission-types/research/actions/gather/context"
     Then the response status is 200
     And the field at "/artifacts" holds exactly 0 items
+    When I GET "/activations/a-1/mission-types/software-dev/actions/implement/context?depth=2"
+    Then the response status is 400
 
   Scenario Outline: FR-021 - an unknown activation is 404 activation_not_found on the graph and on the context
     FR-021: neither read answers for an activation nothing is stored under. The control is the stored activation a-1, which

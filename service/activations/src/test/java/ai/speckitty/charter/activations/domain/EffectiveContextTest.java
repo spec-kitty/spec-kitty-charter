@@ -203,7 +203,10 @@ class EffectiveContextTest {
         assertThat(context.artifacts())
                 .extracting(artifact -> artifact.ref().urn())
                 .containsExactly("directive:D");
-        assertThat(context.skipped().missionTypeNotInForce()).isEmpty();
+        assertThat(context.skipped().missionTypeNotInForce())
+                .as("the bucket is the requested mission type or nothing: the artifact bound to another mission type"
+                        + " that is out of force, which the activation-wide report lists, is absent (carrier exception)")
+                .isEmpty();
         assertThat(context.skipped().staleIds()).containsExactly(ref("directive:Gone"));
     }
 }
