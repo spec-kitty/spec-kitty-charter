@@ -504,3 +504,113 @@ Feature: Applying a preset to an activation
       """
     Then the response status is 404
     And the problem code is "activation_not_found"
+
+  Scenario: A preset that lists a step enhancement selects it, and the id is kept when the activation is written again
+    US2 AS2 (FR-003, SC-006, ADR-0066 decision 4): the enhancing pack's preset lists activated_step_enhancements, and
+    the pack holds the enhancement (beside the planning mission type of its base, which the Background's packs do not
+    touch). Applying the preset selects it; writing the activation again with that selection keeps the id and does not
+    report it as an artifact no pack holds. The write asserts the selection only, not that the enhancement is in force.
+    Given the org pack "plan-base" with the file "pack.yaml":
+      """
+      pack_id: 01M6ZRYK0000000000000000BS
+      pack_version: 1.0.0
+      parent_pack: null
+      name: plan-base
+      pack_level: org
+      """
+    And the org pack "plan-base" with the file "missions/planning/planning.mission-type.yaml":
+      """
+      schema_version: "1.0"
+      id: planning
+      title: Planning
+      description: Plan the work
+      steps:
+        - id: plan
+          title: Plan
+          role: planner
+          prompt_path: steps/plan.prompt.md
+      """
+    And the org pack "plan-base" with the file "missions/planning/steps/plan.prompt.md":
+      """
+      # Plan
+
+      <!-- spdd:reasons-block:start --><!-- spdd:reasons-block:end -->
+      """
+    And the org pack "plan-base" with the file "mission_type.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes:
+      - urn: action:planning/plan
+        kind: action
+        label: plan
+      edges: []
+      """
+    And the org pack "plan-enhancer" with the file "pack.yaml":
+      """
+      pack_id: 01M6ZRYK0000000000000000E1
+      pack_version: 1.0.0
+      parent_pack: null
+      name: plan-enhancer
+      pack_level: org
+      depends_on:
+      - pack_id: 01M6ZRYK0000000000000000BS
+        range: '>=1.0'
+      """
+    And the org pack "plan-enhancer" with the file "missions/planning/enhancements/spdd-plan.step-enhancement.yaml":
+      """
+      schema_version: '1.0'
+      id: spdd-plan
+      prompt_fragments:
+        - slot: spdd:reasons-block
+          path: spdd-plan.prompt-fragment.md
+      """
+    And the org pack "plan-enhancer" with the file "missions/planning/enhancements/spdd-plan.prompt-fragment.md":
+      """
+      Fill or update the REASONS canvas while composing the plan.
+      """
+    And the org pack "plan-enhancer" with the file "enhancements.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - source: step_enhancement:spdd-plan
+        target: plan-base::action:planning/plan
+        relation: enhances
+      """
+    And the org pack "plan-enhancer" with the file "presets/spdd.yaml":
+      """
+      schema_version: '1.0'
+      id: spdd
+      description: The step enhancement of the planning step.
+      activated_step_enhancements:
+        - id: spdd-plan
+      """
+    And the activation "a-1" holds:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "plan-base"}, {"packId": "plan-enhancer"}]}
+      """
+    When I PUT "/activations/a-1/presets/spdd" with the stored ETag and the body:
+      """
+      {}
+      """
+    Then the response status is 200
+    And the field at "/applied" holds exactly the ids:
+      """
+      step_enhancement:spdd-plan
+      """
+    When I PUT "/activations/a-1" with the body:
+      """
+      {"schemaVersion": 2, "packs": [{"packId": "plan-base"}, {"packId": "plan-enhancer"}], "selected": {"step_enhancement": ["spdd-plan"]}}
+      """
+    Then the response status is 200
+    And the field at "/config/selected/step_enhancement" holds exactly the ids:
+      """
+      spdd-plan
+      """
+    When I GET "/activations/a-1"
+    Then the field at "/config/selected/step_enhancement" holds exactly the ids:
+      """
+      spdd-plan
+      """
