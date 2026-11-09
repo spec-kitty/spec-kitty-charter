@@ -210,6 +210,35 @@ Nothing below is applied in this record. The order is the operator's: core suppo
   lenient flag was not chosen: it is a switch someone has to remember to remove, and a pack could stay on it for
   good.
 
+## Annotations
+
+The decisions above stand as written. Each annotation below is dated, additive and cites its ruling.
+
+### Annotation 2026-11-09: guards and emits are fields (D6)
+
+Operator ruling D6 of the step-enhancement service-alignment mission (phase 1). The guard and emit additions of
+[ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 22 are fields of the step
+enhancement, not edges: `add_guards`, `add_lifecycle_guards` and `emits`. They mirror
+[ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/) decision 10 and
+[ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) decisions 15 and 16. They are built
+under [#434](https://github.com/spec-kitty/spec-kitty-charter/issues/434); until then the schema keeps
+`prompt_fragments` alone, and an enhancement with no fragment is refused with `prompt_fragment_invalid` while the
+three fields are not built.
+
+### Annotation 2026-11-09: how the load codes of decision 8 reach the wire (OD-3 (a), OD-7)
+
+Operator rulings OD-3 (a) and OD-7 of the same mission. The three load checks of decision 8 are built:
+
+- A fault is a per-file violation code inside `422 validation_failed` at registration, one violation per fault,
+  each `{pointer: <pack-relative file>, code}`.
+- On a composing read the same load seat answers `500 pack_unreadable`, naming the first faulty file.
+- The `prompt_slot_not_empty` warning of an unversioned descriptor is not a violation. It is listed in the
+  `diagnostics` of the result of a succeeded registration.
+
+The rules and their moments are on the [Load rules](/architecture/composition-and-activation-rules/#load-rules)
+page. The compose checks of decision 8 are not built; the phase-2 mission
+([#438](https://github.com/spec-kitty/spec-kitty-charter/issues/438)) builds them.
+
 ## Alternatives considered
 
 ### Leave the blocks in `built-in` behind the activation gate
