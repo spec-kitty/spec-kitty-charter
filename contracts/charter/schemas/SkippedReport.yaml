@@ -140,8 +140,8 @@ properties:
     description: >-
       The selected enhancers none of whose targets is in force, each with its targets. An enhancer does not stand on its
       own. A target is a NodeReference: it may be a step of a mission type (kind action, id <missionType>/<step>), which
-      is never in force as an artifact, so an enhancer of a step the closure does not hold, or of a mission type that
-      is not in force, names it here.
+      is never in force as an artifact, so an enhancer of a step the closure does not hold names it here; an enhancer of
+      a step of a mission type that is not in force is listed in missionTypeNotInForce instead.
     x-derived:
       rule: The selected enhancers whose enhances targets are all out of force.
       inputs:
