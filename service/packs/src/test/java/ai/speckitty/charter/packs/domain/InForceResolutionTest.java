@@ -954,4 +954,18 @@ class InForceResolutionTest {
         expect(states, "tactic:B", State.INACTIVE, Reason.ENHANCED_TARGET_NOT_IN_FORCE);
         expect(states, "tactic:C", State.ACTIVE, Reason.SELECTED);
     }
+
+    @Test
+    void theReasonOfARequiredNotInForceEntryIsATypeOfExactlyTheTwoPruningReasons() {
+        // D4b (#436): the Java type behind RequiredNotInForce.reason holds the two reasons the pruning gives, no other.
+        Class<?> type = Arrays.stream(InForceStates.RequiredNotInForce.class.getRecordComponents())
+                .filter(component -> component.getName().equals("reason"))
+                .findFirst()
+                .orElseThrow()
+                .getType();
+
+        assertThat(type.isEnum()).as("the reason type is an enum").isTrue();
+        assertThat(Arrays.stream(type.getEnumConstants()).map(constant -> ((Enum<?>) constant).name()))
+                .containsExactlyInAnyOrder("MISSION_TYPE_NOT_IN_FORCE", "ENHANCED_TARGET_NOT_IN_FORCE");
+    }
 }
