@@ -711,7 +711,7 @@ A candidate another active artifact still reaches, directly or through another k
 
 **W25 Floor refusal on a write.** A per-artifact or preset write judges the floor only on `Den(D') ∖ Den(D₀)`: a
 deactivate of `t ∈ Lk(C)` is `409 artifact_locked`, of `t ∈ Req(C)` is `409 artifact_required`, before any walk. A
-stored deny entry on the floor is tolerated and kept.
+stored deny entry on the floor is tolerated and kept by every write except a deactivate that names it (W26).
 *Source:* ADR-0059 D4; DIV-204; activation mission finding F1; `DocumentRules.checkWrite`,
 `ActivationExclusionService`. **Built.** Relaxed by W26 (built, PR C). The deactivate refuses before the walk and the
 document it computes, cascade included, is judged again before it is stored (`ActivationWrites.commit`).
@@ -724,12 +724,15 @@ document it computes, cascade included, is judged again before it is stored (`Ac
 refuses. The judgement is the in-force resolution's own: `T` is satisfied exactly when the resolution of `D'` reports
 `satisfiedBy` for it (E5, E9), never a second copy of the rule, so an enhancement never satisfies.
 A required artifact may be denied while an active override of it is in force in the document being stored, unless it
-is locked. A create judges every deny entry of the body; a replace, a deactivate, a preset applied with `force` and a
-select with `includeDeactivated` judge only the deny entries they add (W6, W25, DIV-204). A replace that adds the
-override and the deny entry together is accepted. The resolution is asked once, and only when a write adds a deny
-entry on a required, not locked artifact, so a closure whose merge refuses (C21, C28, E7) reaches only that write, as
-`500 pack_unreadable`. A later write that removes the override (an unselect) is not refused: no write judges a stored
-deny entry (W25), and the read lists it in `denyNotApplied` and puts `T` back in force (E5, E21).
+is locked. A create judges every deny entry of the body; a replace judges only the deny entries it adds; a deactivate
+judges the named target whether or not its deny entry is already stored (a second deactivate of a locked artifact is
+`409 artifact_locked`, and of a required one whose override was unselected is `409 artifact_required`); a preset applied
+with `force` and a select with `includeDeactivated` add no deny entry and judge none (W6, W25, DIV-204). A replace that
+adds the override and the deny entry together is accepted. The floor judgement asks the resolution once, and only for a
+deny entry on a required, not locked artifact; the per-artifact writes also ask it, through `warned()`, whenever they
+apply anything, so a closure whose merge refuses (C21, C28, E7) reaches them as `500 pack_unreadable` (E20, DIV-230).
+A later write that removes the override (an unselect) is not refused: it judges no stored entry (only a deactivate of
+`T` itself would), and the read lists the entry in `denyNotApplied` and puts `T` back in force (E5, E21).
 *Source:* decision `DM-01M6R3YX23H46PXGNEFC31E6CT` (operator, Q9); research R12; plan IC-13; ADR-0059 amendment R6.
 **Built (PR C).** Pinned by `DocumentRulesOverrideTest` (one case per scope: create, replace, deactivate, force preset,
 select with `includeDeactivated`; the enhancer, the lock, the stored entry and the merge refusal) and by
