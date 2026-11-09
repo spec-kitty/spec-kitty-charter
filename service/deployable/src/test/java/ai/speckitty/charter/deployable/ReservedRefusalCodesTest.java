@@ -333,7 +333,9 @@ class ReservedRefusalCodesTest {
                 RefusalCode.PROMPT_SLOT_MALFORMED,
                 RefusalCode.PROMPT_SLOT_NOT_EMPTY,
                 RefusalCode.PROMPT_FRAGMENT_INVALID,
-                RefusalCode.PROMPT_SLOT_MISSING
+                RefusalCode.PROMPT_SLOT_MISSING,
+                RefusalCode.MISSION_STEP_CONTRACT_NOT_FOUND,
+                RefusalCode.SKELETON_NOT_FOUND
             };
         }
     }

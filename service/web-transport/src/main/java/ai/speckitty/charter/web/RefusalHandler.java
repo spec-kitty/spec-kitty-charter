@@ -336,7 +336,9 @@ public class RefusalHandler {
                     ARTIFACT_NOT_FOUND,
                     PRESET_NOT_FOUND,
                     RELATIONSHIP_NOT_FOUND,
-                    REGISTRATION_NOT_FOUND -> HttpStatus.NOT_FOUND;
+                    REGISTRATION_NOT_FOUND,
+                    MISSION_STEP_CONTRACT_NOT_FOUND,
+                    SKELETON_NOT_FOUND -> HttpStatus.NOT_FOUND;
             case VALIDATION_FAILED,
                     ACTIVATION_INVALID,
                     PACK_SOURCE_REFUSED,
