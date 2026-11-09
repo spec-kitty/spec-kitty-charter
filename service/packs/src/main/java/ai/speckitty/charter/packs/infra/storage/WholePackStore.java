@@ -20,6 +20,7 @@ import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.domain.PackContents.ParseFailure;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
+import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.StepEnhancementFacts;
@@ -87,6 +88,9 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
      * @param policy the text of the mutability policy file the descriptor names, as read and checked against the
      *     {@code policy} schema (ADR-0063); empty when the descriptor names none, or the named file is missing or
      *     invalid (then a violation on the aggregate)
+     * @param warnings the load findings that do not refuse the pack, kept apart from the aggregate's violations
+     *     (A4): the {@code prompt_slot_not_empty} warning of a step prompt in a pack whose descriptor declares no
+     *     {@code schema_version}
      */
     public record LoadedPack(
             Pack pack,
@@ -94,7 +98,8 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
             List<GraphDocument> graphs,
             List<String> unmodelled,
             Optional<PackManifestDso> manifest,
-            Optional<String> policy) {
+            Optional<String> policy,
+            List<PackFinding> warnings) {
         /**
          * Checks the fields and copies the lists.
          *
@@ -104,6 +109,7 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
          * @param unmodelled the files nothing models
          * @param manifest the manifest, if the pack holds a readable one
          * @param policy the named policy file's text, if the pack holds a valid one
+         * @param warnings the load warnings
          */
         public LoadedPack {
             Objects.requireNonNull(pack, "pack");
@@ -112,6 +118,27 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
             unmodelled = List.copyOf(unmodelled);
             Objects.requireNonNull(manifest, "manifest");
             Objects.requireNonNull(policy, "policy");
+            warnings = List.copyOf(warnings);
+        }
+
+        /**
+         * A loaded pack with no warning.
+         *
+         * @param pack the aggregate
+         * @param layout the layout
+         * @param graphs the DRG documents
+         * @param unmodelled the files nothing models
+         * @param manifest the manifest, if the pack holds a readable one
+         * @param policy the named policy file's text, if the pack holds a valid one
+         */
+        public LoadedPack(
+                Pack pack,
+                PackLayout layout,
+                List<GraphDocument> graphs,
+                List<String> unmodelled,
+                Optional<PackManifestDso> manifest,
+                Optional<String> policy) {
+            this(pack, layout, graphs, unmodelled, manifest, policy, List.of());
         }
 
         /**
@@ -199,7 +226,8 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         PackIdentifier id = new PackIdentifier(read.descriptor().packId());
         Map<Urn, String> places = new HashMap<>();
         FilesystemPackStore.GraphRead graphs = store.readGraphs(key);
-        Pack.Builder builder = DomainRepositoryService.assembly(id, read, places, graphs);
+        List<PackFinding> warnings = new ArrayList<>();
+        Pack.Builder builder = DomainRepositoryService.assembly(id, read, places, graphs, warnings);
         if (!graphs.violations().isEmpty()) {
             PackElementViolation first = graphs.violations().getFirst();
             throw new CharterRefusal(
@@ -229,7 +257,13 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         }
         namedPolicy.ifPresent(modelled::add);
         return new LoadedPack(
-                pack, new PackLayout(places), graphs.documents(), unmodelled(packDir, modelled, key), manifest, policy);
+                pack,
+                new PackLayout(places),
+                graphs.documents(),
+                unmodelled(packDir, modelled, key),
+                manifest,
+                policy,
+                warnings);
     }
 
     /**
@@ -556,7 +590,8 @@ public final class WholePackStore implements WholePackWriteStore.Loader {
         // The facts are read the way the compose reads a stored pack, through a repository that lists only this tree.
         DomainRepositoryService single =
                 new DomainRepositoryService(() -> List.of(new PackLocation(key.value(), level, packDir)), strategy);
-        return new WholePackWriteStore.Contents(loaded.pack(), single.compositionFacts(key), digestsOf(loaded.pack()));
+        return new WholePackWriteStore.Contents(
+                loaded.pack(), single.compositionFacts(key), digestsOf(loaded.pack()), loaded.warnings());
     }
 
     /** A digest of each file-backed artifact as {@link #write} would write it, its companions included. */

@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.domain;
 
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
+import ai.speckitty.charter.kernel.markdown.PromptSlots;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -23,6 +24,8 @@ import org.jspecify.annotations.Nullable;
  *     org charter, a project charter or a graph document outside the load path; filled by a full read only
  * @param stepEnhancements the step enhancements, their companions and the pack's graph edges as plain facts; filled by
  *     a full read only, empty in the load-path scope
+ * @param promptSlots the slot parse of each step prompt the read could parse, over its canonical text; filled by a
+ *     full read only. A prompt the codec refuses is listed in {@code unreadableFiles} instead and has no parse (A5).
  */
 public record PackContents(
         PackRoot root,
@@ -34,7 +37,8 @@ public record PackContents(
         List<ArtifactFacts> artifacts,
         List<AssetFacts> assets,
         List<FileRead.Unreadable<?>> unreadableFiles,
-        StepEnhancementFacts stepEnhancements) {
+        StepEnhancementFacts stepEnhancements,
+        List<PromptSlotFacts> promptSlots) {
     /**
      * Checks the fields and copies the lists.
      *
@@ -48,6 +52,7 @@ public record PackContents(
      * @param assets the asset facts
      * @param unreadableFiles the other files that could not be read
      * @param stepEnhancements the step enhancement facts
+     * @param promptSlots the slot parse of each step prompt
      */
     public PackContents {
         Objects.requireNonNull(root, "root");
@@ -60,6 +65,47 @@ public record PackContents(
         assets = List.copyOf(assets);
         unreadableFiles = List.copyOf(unreadableFiles);
         Objects.requireNonNull(stepEnhancements, "stepEnhancements");
+        promptSlots = List.copyOf(promptSlots);
+    }
+
+    /**
+     * Contents that carry no step prompt slot fact: what the load-path scope reads, and the call sites that predate
+     * the slot rules.
+     *
+     * @param root the pack that was read
+     * @param descriptor what {@code pack.yaml} gave
+     * @param shards the root shards
+     * @param fragment what {@code drg/fragment.yaml} gave
+     * @param files the classified files
+     * @param stepContracts the step contract facts
+     * @param artifacts the artifact facts
+     * @param assets the asset facts
+     * @param unreadableFiles the other files that could not be read
+     * @param stepEnhancements the step enhancement facts
+     */
+    public PackContents(
+            PackRoot root,
+            FileRead<PackDescriptor> descriptor,
+            List<FileRead<RawGraph>> shards,
+            FileRead<RawGraph> fragment,
+            List<ClassifiedFile> files,
+            List<StepContractFacts> stepContracts,
+            List<ArtifactFacts> artifacts,
+            List<AssetFacts> assets,
+            List<FileRead.Unreadable<?>> unreadableFiles,
+            StepEnhancementFacts stepEnhancements) {
+        this(
+                root,
+                descriptor,
+                shards,
+                fragment,
+                files,
+                stepContracts,
+                artifacts,
+                assets,
+                unreadableFiles,
+                stepEnhancements,
+                List.of());
     }
 
     /**
@@ -96,7 +142,28 @@ public record PackContents(
                 artifacts,
                 assets,
                 unreadableFiles,
-                StepEnhancementFacts.none());
+                StepEnhancementFacts.none(),
+                List.of());
+    }
+
+    /**
+     * The slots one step prompt declares, parsed from its canonical text.
+     *
+     * @param file the prompt's pack-relative path
+     * @param parse the slots and the faults of the canonical text ({@code MarkdownCodec.write} of the parsed prompt,
+     *     frontmatter included, A5)
+     */
+    public record PromptSlotFacts(String file, PromptSlots.Parse parse) {
+        /**
+         * Checks the fields.
+         *
+         * @param file the prompt's pack-relative path
+         * @param parse the parse
+         */
+        public PromptSlotFacts {
+            Objects.requireNonNull(file, "file");
+            Objects.requireNonNull(parse, "parse");
+        }
     }
 
     /**

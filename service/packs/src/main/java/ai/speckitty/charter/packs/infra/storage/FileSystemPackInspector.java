@@ -6,6 +6,7 @@ import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.markdown.PromptSlots;
 import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackContents.ArtifactFacts;
 import ai.speckitty.charter.packs.domain.PackContents.AssetFacts;
@@ -189,7 +190,8 @@ public final class FileSystemPackInspector implements PackInspector {
                 full.artifacts,
                 full.assets,
                 full.unreadable,
-                full.stepEnhancementFacts(edgesOf(shards, fragment)));
+                full.stepEnhancementFacts(edgesOf(shards, fragment)),
+                full.promptSlots);
     }
 
     /** The step enhancement edges of the pack's graph documents that were read: the root shards, then the fragment. */
@@ -296,6 +298,7 @@ public final class FileSystemPackInspector implements PackInspector {
         final List<AssetFacts> assets = new ArrayList<>();
         private final List<StepEnhancementFacts.Enhancement> enhancements = new ArrayList<>();
         private final List<StepEnhancementFacts.Companion> companions = new ArrayList<>();
+        final List<PackContents.PromptSlotFacts> promptSlots = new ArrayList<>();
         private final Set<String> fragmentFiles = new HashSet<>();
         private final Set<String> unparsedEnhancements = new HashSet<>();
         private final Set<String> assetIds = new HashSet<>();
@@ -416,6 +419,12 @@ public final class FileSystemPackInspector implements PackInspector {
             }
             if (StepEnhancementBinding.FRAGMENT_SCHEMA.equals(structure)) {
                 fragmentFact(file, outcome);
+            }
+            if (MissionTypeBinding.PROMPT_SCHEMA.equals(structure)
+                    && outcome instanceof FileRead.Read<Object> good
+                    && good.value() instanceof MarkdownDocument document) {
+                promptSlots.add(
+                        new PackContents.PromptSlotFacts(file, PromptSlots.parse(MarkdownCodec.write(document))));
             }
         }
 

@@ -5,6 +5,7 @@ import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
+import ai.speckitty.charter.packs.domain.PackFinding;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -28,20 +29,25 @@ public interface WholePackWriteStore {
      *     documents, derived relations and the registered shard) and its presets
      * @param digests a digest of each file-backed artifact as it would be written, companions included, so that two
      *     trees can be told apart artifact by artifact
+     * @param warnings the load findings that do not refuse the pack, kept apart from its violations: today the
+     *     {@code prompt_slot_not_empty} warning of a step prompt in a pack whose descriptor declares no
+     *     {@code schema_version}. A warning never enters {@link Pack#violations()}.
      */
-    record Contents(Pack pack, PackCompositionFacts facts, Map<Urn, String> digests) {
+    record Contents(Pack pack, PackCompositionFacts facts, Map<Urn, String> digests, List<PackFinding> warnings) {
 
         /**
-         * Checks the fields and copies the map.
+         * Checks the fields and copies the collections.
          *
          * @param pack the aggregate
          * @param facts the composition facts
          * @param digests the digest of each file-backed artifact
+         * @param warnings the load warnings
          */
         public Contents {
             Objects.requireNonNull(pack, "pack");
             Objects.requireNonNull(facts, "facts");
             digests = Map.copyOf(digests);
+            warnings = List.copyOf(warnings);
         }
     }
 

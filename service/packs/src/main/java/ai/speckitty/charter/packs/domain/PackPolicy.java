@@ -194,6 +194,7 @@ public final class PackPolicy {
         findings.addAll(artifactRules(contents.artifacts()));
         findings.addAll(assetRules(contents.assets()));
         findings.addAll(stepEnhancementFindings(name, contents.stepEnhancements(), graphsRead(contents)));
+        findings.addAll(promptSlotFindings(contents));
         findings.sort(PRECEDENCE);
         return new PackVerdict(contents.files(), findings);
     }
@@ -350,6 +351,18 @@ public final class PackPolicy {
                     });
         }
         return faults;
+    }
+
+    /** The slot findings of a full read: the warnings and the blocking faults, by the version the descriptor declares. */
+    private static List<PackFinding> promptSlotFindings(PackContents contents) {
+        Optional<String> version = contents.descriptor() instanceof FileRead.Read<PackDescriptor> read
+                ? read.value().schemaVersion()
+                : Optional.empty();
+        List<PackFinding> findings = new ArrayList<>();
+        for (PackContents.PromptSlotFacts prompt : contents.promptSlots()) {
+            promptSlotFaults(prompt.parse(), version).forEach(fault -> findings.add(findingOf(prompt.file(), fault)));
+        }
+        return findings;
     }
 
     /**
