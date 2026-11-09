@@ -114,3 +114,13 @@ Feature: A pack id longer than its cap refuses the pack as unreadable
     When I GET "/offering"
     Then the response status is 500
     And the problem code is "pack_unreadable"
+
+  Scenario: A directive written with an id of 65 characters is refused, and the pack stays readable
+    When I PUT "/packs/alpha/artifacts/directive/DIRECTIVE_LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLX" with the body:
+      """
+      {"schemaVersion": "1.0", "title": "An id one character over the cap", "intent": "Be refused", "enforcement": "required"}
+      """
+    Then the response status is 422
+    And the problem code is "validation_failed"
+    When I GET "/offering"
+    Then the response status is 200
