@@ -29,5 +29,6 @@ A fragment has no frontmatter and must hold non-blank text. It may not contain a
 - **Canonical render is its meaning.** The service holds the fragment as parsed Markdown and writes it back with equal
   meaning, not byte for byte.
 
-Each refusal is `prompt_fragment_invalid`, naming the file. See
+Each refusal is `prompt_fragment_invalid`. A marker or an orphan is refused at the fragment; at registration and on a
+read, the other faults are refused at the step enhancement that names the fragment. See
 [Load rules](/architecture/composition-and-activation-rules/#load-rules) for the moments and the wire shape.

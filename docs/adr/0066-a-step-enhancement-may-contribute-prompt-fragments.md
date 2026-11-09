@@ -220,14 +220,14 @@ Operator ruling D6 of the step-enhancement service-alignment mission (phase 1). 
 [ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) decision 22 are fields of the step
 enhancement, not edges: `add_guards`, `add_lifecycle_guards` and `emits`. They mirror
 [ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/) decision 10 and
-[ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) decisions 15 and 16. They are built
+[ADR-0050](/adr/0050-mission-types-and-lifecycles-as-declared-state-machines/) decisions 15 and 16. They will be built
 under [#434](https://github.com/spec-kitty/spec-kitty-charter/issues/434); until then the schema keeps
-`prompt_fragments` alone, and an enhancement with no fragment is refused with `prompt_fragment_invalid` while the
-three fields are not built.
+`prompt_fragments` alone, and an enhancement with no fragment is refused while the three fields are not built (D12): an
+absent `prompt_fragments` key with `prompt_fragment_invalid`, an empty list as a schema violation.
 
 ### Annotation 2026-11-09: how the load codes of decision 8 reach the wire (OD-3 (a), OD-7)
 
-Operator rulings OD-3 (a) and OD-7 of the same mission. The three load checks of decision 8 are built:
+Operator rulings OD-3 (a) and OD-7 of the same mission. The three load codes of decision 8 are raised:
 
 - A fault is a per-file violation code inside `422 validation_failed` at registration, one violation per fault,
   each `{pointer: <pack-relative file>, code}`.
