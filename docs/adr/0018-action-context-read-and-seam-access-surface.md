@@ -187,6 +187,10 @@ later is compatible. A compat fixture pins that.
 `depth` caps the suggests steps. `hops` is the full path length from the action. They count
 different things.
 
+*(Note 2026-11-09, PR C: the effective action context is built, and its `depth` is narrower than this decision: the
+contract takes 0 or 1 and defaults to 0 (`Depth.yaml`), where D4 allows 0 to 2 and defaults to 2. See
+[DIV-244](/conformance/divergence-register/). The offering's own context read keeps D4 as written.)*
+
 **Seam mapping:**
 
 | Core's concept | `depth` |

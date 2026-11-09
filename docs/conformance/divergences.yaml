@@ -1635,7 +1635,8 @@
     The effective action context: suggestions, enhancements, order and names
   core: >-
     The service's understanding of core, to be confirmed against core: core's action context has
-    no `enhancements` member, lists entries by step, and allows `depth` 0 to 2 (DIV-110).
+    no `enhancements` member, lists entries by step, and allows `depth` 0 to 2, defaulting to 2
+    (ADR-0018 D4).
   service: >-
     The effective action context lists the artifacts in force the ADR-0018 walk reaches and,
     beside them, suggestions: an artifact the listing gives a suggestion that a listed entry
@@ -1643,7 +1644,8 @@
     through, so the suggestions are a subset of the listing's. It carries `enhancements`
     (`[{target, enhancedBy}]`, one per node with an enhancer in force, the start step included),
     sorts its entries by full URN string, and answers `missionTypeNotInForce` with the mission
-    type itself. An unknown mission type or action is `404` before a `304`. `depth` is 0 or 1.
+    type itself. An unknown mission type or action is `404` before a `304`. `depth` is 0 or 1, and
+    absent is 0.
   rationale: >-
     One suggestion definition for the list and the context; a step enhancer enhances a step,
     which no artifact entry names; and a client never reads the walk's order.
