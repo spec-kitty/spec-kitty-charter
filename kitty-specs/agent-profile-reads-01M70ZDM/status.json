@@ -54,9 +54,9 @@
     },
     "WP02": {
       "actor": "claude",
-      "agent": "claude",
-      "agent_profile": "reviewer-renata",
-      "agent_profile_version": "1.0",
+      "agent": "claude:sonnet:architect-alphonso",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
       "implementer_of_record": "claude",
       "lane": "for_review",
@@ -64,11 +64,12 @@
       "last_transition_at": "2026-11-09T21:54:58.786611+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Ready for review. Commits 7f8159ca (ADR-0037/0006 amendments, module table), 599fd715 (kernel HeaderNames), f0e34e89 (:profiles-edge skeleton, registrations, ArchUnit rules with bite fixtures, wiring test). Mission-types session: mirror :missions-edge from f0e34e89."
+        "Ready for review. Commits 7f8159ca (ADR-0037/0006 amendments, module table), 599fd715 (kernel HeaderNames), f0e34e89 (:profiles-edge skeleton, registrations, ArchUnit rules with bite fixtures, wiring test). Mission-types session: mirror :missions-edge from f0e34e89.",
+        "Implementer hand-off (architect-alphonso); f0e34e89 unchanged"
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": null,
-      "role": "reviewer",
+      "role": "implementer",
       "shell_pid": 28605,
       "shell_pid_created_at": "1794261029.88",
       "subtasks": {
