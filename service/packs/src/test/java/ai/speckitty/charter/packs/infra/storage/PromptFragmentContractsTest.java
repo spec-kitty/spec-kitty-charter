@@ -102,6 +102,74 @@ class PromptFragmentContractsTest {
                 .satisfies(violation -> assertThat(violation.keyword()).isEqualTo("pattern"));
     }
 
+    private static final String ENTRY = "  - slot: spdd:reasons-block\n    path: spdd-specify.prompt-fragment.md\n";
+
+    private static String enhancement(String body) {
+        return "schema_version: \"1.0\"\nid: spdd-specify\n" + body;
+    }
+
+    @Test
+    void anEnhancementWithAnEmptyFragmentListIsRefused() {
+        assertThat(yaml("step-enhancement", enhancement("prompt_fragments: []\n")))
+                .singleElement()
+                .satisfies(violation -> {
+                    assertThat(violation.keyword()).isEqualTo("minItems");
+                    assertThat(violation.pointer()).containsExactly("prompt_fragments");
+                });
+    }
+
+    @Test
+    void aFragmentEntryWithoutASlotOrWithoutAPathIsRefused() {
+        assertThat(yaml(
+                        "step-enhancement",
+                        enhancement("prompt_fragments:\n  - path: spdd-specify.prompt-fragment.md\n")))
+                .singleElement()
+                .satisfies(violation -> {
+                    assertThat(violation.keyword()).isEqualTo("required");
+                    assertThat(violation.property()).contains("slot");
+                    assertThat(violation.pointer()).containsExactly("prompt_fragments", "0");
+                });
+        assertThat(yaml("step-enhancement", enhancement("prompt_fragments:\n  - slot: spdd:reasons-block\n")))
+                .singleElement()
+                .satisfies(violation -> {
+                    assertThat(violation.keyword()).isEqualTo("required");
+                    assertThat(violation.property()).contains("path");
+                    assertThat(violation.pointer()).containsExactly("prompt_fragments", "0");
+                });
+    }
+
+    @Test
+    void aFragmentEntryWithAnExtraKeyIsRefused() {
+        assertThat(yaml("step-enhancement", enhancement("prompt_fragments:\n" + ENTRY + "    position: before\n")))
+                .singleElement()
+                .satisfies(violation -> {
+                    assertThat(violation.keyword()).isEqualTo("additionalProperties");
+                    assertThat(violation.property()).contains("position");
+                    assertThat(violation.pointer()).containsExactly("prompt_fragments", "0");
+                });
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"Spdd-Specify", "spdd_specify", "1spdd", "spdd-", "spdd--specify"})
+    void anEnhancementIdIsLowerCaseHyphenatedWordsStartingWithALetter(String id) {
+        assertThat(yaml("step-enhancement", "schema_version: \"1.0\"\nid: " + id + "\n"))
+                .singleElement()
+                .satisfies(violation -> {
+                    assertThat(violation.keyword()).isEqualTo("pattern");
+                    assertThat(violation.pointer()).containsExactly("id");
+                });
+    }
+
+    @Test
+    void anEnhancementWithoutASchemaVersionIsRefused() {
+        assertThat(yaml("step-enhancement", "id: spdd-specify\n"))
+                .singleElement()
+                .satisfies(violation -> {
+                    assertThat(violation.keyword()).isEqualTo("required");
+                    assertThat(violation.property()).contains("schema_version");
+                });
+    }
+
     @Test
     void aFragmentHasNonBlankMarkdownAndNoFrontmatter() {
         MarkdownDocument preamble = new MarkdownDocument(Optional.empty(), Optional.empty(), "Guidance.", List.of());
