@@ -1,5 +1,6 @@
 package ai.speckitty.charter.packs.infra.api;
 
+import ai.speckitty.charter.kernel.transport.HeaderNames;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -20,9 +21,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Component
 public class CharterHeaders extends OncePerRequestFilter {
 
-    static final String CONTRACT_VERSION = "Charter-Contract-Version";
     static final String WORKTREE = "Charter-Worktree";
-    static final String SOURCE_FINGERPRINT = "Charter-Source-Fingerprint";
 
     private final ServiceInfoQuery info;
 
@@ -43,14 +42,14 @@ public class CharterHeaders extends OncePerRequestFilter {
      */
     static HttpHeaders fingerprint(String sourceFingerprint) {
         HttpHeaders headers = new HttpHeaders();
-        headers.set(SOURCE_FINGERPRINT, sourceFingerprint);
+        headers.set(HeaderNames.SOURCE_FINGERPRINT, sourceFingerprint);
         return headers;
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
-        response.setHeader(CONTRACT_VERSION, ContractVersion.value());
+        response.setHeader(HeaderNames.CONTRACT_VERSION, ContractVersion.value());
         response.setHeader(WORKTREE, info.worktree());
         chain.doFilter(request, response);
     }

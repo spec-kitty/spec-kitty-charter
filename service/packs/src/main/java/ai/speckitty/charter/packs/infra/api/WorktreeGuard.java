@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.infra.api;
 
 import ai.speckitty.charter.api.model.Problem;
+import ai.speckitty.charter.kernel.transport.HeaderNames;
 import ai.speckitty.charter.packs.application.AuditLog;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
 import ai.speckitty.charter.web.Problems;
@@ -220,7 +221,7 @@ public class WorktreeGuard extends OncePerRequestFilter {
     private void refuse(HttpServletResponse response, HttpStatus status) throws IOException {
         byte[] body = mapper.get().writeValueAsBytes(new Problem(Problems.title(status), status.value()));
         response.setStatus(status.value());
-        response.setHeader(CharterHeaders.CONTRACT_VERSION, ContractVersion.value());
+        response.setHeader(HeaderNames.CONTRACT_VERSION, ContractVersion.value());
         response.setHeader(CharterHeaders.WORKTREE, info.worktree());
         response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
         response.setContentLength(body.length);
