@@ -196,13 +196,13 @@
     },
     {
       "criterion_id": "FR-020",
-      "description": "Verify FR-020 is satisfied",
+      "description": "Every effective read carries an ETag over the activation revision and the closure fingerprint, answers 304 to a matching If-None-Match, and a change to a pack of the closure moves the tag.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "contracts/charter/scenarios/effective-reads.feature: \"US3 AS7 - a matching If-None-Match is 304 with the current tag\"; contracts/charter/scenarios/effective-graph-and-context.feature: \"FR-020 - each read has an ETag of its own representation, and a matching If-None-Match is 304\"",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:46:18.564913+00:00",
+      "notes": "PR B (#427) list/report; PR C (#448) graph/context. ADR-0059 D5 as amended (closure-scoped digest, per-representation tags)."
     },
     {
       "criterion_id": "FR-021",
