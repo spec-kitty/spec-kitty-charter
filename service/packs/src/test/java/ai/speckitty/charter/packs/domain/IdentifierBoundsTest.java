@@ -94,7 +94,15 @@ class IdentifierBoundsTest {
         assertThat(GuardImplementation.parse(pack + "::asset:lint"))
                 .isEqualTo(new GuardImplementation.AssetBacked(Optional.of(pack), "lint"));
         assertThatThrownBy(() -> GuardImplementation.parse(pack + "x::asset:lint"))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("longer than 64")
+                .hasMessageNotContaining(pack);
+        // The cap is checked before the spelling is matched, so an over-long qualifier is refused for its length even
+        // when the rest of the text is no spelling at all, and the refusal never echoes the text.
+        assertThatThrownBy(() -> GuardImplementation.parse(pack + "x::asset:!"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("longer than 64")
+                .hasMessageNotContaining(pack);
     }
 
     static Stream<Arguments> kebabVerdicts() {
