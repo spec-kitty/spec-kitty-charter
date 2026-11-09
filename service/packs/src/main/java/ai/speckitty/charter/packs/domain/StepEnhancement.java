@@ -26,7 +26,7 @@ public final class StepEnhancement implements CharterArtifact {
     /** The one schema version of the shape. */
     public static final String SCHEMA_VERSION = "1.0";
 
-    private static final Pattern ID = Pattern.compile("^[a-z][a-z0-9]*(-[a-z0-9]+)*$");
+    private static final Pattern ID = Pattern.compile("^[a-z][a-z0-9]*+(?:-[a-z0-9]++)*+$");
     private static final Pattern SLOT = Pattern.compile("^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*$");
 
     private static final ModularRuleset<StepEnhancement> RULES = ModularRuleset.<StepEnhancement>emptyRules()
