@@ -16,6 +16,7 @@ import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.PackSummaryQuery;
 import ai.speckitty.charter.packs.application.RegistrationImpact;
 import ai.speckitty.charter.packs.application.RegistrationJobs;
+import ai.speckitty.charter.packs.domain.Diagnostic;
 import ai.speckitty.charter.web.RefusalHandler;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -101,7 +102,18 @@ final class PackRegistrationMapper {
         body.setOutcome(
                 PackRegistration.OutcomeEnum.fromValue(outcome.outcome().name().toLowerCase(Locale.ROOT)));
         body.setNotices(notices(outcome.notices()));
+        body.setDiagnostics(outcome.diagnostics().stream()
+                .map(PackRegistrationMapper::diagnostic)
+                .toList());
         return body;
+    }
+
+    /** A load warning on the wire: its code token and its detail, which names pack-relative paths only. */
+    private static ai.speckitty.charter.api.model.Diagnostic diagnostic(Diagnostic warning) {
+        return new ai.speckitty.charter.api.model.Diagnostic(
+                ai.speckitty.charter.api.model.Diagnostic.CodeEnum.fromValue(
+                        warning.code().token()),
+                warning.detail());
     }
 
     /** The source as the request named it, which the fetcher recorded: its kind, and the URL or the path. */

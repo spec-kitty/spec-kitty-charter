@@ -20,6 +20,11 @@ value:
           artifactId: B
       locksAdded: []
       locksRemoved: []
+    diagnostics:
+      - code: prompt_slot_not_empty
+        detail: >-
+          missions/software-dev/steps/plan.prompt.md: line 8: slot spdd:reasons-block holds text; the descriptor
+          declares no schema_version, so this is a warning
     _links:
       self:
         href: /api/v1/packs/acme-review-pack

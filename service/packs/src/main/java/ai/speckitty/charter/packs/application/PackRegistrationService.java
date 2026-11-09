@@ -10,7 +10,9 @@ import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.transport.PreconditionException;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
+import ai.speckitty.charter.packs.domain.Diagnostic;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
+import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.WritePolicyGate;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
@@ -119,6 +121,8 @@ public final class PackRegistrationService {
      * @param level the level the pack is stored at
      * @param revision the revision of the stored state, the {@code ETag}
      * @param notices the floor and lock notices of FR-027
+     * @param diagnostics the load warnings of the staged pack, kept apart from its violations (OD-7); empty when the
+     *     load found nothing to warn about
      */
     public record RegistrationOutcome(
             Outcome outcome,
@@ -126,10 +130,11 @@ public final class PackRegistrationService {
             PackDescriptor descriptor,
             PackLevel level,
             PackRevision revision,
-            RegistrationImpact.Notices notices) {
+            RegistrationImpact.Notices notices,
+            List<Diagnostic> diagnostics) {
 
         /**
-         * Checks the fields and copies the list.
+         * Checks the fields and copies the lists.
          *
          * @param outcome what was done
          * @param pack the pack's name
@@ -137,6 +142,7 @@ public final class PackRegistrationService {
          * @param level the level
          * @param revision the revision
          * @param notices the notices
+         * @param diagnostics the load warnings
          */
         public RegistrationOutcome {
             Objects.requireNonNull(outcome, "outcome");
@@ -145,6 +151,27 @@ public final class PackRegistrationService {
             Objects.requireNonNull(level, "level");
             Objects.requireNonNull(revision, "revision");
             Objects.requireNonNull(notices, "notices");
+            diagnostics = List.copyOf(diagnostics);
+        }
+
+        /**
+         * An outcome with no diagnostics.
+         *
+         * @param outcome what was done
+         * @param pack the pack's name
+         * @param descriptor the descriptor
+         * @param level the level
+         * @param revision the revision
+         * @param notices the notices
+         */
+        public RegistrationOutcome(
+                Outcome outcome,
+                PackIdentifier pack,
+                PackDescriptor descriptor,
+                PackLevel level,
+                PackRevision revision,
+                RegistrationImpact.Notices notices) {
+            this(outcome, pack, descriptor, level, revision, notices, List.of());
         }
     }
 
@@ -605,6 +632,14 @@ public final class PackRegistrationService {
     private static RegistrationOutcome outcome(
             Outcome outcome, Upload upload, PackRevision revision, RegistrationImpact.Notices notices) {
         return new RegistrationOutcome(
-                outcome, new PackIdentifier(upload.packId()), upload.descriptor(), upload.level(), revision, notices);
+                outcome,
+                new PackIdentifier(upload.packId()),
+                upload.descriptor(),
+                upload.level(),
+                revision,
+                notices,
+                upload.contents().warnings().stream()
+                        .map(PackFinding::toDiagnostic)
+                        .toList());
     }
 }

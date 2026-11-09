@@ -174,8 +174,9 @@ Feature: A step prompt's slots are judged behind the descriptor-version gate
     And I poll the registration until it ends
     Then the field at "/state" is "succeeded"
 
-  # FR-007, NFR-002: the unversioned twin of the scenario above registers; the text is a warning, not a violation.
-  Scenario: The same text in an unversioned pack registers
+  # FR-007, NFR-002, OD-7: the unversioned twin of the scenario above registers; the text is a warning, listed in the
+  # result's diagnostics at the prompt file, and never a violation.
+  Scenario: The same text in an unversioned pack registers and the result lists the warning
     Given the archive "legacy" is a copy of the archive "unversioned"
     And the archive "legacy" holds the file "missions/software-dev/steps/plan.prompt.md":
       """
@@ -188,6 +189,19 @@ Feature: A step prompt's slots are judged behind the descriptor-version gate
     When I PUT "/packs/slots" with the archive "legacy"
     And I poll the registration until it ends
     Then the field at "/state" is "succeeded"
+    And the field at "/result/diagnostics" holds exactly 1 item(s)
+    And the field at "/result/diagnostics/0/code" is "prompt_slot_not_empty"
+    And the field at "/result/diagnostics/0/detail" contains "missions/software-dev/steps/plan.prompt.md"
+    When I GET "/packs/slots"
+    Then the response status is 200
+    And the response body has no field at "/diagnostics"
+
+  # OD-7: the member is present, and empty, when the load found nothing to warn about.
+  Scenario: A registration with nothing to warn about lists no diagnostics
+    When I PUT "/packs/slots" with the archive "unversioned"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+    And the field at "/result/diagnostics" holds exactly 0 item(s)
 
   # FR-007, the composing read: no read answers a prompt code as the top-level code, it is 500 pack_unreadable.
   Scenario: A closure holding a pack with a malformed slot is unreadable and names the prompt file
