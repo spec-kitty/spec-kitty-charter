@@ -126,13 +126,13 @@
     },
     {
       "criterion_id": "FR-013",
-      "description": "Verify FR-013 is satisfied",
+      "description": "listEffectiveArtifacts answers the artifacts in force (selected within the closure and the read-time language filter, plus the required floor, minus deny entries never on the floor), each with packId, level, state and reason, paged by keyset with a stable summary, and an artifact reached only through suggests carries its when and reason.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "contracts/charter/scenarios/effective-reads.feature: \"US3 AS2 - a denied required directive stays in force with reason required, and the deny entry is not applied\"; contracts/charter/scenarios/effective-reads.feature: \"An artifact reached only through suggests is listed as a suggestion with its when and reason\"",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:45:57.796201+00:00",
+      "notes": "PR B (#427, WP22-WP25); #408 rulings 2-3 (rulings-2026-11-07.md). Also 'The language filter applies at read only...' and 'The list is paged by a keyset cursor, and summary is identical on every page'."
     },
     {
       "criterion_id": "FR-014",
