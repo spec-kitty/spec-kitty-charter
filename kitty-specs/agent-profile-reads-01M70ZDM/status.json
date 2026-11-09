@@ -65,7 +65,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "Ready for review. Commits 7f8159ca (ADR-0037/0006 amendments, module table), 599fd715 (kernel HeaderNames), f0e34e89 (:profiles-edge skeleton, registrations, ArchUnit rules with bite fixtures, wiring test). Mission-types session: mirror :missions-edge from f0e34e89.",
-        "Implementer hand-off (architect-alphonso); f0e34e89 unchanged"
+        "Implementer hand-off (architect-alphonso); f0e34e89 unchanged",
+        "Re-record the implementer of record with its full identity; no code change"
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": null,
