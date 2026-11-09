@@ -980,7 +980,7 @@
     },
     "WP28": {
       "actor": "claude",
-      "agent": "claude:sonnet:java-jenny",
+      "agent": "claude:opus:reviewer-renata",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -991,7 +991,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "Ready for review: T138-T142, T162-T164; hand-off /tmp/claude-0/wp28-handoff.md; decision 01M70C42KC78KB9H6KB7TK9224 (enhancements member)",
-        "Cycle 1 fixes 302a475c (red), 0f439309 (fix)"
+        "Cycle 1 fixes 302a475c (red), 0f439309 (fix)",
+        "Review cycle 2 approved; two NITs (requireAction comment reflow, a long description line) folded at closeout"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
