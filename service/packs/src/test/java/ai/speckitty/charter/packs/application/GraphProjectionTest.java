@@ -133,7 +133,7 @@ class GraphProjectionTest {
     @Test
     void theLayerOverridesAreThoseOfTheNodesInArtifactThenLosingLevelThenLosingPackOrder() {
         Closure closure = new Closure()
-                .pack("beta", PackLevel.BUILT_IN, List.of("tactic:A", "directive:D", "tactic:Out"))
+                .pack("zeta", PackLevel.BUILT_IN, List.of("tactic:A", "directive:D", "tactic:Out"))
                 .pack("org", PackLevel.ORG, List.of("directive:D", "tactic:A", "tactic:Out"))
                 .pack("project", PackLevel.PROJECT, List.of("directive:D", "tactic:A", "tactic:Out"));
 
@@ -145,9 +145,9 @@ class GraphProjectionTest {
                         replaced -> replaced.loser().level(),
                         replaced -> replaced.loser().packId())
                 .containsExactly(
-                        tuple(urn("directive:D"), PackLevel.BUILT_IN, new PackIdentifier("beta")),
+                        tuple(urn("directive:D"), PackLevel.BUILT_IN, new PackIdentifier("zeta")),
                         tuple(urn("directive:D"), PackLevel.ORG, new PackIdentifier("org")),
-                        tuple(urn("tactic:A"), PackLevel.BUILT_IN, new PackIdentifier("beta")),
+                        tuple(urn("tactic:A"), PackLevel.BUILT_IN, new PackIdentifier("zeta")),
                         tuple(urn("tactic:A"), PackLevel.ORG, new PackIdentifier("org")));
     }
 
@@ -158,7 +158,8 @@ class GraphProjectionTest {
                 edge("directive:D", RelationType.SUGGESTS, "tactic:T"),
                 edge("directive:D", RelationType.REQUIRES, "tactic:U"),
                 edge("directive:D", RelationType.REQUIRES, "tactic:T"),
-                edge("directive:D", RelationType.REQUIRES, "tactic:T"));
+                edge("directive:D", RelationType.REQUIRES, "tactic:T"),
+                edge("directive:D", RelationType.ENHANCES, "tactic:T"));
         List<String> held = List.of("directive:D", "tactic:T", "tactic:U");
         Predicate<Urn> all = inForce("directive:D", "tactic:T", "tactic:U");
 
@@ -168,6 +169,7 @@ class GraphProjectionTest {
 
         assertThat(forward.edges())
                 .containsExactly(
+                        link("directive:D", RelationType.ENHANCES, "tactic:T"),
                         link("directive:D", RelationType.REQUIRES, "tactic:T"),
                         link("directive:D", RelationType.REQUIRES, "tactic:U"),
                         link("directive:D", RelationType.SUGGESTS, "tactic:T"),

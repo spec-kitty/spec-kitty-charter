@@ -589,7 +589,8 @@ class EffectiveReadServiceTest {
                 throw new CharterRefusal(code, "no such name");
             });
 
-            assertThatThrownBy(() -> service.actionContext(ID, IMPLEMENT, null))
+            assertThatThrownBy(() -> service.actionContext(ID, IMPLEMENT, "*"))
+                    .as("a wildcard If-None-Match matches any tag, so only the name check can refuse first")
                     .isInstanceOfSatisfying(
                             CharterRefusal.class,
                             refused -> assertThat(refused.code()).isEqualTo(code));

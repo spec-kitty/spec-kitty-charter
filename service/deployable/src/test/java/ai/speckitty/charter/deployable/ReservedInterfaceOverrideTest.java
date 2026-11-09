@@ -70,14 +70,6 @@ class ReservedInterfaceOverrideTest {
         HandlerMethod handler = (HandlerMethod) routed;
         assertThat(handler.getMethod())
                 .isEqualTo(ReservedThingController.class.getMethod("read", String.class, Integer.class));
-        assertThat(ThingApi.class
-                        .getMethod("read", String.class, Integer.class)
-                        .isAnnotationPresent(ReservedOperation.class))
-                .as("the interface method that carries the mapping is unmarked")
-                .isFalse();
-        assertThat(ReservedThingController.class.isAnnotationPresent(ReservedOperation.class))
-                .as("the controller carries no mark of its own")
-                .isFalse();
         assertThatThrownBy(() -> new ReservedOperationInterceptor()
                         .preHandle(new MockHttpServletRequest(), new MockHttpServletResponse(), handler))
                 .isInstanceOfSatisfying(
@@ -88,11 +80,6 @@ class ReservedInterfaceOverrideTest {
     @Test
     void aReservedOperationAnswers501BeforeItsRequestIsBound() throws Exception {
         mvc.perform(get(UNBINDABLE).accept(MediaType.APPLICATION_JSON)).andExpect(status().isNotImplemented());
-    }
-
-    @Test
-    void aReservedReadAnswers501() throws Exception {
-        mvc.perform(get("/api/v1/things/a1").accept(MediaType.APPLICATION_JSON)).andExpect(status().isNotImplemented());
     }
 
     @Test

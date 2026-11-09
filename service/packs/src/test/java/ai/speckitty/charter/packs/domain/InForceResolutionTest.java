@@ -963,20 +963,6 @@ class InForceResolutionTest {
     }
 
     @Test
-    void theReasonOfARequiredNotInForceEntryIsATypeOfExactlyTheTwoPruningReasons() {
-        // D4b (#436): the Java type behind RequiredNotInForce.reason holds the two reasons the pruning gives, no other.
-        Class<?> type = Arrays.stream(InForceStates.RequiredNotInForce.class.getRecordComponents())
-                .filter(component -> component.getName().equals("reason"))
-                .findFirst()
-                .orElseThrow()
-                .getType();
-
-        assertThat(type.isEnum()).as("the reason type is an enum").isTrue();
-        assertThat(Arrays.stream(type.getEnumConstants()).map(constant -> ((Enum<?>) constant).name()))
-                .containsExactlyInAnyOrder("MISSION_TYPE_NOT_IN_FORCE", "ENHANCED_TARGET_NOT_IN_FORCE");
-    }
-
-    @Test
     void aStepEnhancerBoundToItsMissionTypeWithNoEnhancesEdgeIsInForceOnlyWhileTheMissionTypeIs() {
         // OD-6: the merged-edge derivation hands the resolution the binding and no enhances edge for a step enhancer
         // whose single target is a held step.

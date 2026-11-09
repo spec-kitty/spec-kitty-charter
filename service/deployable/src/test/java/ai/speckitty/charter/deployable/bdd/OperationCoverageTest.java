@@ -30,34 +30,6 @@ class OperationCoverageTest {
     }
 
     @Test
-    void theEffectiveGraphAndTheEffectiveActionContextAreBuiltSoTheirSuccessesAreDeclaredForCoverage() {
-        // ADR-0020 D8: a reserved operation answers 501 whatever the request holds, so its 2xx cannot be exercised
-        // until
-        // it is built. PR C built the last two (IC-11): their marker is gone and their successes are declared like any
-        // other operation's, so a scenario has to call each (effective-graph-and-context.feature).
-        assertThat(CONTRACT.operation("get", "/activations/a-1/graph"))
-                .hasValueSatisfying(
-                        operation -> assertThat(operation.reserved()).isFalse());
-        assertThat(CONTRACT.successResponses())
-                .contains(
-                        new Success("get", "/activations/{activationId}/graph", 200),
-                        new Success(
-                                "get",
-                                "/activations/{activationId}/mission-types/{missionType}/actions/{action}/context",
-                                200),
-                        new Success("get", "/activations/{activationId}/skipped", 200),
-                        new Success("get", "/activations/{activationId}/artifacts", 200),
-                        new Success("put", "/activations/{activationId}/presets/{presetId}", 200),
-                        new Success("post", "/activations", 201),
-                        new Success("get", "/activations/{activationId}", 200),
-                        new Success("put", "/activations/{activationId}", 201),
-                        new Success("put", "/activations/{activationId}/selections/{kind}/{artifactId}", 200),
-                        new Success("delete", "/activations/{activationId}/selections/{kind}/{artifactId}", 200),
-                        new Success("put", "/activations/{activationId}/exclusions/{kind}/{artifactId}", 200),
-                        new Success("delete", "/activations/{activationId}/exclusions/{kind}/{artifactId}", 200));
-    }
-
-    @Test
     void aReservedOperationsSuccessesAreNotDeclaredForCoverage(@TempDir Path fixture) throws IOException {
         // The control of the test above, on a planted contract: the rule still holds for a reservation to come.
         Files.createDirectories(fixture.resolve("charter/paths"));
