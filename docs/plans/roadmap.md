@@ -110,8 +110,9 @@ The action-context walk is decided in
 `GET /offering/mission-types/{missionType}/actions/{action}/context`
 ([ADR-0020](/adr/0020-offering-and-activations/) D1, #126). What applies in one activation is the
 effective context under `/activations/{activationId}` (R9,
-[#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103)), and **R9 gates cutover stage
-3**: the seam does not switch its context read to the service before it exists.
+[#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103)), built as `getEffectiveActionContext` (PR C).
+**R9 gated cutover stage 3**: the gate is open, and the seam's switch of its context read to the service is not part of
+this service.
 
 ## Before step 6
 
