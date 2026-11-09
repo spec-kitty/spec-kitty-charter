@@ -66,13 +66,13 @@
     },
     {
       "criterion_id": "FR-007",
-      "description": "Verify FR-007 is satisfied",
+      "description": "A whole-pack replace and a DELETE are all-or-nothing: readers running alongside eight concurrent replaces only ever see one complete stored version, and an interrupted commit leaves the last committed pack served.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "service/packs/src/test/java/ai/speckitty/charter/packs/application/RegistrationConcurrencyTest.java#everyReadSeesOneCompleteVersionWhileEightUploadsReplaceThePack; service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/InterruptedCommitRepairTest.java#aReadAfterACrashServesTheLastCommittedState",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:45:39.189027+00:00",
+      "notes": "PR A (#419, WP14/WP19). Removal side: RemovalConcurrencyTest#aDeleteAndARelationshipPutOntoItNeverBothSucceed (overlap proven, squad F8)."
     },
     {
       "criterion_id": "FR-008",
