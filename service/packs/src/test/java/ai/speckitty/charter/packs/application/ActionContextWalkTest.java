@@ -575,4 +575,17 @@ class ActionContextWalkTest {
                 .extracting(ActionContextWalk.SuggestionCandidate::urn)
                 .containsExactly(urn("tactic:S"));
     }
+
+    @Test
+    void anArtifactTheActionItselfScopesIsNeverACandidateWhateverAListedArtifactSuggests() {
+        Closure closure = closure(
+                List.of("tactic:T1", "tactic:Scoped"),
+                edge(START, RelationType.SCOPE, "tactic:T1"),
+                edge(START, RelationType.SCOPE, "tactic:Scoped"),
+                edge("tactic:T1", RelationType.SUGGESTS, "tactic:Scoped"));
+
+        Context context = walk(closure, 1, inForce("mission_type:M", "tactic:T1"));
+
+        assertThat(context.suggestionCandidates()).isEmpty();
+    }
 }
