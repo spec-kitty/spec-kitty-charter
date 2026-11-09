@@ -55,7 +55,7 @@ class RegexRecursionGuardTest {
             "cannot judge `regex.toString()`",
             "built from a glob: the only group glob() emits is (?:.+/)? (optional, never repeated), the rest is"
                 + " [^/]* and Pattern.quote(...); PackFileKindTest#aSingleStarStaysInOneSegmentAndDoubleStarSpansSegments"
-                + " pins the emitted regex",
+                + " proves a very deep path does not overflow",
         ),
     )
 
