@@ -21,6 +21,9 @@ listOf(
     "kernel",
     "packs",
     "profiles",
+    // The edge rings of the profiles slice (application, infra.api, infra.packs, infra.activations), apart from the
+    // domain because packs depends on profiles (ADR-0037, amendment of 2026-11-09).
+    "profiles-edge",
     "missions",
     "activations",
     "charter-api",

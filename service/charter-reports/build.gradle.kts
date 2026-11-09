@@ -23,15 +23,20 @@ plugins {
     `jacoco-report-aggregation`
 }
 
-/** Each hand-written service module and the one package it holds, in the order the Javadoc overview lists them. */
+/**
+ * Each hand-written service module and the packages it holds, in the order the Javadoc overview lists them. A module
+ * normally holds one package; a slice that spans two modules (ADR-0037, amendment of 2026-11-09) shares its package
+ * root, so each of its modules lists the rings it holds: Javadoc takes a package into one group only.
+ */
 val serviceModules = linkedMapOf(
-    "kernel" to "ai.speckitty.charter.kernel",
-    "packs" to "ai.speckitty.charter.packs",
-    "profiles" to "ai.speckitty.charter.profiles",
-    "missions" to "ai.speckitty.charter.missions",
-    "activations" to "ai.speckitty.charter.activations",
-    "web-transport" to "ai.speckitty.charter.web",
-    "deployable" to "ai.speckitty.charter.deployable",
+    "kernel" to listOf("ai.speckitty.charter.kernel"),
+    "packs" to listOf("ai.speckitty.charter.packs"),
+    "profiles" to listOf("ai.speckitty.charter.profiles.domain"),
+    "profiles-edge" to listOf("ai.speckitty.charter.profiles.application", "ai.speckitty.charter.profiles.infra"),
+    "missions" to listOf("ai.speckitty.charter.missions"),
+    "activations" to listOf("ai.speckitty.charter.activations"),
+    "web-transport" to listOf("ai.speckitty.charter.web"),
+    "deployable" to listOf("ai.speckitty.charter.deployable"),
 )
 
 // Fail closed when the list and the service disagree: every project under service/ that applies
@@ -142,7 +147,7 @@ val aggregateJavadoc = tasks.register<Javadoc>("aggregateJavadoc") {
         addBooleanOption("notimestamp", true)
         // Report every finding, not the first hundred.
         addStringOption("Xmaxwarns", "10000")
-        serviceModules.forEach { (module, packageName) -> group(module, listOf(packageName)) }
+        serviceModules.forEach { (module, packageNames) -> group(module, packageNames) }
         // Gradle prefixes one `-`, so this is javadoc's `--add-stylesheet`.
         addFileOption("-add-stylesheet", docsiteStylesheet.asFile)
         // Back to the docsite page that introduces this reference. Relative through {@docRoot}, which javadoc

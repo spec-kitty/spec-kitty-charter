@@ -3,6 +3,7 @@ package ai.speckitty.charter.deployable;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
@@ -1030,6 +1031,171 @@ class HexagonalArchitectureTest {
                 ACTIVATIONS_ADAPTER_NAMES_PACKS_APPLICATION,
                 ROOT + ".activations.infra.packs.badfixture",
                 "AdapterNamesPacksStorage");
+    }
+
+    // ---- The profiles slice over the packs and activations slices (ADR-0037, amendment of 2026-11-09) ----------
+    // The profiles slice spans two modules: its domain (:profiles) and its edge rings (:profiles-edge). The edge asks
+    // the packs slice and the activations slice, each from one adapter package of its own, and only their application
+    // and domain rings; and neither of those slices names the profiles edge back.
+
+    private static final String PACKS = ROOT + ".packs..";
+    private static final String ACTIVATIONS = ROOT + ".activations..";
+    private static final String PROFILES = ROOT + ".profiles..";
+    /** The one profiles package that may name the packs slice. */
+    private static final String PROFILES_PACKS_ADAPTER = ROOT + ".profiles.infra.packs..";
+    /** The one profiles package that may name the activations slice. */
+    private static final String PROFILES_ACTIVATIONS_ADAPTER = ROOT + ".profiles.infra.activations..";
+
+    private static final String ACTIVATIONS_APPLICATION = ROOT + ".activations.application..";
+    private static final String ACTIVATIONS_DOMAIN_RING = ROOT + ".activations.domain..";
+    private static final String PROFILES_APPLICATION = ROOT + ".profiles.application..";
+    private static final String PROFILES_INFRA = ROOT + ".profiles.infra..";
+
+    /** The profiles edge rings, each of which must be on the classpath for the rules below to check anything. */
+    private static final List<String> PROFILES_EDGE_RINGS = List.of(
+            "ai.speckitty.charter.profiles.application",
+            "ai.speckitty.charter.profiles.infra.api",
+            "ai.speckitty.charter.profiles.infra.packs",
+            "ai.speckitty.charter.profiles.infra.activations");
+
+    /** A PROFILES OVER PACKS (1/2): no profiles class names the packs slice, but those of its packs adapter. */
+    private static final ArchRule PROFILES_NAME_PACKS_ONLY_FROM_ADAPTER = noClasses()
+            .that()
+            .resideInAPackage(PROFILES)
+            .and()
+            .resideOutsideOfPackage(PROFILES_PACKS_ADAPTER)
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage(PACKS);
+
+    /**
+     * A PROFILES OVER PACKS (2/2): that adapter names only the packs application ring and the packs domain values its
+     * answers carry, never a packs adapter: no {@code Hypermedia}, no {@code ArtifactDtos}, no {@code CharterHeaders}.
+     */
+    private static final ArchRule PROFILES_PACKS_ADAPTER_NAMES_PACKS_APPLICATION = noClasses()
+            .that()
+            .resideInAPackage(PROFILES_PACKS_ADAPTER)
+            .should()
+            .dependOnClassesThat(JavaClass.Predicates.resideInAPackage(PACKS)
+                    .and(JavaClass.Predicates.resideOutsideOfPackages(PACKS_APPLICATION, PACKS_DOMAIN)));
+
+    /** A PROFILES OVER ACTIVATIONS (1/2): no profiles class names the activations slice, but those of its adapter. */
+    private static final ArchRule PROFILES_NAME_ACTIVATIONS_ONLY_FROM_ADAPTER = noClasses()
+            .that()
+            .resideInAPackage(PROFILES)
+            .and()
+            .resideOutsideOfPackage(PROFILES_ACTIVATIONS_ADAPTER)
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage(ACTIVATIONS);
+
+    /** A PROFILES OVER ACTIVATIONS (2/2): that adapter names only the activations application and domain rings. */
+    private static final ArchRule PROFILES_ACTIVATIONS_ADAPTER_NAMES_ACTIVATIONS_APPLICATION = noClasses()
+            .that()
+            .resideInAPackage(PROFILES_ACTIVATIONS_ADAPTER)
+            .should()
+            .dependOnClassesThat(JavaClass.Predicates.resideInAPackage(ACTIVATIONS)
+                    .and(JavaClass.Predicates.resideOutsideOfPackages(
+                            ACTIVATIONS_APPLICATION, ACTIVATIONS_DOMAIN_RING)));
+
+    /**
+     * THE EDGE IS NOT NAMED BACK: the packs and activations slices never name the profiles edge rings
+     * ({@code profiles.application}, {@code profiles.infra}). They may name the profiles domain: the pack store binds it.
+     */
+    private static final ArchRule NO_PACKS_OR_ACTIVATIONS_CLASS_NAMES_THE_PROFILES_EDGE = noClasses()
+            .that()
+            .resideInAnyPackage(PACKS, ACTIVATIONS)
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage(PROFILES_APPLICATION, PROFILES_INFRA);
+
+    @Test
+    @DisplayName("PROFILES_OVER_PACKS_AND_ACTIVATIONS")
+    void theProfilesSliceNamesPacksAndActivationsOnlyThroughItsAdapters() {
+        PROFILES_NAME_PACKS_ONLY_FROM_ADAPTER.check(classes);
+        PROFILES_PACKS_ADAPTER_NAMES_PACKS_APPLICATION.check(classes);
+        PROFILES_NAME_ACTIVATIONS_ONLY_FROM_ADAPTER.check(classes);
+        PROFILES_ACTIVATIONS_ADAPTER_NAMES_ACTIVATIONS_APPLICATION.check(classes);
+        NO_PACKS_OR_ACTIVATIONS_CLASS_NAMES_THE_PROFILES_EDGE.check(classes);
+    }
+
+    /**
+     * The slice rules use {@code allowEmptyShould}, so a module missing from the classpath passes with nothing checked.
+     * This test fails instead: every profiles edge ring holds a class, which means {@code :deployable} depends on
+     * {@code :profiles-edge} and the rules above, and the per-slice rings, gate the real packages.
+     */
+    @Test
+    void everyProfilesEdgeRingIsOnTheGatedClasspath() {
+        for (String ring : PROFILES_EDGE_RINGS) {
+            assertThat(classes.stream()
+                            .filter(c -> c.getPackageName().equals(ring)
+                                    || c.getPackageName().startsWith(ring + ".")))
+                    .as("classes in the ring %s", ring)
+                    .isNotEmpty();
+        }
+    }
+
+    @Test
+    void theProfilesOverPacksRulesFailOnTheKnownBads() {
+        assertBites(
+                PROFILES_NAME_PACKS_ONLY_FROM_ADAPTER,
+                ROOT + ".profiles.application.badfixture",
+                "ProfileApplicationNamesPacks");
+        assertBites(
+                PROFILES_NAME_PACKS_ONLY_FROM_ADAPTER,
+                ROOT + ".profiles.infra.api.badfixture",
+                "ProfileApiNamesPacksApi",
+                "ArtifactController");
+        assertBites(
+                PROFILES_NAME_PACKS_ONLY_FROM_ADAPTER,
+                ROOT + ".profiles.domain.badfixture",
+                "ProfileDomainReachesPacks");
+        assertBites(
+                PROFILES_PACKS_ADAPTER_NAMES_PACKS_APPLICATION,
+                ROOT + ".profiles.infra.packs.badfixture",
+                "ProfilePacksAdapterNamesPacksStorage",
+                "ConfigRoot");
+    }
+
+    @Test
+    void theProfilesOverActivationsRulesFailOnTheKnownBads() {
+        assertBites(
+                PROFILES_NAME_ACTIVATIONS_ONLY_FROM_ADAPTER,
+                ROOT + ".profiles.application.badfixture",
+                "ProfileApplicationNamesActivations");
+        assertBites(
+                PROFILES_ACTIVATIONS_ADAPTER_NAMES_ACTIVATIONS_APPLICATION,
+                ROOT + ".profiles.infra.activations.badfixture",
+                "ProfileActivationsAdapterNamesActivationsApi",
+                "ActivationController");
+    }
+
+    @Test
+    void theEdgeIsNotNamedBackRuleFailsOnPacksAndActivationsClassesThatNameIt() {
+        assertBites(
+                NO_PACKS_OR_ACTIVATIONS_CLASS_NAMES_THE_PROFILES_EDGE,
+                ROOT + ".packs.application.badfixture",
+                "ApplicationNamesProfilesApplication",
+                "ProfileUseCaseStandIn");
+        assertBites(
+                NO_PACKS_OR_ACTIVATIONS_CLASS_NAMES_THE_PROFILES_EDGE,
+                ROOT + ".activations.application.badfixture",
+                "ApplicationNamesProfilesInfra",
+                "ProfileApiStandIn");
+    }
+
+    /** The per-slice rings reach the profiles edge too: the same known-bads bite the rules of the {@code profiles} slice. */
+    @Test
+    void thePerSliceRingRulesBiteOnTheProfilesEdgeRings() {
+        assertBites(
+                applicationIsEdge("profiles"),
+                ROOT + ".profiles.application.badfixture",
+                "ProfileApplicationNamesPacks",
+                "ProfileApplicationNamesActivations");
+        assertBites(
+                onlyDeployableComposesAdapters("profiles"),
+                ROOT + ".activations.application.badfixture",
+                "ApplicationNamesProfilesInfra");
     }
 
     // ---- Code-ownership supplements (kept from the incremental rules) ---------------------------------------

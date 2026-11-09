@@ -9,6 +9,9 @@ dependencies {
     implementation(project(":kernel"))
     implementation(project(":packs"))
     implementation(project(":activations"))
+    // The profiles slice's edge rings. The slice rules allow an empty selection, so a module missing from this classpath
+    // would leave its rings unchecked; HexagonalArchitectureTest fails on that instead.
+    implementation(project(":profiles-edge"))
     implementation(project(":web-transport"))
     implementation(catalog.lib("spring-boot-starter-webmvc"))
     implementation(catalog.lib("spring-boot-starter-validation"))
