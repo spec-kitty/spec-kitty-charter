@@ -1,7 +1,7 @@
 {
-  "event_count": 292,
-  "last_event_id": "01M706MPHXE4WN2PCE047AN991",
-  "materialized_at": "2026-11-09T13:05:57.821830+00:00",
+  "event_count": 294,
+  "last_event_id": "01M706N2218T60BRJ8PYKK60QD",
+  "materialized_at": "2026-11-09T13:06:09.590103+00:00",
   "mission_number": "",
   "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
   "mission_type": "",
@@ -13,9 +13,9 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 3
+    "planned": 2
   },
   "work_packages": {
     "WP01": {
@@ -949,9 +949,9 @@
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
       "implementer_of_record": "claude:sonnet:java-jenny",
-      "lane": "planned",
-      "last_event_id": "01M706MPHXE4WN2PCE047AN991",
-      "last_transition_at": "2026-11-09T13:05:57.821830+00:00",
+      "lane": "in_progress",
+      "last_event_id": "01M706N2218T60BRJ8PYKK60QD",
+      "last_transition_at": "2026-11-09T13:06:09.590103+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "Ready for review: T134-T137, T159-T161 and the suggestions addendum (decision 01M7059T4K64TAVKXN3T1FKWYG); hand-off at /tmp/claude-0/wp27-handoff.md"
