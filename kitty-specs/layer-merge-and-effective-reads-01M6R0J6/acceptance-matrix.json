@@ -366,13 +366,13 @@
     },
     {
       "criterion_id": "FR-037",
-      "description": "Verify FR-037 is satisfied",
+      "description": "Registration and the DELETEs require the worktree bearer token (401 otherwise), answer 503 pack_source_unavailable unless charter.registration.enabled and the source kind's flag are on, and every attempt, accepted or refused, writes one audit entry naming the worktree identity.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "contracts/charter/scenarios/registration/whole-pack-registration.feature: \"A registration without the worktree token is refused with the guard's 401, and one with it is accepted\"; contracts/charter/scenarios/registration/whole-pack-registration.feature: \"Registration switched off answers 503, and nothing is stored\"; service/deployable/src/test/java/ai/speckitty/charter/deployable/RegistrationAuditWiringTest.java#anUnauthenticatedPutAnOversizedPutAnAcceptedPutAndARefusedDeleteAreEnteredOnceEach",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:47:10.107944+00:00",
+      "notes": "PR A (#419, WP16/WP17); IC-18. DELETE flag gating folded by PR A squad F1 ('Both deletes answer 503 while registration is switched off...'); source-kind flag: 'A source kind that is switched off answers 503 pack_source_unavailable'."
     },
     {
       "criterion_id": "FR-038",
