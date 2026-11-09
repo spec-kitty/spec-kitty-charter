@@ -288,6 +288,18 @@
       "verdict": "not-applicable",
       "wp": null
     },
+    "#425": {
+      "evidence_ref": "ADR-0066 contracts and step_enhancement kind, landed before #427; outside this mission",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
     "#426": {
       "evidence_ref": "Follow-up issue for the PR B pre-PR squad's deferred findings (research/closeout-notes-pr-b.md, Pre-PR squad dispositions)",
       "fr": null,
