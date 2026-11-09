@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -454,26 +455,49 @@ public record ClosureView(
     }
 
     /**
-     * Stub: the red tests of T134 fail on their assertions.
+     * The effective graph over the merged closure (FR-018, rule E15): the artifacts in force plus each held step whose
+     * mission type is in force, the merged edges among them, and the layer overrides of those nodes. The node predicate
+     * is built here from the in-force states, never handed in (decision {@code 01M7037ZNKJ6JTRKGD7G695ZV1}); it reads
+     * nothing more than this view (NFR-007).
      *
-     * @param states the states
-     * @return nothing yet
+     * @param states what {@link #inForce} answered for the request
+     * @return the graph
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal as {@link #merged()} does
      */
     public GraphProjection mergedGraph(InForceStates states) {
-        return new GraphProjection(List.of(), List.of(), List.of());
+        MergedView view = merged();
+        return GraphProjection.of(view.edges(), view.closure(), effective(states));
     }
 
     /**
-     * Stub: the red tests of T135 fail on their assertions.
+     * The action context over the merged closure (FR-015, FR-019, rule E16): ADR-0018's five-step walk from the held step
+     * {@code action:<missionType>/<action>} over the artifacts in force, with their enhancers, {@code depth} counting
+     * {@code suggests} hops.
      *
      * @param missionType the mission type
      * @param action the action
-     * @param depth the depth
-     * @param states the states
-     * @return nothing yet
+     * @param depth the number of {@code suggests} hops, at least 0
+     * @param states what {@link #inForce} answered for the request
+     * @return what the action reaches; no entry, and {@code missionTypeInForce} false, for a mission type not in force
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with {@code MISSION_TYPE_NOT_FOUND} or
+     *     {@code ACTION_NOT_FOUND}, judged on the merged closure, or as {@link #merged()} does
      */
     public ActionContextWalk.Context actionContext(String missionType, String action, int depth, InForceStates states) {
-        return new ActionContextWalk.Context(Urn.action(missionType, action), true, List.of());
+        return new ActionContextWalk(merged().edges()).walk(missionType, action, depth, effective(states));
+    }
+
+    /**
+     * The effective set as a predicate over URNs: the artifacts of an activatable kind in force. A step is none, and
+     * neither is a template, an asset, a guard or a lifecycle, even when a lock puts it in force inside packs: the
+     * effective reads never list them (decision {@code 01M702A71YF7WNDTG2AA89K8ZA}).
+     */
+    private static Predicate<Urn> effective(InForceStates states) {
+        Objects.requireNonNull(states, "states");
+        return urn ->
+                urn.kind().artifactKind().filter(ArtifactKind::activatable).isPresent()
+                        && states.stateOf(urn)
+                                .filter(InForceStates.ArtifactState::active)
+                                .isPresent();
     }
 
     /**

@@ -276,6 +276,35 @@ public final class EdgeIndex implements ComposeResolver {
                 closure.stream().map(PackUnderResolution::definedArtifacts).toList(), step);
     }
 
+    /**
+     * A typed edge as the effective reads see it: from an artifact held at its place in force to the place it ends at.
+     *
+     * @param source the source artifact
+     * @param relation the relation
+     * @param target the target artifact, at the place the edge leads to
+     * @param when the authored condition of the edge
+     * @param reason the authored reason of the edge
+     */
+    record Link(Urn source, RelationType relation, Urn target, Optional<String> when, Optional<String> reason) {}
+
+    /**
+     * Every edge between two held places, one per written edge, in no promised order: the callers sort. An edge from a
+     * place that does not hold its source, or to a place that holds nothing (a target no pack of the closure holds, or a
+     * version a later level replaced), is not among them.
+     */
+    List<Link> links() {
+        List<Link> links = new ArrayList<>();
+        outgoing.forEach((place, edges) -> {
+            if (holds(place)) {
+                edges.forEach(edge -> neighbour(edge)
+                        .filter(this::holds)
+                        .ifPresent(target -> links.add(
+                                new Link(place.urn(), edge.type(), target.urn(), edge.when(), edge.rationale()))));
+            }
+        });
+        return links;
+    }
+
     /** Whether the place's pack holds its URN and, in a merged index, holds the version in force. */
     boolean holds(Place place) {
         return Optional.ofNullable(byPack.get(place.pack()))

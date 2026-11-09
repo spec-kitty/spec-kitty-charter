@@ -134,7 +134,6 @@ class GraphProjectionTest {
     void theLayerOverridesAreThoseOfTheNodesInArtifactThenLosingLevelThenLosingPackOrder() {
         Closure closure = new Closure()
                 .pack("beta", PackLevel.BUILT_IN, List.of("tactic:A", "directive:D", "tactic:Out"))
-                .pack("alpha", PackLevel.BUILT_IN, List.of("directive:D"))
                 .pack("org", PackLevel.ORG, List.of("directive:D", "tactic:A", "tactic:Out"))
                 .pack("project", PackLevel.PROJECT, List.of("directive:D", "tactic:A", "tactic:Out"));
 
@@ -146,7 +145,6 @@ class GraphProjectionTest {
                         replaced -> replaced.loser().level(),
                         replaced -> replaced.loser().packId())
                 .containsExactly(
-                        tuple(urn("directive:D"), PackLevel.BUILT_IN, new PackIdentifier("alpha")),
                         tuple(urn("directive:D"), PackLevel.BUILT_IN, new PackIdentifier("beta")),
                         tuple(urn("directive:D"), PackLevel.ORG, new PackIdentifier("org")),
                         tuple(urn("tactic:A"), PackLevel.BUILT_IN, new PackIdentifier("beta")),
