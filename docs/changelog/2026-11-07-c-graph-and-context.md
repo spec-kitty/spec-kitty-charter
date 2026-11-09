@@ -39,5 +39,5 @@ contract changes are the `2026-11-07-c-*` and `2026-11-09-c-*` fragments under `
 - **Regenerate.** The two reads gain required members; `EnhancerWithoutTarget.targets` is a list of `NodeReference`.
 - **Rulings of 2026-11-09.** A step enhancer is in force exactly when the mission type of its step is (OD-6), and the
   floor holds activatable kinds only (D16): DIV-239 to DIV-244 of the [register](/conformance/divergence-register/).
-- **Explicit rulings.** Five pages cite the ruling behind each contest, winner or tie; the one tie no ruling covers is
-  tracked in #439. The [ruleset scenario trace](/conformance/ruleset-scenario-trace/) is complete.
+- **Explicit rulings.** The [ruleset scenario trace](/conformance/ruleset-scenario-trace/) is complete; the one tie no
+  ruling covers is tracked in #439.
