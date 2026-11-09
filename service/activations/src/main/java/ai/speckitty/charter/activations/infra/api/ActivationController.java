@@ -25,6 +25,7 @@ import ai.speckitty.charter.api.model.PresetApplication;
 import ai.speckitty.charter.api.model.SelectionRequest;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.transport.EntityTags;
+import ai.speckitty.charter.kernel.transport.HeaderNames;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
@@ -70,8 +71,6 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 @RestController
 @RequestMapping("${charter.api.base-path:/api/v1}")
 public class ActivationController implements ActivationApi {
-
-    private static final String SOURCE_FINGERPRINT = "Charter-Source-Fingerprint";
 
     private final ActivationService activations;
     private final ActivationSelectionService selections;
@@ -312,7 +311,7 @@ public class ActivationController implements ActivationApi {
             case ActivationService.Read.Found<T>(T value, String etag) ->
                 ResponseEntity.ok()
                         .eTag(EntityTags.quote(etag))
-                        .header(SOURCE_FINGERPRINT, fingerprint.apply(value))
+                        .header(HeaderNames.SOURCE_FINGERPRINT, fingerprint.apply(value))
                         .body(body.apply(value));
         };
     }
