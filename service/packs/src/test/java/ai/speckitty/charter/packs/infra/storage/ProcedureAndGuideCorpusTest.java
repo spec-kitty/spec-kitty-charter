@@ -59,7 +59,7 @@ class ProcedureAndGuideCorpusTest {
     Path host;
 
     @ParameterizedTest(name = "{0}: {1} procedures, {2} toolguides, {2} guides")
-    @CsvSource({"built-in, 65, 18", "internal, 17, 3", "qa, 5, 3"})
+    @CsvSource({"built-in, 66, 19", "internal, 17, 3", "qa, 5, 3"})
     @DisplayName("each pack's procedures, toolguides and guides round-trip, and their counts are pinned")
     void everyProcedureToolguideAndGuideRoundTrips(String pack, int procedures, int toolguides) {
         OpenPacksCorpus.assertPinned();
@@ -91,7 +91,7 @@ class ProcedureAndGuideCorpusTest {
     }
 
     @Test
-    @DisplayName("the corpus holds 87 procedures, 24 toolguides and 24 guides")
+    @DisplayName("the corpus holds 88 procedures, 25 toolguides and 25 guides")
     void theCorpusCountsArePinned() {
         OpenPacksCorpus.assertPinned();
         int procedures = 0;
@@ -106,7 +106,7 @@ class ProcedureAndGuideCorpusTest {
             guides += filesOf(observed, path -> path.endsWith(GUIDE_SUFFIX)).size();
         }
 
-        assertThat(List.of(procedures, toolguides, guides)).containsExactly(87, 24, 24);
+        assertThat(List.of(procedures, toolguides, guides)).containsExactly(88, 25, 25);
     }
 
     @Test

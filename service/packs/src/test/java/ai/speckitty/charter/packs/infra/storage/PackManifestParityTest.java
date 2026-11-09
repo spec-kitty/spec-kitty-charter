@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 class PackManifestParityTest {
 
     @Test
-    @DisplayName("all 315 constituent and 2 preset hashes of the pinned built-in manifest are reproduced")
+    @DisplayName("all 310 constituent and 2 preset hashes of the pinned built-in manifest are reproduced")
     void everyPinnedHashIsReproduced() throws IOException {
         Path builtIn = OpenPacksCorpus.packsDirectory().resolve("built-in");
         Map<?, ?> manifest =
@@ -47,8 +47,8 @@ class PackManifestParityTest {
             }
         }
 
-        assertThat(constituents).isEqualTo(315);
-        assertThat(entries).hasSize(317);
+        assertThat(constituents).isEqualTo(310);
+        assertThat(entries).hasSize(312);
         assertThat(mismatched).isEmpty();
     }
 }
