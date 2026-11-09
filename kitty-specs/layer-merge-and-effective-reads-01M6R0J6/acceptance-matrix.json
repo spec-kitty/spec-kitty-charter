@@ -6,13 +6,13 @@
   "criteria": [
     {
       "criterion_id": "FR-001",
-      "description": "Verify FR-001 is satisfied",
+      "description": "PUT /packs/{packId} with a tar.gz or zip archive of the authored pack directory is accepted 202 with a status URI and ends succeeded (created or replaced), after which the service holds exactly the archive's artifacts, edges and presets, an artifact the new archive omits answering 404.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "contracts/charter/scenarios/registration/whole-pack-registration.feature: \"A pack that does not exist yet is created, and everything the archive carries is readable\"; contracts/charter/scenarios/registration/whole-pack-registration.feature: \"A replace drops what the new archive leaves out and keeps what it carries\"",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:43:29.690867+00:00",
+      "notes": "Delivered in PR A (#419, WP14/WP16); asynchronous by DM-01M6RA8225EXG6GAT1MM2R9T6C (A5)."
     },
     {
       "criterion_id": "FR-002",
