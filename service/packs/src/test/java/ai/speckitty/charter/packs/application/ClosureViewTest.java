@@ -409,6 +409,42 @@ class ClosureViewTest {
     }
 
     @Test
+    void aSuggestedArtifactNotSelectedIsASuggestionCandidateWithTheWhenAndTheReasonOfTheEdge() {
+        pack(
+                "alpha",
+                List.of("mission_type:M", "action:M/a", "tactic:T", "tactic:S", "tactic:Other"),
+                edge("action:M/a", RelationType.SCOPE, "tactic:T"),
+                edge("tactic:T", RelationType.VOCABULARY, "tactic:Other"),
+                new Relationship(
+                        u("tactic:T"),
+                        u("tactic:S"),
+                        RelationType.SUGGESTS,
+                        Optional.of("the change is large"),
+                        Optional.of("S checks it")));
+        ClosureView view = view();
+        InForceStates states = view.inForce(InForceRequest.selecting(urns("mission_type:M", "tactic:T")));
+
+        ActionContextWalk.Context context = view.actionContext("M", "a", 1, states);
+
+        assertThat(states.stateOf(u("tactic:S")))
+                .as("the real resolution does not put S in force")
+                .hasValueSatisfying(state -> assertThat(state.active()).isFalse());
+        assertThat(context.suggestionCandidates())
+                .as("S only: the vocabulary link to an unselected artifact is no suggestion")
+                .singleElement()
+                .satisfies(candidate -> {
+                    assertThat(candidate.urn()).isEqualTo(u("tactic:S"));
+                    assertThat(candidate.via()).isEqualTo(u("tactic:T"));
+                    assertThat(candidate.hops()).isEqualTo(2);
+                    assertThat(candidate.when()).contains("the change is large");
+                    assertThat(candidate.reason()).contains("S checks it");
+                });
+        assertThat(context.entries())
+                .extracting(entry -> entry.urn().toString())
+                .containsExactly("tactic:T");
+    }
+
+    @Test
     void aMissionTypeNotInForceAnswersNoEntryAndTheNamesAreJudgedOnTheClosure() {
         aMissionTypeWithAnAction();
         ClosureView view = view();
