@@ -15,3 +15,11 @@
   fault on such a violation. The reserved paragraph of the description now keeps only `prompt_slot_malformed`,
   `prompt_slot_not_empty` and `prompt_slot_missing` reserved, and no longer suggests `artifact_locked` for an ADR-0066
   refusal.
+- The `step-enhancement` schema's description (contract text, no property changes) lists the rules that answer
+  `prompt_fragment_invalid`: an enhancement whose id differs from its file stem is refused by the store's stem rule as a
+  schema violation, not `prompt_fragment_invalid`, as a slot that breaks `<namespace>:<name>` and
+  `prompt_fragments: []` (`minItems`) are; a repeated slot, a missing, shared or orphan companion, the edge rules, the
+  directory, a repeated id and an absent `prompt_fragments` key are `prompt_fragment_invalid`. It also says that guards
+  and emits are fields (`add_guards`, `add_lifecycle_guards`, `emits`) built under #434, not edges. The `path`
+  description no longer binds a companion to its enhancement's id (one companion per entry, any stem matching the
+  pattern, each named by exactly one entry), and `file-kinds.yaml` carries the same wording.
