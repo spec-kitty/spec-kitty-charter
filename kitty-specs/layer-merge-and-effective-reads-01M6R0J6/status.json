@@ -944,7 +944,7 @@
     },
     "WP27": {
       "actor": "claude",
-      "agent": "claude:sonnet:java-jenny",
+      "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -957,6 +957,7 @@
         "Ready for review: T134-T137, T159-T161 and the suggestions addendum (decision 01M7059T4K64TAVKXN3T1FKWYG); hand-off at /tmp/claude-0/wp27-handoff.md"
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-charter/.worktrees/layer-merge-and-effective-reads-01M6R0J6-coord/kitty-specs/layer-merge-and-effective-reads-01M6R0J6/tasks/WP27-c-graph-and-action-walk/review-cycle-1.md",
         "reference": "review-cycle://layer-merge-and-effective-reads-01M6R0J6/WP27-c-graph-and-action-walk/review-cycle-1.md",
@@ -964,16 +965,16 @@
         "verdict": "changes_requested"
       },
       "role": "implementer",
-      "shell_pid": 8970,
-      "shell_pid_created_at": "1794226107.07",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T134": "done",
-        "T135": "done",
-        "T136": "done",
-        "T137": "done",
-        "T159": "done",
-        "T160": "done",
-        "T161": "done"
+        "T134": "planned",
+        "T135": "planned",
+        "T136": "planned",
+        "T137": "planned",
+        "T159": "planned",
+        "T160": "planned",
+        "T161": "planned"
       }
     },
     "WP28": {
