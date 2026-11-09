@@ -407,6 +407,18 @@
       "title": null,
       "verdict": "not-applicable",
       "wp": "WP29"
+    },
+    "#72": {
+      "evidence_ref": "Conformance gate not built yet; cited as context, no work owed by this mission",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": "WP29"
     }
   },
   "schema_version": 1
