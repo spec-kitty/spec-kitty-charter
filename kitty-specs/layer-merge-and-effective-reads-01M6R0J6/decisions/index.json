@@ -1975,6 +1975,29 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-09T14:41:44.556214Z",
+      "decision_id": "01M70C42KC78KB9H6KB7TK9224",
+      "final_answer": "one required member enhancements: [ActionEnhancement {target: NodeReference, enhancedBy}] on the context",
+      "input_key": "pr-c-context-enhancements",
+      "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",
+      "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
+      "opened_by": "claude-runner",
+      "options": [
+        "one required member enhancements: [ActionEnhancement {target: NodeReference, enhancedBy}] on the context",
+        "per-entry enhancedBy on EffectiveArtifact (changes the served list) plus a separate member for the step"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "How does getEffectiveActionContext carry active enhancements (FR-019, E12/E16), including the start step's enhancers, which no artifact entry can name?",
+      "rationale": "Runner after WP28: E12 reads enhancers from the enhanced node's side and a step enhancer enhances a step, which no EffectiveArtifact entry names; a per-entry member would change the shared EffectiveArtifact of the served listing. The operation was reserved (501) until PR C, so the member is part of its first served shape (### Breaking with the rest of the context); it reuses NodeReference. Within FR-019; reviewer checks it.",
+      "resolved_at": "2026-11-09T14:41:46.448298Z",
+      "resolved_by": "claude-runner",
+      "slot_key": "pr-c-context-enhancements",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M6R0J642MF7F33XVMMPSBSAT",
