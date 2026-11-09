@@ -5,6 +5,10 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.activations.application.PacksSession;
+import ai.speckitty.charter.activations.domain.ActivationDocument;
+import ai.speckitty.charter.activations.domain.ClosureSnapshots;
+import ai.speckitty.charter.activations.domain.DocumentRules;
+import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport;
 import ai.speckitty.charter.activations.domain.GraphSnapshot;
@@ -118,6 +122,43 @@ class ClosureViewSessionStepRefsTest {
                 .as("a step satisfies nothing")
                 .isEmpty();
         assertThat(answer.states().get(ref("directive:R2")).satisfiedBy()).contains(D_REF);
+    }
+
+    @Test
+    void aTemplateThatOverridesARequiredDirectiveIsNoSatisfierAndTheWriteAndTheReadAgree() {
+        // R-4: a pack can author `overrides` from a template (the edge endpoints are bare URNs), and a locked template
+        // is in force inside the packs, so the resolution reports the required directive T as overridden by it. D16
+        // drops a node that is no artifact: the read names no overrider, and the write (IC-13) finds no satisfier, so
+        // a deactivate of T is 409 artifact_required while the read shows T out of force. Pinned, not changed.
+        Urn template = urn("template:tpl");
+        Urn required = urn("directive:T");
+        InForceStates hidden = states(byUrn(new ArtifactState(
+                required,
+                State.INACTIVE,
+                Reason.OVERRIDDEN,
+                true,
+                Optional.of(template),
+                Optional.of(template),
+                Optional.empty())));
+
+        MergedSnapshot.ArtifactState read =
+                ClosureViewSession.inForceOf(hidden).states().get(ref("directive:T"));
+        assertThat(read.state()).isEqualTo(ai.speckitty.charter.activations.domain.EffectiveSet.State.INACTIVE);
+        assertThat(read.satisfiedBy()).as("a template is no artifact an activation selects").isEmpty();
+        assertThat(read.overriddenBy()).isEmpty();
+
+        ActivationDocument denied = ActivationDocument.builder()
+                .packs(List.of(PackRef.of("main")))
+                .deactivated(ArtifactKind.DIRECTIVE, List.of("T"))
+                .build()
+                .document();
+        var closure = ClosureSnapshots.snapshot()
+                .pack("main", "1.0.0")
+                .held(ArtifactKind.DIRECTIVE, "T")
+                .requiredBy("directive:T", "PID-main")
+                .build();
+        assertThat(DocumentRules.check(denied, closure, query -> ClosureViewSession.inForceOf(hidden)))
+                .hasValueSatisfying(refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_REQUIRED));
     }
 
     @Test
