@@ -37,7 +37,25 @@ public enum PackFindingCode {
      * companions, edges, directory or identity (FR-004 to FR-006). It is a violation code of the file at registration
      * and the cause of a {@code pack_unreadable} read.
      */
-    PROMPT_FRAGMENT_INVALID(Severity.BLOCKING);
+    PROMPT_FRAGMENT_INVALID(Severity.BLOCKING),
+    /**
+     * A step prompt's slot declaration is malformed, repeated, nested or unpaired (FR-007), whatever the descriptor's
+     * version. It is a violation code of the prompt file at registration and the cause of a {@code pack_unreadable}
+     * read.
+     */
+    PROMPT_SLOT_MALFORMED(Severity.BLOCKING),
+    /**
+     * A step prompt's slot holds text in a pack whose descriptor declares {@code schema_version} {@code "1.0"}
+     * (FR-007). It is a violation code of the prompt file at registration and the cause of a {@code pack_unreadable}
+     * read.
+     */
+    PROMPT_SLOT_NOT_EMPTY(Severity.BLOCKING),
+    /**
+     * A step prompt's slot holds text in a pack whose descriptor declares no {@code schema_version}: the same
+     * condition as {@link #PROMPT_SLOT_NOT_EMPTY}, a warning for the legacy descriptor (ADR-0066 version gate). Two
+     * codes for one condition because a severity is fixed per code.
+     */
+    PROMPT_SLOT_NOT_EMPTY_UNVERSIONED(Severity.WARNING);
 
     /** How a finding weighs. */
     public enum Severity {
@@ -78,6 +96,8 @@ public enum PackFindingCode {
                     ORG_FRAGMENT_MISSING -> RefusalCode.PACK_UNREADABLE;
             case DRG_SCHEMA_ERROR -> RefusalCode.DRG_SCHEMA_ERROR;
             case PROMPT_FRAGMENT_INVALID -> RefusalCode.PROMPT_FRAGMENT_INVALID;
+            case PROMPT_SLOT_MALFORMED -> RefusalCode.PROMPT_SLOT_MALFORMED;
+            case PROMPT_SLOT_NOT_EMPTY -> RefusalCode.PROMPT_SLOT_NOT_EMPTY;
             default -> throw new IllegalStateException(name() + " has no refusal on the load path");
         };
     }
@@ -91,6 +111,7 @@ public enum PackFindingCode {
     public Diagnostic.Code diagnostic() {
         return switch (this) {
             case PACK_LEVEL_MISSING -> Diagnostic.Code.PACK_LEVEL_MISSING;
+            case PROMPT_SLOT_NOT_EMPTY_UNVERSIONED -> Diagnostic.Code.PROMPT_SLOT_NOT_EMPTY;
             default -> throw new IllegalStateException(name() + " has no diagnostic on the load path");
         };
     }

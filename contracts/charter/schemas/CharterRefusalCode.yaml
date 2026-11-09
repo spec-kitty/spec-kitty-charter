@@ -170,9 +170,9 @@ description: >-
   repeated id) is listed at its file inside 422 validation_failed, and a composing read answers 500 pack_unreadable
   naming the file.
   prompt_slot_malformed (a bad, repeated, nested or unpaired slot declaration) and prompt_slot_not_empty
-  (non-whitespace between paired markers at descriptor schema_version "1.0") stay reserved, raised: false until #424
-  builds their checks. prompt_slot_missing stays reserved: the prompt in force declares no slot an active or inactive
-  enhancement names at compose, and #424 raises it with the compose check. pack_reference_pack_missing and
+  (non-whitespace between paired markers at descriptor schema_version "1.0") are raised the same way, at the prompt
+  file. prompt_slot_missing stays reserved: the prompt in force declares no slot an active or inactive
+  enhancement names at compose, and the phase-2 mission (#438) raises it with the compose check. pack_reference_pack_missing and
   pack_reference_artifact_missing keep their existing meanings for references between packs; no ADR-0066 refusal
   is artifact_locked.
 type: string
@@ -720,13 +720,19 @@ x-refusal:
   prompt_slot_malformed:
     status: 500
     retryable: false
-    raised: false
-    description: a base prompt's slot declaration is malformed, repeated, nested or unpaired (ADR-0066, reserved for #424)
+    raised: true
+    description: >-
+      a base prompt's slot declaration is malformed, repeated, nested or unpaired (ADR-0066): a violation code of the
+      prompt file inside 422 validation_failed at registration, and 500 pack_unreadable naming the file on a composing
+      read
   prompt_slot_not_empty:
     status: 500
     retryable: false
-    raised: false
-    description: a slot is not empty at descriptor schema_version 1.0 (ADR-0066, reserved for #424)
+    raised: true
+    description: >-
+      a slot holds text at descriptor schema_version 1.0 (ADR-0066): a violation code of the prompt file inside 422
+      validation_failed at registration, and 500 pack_unreadable naming the file on a composing read; an unversioned
+      descriptor gets the warning DiagnosticCode.prompt_slot_not_empty instead, and the pack loads
   prompt_fragment_invalid:
     status: 500
     retryable: false

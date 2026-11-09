@@ -22,7 +22,9 @@ class PackFindingTest {
             PackFindingCode.DEPENDENCY_RANGE_INVALID,
             PackFindingCode.ORG_FRAGMENT_MISSING,
             PackFindingCode.DRG_SCHEMA_ERROR,
-            PackFindingCode.PROMPT_FRAGMENT_INVALID);
+            PackFindingCode.PROMPT_FRAGMENT_INVALID,
+            PackFindingCode.PROMPT_SLOT_MALFORMED,
+            PackFindingCode.PROMPT_SLOT_NOT_EMPTY);
 
     private static PackFinding finding(PackFindingCode code) {
         return new PackFinding(code, "pack.yaml", List.of("a", "b"), "the detail");
@@ -32,15 +34,16 @@ class PackFindingTest {
     void onlyTheLevelMissingCodeIsAWarning() {
         assertThat(EnumSet.allOf(PackFindingCode.class).stream()
                         .filter(c -> c.severity() == PackFindingCode.Severity.WARNING))
-                .containsExactly(PackFindingCode.PACK_LEVEL_MISSING);
+                .containsExactly(PackFindingCode.PACK_LEVEL_MISSING, PackFindingCode.PROMPT_SLOT_NOT_EMPTY_UNVERSIONED);
     }
 
     @ParameterizedTest
     @EnumSource(PackFindingCode.class)
     void aFindingTakesItsSeverityFromItsCode(PackFindingCode code) {
-        PackFindingCode.Severity expected = code == PackFindingCode.PACK_LEVEL_MISSING
-                ? PackFindingCode.Severity.WARNING
-                : PackFindingCode.Severity.BLOCKING;
+        PackFindingCode.Severity expected =
+                code == PackFindingCode.PACK_LEVEL_MISSING || code == PackFindingCode.PROMPT_SLOT_NOT_EMPTY_UNVERSIONED
+                        ? PackFindingCode.Severity.WARNING
+                        : PackFindingCode.Severity.BLOCKING;
         assertThat(finding(code).severity()).isEqualTo(expected);
     }
 
@@ -68,7 +71,9 @@ class PackFindingTest {
     @ParameterizedTest
     @EnumSource(PackFindingCode.class)
     void aValidateOnlyCodeHasNoWireValue(PackFindingCode code) {
-        if (LOAD_PATH_BLOCKING.contains(code) || code == PackFindingCode.PACK_LEVEL_MISSING) {
+        if (LOAD_PATH_BLOCKING.contains(code)
+                || code == PackFindingCode.PACK_LEVEL_MISSING
+                || code == PackFindingCode.PROMPT_SLOT_NOT_EMPTY_UNVERSIONED) {
             return;
         }
         assertThatThrownBy(code::refusal).isInstanceOf(IllegalStateException.class);
