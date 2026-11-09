@@ -9,6 +9,7 @@ import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.Pep440;
 import ai.speckitty.charter.kernel.domain.Pep440Range;
+import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Tension;
@@ -185,6 +186,57 @@ public final class PackPolicy {
         findings.addAll(assetRules(contents.assets()));
         findings.sort(PRECEDENCE);
         return new PackVerdict(contents.files(), findings);
+    }
+
+    // ---- step enhancements and prompt fragments -------------------------------------------------
+
+    /**
+     * Judges one pack's step enhancements, their fragments and the edges of their graph documents (FR-004 to FR-006)
+     * and answers every fault as the one code {@link PackFindingCode#PROMPT_FRAGMENT_INVALID}, at the file the rule
+     * names. The order is the rules': pack-relative path, then rule order. Validate mode reports these findings.
+     *
+     * @param packName the pack's configured name, which prefixes the origin in a text
+     * @param facts the pack's step enhancement facts
+     * @return one finding per fault, blocking, with an empty place
+     */
+    public static List<PackFinding> stepEnhancementFindings(String packName, StepEnhancementFacts facts) {
+        return StepEnhancementRules.judge(facts).stream()
+                .map(fault -> new PackFinding(
+                        PackFindingCode.PROMPT_FRAGMENT_INVALID,
+                        fault.path(),
+                        List.of(),
+                        origin(packName, fault.path()) + ": " + fault.reason()))
+                .toList();
+    }
+
+    /**
+     * The same faults as violations of the pack at its files, for the load: nothing is thrown, so a registration lists
+     * every one at its file and a composing read names the first. The kind is the wire token of the code.
+     *
+     * @param facts the pack's step enhancement facts
+     * @return one violation per fault, in the rules' order
+     */
+    public static List<PackElementViolation> stepEnhancementViolations(StepEnhancementFacts facts) {
+        String kind = violationKind(PackFindingCode.PROMPT_FRAGMENT_INVALID);
+        return StepEnhancementRules.judge(facts).stream()
+                .map(fault -> new PackElementViolation(fault.path(), kind, fault.reason()))
+                .toList();
+    }
+
+    /**
+     * The wire token a load fault of this code is recorded under as a {@link PackElementViolation} kind. The registration
+     * copies it into the {@code code} of the violation of {@code 422 validation_failed}.
+     *
+     * @param code the finding code
+     * @return its token
+     * @throws IllegalArgumentException for a code that is not recorded as a load violation
+     */
+    public static String violationKind(PackFindingCode code) {
+        return switch (code) {
+            case PROMPT_FRAGMENT_INVALID -> RefusalCode.PROMPT_FRAGMENT_INVALID.token();
+            default ->
+                throw new IllegalArgumentException(code.name() + " is not recorded as a violation of a load fault");
+        };
     }
 
     // ---- single-pack rules a schema cannot express ---------------------------------------------

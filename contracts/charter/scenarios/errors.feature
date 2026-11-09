@@ -182,9 +182,11 @@ Feature: Failures outside the charter's refusals
     pack_source_refused, and the two DELETEs add relationship_not_found and relationship_not_registered (and
     artifact_referenced, the code of the removal of an artifact another pack refers to). action_not_found is raised by
     the effective action context (ADR-0020 D7, PR C), which answers it with 404 when the merged closure holds no such
-    action of the mission type. unresolved_edge_endpoint, and, with the load that
-    judged a pack's graph, pack_level_mismatch and drg_schema_error, are raised by no operation (no
-    operation reaches the whole-pack load that still refuses a graph as drg_schema_error). The activation
+    action of the mission type. unresolved_edge_endpoint and pack_level_mismatch are raised by no
+    operation. drg_schema_error and prompt_fragment_invalid are violation codes of a refused registration (422
+    validation_failed, each at the pack-relative file of the fault), which the amended definition of raised
+    counts: the whole-pack load that the registration runs refuses a graph that breaks its schema as
+    drg_schema_error and a step enhancement or fragment that breaks a rule as prompt_fragment_invalid. The activation
     register adds activation_not_found, activation_invalid, artifact_required and artifact_locked, its
     per-artifact writes add artifact_not_found and mission_type_not_found, and the preset application adds
     preset_not_found.
@@ -235,3 +237,5 @@ Feature: Failures outside the charter's refusals
       | mission_type_not_found      |
       | action_not_found            |
       | preset_not_found            |
+      | drg_schema_error            |
+      | prompt_fragment_invalid     |

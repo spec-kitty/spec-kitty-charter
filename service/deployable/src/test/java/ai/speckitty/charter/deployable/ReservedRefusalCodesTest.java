@@ -7,7 +7,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackFindingCode;
-import ai.speckitty.charter.packs.infra.storage.WholePackStore;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaAccess;
 import com.tngtech.archunit.core.domain.JavaClass;
@@ -45,17 +44,18 @@ import org.snakeyaml.engine.v2.api.LoadSettings;
  * is part of the enum class. Each code marked {@code raised: true} must, the other way round, be named by some main
  * class outside those two; this says only that the code can raise it, not that a request of this version provokes it.
  *
- * <p>Two classes name unraised codes off the wire, and are allowed to name exactly those codes ({@link #OFF_WIRE}):
- * {@code WholePackStore}, the whole-pack load the round trip uses (ADR-0037), refuses a graph that breaks its schema
- * with {@code drg_schema_error}; and {@code PackFindingCode} projects its load-path findings onto refusal codes
- * through {@code PackFinding.toRefusal()}. No operation reaches either; {@link #offWireRules()} fail the day a main
- * class does, by a call or a method reference, so that the code's {@code x-refusal} entry is corrected with it.
+ * <p>One class names an unraised code off the wire, and is allowed to name exactly that code ({@link #OFF_WIRE}):
+ * {@code PackFindingCode} projects its load-path findings onto refusal codes through {@code PackFinding.toRefusal()},
+ * and {@code pack_level_mismatch} is the one code only that projection names (no operation reaches the projection).
+ * {@link #offWireRules()} fail the day a main class does, by a call or a method reference, so that the code's
+ * {@code x-refusal} entry is corrected with it. {@code drg_schema_error} is raised by the amended definition of
+ * {@code raised} (a violation code of {@code 422 validation_failed}, OD-3 (a)), so the whole-pack load that names it
+ * is no longer off the wire.
  */
 class ReservedRefusalCodesTest {
 
     private static final String REFUSAL_CODES = "contract/charter/schemas/CharterRefusalCode.yaml";
 
-    private static final String WHOLE_PACK_STORE = WholePackStore.class.getName();
     private static final String PACK_FINDING = PackFinding.class.getName();
     private static final String PACK_FINDING_CODE = PackFindingCode.class.getName();
 
@@ -67,9 +67,7 @@ class ReservedRefusalCodesTest {
     private static final Set<String> MAPPINGS = Set.of("statusOf", "title");
 
     /** The classes that may name an unraised code because no operation reaches them, and the codes each may name. */
-    private static final Map<String, Set<String>> OFF_WIRE = Map.of(
-            WHOLE_PACK_STORE, Set.of("DRG_SCHEMA_ERROR"),
-            PACK_FINDING_CODE, Set.of("PACK_LEVEL_MISMATCH", "DRG_SCHEMA_ERROR"));
+    private static final Map<String, Set<String>> OFF_WIRE = Map.of(PACK_FINDING_CODE, Set.of("PACK_LEVEL_MISMATCH"));
 
     private static final JavaClasses MAIN = new ClassFileImporter()
             .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
@@ -103,19 +101,11 @@ class ReservedRefusalCodesTest {
     /**
      * The rules that keep the off-wire classes of {@link #OFF_WIRE} off the wire.
      *
-     * @return one rule per way onto the wire: the whole-pack load, and the two projections of a finding to a refusal
+     * @return one rule per way onto the wire: the two projections of a finding to a refusal
      */
     static Stream<ArchRule> offWireRules() {
-        String because =
-                "the refusal it raises is pack_level_mismatch or drg_schema_error, which x-refusal marks raised: false";
+        String because = "the refusal it raises is pack_level_mismatch, which x-refusal marks raised: false";
         return Stream.of(
-                noClasses()
-                        .that()
-                        .haveNameNotMatching(pattern(WHOLE_PACK_STORE))
-                        .should()
-                        .dependOnClassesThat()
-                        .haveNameMatching(pattern(WHOLE_PACK_STORE))
-                        .because(because),
                 noClasses()
                         .that()
                         .haveNameNotMatching(pattern(PACK_FINDING))
@@ -189,9 +179,10 @@ class ReservedRefusalCodesTest {
     @Test
     void theContractMarksTheCodesTheWritesAndTheLoadRaiseAsDecided() {
         // #293: the registration writes raise governance_policy_violation (PackMutabilityPolicy, 409), so it is
-        // raised; drg_schema_error is raised only off the wire (WholePackStore, PackFindingCode), so it is not.
+        // raised; drg_schema_error is raised as a violation code of a refused registration (WholePackStore, OD-3 (a)),
+        // so it is raised too, and pack_level_mismatch, named only by the off-wire projection, is not.
         assertThat(raisedCodes()).contains("GOVERNANCE_POLICY_VIOLATION");
-        assertThat(unraisedCodes()).contains("DRG_SCHEMA_ERROR");
+        assertThat(raisedCodes()).contains("DRG_SCHEMA_ERROR");
         // #125, #291, #360: the activation register, its per-artifact writes and the preset write raise all six of
         // the activation set's codes, and the select of a mission type raises mission_type_not_found. PR C built the
         // last two effective reads (IC-11), so getEffectiveActionContext raises action_not_found too.
@@ -348,13 +339,12 @@ class ReservedRefusalCodesTest {
     }
 
     /**
-     * Reaches each off-wire class the way an operation would: it holds the whole-pack load, and turns findings into
-     * refusals by method reference, the stream shape a {@code callMethod} rule does not see.
+     * Reaches each off-wire projection the way an operation would: it turns findings into refusals by method
+     * reference, the stream shape a {@code callMethod} rule does not see.
      */
     static final class ReachesTheOffWireClasses {
-        List<?> reach(WholePackStore store, List<PackFinding> findings, List<PackFindingCode> codes) {
+        List<?> reach(List<PackFinding> findings, List<PackFindingCode> codes) {
             return List.of(
-                    store,
                     findings.stream().map(PackFinding::toRefusal).toList(),
                     codes.stream().map(PackFindingCode::refusal).toList());
         }
