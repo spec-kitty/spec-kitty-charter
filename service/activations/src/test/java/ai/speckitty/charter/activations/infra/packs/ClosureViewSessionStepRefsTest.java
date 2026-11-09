@@ -53,12 +53,13 @@ import org.junit.jupiter.api.Test;
 /**
  * Every part of the skipped report and of the merged closure that {@link ClosureViewSession} copies through
  * {@code activatable(}, stated for a step of a mission type (#429, T163, D4(a)): one case per call site, each with an
- * artifact of an activatable kind as the control in the same answer. A step ({@code action:<missionType>/<step>}) is a node
- * of the graph and no artifact an activation selects, so the report and the merged closure carry none of it, except the one
- * part whose type is a node: the targets of an enhancer without a target in force, which name the step they enhance.
+ * artifact of an activatable kind as the control in the same answer. A step ({@code action:<missionType>/<step>}) is a
+ * node of the graph and no artifact an activation selects, so the report and the merged closure carry none of it,
+ * except the one part whose type is a node: the targets of an enhancer without a target in force, which name the step
+ * they enhance.
  *
- * <p>Beside them: the effective graph lists the layer override of a held step and no override of a template, an asset, a
- * guard or a lifecycle (T138, T140); and {@code requiredNotInForce} never carries a step, by construction and by an
+ * <p>Beside them: the effective graph lists the layer override of a held step and no override of a template, an asset,
+ * a guard or a lifecycle (T138, T140); and {@code requiredNotInForce} never carries a step, by construction and by an
  * explicit, documented drop (D16).
  */
 class ClosureViewSessionStepRefsTest {
