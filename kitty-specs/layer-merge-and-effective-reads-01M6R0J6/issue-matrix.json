@@ -312,6 +312,18 @@
       "verdict": "in-mission",
       "wp": null
     },
+    "#428": {
+      "evidence_ref": "Storing step enhancements (#425 follow-up), outside this mission; named as the trigger that makes #429 live",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
     "#429": {
       "evidence_ref": "Follow-up from the #427 landing pass: step URNs filtered out of the skipped report; latent until #428; PR C reads it before WP27/WP28",
       "fr": null,
