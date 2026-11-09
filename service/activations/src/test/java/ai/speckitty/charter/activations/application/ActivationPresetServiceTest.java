@@ -123,15 +123,15 @@ class ActivationPresetServiceTest {
         // IC-13: T is required and F, a member of the preset, overrides it; the entry on T, accepted for F's sake, is
         // not a member's, so force keeps it, and a preset never adds a deny entry, so the write is not refused.
         StoredActivation before = stored(ActivationDocument.builder()
-                .selected(ArtifactKind.DIRECTIVE, List.of("F"))
+                .selected(ArtifactKind.DIRECTIVE, List.of("A"))
                 .deactivated(ArtifactKind.DIRECTIVE, List.of("T")));
 
-        service.apply(ID, "keep-f", true, List.of(), quoted(before));
+        ActivationWrites.Outcome outcome = service.apply(ID, "keep-f", true, List.of(), quoted(before));
 
         ActivationDocument stored = repository.find(ID).orElseThrow().document();
         assertThat(stored.selected(ArtifactKind.DIRECTIVE).orElseThrow()).containsExactly("F");
         assertThat(stored.deactivated(ArtifactKind.DIRECTIVE)).containsExactly("T");
-        assertThat(repository.replaces()).isEqualTo(1);
+        assertThat(outcome.stored().revision()).isNotEqualTo(before.revision());
     }
 
     @Test
