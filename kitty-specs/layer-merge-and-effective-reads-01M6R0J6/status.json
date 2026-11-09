@@ -992,7 +992,17 @@
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 7179,
-      "shell_pid_created_at": "1794231379.93"
+      "shell_pid_created_at": "1794231379.93",
+      "subtasks": {
+        "T138": "done",
+        "T139": "done",
+        "T140": "done",
+        "T141": "done",
+        "T142": "done",
+        "T162": "done",
+        "T163": "done",
+        "T164": "done"
+      }
     },
     "WP29": {
       "actor": "finalize-tasks",
