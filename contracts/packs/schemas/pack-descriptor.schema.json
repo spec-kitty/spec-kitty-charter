@@ -6,7 +6,6 @@
   "properties": {
     "schema_version": {
       "const": "1.0",
-      "default": "1.0",
       "description": "The descriptor shape's version, the string \"1.0\". It declares the depends_on shape and switches on ADR-0066's empty-prompt-slot check: slots in this pack's mission step prompts must hold only whitespace or are refused as prompt_slot_not_empty. An unversioned descriptor is the legacy shape; legacy text between paired slot markers remains admitted and produces a prompt_slot_not_empty warning instead.",
       "title": "Schema Version",
       "type": "string"

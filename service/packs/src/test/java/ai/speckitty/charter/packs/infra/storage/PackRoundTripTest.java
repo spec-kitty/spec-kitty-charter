@@ -43,7 +43,8 @@ class PackRoundTripTest {
             Optional.of("drg/fragment.yaml"),
             Optional.empty(),
             List.of(),
-            List.of());
+            List.of(),
+            Optional.empty());
 
     private static final TacticDso ALPHA = new TacticDso(
             ALPHA_ID,
@@ -213,7 +214,8 @@ class PackRoundTripTest {
                 d.packDrg(),
                 d.mutabilityPolicy(),
                 d.dependencies(),
-                d.overrides());
+                d.overrides(),
+                d.schemaVersion());
 
         FilesystemPackStore.PackRead refetched =
                 roundTrip(withTactics(mutated, List.of(), List.of()), host.resolve("fresh"));
@@ -240,7 +242,8 @@ class PackRoundTripTest {
                 d.packDrg(),
                 d.mutabilityPolicy(),
                 d.dependencies(),
-                List.of(new PackOverride("directive:DIRECTIVE_009", "01M4P01D5TWB5FKZGNNQG3943S")));
+                List.of(new PackOverride("directive:DIRECTIVE_009", "01M4P01D5TWB5FKZGNNQG3943S")),
+                d.schemaVersion());
 
         FilesystemPackStore.PackRead refetched =
                 roundTrip(withTactics(settling, List.of(), List.of()), host.resolve("fresh"));
