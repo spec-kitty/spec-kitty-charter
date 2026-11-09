@@ -25,7 +25,7 @@ public record GuideAllowlist(Set<String> hosts) {
 
     /** A host name of LDH labels: each 1 to 63 letters, digits and inner hyphens, at most 253 characters in all. */
     private static final Pattern HOST_NAME =
-            Pattern.compile("(?=.{1,253}$)[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*");
+            Pattern.compile("(?=.{1,253}$)[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*+");
 
     private static final String GUIDE_PROPERTY = "charter.guide-fetch.allowed-hosts";
 

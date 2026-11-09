@@ -42,17 +42,6 @@ class RegexRecursionGuardTest {
      * whose detail no longer equals the entry's fails as out of date, so a changed pattern is judged again.
      */
     private val allowList = mapOf(
-        "packs/src/main/java/ai/speckitty/charter/packs/infra/fetch/git/GitSourceRules.java:HOST_NAME" to Allowed(
-            "repeated group `(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*` is not possessive in"
-                + " `(?=.{1,253}\$)[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*`",
-            "bounded: the (?=.{1,253}\$) lookahead caps the input, and each repeat starts with a literal '.' the"
-                + " repeated body cannot match, so iterations cannot overlap",
-        ),
-        "packs/src/main/java/ai/speckitty/charter/packs/infra/fetch/GuideAllowlist.java:HOST_NAME" to Allowed(
-            "repeated group `(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*` is not possessive in"
-                + " `(?=.{1,253}\$)[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*`",
-            "bounded: the same host grammar as GitSourceRules HOST_NAME, capped by its (?=.{1,253}\$) lookahead",
-        ),
         "packs/src/main/java/ai/speckitty/charter/packs/infra/storage/Re2jRegularExpressionFactory.java:regex" to
             Allowed(
                 "cannot judge `regex`",
