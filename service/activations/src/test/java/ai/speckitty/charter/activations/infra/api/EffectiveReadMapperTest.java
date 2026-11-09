@@ -2,14 +2,18 @@ package ai.speckitty.charter.activations.infra.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.activations.application.EffectiveReadService.After;
+import ai.speckitty.charter.activations.application.EffectiveReadService.ContextRead;
+import ai.speckitty.charter.activations.application.EffectiveReadService.GraphRead;
 import ai.speckitty.charter.activations.application.EffectiveReadService.Page;
 import ai.speckitty.charter.activations.application.EffectiveReadService.PageQuery;
 import ai.speckitty.charter.activations.application.EffectiveReadService.Report;
 import ai.speckitty.charter.activations.domain.ActivationDocument;
 import ai.speckitty.charter.activations.domain.ActivationId;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
+import ai.speckitty.charter.activations.domain.EffectiveContext;
 import ai.speckitty.charter.activations.domain.EffectiveSet.EffectiveArtifact;
 import ai.speckitty.charter.activations.domain.EffectiveSet.Policy;
 import ai.speckitty.charter.activations.domain.EffectiveSet.Reason;
@@ -25,16 +29,25 @@ import ai.speckitty.charter.activations.domain.EffectiveSkippedReport.OverrideNo
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport.PinNotHeld;
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport.PruningReason;
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport.RequiredNotInForce;
+import ai.speckitty.charter.activations.domain.EffectiveTag;
+import ai.speckitty.charter.activations.domain.GraphSnapshot;
+import ai.speckitty.charter.activations.domain.MergedSnapshot;
 import ai.speckitty.charter.activations.domain.NodeRef;
 import ai.speckitty.charter.activations.domain.SkippedReport.SkippedDeactivated;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.api.model.Activation;
 import ai.speckitty.charter.api.model.ActivationSkippedReport;
 import ai.speckitty.charter.api.model.ArtifactReference;
+import ai.speckitty.charter.api.model.EffectiveActionContext;
 import ai.speckitty.charter.api.model.EffectiveArtifactList;
+import ai.speckitty.charter.api.model.EffectiveGraph;
+import ai.speckitty.charter.api.model.EffectiveGraphEdge;
+import ai.speckitty.charter.api.model.EffectiveGraphNode;
 import ai.speckitty.charter.api.model.NodeReference;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackLevel;
+import ai.speckitty.charter.kernel.domain.RelationType;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -339,5 +352,150 @@ class EffectiveReadMapperTest {
                 .isNull();
         assertThat(some.getDenyNotApplied()).containsExactly("tactic:t", "directive:A");
         assertThat(some.getRevision()).isEqualTo(stored.revision().token());
+    }
+
+    // ---- the graph and the action context (IC-11)
+
+    @Test
+    void theGraphIsMappedWithItsNodesEdgesLayerOverridesAndSelfInTheOrderGiven() {
+        NodeRef step = new NodeRef(NodeKind.ACTION, "software-dev/implement");
+        GraphSnapshot graph = new GraphSnapshot(
+                List.of(step, NodeRef.of(A), NodeRef.of(B)),
+                List.of(
+                        new GraphSnapshot.Edge(step, RelationType.SCOPE, NodeRef.of(A)),
+                        new GraphSnapshot.Edge(NodeRef.of(A), RelationType.REQUIRES, NodeRef.of(B))),
+                List.of(new MergedSnapshot.LayerOverride(
+                        step,
+                        new MergedSnapshot.LayerOverride.Side("proj", PackLevel.PROJECT),
+                        new MergedSnapshot.LayerOverride.Side("core", PackLevel.BUILT_IN))));
+
+        EffectiveGraph wire = mapper.toGraph(new GraphRead(stored, "sha256:source", "sha256:closure", graph));
+
+        assertThat(wire.getActivationId()).isEqualTo("a-1");
+        assertThat(wire.getRevision()).isEqualTo(stored.revision().token());
+        assertThat(wire.getGovernanceFingerprint()).isEqualTo("sha256:closure");
+        assertThat(wire.getNodes())
+                .extracting(EffectiveGraphNode::getUrn, node -> node.getKind().getValue())
+                .containsExactly(
+                        tuple("action:software-dev/implement", "action"),
+                        tuple("directive:A", "directive"),
+                        tuple("directive:B", "directive"));
+        assertThat(wire.getEdges())
+                .extracting(
+                        EffectiveGraphEdge::getSource,
+                        edge -> edge.getRelation().getValue(),
+                        EffectiveGraphEdge::getTarget)
+                .containsExactly(
+                        tuple("action:software-dev/implement", "scope", "directive:A"),
+                        tuple("directive:A", "requires", "directive:B"));
+        assertThat(wire.getLayerOverrides()).singleElement().satisfies(replaced -> {
+            assertThat(replaced.getArtifact()).isEqualTo("action:software-dev/implement");
+            assertThat(replaced.getWinner().getPackId()).isEqualTo("proj");
+            assertThat(replaced.getWinner().getLevel().getValue()).isEqualTo("project");
+            assertThat(replaced.getLoser().getPackId()).isEqualTo("core");
+            assertThat(replaced.getLoser().getLevel().getValue()).isEqualTo("built-in");
+        });
+        assertThat(wire.getLinks()).containsOnlyKeys("self");
+        assertThat(wire.getLinks().get("self").getHref()).isEqualTo("/api/v1/activations/a-1/graph");
+    }
+
+    @Test
+    void anEmptyGraphIsMappedWithEmptyListsAndNotAbsentOnes() {
+        EffectiveGraph wire =
+                mapper.toGraph(new GraphRead(stored, "sha256:source", "sha256:closure", GraphSnapshot.empty()));
+
+        assertThat(wire.getNodes()).isEmpty();
+        assertThat(wire.getEdges()).isEmpty();
+        assertThat(wire.getLayerOverrides()).isEmpty();
+    }
+
+    private ContextRead contextRead(EffectiveContext context) {
+        return new ContextRead(
+                stored,
+                "sha256:source",
+                "sha256:closure",
+                new EffectiveTag.ContextQuery("software-dev", "implement", 1),
+                context);
+    }
+
+    @Test
+    void theContextIsMappedWithItsArtifactsSuggestionEnhancementsAndSkippedReport() {
+        EffectiveContext context = new EffectiveContext(
+                List.of(
+                        new EffectiveArtifact(
+                                A,
+                                "main",
+                                PackLevel.ORG,
+                                State.ACTIVE,
+                                false,
+                                Optional.empty(),
+                                Policy.OPEN,
+                                Reason.SELECTED,
+                                Optional.empty()),
+                        item(
+                                T,
+                                Optional.empty(),
+                                Optional.of(new Suggestion(Optional.of("when"), Optional.of("why"))))),
+                List.of(
+                        new EffectiveContext.Enhancement(
+                                new NodeRef(NodeKind.ACTION, "software-dev/implement"),
+                                List.of(new ArtifactRef(ArtifactKind.STEP_ENHANCEMENT, "x"))),
+                        new EffectiveContext.Enhancement(NodeRef.of(A), List.of(B))),
+                EffectiveSkippedReport.empty());
+
+        EffectiveActionContext wire = mapper.toContext(contextRead(context), true);
+
+        assertThat(wire.getActivationId()).isEqualTo("a-1");
+        assertThat(wire.getMissionType()).isEqualTo("software-dev");
+        assertThat(wire.getAction()).isEqualTo("implement");
+        assertThat(wire.getGovernanceFingerprint()).isEqualTo("sha256:closure");
+        assertThat(wire.getArtifacts())
+                .extracting(ai.speckitty.charter.api.model.EffectiveArtifact::getArtifactId)
+                .containsExactly("A", "t");
+        assertThat(wire.getArtifacts().get(0).getSuggestion()).isNull();
+        assertThat(wire.getArtifacts().get(1).getSuggestion().getWhen()).isEqualTo("when");
+        assertThat(wire.getArtifacts().get(1).getSuggestion().getReason()).isEqualTo("why");
+        assertThat(wire.getEnhancements()).hasSize(2);
+        assertThat(wire.getEnhancements().get(0).getTarget())
+                .isEqualTo(new NodeReference(NodeReference.KindEnum.ACTION, "software-dev/implement"));
+        assertThat(wire.getEnhancements().get(0).getEnhancedBy())
+                .containsExactly(new ArtifactReference(ArtifactReference.KindEnum.STEP_ENHANCEMENT, "x"));
+        assertThat(wire.getEnhancements().get(1).getTarget())
+                .isEqualTo(new NodeReference(NodeReference.KindEnum.DIRECTIVE, "A"));
+        assertThat(wire.getSkipped().getMissionTypeNotInForce()).isEmpty();
+    }
+
+    @Test
+    void theContextsSelfLinkIsTheRequestThatWasMadeAndCarriesTheDepthOnlyWhenTheRequestNamedOne() {
+        ContextRead read = contextRead(new EffectiveContext(List.of(), List.of(), EffectiveSkippedReport.empty()));
+
+        assertThat(mapper.toContext(read, true).getLinks().get("self").getHref())
+                .isEqualTo("/api/v1/activations/a-1/mission-types/software-dev/actions/implement/context?depth=1");
+        assertThat(mapper.toContext(read, false).getLinks().get("self").getHref())
+                .isEqualTo("/api/v1/activations/a-1/mission-types/software-dev/actions/implement/context");
+    }
+
+    @Test
+    void aMissionTypeNotInForceIsMappedAsAnEmptyContextWhoseSkippedReportNamesTheMissionType() {
+        EffectiveSkippedReport skipped = new EffectiveSkippedReport(
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(new ArtifactRef(ArtifactKind.MISSION_TYPE, "software-dev")),
+                List.of(),
+                List.of());
+
+        EffectiveActionContext wire =
+                mapper.toContext(contextRead(new EffectiveContext(List.of(), List.of(), skipped)), true);
+
+        assertThat(wire.getArtifacts()).isEmpty();
+        assertThat(wire.getEnhancements()).isEmpty();
+        assertThat(wire.getSkipped().getMissionTypeNotInForce())
+                .containsExactly(new ArtifactReference(ArtifactReference.KindEnum.MISSION_TYPE, "software-dev"));
     }
 }

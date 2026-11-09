@@ -263,6 +263,22 @@ public record EffectiveSet(List<EffectiveArtifact> artifacts, EffectiveSkippedRe
     }
 
     /**
+     * An artifact the action context lists as a suggestion: one the walk reached only through a {@code suggests} edge of an
+     * artifact it lists. It is a suggestion only when the activation does not select it ({@code not_selected}), by the
+     * rule {@link #suggestionsOf} applies to the list, so an artifact that is out of force for another reason (denied,
+     * overridden, language filtered, bound to a mission type not in force) is no suggestion and is not listed.
+     *
+     * @param ref the suggested artifact
+     * @param when the {@code when} of the {@code suggests} edge that reaches it, if it states one
+     * @param reason the {@code reason} of that edge, if it states one
+     * @return the artifact as the list gives it, with the edge's {@code when} and {@code reason} as its suggestion; empty
+     *     when the set does not hold it or it is out of force for another reason than a missing selection
+     */
+    public Optional<EffectiveArtifact> suggested(ArtifactRef ref, Optional<String> when, Optional<String> reason) {
+        return Optional.empty();
+    }
+
+    /**
      * Checks the fields.
      *
      * @param artifacts the artifacts

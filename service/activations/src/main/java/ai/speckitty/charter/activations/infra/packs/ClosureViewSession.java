@@ -1,10 +1,12 @@
 package ai.speckitty.charter.activations.infra.packs;
 
 import ai.speckitty.charter.activations.application.PacksSession;
+import ai.speckitty.charter.activations.domain.ActionContext;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.activations.domain.EffectiveSet;
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport;
+import ai.speckitty.charter.activations.domain.GraphSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
@@ -74,6 +76,16 @@ final class ClosureViewSession implements PacksSession {
     @Override
     public InForceAnswer inForce(InForceQuery query) {
         return inForceOf(view.inForce(requestOf(query)));
+    }
+
+    @Override
+    public GraphSnapshot graph(InForceQuery query) {
+        return GraphSnapshot.empty();
+    }
+
+    @Override
+    public ActionContext actionContext(String missionType, String action, int depth, InForceQuery query) {
+        return ActionContext.notInForce();
     }
 
     /**
@@ -150,8 +162,8 @@ final class ClosureViewSession implements PacksSession {
         List<MergedSnapshot.LayerOverride> overrides = new ArrayList<>();
         for (LayerOverride replaced : closure.layerOverrides()) {
             activatable(replaced.urn())
-                    .ifPresent(ref -> overrides.add(
-                            new MergedSnapshot.LayerOverride(ref, side(replaced.winner()), side(replaced.loser()))));
+                    .ifPresent(ref -> overrides.add(new MergedSnapshot.LayerOverride(
+                            NodeRef.of(ref), side(replaced.winner()), side(replaced.loser()))));
         }
         return overrides;
     }

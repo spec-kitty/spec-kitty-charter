@@ -2,7 +2,9 @@ package ai.speckitty.charter.deployable;
 
 import ai.speckitty.charter.activations.application.AvailablePacks;
 import ai.speckitty.charter.activations.application.PacksSession;
+import ai.speckitty.charter.activations.domain.ActionContext;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
+import ai.speckitty.charter.activations.domain.GraphSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
@@ -91,6 +93,16 @@ public class ActivationTestWiring {
                 @Override
                 public InForceAnswer inForce(InForceQuery query) {
                     return InForceAnswer.empty();
+                }
+
+                @Override
+                public GraphSnapshot graph(InForceQuery query) {
+                    return GraphSnapshot.empty();
+                }
+
+                @Override
+                public ActionContext actionContext(String missionType, String action, int depth, InForceQuery query) {
+                    return ActionContext.notInForce();
                 }
             };
         }

@@ -1,6 +1,8 @@
 package ai.speckitty.charter.activations.application;
 
+import ai.speckitty.charter.activations.domain.ActionContext;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
+import ai.speckitty.charter.activations.domain.GraphSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
@@ -31,6 +33,20 @@ public final class FakeAvailablePacks implements AvailablePacks {
     private Function<InForceQuery, InForceAnswer> resolution = query -> InForceAnswer.empty();
     private int merges;
     private final List<InForceQuery> queries = new ArrayList<>();
+    private Function<InForceQuery, GraphSnapshot> graphAnswer = query -> GraphSnapshot.empty();
+    private Function<ContextAsk, ActionContext> contextAnswer = ask -> ActionContext.notInForce();
+    private final List<ContextAsk> contextAsks = new ArrayList<>();
+    private int graphReads;
+
+    /**
+     * What a session was asked of the action context.
+     *
+     * @param missionType the mission type
+     * @param action the action
+     * @param depth the depth
+     * @param query the document's request
+     */
+    public record ContextAsk(String missionType, String action, int depth, InForceQuery query) {}
 
     /**
      * A fake that answers the snapshot.
@@ -85,6 +101,43 @@ public final class FakeAvailablePacks implements AvailablePacks {
      */
     public void resolves(Function<InForceQuery, InForceAnswer> next) {
         this.resolution = next;
+    }
+
+    /**
+     * Answers every graph question of a session with this graph from now on.
+     *
+     * @param next the answers of {@link PacksSession#graph}, by query
+     */
+    public void graphs(Function<InForceQuery, GraphSnapshot> next) {
+        this.graphAnswer = next;
+    }
+
+    /**
+     * Answers every action-context question of a session with this walk from now on; a function that throws a refusal
+     * answers as the packs slice does for an unknown name.
+     *
+     * @param next the answers of {@link PacksSession#actionContext}, by question
+     */
+    public void contexts(Function<ContextAsk, ActionContext> next) {
+        this.contextAnswer = next;
+    }
+
+    /**
+     * The action-context questions the sessions were asked, in order.
+     *
+     * @return the questions
+     */
+    public List<ContextAsk> contextAsks() {
+        return List.copyOf(contextAsks);
+    }
+
+    /**
+     * How often the sessions were asked for the graph.
+     *
+     * @return the number of {@link PacksSession#graph} calls
+     */
+    public int graphReads() {
+        return graphReads;
     }
 
     @Override
@@ -171,6 +224,19 @@ public final class FakeAvailablePacks implements AvailablePacks {
         public InForceAnswer inForce(InForceQuery query) {
             queries.add(query);
             return resolution.apply(query);
+        }
+
+        @Override
+        public GraphSnapshot graph(InForceQuery query) {
+            graphReads++;
+            return graphAnswer.apply(query);
+        }
+
+        @Override
+        public ActionContext actionContext(String missionType, String action, int depth, InForceQuery query) {
+            ContextAsk ask = new ContextAsk(missionType, action, depth, query);
+            contextAsks.add(ask);
+            return contextAnswer.apply(ask);
         }
     }
 }

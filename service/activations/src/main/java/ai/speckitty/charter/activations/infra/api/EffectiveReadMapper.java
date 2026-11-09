@@ -1,6 +1,8 @@
 package ai.speckitty.charter.activations.infra.api;
 
 import ai.speckitty.charter.activations.application.EffectiveReadService;
+import ai.speckitty.charter.activations.application.EffectiveReadService.ContextRead;
+import ai.speckitty.charter.activations.application.EffectiveReadService.GraphRead;
 import ai.speckitty.charter.activations.application.EffectiveReadService.Page;
 import ai.speckitty.charter.activations.application.EffectiveReadService.PageQuery;
 import ai.speckitty.charter.activations.application.EffectiveReadService.Report;
@@ -12,8 +14,10 @@ import ai.speckitty.charter.activations.domain.NodeRef;
 import ai.speckitty.charter.api.model.ActivationSkippedReport;
 import ai.speckitty.charter.api.model.ActivationSummary;
 import ai.speckitty.charter.api.model.DenyNotApplied;
+import ai.speckitty.charter.api.model.EffectiveActionContext;
 import ai.speckitty.charter.api.model.EffectiveArtifactList;
 import ai.speckitty.charter.api.model.EffectiveArtifactSuggestion;
+import ai.speckitty.charter.api.model.EffectiveGraph;
 import ai.speckitty.charter.api.model.EnhancerWithoutTarget;
 import ai.speckitty.charter.api.model.Link;
 import ai.speckitty.charter.api.model.NodeReference;
@@ -23,6 +27,7 @@ import ai.speckitty.charter.api.model.PageInfo;
 import ai.speckitty.charter.api.model.RequiredNotInForce;
 import ai.speckitty.charter.api.model.SkippedReport;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -90,6 +95,46 @@ public class EffectiveReadMapper {
                 report.governanceFingerprint(),
                 skipped(report.skipped()),
                 Map.of("self", new Link(activations.self(id) + "/skipped")));
+    }
+
+    /**
+     * The effective graph.
+     *
+     * @param read what the service read
+     * @return its wire form
+     */
+    public EffectiveGraph toGraph(GraphRead read) {
+        String id = read.stored().id().value();
+        return new EffectiveGraph(
+                id,
+                read.stored().revision().token(),
+                read.governanceFingerprint(),
+                List.of(),
+                List.of(),
+                List.of(),
+                Map.of("self", new Link(activations.self(id) + "/graph")));
+    }
+
+    /**
+     * The effective action context.
+     *
+     * @param read what the service read
+     * @param depthGiven whether the request named a {@code depth}: {@code self} repeats it only then, so that it is the
+     *     request that was made
+     * @return its wire form
+     */
+    public EffectiveActionContext toContext(ContextRead read, boolean depthGiven) {
+        String id = read.stored().id().value();
+        return new EffectiveActionContext(
+                id,
+                read.stored().revision().token(),
+                read.governanceFingerprint(),
+                read.query().missionType(),
+                read.query().action(),
+                List.of(),
+                List.of(),
+                skipped(read.context().skipped()),
+                Map.of("self", new Link(activations.self(id) + "/graph")));
     }
 
     private static ActivationSummary summary(EffectiveSet.Summary counts) {

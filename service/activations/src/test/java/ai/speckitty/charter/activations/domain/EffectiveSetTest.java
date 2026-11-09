@@ -552,6 +552,75 @@ class EffectiveSetTest {
                 .contains(new Suggestion(Optional.of("from a"), Optional.of("a")));
     }
 
+    // ---- a suggestion the action context lists, through the one carrier ----
+
+    @Test
+    void anArtifactTheActionReachesOnlyThroughSuggestsIsListedWithTheWalksEdgeAsItsSuggestion() {
+        EffectiveSet set = new Scene()
+                .artifact("directive:D", State.ACTIVE, Reason.SELECTED)
+                .artifact("directive:S", State.INACTIVE, Reason.NOT_SELECTED)
+                .suggests("directive:D", "directive:S", "the list's edge", "the list's reason")
+                .of();
+
+        Optional<EffectiveArtifact> suggested =
+                set.suggested(ref("directive:S"), Optional.of("the walk's edge"), Optional.of("the walk's reason"));
+
+        assertThat(suggested).hasValueSatisfying(artifact -> {
+            assertThat(artifact.ref()).isEqualTo(ref("directive:S"));
+            assertThat(artifact.state()).isEqualTo(State.INACTIVE);
+            assertThat(artifact.reason()).isEqualTo(Reason.NOT_SELECTED);
+            assertThat(artifact.packId()).isEqualTo("alpha");
+            assertThat(artifact.suggestion())
+                    .as("the edge the walk reached it by, which is the nearest, not the one the list picks")
+                    .contains(new Suggestion(Optional.of("the walk's edge"), Optional.of("the walk's reason")));
+        });
+    }
+
+    @Test
+    void anEdgeThatStatesNeitherWhenNorReasonIsStillASuggestionOfTheContext() {
+        EffectiveSet set = new Scene()
+                .artifact("directive:S", State.INACTIVE, Reason.NOT_SELECTED)
+                .of();
+
+        assertThat(set.suggested(ref("directive:S"), Optional.empty(), Optional.empty()))
+                .hasValueSatisfying(artifact ->
+                        assertThat(artifact.suggestion()).contains(new Suggestion(Optional.empty(), Optional.empty())));
+    }
+
+    @Test
+    void onlyAnArtifactTheDocumentDoesNotSelectIsListedAsASuggestionWhateverOtherReasonKeepsAnArtifactOut() {
+        Scene scene = new Scene().artifact("directive:D", State.ACTIVE, Reason.SELECTED);
+        Map<String, Reason> outOfForce = Map.of(
+                "tactic:Denied", Reason.DEACTIVATED,
+                "tactic:Hidden", Reason.OVERRIDDEN,
+                "tactic:Filtered", Reason.LANGUAGE_FILTERED,
+                "tactic:Unbound", Reason.MISSION_TYPE_NOT_IN_FORCE,
+                "tactic:Ungrounded", Reason.ENHANCED_TARGET_NOT_IN_FORCE);
+        outOfForce.forEach((urn, reason) ->
+                scene.artifact(urn, reason == Reason.DEACTIVATED ? State.EXCLUDED : State.INACTIVE, reason));
+        scene.artifact("tactic:Unselected", State.INACTIVE, Reason.NOT_SELECTED);
+        EffectiveSet set = scene.of();
+
+        outOfForce.forEach((urn, reason) -> assertThat(set.suggested(ref(urn), Optional.of("w"), Optional.of("r")))
+                .as(reason.token())
+                .isEmpty());
+        assertThat(set.suggested(ref("tactic:Unselected"), Optional.of("w"), Optional.of("r")))
+                .as("not_selected, in the same set")
+                .isPresent();
+    }
+
+    @Test
+    void anArtifactInForceAndOneTheSetDoesNotHoldAreNoSuggestion() {
+        EffectiveSet set = new Scene()
+                .artifact("directive:D", State.ACTIVE, Reason.SELECTED)
+                .of();
+
+        assertThat(set.suggested(ref("directive:D"), Optional.of("w"), Optional.of("r")))
+                .isEmpty();
+        assertThat(set.suggested(ref("directive:Unknown"), Optional.of("w"), Optional.of("r")))
+                .isEmpty();
+    }
+
     // ---- the report of a write's shape, and the request ----
 
     @Test

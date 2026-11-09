@@ -43,7 +43,37 @@ public record EffectiveTag(String token) {
         /** {@code listEffectiveArtifacts}. */
         ARTIFACTS,
         /** {@code getActivationSkippedReport}. */
-        SKIPPED
+        SKIPPED,
+        /** {@code getEffectiveGraph}. */
+        GRAPH,
+        /** {@code getEffectiveActionContext}. */
+        CONTEXT
+    }
+
+    /**
+     * The query of {@code getEffectiveActionContext}, as it selects a representation.
+     *
+     * @param missionType the mission type of the path
+     * @param action the action of the path
+     * @param depth the number of {@code suggests} hops the request resolved to, its default when it sent none
+     */
+    public record ContextQuery(String missionType, String action, int depth) {
+
+        /**
+         * Checks the fields.
+         *
+         * @param missionType the mission type
+         * @param action the action
+         * @param depth the depth
+         */
+        public ContextQuery {
+            Objects.requireNonNull(missionType, "missionType");
+            Objects.requireNonNull(action, "action");
+        }
+
+        private String normalized() {
+            return "missionType=" + missionType + "\naction=" + action + "\ndepth=" + depth;
+        }
     }
 
     /**
@@ -125,6 +155,29 @@ public record EffectiveTag(String token) {
      */
     public static EffectiveTag artifacts(Revision revision, ClosureSnapshot closure, Query query) {
         return of(Read.ARTIFACTS, revision, closure, query.normalized());
+    }
+
+    /**
+     * The tag of the effective graph.
+     *
+     * @param revision the activation's revision
+     * @param closure the closure the answer was computed from
+     * @return the tag
+     */
+    public static EffectiveTag graph(Revision revision, ClosureSnapshot closure) {
+        return of(Read.SKIPPED, revision, closure, NO_QUERY);
+    }
+
+    /**
+     * The tag of one effective action context.
+     *
+     * @param revision the activation's revision
+     * @param closure the closure the answer was computed from
+     * @param query the mission type, the action and the depth
+     * @return the tag
+     */
+    public static EffectiveTag context(Revision revision, ClosureSnapshot closure, ContextQuery query) {
+        return of(Read.SKIPPED, revision, closure, query.normalized());
     }
 
     private static EffectiveTag of(Read read, Revision revision, ClosureSnapshot closure, String query) {

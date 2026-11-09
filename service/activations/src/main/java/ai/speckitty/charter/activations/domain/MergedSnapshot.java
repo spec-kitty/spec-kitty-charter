@@ -98,13 +98,13 @@ public record MergedSnapshot(
     }
 
     /**
-     * One version of an artifact that a later level replaced.
+     * One version of a node that a later level replaced.
      *
-     * @param ref the artifact
+     * @param ref the node: an artifact, or a step of a mission type held by the closure
      * @param winner the version in force
      * @param loser the version it replaced
      */
-    public record LayerOverride(ArtifactRef ref, Side winner, Side loser) {
+    public record LayerOverride(NodeRef ref, Side winner, Side loser) {
 
         /**
          * One version of the artifact.
@@ -129,7 +129,7 @@ public record MergedSnapshot(
         /**
          * Checks the fields.
          *
-         * @param ref the artifact
+         * @param ref the node
          * @param winner the version in force
          * @param loser the version it replaced
          */

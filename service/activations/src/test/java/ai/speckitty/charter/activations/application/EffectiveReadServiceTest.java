@@ -5,16 +5,21 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.activations.application.ActivationService.Read;
 import ai.speckitty.charter.activations.application.EffectiveReadService.After;
+import ai.speckitty.charter.activations.application.EffectiveReadService.ContextRead;
+import ai.speckitty.charter.activations.application.EffectiveReadService.GraphRead;
 import ai.speckitty.charter.activations.application.EffectiveReadService.Page;
 import ai.speckitty.charter.activations.application.EffectiveReadService.PageQuery;
 import ai.speckitty.charter.activations.application.EffectiveReadService.Report;
 import ai.speckitty.charter.activations.application.EffectiveReadService.StaleCursorException;
 import ai.speckitty.charter.activations.application.EffectiveReadService.Viewed;
+import ai.speckitty.charter.activations.domain.ActionContext;
 import ai.speckitty.charter.activations.domain.ActivationDocument;
 import ai.speckitty.charter.activations.domain.ActivationId;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
 import ai.speckitty.charter.activations.domain.ClosureSnapshots;
+import ai.speckitty.charter.activations.domain.EffectiveContext;
+import ai.speckitty.charter.activations.domain.EffectiveSet;
 import ai.speckitty.charter.activations.domain.EffectiveSet.Bucket;
 import ai.speckitty.charter.activations.domain.EffectiveSet.EffectiveArtifact;
 import ai.speckitty.charter.activations.domain.EffectiveSet.Policy;
@@ -23,17 +28,24 @@ import ai.speckitty.charter.activations.domain.EffectiveSet.State;
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport.DenyNotApplied;
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport.DenyReason;
 import ai.speckitty.charter.activations.domain.EffectiveTag;
+import ai.speckitty.charter.activations.domain.GraphSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.ArtifactState;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
+import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
+import ai.speckitty.charter.activations.domain.NodeRef;
 import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.activations.infra.storage.InMemoryActivationRepository;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.transport.EntityTags;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -423,5 +435,188 @@ class EffectiveReadServiceTest {
         packs.answer(closure("sha256:changed"));
 
         assertThat(service.activation(ID, EntityTags.quote(before))).isInstanceOf(Read.Found.class);
+    }
+
+    // ---- getEffectiveGraph and getEffectiveActionContext (IC-11)
+
+    private static final EffectiveTag.ContextQuery IMPLEMENT =
+            new EffectiveTag.ContextQuery("software-dev", "implement", 1);
+    private static final ArtifactRef STEP_ENHANCER = new ArtifactRef(ArtifactKind.STEP_ENHANCEMENT, "x");
+
+    private static GraphSnapshot graph() {
+        return new GraphSnapshot(
+                List.of(NodeRef.of(A), NodeRef.of(B)),
+                List.of(new GraphSnapshot.Edge(NodeRef.of(A), RelationType.REQUIRES, NodeRef.of(B))),
+                List.of());
+    }
+
+    private static ActionContext walked() {
+        return new ActionContext(
+                true,
+                List.of(new ActionContext.Reached(A, List.of(T1))),
+                List.of(new ActionContext.SuggestionCandidate(B, Optional.of("when"), Optional.of("why"))),
+                List.of(STEP_ENHANCER));
+    }
+
+    private ContextRead context(EffectiveTag.ContextQuery query) {
+        return found(service.actionContext(ID, query, null)).value();
+    }
+
+    @Test
+    void theGraphIsTheSessionsGraphOfTheDocumentsRequestUnderTheTagOfTheGraph() {
+        List<InForceQuery> asked = new ArrayList<>();
+        packs.graphs(query -> {
+            asked.add(query);
+            return graph();
+        });
+
+        Read.Found<GraphRead> found = found(service.graph(ID, null));
+
+        assertThat(found.value().graph()).isEqualTo(graph());
+        assertThat(found.value().stored()).isEqualTo(stored);
+        assertThat(found.value().sourceFingerprint()).isEqualTo(SOURCE);
+        assertThat(found.value().governanceFingerprint()).isEqualTo(CLOSURE);
+        assertThat(found.etag())
+                .isEqualTo(
+                        EffectiveTag.graph(stored.revision(), closure(CLOSURE)).token());
+        assertThat(asked).hasSize(1);
+        assertThat(asked.getFirst().selected()).containsExactlyInAnyOrder(A, T1);
+        assertThat(asked.getFirst().deactivated()).containsExactly(C);
+        assertThat(packs.calls()).as("one verified read").isEqualTo(1);
+    }
+
+    @Test
+    void theGraphAnswers304ToItsOwnTagAndToNoOtherReadsTag() {
+        String graphTag =
+                EffectiveTag.graph(stored.revision(), closure(CLOSURE)).token();
+        String skippedTag =
+                EffectiveTag.skipped(stored.revision(), closure(CLOSURE)).token();
+
+        assertThat(service.graph(ID, EntityTags.quote(graphTag))).isEqualTo(new Read.NotModified<GraphRead>(graphTag));
+        assertThat(packs.graphReads()).as("a 304 reads no graph").isZero();
+        assertThat(service.graph(ID, EntityTags.quote(skippedTag)))
+                .as("the skipped report's tag is no tag of the graph")
+                .isInstanceOf(Read.Found.class);
+        assertThat(packs.graphReads()).isEqualTo(1);
+    }
+
+    @Test
+    void theContextAnswers304ToItsOwnTagForItsOwnMissionTypeActionAndDepthOnly() {
+        String tag = EffectiveTag.context(stored.revision(), closure(CLOSURE), IMPLEMENT)
+                .token();
+        packs.contexts(ask -> walked());
+
+        assertThat(service.actionContext(ID, IMPLEMENT, EntityTags.quote(tag)))
+                .isEqualTo(new Read.NotModified<ContextRead>(tag));
+        assertThat(packs.contextAsks()).as("a 304 walks nothing").isEmpty();
+        assertThat(service.actionContext(
+                        ID, new EffectiveTag.ContextQuery("software-dev", "implement", 0), EntityTags.quote(tag)))
+                .as("another depth is another representation")
+                .isInstanceOf(Read.Found.class);
+    }
+
+    @Test
+    void theGraphAndTheContextAnswerTagsOfTheirOwnAndAChangeOfThePacksOfTheClosureMovesBoth() {
+        packs.contexts(ask -> walked());
+        String graph = found(service.graph(ID, null)).etag();
+        String context = found(service.actionContext(ID, IMPLEMENT, null)).etag();
+        String skipped = found(service.skipped(ID, null)).etag();
+
+        assertThat(new HashSet<>(List.of(graph, context, skipped)))
+                .as("three reads, three tags")
+                .hasSize(3);
+        packs.answer(closure("sha256:changed"));
+        assertThat(found(service.graph(ID, null)).etag()).isNotEqualTo(graph);
+        assertThat(found(service.actionContext(ID, IMPLEMENT, null)).etag()).isNotEqualTo(context);
+    }
+
+    @Test
+    void theContextListsTheWalksEntriesAndItsSuggestionThroughTheEffectiveSetsCarrier() {
+        packs.contexts(ask -> walked());
+
+        ContextRead read = context(IMPLEMENT);
+
+        assertThat(read.context().artifacts())
+                .extracting(EffectiveArtifact::ref)
+                .as("A is in force and walked, B is not selected and suggested; T1 is in force but not reached")
+                .containsExactly(A, B);
+        assertThat(read.context().artifacts().get(1).suggestion())
+                .contains(new EffectiveSet.Suggestion(Optional.of("when"), Optional.of("why")));
+        assertThat(read.context().enhancements())
+                .containsExactly(
+                        new EffectiveContext.Enhancement(
+                                new NodeRef(NodeKind.ACTION, "software-dev/implement"), List.of(STEP_ENHANCER)),
+                        new EffectiveContext.Enhancement(NodeRef.of(A), List.of(T1)));
+        assertThat(read.query()).isEqualTo(IMPLEMENT);
+        assertThat(read.sourceFingerprint()).isEqualTo(SOURCE);
+        assertThat(read.governanceFingerprint()).isEqualTo(CLOSURE);
+    }
+
+    @Test
+    void theContextAsksTheSessionOnceForTheWalkAndResolvesTheInForceStatesOnceForTheSet() {
+        packs.contexts(ask -> walked());
+
+        context(IMPLEMENT);
+
+        assertThat(packs.contextAsks()).hasSize(1);
+        assertThat(packs.contextAsks().getFirst().missionType()).isEqualTo("software-dev");
+        assertThat(packs.contextAsks().getFirst().action()).isEqualTo("implement");
+        assertThat(packs.contextAsks().getFirst().depth()).isEqualTo(1);
+        assertThat(packs.contextAsks().getFirst().query().selected()).containsExactlyInAnyOrder(A, T1);
+        assertThat(packs.calls()).isEqualTo(1);
+        assertThat(packs.merges()).isEqualTo(1);
+        assertThat(packs.queries()).hasSize(1);
+    }
+
+    @Test
+    void aMissionTypeNotInForceAnswersAnEmptyContextWithTheMissionTypeInTheSkippedReport() {
+        packs.contexts(ask -> ActionContext.notInForce());
+
+        ContextRead read = context(IMPLEMENT);
+
+        assertThat(read.context().artifacts()).isEmpty();
+        assertThat(read.context().enhancements()).isEmpty();
+        assertThat(read.context().skipped().missionTypeNotInForce())
+                .containsExactly(new ArtifactRef(ArtifactKind.MISSION_TYPE, "software-dev"));
+    }
+
+    @Test
+    void anUnknownMissionTypeOrActionIsTheRefusalTheSessionThrowsAndNothingElseIsRead() {
+        for (RefusalCode code : List.of(RefusalCode.MISSION_TYPE_NOT_FOUND, RefusalCode.ACTION_NOT_FOUND)) {
+            packs.contexts(ask -> {
+                throw new CharterRefusal(code, "no such name");
+            });
+
+            assertThatThrownBy(() -> service.actionContext(ID, IMPLEMENT, null))
+                    .isInstanceOfSatisfying(
+                            CharterRefusal.class,
+                            refused -> assertThat(refused.code()).isEqualTo(code));
+        }
+        assertThat(packs.merges())
+                .as("a name refused is refused before the set is built")
+                .isZero();
+    }
+
+    @Test
+    void anUnknownActivationOrOneWhosePackIsNoLongerConfiguredRefusesBothReads() {
+        ActivationId unknown = new ActivationId("unknown");
+
+        assertThatThrownBy(() -> service.graph(unknown, null))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refused -> assertThat(refused.code()).isEqualTo(RefusalCode.ACTIVATION_NOT_FOUND));
+        assertThatThrownBy(() -> service.actionContext(unknown, IMPLEMENT, null))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refused -> assertThat(refused.code()).isEqualTo(RefusalCode.ACTIVATION_NOT_FOUND));
+        packs.answer(ClosureSnapshot.unresolved(Set.of("main")));
+        assertThatThrownBy(() -> service.graph(ID, null))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refused -> assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+        assertThatThrownBy(() -> service.actionContext(ID, IMPLEMENT, null))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refused -> assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
     }
 }
