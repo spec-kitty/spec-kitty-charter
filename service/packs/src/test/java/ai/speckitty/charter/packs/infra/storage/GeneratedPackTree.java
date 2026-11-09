@@ -116,6 +116,7 @@ final class GeneratedPackTree {
         MISSION_TYPE("mission-type"),
         GUARD("guard"),
         LIFECYCLE("lifecycle"),
+        STEP_ENHANCEMENT("step-enhancement"),
         // The asset stays last: randomKind(false) leaves it out by dropping the last kind.
         ASSET("asset");
 
@@ -210,6 +211,8 @@ final class GeneratedPackTree {
     private static final String MALFORMED = "id: [\n";
     /** The guide a valid toolguide names, titled as {@link #contentOf} titles the toolguide. */
     private static final String TOOLGUIDE_GUIDE = "# T\n\n## Overview\n\nO\n";
+    /** The fragment a valid step enhancement names: plain Markdown, no frontmatter, no marker. */
+    private static final String ENHANCEMENT_FRAGMENT = "Fill the slot.\n";
     /** Payload bytes no text codec keeps: a PNG signature, a NUL, CR/LF pairs and no final newline. */
     private static final byte[] PAYLOAD_BYTES = {
         (byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1a, '\n', 0, (byte) 0xff, '\r', '\n', 'x'
@@ -517,17 +520,26 @@ final class GeneratedPackTree {
         // A mission type sits at missions/<id>/<id>.mission-type.yaml (ADR-0044), a guard at guards/<id>.guard.yaml
         // and a lifecycle at lifecycles/<id>.lifecycle.yaml (ADR-0054, ADR-0050): each is planted there in the plain
         // shape, and a tactic stands in for it in every other shape.
-        boolean placed = wanted == Kind.MISSION_TYPE || wanted == Kind.GUARD || wanted == Kind.LIFECYCLE;
+        // A step enhancement sits at missions/<type>/enhancements/<id>.step-enhancement.yaml (ADR-0066), its fragment
+        // beside it.
+        boolean placed = wanted == Kind.MISSION_TYPE
+                || wanted == Kind.GUARD
+                || wanted == Kind.LIFECYCLE
+                || wanted == Kind.STEP_ENHANCEMENT;
         Kind kind = (wanted == Kind.PROCEDURE && dottedStem) || (placed && shape != Shape.LOADED_PLAIN)
                 ? Kind.TACTIC
                 : wanted;
-        boolean stemIsId =
-                kind == Kind.PROCEDURE || kind == Kind.MISSION_TYPE || kind == Kind.GUARD || kind == Kind.LIFECYCLE;
+        boolean stemIsId = kind == Kind.PROCEDURE
+                || kind == Kind.MISSION_TYPE
+                || kind == Kind.GUARD
+                || kind == Kind.LIFECYCLE
+                || kind == Kind.STEP_ENHANCEMENT;
         String stem = stemIsId ? idOf(kind, n) : "e" + n;
         String path = switch (kind) {
             case MISSION_TYPE -> "missions/" + stem + "/" + stem + ".mission-type.yaml";
             case GUARD -> "guards/" + stem + ".guard.yaml";
             case LIFECYCLE -> "lifecycles/" + stem + ".lifecycle.yaml";
+            case STEP_ENHANCEMENT -> "missions/t" + n + "/enhancements/" + stem + ".step-enhancement.yaml";
             default -> loadedPath(shape, stem, kind);
         };
         boolean valid =
@@ -545,6 +557,13 @@ final class GeneratedPackTree {
         if (valid && kind == Kind.TOOLGUIDE) {
             // A toolguide's guide companion (#194), beside it; part of the toolguide's row, not a shape of its own.
             Files.writeString(file.resolveSibling(id + ".guide.md"), TOOLGUIDE_GUIDE, StandardCharsets.UTF_8);
+        }
+        if (valid && kind == Kind.STEP_ENHANCEMENT) {
+            // The enhancement's fragment companion (ADR-0066), beside it; part of its row, not a shape of its own. The
+            // plant holds no enhances edge: one tree holds no base pack to qualify a target with, and the digest
+            // oracle reads files, not edges.
+            Files.writeString(
+                    file.resolveSibling(id + ".prompt-fragment.md"), ENHANCEMENT_FRAGMENT, StandardCharsets.UTF_8);
         }
         Planted planted = new Planted(path, Verdict.LOADED, kind, valid ? id : null, file, null);
         remember(pack, shape, planted);
@@ -762,6 +781,7 @@ final class GeneratedPackTree {
             case MISSION_TYPE -> "mt-" + n;
             case GUARD -> "g-" + n;
             case LIFECYCLE -> "lc-" + n;
+            case STEP_ENHANCEMENT -> "se-" + n;
             case ASSET -> "a-" + n;
         };
     }
@@ -798,6 +818,9 @@ final class GeneratedPackTree {
             case LIFECYCLE ->
                 "schema_version: '1.0'\nid: " + id + "\ntitle: T\ninitial: a\nstates:\n  - id: a\n    title: A\n"
                         + "  - id: b\n    title: B\n    terminal: true\ntransitions:\n  - from: a\n    to: b\n";
+            case STEP_ENHANCEMENT ->
+                "schema_version: '1.0'\nid: " + id + "\nprompt_fragments:\n  - slot: spdd:slot\n    path: " + id
+                        + ".prompt-fragment.md\n";
             case ASSET -> throw new IllegalArgumentException("an asset sidecar is planted with its payload");
         };
     }

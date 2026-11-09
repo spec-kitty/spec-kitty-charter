@@ -24,3 +24,8 @@ empty_kinds:
       The pinned built-in pack has no lifecycle yet: the work-package lifecycle from core's lane table is
       spec-kitty-open-packs P6. Lifecycles round-trip in GuardAndLifecycleYamlTest and GuardAndLifecycleLoadTest.
     issue: "#156"
+  - kind: step-enhancement
+    reason: >-
+      Step enhancements and their fragments round-trip in StepEnhancementYamlTest, WholePackStoreTest and the
+      DomainRoundTrip fixture test; built-in has none at the pin (open-packs#175 ships them in packs/spdd).
+    issue: "#428"

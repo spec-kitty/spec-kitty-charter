@@ -257,8 +257,6 @@ public final class FileSystemPackInspector implements PackInspector {
                 }
                 if (KindBindings.isCompanionStructure(mapped.kind())) {
                     readCompanion(path, file, mapped.kind());
-                } else if (KindBindings.isDeferredCompanionStructure(mapped.kind())) {
-                    readCompanion(path, file, mapped.kind());
                 } else if (PackDocumentMarkdown.KIND.equals(mapped.kind())) {
                     readDocument(path, file);
                 } else {
@@ -404,7 +402,6 @@ public final class FileSystemPackInspector implements PackInspector {
                     yield new FileRead.Unreadable<>(file, null, violations);
                 }
                 try {
-                    // A deferred companion (#424) has no owning binding yet: its structure schema is all there is.
                     KindBindings.byCompanionStructure(structure)
                             .ifPresent(binding -> binding.checkCompanion(structure, parsed.document()));
                 } catch (IllegalArgumentException broken) {

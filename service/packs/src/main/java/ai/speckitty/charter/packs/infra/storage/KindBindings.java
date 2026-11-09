@@ -30,7 +30,8 @@ final class KindBindings {
             ProcedureBinding.INSTANCE,
             MissionTypeBinding.INSTANCE,
             GuardBinding.INSTANCE,
-            LifecycleBinding.INSTANCE);
+            LifecycleBinding.INSTANCE,
+            StepEnhancementBinding.INSTANCE);
 
     /**
      * The structure schemas a bound kind's Markdown companion is validated with (ADR-0039 as amended, #194), derived
@@ -39,14 +40,6 @@ final class KindBindings {
     private static final Set<String> COMPANION_STRUCTURES = ALL.stream()
             .flatMap(binding -> binding.companionStructures().stream())
             .collect(Collectors.toUnmodifiableSet());
-
-    /**
-     * The structure schemas of Markdown companions whose owning kind is classified but not yet bound to a store
-     * (ADR-0066, service follow-up #424): a step enhancement's {@code prompt-fragment}. Like the enhancement's own
-     * YAML, such a file is validated and then held by no store, so neither is skipped on one side only and neither
-     * fails the load. Binding the owning kind moves the structure into {@link #COMPANION_STRUCTURES} and out of here.
-     */
-    private static final Set<String> DEFERRED_COMPANION_STRUCTURES = Set.of("prompt-fragment");
 
     private KindBindings() {}
 
@@ -99,17 +92,6 @@ final class KindBindings {
      */
     static boolean isCompanionStructure(String schemaName) {
         return COMPANION_STRUCTURES.contains(schemaName);
-    }
-
-    /**
-     * Whether a schema is the structure of a Markdown companion whose owning kind has no binding yet (#424). The store
-     * neither reads nor writes such a file, as it does not the owning kind's YAML; validate mode checks its structure.
-     *
-     * @param schemaName a schema name, as {@code file-kinds.yaml} maps a file to it
-     * @return whether the companion is classified, validated and held by no store
-     */
-    static boolean isDeferredCompanionStructure(String schemaName) {
-        return DEFERRED_COMPANION_STRUCTURES.contains(schemaName);
     }
 
     /**

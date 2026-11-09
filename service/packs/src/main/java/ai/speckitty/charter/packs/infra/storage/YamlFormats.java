@@ -22,7 +22,8 @@ final class YamlFormats {
             ProcedureYaml.INSTANCE,
             MissionTypeYaml.INSTANCE,
             GuardYaml.INSTANCE,
-            LifecycleYaml.INSTANCE);
+            LifecycleYaml.INSTANCE,
+            StepEnhancementYaml.INSTANCE);
 
     private YamlFormats() {}
 
