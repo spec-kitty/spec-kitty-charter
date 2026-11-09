@@ -2,7 +2,7 @@
 title: "ADR-0037: A kind-keyed pack registry and the whole-pack seam"
 description: The Pack aggregate and pack storage key their artifacts by kind, so a new kind only registers itself; a whole pack is loaded from and written to a directory through that registry.
 doc_status: active
-updated: 2026-11-05T00:00:00Z
+updated: 2026-11-09T00:00:00Z
 decision_status: 'Accepted; extended in part by ADR-0039 and ADR-0040 (2026-10-27) and ADR-0042 (2026-10-28); decision 6 reversed again by ADR-0044 (2026-10-30, accepted 2026-10-31); decision 4 superseded in part by ADR-0052 and the #190 amendment (2026-10-27) by ADR-0049 (2026-11-02)'
 decision_date: '2026-10-27'
 type: ADR
@@ -16,6 +16,7 @@ related:
   - adr/0042-pack-level-files-sanitized-shapes-and-the-derived-manifest
   - context/conceptual-model
   - architecture/logical-model
+  - architecture/hexagonal-service
 audience:
   - profile: charter-service-contributor
     guidance_text: Read this before adding an artifact kind to the packs slice, or before loading or writing a whole pack.
@@ -122,6 +123,42 @@ of decision 4, `pack.md`, under
 2026-10-30. The `Pack` aggregate holds it as `document()`, a value in the shape of #194's Markdown
 model; `WholePackStore` (decision 5) reads it and writes it in the canonical form before the
 manifest. No decision of this record changes.
+
+### Amendment 2026-11-09: the slice edge module
+
+Made by the agent-profile reads mission (`agent-profile-reads-01M70ZDM`, operator decision
+`01M710E3M0B37N99XEK4A7JEY0`). It changes no decision of this record; it settles the question the
+amendment of 2026-10-27 left open: what a slice does whose domain `packs.infra.storage` binds, once
+that slice needs read endpoints of its own.
+
+- **The problem.** `:packs` depends on `:profiles`, because `packs.infra.storage` binds `AgentProfile`.
+  A `profiles.application` that asks `packs.application` for the packs would need `:profiles` to depend
+  on `:packs`, which is a Gradle cycle.
+- **The rule.** A slice whose domain `packs.infra.storage` binds keeps that domain in its own module
+  (`:profiles`). Its `application`, `infra.api`, `infra.packs` and `infra.activations` rings live in
+  `:<slice>-edge`, with the slice's package names unchanged. The dependency direction is `:profiles`,
+  then `:packs`, then `:activations`, then `:profiles-edge`, then `:deployable`.
+- **The rings.**
+  - `profiles.infra.packs` is the one package of the slice that names `packs`, and only
+    `packs.application` and `packs.domain`.
+  - `profiles.infra.activations` is the one package that names `activations`, and only
+    `activations.application` and `activations.domain`.
+  - No `packs` or `activations` class names `profiles.application` or `profiles.infra`.
+  - The architecture test pins each of these with a known-bad control.
+- **The mission-types slice follows this pattern.** Its domain is bound by `packs.infra.storage` too, so
+  its rings go to `:missions-edge`.
+- **Options considered.**
+  - (a) Split out the domain module, so `:packs` depends on a small `:profiles-domain` and `:profiles`
+    holds the rings. Rejected: it moves a module that the amendment of 2026-10-27 and ADR-0035 place on
+    purpose, and it renames the domain's coordinates for every user.
+  - (b) Put the rings in `:packs`. Rejected: `packs` would then name a slice's inbound adapter, which
+    undoes `ENTRYPOINT_STAYS_IN_ITS_SLICE`, and every new kind would grow the packs module.
+  - (c) A neutral view type in `packs.domain`, which the slice's application reads. Rejected: it is
+    the typed view the amendment of 2026-10-27 refused, because `packs.domain` cannot name `AgentProfile`.
+  - (d) Amend the rule so that `:profiles` may depend on `:packs`. Rejected: `packs.infra.storage` binds
+    `AgentProfile`, so the two would cycle.
+  - (e) A separate edge module per slice. Chosen: the slice keeps its package names and its domain
+    module, the direction stays acyclic, and the rings are gated by the rules above.
 
 ## Context
 

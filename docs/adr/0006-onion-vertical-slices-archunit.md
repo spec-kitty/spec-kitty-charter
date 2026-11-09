@@ -79,6 +79,14 @@ ports; they may use the framework. Status stays Accepted.
   application ring as a place for plain orchestration) are read with this revision: the direction
   stays inward, but the application ring is an edge, not part of the pure core.
 
+### Amendment 2026-11-09 — a slice may span a domain module and an edge module
+
+One slice may span two Gradle modules: its domain module and an edge module. When another slice's
+storage binds the slice's domain, the domain stays in `:<slice>` and the slice's `application` and
+`infra` rings live in `:<slice>-edge`, with the package names unchanged. The layers are still
+packages, and the rings are gated as before. The reason, the options and the rules are in
+[ADR-0037](/adr/0037-kind-keyed-pack-registry-and-whole-pack-seam/), amendment of 2026-11-09.
+
 ## Context
 
 The service is a hexagonal, plain-Java domain behind a generated OpenAPI contract (ADR-0001). The existing
