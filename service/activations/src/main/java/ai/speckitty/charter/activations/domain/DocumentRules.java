@@ -1,5 +1,6 @@
 package ai.speckitty.charter.activations.domain;
 
+import ai.speckitty.charter.activations.domain.MergedSnapshot.ArtifactState;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
@@ -26,8 +27,8 @@ import java.util.stream.Collectors;
  * compared as a number). Every pointer is an RFC 6901 pointer into the request body: a list index is the position as
  * written ({@link ActivationDocument.Built#written()}), a repeated unknown id has one violation per position, and a
  * repeated pack is judged at its first position only (the later ones are {@code duplicate_pack}). A document checked
- * without a written form ({@link #check(ActivationDocument, ClosureSnapshot)}) is indexed by its canonical lists.
- * The codes:
+ * without a written form ({@link #check(ActivationDocument, ClosureSnapshot, InForceFacts)}) is indexed by its
+ * canonical lists. The codes:
  *
  * <ul>
  *   <li>{@code unknown_artifact}: a {@code selected} or {@code deactivated} id the closure does not hold, of any kind,
@@ -42,7 +43,14 @@ import java.util.stream.Collectors;
  *
  * <p>Only a document with no violation meets the floor (ADR-0012 D7): a deny entry on an artifact a pack locks is a
  * {@code 409 artifact_locked} naming each locking pack, and otherwise one on an artifact a pack requires is a
- * {@code 409 artifact_required} naming each requiring pack. Locked wins, since locked implies required. Each
+ * {@code 409 artifact_required} naming each requiring pack, unless an active override of it satisfies the requirement
+ * (IC-13, operator ruling Q9, research R12). Locked wins, since locked implies required, and no override satisfies a
+ * lock. "Active" is the in-force resolution's own judgement of the document as it will be stored ({@link InForceFacts}:
+ * an artifact it reports as satisfied by an artifact in force), never a rule of this class, so a deny entry accepted on
+ * write is one the next read applies; an enhancement never satisfies. The facts are asked only when a write adds a
+ * deny entry on a required artifact no pack locks, and a refusal of the closure's merge ({@code pack_unreadable})
+ * reaches that write. Removing the override later is not refused: no write judges a stored deny entry, and the read
+ * lists it in {@code denyNotApplied}. Each
  * {@link RequiringPack} names the pack by the id it is configured under, and its {@code via} is the extends chain
  * ({@link ClosureSnapshot#extendsChain}) from the first pack the document names, in its order, whose
  * {@code parent_pack} line reaches the requiring pack: empty when a pack the document names (or, without
@@ -70,27 +78,33 @@ public final class DocumentRules {
     private DocumentRules() {}
 
     /**
-     * Checks a document.
+     * Checks a document, with the in-force facts that decide a deny entry on a required artifact (IC-13).
      *
      * @param document the document
      * @param snapshot the closure the document names
+     * @param facts what the in-force resolution puts in force for the document as it will be stored
      * @return the refusal; empty when the document may be stored
      */
-    public static Optional<CharterRefusal> check(ActivationDocument document, ClosureSnapshot snapshot) {
-        return check(new ActivationDocument.Built(document, List.of()), snapshot);
+    public static Optional<CharterRefusal> check(
+            ActivationDocument document, ClosureSnapshot snapshot, InForceFacts facts) {
+        return check(new ActivationDocument.Built(document, List.of()), snapshot, facts);
     }
 
     /**
-     * Checks a document just built, together with its shape violations.
+     * Checks a document just built, together with its shape violations, judging every deny entry on the floor (a
+     * create). A deny entry on a required artifact is accepted when an active override of it satisfies the requirement
+     * in this document, as the in-force resolution judges it ({@link InForceFacts}); one on a locked artifact never is.
      *
      * @param built the document and its shape violations
      * @param snapshot the closure the document names
+     * @param facts what the in-force resolution puts in force for the document as it will be stored
      * @return the refusal; empty when the document may be stored
      */
-    public static Optional<CharterRefusal> check(ActivationDocument.Built built, ClosureSnapshot snapshot) {
+    public static Optional<CharterRefusal> check(
+            ActivationDocument.Built built, ClosureSnapshot snapshot, InForceFacts facts) {
         List<RefusalViolation> violations = violations(built, snapshot, Tolerance.NONE);
         if (violations.isEmpty()) {
-            return floorRefusal(built.document(), snapshot);
+            return floorRefusal(built.document(), built.document(), snapshot, facts);
         }
         return Optional.of(invalid(violations));
     }
@@ -108,47 +122,56 @@ public final class DocumentRules {
 
     /**
      * Checks the document a per-artifact or preset write computed (data model: "the floor is never denied"): every id
-     * is judged as {@link #check(ActivationDocument, ClosureSnapshot)} judges it (FR-017), but the floor only on the
-     * deny entries the write adds. A stored deny entry on an artifact a pack upgrade made required or locked is
-     * tolerated, not applied (ADR-0059 D4), so it never refuses a write of another id.
+     * is judged as {@link #check(ActivationDocument, ClosureSnapshot, InForceFacts)} judges it (FR-017), but the floor
+     * only on the deny entries the write adds. A stored deny entry on an artifact a pack upgrade made required or
+     * locked is tolerated, not applied (ADR-0059 D4), so it never refuses a write of another id. A deny entry the write
+     * adds on a required artifact is accepted when an active override of it satisfies the requirement in {@code after},
+     * the document as it will be stored (IC-13). The facts are asked only for such an entry; a stored deny entry, and a
+     * write that adds none (an unselect of the override, a select with {@code includeDeactivated}), never ask.
      *
      * @param before the document as stored
      * @param after the document the write computed
      * @param snapshot the closure the document names
+     * @param facts what the in-force resolution puts in force for {@code after}
      * @return the refusal; empty when the document may be stored
      */
     public static Optional<CharterRefusal> checkWrite(
-            ActivationDocument before, ActivationDocument after, ClosureSnapshot snapshot) {
-        Optional<CharterRefusal> refusal = check(after, snapshot);
-        if (refusal.isEmpty() || !refusal.orElseThrow().violations().isEmpty()) {
-            return refusal;
+            ActivationDocument before, ActivationDocument after, ClosureSnapshot snapshot, InForceFacts facts) {
+        List<RefusalViolation> violations =
+                violations(new ActivationDocument.Built(after, List.of()), snapshot, Tolerance.NONE);
+        if (!violations.isEmpty()) {
+            return Optional.of(invalid(violations));
         }
-        return floorRefusal(addedDenies(before, after, snapshot), snapshot);
+        return floorRefusal(addedDenies(before, after, snapshot), after, snapshot, facts);
     }
 
     /**
      * Checks the body of a full replace against the document it replaces (A4, B1): every id is judged as
-     * {@link #check(ActivationDocument.Built, ClosureSnapshot)} judges it, except that an id the closure no longer
-     * holds is tolerated when the stored document names it (in any known spelling, in either list of its kind), and a
-     * pinned version the closure does not hold is tolerated; {@link StaleIds#drop} then drops both from the document
-     * stored. The floor is judged on the deny entries the body adds to the stored document only ({@link #addedDenies}),
-     * as {@link #checkWrite} judges a per-artifact write.
+     * {@link #check(ActivationDocument.Built, ClosureSnapshot, InForceFacts)} judges it, except that an id the closure
+     * no longer holds is tolerated when the stored document names it (in any known spelling, in either list of its
+     * kind), and a pinned version the closure does not hold is tolerated; {@link StaleIds#drop} then drops both from
+     * the document stored. The floor is judged on the deny entries the body adds to the stored document only
+     * ({@link #addedDenies}), as {@link #checkWrite} judges a per-artifact write. A deny entry the body adds on a
+     * required artifact is accepted when an active override of it satisfies the requirement in the document as it will
+     * be stored, the body less what {@link StaleIds#drop} drops (IC-13), so a body that adds the override and the deny
+     * entry together is accepted.
      *
      * @param built the body as the request built it, normalized, with its shape violations
      * @param stored the document the replace replaces; the empty document when nothing is stored, so that every deny
      *     entry is added and every unknown id is refused
      * @param snapshot the closure the body names
+     * @param facts what the in-force resolution puts in force for the document as it will be stored
      * @return the refusal; empty when the body, less what {@link StaleIds#drop} drops, may be stored
      */
     public static Optional<CharterRefusal> checkReplace(
-            ActivationDocument.Built built, ActivationDocument stored, ClosureSnapshot snapshot) {
+            ActivationDocument.Built built, ActivationDocument stored, ClosureSnapshot snapshot, InForceFacts facts) {
         List<RefusalViolation> violations = violations(built, snapshot, Tolerance.replacing(stored));
         if (!violations.isEmpty()) {
             return Optional.of(invalid(violations));
         }
         ActivationDocument kept =
                 snapshot.resolved() ? StaleIds.drop(built.document(), snapshot).document() : built.document();
-        return floorRefusal(addedDenies(stored, kept, snapshot), snapshot);
+        return floorRefusal(addedDenies(stored, kept, snapshot), kept, snapshot, facts);
     }
 
     /**
@@ -288,7 +311,7 @@ public final class DocumentRules {
      * Writes every known spelling of an id (the declared id, its full URN, a case variant of either) as the declared
      * id, in the allow and deny lists as written and in the document, so that every spelling gives one stored document
      * and one revision (ADR-0020 D4, operator ruling of 2026-11-06). A spelling that is unknown or ambiguous is left
-     * as written, for {@link #check(ActivationDocument.Built, ClosureSnapshot)} to refuse at its position. A closure
+     * as written, for {@link #check(ActivationDocument.Built, ClosureSnapshot, InForceFacts)} to refuse at its position. A closure
      * that did not compose normalizes nothing.
      *
      * @param built the document as the request built it
@@ -346,8 +369,14 @@ public final class DocumentRules {
         return resolution instanceof ArtifactSpellings.Resolution.Declared found ? found.id() : id;
     }
 
-    private static Optional<CharterRefusal> floorRefusal(ActivationDocument document, ClosureSnapshot snapshot) {
-        List<String> denied = deniedUrns(document);
+    /**
+     * The floor refusal for the deny entries of {@code denying}: a locked one wins, since locked implies required; a
+     * required one is refused unless an active override satisfies it in {@code stored}, the document as it will be
+     * stored (IC-13). The facts are asked once, and only when a deny entry is on a required artifact no pack locks.
+     */
+    private static Optional<CharterRefusal> floorRefusal(
+            ActivationDocument denying, ActivationDocument stored, ClosureSnapshot snapshot, InForceFacts facts) {
+        List<String> denied = deniedUrns(denying);
         List<String> locked = denied.stream()
                 .filter(urn -> snapshot.lockingPack(urn).isPresent())
                 .toList();
@@ -355,18 +384,43 @@ public final class DocumentRules {
             Set<String> locking = locked.stream()
                     .flatMap(urn -> snapshot.lockingPack(urn).stream())
                     .collect(Collectors.toCollection(LinkedHashSet::new));
-            return Optional.of(floor(RefusalCode.ARTIFACT_LOCKED, "locks", locked, via(document, snapshot, locking)));
+            return Optional.of(floor(RefusalCode.ARTIFACT_LOCKED, "locks", locked, via(denying, snapshot, locking)));
         }
-        List<String> required = denied.stream()
-                .filter(urn -> !snapshot.requiringPacks(urn).isEmpty())
-                .toList();
-        Set<String> requiring = required.stream()
+        List<String> unmet = unsatisfied(
+                denied.stream()
+                        .filter(urn -> !snapshot.requiringPacks(urn).isEmpty())
+                        .toList(),
+                stored,
+                facts);
+        Set<String> requiring = unmet.stream()
                 .flatMap(urn -> snapshot.requiringPacks(urn).stream())
                 .collect(Collectors.toCollection(LinkedHashSet::new));
-        return required.isEmpty()
+        return unmet.isEmpty()
                 ? Optional.empty()
                 : Optional.of(
-                        floor(RefusalCode.ARTIFACT_REQUIRED, "requires", required, via(document, snapshot, requiring)));
+                        floor(RefusalCode.ARTIFACT_REQUIRED, "requires", unmet, via(denying, snapshot, requiring)));
+    }
+
+    /**
+     * The denied required artifacts no active override satisfies in the document as it will be stored. The in-force
+     * resolution decides: an artifact it reports as satisfied by an artifact in force (E5, E9) is satisfied; one it
+     * puts back in force with its deny entry not applied, or does not report, is not. An enhancement never satisfies.
+     */
+    private static List<String> unsatisfied(List<String> required, ActivationDocument stored, InForceFacts facts) {
+        if (required.isEmpty()) {
+            return required;
+        }
+        Map<ArtifactRef, ArtifactState> states =
+                facts.inForce(EffectiveSet.queryOf(stored)).states();
+        return required.stream().filter(urn -> !satisfied(urn, states)).toList();
+    }
+
+    private static boolean satisfied(String urn, Map<ArtifactRef, ArtifactState> states) {
+        return Urn.parse(urn)
+                .flatMap(ArtifactRef::of)
+                .map(states::get)
+                .flatMap(ArtifactState::satisfiedBy)
+                .isPresent();
     }
 
     private static List<String> deniedUrns(ActivationDocument document) {

@@ -2,7 +2,7 @@
 title: Ruleset scenario trace
 description: Maps each counter-example of the layer-merge ruleset review and each acceptance scenario of its user stories to its decision, the scenario that pins it and its pull request.
 doc_status: active
-updated: 2026-11-08T00:00:00Z
+updated: 2026-11-09T00:00:00Z
 type: API
 kind: Reference
 related:
@@ -30,7 +30,10 @@ Scenario files are under `contracts/charter/scenarios/`. A row is **built** when
 branch of its pull request and its work package was approved; it is **planned** when its scenario file is named and the scenario is written by the pull request
 shown; it is **partly built** when one half is built and the other half belongs to a later pull request. The pull request A, B and C rows are filled by the documentation work package of that pull request (WP20, WP26
 and WP29) when its scenarios land. A scenario still tagged `@WIP` is planned, whatever file it sits in. The PR B rows
-were filled on 2026-11-08 (WP26); no scenario of `effective-reads.feature` or `layer-merge.feature` is tagged `@WIP`.
+were filled on 2026-11-08 (WP26); no scenario of `effective-reads.feature` or `layer-merge.feature` is tagged `@WIP`. The PR C
+rows were filled on 2026-11-09 (WP29); no scenario of `effective-graph-and-context.feature` or
+`activation-deny-satisfied.feature` is tagged `@WIP`, and **the trace is complete**: every row is built, and each row names a
+scenario that exists in the file it names.
 
 ## Counter-examples of the ruleset review
 
@@ -81,8 +84,9 @@ The depth ruling is PR A0 (WP30); the read-side rulings are folded into the requ
 | #408 round trip | The round trip is not exact when another active artifact suggests a candidate: the candidate is kept in `skippedShared` | `DM-01M6TF3BA808JMW0W0A0CPXBNW` | `activation-cascade-depth.feature`: `The round trip is not exact when another active artifact suggests a candidate` | A0 | built |
 | #408 refusals | A `depth` that is a string, a decimal, negative or past the int32 range is `422` at `/depth` and stores nothing | `DM-01M6TDH0SY5Q224GX709DXWG8K` | `activation-cascade-depth.feature`: `A select whose depth is a string is 422 at /depth and stores nothing`; `A select whose depth is a decimal is 422 at /depth and stores nothing`; `A select whose depth is a negative number is 422 at /depth and stores nothing`; `A select whose depth is a number past the int32 range is 422 at /depth and stores nothing`; `A deactivate whose depth is negative is 422 at /depth and stores nothing`; `A deactivate whose depth is a decimal is 422 at /depth and stores nothing` | A0 | built |
 | #408 language filter | The language filter applies at read only; a read with no activation applies no filtering | operator ruling on #408 (2026-11-07), ruling 2 | `effective-reads.feature`: `The language filter applies at read only: no languages filters nothing, and what it filtered is in the bucket` | B | built |
-| #408 conditional suggests | A `suggests` edge's `when` surfaces as conditional in the effective reads, above all the action context; hard relations stay plain entries | operator ruling on #408 (2026-11-07), ruling 3 | `effective-graph-and-context.feature` (planned): a `suggests`-only artifact listed with its `when` and `reason` in the action context (FR-019). The effective list half is built: `effective-reads.feature`: `An artifact reached only through suggests is listed as a suggestion with its when and reason` | C | partly built |
-| Q9 (deny satisfied by an override) | A deny entry on a required, not locked artifact is accepted when an active override of it is in the document after the write | `DM-01M6R3YX23H46PXGNEFC31E6CT` | `activation-deny-satisfied.feature` (planned): deactivate required `T` with an active `E overrides T` is `200` (WP29) | C | planned |
+| #408 conditional suggests | A `suggests` edge's `when` surfaces as conditional in the effective reads, above all the action context; hard relations stay plain entries | operator ruling on #408 (2026-11-07), ruling 3 | `effective-graph-and-context.feature`: `US5 AS4 - the context holds the artifacts in force the action reaches, with the suggestion only through suggests`. The effective list half: `effective-reads.feature`: `An artifact reached only through suggests is listed as a suggestion with its when and reason` | B, C | built |
+| Q9 (deny satisfied by an override) | A deny entry on a required, not locked artifact is accepted when an active override of it is in the document after the write; an enhancer alone, or a lock, is still refused | `DM-01M6R3YX23H46PXGNEFC31E6CT` | `activation-deny-satisfied.feature`: `IC-13 - deactivating a required T with an active override of it is 200 and the deny entry is applied`; `IC-13 - a replace that adds both the override and the deny entry is 200`; `IC-13 - a create judges every deny entry of the body: the override and the deny entry together are 201, the enhancer alone is 409`; `IC-13 - unselecting the override afterwards is 200 and the read lists the deny entry in denyNotApplied`. Regression controls, green before PR C: `IC-13 regression control, green before - deactivating a required T with only an enhancer of it active is 409 artifact_required`; `IC-13 regression control, green before - deactivating a locked LK is 409 artifact_locked whatever overrides it`; `IC-13 regression control, green before - a replace with the deny entry and no override is 409 artifact_required` | C | built |
+| Q9 (merge refusal) | A write that adds a deny entry on a required artifact asks the in-force resolution, so a closure whose layer merge is refused answers `500 pack_unreadable`; a deny entry on a free artifact never asks | `DM-01M6R3YX23H46PXGNEFC31E6CT`; research R12 | `activation-deny-satisfied.feature`: `IC-13 - a merge refusal reaches a write that adds a deny entry on a required artifact` | C | built |
 
 ## Decisions of 2026-11-08 (PR B)
 
@@ -97,10 +101,30 @@ Operator and runner decisions taken while PR B was built. Their rows are built b
 | Keyset cursor | A cursor binds the tag of its set; one from another tag is `400` | `DM-01M6R0TNEBR7KGJMW2SQXQGJ0A` | `effective-reads.feature`: `The list is paged by a keyset cursor, and summary is identical on every page`; `A cursor from another tag is 400, and a fresh cursor of the new tag pages on` | B | built |
 | Layer override gate | An override the overridden artifact's level forbids is `500 pack_unreadable` | ADR-0063 D3; FR-011 | `layer-merge.feature`: `A layer override the overridden artifact's level forbids is 500 pack_unreadable, and one of an open artifact is served` | B | built |
 
+## Rulings of 2026-11-09 (PR C)
+
+Operator and runner decisions taken at the PR C plan point and while it was built. Their rows are built by PR C.
+
+| Id | Ruled answer | Decision | Scenario | PR | Status |
+|---|---|---|---|---|---|
+| Node predicate | The graph's nodes are the artifacts in force and the held steps of the mission types in force; a template, an asset, a guard and a lifecycle are never nodes or layer overrides | `01M702A71YF7WNDTG2AA89K8ZA`, `01M7037ZNKJ6JTRKGD7G695ZV1` | `effective-graph-and-context.feature`: `US5 AS2 - the override of a held step is listed, the override of a template and of an artifact out of force are not` | C | built |
+| #429 (D3, D4(a), D15, D16) | A target of an enhancer without a target in force is a `NodeReference {kind, id}`; the floor holds activatable kinds only | plan, "PR C scope added by operator rulings (2026-11-09)" | `effective-graph-and-context.feature`: `#429 - a target of an enhancer without a target in force is a NodeReference, on the report and on the context` | C | built |
+| Context suggestions | A context suggestion is an artifact the listing gives a suggestion that a listed entry reaches through `suggests`, with the edge's `when` and `reason` | `01M7059T4K64TAVKXN3T1FKWYG`, `01M70CTZP7P2EHSCK2G0RET74B`, `01M6Y6VE6VZQ4MXD98N93JB3GJ` | `effective-graph-and-context.feature`: `US5 AS4 - the context holds the artifacts in force the action reaches, with the suggestion only through suggests` | C | built |
+| Context enhancements | The context reads each node's enhancers in force from the node's side, in one `enhancements` member | `01M70C42KC78KB9H6KB7TK9224` | `effective-graph-and-context.feature`: `US5 AS3 - an enhancer in force is an edge of the graph, read from T's side, and one out of force is not` | C | built |
+| Names before the tag | An unknown mission type or action is `404`, judged on the merged closure whether or not the mission type is in force, and before a `304` | plan IC-11; FR-019, FR-020 | `effective-graph-and-context.feature`: `US5 AS5 - an unknown mission type or action is 404, whether or not the mission type is in force`. The `404` before a matching tag cannot be built from a scenario, since the tag of an unknown name does not exist; `EffectiveReadServiceTest.anUnknownNameIsRefusedBeforeTheTagIsComparedWhateverIfNoneMatchSays` pins it | C | built |
+| Each read has its tag | The graph and the context each carry an `ETag` of their own representation, and a matching `If-None-Match` answers `304` | `01M6Y11E55YP5TG1EJ1MDKCFRP`; FR-020 | `effective-graph-and-context.feature`: `FR-020 - each read has an ETag of its own representation, and a matching If-None-Match is 304` | C | built |
+
+Pinned by unit tests only, because no pack file can author a step enhancement before #424 loads them, so no scenario can
+reach them: the step enhancer's binding and the unheld target (OD-6, decision `01M702A8XYB588PSGTXRKQ4NKK`; rule E6,
+`InForceResolutionTest` and `ClosureViewTest`), and the one step predicate in its two forms (OD-9, decision
+`01M7037V93Y077H8M4W9V8Y6B3`; rules W20 and E16, `StepHoldingTest`, `EdgeIndexTest`, `ReachabilityTest`). They have no row,
+because a row names a scenario; the rules page names the tests.
+
 ## Acceptance scenarios of the user stories
 
 User stories 1 and 2 are PR A and are built in it (WP20 filled their rows). Stories 3, 4 and 6 are PR B and are built
-in it, with the two effective reads that serve them; story 5 is PR C, and the effective graph and context still answer `501`.
+in it, with the two effective reads that serve them; story 5 is PR C and is built in it (WP29 filled its rows), with the
+effective graph and the effective action context.
 
 | Id | Ruled answer | Scenario | PR | Status |
 |---|---|---|---|---|
@@ -126,15 +150,15 @@ in it, with the two effective reads that serve them; story 5 is PR C, and the ef
 | US3 AS7 | A matching `If-None-Match` answers `304` | `effective-reads.feature`: `US3 AS7 - a matching If-None-Match is 304 with the current tag`; `US3 AS7 - after a re-registration that changes a pack of the closure the old tag is 200 with a new ETag`; `US3 AS7 - a change to a pack outside the closure keeps the tag`; `US3 AS7 - a state, a kind and a cursor page never answer 304 to the tag of another representation` | B | built |
 | US4 AS1 | Each case appears once in the bucket that explains it, with the activation's revision | `effective-reads.feature`: `US4 AS1 - each artifact not in force is in exactly one bucket, and the report carries the revision` | B | built |
 | US4 AS2 | An unknown activation id is `404 activation_not_found` | `effective-reads.feature`: `US4 AS2 - an unknown activation is 404 activation_not_found on both reads` | B | built |
-| US5 AS1 | An edge whose endpoint is not in force is absent from the effective graph | `effective-graph-and-context.feature` (planned) | C | planned |
-| US5 AS2 | A layer override resolves edges to the winner and is listed in `layerOverrides` | `effective-graph-and-context.feature` (planned) | C | planned |
-| US5 AS3 | `T` read from its side shows `E enhances T` | `effective-graph-and-context.feature` (planned) | C | planned |
-| US5 AS4 | The action context of a mission type in force holds what the step contract names, with active enhancers | `effective-graph-and-context.feature` (planned) | C | planned |
-| US5 AS5 | A mission type not in force gives an empty context and the reason; an unknown action is `404 action_not_found` | `effective-graph-and-context.feature` (planned) | C | planned |
+| US5 AS1 | An edge whose endpoint is not in force is absent from the effective graph | `effective-graph-and-context.feature`: `US5 AS1 - an edge whose endpoint is not in force is absent from the graph` | C | built |
+| US5 AS2 | A layer override resolves edges to the winner and is listed in `layerOverrides` | `effective-graph-and-context.feature`: `US5 AS2 - the edge from an overridden version is gone, the edge to it ends at the winner, and the override is listed`; `US5 AS2 - the override of a held step is listed, the override of a template and of an artifact out of force are not` | C | built |
+| US5 AS3 | `T` read from its side shows `E enhances T` | `effective-graph-and-context.feature`: `US5 AS3 - an enhancer in force is an edge of the graph, read from T's side, and one out of force is not` | C | built |
+| US5 AS4 | The action context of a mission type in force holds what the step contract names, with active enhancers | `effective-graph-and-context.feature`: `US5 AS4 - the context holds the artifacts in force the action reaches, with the suggestion only through suggests` | C | built |
+| US5 AS5 | A mission type not in force gives an empty context and the reason; an unknown action is `404 action_not_found` | `effective-graph-and-context.feature`: `US5 AS5 - the context of a mission type not in force is empty and the skipped report says why`; `US5 AS5 - an unknown mission type or action is 404, whether or not the mission type is in force` | C | built |
 | US6 AS1 | A settlement that names `b` puts `b`'s `D` in force and raises no `pack_sibling_conflict` | `layer-merge.feature`: `US6 AS1 - a distribution pack's settlement puts the named member's version in force (#357)` | B | built |
 | US6 AS2 | The same conflict without the entry refuses with `500 pack_unreadable` naming `pack_sibling_conflict` | `layer-merge.feature`: `US6 AS2 - the same conflict without a settlement is refused, and an activation that avoids it still answers` | B | built |
 
 ## Checking the built rows
 
-Every built row (A0 and A) names a scenario that exists in the file named. To check, list the scenario names of each file
+Every row names a scenario that exists in the file named. To check, list the scenario names of each file
 (`grep -E '^\s*Scenario' contracts/charter/scenarios/<file>`) and compare them with the scenario names above.

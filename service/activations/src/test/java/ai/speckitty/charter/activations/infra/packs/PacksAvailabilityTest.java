@@ -12,6 +12,7 @@ import ai.speckitty.charter.activations.domain.DocumentRules;
 import ai.speckitty.charter.activations.domain.EffectiveSet;
 import ai.speckitty.charter.activations.domain.EffectiveSkippedReport;
 import ai.speckitty.charter.activations.domain.EffectiveTag;
+import ai.speckitty.charter.activations.domain.InForceFacts;
 import ai.speckitty.charter.activations.domain.MergedSnapshot;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
 import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
@@ -269,7 +270,7 @@ class PacksAvailabilityTest {
                 .deactivated(ArtifactKind.DIRECTIVE, List.of("D1"))
                 .build();
 
-        assertThat(DocumentRules.check(built, snapshot)).hasValueSatisfying(refusal -> {
+        assertThat(DocumentRules.check(built, snapshot, InForceFacts.NONE)).hasValueSatisfying(refusal -> {
             assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_REQUIRED);
             assertThat(refusal.requiredBy()).extracting(by -> by.packId()).containsExactly("core");
         });
@@ -283,7 +284,7 @@ class PacksAvailabilityTest {
                 .deactivated(ArtifactKind.DIRECTIVE, List.of("D2"))
                 .build();
 
-        assertThat(DocumentRules.check(built, snapshot)).hasValueSatisfying(refusal -> {
+        assertThat(DocumentRules.check(built, snapshot, InForceFacts.NONE)).hasValueSatisfying(refusal -> {
             assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_REQUIRED);
             assertThat(refusal.requiredBy()).extracting(by -> by.packId()).containsExactly("alpha");
         });
@@ -315,7 +316,7 @@ class PacksAvailabilityTest {
         ActivationDocument.Built built = ActivationDocument.builder()
                 .packs(List.of(PackRef.of("alpha"), PackRef.of("ghost")))
                 .build();
-        assertThat(DocumentRules.check(built, snapshot)).hasValueSatisfying(refusal -> {
+        assertThat(DocumentRules.check(built, snapshot, InForceFacts.NONE)).hasValueSatisfying(refusal -> {
             assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_INVALID);
             assertThat(refusal.violations()).singleElement().satisfies(violation -> {
                 assertThat(violation.pointer()).isEqualTo("/packs/1/packId");

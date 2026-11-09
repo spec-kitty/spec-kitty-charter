@@ -2,7 +2,7 @@
 title: Service contract
 description: The OpenAPI 3.1 contract of the charter service — the built operations, the planned reads and writes, the error model and the transports.
 doc_status: draft
-updated: 2026-11-08T00:00:00Z
+updated: 2026-11-09T00:00:00Z
 type: API
 kind: Reference
 related:
@@ -84,9 +84,9 @@ Every operation requires the per-worktree bearer token (`charterWorktreeToken`).
 carries `Charter-Contract-Version` and `Charter-Worktree`. `Charter-Source-Fingerprint` is declared,
 and required, only on the 200 of a verified read: `getServiceInfo`, `getOffering`, `listPackArtifacts`,
 `getPackArtifact` and `listArtifactReferences` ([#175](https://github.com/spec-kitty/spec-kitty-charter/issues/175)). It carries the digest
-that read verified. The 200s of the four reserved effective reads (`listEffectiveArtifacts`,
-`getActivationSkippedReport`, `getEffectiveGraph`, `getEffectiveActionContext`) declare it too, ahead of being
-built; while they answer `501` they send none. `getActivation` and `listActivationPacks` send none: the document
+that read verified. The 200s of the four effective reads (`listEffectiveArtifacts`,
+`getActivationSkippedReport`, `getEffectiveGraph`, `getEffectiveActionContext`) declare it too and send it, as each is a
+verified read; none is reserved any more (the first two since PR B, the last two since PR C). `getActivation` and `listActivationPacks` send none: the document
 read depends only on the stored document (ADR-0059 D5), and the closure read reports a change through its `ETag`.
 No refusal, write, root or contract-document answer carries it.
 
@@ -253,13 +253,14 @@ sequences, is in [Offering and activation](/architecture/offering-and-activation
 | `PUT`, `GET`, `DELETE` | `/activations/{activationId}` | `replaceActivation`, `getActivation`, `deleteActivation`: register or replace, read, remove an activation. **Built** | [#125](https://github.com/spec-kitty/spec-kitty-charter/issues/125) |
 | `GET` | `/activations/{activationId}/packs` | `listActivationPacks`: the `depends_on` and `parent_pack` closure rooted at the document's packs. **Built** | [#360](https://github.com/spec-kitty/spec-kitty-charter/issues/360) |
 | `PUT`, `DELETE` | `…/{activationId}/selections/{kind}/{artifactId}`, `…/exclusions/{kind}/{artifactId}`; `PUT …/presets/{presetId}` | `selectActivationArtifact`, `unselectActivationArtifact`, `deactivateActivationArtifact`, `reactivateActivationArtifact`, `applyActivationPreset`: change one choice, with `If-Match`. **Built** | [#125](https://github.com/spec-kitty/spec-kitty-charter/issues/125) declares them; [#291](https://github.com/spec-kitty/spec-kitty-charter/issues/291) builds them |
-| `GET` | `…/{activationId}/artifacts`, `skipped`, `graph`, `mission-types/…/context` | `listEffectiveArtifacts`, `getActivationSkippedReport`, `getEffectiveGraph`, `getEffectiveActionContext`: the effective reads (R9). **Declared, reserved (501)**; R9 gates cutover stage 3 | [#125](https://github.com/spec-kitty/spec-kitty-charter/issues/125) declares them; [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103) builds them |
+| `GET` | `…/{activationId}/artifacts`, `skipped`, `graph`, `mission-types/…/context` | `listEffectiveArtifacts`, `getActivationSkippedReport`, `getEffectiveGraph`, `getEffectiveActionContext`: the effective reads (R9). **Built** (the list and the report in PR B, the graph and the context in PR C); R9 gates cutover stage 3 | [#125](https://github.com/spec-kitty/spec-kitty-charter/issues/125) declares them; [#103](https://github.com/spec-kitty/spec-kitty-charter/issues/103) builds them |
 
 **The activation set is in the contract** (#125, inside `0.1.0-SNAPSHOT` by the operator's ruling of 2026-10-31):
 every activation operation is declared in full under the tag `Activation`. The register (`createActivation`,
 `replaceActivation`, `getActivation`, `deleteActivation`), the closure read (`listActivationPacks`, #360) and the five
-per-artifact and preset writes (#291) are built. Only the four effective reads keep `x-reserved` and answer `501`
-until they are built. The set declares the `ActivationConfig` document (canonical as JSON Schema 2020-12 in
+per-artifact and preset writes (#291) are built, and so are the four effective reads: no operation of the set keeps
+`x-reserved` or answers `501` any more (ADR-0020 D8; the interceptor stays, with a planted-contract control, for a later
+reservation). The set declares the `ActivationConfig` document (canonical as JSON Schema 2020-12 in
 `contracts/offering/schemas/`), `Activation`, `ActivationChange`, the skipped report and the effective-read schemas;
 `ETag`, `If-Match` and `If-None-Match`; the six activation refusal codes; and the shared `Problem`'s `requiredBy`
 and `violations`. Every one of the six codes is raised: `activation_not_found` (404), `artifact_not_found` and
@@ -289,7 +290,8 @@ writes come after the read stages, one at a time: charter document save and comp
   `CharterRefusalCode` carries a machine-readable `x-refusal` map (status, retryable, raised)
   for every code. A refusal's examples and description name only raised codes, which `:contracts:check` checks
   ([#176](https://github.com/spec-kitty/spec-kitty-charter/issues/176)). The refusals of a reserved operation
-  (`x-reserved`) describe it once built and are judged when it is built; until then it answers `501`.
+  (`x-reserved`) describe it once built and are judged when it is built; until then it answers `501`. No operation is
+  reserved today, so every declared refusal of the activation set is raised.
 - `kind_not_found` (404) is raised when the path of an artifact read names a kind the service does not serve.
   The pack is judged first, so an unknown pack is `pack_not_found` whatever the kind; an id the pack does not hold
   is the not-found code of its kind (`tactic_not_found`, …).

@@ -6,14 +6,20 @@ post:
     ETag (ADR-0020 D3). A client with a stable id of its own uses PUT instead. The document is validated against
     its closure, the packs it names and their depends_on and parent_pack closure (every configured pack when it names none): an
     unknown pack, kind or artifact is 422 activation_invalid with violations, and a deny entry on an artifact a
-    pack of the closure requires or locks is 409 artifact_required or artifact_locked naming the pack. A body over
+    pack of the closure locks is 409 artifact_locked, and one on an artifact a pack of the closure requires is 409
+    artifact_required, naming the pack, unless an active override of it satisfies the requirement in the document as
+    it will be stored: an artifact that overrides it (an overrides edge of the merged closure) and is in force,
+    selected or required, within the language filter and bound to a mission type in force, not denied and not hidden
+    by an override itself. An enhancement never satisfies, and a locked artifact is never satisfied by an override
+    (operator ruling Q9, research R12). The create judges every deny entry of the body. A body over
     1 MiB, an unknown member or a null is 422 activation_invalid. A body that sends activatedKinds or missionTypes is
     422 validation_failed, with one violation per member at its pointer naming its replacement (selected.mission_type
     for missionTypes; selected.<kind> for activatedKinds): the two members are not part of the document since the one
     kind model (IC-20), and no deprecation window applies. A pack pinned to a version no pack of the
     closure holds is 422 activation_invalid (version_not_held): the create keeps the refusal for a pin in its own
     body, while the other writes drop such a pin (ActivationChange.droppedPins). A deny entry on a mission type is
-    judged as on any kind: on a required or locked one it is 409. Nothing is stored on a refusal.
+    judged as on any kind: on a locked one it is 409, and on a required one it is 409 unless an override satisfies it.
+    Nothing is stored on a refusal.
   tags:
   - Activation
   requestBody:

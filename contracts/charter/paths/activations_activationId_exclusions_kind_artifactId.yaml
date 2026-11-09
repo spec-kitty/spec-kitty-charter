@@ -12,9 +12,22 @@ put:
     another active one still reaches, over any cascade relation, enhances included (skippedShared). A cascade never removes an
     artifact a pack requires or locks: it is kept, with what it reaches, and a selected one the cascade reached is
     reported in skippedShared when another active artifact still references it, named by that artifact; one only the
-    floor keeps is not reported. A named artifact a pack requires or locks is 409, naming every requiring pack, and
-    nothing is stored (A1: The requirement of a governing preset id is the union, across the levels (built-in, org, project), of the must-have items of the copy in force at each level. Within one level the copy of the pack last in closure order replaces the others, a child pack's copy its parent's, and a replaced copy requires nothing. A deny of an artifact only an earlier level's copy requires, which a later level's copy replaced, is 409 artifact_required naming that earlier level's pack.); only the deny entry the write adds is judged against that floor, so a stored one a pack
-    upgrade put on it is tolerated (ADR-0059 D4). Requires If-Match (ADR-0020 D6), the quoted revision or the current getActivation tag (a closure tag that no longer matches is 412; the answer keeps the revision as its ETag). An If-Match that is neither * nor one quoted sha256 tag (the revision or the getActivation tag) breaks its pattern and is 400 before anything
+    floor keeps is not reported. A named artifact a pack locks is 409 artifact_locked, and one a pack requires is 409
+    artifact_required, naming every requiring pack, unless an active override of it satisfies the requirement in the
+    document as it will be stored: an artifact that overrides it (an overrides edge of the merged closure) and is in
+    force, selected or required, within the language filter and bound to a mission type in force, not denied and not
+    hidden by an override itself. An enhancement never satisfies, and a locked artifact is never satisfied by an
+    override (operator ruling Q9, research R12); nothing is stored on a refusal (A1: The requirement of a governing
+    preset id is the union, across the levels (built-in, org, project), of the must-have items of the copy in force at
+    each level. Within one level the copy of the pack last in closure order replaces the others, a child pack's copy
+    its parent's, and a replaced copy requires nothing. A deny of an artifact only an earlier level's copy requires,
+    which a later level's copy replaced, is 409 artifact_required naming that earlier level's pack.); only the deny
+    entry the write adds is judged against that floor, so a stored one a pack
+    upgrade put on it is tolerated (ADR-0059 D4), and removing the satisfying override later (an unselect of it) is
+    not refused: the deny entry is then read as not applied and listed in denyNotApplied. Requires If-Match (ADR-0020
+    D6), the quoted revision or the current getActivation tag (a closure tag that no longer matches is 412; the answer
+    keeps the revision as its ETag). An If-Match that is neither * nor one quoted sha256 tag (the revision or the
+    getActivation tag) breaks its pattern and is 400 before anything
     else is judged. Then the preconditions, in this order: 428 without If-Match, 404 activation_not_found, 412 when
     stale; each comes before any 422, a fault of the body included. A cascading deactivate removes the reached artifacts from selected only where the kind holds a list; an absent
     kind selects none (absent means none), so there is nothing to remove, and the deny entry on the named artifact
@@ -23,7 +36,8 @@ put:
     artifact_not_found (mission_type_not_found for kind mission_type); a kind outside the path's enum is 422
     activation_invalid with a violation at the path. A mission type is denied like any kind (one kind model, IC-20;
     Q2, decision DM-01M6RCXZ9HSHT4K3443YYZ8ZFC): it joins deactivated.mission_type, and a mission type a pack
-    requires or locks is 409 artifact_required or artifact_locked, naming every requiring pack. A cascading
+    requires or locks is 409 artifact_required or artifact_locked, naming every requiring pack (a required one is
+    judged as any kind, so an override satisfies it). A cascading
     deactivate of a mission type walks the steps it holds as a cascading select does (rule W20), and unselects what
     only it kept (rule W23). Stale ids are dropped on write (ADR-0059 amendment of 2026-11-06): the write first
     removes from the

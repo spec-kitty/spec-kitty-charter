@@ -108,7 +108,7 @@ public class ActivationExclusionService {
             ArtifactRef target = ActivationWrites.declared(snapshot, written, Set.of());
             ActivationWrites.requireHeld(snapshot, target);
             ActivationDocument before = ActivationWrites.current(loaded, snapshot);
-            refuseFloor(before, target, snapshot);
+            refuseFloor(before, target, session);
             Reach own = ActivationWrites.walk(session, CascadeRules.planDeactivate(before, target, scope, depth));
             Set<ArtifactRef> floor = floorOf(snapshot);
             Reach others = ActivationWrites.walk(session, CascadeRules.planShared(before, target, scope, own, floor));
@@ -146,14 +146,20 @@ public class ActivationExclusionService {
     }
 
     /**
-     * The {@code 409} of a target on the floor, judged as {@link DocumentRules} judges a deny entry: the document's
-     * packs and the target's deny entry alone, so the refusal names exactly the packs that require or lock it.
+     * The {@code 409} of a target on the floor, before the walk: the named target is judged whether or not its deny
+     * entry is already stored, as {@link DocumentRules#checkWrite} judges an entry the write adds (the stored document
+     * with the entry removed is the {@code before}), so the refusal names exactly the packs that lock or require it.
+     * A deny entry stored earlier, for an override that is gone or for an artifact a pack upgrade has since locked,
+     * is therefore refused again. A required target is accepted when an active override of it satisfies the
+     * requirement (IC-13); the document the write stores, with its cascade, is judged again by
+     * {@link ActivationWrites#commit}.
      */
-    private static void refuseFloor(ActivationDocument before, ArtifactRef target, ClosureSnapshot snapshot) {
-        ActivationDocument.Builder denying = ActivationDocument.builder();
-        before.packs().ifPresent(denying::packs);
-        denying.deactivated(target.kind(), List.of(target.id()));
-        DocumentRules.check(denying.build().document(), snapshot)
+    private static void refuseFloor(ActivationDocument before, ArtifactRef target, PacksSession session) {
+        DocumentRules.checkWrite(
+                        before.withoutDeny(target.kind(), target.id()),
+                        before.withDeny(target.kind(), target.id()),
+                        session.snapshot(),
+                        session::inForce)
                 .filter(refusal -> refusal.violations().isEmpty())
                 .ifPresent(refusal -> {
                     throw refusal;

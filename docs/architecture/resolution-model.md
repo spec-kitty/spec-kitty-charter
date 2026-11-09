@@ -2,7 +2,7 @@
 title: Resolution model
 description: What the charter domain computes (layer merge, activation, cascade, action-scoped context, profile resolution) and the fail-loud rules it inherits.
 doc_status: draft
-updated: 2026-11-08T00:00:00Z
+updated: 2026-11-09T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -27,9 +27,9 @@ audience:
 What the charter domain computes from its inputs: layer merge, activation, cascade, action-scoped context and profile resolution, and the fail-loud rules it keeps.
 
 > **Status:** exists in core, and partly built in the service. Since PR B of the layer-merge mission (2026-11-08) the
-> service merges the layers of an activation's closure and resolves what is in force over the merge; the two effective
-> reads that serve it, the artifact list and the skipped report, answer. The effective graph and the effective action
-> context are PR C and still answer `501`. The Java domain must reproduce core fixture for fixture before it answers in production; a wrong core behavior is fixed in Python first, with a fixture. Mutability levels, persistent exclusions and the `impacts` relation are provisional decisions of 2026-10-19, not yet built in core; since 2026-10-26 the relation is `tension` and `impacts` is a per-value list ([ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/)), removal is distinct from deactivation ([ADR-0030](/adr/0030-removal-is-distinct-from-deactivation/)) and requirement is authored as a preset ([ADR-0031](/adr/0031-requirement-is-authored-as-a-preset/)). [What the labels mean](/#status).
+> service merges the layers of an activation's closure and resolves what is in force over the merge; the effective
+> reads that serve it answer: the artifact list and the skipped report since PR B, the effective graph and the effective
+> action context since PR C (2026-11-09). The Java domain must reproduce core fixture for fixture before it answers in production; a wrong core behavior is fixed in Python first, with a fixture. Mutability levels, persistent exclusions and the `impacts` relation are provisional decisions of 2026-10-19, not yet built in core; since 2026-10-26 the relation is `tension` and `impacts` is a per-value list ([ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/)), removal is distinct from deactivation ([ADR-0030](/adr/0030-removal-is-distinct-from-deactivation/)) and requirement is authored as a preset ([ADR-0031](/adr/0031-requirement-is-authored-as-a-preset/)). [What the labels mean](/#status).
 
 ## Inputs
 
@@ -73,8 +73,10 @@ flowchart LR
    mutability level is checked against what later packs do to it: a change the level does not
    allow is a refusal ([ADR-0012](/adr/0012-pack-mutability-policy/)): the registration writes raise
    `governance_policy_violation` (#293), and the merge refuses a layer override the level forbids as
-   `500 pack_unreadable` (DIV-217). When org packs declare the same URN, the
-   later-declared pack wins for every URN and every restated edge (core `59d190a7`, #87).
+   `500 pack_unreadable` (DIV-217). When org packs declare the same URN, core's later-declared pack wins for every URN and
+   every restated edge (core `59d190a7`, #87); the service does not: two siblings that define or change one artifact
+   are refused `pack_sibling_conflict` unless one `overrides` entry settles it (ADR-0048 d9, rules C14 and C15, the note
+   below), so the order of declaration never decides.
    *2026-11-05: across levels the artifact from the level that applies takes the place of the other one whole; no
    field merge ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) decision 3).*
 
@@ -114,7 +116,7 @@ flowchart LR
 ### The action-context walk
 
 `getActionContext` answers the offering's walk, never a filtered one. Five breadth-first steps,
-each artifact listed once by the first step that reaches it:
+each artifact listed once by the first step that reaches it (ADR-0018 D3, minimum-step semantics):
 
 1. `scope` from the action node, one hop;
 2. `requires` from the scoped artifacts, transitively;
@@ -141,11 +143,13 @@ answers a `MergedClosure`. `ClosureView.merged()` builds it once per read, on fi
 carries it to `activations` as a value (C-002). `/offering` composes and never merges (FR-023).
 
 1. **Per level** (C15, #357). The packs of one level that hold an id contest it. A contest that exactly one descriptor
-   `overrides` entry settles puts the named member's version in force at that level; an unsettled one is refused
-   `pack_sibling_conflict` (DIV-218). A step of a mission type shares its mission type's settlement. Two copies of one
-   preset at one level are parent and child, and the child holds it (C29, C34).
-2. **Across levels** (C17, C18). In merge order (built-in, org, project) the level that applies wins, and its artifact
-   replaces the others whole: nothing of a losing version is read (DIV-216). A graph document's node counts as holding
+   `overrides` entry settles puts the named member's version in force at that level (ADR-0048 d9, ADR-0053 d5); an
+   unsettled one, and one whose entries name two different siblings, is refused `pack_sibling_conflict` (DIV-218; the
+   second case was settled by closure order until the #427 landing). A step of a mission type shares its mission type's settlement. Two copies of one
+   preset at one level are parent and child, and the child holds it (C29, C34; operator decision
+   `01M6ZCXAJ9MTTF9XJSR89F3NYG`: within a level the replacing copy wins).
+2. **Across levels** (C17, C18). In merge order (built-in, org, project) the level that applies wins (ADR-0053 d6), and its artifact
+   replaces the others whole: nothing of a losing version is read (ADR-0059 decision 3, DIV-216). A graph document's node counts as holding
    its URN, so an org graph that only declares a built-in step's node replaces that step (DIV-220).
 3. **Edges** (C19, C20). An edge from a losing version is dropped with it; an edge to the overridden id, bare or
    `<pack>::`-written, resolves to the winner.
@@ -159,7 +163,10 @@ provenance shows it. It carries the `applies_to_languages` of each winner, one w
 floor as the union, across the levels, of the must-have items of the copy of a preset id in force at each level, restricted to what the closure holds
 (C31, A1, [DIV-205](/conformance/divergence-register/)). The writes' floor refusal and the registration
 notices read the same union (decision `01M6YKZRM7VF19A57E40D59N81`); `/offering` keeps the winning copies. A winning mission type does not take the unique steps of its losers, so a built-in step survives
-under a project mission type of the same id; PR C confirms this with the architecture owner.
+under a project mission type of the same id (A7; decision `01M7037V93Y077H8M4W9V8Y6B3`, which keeps it and reports the
+architect's C17/C18 dissent to the operator: C18 governs one URN's content, and a step is a URN of its own). A step is
+held by a pack that defines its mission type and declares it, and by the closure when some pack holds it; the place of
+a held step is its merged winner, so a layer override of a held step counts (OD-9, DIV-243).
 
 The write cascade walks the merged edges, so it never follows an edge a losing version declared (rule E20, DIV-230).
 A write over a closure whose merge refuses therefore answers `500` as a read does. The compose facts of each pack are
@@ -178,13 +185,15 @@ The set is solved in four strata, each a fixed point over the one below (researc
 1. **Candidates.** The selected artifacts of the merged closure within the language filter, minus the deny entries,
    plus every locked artifact. A required artifact is a candidate only when it is selected.
 2. **Overrides.** Transitive from the top: in `F -> E -> T` only `F` stays, and `F` satisfies a requirement on `E` and
-   `T`. A target that is not `open` stays, and the pair is reported as `overrideNotApplied` (DIV-221). A cycle of
+   `T` (A3, decision `DM-01M6RA7RPNZS810FTFC98Z13GH`). A target that is not `open` stays, and the pair is reported as `overrideNotApplied` (DIV-221). A cycle of
    overrides that the candidates or the floor reach is refused `500 pack_unreadable` (DIV-222).
 3. **The requirement.** A required artifact is satisfied by itself in force or by an artifact in force that overrides
-   it, never by an enhancement; otherwise it is put in force, whatever the language filter says (DIV-225, DIV-226). This
+   it, never by an enhancement (operator rulings Q6 and Q8 of 2026-11-06); otherwise it is put in force, whatever the language filter says (DIV-225, DIV-226). This
    repeats until no required artifact is unsatisfied on the final set.
 4. **Enhancers and bindings.** A least fixed point: an enhancer is in force only when its support chain reaches an
-   artifact that enhances nothing and is in force, and a step contract only while its mission type is (DIV-224). A
+   artifact that enhances nothing and is in force, and a step contract only while its mission type is (DIV-224, A8).
+   A step enhancer is grounded exactly when the mission type of its single `enhances` target is in force (OD-6,
+   decision `01M702A8XYB588PSGTXRKQ4NKK`, DIV-241); one whose target step no pack holds is pruned for its target. A
    required or locked artifact this removes stays out and is reported once, in `requiredNotInForce`.
 
 An overrider that stratum 4 removes loses its overrides, and the strata run again without it, until no overrider is
@@ -195,8 +204,10 @@ Each artifact then gets one state and one reason, the first row of the precedenc
 `selected` when in force; then a bound artifact whose mission type is out, an enhancer with no target in force,
 `language_filtered`, `deactivated` (the only reason with the state `excluded`), `overridden` for a selected artifact an
 override hides, and `not_selected`. A denied artifact that the enhancer or binding row prunes is `inactive`, not
-`excluded`. An artifact that is not selected stays `not_selected` even when an override hides it, and a required one
-then carries `satisfiedBy`. There is no `kind_default` or `kind_not_activated` (DIV-229). The language filter applies at read only
+`excluded`. An artifact that is not selected stays `not_selected` even when an override hides it (research R11 step 3), and a required one
+then carries `satisfiedBy`. When several artifacts in force satisfy or hide one artifact, `satisfiedBy` and `overriddenBy`
+name the smallest URN: no ruling settles that choice, it is PR B's behavior as found, and an operator ruling is tracked
+in #439. There is no `kind_default` or `kind_not_activated` (DIV-229). The language filter applies at read only
 (DIV-227).
 
 Two reads serve it, and both answer from one verified read of the closure (E19), retried up to three times on
@@ -211,8 +222,12 @@ Two reads serve it, and both answer from one verified read of the closure (E19),
 The reports of what is not applied are `denyNotApplied` (a deny entry a lock or the floor overrides), `overrideNotApplied`,
 `requiredNotInForce`, `requiredNotHeld` (a must-have item no pack holds) and `pinNotHeld`. A write reports the same
 reads' verdict as `warnings` (DIV-237). A suggestion is only a `not_selected` artifact a `suggests` edge of an active
-artifact reaches (DIV-235). The two effective reads that PR C builds, the graph and the action context, use the same
-in-force set. [Offering and activation](/architecture/offering-and-activation/#the-effective-reads) has the
+artifact reaches (DIV-235). The two effective reads that PR C built, the graph and the action context, use the same
+in-force set, and one more rule for what a node is: the nodes are the artifacts in force and the held steps of the
+mission types in force, and a template, an asset, a guard and a lifecycle are none of them (decisions
+`01M702A71YF7WNDTG2AA89K8ZA`, `01M7037ZNKJ6JTRKGD7G695ZV1`, DIV-240). The walk starts at the held step and lists and
+walks only artifacts in force; the context's suggestions are the listing's (decision `01M70CTZP7P2EHSCK2G0RET74B`).
+[Offering and activation](/architecture/offering-and-activation/#the-effective-reads) has the
 request and response behavior, the tags and the refusals.
 
 ## Writes
@@ -220,7 +235,10 @@ request and response behavior, the tags and the refusals.
 Activation is a **plan, then commit**: planning validates and never mutates; committing
 writes only after the plan succeeds. The service's per-artifact writes keep that shape: each
 computes the whole new document from one view of the closure, judges it, and stores it by one
-compare-and-set ([The per-artifact writes](/architecture/offering-and-activation/#the-per-artifact-writes)).
+compare-and-set ([The per-artifact writes](/architecture/offering-and-activation/#the-per-artifact-writes)). A deny entry on a
+required artifact is accepted when an active override of it satisfies the requirement in the document being stored, and
+refused otherwise; a locked artifact is always refused (rule W26, DIV-204; the in-force resolution above judges it, so a
+write and a read cannot disagree).
 In core, applying a preset over customized lists is refused without `--force`, and the
 applied preset name is not persisted. The service applies a preset over any list: its
 `force` clears the deny entries of the preset's members

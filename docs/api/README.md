@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: API
 description: The charter API — four operations built in the Java service, its Javadoc, and the planned reads, writes and Python package surface that are still design only.
 doc_status: draft
-updated: 2026-10-19T00:00:00Z
+updated: 2026-11-09T00:00:00Z
 type: API
 kind: Hub
 related:
@@ -26,7 +26,7 @@ audience:
 > offering (`getOffering`, `GET /offering`); the pack-scoped artifact reads (`listPackArtifacts`,
 > `getPackArtifact`) and an artifact's references across packs (`listArtifactReferences`); and the
 > registration writes for directives, paradigms, styleguides, toolguides and relationships. The
-> activation set, the effective reads and the action-scoped context are declared and answer `501`. The
+> activation set (the register, the closure read, the per-artifact writes and the four effective reads) is built, and no operation answers `501`. The
 > [Java API reference](/api/javadoc/) documents the service's hand-written modules. Still
 > only designed: the other reads of the [service contract](/api/service-contract/), which the
 > cutover read inventory ([#94](https://github.com/spec-kitty/spec-kitty-charter/issues/94))

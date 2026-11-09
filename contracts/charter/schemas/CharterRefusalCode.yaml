@@ -48,7 +48,8 @@ description: >-
   application whose path names a preset no pack of the activation's closure holds; activation_invalid (422), a
   document or body the service refuses, each refused part listed in violations (a document carrying a removed member, activatedKinds or missionTypes, is
   validation_failed, not activation_invalid); artifact_required and
-  artifact_locked (409), a deactivation a pack requires or locks, whose refusal names every requiring pack in
+  artifact_locked (409), a deactivation a pack requires or locks (a required artifact is accepted when an active
+  override of it satisfies the requirement, a locked one never), whose refusal names every requiring pack in
   requiredBy. The requirement of a governing preset id is the union, across the levels (built-in, org, project), of
   the must-have items of the copy in force at each level. Within one level the copy of the pack last in closure order
   replaces the others, a child pack's copy its parent's, and a replaced copy requires nothing. A deny of an artifact

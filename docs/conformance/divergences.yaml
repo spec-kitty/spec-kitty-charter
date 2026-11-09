@@ -3,7 +3,7 @@
 # one by one, the context-read and activation entries in a table). DivergenceRegisterTest fails
 # when an id is listed twice here or is on one of the two and not the other. The blocks are pack
 # schemas (DIV-001..099, ADR-0017), context read (DIV-101..110, ADR-0018), activation
-# (DIV-201..237, ADR-0020; DIV-208 withdrawn before it landed, so its id stays taken; DIV-201 and DIV-202 were proposed until PR B), pack-level files (DIV-301..399, ADR-0042), procedures and
+# (DIV-201..244, ADR-0020; DIV-238 is claimed by the step-enhancements mission; DIV-208 withdrawn before it landed, so its id stays taken; DIV-201 and DIV-202 were proposed until PR B), pack-level files (DIV-301..399, ADR-0042), procedures and
 # toolguide guides (DIV-401..499, ADR-0043), mission types (DIV-501..599, ADR-0044) and registration (DIV-601..699, ADR-0065). Consumers: the
 # conformance gate (#72) and the pack doctor parity test (#115) read this file; a difference from
 # core that is not listed here with status `open` fails them, so a `proposed` entry is not yet
@@ -629,27 +629,40 @@
   surface: A deny entry on a required or locked artifact in an activation write
   core: Accepts the entry and ignores it, or warns.
   service: >-
-    Refuses the write 409 artifact_required or artifact_locked, naming the requiring or locking
-    pack in requiredBy, and stores nothing. Create and replace judge every deny entry of the
-    document; a per-artifact or preset write judges only the deny entries it adds. The
-    requirement follows A1 (DIV-205). The requirement of a governing preset id is the union,
-    across the levels (built-in, org, project), of the must-have items of the copy in force at
-    each level. Within one level the copy of the pack last in closure order replaces the others,
-    a child pack's copy its parent's, and a replaced copy requires nothing. A deny of an
-    artifact only an earlier level's copy requires, which a later level's copy replaced, is 409
-    artifact_required naming that earlier level's pack.
+    Refuses the write 409 artifact_locked for a locked artifact, and 409 artifact_required for a
+    required one that no active override satisfies, naming the requiring or locking pack in
+    requiredBy, and stores nothing. A deny entry on a required, not locked artifact is accepted
+    when an active override of it satisfies the requirement in the document as it will be stored
+    (operator ruling Q9): the in-force resolution judges it (E5, DIV-225), so an enhancement never
+    satisfies and a deny entry accepted on write is one the next read applies; a locked artifact is
+    never satisfied by an override. A create judges every deny entry of the document; a replace, a
+    deactivate, a preset applied with force and a select with includeDeactivated judge only the
+    deny entries they add, and a replace that adds the override and the deny entry together is
+    accepted. A later write that removes the override is not refused; the read lists the deny
+    entry in denyNotApplied. The resolution is asked only when a write adds a deny entry on a
+    required artifact, so a layer merge that refuses (DIV-217, DIV-218) reaches that write as 500
+    pack_unreadable, where it answered 409 before PR C. The requirement follows A1 (DIV-205). The
+    requirement of a governing preset id is the union, across the levels (built-in, org, project),
+    of the must-have items of the copy in force at each level. Within one level the copy of the
+    pack last in closure order replaces the others, a child pack's copy its parent's, and a
+    replaced copy requires nothing. A deny of an artifact only an earlier level's copy requires,
+    which a later level's copy replaced, is 409 artifact_required naming that earlier level's pack.
   rationale: >-
     A deny entry that can never apply misleads the reader of the document. Refusing it at write
     keeps every stored deny entry meaningful; a stale entry left by a pack upgrade is served as
     stored, tolerated by a per-artifact write that does not add it, and refused on the next create
-    or replace (ADR-0059 D4).
+    or replace (ADR-0059 D4). An active override satisfies the requirement, so the deny entry
+    applies at read and "accepted on write" means "satisfied at read" for that document (research
+    R12).
   ruling: >-
-    ADR-0020 D9; ADR-0059 D4; decisions `01M6YKZRM7VF19A57E40D59N81`,
-    `01M6ZCXAJ9MTTF9XJSR89F3NYG`
+    ADR-0020 D9; ADR-0059 D4 and amendment R6; decisions `01M6YKZRM7VF19A57E40D59N81`,
+    `01M6ZCXAJ9MTTF9XJSR89F3NYG`, `DM-01M6R3YX23H46PXGNEFC31E6CT`
   status: open
   since: 2026-11-05
   evidence:
     - "charter: contracts/charter/scenarios/activation-register.feature (A deny entry on a must-have item of a governing preset is refused, naming the pack)"
+    - "charter: contracts/charter/scenarios/activation-deny-satisfied.feature (IC-13: the deactivate, the replace, the create, the unselect afterwards, the three regression controls and the merge refusal)"
+    - "charter: service/activations/src/test/java/ai/speckitty/charter/activations/domain/DocumentRulesOverrideTest.java"
     - "corpus case: deny-required-refused-at-write"
 
 - id: DIV-205
@@ -1488,6 +1501,158 @@
   evidence:
     - "charter: contracts/charter/scenarios/effective-reads.feature (B6/B7 - a select of an enhancer whose target is denied is 200 with the warning enhanced_target_not_in_force; B6/B7 - a select of an artifact an active override hides is 200 with the warning overridden; B4 - a registration that changes an activation's in-force set lists it in activationsAffected, and not an unrelated one)"
     - "corpus case: write-warnings"
+
+- id: DIV-239
+  surface: >-
+    The required floor holds activatable kinds only, and a step reference is a NodeReference
+  core: >-
+    The service's understanding of core, to be confirmed against core: core's required lists
+    name artifacts of any kind, and whether a step can be required is not confirmed.
+  service: >-
+    `requiredNotInForce` and the required floor never name a step (`action:`): the policy and
+    preset schemas cannot name one, so the floor holds activatable kinds only. Every part of the
+    skipped report that the contract types as an `ArtifactReference` drops a step reference and
+    keeps the artifact references beside it. The targets of `enhancedTargetNotInForce` are
+    `NodeReference {kind, id}`, so a step enhancer's target step is named
+    (`EnhancerWithoutTarget.targets`, a breaking change of that response).
+  rationale: >-
+    The contract's `ArtifactReference` is activatable-only, and a step is no activatable
+    artifact; a step the floor cannot name is never required, and one an enhancer targets is
+    still a node a client must be able to read.
+  ruling: >-
+    Plan, PR C scope added by operator rulings of 2026-11-09 (#429 D3, D4(a), D15, D16); rules
+    C31 and E14
+  status: open
+  since: 2026-11-09
+  evidence:
+    - "charter: service/activations/src/test/java/ai/speckitty/charter/activations/infra/packs/ClosureViewSessionStepRefsTest.java (aRequiredStepThatIsNotInForceIsDroppedAndARequiredArtifactIsKept; thePolicyAndPresetSchemasCannotNameAStepSoTheFloorHoldsNone; theTargetsOfAnEnhancerNameTheStepsItEnhancesAndTheArtifactsAlike)"
+    - "charter: contracts/charter/scenarios/effective-graph-and-context.feature (#429 - a target of an enhancer without a target in force is a NodeReference, on the report and on the context)"
+    - "corpus case: required-floor-activatable-kinds"
+
+- id: DIV-240
+  surface: >-
+    Kinds with no activation state are absent from the effective reads and from layerOverrides
+  core: >-
+    The service's understanding of core, to be confirmed against core: core's merged graph holds
+    every node of every kind and reports no layer override at all.
+  service: >-
+    The effective graph and the effective action context leave out every kind that has no
+    activation state: a template, an asset, a guard and a lifecycle are never nodes, entries or
+    layer overrides, even when a lock puts one in force inside the packs. The graph's nodes are
+    the artifacts in force and the held steps of the mission types in force (a step is a node,
+    an edge may start at one, and its layer override is listed). `layerOverrides` lists only the
+    overrides of those nodes.
+  rationale: >-
+    A node with no state under an activation cannot be in force or out of it; listing it would
+    widen the read beyond the operator's ruling, and a held step is the one non-activatable node
+    with a defined state, that of its mission type.
+  ruling: >-
+    Decisions `01M702A71YF7WNDTG2AA89K8ZA`, `01M7037ZNKJ6JTRKGD7G695ZV1`; FR-018; rule E15
+  status: open
+  since: 2026-11-09
+  evidence:
+    - "charter: service/packs/src/test/java/ai/speckitty/charter/packs/application/ClosureViewTest.java (aKindWithNoActivationStateIsAbsentFromTheGraphAndTheWalkEvenWhenALockPutsItInForceInsidePacks; theLayerOverridesFollowTheNodesOfTheGraph)"
+    - "charter: contracts/charter/scenarios/effective-graph-and-context.feature (US5 AS2 - the override of a held step is listed, the override of a template and of an artifact out of force are not)"
+    - "corpus case: effective-graph-nodes-in-force"
+
+- id: DIV-241
+  surface: >-
+    A step enhancer is bound to its mission type, and an unheld target prunes it
+  core: >-
+    The service's understanding of core, to be confirmed against core: core applies a step
+    enhancement when it reads the prompt and has no in-force state for it.
+  service: >-
+    A step enhancer, a `step_enhancement` with exactly one distinct `enhances` target that is an
+    action `action:M/s`, is in force exactly when the mission type `M` is in force, and is
+    pruned with the reason `mission_type_not_in_force` (bucket `missionTypeNotInForce`)
+    otherwise. When no pack holds the target step it keeps its edge and is pruned with
+    `enhanced_target_not_in_force`. Every other shape of enhancer keeps the rule of DIV-224.
+  rationale: >-
+    A step is never in force, so the enhancer rule alone would prune every step enhancer; the
+    binding grounds it in the mission type, and the unheld target keeps I11 true.
+  ruling: >-
+    Operator ruling OD-6 (decision `01M702A8XYB588PSGTXRKQ4NKK`); decision
+    `01M7037V93Y077H8M4W9V8Y6B3`; rule E6
+  status: open
+  since: 2026-11-09
+  evidence:
+    - "charter: service/packs/src/test/java/ai/speckitty/charter/packs/application/ClosureViewTest.java (aStepEnhancerIsActiveWhenItAndTheMissionTypeOfItsStepAreSelectedAndNoActionIs; aStepEnhancerWhoseMissionTypeIsNotSelectedIsPrunedForTheMissionType; aStepEnhancerOfAStepNoPackHoldsKeepsItsEdgeAndIsPrunedForItsTarget)"
+    - "charter: contracts/charter/changes/2026-11-09-c-step-enhancer-binding.md"
+    - "corpus case: step-enhancer-bound-to-mission-type"
+
+- id: DIV-242
+  surface: >-
+    The write cascade follows only held steps
+  core: >-
+    The service's understanding of core, to be confirmed against core: core's cascade follows
+    the steps of the mission type its graph declares.
+  service: >-
+    A mission type reaches `action:M/s` in the cascade when a pack of the closure defines `M`
+    and declares the action. An action declared where no pack defines its mission type, and one
+    declared by a pack beside a mission type another pack defines, is no longer followed.
+  rationale: >-
+    One predicate for what a step is, used by the cascade, by `action_not_found` and by the
+    walk, so the writes and the reads cannot disagree about a step.
+  ruling: >-
+    Operator ruling OD-9 (decision `01M7037V93Y077H8M4W9V8Y6B3`); rule W20
+  status: open
+  since: 2026-11-09
+  evidence:
+    - "charter: service/packs/src/test/java/ai/speckitty/charter/packs/application/ReachabilityTest.java (theCascadeFollowsOnlyHeldStepsSoAStepDeclaredWhereNoClosurePackDefinesItsMissionTypeIsNotEntered)"
+    - "charter: service/packs/src/test/java/ai/speckitty/charter/packs/application/EdgeIndexTest.java (anActionDeclaredWithoutItsMissionTypeInAnyPackIsNotAStepOfThatMissionType)"
+    - "corpus case: cascade-follows-held-steps"
+
+- id: DIV-243
+  surface: >-
+    A step is held per pack and on the closure
+  core: >-
+    The service's understanding of core, to be confirmed against core: core reads a step from
+    the mission type's `steps` list and reports no per-pack form.
+  service: >-
+    One predicate in two forms: per pack (the pack defines `mission_type:M` and declares
+    `action:M/s`) and on the closure (some pack holds it, with the merged winner as its place,
+    so a layer override of a held step counts). A winning mission type keeps the unique steps of
+    the versions it replaced (A7). The mission type in one pack and the action in another pack
+    alone is not a held step.
+  rationale: >-
+    The operator's wording is per pack; the closure form keeps a layer override of a held step a
+    step (C17). The architect's C17/C18 dissent on the steps of a losing mission type is
+    recorded in the PR C plan-point dispositions and stands.
+  ruling: >-
+    Decision `01M7037V93Y077H8M4W9V8Y6B3`; rules W20 and E16
+  status: open
+  since: 2026-11-09
+  evidence:
+    - "charter: service/packs/src/test/java/ai/speckitty/charter/packs/domain/StepHoldingTest.java"
+    - "charter: service/packs/src/test/java/ai/speckitty/charter/packs/application/EdgeIndexTest.java (aWinningMissionTypeKeepsTheUniqueStepsOfTheVersionItReplaced)"
+    - "corpus case: step-held-per-pack-and-on-the-closure"
+
+- id: DIV-244
+  surface: >-
+    The effective action context: suggestions, enhancements, order and names
+  core: >-
+    The service's understanding of core, to be confirmed against core: core's action context has
+    no `enhancements` member, lists entries by step, and allows `depth` 0 to 2 (DIV-110).
+  service: >-
+    The effective action context lists the artifacts in force the ADR-0018 walk reaches and,
+    beside them, suggestions: an artifact the listing gives a suggestion that a listed entry
+    reaches through `suggests`, with the nearest edge's `when` and `reason`, never walked
+    through, so the suggestions are a subset of the listing's. It carries `enhancements`
+    (`[{target, enhancedBy}]`, one per node with an enhancer in force, the start step included),
+    sorts its entries by full URN string, and answers `missionTypeNotInForce` with the mission
+    type itself. An unknown mission type or action is `404` before a `304`. `depth` is 0 or 1.
+  rationale: >-
+    One suggestion definition for the list and the context; a step enhancer enhances a step,
+    which no artifact entry names; and a client never reads the walk's order.
+  ruling: >-
+    Decisions `01M7059T4K64TAVKXN3T1FKWYG`, `01M70CTZP7P2EHSCK2G0RET74B`,
+    `01M70C42KC78KB9H6KB7TK9224`, `01M6Y6VE6VZQ4MXD98N93JB3GJ`; ADR-0018 D3; FR-019; rule E16
+  status: open
+  since: 2026-11-09
+  evidence:
+    - "charter: contracts/charter/scenarios/effective-graph-and-context.feature (US5 AS4 - the context holds the artifacts in force the action reaches, with the suggestion only through suggests; US5 AS5 - an unknown mission type or action is 404, whether or not the mission type is in force)"
+    - "charter: service/activations/src/test/java/ai/speckitty/charter/activations/domain/EffectiveSetTest.java (anArtifactAnotherArtifactInForceRequiresOutsideTheContextIsNoSuggestionOfTheContextAndOneNobodyRequiresIs)"
+    - "corpus case: effective-context-enhancements-and-suggestions"
 
 # Pack-level files (DIV-301..399), mission pack-level-files-round-trip-01M60H1A (#195, ADR-0042).
 - id: DIV-301
