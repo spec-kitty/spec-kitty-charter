@@ -14,9 +14,11 @@ value:
       - id: bootstrap
         description: Load charter context for this action
         command: spec-kitty charter context --action specify --json
+        inputs: []
       - id: capture_intent
         description: |
           Conduct or verify the human discovery interview, then capture confirmed user intent
+        inputs: []
         delegatesTo:
           kind: directive
           candidates:
@@ -30,6 +32,7 @@ value:
                   href: /api/v1/packs/core/artifacts/directive/DIRECTIVE_037
       - id: map_examples
         description: Capture concrete rules, examples, and open questions for the behavior slice
+        inputs: []
         delegatesTo:
           kind: procedure
           candidates:

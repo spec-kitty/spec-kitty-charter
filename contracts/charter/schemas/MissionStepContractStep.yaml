@@ -5,6 +5,7 @@ additionalProperties: false
 required:
   - id
   - description
+  - inputs
 properties:
   id:
     type: string
@@ -26,7 +27,7 @@ properties:
       symbol: ContractStep.command
   inputs:
     type: array
-    description: The inputs the step's command takes, in stored order; absent when it declares none.
+    description: The inputs the step's command takes, in stored order; empty when it declares none.
     items:
       $ref: MissionStepContractInput.yaml
     x-source:

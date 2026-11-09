@@ -6,7 +6,9 @@ description: >-
   agent_profile, mission_type or mission_step_contract. For agent_profile the templated item read is
   not the one that answers: the literal operation getPackAgentProfile does. A mission_step_contract is
   served by the generic item read; the item of a mission_type is answered by getPackMissionType, whose
-  literal path the service prefers, and its references read takes this parameter like any other kind. The
+  literal path the service prefers, and its references read and its removal (deletePackArtifact, which
+  removes the listed kinds, mission_type and mission_step_contract included) take this parameter like
+  any other kind. The
   parameter is a slug, not an enum: a value that is not a slug (Tactic, -tactic) is a 400 Problem
   without a code, before the pack is judged, and a slug that names no served kind is answered 404
   kind_not_found by the service, after the pack is found.

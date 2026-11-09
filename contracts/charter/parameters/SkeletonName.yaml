@@ -7,8 +7,8 @@ description: >-
   templates/spec-template.md, and divio~1howto-template.md names templates/divio/howto-template.md. The service
   decodes it ('~1' to '/', then '~0' to '~') and looks the result up among the type's skeletons only, so nothing is
   resolved outside the mission type; a name that does not decode to a skeleton of the type, a '~' followed by
-  anything but 0 or 1 included, is a 404 skeleton_not_found, after the pack and the mission type are found. A '/'
-  in the name, even percent-encoded, is not one segment.
+  anything but 0 or 1 included, is a 404 skeleton_not_found, after the pack and the mission type are found. A path
+  with a '/' after skeletons/ names no operation.
 schema:
   type: string
   minLength: 1
