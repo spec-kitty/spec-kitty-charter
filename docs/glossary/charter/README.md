@@ -165,7 +165,7 @@ One `depends_on` entry a pack declares: the depended-on pack's `pack_id` and a P
 
 ## Activated pack
 
-A pack whose artifacts the active charter puts in force. The activation set is reserved (issue #125), so no read answers it yet; the roots of a compose come from it with #360. Compare Configured pack and Available pack.
+A pack whose artifacts the active charter puts in force. The effective reads answer what an activation puts in force (issues #125, #103), and `listActivationPacks` answers its closure (#360), the roots of a compose. Compare Configured pack and Available pack.
 
 **Meta:**
 
@@ -500,6 +500,56 @@ Whether something is a paradigm: a school of practice with a worldview that brin
 ## Procedure
 
 A playbook: a bounded, step-by-step way to handle one situation, with entry and exit conditions. It is used inside a step; nothing runs or tracks it, and it has no state, deliverables, gates or role slots, so it sits below a mission type. A tactic is one technique; a procedure is an episode that combines techniques. A rule-shaped procedure is a directive. The `operator` role marks where a procedure asks the human for input or action. Decided, not built yet: ADR-0052 tightens this definition and moves its inline anti-patterns to authored anti-pattern files.
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#held-step}
+
+## Held step
+
+A step `action:M/s` that a pack of the closure holds: some pack defines `mission_type:M` and declares the action, and a layer override of the step counts. One predicate decides which steps the write cascade follows, which ids `action_not_found` refuses and where the effective action context starts (rules W20 and E16, DIV-243). A step is a node of the effective graph, never an artifact in force.
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#nodereference}
+
+## NodeReference
+
+A node of the graph named by `{kind, id}` where it may be a step (kind `action`, id `<missionType>/<step>`) and not an activatable artifact. The enhancer targets of the skipped report, the effective graph's nodes and the context's `enhancements` carry it. See Held step.
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#layer-override}
+
+## Layer override
+
+The record that one version of an artifact, from a pack at a higher level (built-in, org, project), won over another version of the same artifact from a lower one, so the merged closure reads the winner whole. The effective graph lists one record per losing version of a node of the graph in `layerOverrides`. Not the Overrides edge, which settles a sibling conflict, nor Overlay Override, a CRG relation.
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#effective-graph}
+
+## Effective graph
+
+The graph of an activation (`getEffectiveGraph`): the nodes in force (the artifacts in force and the held steps of the mission types in force), the merged edges among them resolved through the layer overrides, and the layer overrides applied. Not the offering's graph filtered by the activation.
+
+**Meta:**
+
+- **status:** `canonical`
+
+{#effective-action-context}
+
+## Effective action context
+
+What ADR-0018's walk reaches from a held step over the artifacts in force of an activation (`getEffectiveActionContext`), with the suggestions, the `enhancements` of the nodes it names and the skipped report. Compare Effective graph.
 
 **Meta:**
 
