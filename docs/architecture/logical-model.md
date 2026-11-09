@@ -295,7 +295,7 @@ facts; it does not restate them.
 | `asset` | `asset` | no | no | yes | no | all |
 | `template` | `template` | no | no | no | no | all |
 | `mission_type` (service only, DIV-501) | `mission-type` | yes | yes | no | no | all |
-| `step_enhancement` (service only) | `step-enhancement` | no | yes | yes | yes | none |
+| `step_enhancement` (service only) | `step-enhancement` | no | yes | no | no | none |
 
 - **Activatable**: the kind can appear in an `activated_<plural>` list. `template` and `asset`
   resolve specially and are never activated as a live rule.
@@ -323,6 +323,9 @@ facts; it does not restate them.
   (ADR-0053 decision 22), with guards, emits and prompt fragments for slots the step declares
   ([ADR-0066](/adr/0066-a-step-enhancement-may-contribute-prompt-fragments/)). A preset lists it
   in `activated_step_enhancements`; `none` means the service activates none when the key is absent.
+  It is not org-requirable: `org-charter.yaml` has no `required_step_enhancements`. The schema holds
+  only prompt fragments so far, and the service does not store the kind yet; the guard and emit
+  additions and the store binding are [#428](https://github.com/spec-kitty/spec-kitty-charter/issues/428).
 
 ### Accepted kinds and kind changes (epic #142, not built yet)
 
