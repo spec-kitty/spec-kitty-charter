@@ -36,11 +36,8 @@ contract changes are the `2026-11-07-c-*` and `2026-11-09-c-*` fragments under `
 - **The effective-read tags change.** The tags move to domain `v2`: a client holding a PR B tag gets a `200` with the
   new body, not a `304`.
 - **The write cascade follows held steps only** (OD-9, [DIV-242](/conformance/divergence-register/)).
-- **Regenerate for the breaking changes.** The two reads gain required members, and `EnhancerWithoutTarget.targets` becomes
-  a list of `NodeReference {kind, id}`.
-- **Rulings of 2026-11-09.** A step enhancer is in force exactly when the mission type of its step is (OD-6); one predicate
-  decides which steps are held, so the cascade follows held steps only (OD-9); the floor holds activatable kinds only (D16).
-  They are DIV-239 to DIV-244 of the [register](/conformance/divergence-register/).
-- **Explicit rulings.** Five pages cite, for each sentence about a contest, a winner or a tie, the ruling or the refusal
-  that settles it; the one tie no ruling covers, `satisfiedBy` by smallest URN, is tracked in #439. The
-  [ruleset scenario trace](/conformance/ruleset-scenario-trace/) is complete.
+- **Regenerate.** The two reads gain required members; `EnhancerWithoutTarget.targets` is a list of `NodeReference`.
+- **Rulings of 2026-11-09.** A step enhancer is in force exactly when the mission type of its step is (OD-6), and the
+  floor holds activatable kinds only (D16): DIV-239 to DIV-244 of the [register](/conformance/divergence-register/).
+- **Explicit rulings.** Five pages cite the ruling behind each contest, winner or tie; the one tie no ruling covers is
+  tracked in #439. The [ruleset scenario trace](/conformance/ruleset-scenario-trace/) is complete.
