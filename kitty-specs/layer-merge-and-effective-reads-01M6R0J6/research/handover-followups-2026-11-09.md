@@ -7,15 +7,17 @@ first. The earlier hand-overs (`handover-followups-2026-11-08.md`, `-2026-11-07.
 ## Where the mission is
 
 - **PR A0** (#414), **PR A** (#419) and the PR A follow-ups (#423) are merged.
-- **PR B** (WP21–WP26) is #427, branch `issue-10-pr-b-effective-reads`, rebuilt on `main` at `b7960211` (ADR-0066):
-  one signed commit per WP, each tree checked against its approved lane, then the pre-PR squad's folds, a status
-  commit and two gate fixes. `verifyAll` and `:packs:wholePackRoundTrip` are green on its final tree.
+- **PR B** (WP21–WP26) is #427, **merged 2026-11-09** (07:38 UTC). A maintainer landing pass rebased it onto `main` at
+  `465e3de2` (which holds #425, the ADR-0066 contracts and the activatable kind `step_enhancement`), squashed each
+  fold's red/green pair into one commit (26 commits; the rewrite dropped the commit signatures, which `main` does not
+  require), and folded one second-opinion finding: a step contest whose `overrides` entries named two different
+  siblings was settled by closure order; it now refuses `pack_sibling_conflict` (C15).
 - **WP27–WP29** (PR C) are planned: lanes `lane-y` (WP27), `lane-z` (WP28) and `lane-{` (WP29). They were allocated
   before PR B; rebuild each on `main` once #427 is merged (below).
 
 ## First steps for the PR C runner
 
-1. **Wait for #427 to merge**, then rebase the planning branch (`issue-10-layer-merge-effective-reads`) onto `main`
+1. **#427 is merged.** Rebase the planning branch (`issue-10-layer-merge-effective-reads`) onto `main`
    (the operator prefers rebase to merge). Its commits beyond `main` are planning-only; check that `main` already
    holds everything else before replaying.
 2. **Re-pin and re-record.** After the rebase, `finalize-tasks --refresh-planning-commit --allow-orphaned` re-points
@@ -53,6 +55,12 @@ first. The earlier hand-overs (`handover-followups-2026-11-08.md`, `-2026-11-07.
   level; within a level the replacing copy wins. One rule for reads, writes and notices (`LayerMerge.floorOf`).
 
 ## Open follow-ups (not PR C's unless the operator schedules them)
+
+- #429 (from the #427 landing): `ClosureViewSession` filters `action:` URNs through `activatable()`, so a step
+  enhancer's targets come back `[]` in `enhancedTargetNotInForce` and a pruned required or locked step is left out of
+  the skipped report. Latent until step enhancements are stored (#428); the first item needs a contract change
+  (`EnhancerWithoutTarget.targets` admitting `action`). PR C's graph and action-context reads touch the same
+  boundary: read #429 before WP27/WP28, and check #425's `step_enhancement` kind in the in-force resolution.
 
 - #426: the PR B pre-PR squad's deferred items (`activationsAffected` under the registry lock against NFR-009; If-Match
   tag from the write's own session; registration not trying the merge; two preset winner functions; static test

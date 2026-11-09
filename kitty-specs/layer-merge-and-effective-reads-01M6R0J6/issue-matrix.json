@@ -288,6 +288,18 @@
       "verdict": "not-applicable",
       "wp": null
     },
+    "#425": {
+      "evidence_ref": "ADR-0066 contracts and step_enhancement kind, landed before #427; outside this mission",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
     "#426": {
       "evidence_ref": "Follow-up issue for the PR B pre-PR squad's deferred findings (research/closeout-notes-pr-b.md, Pre-PR squad dispositions)",
       "fr": null,
@@ -301,7 +313,7 @@
       "wp": null
     },
     "#427": {
-      "evidence_ref": "PR B of this mission (WP21-WP26), draft; named by the PR C hand-over",
+      "evidence_ref": "PR B of this mission (WP21-WP26), merged 2026-11-09 at main 465e3de2+",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -310,6 +322,30 @@
       "source_file": null,
       "title": null,
       "verdict": "in-mission",
+      "wp": null
+    },
+    "#428": {
+      "evidence_ref": "Storing step enhancements (#425 follow-up), outside this mission; named as the trigger that makes #429 live",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#429": {
+      "evidence_ref": "Follow-up from the #427 landing pass: step URNs filtered out of the skipped report; latent until #428; PR C reads it before WP27/WP28",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
       "wp": null
     }
   },
