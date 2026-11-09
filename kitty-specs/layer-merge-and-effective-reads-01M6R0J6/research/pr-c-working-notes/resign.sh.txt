@@ -1,0 +1,18 @@
+#!/bin/bash
+# Re-sign unpushed CLI commits on the mission branch, then re-sign an unsigned lane-head merge whose 2nd parent was a re-signed commit. Usage: resign.sh <lane-letter>
+set -e
+cd /home/user/spec-kitty-charter
+MB=kitty/mission-layer-merge-and-effective-reads-01M6R0J6
+C=.worktrees/layer-merge-and-effective-reads-01M6R0J6-coord
+git -C $C add -A kitty-specs; git -C $C diff --cached --quiet || { printf 'Record pending status events\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01JuXv6d5PY31s2gUiRUcBDf\n' | git -C $C commit -S -q -F -; }
+rs() { git log -1 --format=%B $1 | GIT_AUTHOR_NAME="$(git log -1 --format=%an $1)" GIT_AUTHOR_EMAIL="$(git log -1 --format=%ae $1)" GIT_AUTHOR_DATE="$(git log -1 --format=%aI $1)" git commit-tree -S $1^{tree} "${@:2}"; }
+declare -A map; new=$(git rev-parse origin/$MB)
+for c in $(git rev-list --reverse origin/$MB..$MB); do
+  if git cat-file commit $c | grep -q gpgsig && [ "$(git rev-parse $c^1)" = "$new" ]; then map[$c]=$c; new=$c; continue; fi
+  n=$(rs $c -p $new); map[$c]=$n; new=$n; done
+git -C $C reset -q --hard $new
+if [ -n "$1" ]; then L=.worktrees/layer-merge-and-effective-reads-01M6R0J6-lane-$1; h=$(git -C $L rev-parse HEAD)
+  if ! git cat-file commit $h | grep -q gpgsig; then ps=""; for p in $(git log -1 --format=%P $h); do ps="$ps -p ${map[$p]:-$p}"; done; nl=$(rs $h $ps); git -C $L reset -q --hard $nl; fi
+  echo "lane-$1 $(git -C $L log -1 --format=%h) sig=$(git -C $L cat-file commit HEAD | grep -c gpgsig)"; fi
+git push -q origin $MB 2>&1 | tail -1
+echo "mission $(git log -1 --format=%h $MB) sig=$(git cat-file commit $MB | grep -c gpgsig)"

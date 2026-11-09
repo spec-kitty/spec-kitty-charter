@@ -1,8 +1,10 @@
 title: EffectiveArtifactList
 description: >-
-  The artifacts of the offering under an activation, one page at a time (ADR-0020 D7), with the counts of the whole
-  effective set (summary), which moved here from Activation (ADR-0059 D5): they depend on the offering, so they are
-  answered with governanceFingerprint and covered by this read's ETag.
+  The artifacts of the merged closure under an activation, one page at a time (ADR-0020 D7): every artifact with its
+  state, so "in force" is state active (operator ruling Q1). The summary counts the whole set and is identical on every
+  page; it moved here from Activation (ADR-0059 D5) because it depends on the packs, so it is answered with
+  governanceFingerprint and covered by this read's ETag. Items are ordered by kind, then by id in code-point order, and
+  paged by a keyset cursor.
 type: object
 additionalProperties: false
 required:
@@ -36,12 +38,16 @@ properties:
     allOf:
     - $ref: Sha256Digest.yaml
     description: >-
-      The digest of the offering this answer was computed from, as ServiceInfo.sourceFingerprint; with revision,
-      it ties the answer to both the document and the packs.
+      The charter-closure/v1 digest of the packs of the activation's closure alone: the configured id and level of each
+      closure pack and the files of those packs, taken in the same consistent read as the answer. It is not
+      ServiceInfo.sourceFingerprint and not the Charter-Source-Fingerprint header, which digest the whole source; a
+      change to a pack outside the closure leaves it unchanged. With revision, it ties the answer to both the document
+      and the packs of its closure.
     x-derived:
-      rule: The source fingerprint of the packs the answer was computed from.
+      rule: sha256 of "charter-closure/v1", the configured id and level of each pack of the activation's closure, and
+        those packs' files; the packs outside the closure are not read into it.
       inputs:
-      - schemas/ServiceInfo.yaml#/properties/sourceFingerprint
+      - schemas/ActivationConfig.yaml
   summary:
     $ref: ActivationSummary.yaml
   items:
@@ -50,7 +56,7 @@ properties:
       $ref: EffectiveArtifact.yaml
     description: The artifacts of this page.
     x-derived:
-      rule: The effective set, filtered by kind and state and paged.
+      rule: The effective set of the merged closure, filtered by kind and state and paged by (kind, id).
       inputs:
       - schemas/ActivationConfig.yaml
   pageInfo:

@@ -68,6 +68,12 @@ post:
         The registration is well-formed but breaks a pack invariant or schema (validation_failed): among others, one of
         its lists is null or holds a null item (a list is sent as an array, [] where it may be empty, and an optional
         one may be left out), or its body is over the body limit (1 MiB; refused validation_failed before it is read).
+        The write is also judged over every closure the pack joins, as the pack will be after it, under the registry
+        lock (the registration impact check, IC-15; operator ruling DM-01M6VG6GC40AKYYFRR35SV8HVW, FR-025): a closure
+        that would no longer compose is refused with its composition code (pack_sibling_conflict, two packs of one level
+        defining one id, among them), and one that would break a relation rule with override_not_permitted,
+        enhances_cycle, conflicting_relations, self_override or override_cycle. The packs member names the closure's
+        root pack and the packs involved, and nothing is written.
       headers:
         Charter-Contract-Version:
           $ref: ../headers/CharterContractVersion.yaml
@@ -79,5 +85,7 @@ post:
             $ref: ../schemas/CharterRefusal.yaml
     '500':
       $ref: ../responses/OfferingUnreadable.yaml
+    '503':
+      $ref: ../responses/RegistryBusy.yaml
     default:
       $ref: ../../_shared/responses/Problem.yaml

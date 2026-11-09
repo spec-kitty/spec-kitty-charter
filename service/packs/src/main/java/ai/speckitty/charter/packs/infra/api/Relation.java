@@ -32,7 +32,10 @@ public enum Relation {
     NEXT("next"),
 
     /** The pack-scoped read of the artifact a resolved reference names. */
-    ARTIFACT("artifact");
+    ARTIFACT("artifact"),
+
+    /** The stored pack a succeeded registration status points at. */
+    PACK("pack");
 
     private final String wireKey;
 

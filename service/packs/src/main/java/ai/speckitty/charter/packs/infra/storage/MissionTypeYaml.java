@@ -51,7 +51,6 @@ enum MissionTypeYaml implements YamlFormat<MissionTypeDso> {
                 Boolean.TRUE.equals(root.get("requires_substantive_spec")),
                 conventions,
                 artifacts(root, "expected_output_artifacts"),
-                references(root),
                 steps(root, "steps"),
                 steps(root, "on_demand_steps"));
     }
@@ -68,7 +67,6 @@ enum MissionTypeYaml implements YamlFormat<MissionTypeDso> {
                     optional(s, "guidelines_path"),
                     artifacts(s, "expected_input_artifacts"),
                     artifacts(s, "expected_output_artifacts"),
-                    references(s),
                     Optional.empty(),
                     Optional.empty()));
         }
@@ -88,15 +86,6 @@ enum MissionTypeYaml implements YamlFormat<MissionTypeDso> {
         return artifacts;
     }
 
-    private static List<MissionTypeDso.Reference> references(Map<?, ?> owner) {
-        List<MissionTypeDso.Reference> references = new ArrayList<>();
-        for (Map<?, ?> r : mappings(owner, "references")) {
-            references.add(new MissionTypeDso.Reference(
-                    required(r, "type"), required(r, "id"), optional(r, "when"), optional(r, "reason")));
-        }
-        return references;
-    }
-
     @Override
     public String write(MissionTypeDso type) {
         YamlDumpEmitter out = new YamlDumpEmitter()
@@ -112,7 +101,6 @@ enum MissionTypeYaml implements YamlFormat<MissionTypeDso> {
             out.present("path_conventions", new LinkedHashMap<String, Object>(type.pathConventions()));
         }
         return out.mappings("expected_output_artifacts", writeArtifacts(type.expectedOutputArtifacts()))
-                .mappings("references", writeReferences(type.references()))
                 .mappings("steps", writeSteps(type.steps()))
                 .mappings("on_demand_steps", writeSteps(type.onDemandSteps()))
                 .dump();
@@ -132,7 +120,6 @@ enum MissionTypeYaml implements YamlFormat<MissionTypeDso> {
                     out, "expected_input_artifacts", writeArtifacts(step.expectedInputArtifacts()));
             YamlDumpEmitter.mappingsInto(
                     out, "expected_output_artifacts", writeArtifacts(step.expectedOutputArtifacts()));
-            YamlDumpEmitter.mappingsInto(out, "references", writeReferences(step.references()));
             written.add(out);
         }
         return written;
@@ -149,19 +136,6 @@ enum MissionTypeYaml implements YamlFormat<MissionTypeDso> {
                 out.put("blocking", true);
             }
             YamlDumpEmitter.scalarInto(out, "template_path", artifact.templatePath());
-            written.add(out);
-        }
-        return written;
-    }
-
-    private static List<Map<String, Object>> writeReferences(List<MissionTypeDso.Reference> references) {
-        List<Map<String, Object>> written = new ArrayList<>();
-        for (MissionTypeDso.Reference reference : references) {
-            Map<String, Object> out = YamlDumpEmitter.mapping();
-            out.put("type", reference.type());
-            out.put("id", reference.id());
-            YamlDumpEmitter.scalarInto(out, "when", reference.when());
-            YamlDumpEmitter.scalarInto(out, "reason", reference.reason());
             written.add(out);
         }
         return written;

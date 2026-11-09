@@ -3,6 +3,8 @@ package ai.speckitty.charter.packs.application;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.PackSources;
+import java.time.Duration;
+import java.util.Collection;
 import java.util.Objects;
 import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
@@ -24,6 +26,7 @@ import org.jspecify.annotations.Nullable;
 public final class ConsistentRead {
 
     private final PackSources sources;
+    private final PackWriteGeneration generation;
 
     /**
      * A verifier over the inputs {@code sources} digests.
@@ -31,7 +34,40 @@ public final class ConsistentRead {
      * @param sources the pack files port; digested afresh before and after every load
      */
     public ConsistentRead(PackSources sources) {
+        this(sources, PackWriteGeneration.shared());
+    }
+
+    /**
+     * A verifier that also watches a write generation.
+     *
+     * @param sources the pack files port
+     * @param generation the write generation the pack writes bracket their swap with
+     */
+    public ConsistentRead(PackSources sources, PackWriteGeneration generation) {
         this.sources = Objects.requireNonNull(sources, "sources");
+        this.generation = Objects.requireNonNull(generation, "generation");
+    }
+
+    /**
+     * The digest of the named packs' files alone, for a caller that scopes a fingerprint to a closure. Call it inside
+     * the {@code load} of {@link #read}: the whole-source digests taken before and after the load then guard it, so it
+     * names the files the load read.
+     *
+     * @param packNames the configured names of the packs
+     * @return {@code sha256:} and 64 lower-case hex digits
+     * @throws CharterRefusal with {@code PACK_UNREADABLE} when a named pack cannot be read
+     */
+    public String fingerprintOf(Collection<String> packNames) {
+        return sources.fingerprintOf(Objects.requireNonNull(packNames, "packNames"));
+    }
+
+    /**
+     * Waits until no pack swap runs, so that a retried read starts on a quiet registry.
+     *
+     * @param max the longest wait
+     */
+    public void awaitWrites(Duration max) {
+        generation.awaitIdle(max);
     }
 
     /**
@@ -57,20 +93,45 @@ public final class ConsistentRead {
     public <T> Verified<T> read(String staleDetail, Supplier<T> load) {
         Objects.requireNonNull(staleDetail, "staleDetail");
         Objects.requireNonNull(load, "load");
-        String first = sources.fingerprint();
-        T value;
+        long written = generation.registry();
+        if (PackWriteGeneration.isSwapping(written)) {
+            throw new CharterRefusal(RefusalCode.STALE_INPUT, staleDetail);
+        }
+        String first = firstDigest(written, staleDetail);
+        T value = loaded(first, written, staleDetail, load);
+        if (moved(written) || !first.equals(digestOrNull())) {
+            throw new CharterRefusal(RefusalCode.STALE_INPUT, staleDetail);
+        }
+        return new Verified<>(value, first);
+    }
+
+    /** Whether a swap started or finished since {@code written} was read. */
+    private boolean moved(long written) {
+        return generation.registry() != written;
+    }
+
+    /** The first digest; a refusal while the generation moves (a directory renamed mid-listing) is stale, not unreadable. */
+    private String firstDigest(long written, String staleDetail) {
         try {
-            value = load.get();
+            return sources.fingerprint();
+        } catch (CharterRefusal unreadable) {
+            if (moved(written)) {
+                throw new CharterRefusal(RefusalCode.STALE_INPUT, staleDetail, unreadable);
+            }
+            throw unreadable;
+        }
+    }
+
+    /** The load's value; its failure is the answer only when neither the digest nor the generation moved. */
+    private <T> T loaded(String first, long written, String staleDetail, Supplier<T> load) {
+        try {
+            return load.get();
         } catch (RuntimeException failed) {
-            if (!first.equals(digestAfterFailure(failed))) {
+            if (moved(written) || !first.equals(digestAfterFailure(failed))) {
                 throw new CharterRefusal(RefusalCode.STALE_INPUT, staleDetail, failed);
             }
             throw failed;
         }
-        if (!first.equals(digestOrNull())) {
-            throw new CharterRefusal(RefusalCode.STALE_INPUT, staleDetail);
-        }
-        return new Verified<>(value, first);
     }
 
     /** The second digest after a failed load; if it breaks in a way that is no refusal, that break keeps the load failure. */

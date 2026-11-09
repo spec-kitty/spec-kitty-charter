@@ -29,6 +29,7 @@ related:
   - adr/0050-mission-types-and-lifecycles-as-declared-state-machines
   - adr/0051-event-registry-a-thin-provider-neutral-consistency-check
   - adr/0052-procedures-tightened-and-anti-patterns-as-authored-artifacts
+  - adr/0064-graph-documents-are-the-only-source-of-relationships
 audience:
   - profile: pack-author
     guidance_text: Read this for the parts of the charter and how they relate.
@@ -178,7 +179,8 @@ level contiguous, in merge order: built-in, then org, then project. The offering
 naming the pack, rather than serving part of it.
 
 - **Level direction.** A pack may take a `parent_pack`, and may `depends_on` a pack, only at its own level or one
-  nearer built-in. `parent_pack` stays lineage only; it orders nothing.
+  nearer built-in. `parent_pack` is an ordering and a cycle edge, as `depends_on` is (operator ruling of 2026-11-06): the
+  pack a child extends merges before it, and a `parent_pack` cycle is refused as `pack_dependency_cycle`.
 - **Identity.** A pack id and a pack name are unique across a compose without exception. An artifact id is unique
   within a level, except where an `overrides` edge settles it. Across levels the same id is a layer override.
 - **Sibling conflict.** Two packs at one level that both change or both define the same artifact id, of any kind, are a
@@ -189,12 +191,12 @@ naming the pack, rather than serving part of it.
   put in force.
 - **Qualified reference.** A reference to an artifact of another pack is written `<pack-name>::<urn>`
   ([qualified reference](/glossary/charter/#qualified-reference)). The pack is provenance, not identity: the
-  artifact's URN stays bare, and the qualifier is provenance on the relationship the reference mints. The named pack
-  must be in the *referring* pack's own `depends_on` closure and must hold the artifact. A bare reference is the
-  referring pack's own artifact if it holds one, is refused as unqualified if only another pack holds it, and has no
-  holder otherwise. A composed read checks every reference, edge ends and `procedures` and `directive_refs` included,
-  and following one across packs is part of a served read. `listArtifactReferences` shows how one artifact's
-  references resolve.
+  artifact's URN stays bare, and the qualifier is provenance on the edge. A reference is an edge end in a graph
+  document; no artifact field carries one ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/)).
+  The named pack must be in the *referring* pack's own `depends_on` closure and must hold the artifact. A bare
+  reference is the referring pack's own artifact if it holds one, is refused as unqualified if only another pack holds
+  it, and has no holder otherwise. A composed read checks every edge end, and following one across packs is part of a
+  served read. `listArtifactReferences` shows how one artifact's outgoing edges resolve.
 - **Refusals.** A broken compose refuses every composed read with a 500 that names the violating packs in its
   `packs` member. A pack-scoped read of one artifact by id still answers. An unreadable artifact or graph file of a
   configured pack makes the offering refuse `pack_unreadable`. The causes and fixes are one table in
@@ -293,6 +295,7 @@ facts; it does not restate them.
 | `asset` | `asset` | no | no | yes | no | all |
 | `template` | `template` | no | no | no | no | all |
 | `mission_type` (service only, DIV-501) | `mission-type` | yes | yes | no | no | all |
+| `step_enhancement` (service only) | `step-enhancement` | no | yes | no | no | none |
 
 - **Activatable**: the kind can appear in an `activated_<plural>` list. `template` and `asset`
   resolve specially and are never activated as a live rule.
@@ -316,6 +319,13 @@ facts; it does not restate them.
   own domain model ([Mission types](#mission-types-actions-and-step-contracts)). It is activatable
   because a preset lists it in its own `activated_mission_types` slot, not among its activated
   kinds.
+- `step_enhancement`: an add-only enhancement joined to a mission step by an `enhances` edge
+  (ADR-0053 decision 22), with guards, emits and prompt fragments for slots the step declares
+  ([ADR-0066](/adr/0066-a-step-enhancement-may-contribute-prompt-fragments/)). A preset lists it
+  in `activated_step_enhancements`; `none` means the service activates none when the key is absent.
+  It is not org-requirable: `org-charter.yaml` has no `required_step_enhancements`. The schema holds
+  only prompt fragments so far, and the service does not store the kind yet; the guard and emit
+  additions and the store binding are [#428](https://github.com/spec-kitty/spec-kitty-charter/issues/428).
 
 ### Accepted kinds and kind changes (epic #142, not built yet)
 
@@ -351,6 +361,7 @@ service it is the node of the `mission_type` artifact kind (DIV-501):
 |---|---|---|
 | `action` | `action:software-dev/plan` | One action of one mission type. Action-scoped context starts here. |
 | `mission_type` | `mission_type:software-dev` | A mission type, artifact-backed in the service. Its `requires` edges give the action sequence; its `scope` edges carry type-wide governance. |
+| `step_enhancement` | `step_enhancement:spdd-specify` | Add-only contributions joined to a step by `enhances`; prompt fragments address slots in the step's prompt (ADR-0066). |
 | `glossary_scope` / `glossary` (retiring in core) | `glossary:<id>` | Glossary scoping and vocabulary targets. Core's `drg/models.py` (lines 60-66) fences them off for deletion; `glossary_pack` survives. |
 
 ### Relations
@@ -374,7 +385,7 @@ service it is the node of the `mission_type` artifact kind (DIV-501):
 | `impacts` (current state) | Directed and signed: the source artifact helps (positive) or hurts (negative) the target, with a strength from -1 to +1 (in core ADR `2026-07-26-3` a negative strength was a tension claim). It replaced `in_tension_with` in core ADR `2026-07-26-3`. Superseded as a relation by ADR-0028: `impacts` becomes an artifact's per-value list, and a tension is never an `impacts` edge: the service holds an `in_tension_with` edge as a tension ([ADR-0045](/adr/0045-tension-beside-the-relationships-and-nodes-keep-every-declared-field/)). |
 | `reconciles_tension` | Directional, from a reconciling artifact to one side of a tension pair. A pair is resolved only when an active artifact reconciles both sides. The pair is joined by a tension (ADR-0028); in today's pack files that tension is written `in_tension_with` (ADR-0045). |
 | `rejects` | Directional, from a good artifact to an `anti_pattern` node. |
-| `implemented_by` | Directional, from a guard to the executable asset that implements it ([ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/) decision 3). Derived from the guard's `implemented_by` field (`Guard.relationships()`), never authored, and read by nothing until the contract set lands (work breakdown item 13): a graph shard or a relationship registration that names it is refused. A built-in guard derives no edge. |
+| `implemented_by` | Directional, from a guard to the executable asset that implements it ([ADR-0054](/adr/0054-guards-are-enforced-checks-implemented-by-executable-assets/) decision 3). Derived from the guard's `implemented_by` field (`Guard.derivedRelationships()`), never authored, and read by nothing until the contract set lands (work breakdown item 13): a graph shard or a relationship registration that names it is refused. A built-in guard derives no edge. |
 
 The activation cascade follows `requires`, `suggests`, `refines`, `scope` and `instantiates` forward, `enhances` both ways (a target in force brings its enhancers, and an enhancer in force brings its target; the pull runs at read, within `activatedKinds`, and is never written to `selected`), and qualified `<pack>::` targets; it passes through `specializes_from` without putting the parent in force, and follows no other relation ([ADR-0059](/adr/0059-switch-gate-cascade-edges-and-activation-rulings/) decision 2).
 
@@ -400,6 +411,11 @@ appears in the pack schemas and the contract, and whether the relationship reach
 
 In YAML and shards this link is an *edge* (`DrgEdge`); in the domain it is a *relationship*.
 
+An edge is authored only in a pack's graph documents: the root `*.graph.yaml` shards, the registered shard
+`registered.graph.yaml` among them, and `drg/fragment.yaml`. No artifact field creates one, and
+`putPackRelationship` is the only operation that writes one
+([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/)).
+
 In the Java domain a relationship is a first-class value object — `from`, `to`, a
 behavior-carrying `RelationType` (directionality and activation propagation derive from the type),
 and an optional `rationale` — identified by the unordered `{from, to}` pair, so **at most one
@@ -409,11 +425,12 @@ relationship may exist on the same pair
 part); how the domain keys the two is candidate, undecided. Here a
 **component** is the `CharterArtifact` node at the `from` or `to` of a relationship — a graph node,
 narrower than the glossary's broader "charter component". A charter
-component exposes `relationships()`: the relationships for which it is the effective origin (its
-`from` matches, or a bidirectional relationship names it as `to`). A repository returns a component
-with its relationships already populated; the graph is walked **on demand**, resolving each
-neighbor through its own kind's repository rather than loading the whole Charter Reference Graph
-(CRG) into memory. `DrgEdge`
+component exposes `derivedRelationships()`: relations derived from its runtime data, never authored,
+and empty by default. Only a guard derives one today, `implemented_by` to its in-pack asset. The
+authored edges come from the graph documents through the `PackEdgeRepository` port, which
+`ArtifactReadService` reads to answer an artifact's references. The on-demand walk of
+[ADR-0025](/adr/0025-relationships-first-class-and-lazy-repository-walk/) (`GraphWalk`) is wired to no read: it
+sees derived relations only, and its retirement is a follow-up of ADR-0064. `DrgEdge`
 is the storage-side serialization object for a relationship, not the domain concept. The identity is
 a bounded, conditional unidirectional collapse with a revisit trigger when a symmetric relation is
 minted; see
@@ -455,7 +472,7 @@ removal ([ADR-0030](/adr/0030-removal-is-distinct-from-deactivation/)).
   `activatedKinds`, `missionTypes`) has three states, absent, `[]` and a list of ids; absent and
   `[]` both mean none and stay distinct on the wire
   ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/) d10). An absent
-  `packs` means every configured pack. The `depends_on` closure of `packs` holds the only packs
+  `packs` means every configured pack. The `depends_on` and `parent_pack` closure of `packs` holds the only packs
   the document can name: an id outside it is refused. The required floor is the must-have items
   of every governing preset in that closure. A create or replace whose deny list names a required
   or locked artifact is refused `409`; a per-artifact or preset write tolerates such an entry
@@ -555,10 +572,9 @@ store binds the kind and depends on the module.
   `activated_mission_types`, and it has its own domain model, separate from the charter kinds and
   from profiles, matching the mission-types and profiles slices of
   [ADR-0006](/adr/0006-onion-vertical-slices-archunit/).
-- **Recipe ingredients.** The mission type's own `references`, kept by id and never minted as
-  relationships until [#189](https://github.com/spec-kitty/spec-kitty-charter/issues/189) rules;
-  until then the graph's `scope` edges, which equal them, carry their activation meaning. Core
-  reads them from `governance-profile.yaml` (`MissionTypeProfile`), a file the service retires
+- **Recipe ingredients.** The graph's `scope` edges from the mission type. The type carries no
+  `references` field ([ADR-0064](/adr/0064-graph-documents-are-the-only-source-of-relationships/)).
+  Core reads the ingredients from `governance-profile.yaml` (`MissionTypeProfile`), a file the service retires
   (DIV-502).
 - **Folder layout** (decided, ADR-0044 decision 5). `missions/<type>/<type>.mission-type.yaml`,
   `missions/<type>/steps/<step>.prompt.md`, `missions/<type>/steps/<step>.guidelines.md` and
@@ -591,8 +607,8 @@ runs it, evaluates its guards and sends its events. The charter service runs no 
 | Parallel regions | not modelled | not modelled; per-work-package lifecycles cover today's parallel work |
 
 **Extension.** Another pack may enhance a step (a step enhancement: an artifact holding the additions, joined to
-the step by a CRG `enhances` edge, as profiles are augmented; it adds references, guards and emits and never
-removes, reorders or re-routes) or replace a step or a type (`overrides`: whole replacement, with a drift warning).
+the step by a CRG `enhances` edge, as profiles are augmented; it adds guards, emits and prompt fragments, text
+inserted into slots the step's prompt declares, and never removes, reorders or re-routes, nor edits prompt text outside a slot) or replace a step or a type (`overrides`: whole replacement, with a drift warning).
 A reference across packs is written `<pack-name>::<urn>` ([ADR-0053](/adr/0053-operator-rulings-on-the-pack-ecosystem-open-questions/)).
 
 **Theoretical origins.**

@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.infra.fetch;
 
 import java.net.IDN;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -26,6 +27,8 @@ public record GuideAllowlist(Set<String> hosts) {
     private static final Pattern HOST_NAME =
             Pattern.compile("(?=.{1,253}$)[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*");
 
+    private static final String GUIDE_PROPERTY = "charter.guide-fetch.allowed-hosts";
+
     /** The default: no host is allowed. */
     public static final GuideAllowlist EMPTY = new GuideAllowlist(Set.of());
 
@@ -46,33 +49,56 @@ public record GuideAllowlist(Set<String> hosts) {
      * @throws IllegalArgumentException naming the first entry that is not a plain host name
      */
     public static GuideAllowlist of(Collection<String> configured) {
+        return of(configured, GUIDE_PROPERTY);
+    }
+
+    /**
+     * The allowlist of the configured host names of a property, normalised; blank entries are dropped.
+     *
+     * @param configured host names as configured
+     * @param property the configuration key they were bound from, which a refusal names
+     * @return the allowlist
+     * @throws IllegalArgumentException naming the property and the first entry that is not a plain host name
+     */
+    public static GuideAllowlist of(Collection<String> configured, String property) {
         return new GuideAllowlist(configured.stream()
                 .map(GuideAllowlist::normalise)
                 .filter(host -> !host.isEmpty())
-                .map(GuideAllowlist::checked)
+                .map(entry -> checked(entry, property))
                 .collect(Collectors.toUnmodifiableSet()));
     }
 
+    /**
+     * Every host either allowlist names: the set the resolver guard acts on when several features fetch (squad 1).
+     *
+     * @param other another allowlist
+     * @return the union
+     */
+    public GuideAllowlist union(GuideAllowlist other) {
+        Set<String> both = new HashSet<>(hosts);
+        both.addAll(other.hosts);
+        return new GuideAllowlist(both);
+    }
+
     /** A normalised entry in its ASCII form, or a refusal naming it. */
-    private static String checked(String entry) {
+    private static String checked(String entry, String property) {
         String ascii;
         try {
             ascii = IDN.toASCII(entry, IDN.USE_STD3_ASCII_RULES).toLowerCase(Locale.ROOT);
         } catch (IllegalArgumentException invalid) {
-            throw notAHostName(entry, "it is not a valid host name");
+            throw notAHostName(entry, property, "it is not a valid host name");
         }
         if (!HOST_NAME.matcher(ascii).matches()) {
-            throw notAHostName(entry, "only a plain host name is listed: no scheme, port, path or wildcard");
+            throw notAHostName(entry, property, "only a plain host name is listed: no scheme, port, path or wildcard");
         }
         if (HttpsGuideFetcher.isIpLiteral(ascii)) {
-            throw notAHostName(entry, "an IP literal is never fetched from");
+            throw notAHostName(entry, property, "an IP literal is never fetched from");
         }
         return ascii;
     }
 
-    private static IllegalArgumentException notAHostName(String entry, String why) {
-        return new IllegalArgumentException(
-                "charter.guide-fetch.allowed-hosts entry '" + entry + "' is not a plain host name; " + why);
+    private static IllegalArgumentException notAHostName(String entry, String property, String why) {
+        return new IllegalArgumentException(property + " entry '" + entry + "' is not a plain host name; " + why);
     }
 
     /**

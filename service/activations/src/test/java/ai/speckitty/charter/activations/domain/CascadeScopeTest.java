@@ -7,7 +7,9 @@ import static ai.speckitty.charter.kernel.domain.ArtifactKind.TACTIC;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -29,15 +31,27 @@ class CascadeScopeTest {
     }
 
     @Test
-    void allCoversEveryActivatableKind() {
+    void allCoversEveryActivatableKindMissionTypesIncluded() {
+        // Rule W21 (A7): mission_type is a kind like any other, so all admits it.
         CascadeScope.Parsed parsed = parse("all");
 
         assertThat(parsed.violations()).isEmpty();
         assertThat(parsed.scope()).isEqualTo(CascadeScope.all());
         assertThat(parsed.scope().cascades()).isTrue();
-        assertThat(parsed.scope().kinds()).containsExactlyInAnyOrderElementsOf(ActivationDocument.kinds());
+        assertThat(parsed.scope().kinds())
+                .containsExactlyInAnyOrderElementsOf(Arrays.stream(ArtifactKind.values())
+                        .filter(ArtifactKind::activatable)
+                        .toList());
         assertThat(parsed.scope().admits(AGENT_PROFILE)).isTrue();
-        assertThat(parsed.scope().admits(MISSION_TYPE)).isFalse();
+        assertThat(parsed.scope().admits(MISSION_TYPE)).isTrue();
+    }
+
+    @Test
+    void aCascadeMayNameMissionTypes() {
+        CascadeScope.Parsed parsed = parse("directive", "mission_type");
+
+        assertThat(parsed.violations()).isEmpty();
+        assertThat(parsed.scope().kinds()).containsExactlyInAnyOrder(DIRECTIVE, MISSION_TYPE);
     }
 
     @Test
@@ -63,7 +77,7 @@ class CascadeScopeTest {
 
     @Test
     void anUnknownKindIsNamedAtItsIndex() {
-        CascadeScope.Parsed parsed = parse("directive", "nope", "mission_type");
+        CascadeScope.Parsed parsed = parse("directive", "nope", "template");
 
         assertThat(parsed.violations())
                 .extracting(RefusalViolation::pointer, RefusalViolation::code)

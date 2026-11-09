@@ -7,9 +7,13 @@ import ai.speckitty.charter.activations.domain.ActivationChange;
 import ai.speckitty.charter.activations.domain.ActivationDocument;
 import ai.speckitty.charter.activations.domain.ActivationId;
 import ai.speckitty.charter.activations.domain.ArtifactRef;
+import ai.speckitty.charter.activations.domain.PackRef;
 import ai.speckitty.charter.activations.domain.SkippedReport;
+import ai.speckitty.charter.activations.domain.StaleIds;
 import ai.speckitty.charter.activations.domain.StoredActivation;
+import ai.speckitty.charter.api.model.ActivationWarning;
 import ai.speckitty.charter.api.model.ArtifactReference;
+import ai.speckitty.charter.api.model.PackPin;
 import ai.speckitty.charter.api.model.SharedSkip;
 import ai.speckitty.charter.api.model.SkippedDeactivated;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
@@ -78,21 +82,32 @@ class ActivationChangeMapperTest {
     }
 
     @Test
-    void droppedIsMappedWhenTheWriteDroppedAStaleIdAndLeftOutOtherwise() {
+    void droppedIsMappedWhenTheWriteDroppedAStaleIdAndLeftOutOtherwiseAndDroppedPinsIsAlwaysThere() {
         ActivationDocument after = ActivationDocument.builder().build().document();
         StoredActivation stored = StoredActivation.of(new ActivationId("a-1"), after);
         ActivationChange change = new ActivationChange(after, List.of(), List.of(), SkippedReport.empty());
 
         ai.speckitty.charter.api.model.ActivationChange none =
                 mapper.toChange(new ActivationWrites.Outcome(stored, change));
-        ai.speckitty.charter.api.model.ActivationChange some =
-                mapper.toChange(new ActivationWrites.Outcome(stored, change.withDropped(List.of(T, D))));
+        ai.speckitty.charter.api.model.ActivationChange some = mapper.toChange(new ActivationWrites.Outcome(
+                stored,
+                change.withDropped(new StaleIds.Dropped(
+                        after,
+                        List.of(T, D),
+                        List.of(PackRef.pinned("beta", "2.0.0"), PackRef.pinned("alpha", "1.0.0"))))));
 
         assertThat(none.getDropped()).isNull();
+        assertThat(none.getDroppedPins()).isEmpty();
         assertThat(some.getDropped())
                 .containsExactly(
                         reference(ArtifactReference.KindEnum.DIRECTIVE, "D"),
                         reference(ArtifactReference.KindEnum.TACTIC, "t"));
+        assertThat(some.getDroppedPins())
+                .as("B1: each pin as it was stored, in the document's pack order")
+                .extracting(PackPin::getPackId, PackPin::getVersion)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("beta", "2.0.0"),
+                        org.assertj.core.groups.Tuple.tuple("alpha", "1.0.0"));
     }
 
     @Test
@@ -107,5 +122,34 @@ class ActivationChangeMapperTest {
         assertThat(answer.getApplied()).isEmpty();
         assertThat(answer.getCleared()).isEmpty();
         assertThat(answer.getSkipped().getSkippedShared()).isEmpty();
+    }
+
+    @Test
+    void warningsAreMappedSortedByArtifactAndAlwaysPresent() {
+        ActivationDocument after = ActivationDocument.builder().build().document();
+        StoredActivation stored = StoredActivation.of(new ActivationId("a-1"), after);
+        ActivationChange none = new ActivationChange(after, List.of(), List.of(), SkippedReport.empty());
+        ActivationChange some = new ActivationChange(
+                after,
+                List.of(X, T),
+                List.of(),
+                SkippedReport.empty(),
+                List.of(),
+                List.of(),
+                List.of(
+                        new ActivationChange.Warning(ActivationChange.Code.OVERRIDDEN, X),
+                        new ActivationChange.Warning(ActivationChange.Code.ENHANCED_TARGET_NOT_IN_FORCE, T)));
+
+        assertThat(mapper.toChange(new ActivationWrites.Outcome(stored, none)).getWarnings())
+                .as("always present, [] when none")
+                .isEmpty();
+        assertThat(mapper.toChange(new ActivationWrites.Outcome(stored, some)).getWarnings())
+                .containsExactly(
+                        new ActivationWarning(
+                                ActivationWarning.CodeEnum.ENHANCED_TARGET_NOT_IN_FORCE,
+                                reference(ArtifactReference.KindEnum.TACTIC, "t")),
+                        new ActivationWarning(
+                                ActivationWarning.CodeEnum.OVERRIDDEN,
+                                reference(ArtifactReference.KindEnum.TACTIC, "x")));
     }
 }

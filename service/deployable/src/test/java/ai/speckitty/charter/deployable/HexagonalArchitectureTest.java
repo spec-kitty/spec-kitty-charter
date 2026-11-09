@@ -55,6 +55,8 @@ class HexagonalArchitectureTest {
     private static final String PACKS_API = ROOT + ".packs.infra.api..";
     /** The outbound adapter that fetches a guide by URI (#194). */
     private static final String PACKS_FETCH = ROOT + ".packs.infra.fetch..";
+    /** The adapter that extracts an uploaded pack archive into staging (IC-03, WP13). */
+    private static final String PACKS_ARCHIVE = ROOT + ".packs.infra.archive..";
 
     private static final String PROFILES_DOMAIN = ROOT + ".profiles.domain..";
     /** The missions slice's domain (ADR-0044). */
@@ -111,10 +113,10 @@ class HexagonalArchitectureTest {
     /** ONION_DEPENDS_INWARD (3/3): only the composition root composes the adapters. */
     private static final ArchRule ONION_ONLY_DEPLOYABLE_COMPOSES_ADAPTERS = noClasses()
             .that()
-            .resideOutsideOfPackages(PACKS_API, PACKS_STORAGE, PACKS_FETCH, DEPLOYABLE)
+            .resideOutsideOfPackages(PACKS_API, PACKS_STORAGE, PACKS_FETCH, PACKS_ARCHIVE, DEPLOYABLE)
             .should()
             .dependOnClassesThat()
-            .resideInAnyPackage(PACKS_API, PACKS_STORAGE, PACKS_FETCH);
+            .resideInAnyPackage(PACKS_API, PACKS_STORAGE, PACKS_FETCH, PACKS_ARCHIVE);
 
     /** ONION_DEPENDS_INWARD (3/3): nothing, the edge rings included, depends on the composition root. */
     private static final ArchRule ONION_NOTHING_DEPENDS_ON_COMPOSITION_ROOT = noClasses()
@@ -336,7 +338,9 @@ class HexagonalArchitectureTest {
     @Test
     @DisplayName("RESERVED_METHOD_READS_NOTHING")
     void aReservedOperationReadsAndStoresNothing() {
-        RESERVED_METHOD_READS_NOTHING.check(classes);
+        // PR C built the last two reserved operations (IC-11), so the rule may select no method here; it still gates
+        // one that is marked, and its control below runs it unchanged on a marked method that reaches a use case.
+        RESERVED_METHOD_READS_NOTHING.allowEmptyShould(true).check(classes);
     }
 
     @Test
@@ -442,7 +446,7 @@ class HexagonalArchitectureTest {
             .resideInAPackage(PACKS_API)
             .should()
             .dependOnClassesThat()
-            .resideInAnyPackage(PACKS_STORAGE, PACKS_FETCH);
+            .resideInAnyPackage(PACKS_STORAGE, PACKS_FETCH, PACKS_ARCHIVE);
 
     @Test
     @DisplayName("ENTRYPOINT_OVER_APPLICATION")
@@ -480,6 +484,42 @@ class HexagonalArchitectureTest {
         assertBites(ENTRYPOINT_OVER_APPLICATION, ROOT + ".packs.infra.api.badfixture", "EntrypointReachesFetcher");
         assertBites(FETCH_ADAPTER_STANDS_ALONE, ROOT + ".packs.infra.api.badfixture", "EntrypointReachesFetcher");
         assertBites(FETCH_ADAPTER_STANDS_ALONE, ROOT + ".packs.infra.storage.badfixture", "StorageReachesFetcher");
+    }
+
+    /**
+     * ARCHIVE_ADAPTER_STANDS_ALONE (IC-03): the archive extractor is reached only through its application-ring port
+     * ({@code PackArchiveReader}) and composed by the composition root; no other adapter names it, and it names none.
+     */
+    private static final ArchRule ARCHIVE_ADAPTER_STANDS_ALONE = noClasses()
+            .that()
+            .resideInAnyPackage(PACKS_API, PACKS_STORAGE, PACKS_FETCH)
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage(PACKS_ARCHIVE);
+
+    private static final ArchRule ARCHIVE_ADAPTER_NAMES_NO_OTHER_ADAPTER = noClasses()
+            .that()
+            .resideInAPackage(PACKS_ARCHIVE)
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage(PACKS_API, PACKS_STORAGE, PACKS_FETCH);
+
+    @Test
+    @DisplayName("ARCHIVE_ADAPTER_STANDS_ALONE")
+    void archiveAdapterStandsAlone() {
+        ARCHIVE_ADAPTER_STANDS_ALONE.check(classes);
+        ARCHIVE_ADAPTER_NAMES_NO_OTHER_ADAPTER.check(classes);
+    }
+
+    @Test
+    void theArchiveAdapterRulesFailOnAnAdapterThatNamesTheExtractor() {
+        assertBites(ARCHIVE_ADAPTER_STANDS_ALONE, ROOT + ".packs.infra.api.badfixture", "EntrypointReachesArchive");
+        assertBites(ARCHIVE_ADAPTER_STANDS_ALONE, ROOT + ".packs.infra.fetch.badfixture", "FetcherReachesArchive");
+        assertBites(
+                ARCHIVE_ADAPTER_NAMES_NO_OTHER_ADAPTER,
+                ROOT + ".packs.infra.archive.badfixture",
+                "ArchiveReachesFetcher");
+        assertBites(ENTRYPOINT_OVER_APPLICATION, ROOT + ".packs.infra.api.badfixture", "EntrypointReachesArchive");
     }
 
     /**

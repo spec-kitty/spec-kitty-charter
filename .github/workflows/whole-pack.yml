@@ -4,36 +4,36 @@ name: whole-pack
 # into the domain, written back, read again and compared with its source by meaning, against the checked-in
 # expected-red baseline (service/packs/src/test/resources/whole-pack). It uploads the report as `whole-pack-report`.
 #
-# Not a required check yet: ci.yml does not call this workflow, so it never feeds `CI gate / gate` (ADR-0023). It
-# becomes required once the gate is green.
+# A required check (epic #186, operator ruling of 2026-11-05): ci.yml calls this workflow for its `wholepack` group, so
+# it feeds `CI gate / gate` (ADR-0023), and every pull request that changes what it covers has to keep packs
+# round-tripping.
 on:
-  pull_request:
-    paths:
-      - "contracts/packs/**"
-      - "service/**"
-      - "build-logic/**"
-      - "gradle/**"
-      - "*.gradle.kts"
-      - "gradle.properties"
-      - ".github/workflows/whole-pack.yml"
+  # Pull requests enter through the CI gate orchestrator (.github/workflows/ci.yml), which calls
+  # this workflow via workflow_call; there is no direct pull_request trigger, so nothing double-runs.
+  # The paths are ci.yml's `wholepack_re`: :packs also reads contracts/charter and contracts/offering.
   push:
     branches: [main]
     paths:
-      - "contracts/packs/**"
+      - "contracts/**"
       - "service/**"
       - "build-logic/**"
       - "gradle/**"
       - "*.gradle.kts"
       - "gradle.properties"
+      - "gradlew"
       - ".github/workflows/whole-pack.yml"
+  workflow_call:
   workflow_dispatch:
 
 permissions:
   contents: read
 
+# When called, github.workflow is the caller's name, so a call from ci.yml gets its own group and never cancels, or is
+# cancelled by, this workflow's own run on the same ref. Only this workflow's own runs cancel a superseded run; a called
+# run belongs to its caller, whose own concurrency group cancels a superseded pull request run.
 concurrency:
-  group: whole-pack-${{ github.ref }}
-  cancel-in-progress: true
+  group: whole-pack-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.workflow == 'whole-pack' }}
 
 jobs:
   whole-pack:

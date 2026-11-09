@@ -1,0 +1,77 @@
+#!/bin/sh
+# A fake git for the tests of the git source (WP18, T152). It runs no repository: it
+#   - prints the text of the file "version" beside it for --version (default: git version 2.51.0),
+#   - appends the arguments it got, its working directory and its whole environment to the file "record" beside it,
+#   - and, per subcommand SUB (the first argument that is not a -c pair or a --git-dir), replays the files beside it:
+#       SUB.out   copied to stdout (for cat-file, the bytes git would print),
+#       SUB.err   copied to stderr,
+#       SUB.exit  the exit status (default 0),
+#       SUB.sleep seconds to sleep before answering,
+#       SUB.grow  bytes to write into the --git-dir (the fetch that fills the disk).
+# It is copied next to its answers by the test and is first on no PATH but the one the test gives it. POSIX sh only.
+
+here=${0%/*}
+here=$(cd "$here" && pwd)
+
+# The environment the test gave is recorded before anything else, then the tools of the script are found on a path of
+# its own: the PATH of a run is the directory of git alone.
+environment=$(/usr/bin/env)
+PATH=/usr/bin:/bin
+
+{
+    printf 'begin\n'
+    printf 'cwd:%s\n' "$(pwd)"
+    printf 'cwdmode:%s\n' "$(ls -ld . | cut -c1-10)"
+    for argument in "$@"; do
+        printf 'argv:%s\n' "$argument"
+    done
+    printf '%s\n' "$environment" | sort | sed 's/^/env:/'
+    printf 'end\n'
+} >> "$here/record"
+
+if [ "$1" = "--version" ]; then
+    if [ -f "$here/version" ]; then
+        cat "$here/version"
+    else
+        printf 'git version 2.51.0\n'
+    fi
+    exit 0
+fi
+
+sub=
+gitdir=
+skip=
+for argument in "$@"; do
+    if [ -n "$skip" ]; then
+        skip=
+        continue
+    fi
+    case "$argument" in
+        -c) skip=1 ;;
+        --git-dir=*) gitdir=${argument#--git-dir=} ;;
+        -*) ;;
+        *)
+            sub=$argument
+            break
+            ;;
+    esac
+done
+
+if [ -f "$here/$sub.sleep" ]; then
+    sleep "$(cat "$here/$sub.sleep")"
+fi
+if [ -f "$here/$sub.grow" ] && [ -n "$gitdir" ]; then
+    mkdir -p "$gitdir"
+    head -c "$(cat "$here/$sub.grow")" /dev/zero > "$gitdir/grown.pack"
+    sleep 5
+fi
+if [ -f "$here/$sub.err" ]; then
+    cat "$here/$sub.err" >&2
+fi
+if [ -f "$here/$sub.out" ]; then
+    cat "$here/$sub.out"
+fi
+if [ -f "$here/$sub.exit" ]; then
+    exit "$(cat "$here/$sub.exit")"
+fi
+exit 0

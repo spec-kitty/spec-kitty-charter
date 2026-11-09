@@ -4,13 +4,13 @@ get:
   operationId: getEffectiveGraph
   summary: Read the graph of the offering filtered by an activation.
   description: >-
-    The offering's graph with the nodes not in force removed, and each edge dropped with its endpoints (ADR-0020
-    D7). Reserved: it answers 501 until it is built (ADR-0020 D8).
+    The graph of the merged closure under the activation (ADR-0020 D7, FR-018): the nodes in force, the edges among them
+    resolved through the layer overrides, and the layer overrides applied. An edge is dropped with either endpoint, an
+    edge from an overridden version is absent and an edge to one ends at the winner, so a client reads, from either end,
+    what an enhancer enhances. The answer carries an ETag over the activation's revision and the packs of its closure,
+    and answers 304 on a matching If-None-Match.
   tags:
   - Activation
-  x-reserved:
-    contractSet: activation
-    issue: '#125'
   parameters:
   - $ref: ../parameters/IfNoneMatch.yaml
   responses:
@@ -32,6 +32,8 @@ get:
           examples:
             one-edge:
               $ref: ../examples/EffectiveGraph.one-edge.yaml
+            layer-override:
+              $ref: ../examples/EffectiveGraph.layer-override.yaml
     '304':
       $ref: ../responses/NotModified.yaml
     '401':
@@ -42,7 +44,5 @@ get:
       $ref: ../responses/ActivationNotFound.yaml
     '500':
       $ref: ../responses/OfferingUnreadable.yaml
-    '501':
-      $ref: ../responses/NotImplemented.yaml
     default:
       $ref: ../../_shared/responses/Problem.yaml

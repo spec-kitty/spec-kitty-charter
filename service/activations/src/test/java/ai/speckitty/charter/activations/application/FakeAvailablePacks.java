@@ -1,12 +1,19 @@
 package ai.speckitty.charter.activations.application;
 
+import ai.speckitty.charter.activations.domain.ActionContext;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
+import ai.speckitty.charter.activations.domain.GraphSnapshot;
+import ai.speckitty.charter.activations.domain.MergedSnapshot;
+import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceAnswer;
+import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
 import ai.speckitty.charter.activations.domain.Reach;
 import ai.speckitty.charter.activations.domain.ReachPlan;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 
@@ -14,7 +21,8 @@ import org.jspecify.annotations.Nullable;
  * An {@link AvailablePacks} that answers one snapshot a test sets, or one refusal, and counts the reads, so a test pins
  * that a use case reads the packs exactly as often as NFR-007 allows. It records the roots of each read. A session's
  * walks answer from a graph a test sets ({@link #walks}); every walk is recorded, so a test sees what the use case
- * asked.
+ * asked. {@link #merged} and {@link #resolves} set what a session answers for the merged closure and the in-force
+ * resolution; each asked question is counted, so a test sees that the whole request answered from the one read.
  */
 public final class FakeAvailablePacks implements AvailablePacks {
 
@@ -23,6 +31,25 @@ public final class FakeAvailablePacks implements AvailablePacks {
     private final List<Optional<List<String>>> calls = new ArrayList<>();
     private Function<ReachPlan, Reach> graph = plan -> Reach.empty();
     private final List<ReachPlan> walked = new ArrayList<>();
+    private MergedSnapshot merged = MergedSnapshot.empty();
+    private Function<InForceQuery, InForceAnswer> resolution = query -> InForceAnswer.empty();
+    private int merges;
+    private final List<InForceQuery> queries = new ArrayList<>();
+    private Function<InForceQuery, GraphSnapshot> graphAnswer = query -> GraphSnapshot.empty();
+    private Function<ContextAsk, ActionContext> contextAnswer = ask -> ActionContext.notInForce();
+    private final List<ContextAsk> contextAsks = new ArrayList<>();
+    private int graphReads;
+    private final List<String> nameChecks = new ArrayList<>();
+
+    /**
+     * What a session was asked of the action context.
+     *
+     * @param missionType the mission type
+     * @param action the action
+     * @param depth the depth
+     * @param query the document's request
+     */
+    public record ContextAsk(String missionType, String action, int depth, InForceQuery query) {}
 
     /**
      * A fake that answers the snapshot.
@@ -61,6 +88,70 @@ public final class FakeAvailablePacks implements AvailablePacks {
         this.graph = next;
     }
 
+    /**
+     * Answers this merged closure to every session from now on.
+     *
+     * @param next the answer of {@link PacksSession#merged}
+     */
+    public void merged(MergedSnapshot next) {
+        this.merged = next;
+    }
+
+    /**
+     * Answers every in-force question of a session with this resolution from now on.
+     *
+     * @param next the answers of {@link PacksSession#inForce}, by query
+     */
+    public void resolves(Function<InForceQuery, InForceAnswer> next) {
+        this.resolution = next;
+    }
+
+    /**
+     * Answers every graph question of a session with this graph from now on.
+     *
+     * @param next the answers of {@link PacksSession#graph}, by query
+     */
+    public void graphs(Function<InForceQuery, GraphSnapshot> next) {
+        this.graphAnswer = next;
+    }
+
+    /**
+     * Answers every action-context question of a session with this walk from now on; a function that throws a refusal
+     * answers as the packs slice does for an unknown name.
+     *
+     * @param next the answers of {@link PacksSession#actionContext}, by question
+     */
+    public void contexts(Function<ContextAsk, ActionContext> next) {
+        this.contextAnswer = next;
+    }
+
+    /**
+     * The action-context questions the sessions were asked, in order.
+     *
+     * @return the questions
+     */
+    public List<ContextAsk> contextAsks() {
+        return List.copyOf(contextAsks);
+    }
+
+    /**
+     * The action names the sessions were asked to judge on their own, as {@code <missionType>/<action>}, in order.
+     *
+     * @return the names
+     */
+    public List<String> nameChecks() {
+        return List.copyOf(nameChecks);
+    }
+
+    /**
+     * How often the sessions were asked for the graph.
+     *
+     * @return the number of {@link PacksSession#graph} calls
+     */
+    public int graphReads() {
+        return graphReads;
+    }
+
     @Override
     public PacksSession session(Optional<List<String>> packIds) {
         calls.add(packIds);
@@ -86,6 +177,24 @@ public final class FakeAvailablePacks implements AvailablePacks {
      */
     public Optional<List<String>> lastRoots() {
         return calls.getLast();
+    }
+
+    /**
+     * How often the sessions were asked for the merged closure.
+     *
+     * @return the number of {@link PacksSession#merged} calls
+     */
+    public int merges() {
+        return merges;
+    }
+
+    /**
+     * The in-force questions the sessions were asked, in order.
+     *
+     * @return the queries
+     */
+    public List<InForceQuery> queries() {
+        return List.copyOf(queries);
     }
 
     /**
@@ -115,6 +224,38 @@ public final class FakeAvailablePacks implements AvailablePacks {
         public Reach reach(ReachPlan plan) {
             walked.add(plan);
             return graph.apply(plan);
+        }
+
+        @Override
+        public MergedSnapshot merged() {
+            merges++;
+            return merged;
+        }
+
+        @Override
+        public InForceAnswer inForce(InForceQuery query) {
+            queries.add(query);
+            return resolution.apply(query);
+        }
+
+        @Override
+        public GraphSnapshot graph(InForceQuery query) {
+            graphReads++;
+            return graphAnswer.apply(query);
+        }
+
+        @Override
+        public void requireAction(String missionType, String action) {
+            nameChecks.add(missionType + "/" + action);
+            java.util.Objects.requireNonNull(contextAnswer.apply(new ContextAsk(
+                    missionType, action, 0, new InForceQuery(Set.of(), Set.of(), Optional.empty(), Map.of()))));
+        }
+
+        @Override
+        public ActionContext actionContext(String missionType, String action, int depth, InForceQuery query) {
+            ContextAsk ask = new ContextAsk(missionType, action, depth, query);
+            contextAsks.add(ask);
+            return contextAnswer.apply(ask);
         }
     }
 }

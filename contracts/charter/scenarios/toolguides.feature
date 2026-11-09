@@ -5,7 +5,8 @@ Feature: Toolguides are read and registered functionally
   answering the artifact in the envelope the item read answers, through functional registration
   (ADR-0026): the whole pack aggregate is revalidated and committed atomically, a refusal leaves the pack
   unchanged (NFR-002), and every write answers an ETag revision for optimistic concurrency (FR-012). A
-  toolguide mints no relationships. There is no DELETE or PATCH. The guide travels as content, never as a
+  toolguide carries no relationship field: its relationships are registered through PUT
+  /packs/{packId}/relationships (ADR-0064), and a body that still sends one is refused. There is no DELETE or PATCH. The guide travels as content, never as a
   path (FR-010, US5): a registration carries exactly one of guide (its Markdown) or guideUri (fetched by the
   service), and a read answers the stored guide with its H1 written from the title (FR-011).
 
@@ -25,7 +26,7 @@ Feature: Toolguides are read and registered functionally
   Scenario: A registered toolguide is read back value-equal, its guide with the H1 from the title (FR-015, US5 AS1)
     When I PUT "/packs/qa/artifacts/toolguide/git" with the body:
       """
-      {"schemaVersion": "1.0", "tool": "git", "title": "How to use git", "guide": "## Overview\n\nUse git under governance.\n\n## Usage\n\nRun `git status` first.", "summary": "Using git under governance.", "commands": ["git status"], "appliesToLanguages": ["java"], "lastUpdated": "2026-03-03", "references": ["docs/git.md"]}
+      {"schemaVersion": "1.0", "tool": "git", "title": "How to use git", "guide": "## Overview\n\nUse git under governance.\n\n## Usage\n\nRun `git status` first.", "summary": "Using git under governance.", "commands": ["git status"], "appliesToLanguages": ["java"], "lastUpdated": "2026-03-03"}
       """
     Then the response status is 201
     When I GET "/packs/qa/artifacts/toolguide/git"
@@ -207,7 +208,7 @@ Feature: Toolguides are read and registered functionally
         "kind": "toolguide",
         "id": "git",
         "packId": "qa",
-        "toolguide": {"id": "git", "schemaVersion": "1.0", "tool": "git", "title": "How to use git", "guide": "# How to use git\n\n## Overview\n\nUse git.\n", "summary": "Using git.", "commands": [], "appliesToLanguages": [], "lastUpdated": null, "references": []},
+        "toolguide": {"id": "git", "schemaVersion": "1.0", "tool": "git", "title": "How to use git", "guide": "# How to use git\n\n## Overview\n\nUse git.\n", "summary": "Using git.", "commands": [], "appliesToLanguages": [], "lastUpdated": null},
         "_links": {
           "self": {"href": "/api/v1/packs/qa/artifacts/toolguide/git"},
           "collection": {"href": "/api/v1/packs/qa/artifacts?kind=toolguide"}
@@ -275,3 +276,4 @@ Feature: Toolguides are read and registered functionally
       | case        | fields                             | detail                                                                                                           |
       | a null list | , "commands": null                 | The commands list is null; a list is sent as an array, [] when it is empty, and an optional one may be left out. |
       | a null item | , "commands": ["git status", null] | Item 1 of the commands list is null; a list holds no null item.                                                  |
+      | a removed references | , "references": ["docs/git.md"] | A toolguide registration has no member references; a relationship is registered through PUT /packs/{packId}/relationships. |

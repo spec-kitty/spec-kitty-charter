@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -99,9 +100,9 @@ class KindBindingsTest {
     }
 
     @Test
-    @DisplayName("the test fixtures' copies of the step companion structure schemas are the bundled ones")
+    @DisplayName("the test fixtures' copies of the bundled Markdown structure schemas have not drifted")
     void theFixtureStepSchemaCopiesAreTheBundledOnes() throws java.io.IOException {
-        for (String schema : List.of("mission-step-prompt", "mission-step-guidelines")) {
+        for (String schema : List.of("mission-step-prompt", "mission-step-guidelines", "prompt-fragment")) {
             try (var fixture = KindBindingsTest.class.getResourceAsStream(
                             "/markdown-rule-fixtures/" + schema + ".schema.json");
                     var bundled =
@@ -184,19 +185,29 @@ class KindBindingsTest {
     }
 
     @Test
-    @DisplayName("the companion structures are derived from the bindings: each Markdown files rule but the pack"
-            + " document's names one, and each declared one is the structure the binding's companion carries")
+    @DisplayName("the companion structures are derived from the bindings: each Markdown files rule of a bound kind"
+            + " names one, and each declared one is the structure the binding's companion carries")
     void theCompanionStructuresAreTheBindingsOwn() {
         assertThat(KindBindings.isCompanionStructure(ToolguideBinding.GUIDE_SCHEMA))
                 .isTrue();
         assertThat(KindBindings.isCompanionStructure("toolguide")).isFalse();
         assertThat(KindBindings.byCompanionStructure(ToolguideBinding.GUIDE_SCHEMA))
                 .containsSame(ToolguideBinding.INSTANCE);
-        // #260: pack.md is the one Markdown files rule that is no companion; the pack holds it in its own slot.
+        // #260: pack.md is no companion; the pack holds it in its own slot. ADR-0066's fragment is a companion of
+        // the step-enhancement kind, whose storage binding is service follow-up #424: it is no companion of a kind
+        // bound here, but a deferred one, validated and held by no store, as its enhancement's YAML is.
         assertThat(KindBindings.isCompanionStructure(PackDocumentMarkdown.KIND)).isFalse();
+        assertThat(KindBindings.isCompanionStructure("prompt-fragment")).isFalse();
+        assertThat(KindBindings.isDeferredCompanionStructure("prompt-fragment")).isTrue();
+        assertThat(KindBindings.isDeferredCompanionStructure(ToolguideBinding.GUIDE_SCHEMA))
+                .isFalse();
+        assertThat(KindBindings.isDeferredCompanionStructure(PackDocumentMarkdown.KIND))
+                .isFalse();
+        assertThat(KindBindings.byCompanionStructure("prompt-fragment")).isEmpty();
         assertThat(PackFileKind.bundled().fileRules())
                 .filteredOn(rule -> rule.contentForm() == ContentForm.MARKDOWN)
-                .filteredOn(rule -> !rule.schema().equals(PackDocumentMarkdown.KIND))
+                .filteredOn(rule -> !Set.of(PackDocumentMarkdown.KIND).contains(rule.schema())
+                        && !KindBindings.isDeferredCompanionStructure(rule.schema()))
                 .isNotEmpty()
                 .allSatisfy(rule -> assertThat(KindBindings.isCompanionStructure(rule.schema()))
                         .as(rule.match())
@@ -211,7 +222,6 @@ class KindBindingsTest {
                 List.of(),
                 List.of(),
                 java.util.Optional.empty(),
-                List.of(),
                 java.util.Optional.empty());
         assertThat(ToolguideBinding.INSTANCE.companions(dso))
                 .allSatisfy(companion -> assertThat(ToolguideBinding.INSTANCE.companionStructures())

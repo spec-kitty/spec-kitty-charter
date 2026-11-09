@@ -46,20 +46,14 @@ class DoctrineValidationParityTest {
     // ---- one fixture per kind, each field overridable so a case differs from its control in exactly one value ----
 
     private static Directive directive(
-            String schema,
-            String title,
-            String intent,
-            Enforcement enforcement,
-            List<String> allowances,
-            String procedure) {
+            String schema, String title, String intent, Enforcement enforcement, List<String> allowances) {
         Directive.Builder builder = Directive.builder()
                 .id(new DirectiveIdentifier("DIRECTIVE_950"))
                 .packId(PACK)
                 .schemaVersion(schema)
                 .title(title)
                 .intent(intent)
-                .enforcement(enforcement)
-                .procedure(procedure);
+                .enforcement(enforcement);
         allowances.forEach(builder::explicitAllowance);
         return builder.build();
     }
@@ -82,14 +76,13 @@ class DoctrineValidationParityTest {
         return builder.build();
     }
 
-    private static Paradigm paradigm(String schema, String name, String summary, String directiveRef) {
+    private static Paradigm paradigm(String schema, String name, String summary) {
         return Paradigm.builder()
                 .id(new ParadigmIdentifier("parity-paradigm"))
                 .packId(PACK)
                 .schemaVersion(schema)
                 .name(name)
                 .summary(summary)
-                .directiveRef(directiveRef)
                 .build();
     }
 
@@ -112,32 +105,27 @@ class DoctrineValidationParityTest {
     static Stream<Arguments> rulesetCases() {
         List<String> allowance = List.of("spikes may skip it");
         return Stream.of(
-                // directive: schema_version, title, intent, enforcement conditional, procedures
+                // directive: schema_version, title, intent, enforcement conditional
                 row(
                         "directive: schema version other than 1.0",
-                        () -> directive("2.0", "T", "I", Enforcement.REQUIRED, List.of(), "p"),
-                        () -> directive("1.0", "T", "I", Enforcement.REQUIRED, List.of(), "p"),
+                        () -> directive("2.0", "T", "I", Enforcement.REQUIRED, List.of()),
+                        () -> directive("1.0", "T", "I", Enforcement.REQUIRED, List.of()),
                         "A directive needs a schema version of 1.0."),
                 row(
                         "directive: blank title",
-                        () -> directive("1.0", " ", "I", Enforcement.REQUIRED, List.of(), "p"),
-                        () -> directive("1.0", "T", "I", Enforcement.REQUIRED, List.of(), "p"),
+                        () -> directive("1.0", " ", "I", Enforcement.REQUIRED, List.of()),
+                        () -> directive("1.0", "T", "I", Enforcement.REQUIRED, List.of()),
                         "A directive needs a title that is not blank."),
                 row(
                         "directive: blank intent",
-                        () -> directive("1.0", "T", "", Enforcement.REQUIRED, List.of(), "p"),
-                        () -> directive("1.0", "T", "I", Enforcement.REQUIRED, List.of(), "p"),
+                        () -> directive("1.0", "T", "", Enforcement.REQUIRED, List.of()),
+                        () -> directive("1.0", "T", "I", Enforcement.REQUIRED, List.of()),
                         "A directive needs an intent that is not blank."),
                 row(
                         "directive: lenient-adherence without an explicit allowance",
-                        () -> directive("1.0", "T", "I", Enforcement.LENIENT_ADHERENCE, List.of(), "p"),
-                        () -> directive("1.0", "T", "I", Enforcement.LENIENT_ADHERENCE, allowance, "p"),
+                        () -> directive("1.0", "T", "I", Enforcement.LENIENT_ADHERENCE, List.of()),
+                        () -> directive("1.0", "T", "I", Enforcement.LENIENT_ADHERENCE, allowance),
                         "A lenient-adherence directive needs at least one explicit allowance."),
-                row(
-                        "directive: blank procedure entry",
-                        () -> directive("1.0", "T", "I", Enforcement.REQUIRED, List.of(), " "),
-                        () -> directive("1.0", "T", "I", Enforcement.REQUIRED, List.of(), "p"),
-                        "Every procedure of a directive must be non-blank."),
                 // styleguide: schema_version, title, principles cardinality, patterns / anti_patterns non-empty when
                 // present
                 row(
@@ -165,37 +153,32 @@ class DoctrineValidationParityTest {
                         () -> styleguide("1.0", "T", List.of("p"), Optional.empty(), Optional.of(List.of())),
                         () -> styleguide("1.0", "T", List.of("p"), Optional.empty(), Optional.of(List.of(ANTI))),
                         "A styleguide's anti-patterns, when present, must not be empty."),
-                // paradigm: schema_version, name, summary, directive refs
+                // paradigm: schema_version, name, summary
                 row(
                         "paradigm: schema version other than 1.0",
-                        () -> paradigm("3.0", "N", "S", "DIRECTIVE_001"),
-                        () -> paradigm("1.0", "N", "S", "DIRECTIVE_001"),
+                        () -> paradigm("3.0", "N", "S"),
+                        () -> paradigm("1.0", "N", "S"),
                         "A paradigm needs a schema version of 1.0."),
                 row(
                         "paradigm: blank name",
-                        () -> paradigm("1.0", " ", "S", "DIRECTIVE_001"),
-                        () -> paradigm("1.0", "N", "S", "DIRECTIVE_001"),
+                        () -> paradigm("1.0", " ", "S"),
+                        () -> paradigm("1.0", "N", "S"),
                         "A paradigm needs a name that is not blank."),
                 row(
                         "paradigm: blank summary",
-                        () -> paradigm("1.0", "N", "", "DIRECTIVE_001"),
-                        () -> paradigm("1.0", "N", "S", "DIRECTIVE_001"),
+                        () -> paradigm("1.0", "N", ""),
+                        () -> paradigm("1.0", "N", "S"),
                         "A paradigm needs a summary that is not blank."),
-                row(
-                        "paradigm: blank directive reference",
-                        () -> paradigm("1.0", "N", "S", " "),
-                        () -> paradigm("1.0", "N", "S", "DIRECTIVE_001"),
-                        "A paradigm's directive references must not be blank."),
                 // tactic (retrofit): steps cardinality, name
                 row(
                         "tactic: no step",
                         () -> tactic("N", List.of()),
-                        () -> tactic("N", List.of(new TacticStep("Only step", Optional.empty(), List.of(), List.of()))),
+                        () -> tactic("N", List.of(new TacticStep("Only step", Optional.empty(), List.of()))),
                         "A tactic needs at least one step."),
                 row(
                         "tactic: blank name",
-                        () -> tactic(" ", List.of(new TacticStep("Only step", Optional.empty(), List.of(), List.of()))),
-                        () -> tactic("N", List.of(new TacticStep("Only step", Optional.empty(), List.of(), List.of()))),
+                        () -> tactic(" ", List.of(new TacticStep("Only step", Optional.empty(), List.of()))),
+                        () -> tactic("N", List.of(new TacticStep("Only step", Optional.empty(), List.of()))),
                         "A tactic needs a name that is not blank."));
     }
 
@@ -240,7 +223,7 @@ class DoctrineValidationParityTest {
     void anEnforcementTokenOutsideTheEnumIsNotLoadable(@TempDir Path host) throws IOException {
         Path pack = PackFixtures.copyOf("pack-a", host);
         DomainRepositoryService service = serviceOver(pack);
-        Directive directive = directive("1.0", "T", "I", Enforcement.REQUIRED, List.of(), "p");
+        Directive directive = directive("1.0", "T", "I", Enforcement.REQUIRED, List.of());
         service.save(directive);
 
         assertThat(service.load(PACK, directive.id())).isPresent();

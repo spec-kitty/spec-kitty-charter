@@ -7,6 +7,7 @@ import ai.speckitty.charter.packs.domain.PackSources;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -35,6 +36,21 @@ public final class FileSystemPackSources implements PackSources {
         return digestNamed(locations.get(), PackFileSet::digested);
     }
 
+    @Override
+    public String fingerprintOf(Collection<String> packNames) {
+        List<PackLocation> configured = locations.get();
+        for (String name : packNames) {
+            if (configured.stream().noneMatch(location -> location.name().equals(name))) {
+                throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + name + " is not configured");
+            }
+        }
+        return digestNamed(
+                configured.stream()
+                        .filter(location -> packNames.contains(location.name()))
+                        .toList(),
+                PackFileSet::digested);
+    }
+
     /**
      * The fingerprint of the packs, each pack's files named by {@code filesOf}. {@link #fingerprint()} does the same with
      * {@link PackFileSet#digested(Path, String)}; a test calls it with a list that leaves something out to prove the exactness
@@ -55,19 +71,36 @@ public final class FileSystemPackSources implements PackSources {
     private static String digestNamed(List<PackLocation> locations, BiFunction<Path, String, List<String>> filesOf) {
         Fingerprint fingerprint = Fingerprint.sha256();
         for (PackLocation location : locations) {
-            Path root = location.root().toAbsolutePath().normalize();
-            if (!Files.isDirectory(root)) {
-                throw new CharterRefusal(
-                        RefusalCode.PACK_UNREADABLE, "pack " + location.name() + " is not a directory");
-            }
-            for (String relative : filesOf.apply(root, location.name())) {
-                // The relative path is in '/' form, so the digest is the same on every OS.
-                fingerprint
-                        .add(location.name() + "/" + relative)
-                        .add(bytes(root.resolve(relative), location.name(), relative));
-            }
+            addPack(fingerprint, location.root(), location.name(), filesOf);
         }
         return fingerprint.value();
+    }
+
+    /**
+     * The digest of one pack's files as {@link #fingerprintOf} digests it, path and bytes of each: the digest of
+     * {@code fingerprintOf(List.of(packName))} for the pack at {@code root}.
+     *
+     * @param root the pack's directory
+     * @param packName the name the pack is configured under
+     * @return {@code sha256:} and 64 lower-case hex digits
+     * @throws CharterRefusal with {@link RefusalCode#PACK_UNREADABLE} when the pack or one of its files cannot be read
+     */
+    static String digestOfPack(Path root, String packName) {
+        Fingerprint fingerprint = Fingerprint.sha256();
+        addPack(fingerprint, root, packName, PackFileSet::digested);
+        return fingerprint.value();
+    }
+
+    private static void addPack(
+            Fingerprint fingerprint, Path directory, String name, BiFunction<Path, String, List<String>> filesOf) {
+        Path root = directory.toAbsolutePath().normalize();
+        if (!Files.isDirectory(root)) {
+            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "pack " + name + " is not a directory");
+        }
+        for (String relative : filesOf.apply(root, name)) {
+            // The relative path is in '/' form, so the digest is the same on every OS.
+            fingerprint.add(name + "/" + relative).add(bytes(root.resolve(relative), name, relative));
+        }
     }
 
     private static byte[] bytes(Path file, String packName, String relative) {

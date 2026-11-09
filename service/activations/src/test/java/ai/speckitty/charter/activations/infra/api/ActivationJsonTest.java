@@ -23,11 +23,12 @@ class ActivationJsonTest {
     @ParameterizedTest
     @ValueSource(
             strings = {
-                "{\"schemaVersion\":1}",
-                "{\"schemaVersion\":1,\"missionTypes\":[]}",
-                "{\"schemaVersion\":1,\"selected\":{\"directive\":[]}}",
-                "{\"schemaVersion\":1,\"selected\":{\"skill\":[]},\"deactivated\":{\"tactic\":[\"T1\"]}}",
-                "{\"schemaVersion\":1,\"packs\":[{\"packId\":\"built-in\"}]}"
+                "{\"schemaVersion\":2}",
+                "{\"schemaVersion\":2,\"languages\":[]}",
+                "{\"schemaVersion\":2,\"selected\":{\"directive\":[]}}",
+                "{\"schemaVersion\":2,\"selected\":{\"skill\":[]},\"deactivated\":{\"tactic\":[\"T1\"]}}",
+                "{\"schemaVersion\":2,\"packs\":[{\"packId\":\"built-in\"}]}",
+                "{\"schemaVersion\":2,\"selected\":{\"mission_type\":[]},\"deactivated\":{\"mission_type\":[\"m\"]}}"
             })
     void aDocumentReadAndWrittenAgainIsUnchanged(String document) {
         ActivationConfig read = mapper.readValue(document, ActivationConfig.class);

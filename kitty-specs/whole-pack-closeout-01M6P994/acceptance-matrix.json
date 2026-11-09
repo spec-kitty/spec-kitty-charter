@@ -1,0 +1,89 @@
+{
+  "mission_slug": "whole-pack-closeout-01M6P994",
+  "mission_number": "",
+  "mission_type": "",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "kernel.markdown MarkdownLines/MarkdownScanner; MarkdownLinesTest, MarkdownScannerTest; HexagonalArchitectureTest 45/45 (WP01 e6626dcf)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:10:44.386686+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "StepDocumentRulesTest 41/41 field-by-field agreement + write/read-back; review probes: removing a guard turns it red (WP01)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:10:49.462085+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "MarkdownDocumentTest over shared MarkdownRuleCases; :packs 2783 tests green (WP01 review)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:10:54.034002+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PackRootSpellingTest 5/5; red before the fix with 'leaves the pack' on the x/.., /. and missions/.. spellings (WP02 beb3d788)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:10:59.517262+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "PackRootSpellingTest missing-template control: exactly one unreadable file ending ': missing'; load parity (WP02)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:11:04.866416+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "inspection",
+      "evidence": "ci.yml wholepack group + gate needs/env/echo/loop; whole-pack.yml workflow_call; :packs:wholePackRoundTrip green locally 417/437 green, 0 red (WP03 b4c63601)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:11:10.294879+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "inspection",
+      "evidence": "service-build, contributing, ADR-0023/0040/0044, plans, roadmap, milestones, charter, changelog; check_docs.py all ok (WP03)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:11:15.433343+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "inspection",
+      "evidence": "The PR body carries Closes #299, #319, #186; the issues close when the operator merges it (WP03)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-11-05T17:11:20.650418+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}

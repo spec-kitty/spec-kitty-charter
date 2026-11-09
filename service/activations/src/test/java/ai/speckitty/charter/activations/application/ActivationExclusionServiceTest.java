@@ -52,8 +52,11 @@ class ActivationExclusionServiceTest {
                 .pack("main", "1.0.0")
                 .held(ArtifactKind.DIRECTIVE, "D", "D2", "LK", "RQ")
                 .held(ArtifactKind.TACTIC, "t", "t2", "t3", "e2")
+                .held(ArtifactKind.MISSION_TYPE, "research", "mt-lk", "mt-rq")
                 .lockedBy("directive:LK", "main")
                 .requiredBy("directive:RQ", "main")
+                .lockedBy("mission_type:mt-lk", "main")
+                .requiredBy("mission_type:mt-rq", "main")
                 .build());
         service = new ActivationExclusionService(new ActivationWrites(repository, packs));
         packs.walks(plan -> walk(plan, FIXTURE));
@@ -167,26 +170,84 @@ class ActivationExclusionServiceTest {
     }
 
     @Test
-    void aMissionTypeHasNoDenyListSoItsKindIs422AtThePath() {
+    void aMissionTypeIsTakenAtThePathAsAnyKindAndARequiredOneIs409() {
+        // A7 Q2: the path takes kind=mission_type; the deny itself is planned by CascadeRules (WP05, T022).
+        packs.answer(ClosureSnapshots.snapshot()
+                .pack("main", "1.0.0")
+                .held(ArtifactKind.MISSION_TYPE, "research", "software-dev")
+                .requiredBy("mission_type:software-dev", "main")
+                .build());
+        StoredActivation before =
+                stored(ActivationDocument.builder().deactivated(ArtifactKind.MISSION_TYPE, List.of("research")));
+
+        assertThatThrownBy(() -> service.deactivate(
+                        ID, "mission_type", "software-dev", Optional.empty(), List.of(), quoted(before)))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_REQUIRED));
+        assertThatThrownBy(() ->
+                        service.deactivate(ID, "mission_type", "nope", Optional.empty(), List.of(), quoted(before)))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.MISSION_TYPE_NOT_FOUND));
+        ActivationWrites.Outcome reactivated =
+                service.reactivate(ID, "mission_type", "Mission_Type:Research", quoted(before));
+
+        assertThat(reactivated.change().cleared())
+                .containsExactly(new ArtifactRef(ArtifactKind.MISSION_TYPE, "research"));
+        assertThat(reactivated.stored().document().deactivated()).isEmpty();
+        assertThat(repository.replaces()).isOne();
+    }
+
+    @Test
+    void aMissionTypeIsDeniedAndReactivatedLikeAnyKind() {
+        // A7 Q2: deactivated.mission_type is a deny list like any other.
+        ArtifactRef research = new ArtifactRef(ArtifactKind.MISSION_TYPE, "research");
+        StoredActivation before =
+                stored(ActivationDocument.builder().selected(ArtifactKind.MISSION_TYPE, List.of("research")));
+
+        ActivationWrites.Outcome denied =
+                service.deactivate(ID, "mission_type", "research", Optional.empty(), List.of(), quoted(before));
+
+        assertThat(denied.change().applied()).containsExactly(research);
+        assertThat(now().selected(ArtifactKind.MISSION_TYPE)).isEmpty();
+        assertThat(now().deactivated(ArtifactKind.MISSION_TYPE)).containsExactly("research");
+
+        ActivationWrites.Outcome reactivated =
+                service.reactivate(ID, "mission_type", "research", quoted(denied.stored()));
+
+        assertThat(reactivated.change().cleared()).containsExactly(research);
+        assertThat(now().deactivated()).isEmpty();
+    }
+
+    @Test
+    void aLockedOrRequiredMissionTypeIs409LikeAnyKindAndNothingIsStored() {
         StoredActivation before = stored(ActivationDocument.builder());
 
-        assertThatThrownBy(() -> service.deactivate(ID, "mission_type", "research", ALL, List.of(), quoted(before)))
+        assertThatThrownBy(() -> service.deactivate(ID, "mission_type", "mt-lk", ALL, List.of(), quoted(before)))
                 .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
-                    assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_INVALID);
-                    assertThat(refusal.violations())
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_LOCKED);
+                    assertThat(refusal.requiredBy())
                             .singleElement()
-                            .satisfies(
-                                    violation -> assertThat(violation.pointer()).isEqualTo("/kind"));
+                            .satisfies(pack -> assertThat(pack.packId()).isEqualTo("main"));
                 });
-        assertThatThrownBy(() -> service.reactivate(ID, "mission_type", "research", quoted(before)))
-                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
-                    assertThat(refusal.code()).isEqualTo(RefusalCode.ACTIVATION_INVALID);
-                    assertThat(refusal.violations())
-                            .singleElement()
-                            .satisfies(
-                                    violation -> assertThat(violation.pointer()).isEqualTo("/kind"));
-                });
-        assertThat(packs.calls()).isZero();
+        assertThatThrownBy(() -> service.deactivate(ID, "mission_type", "mt-rq", ALL, List.of(), quoted(before)))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.ARTIFACT_REQUIRED));
+        assertThat(packs.walked()).isEmpty();
+        assertThat(repository.replaces()).isZero();
+    }
+
+    @Test
+    void anUnknownMissionTypeIs404MissionTypeNotFound() {
+        StoredActivation before = stored(ActivationDocument.builder());
+
+        assertThatThrownBy(() -> service.deactivate(ID, "mission_type", "nope", ALL, List.of(), quoted(before)))
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.MISSION_TYPE_NOT_FOUND));
+        assertThat(repository.replaces()).isZero();
     }
 
     @Test
@@ -278,7 +339,7 @@ class ActivationExclusionServiceTest {
         ActivationWrites.Outcome outcome = chained.deactivate(ID, "directive", "D", ALL, List.of(), quoted(before));
 
         assertThat(now().selected(ArtifactKind.TACTIC).orElseThrow()).containsExactly("c", "c3", "c4");
-        assertThat(now().selected(ArtifactKind.DIRECTIVE).orElseThrow()).isEmpty();
+        assertThat(now().selected(ArtifactKind.DIRECTIVE)).isEmpty();
         assertThat(now().deactivated(ArtifactKind.DIRECTIVE)).containsExactly("D");
         assertThat(outcome.change().applied()).containsExactly(D, c5);
         assertThat(outcome.change().skipped().skippedShared())
@@ -323,7 +384,7 @@ class ActivationExclusionServiceTest {
 
     @Test
     void aReactivateDropsTheStoredIdsTheClosureNoLongerDeclares() {
-        // ADR-0059 amendment R5: GONE and old are stale; the write drops them and names them.
+        // ADR-0059 amendment A5: GONE and old are stale; the write drops them and names them.
         StoredActivation before = stored(ActivationDocument.builder()
                 .selected(ArtifactKind.DIRECTIVE, List.of("GONE"))
                 .deactivated(ArtifactKind.TACTIC, List.of("old", "t")));
@@ -336,7 +397,7 @@ class ActivationExclusionServiceTest {
         assertThat(outcome.change().cleared()).containsExactly(T);
         assertThat(outcome.change().applied()).containsExactly(T);
         assertThat(now().deactivated()).isEmpty();
-        assertThat(now().selected(ArtifactKind.DIRECTIVE).orElseThrow()).isEmpty();
+        assertThat(now().selected(ArtifactKind.DIRECTIVE)).isEmpty();
     }
 
     @Test
@@ -367,6 +428,30 @@ class ActivationExclusionServiceTest {
         assertThat(outcome.stored().revision()).isNotEqualTo(before.revision());
         assertThat(now().deactivated(ArtifactKind.TACTIC)).containsExactly("t");
         assertThat(repository.replaces()).isEqualTo(1);
+    }
+
+    @Test
+    void aDeactivateAndAReactivateInAnotherSpellingWriteTheDeclaredId() {
+        // ADR-0020 D4 (operator ruling of 2026-11-06): the path id is read as a document's id is.
+        StoredActivation before = stored(ActivationDocument.builder());
+
+        ActivationWrites.Outcome denied =
+                service.deactivate(ID, "directive", "directive:d2", Optional.empty(), List.of(), quoted(before));
+        ActivationWrites.Outcome cleared = service.reactivate(ID, "directive", "d2", quoted(denied.stored()));
+
+        assertThat(denied.change().applied()).containsExactly(D2);
+        assertThat(cleared.change().applied()).containsExactly(D2);
+        assertThat(now().deactivated(ArtifactKind.DIRECTIVE)).isEmpty();
+    }
+
+    @Test
+    void aReactivateOfAStaleIdInAnotherSpellingDropsIt() {
+        StoredActivation before = stored(ActivationDocument.builder().deactivated(ArtifactKind.TACTIC, List.of("old")));
+
+        ActivationWrites.Outcome outcome = service.reactivate(ID, "tactic", "tactic:OLD", quoted(before));
+
+        assertThat(outcome.change().dropped()).containsExactly(new ArtifactRef(ArtifactKind.TACTIC, "old"));
+        assertThat(now().deactivated()).isEmpty();
     }
 
     @Test

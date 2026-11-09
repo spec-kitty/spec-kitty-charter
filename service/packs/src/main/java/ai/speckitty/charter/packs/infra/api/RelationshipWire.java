@@ -23,24 +23,6 @@ final class RelationshipWire {
     private RelationshipWire() {}
 
     /**
-     * The relationships of a registration body.
-     *
-     * @param wire the body's relationships
-     * @return the kernel relationships, in body order
-     * @throws CharterRefusal with {@link RefusalCode#VALIDATION_FAILED} when any endpoint is not a URN of a known kind
-     *     or the type is unknown
-     */
-    static List<Relationship> fromWire(List<RelationshipRegistration> wire) {
-        try {
-            return wire.stream()
-                    .map(r -> relationship(r.getFrom(), r.getTo(), r.getType(), r.getWhen(), r.getRationale()))
-                    .toList();
-        } catch (IllegalArgumentException invalid) {
-            throw refused(invalid);
-        }
-    }
-
-    /**
      * The relationship of a relationship-route request body.
      *
      * @param wire the request body

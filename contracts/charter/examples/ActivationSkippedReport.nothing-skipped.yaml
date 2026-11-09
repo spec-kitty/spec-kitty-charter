@@ -1,6 +1,5 @@
 summary: >-
-  An activation from which nothing was skipped, as the operation answers once it is built (reserved until then,
-  ADR-0020 D8). self is the report.
+  An activation from which nothing was skipped: every bucket of the report is empty. self is the report.
 value:
   activationId: a-1
   revision: sha256:3f1b2c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809
@@ -10,6 +9,16 @@ value:
     skippedDeactivated: []
     unreachedBehindDeactivated: []
     skippedShared: []
+    staleIds: []
+    denyNotApplied: []
+    languageFiltered: []
+    overridden: []
+    missionTypeNotInForce: []
+    overrideNotApplied: []
+    enhancedTargetNotInForce: []
+    pinNotHeld: []
+    requiredNotHeld: []
+    requiredNotInForce: []
   _links:
     self:
       href: /api/v1/activations/a-1/skipped

@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "mission_slug": "whole-pack-closeout-01M6P994",
+  "mission_id": "01M6P9942WSGA296CT16YHGDH9",
+  "mission_branch": "kitty/mission-whole-pack-closeout-01M6P994",
+  "target_branch": "epic-186-closeout",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "docs/adr/0040-content-form-and-payload-kinds.md",
+        "docs/adr/0044-mission-types-consolidated-into-one-sanitized-shape.md",
+        "docs/architecture/hexagonal-service.md",
+        "service/kernel/src/main/java/ai/speckitty/charter/kernel/markdown/**",
+        "service/kernel/src/test/java/ai/speckitty/charter/kernel/markdown/**",
+        "service/missions/src/main/java/ai/speckitty/charter/missions/domain/StepDocument.java",
+        "service/missions/src/main/java/ai/speckitty/charter/missions/domain/StepSection.java",
+        "service/missions/src/test/java/ai/speckitty/charter/missions/domain/MissionValuesTest.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/domain/markdown/**",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/markdown/**",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/markdown/**",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/StepDocumentRulesTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "tracker-integration"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/FileSystemPackInspector.java",
+        "service/packs/src/main/java/ai/speckitty/charter/packs/infra/storage/FilesystemPackStore.java",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/PackRootSpellingTest.java"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        ".github/workflows/ci.yml",
+        ".github/workflows/whole-pack.yml",
+        ".kittify/charter/charter.md",
+        "docs/adr/0023-ci-gate-required-check.md",
+        "docs/changelog/2026-11-05-whole-pack-required.md",
+        "docs/guides/contributing.md",
+        "docs/guides/service-build.md",
+        "docs/plans/engineering-notes/test-suite-assessment-2026-11-03.md",
+        "docs/plans/milestones.md",
+        "docs/plans/roadmap.md",
+        "docs/plans/triage-2026-11-02.md",
+        "service/packs/build.gradle.kts",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/infra/storage/WholePackRoundTripTest.java"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [
+        "lane-a",
+        "lane-b"
+      ],
+      "parallel_group": 1
+    }
+  ],
+  "computed_at": "2026-11-05T16:47:58.109255+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "planning_commit_sha": "735fa5b6874bf8b65de2c7856730613b481f2f5a"
+}

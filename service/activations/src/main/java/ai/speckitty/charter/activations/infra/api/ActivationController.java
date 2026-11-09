@@ -5,8 +5,11 @@ import ai.speckitty.charter.activations.application.ActivationPresetService;
 import ai.speckitty.charter.activations.application.ActivationSelectionService;
 import ai.speckitty.charter.activations.application.ActivationService;
 import ai.speckitty.charter.activations.application.ActivationWrites;
+import ai.speckitty.charter.activations.application.EffectiveReadService;
 import ai.speckitty.charter.activations.domain.ActivationId;
 import ai.speckitty.charter.activations.domain.ClosureSnapshot;
+import ai.speckitty.charter.activations.domain.EffectiveSet;
+import ai.speckitty.charter.activations.domain.EffectiveTag;
 import ai.speckitty.charter.activations.domain.StoredActivation;
 import ai.speckitty.charter.api.ActivationApi;
 import ai.speckitty.charter.api.model.Activation;
@@ -20,20 +23,23 @@ import ai.speckitty.charter.api.model.EffectiveGraph;
 import ai.speckitty.charter.api.model.ExclusionRequest;
 import ai.speckitty.charter.api.model.PresetApplication;
 import ai.speckitty.charter.api.model.SelectionRequest;
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.transport.EntityTags;
-import ai.speckitty.charter.kernel.transport.ReservedOperation;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 /**
  * The activation set (ADR-0020). The register is built: {@code createActivation}, {@code getActivation},
@@ -44,22 +50,28 @@ import org.springframework.web.server.ResponseStatusException;
  * {@link ActivationExclusionService} and {@link ActivationPresetService}, each answering the {@code ActivationChange}
  * with the stored revision as its {@code ETag}. A refusal they throw is answered by the problem handlers. The faults
  * {@link ActivationBodyAdvice} found in a write's body ({@link DeferredBody}) go to the use case, which refuses them
- * once the preconditions hold. The four
- * effective reads stay reserved (ADR-0020 D8): each carries its own {@link ReservedOperation} mark,
- * so an operation is built by removing its mark alone. The composition root's {@code ReservedOperationInterceptor} answers a marked one {@code 501} before
- * the request is bound; each throws the same answer in case one is reached. A marked method reads and stores nothing
- * ({@code HexagonalArchitectureTest}).
+ * once the preconditions hold. {@code getActivation} and the four effective reads ({@code listEffectiveArtifacts},
+ * {@code getActivationSkippedReport}, and, in PR C, {@code getEffectiveGraph} and {@code getEffectiveActionContext})
+ * answer through {@link EffectiveReadService}. Every operation is built, so none carries a {@code ReservedOperation} mark
+ * (ADR-0020 D8); an operation reserved later is marked on its method alone, and the composition root's
+ * {@code ReservedOperationInterceptor} answers a marked one {@code 501} before the request is bound. A marked method reads
+ * and stores nothing ({@code HexagonalArchitectureTest}).
  *
  * <p>The reads answer {@code 304} themselves when the {@code If-None-Match} matches ({@link EntityTags#noneMatch}, a
  * weak comparison), with the {@code ETag} and no body. Spring's {@code HttpEntityMethodProcessor} re-checks only a
  * {@code 200} carrying an {@code ETag}, by the same weak comparison, so the two agree: a tag the service found not
- * matching is one Spring finds not matching. Neither read sends {@code Charter-Source-Fingerprint}: the document read
- * depends only on the stored document (ADR-0059 D5), and the closure read reports a change through its {@code ETag},
- * which covers the revision and the closure's fingerprint.
+ * matching is one Spring finds not matching. {@code getActivation}'s {@code ETag} is the strong closure tag, over the
+ * revision and the closure's own digest, because its {@code denyNotApplied} is judged against the packs of the closure
+ * (decision {@code 01M6Y11E55YP5TG1EJ1MDKCFRP}); the four effective reads' tags also name their representation. The four
+ * effective reads are verified reads and send the {@code Charter-Source-Fingerprint} they verified on a {@code 200}; the
+ * document read and the closure read send none (the closure read reports a change through its {@code ETag}). The
+ * writes answer the revision as their {@code ETag} and take it, or the {@code getActivation} tag, as {@code If-Match}.
  */
 @RestController
 @RequestMapping("${charter.api.base-path:/api/v1}")
 public class ActivationController implements ActivationApi {
+
+    private static final String SOURCE_FINGERPRINT = "Charter-Source-Fingerprint";
 
     private final ActivationService activations;
     private final ActivationSelectionService selections;
@@ -67,6 +79,8 @@ public class ActivationController implements ActivationApi {
     private final ActivationPresetService presets;
     private final ActivationMapper mapper;
     private final ActivationChangeMapper changes;
+    private final EffectiveReadService effective;
+    private final EffectiveReadMapper reads;
 
     /**
      * A controller over the activation register and its per-artifact writes.
@@ -77,6 +91,8 @@ public class ActivationController implements ActivationApi {
      * @param presets the preset write
      * @param mapper the document's wire mapper
      * @param changes the per-artifact writes' wire mapper
+     * @param effective the effective reads and the document read
+     * @param reads the effective reads' wire mapper
      */
     @Autowired
     public ActivationController(
@@ -85,13 +101,17 @@ public class ActivationController implements ActivationApi {
             ActivationExclusionService exclusions,
             ActivationPresetService presets,
             ActivationMapper mapper,
-            ActivationChangeMapper changes) {
+            ActivationChangeMapper changes,
+            EffectiveReadService effective,
+            EffectiveReadMapper reads) {
         this.activations = Objects.requireNonNull(activations, "activations");
         this.selections = Objects.requireNonNull(selections, "selections");
         this.exclusions = Objects.requireNonNull(exclusions, "exclusions");
         this.presets = Objects.requireNonNull(presets, "presets");
         this.mapper = Objects.requireNonNull(mapper, "mapper");
         this.changes = Objects.requireNonNull(changes, "changes");
+        this.effective = Objects.requireNonNull(effective, "effective");
+        this.reads = Objects.requireNonNull(reads, "reads");
     }
 
     @Override
@@ -105,7 +125,7 @@ public class ActivationController implements ActivationApi {
     @Override
     public ResponseEntity<Activation> createActivation(ActivationConfig activationConfig) {
         StoredActivation stored = activations.create(mapper.toDocument(activationConfig));
-        return created(stored);
+        return created(stored, mapper.toActivation(stored));
     }
 
     @Override
@@ -118,7 +138,13 @@ public class ActivationController implements ActivationApi {
         Optional<List<String>> cascade =
                 Optional.ofNullable(exclusionRequest.getCascade()).map(List::copyOf);
         return changed(exclusions.deactivate(
-                new ActivationId(activationId), kind, artifactId, cascade, DeferredBody.recorded(), ifMatch));
+                new ActivationId(activationId),
+                kind,
+                artifactId,
+                cascade,
+                depthOf(exclusionRequest.getDepth()),
+                DeferredBody.recorded(),
+                ifMatch));
     }
 
     @Override
@@ -129,27 +155,39 @@ public class ActivationController implements ActivationApi {
 
     @Override
     public ResponseEntity<Activation> getActivation(String activationId, @Nullable String ifNoneMatch) {
-        return answer(activations.get(new ActivationId(activationId), ifNoneMatch), mapper::toActivation);
+        return answer(
+                effective.activation(new ActivationId(activationId), ifNoneMatch),
+                viewed -> mapper.toActivation(viewed.stored(), viewed.denyNotApplied()));
     }
 
     @Override
-    @ReservedOperation
     public ResponseEntity<ActivationSkippedReport> getActivationSkippedReport(
             String activationId, @Nullable String ifNoneMatch) {
-        throw notBuilt();
+        return verified(
+                effective.skipped(new ActivationId(activationId), ifNoneMatch),
+                EffectiveReadService.Report::sourceFingerprint,
+                reads::toSkipped);
     }
 
     @Override
-    @ReservedOperation
     public ResponseEntity<EffectiveActionContext> getEffectiveActionContext(
             String activationId, String missionType, String action, @Nullable String ifNoneMatch, Integer depth) {
-        throw notBuilt();
+        boolean depthGiven = queryParamGiven("depth");
+        return verified(
+                effective.actionContext(
+                        new ActivationId(activationId),
+                        new EffectiveTag.ContextQuery(missionType, action, depth),
+                        ifNoneMatch),
+                EffectiveReadService.ContextRead::sourceFingerprint,
+                read -> reads.toContext(read, depthGiven));
     }
 
     @Override
-    @ReservedOperation
     public ResponseEntity<EffectiveGraph> getEffectiveGraph(String activationId, @Nullable String ifNoneMatch) {
-        throw notBuilt();
+        return verified(
+                effective.graph(new ActivationId(activationId), ifNoneMatch),
+                EffectiveReadService.GraphRead::sourceFingerprint,
+                reads::toGraph);
     }
 
     @Override
@@ -159,7 +197,6 @@ public class ActivationController implements ActivationApi {
     }
 
     @Override
-    @ReservedOperation
     public ResponseEntity<EffectiveArtifactList> listEffectiveArtifacts(
             String activationId,
             @Nullable String ifNoneMatch,
@@ -167,7 +204,19 @@ public class ActivationController implements ActivationApi {
             @Nullable String state,
             Integer pageSize,
             @Nullable String pageCursor) {
-        throw notBuilt();
+        EffectiveReadService.PageQuery query = new EffectiveReadService.PageQuery(
+                Optional.ofNullable(kind).map(ActivationController::kindFilter),
+                Optional.ofNullable(state).map(ActivationController::stateFilter),
+                pageSize,
+                Optional.ofNullable(pageCursor).map(EffectiveCursor::decode));
+        try {
+            return verified(
+                    effective.list(new ActivationId(activationId), query, ifNoneMatch),
+                    EffectiveReadService.Page::sourceFingerprint,
+                    page -> reads.toList(page, queryParamGiven("pageSize")));
+        } catch (EffectiveReadService.StaleCursorException anotherSet) {
+            throw new ErrorResponseException(HttpStatus.BAD_REQUEST, anotherSet);
+        }
     }
 
     @Override
@@ -185,11 +234,11 @@ public class ActivationController implements ActivationApi {
         ActivationService.Written written = activations.put(
                 new ActivationId(activationId), mapper.toDocument(activationConfig), ifMatch, ifNoneMatch);
         if (written.created()) {
-            return created(written.stored());
+            return created(written.stored(), mapper.toReplaced(written));
         }
         return ResponseEntity.ok()
                 .eTag(EntityTags.quote(written.stored().revision().token()))
-                .body(mapper.toActivation(written.stored()));
+                .body(mapper.toReplaced(written));
     }
 
     @Override
@@ -208,6 +257,7 @@ public class ActivationController implements ActivationApi {
                 artifactId,
                 cascade,
                 includeDeactivated,
+                depthOf(selectionRequest.getDepth()),
                 DeferredBody.recorded(),
                 ifMatch));
     }
@@ -218,6 +268,11 @@ public class ActivationController implements ActivationApi {
         return changed(selections.unselect(new ActivationId(activationId), kind, artifactId, ifMatch));
     }
 
+    /** The body's {@code depth}, which its guard has judged: empty when the body did not send one. */
+    private static OptionalInt depthOf(@Nullable Integer depth) {
+        return depth == null ? OptionalInt.empty() : OptionalInt.of(depth);
+    }
+
     /** A per-artifact write's answer: {@code 200} with the stored revision as the {@code ETag}, a no-op's unchanged. */
     private ResponseEntity<ActivationChange> changed(ActivationWrites.Outcome outcome) {
         return ResponseEntity.ok()
@@ -225,10 +280,10 @@ public class ActivationController implements ActivationApi {
                 .body(changes.toChange(outcome));
     }
 
-    private ResponseEntity<Activation> created(StoredActivation stored) {
+    private ResponseEntity<Activation> created(StoredActivation stored, Activation body) {
         return ResponseEntity.created(URI.create(mapper.self(stored.id().value())))
                 .eTag(EntityTags.quote(stored.revision().token()))
-                .body(mapper.toActivation(stored));
+                .body(body);
     }
 
     /** A read's answer: {@code 304} with the {@code ETag} and no body, or {@code 200} with both. */
@@ -244,11 +299,44 @@ public class ActivationController implements ActivationApi {
     }
 
     /**
-     * The answer of a reserved operation, should one ever be reached past the interceptor.
-     *
-     * @return a {@code 501} that {@code ProblemHandler} renders as a {@code Problem} without a code
+     * A verified read's answer: as {@link #answer}, and on a {@code 200} the {@code Charter-Source-Fingerprint} the read
+     * verified; a {@code 304} sends the tag alone.
      */
-    private static ResponseStatusException notBuilt() {
-        return new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED);
+    private static <T, B> ResponseEntity<B> verified(
+            ActivationService.Read<T> read, Function<T, String> fingerprint, Function<T, B> body) {
+        return switch (read) {
+            case ActivationService.Read.NotModified<T>(String etag) ->
+                ResponseEntity.status(HttpStatus.NOT_MODIFIED)
+                        .eTag(EntityTags.quote(etag))
+                        .build();
+            case ActivationService.Read.Found<T>(T value, String etag) ->
+                ResponseEntity.ok()
+                        .eTag(EntityTags.quote(etag))
+                        .header(SOURCE_FINGERPRINT, fingerprint.apply(value))
+                        .body(body.apply(value));
+        };
+    }
+
+    /** Whether the request named a query parameter that has a default, so that this is read from the request itself. */
+    private static boolean queryParamGiven(String name) {
+        return ServletUriComponentsBuilder.fromCurrentRequest()
+                .build()
+                .getQueryParams()
+                .containsKey(name);
+    }
+
+    /** The kind filter: an activatable kind, or a {@code 400} problem without a code. */
+    private static ArtifactKind kindFilter(String token) {
+        return ArtifactKind.fromToken(token)
+                .filter(ArtifactKind::activatable)
+                .orElseThrow(() -> new ErrorResponseException(HttpStatus.BAD_REQUEST));
+    }
+
+    /** The state filter: one of the three states, or a {@code 400} problem without a code. */
+    private static EffectiveSet.State stateFilter(String token) {
+        return Arrays.stream(EffectiveSet.State.values())
+                .filter(state -> state.token().equals(token))
+                .findFirst()
+                .orElseThrow(() -> new ErrorResponseException(HttpStatus.BAD_REQUEST));
     }
 }

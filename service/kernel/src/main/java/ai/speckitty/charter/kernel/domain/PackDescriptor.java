@@ -20,6 +20,7 @@ import java.util.Set;
  * @param dependencies the packs this pack declares it depends on; empty when it declares none
  * @param overrides the sibling conflicts this pack settles (any pack of the compose may declare one until #358), each
  *     by the conflicting artifact and the member meant to win; empty when it settles none
+ * @param schemaVersion the pack's {@code schema_version} as written; empty for an unversioned (legacy) descriptor
  */
 public record PackDescriptor(
         String packId,
@@ -30,7 +31,44 @@ public record PackDescriptor(
         Optional<String> requiresCore,
         PackPaths paths,
         List<PackDependency> dependencies,
-        List<PackOverride> overrides) {
+        List<PackOverride> overrides,
+        Optional<String> schemaVersion) {
+    /**
+     * Builds an unversioned descriptor: one that states no {@code schema_version}.
+     *
+     * @param packId the pack's {@code pack_id}
+     * @param packVersion the pack's {@code pack_version}
+     * @param parentPack the pack's {@code parent_pack}, possibly empty
+     * @param name the pack's {@code name}
+     * @param declaredLevel the declared level, possibly empty
+     * @param requiresCore the raw {@code requires_core}, possibly empty
+     * @param paths the declared paths
+     * @param dependencies the declared dependencies
+     * @param overrides the declared sibling conflicts this pack settles
+     */
+    public PackDescriptor(
+            String packId,
+            String packVersion,
+            Optional<String> parentPack,
+            String name,
+            Optional<PackLevel> declaredLevel,
+            Optional<String> requiresCore,
+            PackPaths paths,
+            List<PackDependency> dependencies,
+            List<PackOverride> overrides) {
+        this(
+                packId,
+                packVersion,
+                parentPack,
+                name,
+                declaredLevel,
+                requiresCore,
+                paths,
+                dependencies,
+                overrides,
+                Optional.empty());
+    }
+
     /**
      * Builds a descriptor that declares neither {@code active_charter} nor {@code pack_drg}.
      *
@@ -57,7 +95,8 @@ public record PackDescriptor(
                 requiresCore,
                 PackPaths.none(),
                 List.of(),
-                List.of());
+                List.of(),
+                Optional.empty());
     }
 
     /**
@@ -118,6 +157,7 @@ public record PackDescriptor(
      * @param paths the declared paths
      * @param dependencies the declared dependencies
      * @param overrides the declared sibling conflicts this pack settles
+     * @param schemaVersion the declared {@code schema_version}, possibly empty
      * @throws IllegalArgumentException when two {@code overrides} edges settle one artifact
      */
     public PackDescriptor {
@@ -130,6 +170,7 @@ public record PackDescriptor(
         Objects.requireNonNull(paths, "paths");
         Objects.requireNonNull(dependencies, "dependencies");
         Objects.requireNonNull(overrides, "overrides");
+        Objects.requireNonNull(schemaVersion, "schemaVersion");
         dependencies = List.copyOf(dependencies);
         overrides = List.copyOf(overrides);
         Optional<String> twice = artifactSettledTwice(overrides);
