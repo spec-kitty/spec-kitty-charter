@@ -1,7 +1,7 @@
 {
-  "event_count": 301,
-  "last_event_id": "01M70CV7PWJV44FX8SM6SDJ0TT",
-  "materialized_at": "2026-11-09T14:54:23.452869+00:00",
+  "event_count": 303,
+  "last_event_id": "01M70CVE3A6JBCK8971Z7K8EW5",
+  "materialized_at": "2026-11-09T14:54:29.985023+00:00",
   "mission_number": "",
   "mission_slug": "layer-merge-and-effective-reads-01M6R0J6",
   "mission_type": "",
@@ -13,9 +13,9 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 2
+    "planned": 1
   },
   "work_packages": {
     "WP01": {
@@ -985,9 +985,9 @@
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
       "implementer_of_record": "claude:sonnet:java-jenny",
-      "lane": "planned",
-      "last_event_id": "01M70CV7PWJV44FX8SM6SDJ0TT",
-      "last_transition_at": "2026-11-09T14:54:23.452869+00:00",
+      "lane": "in_progress",
+      "last_event_id": "01M70CVE3A6JBCK8971Z7K8EW5",
+      "last_transition_at": "2026-11-09T14:54:29.985023+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "Ready for review: T138-T142, T162-T164; hand-off /tmp/claude-0/wp28-handoff.md; decision 01M70C42KC78KB9H6KB7TK9224 (enhancements member)"
