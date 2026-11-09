@@ -20,7 +20,7 @@
   "work_packages": {
     "WP01": {
       "actor": "claude",
-      "agent": "claude:sonnet:java-jenny",
+      "agent": "claude:opus:reviewer-renata",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 2,
@@ -33,7 +33,8 @@
         "Pin at a2a9379; one commit (pin alone is red). Counts moved with upstream traces in commit body: manifest 315->310 (entries 317->312), built-in procedures 65->66, toolguides/guides 18->19, corpus 87/24/24->88/25/25, markdown 89->90, inspector files 392->389, exclusions.yaml **/__init__.py entry removed (dfc6601). Unmoved: Counts(), 31 profiles, MissionType 47/13/17/32, StepContract 28, CompanionDigest 10, expected-red.yaml. Scope note: also edited FileSystemPackInspectorTest, ProcedureAndGuideCorpusTest, MarkdownCorpusTest (outside owned_files, red at pin). Divergence: .kittify implement index.yaml:33-35 and implement.step-contract.yaml:15-17 name deleted paradigms (execution-lanes, shared-branch-ci, git-flow); for open-packs/core follow-up. Open-packs manifest omits git-flow procedure and execution-lanes toolguide. Prompt's :packs:test command does not run open-packs-tagged tests; used :packs:openPacksRoundTrip.",
         "Re-record the implementer hand-off with its profile (java-jenny); no change to the work",
         "Re-record the implementer of record with its full identity; no code change",
-        "Implementer hand-off (java-jenny); commit 371748ed unchanged"
+        "Implementer hand-off (java-jenny); commit 371748ed unchanged",
+        "Review passed. Every moved count verified against open-packs 22c14b2d..a2a9379: manifest 315->310 / 312 entries (directive -1, paradigm -5, styleguide +2, tactic -1); built-in procedures 65->66 (a6e11d9), toolguides/guides 18->19 (7174cc9); corpus 87/24/24->88/25/25; Markdown 89->90; inspector 392->389 (-9 +6); __init__.py exclusion stale after dfc6601. No assertion weakened. Vendored trees identical to git archive a2a9379; syncPacks -PcheckPacks green. Forced :packs:openPacksRoundTrip (54 tests, 0 fail/skip) and :packs:wholePackRoundTrip (8, 0 fail/skip) green. Edits to FileSystemPackInspectorTest, ProcedureAndGuideCorpusTest, MarkdownCorpusTest (outside owned_files) justified: red at the pin, traced counts only, no other WP owns them. Non-blocking for orchestrator: built-in pack-manifest.yaml at a2a9379 omits git-flow.procedure and execution-lanes.toolguide (file an open-packs draft issue); .kittify implement index/step-contract name deleted paradigms (core follow-up). Checklist: 1-3 N/A, 4 PASS (FR-001 via round-trip gates), 5-8 PASS."
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
