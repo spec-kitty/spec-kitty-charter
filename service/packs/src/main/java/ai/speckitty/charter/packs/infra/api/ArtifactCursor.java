@@ -18,7 +18,7 @@ import org.springframework.web.ErrorResponseException;
  * artifact of a page. It is opaque to a client, which passes it back unchanged; the application sees only the
  * {@link ArtifactPosition} it decodes to.
  *
- * <p>A cursor that does not decode to a served kind and a non-empty id, or that names a kind other than the request's
+ * <p>A cursor that does not decode to a listed kind and a non-empty id, or that names a kind other than the request's
  * kind filter, is refused as a {@code 400} {@link ErrorResponseException}, which {@link ProblemHandler} answers as the
  * plain {@code Problem} of its status: a malformed request, not a charter refusal, so it carries no code.
  */
@@ -45,7 +45,7 @@ final class ArtifactCursor {
      * @param filter the request's kind filter; empty when it names none
      * @return the position
      * @throws ErrorResponseException with status 400 when the cursor is not base64url of UTF-8 {@code <kind>/<id>} with
-     *     a served kind and a non-empty id, or names a kind other than {@code filter}
+     *     a listed kind and a non-empty id, or names a kind other than {@code filter}
      */
     static ArtifactPosition decode(String cursor, Optional<ArtifactKind> filter) {
         String text = text(cursor);

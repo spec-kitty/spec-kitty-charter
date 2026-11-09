@@ -181,11 +181,12 @@ class WireTokenParityTest {
                         tokens(RefusalCode.values(), RefusalCode::token),
                         values(CharterRefusal.CodeEnum.values(), CharterRefusal.CodeEnum::getValue),
                         CharterRefusal.CodeEnum::fromValue),
-                // The served kinds against ArtifactKindToken, which only the ?kind= filter references. The generator
+                // The listed kinds against ArtifactKindToken, which only the ?kind= filter references (#99: the kinds
+                // the filter takes are the served ones, then mission_type and mission_step_contract). The generator
                 // types that parameter as a String, so the enum is read from the contract file itself.
                 new Pair(
                         "ArtifactKindToken",
-                        tokens(ArtifactReadService.SERVED.toArray(ArtifactKind[]::new), ArtifactKind::token),
+                        tokens(ArtifactReadService.LISTED.toArray(ArtifactKind[]::new), ArtifactKind::token),
                         ARTIFACT_KIND_TOKENS,
                         token -> member(ARTIFACT_KIND_TOKENS, token)),
                 // NodeKind reaches the wire through EffectiveGraphNode.kind (the effective graph, served since PR C)

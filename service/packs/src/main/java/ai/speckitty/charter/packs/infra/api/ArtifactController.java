@@ -32,11 +32,11 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
  * {@link ArtifactReadService}, the only reads of a pack's artifacts. The writable kinds are registered under
  * the same tree by their own controllers ({@link DirectiveController} and its siblings). A refusal the service throws is answered by
  * {@link RefusalHandler}. The adapter answers the 400s itself, as plain problems without a code: a kind filter that
- * is not a served kind, a page cursor {@link ArtifactCursor} cannot read, and a parameter out of the bounds the
+ * is not a listed kind, a page cursor {@link ArtifactCursor} cannot read, and a parameter out of the bounds the
  * generated interface declares (a page size out of range), which bean validation refuses.
  *
  * <p>Every link is built by {@link Hypermedia}: an item's {@code self} and {@code collection} (no {@code edit} in this
- * minor, R-24), and a page's {@code self} (the request with the query it gave), {@code first} (without the cursor)
+ * minor, R-24), with a step contract's {@code mission-type} and {@code step} when its pack holds them, and a page's {@code self} (the request with the query it gave), {@code first} (without the cursor)
  * and, when more artifacts follow, {@code next}.
  */
 @RestController
@@ -103,7 +103,10 @@ public class ArtifactController implements ArtifactsApi {
                 ResponseEntity.ok().headers(CharterHeaders.fingerprint(verified.fingerprint()));
         verified.value().revision().ifPresent(revision -> answer.eTag(revision.token()));
         return answer.body(ArtifactDtos.artifact(
-                verified.value(), guides, ArtifactDtos.itemLinks(kind, packId, artifactId, links)));
+                verified.value(),
+                guides,
+                ArtifactDtos.itemLinks(verified.value(), kind, packId, artifactId, links),
+                links));
     }
 
     @Override
@@ -119,7 +122,7 @@ public class ArtifactController implements ArtifactsApi {
                 .body(new ArtifactReferenceList(items, Hypermedia.wire(own)));
     }
 
-    /** One resolved reference on the wire: the artifact link only when the target is a kind the service serves. */
+    /** One resolved reference on the wire: the artifact link only when the target is a kind the service lists. */
     private ReferencedArtifact referenced(ArtifactReadService.Reference reference) {
         Map<Relation, Hypermedia.LinkValue> target = new EnumMap<>(Relation.class);
         reference
@@ -151,7 +154,7 @@ public class ArtifactController implements ArtifactsApi {
         return wire;
     }
 
-    /** The kind filter: a served kind, or a 400 problem without a code. */
+    /** The kind filter: a listed kind, or a 400 problem without a code. */
     private static Optional<ArtifactKind> filter(@Nullable String kind) {
         if (kind == null) {
             return Optional.empty();

@@ -46,6 +46,13 @@ import org.springframework.stereotype.Service;
 @Service
 public final class ArtifactRemovalService {
 
+    /**
+     * The listed kinds a {@code DELETE} does not remove yet: a mission type's removal takes its skeletons with it, one
+     * removal under one impact check (#99, D10), which this service does not build yet, so it is refused
+     * {@code kind_not_found} until it does rather than leaving the skeletons behind.
+     */
+    static final Set<ArtifactKind> NOT_YET_REMOVABLE = Set.of(ArtifactKind.MISSION_TYPE);
+
     private final PackRepository packs;
     private final PackRemovalStore store;
     private final WritePolicyGate gate;
@@ -143,9 +150,14 @@ public final class ArtifactRemovalService {
     // ---- 404
     // ----------------------------------------------------------------------------------------------------------
 
-    /** The artifact's URN once the kind is served and the pack holds the artifact; the not-found code of the path otherwise. */
+    /**
+     * The artifact's URN once the kind is removable and the pack holds the artifact; the not-found code of the path
+     * otherwise. The removable kinds are the listed ones ({@link ArtifactReadService#LISTED}) but those of
+     * {@link #NOT_YET_REMOVABLE}.
+     */
     private static Urn requireHeld(Pack current, PackIdentifier pack, String kindToken, String artifactId) {
         ArtifactKind kind = ArtifactReadService.listedKind(kindToken)
+                .filter(listed -> !NOT_YET_REMOVABLE.contains(listed))
                 .orElseThrow(() -> new CharterRefusal(
                         RefusalCode.KIND_NOT_FOUND, "The service serves no artifact kind " + kindToken + "."));
         CharterRefusal absent = new CharterRefusal(

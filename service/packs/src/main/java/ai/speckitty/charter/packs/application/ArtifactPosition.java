@@ -5,16 +5,16 @@ import java.util.Comparator;
 import java.util.Objects;
 
 /**
- * Where an artifact stands in a pack's generic list: its served kind and its id. A page cursor names one, and the
+ * Where an artifact stands in a pack's generic list: its listed kind and its id. A page cursor names one, and the
  * next page holds the artifacts strictly after it, whether or not an artifact still stands there.
  *
- * @param kind a served kind ({@link ArtifactReadService#listed()})
+ * @param kind a listed kind ({@link ArtifactReadService#listed()})
  * @param id the artifact's id within its kind
  */
 public record ArtifactPosition(ArtifactKind kind, String id) {
 
     /**
-     * The list order: by the served-kind order ({@link ArtifactReadService#listed()}), then by id in code-point order.
+     * The list order: by the listed-kind order ({@link ArtifactReadService#listed()}), then by id in code-point order.
      * Code points, not UTF-16 units: {@link String#compareTo} would put a supplementary character before
      * {@code U+FB01}.
      */
@@ -23,17 +23,17 @@ public record ArtifactPosition(ArtifactKind kind, String id) {
             .thenComparing(ArtifactPosition::id, ArtifactPosition::compareCodePoints);
 
     /**
-     * A position of a served kind.
+     * A position of a listed kind.
      *
-     * @param kind a served kind
+     * @param kind a listed kind
      * @param id the artifact's id within its kind
-     * @throws IllegalArgumentException when {@code kind} is not served
+     * @throws IllegalArgumentException when {@code kind} is not listed
      */
     public ArtifactPosition {
         Objects.requireNonNull(kind, "kind");
         Objects.requireNonNull(id, "id");
         if (!ArtifactReadService.listed().contains(kind)) {
-            throw new IllegalArgumentException("not a served kind: " + kind.token());
+            throw new IllegalArgumentException("not a listed kind: " + kind.token());
         }
     }
 

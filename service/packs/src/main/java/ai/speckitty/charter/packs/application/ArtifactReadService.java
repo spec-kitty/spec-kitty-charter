@@ -13,6 +13,8 @@ import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
+import ai.speckitty.charter.packs.domain.MissionStepContract;
+import ai.speckitty.charter.packs.domain.MissionTypeSteps;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
@@ -22,6 +24,7 @@ import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.Paradigm;
 import ai.speckitty.charter.packs.domain.ParadigmIdentifier;
+import ai.speckitty.charter.packs.domain.StepDelegation;
 import ai.speckitty.charter.packs.domain.Styleguide;
 import ai.speckitty.charter.packs.domain.StyleguideIdentifier;
 import ai.speckitty.charter.packs.domain.Tactic;
@@ -33,19 +36,30 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
- * The generic artifact reads: one paged list of a pack's artifacts of the served kinds, and one artifact by kind and
- * id. They are the only artifact reads the API serves; the per-kind routes are gone. The item delegates to the
- * per-kind read service of its kind ({@link TacticReadService} and the rest), which the generic reads compose (#169
- * folds the kinds into a registry later).
+ * The generic artifact reads: one paged list of a pack's artifacts of the listed kinds, one artifact by kind and id,
+ * and the references one artifact writes. They are the only artifact reads the API serves; the per-kind routes are
+ * gone. The item delegates to the per-kind read service of its kind ({@link TacticReadService} and the rest), which the
+ * generic reads compose (#169 folds the kinds into a registry later).
+ *
+ * <p>Three sets of kinds (#99): {@link #SERVED}, the kinds with a per-kind read and the agent profile, whose body the
+ * profiles slice renders; {@link #LISTED}, the one kind gate ({@link #listedKind(String)}) of the list, its
+ * {@code ?kind=} filter, the item read, the references read and the removal, the served ones, then the mission type,
+ * then the mission step contract; and {@link #ITEM_KINDS}, the listed kinds the templated item read renders, the served
+ * ones but the agent profile, then the mission step contract, read from the pack aggregate. An agent profile's and a
+ * mission type's items are answered at their own literal paths, by the profiles and the missions slices, never by the
+ * templated item read, which refuses them {@link RefusalCode#KIND_NOT_FOUND} after the pack, never a server error.
  *
  * <p>The list is one read verified by {@link ConsistentRead}: the pack aggregate is loaded between two digests, so a
  * page and its fingerprint name the same inputs. The pack is judged before the kind: an identifier that names no
- * configured pack is refused {@link RefusalCode#PACK_NOT_FOUND}, then a kind outside {@link #SERVED} is refused
+ * configured pack is refused {@link RefusalCode#PACK_NOT_FOUND}, then a kind outside {@link #LISTED} is refused
  * {@link RefusalCode#KIND_NOT_FOUND}, inside the same kind of verified read.
  *
  * <p>A configured pack without a readable {@code pack.yaml} is not a readable canonical pack (operator ruling of
@@ -60,10 +74,11 @@ import org.springframework.stereotype.Service;
 public final class ArtifactReadService {
 
     /**
-     * The kinds this service serves, in the list order; {@code agent_profile} is last. Other kernel kinds are not served
-     * yet. An agent profile is listed, referenced and removed here, but its body is rendered by the profiles slice's
-     * literal route ({@code getPackAgentProfile}), which always wins over the templated item route; the templated item
-     * read refuses it {@link RefusalCode#KIND_NOT_FOUND} where that route is not wired, never a server error.
+     * The kinds this service serves, in the list order; {@code agent_profile} is last. They are the head of
+     * {@link #LISTED}, so a kind appended here stays before the mission kinds. Other kernel kinds are not served yet. An
+     * agent profile is listed, referenced and removed here, but its body is rendered by the profiles slice's literal
+     * route ({@code getPackAgentProfile}), which always wins over the templated item route; the templated item read
+     * refuses it {@link RefusalCode#KIND_NOT_FOUND} where that route is not wired, never a server error.
      */
     public static final List<ArtifactKind> SERVED = List.of(
             ArtifactKind.TACTIC,
@@ -74,15 +89,33 @@ public final class ArtifactReadService {
             ArtifactKind.AGENT_PROFILE);
 
     /**
+     * The kinds the templated item read renders: the {@link #SERVED} kinds but the agent profile, then the mission step
+     * contract. An agent profile and a mission type are listed but not among them: each is rendered at its own literal
+     * path, and the templated item read refuses them {@link RefusalCode#KIND_NOT_FOUND} after the one kind gate,
+     * {@link #listedKind(String)}.
+     */
+    public static final List<ArtifactKind> ITEM_KINDS = Stream.concat(
+                    SERVED.stream().filter(kind -> kind != ArtifactKind.AGENT_PROFILE),
+                    Stream.of(ArtifactKind.MISSION_STEP_CONTRACT))
+            .toList();
+
+    /**
+     * The listed kinds, in the list order: the {@link #SERVED} kinds, then the mission type, then the mission step
+     * contract. They are the kinds of the list and its {@code ?kind=} filter, of the references read and of the removal.
+     */
+    public static final List<ArtifactKind> LISTED =
+            afterTheServed(ArtifactKind.MISSION_TYPE, ArtifactKind.MISSION_STEP_CONTRACT);
+
+    /**
      * The kinds a client can list and follow from a list: the list, its {@code ?kind=} filter, the positions of a page,
      * a reference's {@code artifact} link and the removal of an artifact. Every gate on the listable kinds reads this
      * accessor and not {@link #SERVED}, so that a kind can later be served without being listed, or the other way round.
-     * Today it is {@link #SERVED}.
+     * It is {@link #LISTED}: the served kinds, then the mission type, then the mission step contract.
      *
      * @return the listed kinds, in the list order
      */
     public static List<ArtifactKind> listed() {
-        return SERVED;
+        return LISTED;
     }
 
     private static final String STALE_LIST = "The inputs changed while the artifacts were read; read them again.";
@@ -93,22 +126,29 @@ public final class ArtifactReadService {
             ArtifactKind.STYLEGUIDE, RefusalCode.STYLEGUIDE_NOT_FOUND,
             ArtifactKind.PARADIGM, RefusalCode.PARADIGM_NOT_FOUND,
             ArtifactKind.TOOLGUIDE, RefusalCode.TOOLGUIDE_NOT_FOUND,
-            // Kinds served from now on use artifact_not_found; the five above keep their own codes (contract rule).
-            ArtifactKind.AGENT_PROFILE, RefusalCode.ARTIFACT_NOT_FOUND);
+            // agent_profile uses artifact_not_found; the five above keep their own codes (contract rule), and the
+            // mission kinds have their own codes (#99).
+            ArtifactKind.AGENT_PROFILE, RefusalCode.ARTIFACT_NOT_FOUND,
+            ArtifactKind.MISSION_TYPE, RefusalCode.MISSION_TYPE_NOT_FOUND,
+            ArtifactKind.MISSION_STEP_CONTRACT, RefusalCode.MISSION_STEP_CONTRACT_NOT_FOUND);
 
     /**
-     * The code a request for an artifact of a served kind that the pack does not hold is refused with.
+     * The code a request for an artifact of a listed kind that the pack does not hold is refused with.
      *
-     * @param kind a served kind
+     * @param kind a listed kind
      * @return its not-found code, for example {@code directive_not_found}
-     * @throws IllegalArgumentException when the kind is not served
+     * @throws IllegalArgumentException when the kind is not listed
      */
     public static RefusalCode absentCode(ArtifactKind kind) {
         RefusalCode code = ABSENT.get(kind);
         if (code == null) {
-            throw new IllegalArgumentException("not a served kind: " + kind);
+            throw new IllegalArgumentException("not a listed kind: " + kind);
         }
         return code;
+    }
+
+    private static List<ArtifactKind> afterTheServed(ArtifactKind... kinds) {
+        return Stream.concat(SERVED.stream(), Stream.of(kinds)).toList();
     }
 
     private final PackRepository packs;
@@ -122,12 +162,14 @@ public final class ArtifactReadService {
     private final OfferingReadService offerings;
     private final CompositeComponentResolver components;
     private final PackEdgeRepository graphs;
+    private final MissionTypeSteps steps;
 
     /**
      * One artifact as the list names it.
      *
      * @param position its kind and id, which is also its place in the list
-     * @param title the name of a tactic or a paradigm, the title of a directive, a styleguide or a toolguide
+     * @param title the artifact's {@linkplain CharterArtifact#label() label}: the name of a tactic or a paradigm, the
+     *     title of a directive, a styleguide, a toolguide or a mission type, the action of a mission step contract
      */
     public record Summary(ArtifactPosition position, String title) {
 
@@ -175,7 +217,7 @@ public final class ArtifactReadService {
         /**
          * The pack revision the artifact was read at.
          *
-         * @return the revision of a writable kind; empty for a tactic, which has no write
+         * @return the revision of a writable kind; empty for a tactic or a mission step contract, which have no write
          */
         Optional<PackRevision> revision();
 
@@ -242,6 +284,41 @@ public final class ArtifactReadService {
                 return Optional.of(at);
             }
         }
+
+        /**
+         * A mission step contract and what its pack holds of what it names, read in the same verified read: its links
+         * point only at what the pack holds. It has no write, so no revision.
+         *
+         * @param artifact the step contract
+         * @param missionTypeHeld whether the pack holds the mission type its {@code mission} names
+         * @param stepHeld whether that mission type is held and declares the step its {@code action} names
+         * @param heldCandidates the delegation candidates of a listed kind that the pack holds, as positions
+         */
+        record OfMissionStepContract(
+                MissionStepContract artifact,
+                boolean missionTypeHeld,
+                boolean stepHeld,
+                Set<ArtifactPosition> heldCandidates)
+                implements Item {
+
+            /**
+             * A step contract item, its held candidates copied.
+             *
+             * @param artifact the step contract
+             * @param missionTypeHeld whether its mission type is held
+             * @param stepHeld whether its step is held
+             * @param heldCandidates its held delegation candidates
+             */
+            public OfMissionStepContract {
+                Objects.requireNonNull(artifact, "artifact");
+                heldCandidates = Set.copyOf(heldCandidates);
+            }
+
+            @Override
+            public Optional<PackRevision> revision() {
+                return Optional.empty();
+            }
+        }
     }
 
     /**
@@ -258,6 +335,7 @@ public final class ArtifactReadService {
      * @param offerings the offering read whose compose a reference is resolved against, resolved once per read
      * @param components the resolver that resolves a reference a read is given, against the compose closure
      * @param graphs the port that reads a pack's graph-document edges, the references an artifact writes
+     * @param steps the port that names the steps a mission type declares, for a step contract's step
      */
     @Autowired
     public ArtifactReadService(
@@ -271,7 +349,8 @@ public final class ArtifactReadService {
             ToolguideReadService toolguides,
             OfferingReadService offerings,
             CompositeComponentResolver components,
-            PackEdgeRepository graphs) {
+            PackEdgeRepository graphs,
+            MissionTypeSteps steps) {
         this.packs = Objects.requireNonNull(packs, "packs");
         this.descriptors = Objects.requireNonNull(descriptors, "descriptors");
         this.read = Objects.requireNonNull(read, "read");
@@ -283,28 +362,29 @@ public final class ArtifactReadService {
         this.offerings = Objects.requireNonNull(offerings, "offerings");
         this.components = Objects.requireNonNull(components, "components");
         this.graphs = Objects.requireNonNull(graphs, "graphs");
+        this.steps = Objects.requireNonNull(steps, "steps");
     }
 
     /**
      * The listed kind a token names: the one kind gate of the list, the item read, the references read, the removal
      * and the list's positions, so that a read and a removal never disagree on {@code kind_not_found}.
      *
-     * @param token a kind token, for example {@code directive}
-     * @return the kind; empty when the token names no kind, or one the list does not hold
+     * @param token a kind token, for example {@code mission_type}
+     * @return the kind; empty when the token names no kind, or one this service does not list ({@link #LISTED})
      */
     public static Optional<ArtifactKind> listedKind(String token) {
-        return ArtifactKind.fromToken(token).filter(kind -> listed().contains(kind));
+        return ArtifactKind.fromToken(token).filter(LISTED::contains);
     }
 
     /**
-     * One page of a pack's artifacts of the served kinds, with the digest of the inputs it was read from.
+     * One page of a pack's artifacts of the listed kinds, with the digest of the inputs it was read from.
      *
      * @param pack the pack's identity
-     * @param filter the one served kind to list; empty for all of them
+     * @param filter the one listed kind to list; empty for all of them
      * @param after the position the page starts after; empty for the first page
      * @param size the most artifacts the page holds, at least 1
      * @return the page and the verified fingerprint
-     * @throws IllegalArgumentException when {@code size} is below 1 or {@code filter} is not a served kind
+     * @throws IllegalArgumentException when {@code size} is below 1 or {@code filter} is not a listed kind
      * @throws CharterRefusal with {@link RefusalCode#PACK_UNREADABLE} when any configured pack or pack file cannot be
      *     read, this pack included when it has no readable {@code pack.yaml}, with {@link RefusalCode#PACK_NOT_FOUND}
      *     when no configured pack has this identifier, or with
@@ -319,7 +399,7 @@ public final class ArtifactReadService {
         }
         List<ArtifactKind> kinds = filter.map(List::of).orElse(listed());
         if (!listed().containsAll(kinds)) {
-            throw new IllegalArgumentException("not a served kind: " + kinds);
+            throw new IllegalArgumentException("not a listed kind: " + kinds);
         }
         return read.read(STALE_LIST, () -> page(packs.load(pack), kinds, after, size));
     }
@@ -334,7 +414,8 @@ public final class ArtifactReadService {
      * @throws CharterRefusal with {@link RefusalCode#PACK_NOT_FOUND} when no configured pack has this identifier,
      *     whatever the kind; with {@link RefusalCode#PACK_UNREADABLE} when the configured pack has no readable
      *     {@code pack.yaml}, whatever the kind; with {@link RefusalCode#KIND_NOT_FOUND} when the token names no listed kind, or names
-     *     {@code agent_profile}, which the literal route renders; with the not-found code of the kind when the pack has no such artifact; with {@link RefusalCode#PACK_UNREADABLE} or
+     *     a listed kind outside {@link #ITEM_KINDS} ({@code agent_profile} or {@code mission_type}), which its literal route renders; with the
+     *     not-found code of the kind when the pack has no such artifact; with {@link RefusalCode#PACK_UNREADABLE} or
      *     {@link RefusalCode#STALE_INPUT} as every verified read refuses
      */
     public ConsistentRead.Verified<Item> item(PackIdentifier pack, String kindToken, String id) {
@@ -348,13 +429,14 @@ public final class ArtifactReadService {
                     new CharterRefusal(
                             RefusalCode.KIND_NOT_FOUND, "The service serves no artifact kind " + kindToken + "."));
         }
-        if (kind.get() == ArtifactKind.AGENT_PROFILE) {
+        if (!ITEM_KINDS.contains(kind.get())) {
+            String token = kind.get().token();
             return refusedAfterThePack(
                     pack,
                     new CharterRefusal(
                             RefusalCode.KIND_NOT_FOUND,
-                            "The templated item read renders no agent_profile; read it at /packs/" + pack.value()
-                                    + "/artifacts/agent_profile/" + id + "."));
+                            "The templated item read renders no " + token + "; read it at /packs/" + pack.value()
+                                    + "/artifacts/" + token + "/" + id + "."));
         }
         ArtifactKind served = kind.get();
         String stale = "The inputs changed while the " + served.token() + " was read; read it again.";
@@ -394,7 +476,8 @@ public final class ArtifactReadService {
      * @param id the referring artifact's id
      * @return the references and the verified fingerprint
      * @throws CharterRefusal as {@link #item(PackIdentifier, String, String)} refuses for the pack, the kind and the
-     *     artifact; with a composition code as the offering refuses a compose the resolver cannot serve
+     *     artifact, over the {@link #LISTED} kinds, so a mission type is read here and refused with its own not-found
+     *     code; with a composition code as the offering refuses a compose the resolver cannot serve
      */
     public ConsistentRead.Verified<List<Reference>> references(PackIdentifier pack, String kindToken, String id) {
         Objects.requireNonNull(pack, "pack");
@@ -463,6 +546,51 @@ public final class ArtifactReadService {
         });
     }
 
+    /**
+     * A mission step contract, read from the pack aggregate in one verified read with what the pack holds of what it
+     * names: its mission type, the step its action names under that type, and each delegation candidate of a listed
+     * kind. A step contract whose mission type the pack does not hold still reads.
+     */
+    private ConsistentRead.Verified<Item> stepContract(PackIdentifier pack, String id) {
+        return read.read(STALE_ONE, () -> {
+            Pack held = packs.load(pack);
+            MissionStepContract contract =
+                    (MissionStepContract) heldIn(held, pack, ArtifactKind.MISSION_STEP_CONTRACT, id);
+            Optional<CharterArtifact> type = held.artifacts(ArtifactKind.MISSION_TYPE).stream()
+                    .filter(candidate -> candidate.localId().equals(contract.mission()))
+                    .findFirst();
+            boolean step = type.map(steps::stepIds)
+                    .map(ids -> ids.contains(contract.action()))
+                    .orElse(false);
+            return new Item.OfMissionStepContract(contract, type.isPresent(), step, heldCandidates(held, contract));
+        });
+    }
+
+    /** The delegation candidates of a step contract whose kind is listed and that the pack holds. */
+    private static Set<ArtifactPosition> heldCandidates(Pack held, MissionStepContract contract) {
+        return contract.steps().stream()
+                .flatMap(step -> step.delegatesTo().stream())
+                .filter(delegation -> LISTED.contains(delegation.kind()))
+                .flatMap(delegation -> heldOf(held, delegation))
+                .collect(Collectors.toUnmodifiableSet());
+    }
+
+    private static Stream<ArtifactPosition> heldOf(Pack held, StepDelegation delegation) {
+        return delegation.candidates().stream()
+                .filter(candidate -> held.artifacts(delegation.kind()).stream()
+                        .anyMatch(artifact -> artifact.localId().equals(candidate)))
+                .map(candidate -> new ArtifactPosition(delegation.kind(), candidate));
+    }
+
+    /** The artifact of a listed kind the pack aggregate holds under an id; the kind's not-found code otherwise. */
+    private static CharterArtifact heldIn(Pack held, PackIdentifier pack, ArtifactKind kind, String id) {
+        return held.artifacts(kind).stream()
+                .filter(artifact -> artifact.localId().equals(id))
+                .findFirst()
+                .orElseThrow(() -> new CharterRefusal(
+                        absentCode(kind), "Pack " + pack.value() + " has no " + kind.token() + " " + id + "."));
+    }
+
     /** The kind's own verified read of one artifact, typed by its kind. */
     private ConsistentRead.Verified<Item> servedItem(PackIdentifier pack, ArtifactKind kind, String id) {
         return switch (kind) {
@@ -509,28 +637,24 @@ public final class ArtifactReadService {
                         toolguide -> as(
                                 toolguides.toolguideWithRevision(pack, toolguide),
                                 revised -> new Item.OfToolguide(revised.value(), revised.revision())));
-            default -> throw new IllegalStateException("a served kind without a read: " + kind);
+            case MISSION_STEP_CONTRACT -> stepContract(pack, id);
+            default -> throw new IllegalStateException("an item kind without a read: " + kind);
         };
     }
 
     /**
-     * The artifact whose references are read: through its kind's item read, or, for an agent profile, whose body the
-     * profiles slice renders, the stored entity, in one verified read. The id is not parsed as an identifier of the
-     * kind: an id the pack does not hold, malformed or not, is the kind's not-found.
+     * The artifact whose references are read: through its kind's item read, or, for a kind the templated item read does
+     * not render (an agent profile, a mission type), the stored entity, in one verified read. The id is not parsed as an
+     * identifier of the kind: an id the pack does not hold, malformed or not, is the kind's not-found.
      */
     private ConsistentRead.Verified<CharterArtifact> referrer(PackIdentifier pack, ArtifactKind kind, String id) {
-        if (kind != ArtifactKind.AGENT_PROFILE) {
+        if (ITEM_KINDS.contains(kind)) {
             ConsistentRead.Verified<Item> item = servedItem(pack, kind, id);
             return new ConsistentRead.Verified<>(item.value().artifact(), item.fingerprint());
         }
         return read.read(
                 "The inputs changed while the " + kind.token() + " was read; read it again.",
-                () -> packs.load(pack).artifacts(kind).stream()
-                        .filter(candidate -> candidate.localId().equals(id))
-                        .findFirst()
-                        .orElseThrow(() -> new CharterRefusal(
-                                absentCode(kind),
-                                "Pack " + pack.value() + " has no " + kind.token() + " " + id + ".")));
+                () -> heldIn(packs.load(pack), pack, kind, id));
     }
 
     /**
