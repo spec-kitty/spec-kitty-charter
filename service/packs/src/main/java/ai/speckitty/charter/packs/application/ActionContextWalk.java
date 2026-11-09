@@ -173,12 +173,17 @@ public final class ActionContextWalk {
      * @param entries the entries, sorted by full URN string (ADR-0018 D3)
      * @param suggestionCandidates the out-of-force candidates step 3 reached, in URN order; see
      *     {@link ActionContextWalk#walk}
+     * @param actionEnhancedBy the enhancers in force that enhance the start step itself, in URN order; empty when the
+     *     mission type is not in force
+     * @param actionEnhances the artifacts in force the start step enhances, in URN order; empty likewise
      */
     public record Context(
             Urn action,
             boolean missionTypeInForce,
             List<Entry> entries,
-            List<SuggestionCandidate> suggestionCandidates) {
+            List<SuggestionCandidate> suggestionCandidates,
+            List<Urn> actionEnhancedBy,
+            List<Urn> actionEnhances) {
 
         /**
          * Checks and copies the fields.
@@ -187,11 +192,15 @@ public final class ActionContextWalk {
          * @param missionTypeInForce whether the mission type is in force
          * @param entries the entries
          * @param suggestionCandidates the out-of-force suggestions
+         * @param actionEnhancedBy the enhancers in force of the start step
+         * @param actionEnhances the artifacts in force the start step enhances
          */
         public Context {
             Objects.requireNonNull(action, "action");
             entries = List.copyOf(Objects.requireNonNull(entries, "entries"));
             suggestionCandidates = List.copyOf(Objects.requireNonNull(suggestionCandidates, "suggestionCandidates"));
+            actionEnhancedBy = List.copyOf(Objects.requireNonNull(actionEnhancedBy, "actionEnhancedBy"));
+            actionEnhances = List.copyOf(Objects.requireNonNull(actionEnhances, "actionEnhances"));
         }
     }
 
@@ -257,7 +266,7 @@ public final class ActionContextWalk {
         Urn type = known(missionType, action);
         Urn start = Urn.action(missionType, action);
         if (!inForce.test(type)) {
-            return new Context(start, false, List.of(), List.of());
+            return new Context(start, false, List.of(), List.of(), List.of(), List.of());
         }
         Run run = new Run(start, inForce);
         List<Urn> scoped = run.expand(List.of(start), Step.SCOPE, 1);
@@ -265,7 +274,7 @@ public final class ActionContextWalk {
         List<Urn> suggested = run.expand(scoped, Step.SUGGESTS, depth);
         run.expand(suggested, Step.REQUIRES_OF_SUGGESTED, Integer.MAX_VALUE);
         run.expand(run.listedUrns(), Step.VOCABULARY, 1);
-        return new Context(start, true, run.entries(), run.suggestions());
+        return new Context(start, true, run.entries(), run.suggestions(), List.of(), List.of());
     }
 
     /** The mission type's URN, once the names are judged on the merged closure (OD-9, closure form). */

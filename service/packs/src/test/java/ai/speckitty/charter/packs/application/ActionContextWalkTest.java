@@ -589,4 +589,53 @@ class ActionContextWalkTest {
 
         assertThat(context.suggestionCandidates()).isEmpty();
     }
+
+    // ---- the enhancers of the start step, both ways ----------------------------------------------------------------
+
+    private static Closure enhancingTheStep() {
+        return closure(
+                List.of("tactic:T1", "skill:E2", "skill:E1", "skill:Idle", "tactic:Target", "tactic:IdleTarget"),
+                edge(START, RelationType.SCOPE, "tactic:T1"),
+                edge("skill:E2", RelationType.ENHANCES, START),
+                edge("skill:E1", RelationType.ENHANCES, START),
+                edge("skill:Idle", RelationType.ENHANCES, START),
+                edge(START, RelationType.ENHANCES, "tactic:Target"),
+                edge(START, RelationType.ENHANCES, "tactic:IdleTarget"));
+    }
+
+    @Test
+    void theContextCarriesTheEnhancersInForceOfTheStartStepAndTheArtifactsInForceItEnhancesInUrnOrder() {
+        Context context = walk(
+                enhancingTheStep(), 0, inForce("mission_type:M", "tactic:T1", "skill:E1", "skill:E2", "tactic:Target"));
+
+        assertThat(context.actionEnhancedBy())
+                .as("skill:Idle is not in force")
+                .containsExactly(urn("skill:E1"), urn("skill:E2"));
+        assertThat(context.actionEnhances())
+                .as("tactic:IdleTarget is not in force")
+                .containsExactly(urn("tactic:Target"));
+        assertThat(listed(context))
+                .as("none of them is pulled into the answer (rule E12)")
+                .containsExactly("tactic:T1");
+    }
+
+    @Test
+    void aStartStepNobodyEnhancesAndThatEnhancesNothingHasNoEnhancers() {
+        Context context = walk(
+                closure(List.of("tactic:T1"), edge(START, RelationType.SCOPE, "tactic:T1")),
+                0,
+                ActionContextWalkTest::everything);
+
+        assertThat(context.actionEnhancedBy()).isEmpty();
+        assertThat(context.actionEnhances()).isEmpty();
+    }
+
+    @Test
+    void aMissionTypeNotInForceAnswersNoEnhancerOfTheStartStepEither() {
+        Context context = walk(enhancingTheStep(), 0, inForce("skill:E1", "tactic:Target"));
+
+        assertThat(context.missionTypeInForce()).isFalse();
+        assertThat(context.actionEnhancedBy()).isEmpty();
+        assertThat(context.actionEnhances()).isEmpty();
+    }
 }
