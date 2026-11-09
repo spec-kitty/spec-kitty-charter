@@ -21,10 +21,12 @@ put:
     preset id is the union, across the levels (built-in, org, project), of the must-have items of the copy in force at
     each level. Within one level the copy of the pack last in closure order replaces the others, a child pack's copy
     its parent's, and a replaced copy requires nothing. A deny of an artifact only an earlier level's copy requires,
-    which a later level's copy replaced, is 409 artifact_required naming that earlier level's pack.); only the deny
-    entry the write adds is judged against that floor, so a stored one a pack
-    upgrade put on it is tolerated (ADR-0059 D4), and removing the satisfying override later (an unselect of it) is
-    not refused: the deny entry is then read as not applied and listed in denyNotApplied. Requires If-Match (ADR-0020
+    which a later level's copy replaced, is 409 artifact_required naming that earlier level's pack.); the named
+    artifact is judged against that floor whether or not its deny entry is already stored (a second deactivate of a
+    locked artifact is 409 artifact_locked, and of a required one whose override was unselected is 409
+    artifact_required, ADR-0059 D4 and amendment R6), and removing the satisfying override later (an unselect of it)
+    is not refused: the deny entry is then read as not applied and listed in denyNotApplied. A closure whose layer
+    merge refuses reaches this write as 500 pack_unreadable (DIV-230). Requires If-Match (ADR-0020
     D6), the quoted revision or the current getActivation tag (a closure tag that no longer matches is 412; the answer
     keeps the revision as its ETag). An If-Match that is neither * nor one quoted sha256 tag (the revision or the
     getActivation tag) breaks its pattern and is 400 before anything

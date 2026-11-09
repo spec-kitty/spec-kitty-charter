@@ -635,13 +635,16 @@
     when an active override of it satisfies the requirement in the document as it will be stored
     (operator ruling Q9): the in-force resolution judges it (E5, DIV-225), so an enhancement never
     satisfies and a deny entry accepted on write is one the next read applies; a locked artifact is
-    never satisfied by an override. A create judges every deny entry of the document; a replace, a
-    deactivate, a preset applied with force and a select with includeDeactivated judge only the
-    deny entries they add, and a replace that adds the override and the deny entry together is
-    accepted. A later write that removes the override is not refused; the read lists the deny
-    entry in denyNotApplied. The resolution is asked only when a write adds a deny entry on a
-    required artifact, so a layer merge that refuses (DIV-217, DIV-218) reaches that write as 500
-    pack_unreadable, where it answered 409 before PR C. The requirement follows A1 (DIV-205). The
+    never satisfied by an override. A create judges every deny entry of the document; a replace
+    judges only the deny entries it adds; a deactivate judges the named target whether or not its
+    deny entry is already stored; a preset applied with force and a select with includeDeactivated
+    add no deny entry and judge none. A replace that adds the override and the deny entry together
+    is accepted. A later write that removes the override is not refused; the read lists the deny
+    entry in denyNotApplied. The floor judgement of a create, a replace and a deactivate asks the
+    resolution only for a deny entry on a required artifact; the per-artifact writes ask it
+    whenever they apply anything (DIV-230). A layer merge that refuses (DIV-217, DIV-218)
+    therefore reaches a write as 500 pack_unreadable, where it answered 409 before PR C. The
+    requirement follows A1 (DIV-205). The
     requirement of a governing preset id is the union, across the levels (built-in, org, project),
     of the must-have items of the copy in force at each level. Within one level the copy of the
     pack last in closure order replaces the others, a child pack's copy its parent's, and a
@@ -650,8 +653,8 @@
   rationale: >-
     A deny entry that can never apply misleads the reader of the document. Refusing it at write
     keeps every stored deny entry meaningful; a stale entry left by a pack upgrade is served as
-    stored, tolerated by a per-artifact write that does not add it, and refused on the next create
-    or replace (ADR-0059 D4). An active override satisfies the requirement, so the deny entry
+    stored, tolerated by a write that neither adds nor names it, and refused on the next create,
+    on a replace that adds it and on a deactivate of that artifact (ADR-0059 D4). An active override satisfies the requirement, so the deny entry
     applies at read and "accepted on write" means "satisfied at read" for that document (research
     R12).
   ruling: >-
@@ -661,7 +664,7 @@
   since: 2026-11-05
   evidence:
     - "charter: contracts/charter/scenarios/activation-register.feature (A deny entry on a must-have item of a governing preset is refused, naming the pack)"
-    - "charter: contracts/charter/scenarios/activation-deny-satisfied.feature (IC-13: the deactivate, the replace, the create, the unselect afterwards, the three regression controls and the merge refusal)"
+    - "charter: contracts/charter/scenarios/activation-deny-satisfied.feature (IC-13: the deactivate, the replace, the create, the unselect afterwards, the stored locked and the removed-override re-deactivates, the three regression controls and the merge refusal)"
     - "charter: service/activations/src/test/java/ai/speckitty/charter/activations/domain/DocumentRulesOverrideTest.java"
     - "corpus case: deny-required-refused-at-write"
 

@@ -480,7 +480,8 @@ removal ([ADR-0030](/adr/0030-removal-is-distinct-from-deactivation/)).
   of every governing preset in that closure. A create or replace whose deny list names a required
   or locked artifact is refused `409`, unless an active override of a required, not locked artifact satisfies the
   requirement in the document as it will be stored (an enhancement never does; rule W26); a per-artifact or preset
-  write tolerates such an entry already stored and refuses `409` only a deny entry it adds
+  write refuses `409` only a deny entry it adds, and a deactivate also its named target when that entry is already
+  stored
   ([DIV-204](/conformance/divergence-register/), [DIV-205](/conformance/divergence-register/)).
   Since PR B and PR C the service answers four effective reads: the artifact list and the skipped report, the effective
   graph and the effective action context. The graph holds the nodes in force (the artifacts in force, and the held

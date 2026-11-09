@@ -410,13 +410,16 @@ registration and is not the place.
     override). An enhancement never satisfies. A locked `T` is refused `409 artifact_locked` whatever overrides it.
   - The write and the read cannot disagree: the write asks the same `InForceResolution` the reads share, through the
     `PacksSession` of its request, and a deny entry it accepts is one the next read applies.
-  - Scope, as DIV-204: a create judges every deny entry of its body; a replace, a deactivate, a preset applied with
-    `force` and a select with `includeDeactivated` judge only the deny entries they add (A4 of the amendment of
-    2026-11-07). A replace that adds the override and the deny entry together is accepted.
+  - Scope, as DIV-204: a create judges every deny entry of its body; a replace judges only the deny entries it adds
+    (A4 of the amendment of 2026-11-07); a deactivate judges the named target whether or not its deny entry is already
+    stored; a preset applied with `force` and a select with `includeDeactivated` add no deny entry and judge none. A
+    replace that adds the override and the deny entry together is accepted.
   - Removing the override later is not refused. The stored deny entry is then not applied: the read puts `T` back in
-    force and lists the entry in `denyNotApplied` with the reason `required`, and a write judges only what it adds.
-  - The resolution is asked only when a write adds a deny entry on a required, not locked artifact, so a closure whose
-    layer merge refuses (D3, `500 pack_unreadable`) reaches that write and no other. `CascadeRules` is unchanged: a
+    force and lists the entry in `denyNotApplied` with the reason `required`, and only a write that adds the entry, or
+    deactivates its target again, judges it.
+  - The floor judgement asks the resolution only for a deny entry on a required, not locked artifact. The per-artifact
+    writes also ask it whenever they apply anything (DIV-230), so a closure whose layer merge refuses (D3,
+    `500 pack_unreadable`) reaches them as well. `CascadeRules` is unchanged: a
     floor artifact is never a cascading-deactivate candidate.
   - ADR-0013 D2 and ADR-0020 D7 say a required artifact is "never subtracted" and "active whatever the document says".
     The rulings of 2026-11-06 let an active override hide a required artifact, so those texts read as this amendment
