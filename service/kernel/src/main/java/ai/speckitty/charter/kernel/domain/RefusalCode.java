@@ -192,7 +192,18 @@ public enum RefusalCode {
     /** An enhancement or Markdown prompt fragment breaks its load-time rules (ADR-0066; reserved for #424). */
     PROMPT_FRAGMENT_INVALID("prompt_fragment_invalid"),
     /** The prompt in force declares no slot an enhancement names (ADR-0066; reserved for #424). */
-    PROMPT_SLOT_MISSING("prompt_slot_missing");
+    PROMPT_SLOT_MISSING("prompt_slot_missing"),
+
+    /**
+     * The asked pack has no mission step contract with the asked identity: the not-found code of kind
+     * {@code mission_step_contract}. Answered as 404. Reserved for #99 until its read is built.
+     */
+    MISSION_STEP_CONTRACT_NOT_FOUND("mission_step_contract_not_found"),
+    /**
+     * The skeleton name does not decode to a skeleton of the asked mission type (RFC 6901 escaping, D9). Answered as
+     * 404. Reserved for #99 until its read is built.
+     */
+    SKELETON_NOT_FOUND("skeleton_not_found");
 
     private final String token;
 
@@ -216,7 +227,8 @@ public enum RefusalCode {
      *     {@link #TACTIC_NOT_FOUND}, {@link #DIRECTIVE_NOT_FOUND}, {@link #STYLEGUIDE_NOT_FOUND},
      *     {@link #PARADIGM_NOT_FOUND}, {@link #TOOLGUIDE_NOT_FOUND}, {@link #KIND_NOT_FOUND},
      *     {@link #ACTIVATION_NOT_FOUND}, {@link #ARTIFACT_NOT_FOUND}, {@link #PRESET_NOT_FOUND},
-     *     {@link #RELATIONSHIP_NOT_FOUND} and {@link #REGISTRATION_NOT_FOUND}
+     *     {@link #RELATIONSHIP_NOT_FOUND}, {@link #REGISTRATION_NOT_FOUND}, {@link #MISSION_STEP_CONTRACT_NOT_FOUND} and
+     *     {@link #SKELETON_NOT_FOUND}
      */
     public boolean notFound() {
         return this == MISSION_TYPE_NOT_FOUND
@@ -232,6 +244,8 @@ public enum RefusalCode {
                 || this == ARTIFACT_NOT_FOUND
                 || this == PRESET_NOT_FOUND
                 || this == RELATIONSHIP_NOT_FOUND
-                || this == REGISTRATION_NOT_FOUND;
+                || this == REGISTRATION_NOT_FOUND
+                || this == MISSION_STEP_CONTRACT_NOT_FOUND
+                || this == SKELETON_NOT_FOUND;
     }
 }
