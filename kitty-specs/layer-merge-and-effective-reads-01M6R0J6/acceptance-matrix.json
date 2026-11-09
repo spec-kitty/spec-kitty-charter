@@ -146,13 +146,13 @@
     },
     {
       "criterion_id": "FR-015",
-      "description": "Verify FR-015 is satisfied",
+      "description": "An enhancement is returned only when the enhancer is itself active, T is reported as enhanced by an active E, and an enhancer pulls nothing into force.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "contracts/charter/scenarios/effective-reads.feature: \"US3 AS5 - an active enhancer and its target in force are both in force, and an enhancer that is not active is absent\"; contracts/charter/scenarios/effective-graph-and-context.feature: \"US5 AS3 - an enhancer in force is an edge of the graph, read from T's side, and one out of force is not\"",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:reviewer-renata",
+      "verified_at": "2026-11-09T19:46:03.999940+00:00",
+      "notes": "PR B (#427) for the list; PR C (#448) for the graph/context side. Ruling of 2026-11-06 (enhances read only when active)."
     },
     {
       "criterion_id": "FR-016",
