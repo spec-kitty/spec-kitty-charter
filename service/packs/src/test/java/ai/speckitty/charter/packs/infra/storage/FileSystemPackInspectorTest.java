@@ -716,8 +716,32 @@ class FileSystemPackInspectorTest {
         PackVerdict verdict = PackPolicy.judge(INSPECTOR.inspect(root, Scope.FULL));
 
         // OP-1, OP-2 and open-packs#75 landed: the presets, the manifest and the six sidecars are all in the shapes the
-        // store reads (ADR-0042, ADR-0040 decision 6), so main at 90de8f9's "no findings" is back.
-        assertThat(verdict.findings()).isEmpty();
+        // store reads (ADR-0042, ADR-0040 decision 6), so main at 90de8f9's "no findings" is back, but for the five
+        // software-dev step prompts whose slot still holds legacy text under an unversioned descriptor: five warnings
+        // (ADR-0066 version gate). The slots return to empty when open-packs#175 empties them (#435).
+        assertThat(verdict.findings())
+                .extracting(PackFinding::code, PackFinding::severity, PackFinding::file)
+                .containsExactlyInAnyOrder(
+                        tuple(
+                                PackFindingCode.PROMPT_SLOT_NOT_EMPTY_UNVERSIONED,
+                                PackFindingCode.Severity.WARNING,
+                                "missions/software-dev/steps/implement.prompt.md"),
+                        tuple(
+                                PackFindingCode.PROMPT_SLOT_NOT_EMPTY_UNVERSIONED,
+                                PackFindingCode.Severity.WARNING,
+                                "missions/software-dev/steps/plan.prompt.md"),
+                        tuple(
+                                PackFindingCode.PROMPT_SLOT_NOT_EMPTY_UNVERSIONED,
+                                PackFindingCode.Severity.WARNING,
+                                "missions/software-dev/steps/review.prompt.md"),
+                        tuple(
+                                PackFindingCode.PROMPT_SLOT_NOT_EMPTY_UNVERSIONED,
+                                PackFindingCode.Severity.WARNING,
+                                "missions/software-dev/steps/specify.prompt.md"),
+                        tuple(
+                                PackFindingCode.PROMPT_SLOT_NOT_EMPTY_UNVERSIONED,
+                                PackFindingCode.Severity.WARNING,
+                                "missions/software-dev/steps/tasks.prompt.md"));
 
         // 386 at 5df92a5d, less the 74 YAML files the mission-type migration (#194,
         // open-packs#95) retired, plus its 4 mission-type files, plus the payloads and templates #251 lists whatever

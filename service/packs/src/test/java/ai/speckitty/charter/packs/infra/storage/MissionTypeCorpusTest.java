@@ -1,10 +1,15 @@
 package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.tuple;
 
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.missions.domain.MissionStep;
 import ai.speckitty.charter.missions.domain.MissionType;
+import ai.speckitty.charter.packs.domain.PackFinding;
+import ai.speckitty.charter.packs.domain.PackFindingCode;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -13,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
+import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -144,6 +150,49 @@ class MissionTypeCorpusTest {
         for (String file : written) {
             assertThat(copy.resolve(file)).as(file).hasSameBinaryContentAs(source.resolve(file));
         }
+    }
+
+    /** The five software-dev prompts that still hold legacy text between their slot markers at the pin (open-packs#175). */
+    private static final List<String> SLOT_PROMPTS = List.of(
+            "missions/software-dev/steps/implement.prompt.md",
+            "missions/software-dev/steps/plan.prompt.md",
+            "missions/software-dev/steps/review.prompt.md",
+            "missions/software-dev/steps/specify.prompt.md",
+            "missions/software-dev/steps/tasks.prompt.md");
+
+    @Test
+    @DisplayName("the built-in pack loads with exactly 5 prompt_slot_not_empty warnings, one per software-dev prompt")
+    void theBuiltInPackWarnsOncePerLegacySlotPrompt() {
+        OpenPacksCorpus.assertPinned();
+
+        WholePackStore.LoadedPack loaded = new WholePackStore(new YamlSerializationStrategy())
+                .load(OpenPacksCorpus.packsDirectory().resolve("built-in"));
+
+        assertThat(loaded.warnings())
+                .extracting(PackFinding::code, PackFinding::file)
+                .containsExactlyInAnyOrder(SLOT_PROMPTS.stream()
+                        .map(file -> tuple(PackFindingCode.PROMPT_SLOT_NOT_EMPTY_UNVERSIONED, file))
+                        .toArray(Tuple[]::new));
+        assertThat(loaded.warnings())
+                .allSatisfy(warning -> assertThat(warning.detail())
+                        .startsWith(warning.file() + ": ")
+                        .contains("spdd:reasons-block"));
+        assertThat(loaded.pack().violations())
+                .as("a warning is never a violation (A4)")
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName("the built-in pack composes at the pin: the warnings refuse nothing, no pack_unreadable (NFR-002)")
+    void theBuiltInPackComposesDespiteItsWarnings() {
+        OpenPacksCorpus.assertPinned();
+        Path builtIn = OpenPacksCorpus.packsDirectory().resolve("built-in");
+        DomainRepositoryService service = new DomainRepositoryService(
+                () -> List.of(new PackLocation("built-in", PackLevel.BUILT_IN, builtIn)),
+                new YamlSerializationStrategy());
+
+        assertThatCode(() -> service.compositionFacts(new PackIdentifier("built-in")))
+                .doesNotThrowAnyException();
     }
 
     @Test

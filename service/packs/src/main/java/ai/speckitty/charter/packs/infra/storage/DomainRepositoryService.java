@@ -11,6 +11,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.kernel.markdown.PromptSlots;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.missions.domain.UnresolvedTemplate;
 import ai.speckitty.charter.packs.domain.AssetFile;
@@ -30,6 +31,7 @@ import ai.speckitty.charter.packs.domain.PackDocument;
 import ai.speckitty.charter.packs.domain.PackEdge;
 import ai.speckitty.charter.packs.domain.PackEdgeRepository;
 import ai.speckitty.charter.packs.domain.PackElementViolation;
+import ai.speckitty.charter.packs.domain.PackFinding;
 import ai.speckitty.charter.packs.domain.PackFindingCode;
 import ai.speckitty.charter.packs.domain.PackPolicy;
 import ai.speckitty.charter.packs.domain.PackRepository;
@@ -50,6 +52,7 @@ import ai.speckitty.charter.packs.domain.Template;
 import ai.speckitty.charter.packs.domain.Toolguide;
 import ai.speckitty.charter.packs.domain.ToolguideIdentifier;
 import ai.speckitty.charter.packs.domain.ToolguideRepository;
+import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
 import ai.speckitty.charter.profiles.domain.AgentProfile;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -716,11 +719,13 @@ public final class DomainRepositoryService
 
     private Pack assemble(PackIdentifier pack) {
         Resolved resolved = resolve(pack);
+        // No read serves the warnings in phase 1: the list is filled and dropped.
         return assembly(
                         pack,
                         resolved.store.read(resolved.key),
                         new HashMap<>(),
-                        resolved.store.readGraphs(resolved.key))
+                        resolved.store.readGraphs(resolved.key),
+                        new ArrayList<>())
                 .build();
     }
 
@@ -798,24 +803,66 @@ public final class DomainRepositoryService
      * </ol>
      *
      * and last appends each rule fault as a violation at its file, after the violations of the store, of every bound
-     * kind, the templates, the presets and the pack document: the order of {@code readable}'s first violation.
+     * kind, the templates, the presets and the pack document, and after the slot faults of the step prompts (FR-007,
+     * IC-03): the order of {@code readable}'s first violation. A slot fault the descriptor's version only warns of is
+     * put on {@code warnings}, not on the violations.
      *
      * @param pack the pack the artifacts belong to
      * @param read what the store read
      * @param places receives each added artifact's pack-relative file
      * @param graphs what the store read of the pack's graph documents
+     * @param warnings receives the load findings that do not refuse the pack (A4, A8), filled as {@code places} is
      * @return the builder, ready to build
      */
     static Pack.Builder assembly(
             PackIdentifier pack,
             FilesystemPackStore.PackRead read,
             Map<Urn, String> places,
-            FilesystemPackStore.GraphRead graphs) {
+            FilesystemPackStore.GraphRead graphs,
+            List<PackFinding> warnings) {
         List<StepEnhancementFault.Finding> faults = PackPolicy.stepEnhancementFaults(
                 stepEnhancementFacts(read, graphs), graphs.violations().isEmpty());
         Pack.Builder builder = assembly(pack, judged(read, faults), places);
+        recordPromptSlotFaults(read, builder, warnings);
         faults.stream().map(PackPolicy::violationOf).forEach(builder::violation);
         return builder;
+    }
+
+    /**
+     * Judges the slots of every step prompt of the stored mission types (FR-007) and records each fault at the prompt's
+     * pack-relative file: a blocking fault as a violation, a warning on {@code warnings}, never on the violations
+     * (A4). The text parsed is the canonical text of the prompt document the store read into the mission type
+     * ({@code MissionTypeDso.Step#prompt}), frontmatter included (A5, A11): the same text validate mode parses. A step
+     * with no prompt has nothing to judge.
+     */
+    private static void recordPromptSlotFaults(
+            FilesystemPackStore.PackRead read, Pack.Builder builder, List<PackFinding> warnings) {
+        Optional<String> version = read.descriptor().toDescriptor().schemaVersion();
+        for (FilesystemPackStore.Stored<MissionTypeDso> stored : read.elements(MissionTypeBinding.INSTANCE)) {
+            List<MissionTypeDso.Step> steps = new ArrayList<>(stored.dso().steps());
+            steps.addAll(stored.dso().onDemandSteps());
+            for (MissionTypeDso.Step step : steps) {
+                if (step.promptPath().isEmpty() || step.prompt().isEmpty()) {
+                    continue;
+                }
+                String file = companionFile(stored.file(), step.promptPath().get());
+                PromptSlots.Parse parse =
+                        PromptSlots.parse(MarkdownCodec.write(step.prompt().get()));
+                for (PackPolicy.PromptSlotFault fault : PackPolicy.promptSlotFaults(parse, version)) {
+                    if (fault.code().severity() == PackFindingCode.Severity.BLOCKING) {
+                        builder.violation(PackPolicy.violationOf(file, fault));
+                    } else {
+                        warnings.add(PackPolicy.findingOf(file, fault));
+                    }
+                }
+            }
+        }
+    }
+
+    /** The pack-relative file of a companion path, which is relative to the file of the artifact that names it. */
+    private static String companionFile(String artifactFile, String companionPath) {
+        Path file = Path.of(artifactFile).resolveSibling(companionPath).normalize();
+        return file.toString().replace(file.getFileSystem().getSeparator(), "/");
     }
 
     /** The store hard-codes this kind for a companion it refuses ({@code FilesystemPackStore#withCompanions}). */
