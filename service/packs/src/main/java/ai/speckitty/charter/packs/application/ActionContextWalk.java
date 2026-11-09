@@ -353,6 +353,7 @@ public final class ActionContextWalk {
             for (Urn parent : frontier) {
                 for (Link link : outgoing.getOrDefault(parent, List.of())) {
                     if (relation == RelationType.SUGGESTS
+                            && link.relation() == RelationType.SUGGESTS
                             && !link.target().equals(start)
                             && !visited.contains(link.target())
                             && !inForce.test(link.target())) {
