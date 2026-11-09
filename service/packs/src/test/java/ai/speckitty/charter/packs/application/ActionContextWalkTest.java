@@ -24,6 +24,8 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 /**
  * The action-context walk (ADR-0018 D2 and D3, rule E16): five breadth-first steps from {@code action:M/a} over the merged
@@ -540,5 +542,37 @@ class ActionContextWalkTest {
         assertThat(context.suggestionCandidates())
                 .extracting(ActionContextWalk.SuggestionCandidate::urn, ActionContextWalk.SuggestionCandidate::via)
                 .containsExactly(tuple(urn("tactic:S1"), urn("tactic:B")), tuple(urn("tactic:S2"), urn("tactic:A")));
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+            value = RelationType.class,
+            names = {"VOCABULARY", "ENHANCES", "OVERRIDES", "APPLIES", "REFINES", "INSTANTIATES"})
+    void onlyASuggestsLinkMakesACandidateWhateverOtherRelationAScopedArtifactReachesATargetBy(RelationType relation) {
+        Closure closure = closure(
+                List.of("tactic:T1", "tactic:Out"),
+                edge(START, RelationType.SCOPE, "tactic:T1"),
+                edge("tactic:T1", relation, "tactic:Out"));
+
+        Context context = walk(closure, 2, inForce("mission_type:M", "tactic:T1"));
+
+        assertThat(context.suggestionCandidates())
+                .as("a %s link to an out-of-force target is no suggestion", relation)
+                .isEmpty();
+    }
+
+    @Test
+    void aSuggestedArtifactIsStillACandidateWhenAnotherLinkOfTheSameSourceReachesAnotherTargetOutOfForce() {
+        Closure closure = closure(
+                List.of("tactic:T1", "tactic:S", "tactic:O"),
+                edge(START, RelationType.SCOPE, "tactic:T1"),
+                edge("tactic:T1", RelationType.SUGGESTS, "tactic:S"),
+                edge("tactic:T1", RelationType.OVERRIDES, "tactic:O"));
+
+        Context context = walk(closure, 1, inForce("mission_type:M", "tactic:T1"));
+
+        assertThat(context.suggestionCandidates())
+                .extracting(ActionContextWalk.SuggestionCandidate::urn)
+                .containsExactly(urn("tactic:S"));
     }
 }
