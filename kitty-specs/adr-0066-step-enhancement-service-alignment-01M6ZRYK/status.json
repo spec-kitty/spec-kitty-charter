@@ -1,7 +1,7 @@
 {
-  "event_count": 9,
-  "last_event_id": "01M7011BANV31XQ4SRK9JMPNE0",
-  "materialized_at": "2026-11-09T11:28:00.853908+00:00",
+  "event_count": 10,
+  "last_event_id": "01M7011CWWRYMY1H5ZYEVAR45A",
+  "materialized_at": "2026-11-09T11:28:02.460895+00:00",
   "mission_number": "",
   "mission_slug": "adr-0066-step-enhancement-service-alignment-01M6ZRYK",
   "mission_type": "",
@@ -15,7 +15,7 @@
     "for_review": 0,
     "in_progress": 0,
     "in_review": 0,
-    "planned": 9
+    "planned": 10
   },
   "work_packages": {
     "WP01": {
@@ -80,6 +80,13 @@
       "lane": "planned",
       "last_event_id": "01M7011BANV31XQ4SRK9JMPNE0",
       "last_transition_at": "2026-11-09T11:28:00.853908+00:00"
+    },
+    "WP10": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01M7011CWWRYMY1H5ZYEVAR45A",
+      "last_transition_at": "2026-11-09T11:28:02.460895+00:00"
     }
   }
 }
